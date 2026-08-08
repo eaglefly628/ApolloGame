@@ -1,0 +1,1873 @@
+{
+  "slug": "game108",
+  "at": "2026-08-08T07:33:08.397Z",
+  "gameHash": "55edda0e5133f9d5",
+  "ok": true,
+  "form": "compiled",
+  "uiDrivableRate": 0.2876712328767123,
+  "totalSummary": {
+    "signalSteps": 73,
+    "drivenSteps": 21,
+    "tickSteps": 136,
+    "expectSteps": 61,
+    "uiDrivableRate": 0.2876712328767123
+  },
+  "scenarios": [
+    {
+      "name": "蓄力与伤害·两回合攒到 2 层出石克剪掉 30",
+      "file": "01-charge-damage.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 1,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": true
+        },
+        {
+          "step": 2,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 3,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": false,
+          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is not sta"
+        },
+        {
+          "step": 4,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 5,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": false,
+          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is not sta"
+        },
+        {
+          "step": 6,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 7,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 8,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 9,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 10,
+          "kind": "signal",
+          "signal": "throw.scissors",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 11,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 12,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 13,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 14,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 15,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 16,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 17,
+          "kind": "signal",
+          "signal": "duel.next",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 18,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 19,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 20,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": false,
+          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
+        },
+        {
+          "step": 21,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 22,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 23,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 24,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 25,
+          "kind": "signal",
+          "signal": "throw.rock",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 26,
+          "kind": "signal",
+          "signal": "throw.scissors",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 27,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 28,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 29,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 30,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 31,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 32,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 33,
+        "signalSteps": 8,
+        "drivenSteps": 1,
+        "tickSteps": 13,
+        "expectSteps": 12,
+        "uiDrivableRate": 0.125
+      }
+    },
+    {
+      "name": "诈唬·攒三回合的石却出剪，石槽不清零",
+      "file": "02-bluff.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": false,
+          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
+        },
+        {
+          "step": 1,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 2,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 3,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 4,
+          "kind": "signal",
+          "signal": "throw.scissors",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 5,
+          "kind": "signal",
+          "signal": "throw.paper",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 6,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 7,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 8,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 9,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 10,
+          "kind": "signal",
+          "signal": "duel.next",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 11,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 12,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": false,
+          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
+        },
+        {
+          "step": 13,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 14,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 15,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 16,
+          "kind": "signal",
+          "signal": "throw.scissors",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 17,
+          "kind": "signal",
+          "signal": "throw.paper",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 18,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 19,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 20,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 21,
+          "kind": "signal",
+          "signal": "duel.next",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 22,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 23,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": true
+        },
+        {
+          "step": 24,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 25,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 26,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 27,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 28,
+          "kind": "signal",
+          "signal": "throw.scissors",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 29,
+          "kind": "signal",
+          "signal": "throw.paper",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 30,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 31,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 32,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 33,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 34,
+        "signalSteps": 11,
+        "drivenSteps": 1,
+        "tickSteps": 17,
+        "expectSteps": 6,
+        "uiDrivableRate": 0.09090909090909091
+      }
+    },
+    {
+      "name": "满蓄被克·赔掉三回合",
+      "file": "03-full-charge-countered.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": true
+        },
+        {
+          "step": 1,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 2,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 3,
+          "kind": "signal",
+          "signal": "throw.scissors",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 4,
+          "kind": "signal",
+          "signal": "throw.paper",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 5,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 6,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 7,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 8,
+          "kind": "signal",
+          "signal": "duel.next",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 9,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 10,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": true
+        },
+        {
+          "step": 11,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 12,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 13,
+          "kind": "signal",
+          "signal": "throw.scissors",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 14,
+          "kind": "signal",
+          "signal": "throw.paper",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 15,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 16,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 17,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 18,
+          "kind": "signal",
+          "signal": "duel.next",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 19,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 20,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": true
+        },
+        {
+          "step": 21,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 22,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 23,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 24,
+          "kind": "signal",
+          "signal": "throw.rock",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 25,
+          "kind": "signal",
+          "signal": "throw.paper",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 26,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 27,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 28,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 29,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 30,
+        "signalSteps": 11,
+        "drivenSteps": 3,
+        "tickSteps": 17,
+        "expectSteps": 2,
+        "uiDrivableRate": 0.2727272727272727
+      }
+    },
+    {
+      "name": "平局·双方不掉血但都清零",
+      "file": "04-tie-no-damage.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": true
+        },
+        {
+          "step": 1,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 2,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": false,
+          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
+        },
+        {
+          "step": 3,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 4,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 5,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 6,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 7,
+          "kind": "signal",
+          "signal": "throw.rock",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 8,
+          "kind": "signal",
+          "signal": "throw.rock",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 9,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 10,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 11,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 12,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 13,
+        "signalSteps": 4,
+        "drivenSteps": 1,
+        "tickSteps": 6,
+        "expectSteps": 3,
+        "uiDrivableRate": 0.25
+      }
+    },
+    {
+      "name": "上限锁·满 3 后再点不越界",
+      "file": "05-charge-cap.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": false,
+          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
+        },
+        {
+          "step": 1,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 2,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": false,
+          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
+        },
+        {
+          "step": 3,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 4,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 5,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 6,
+          "kind": "signal",
+          "signal": "throw.scissors",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 7,
+          "kind": "signal",
+          "signal": "throw.paper",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 8,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 9,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 10,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 11,
+          "kind": "signal",
+          "signal": "duel.next",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 12,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 13,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": false,
+          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
+        },
+        {
+          "step": 14,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 15,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 16,
+          "kind": "signal",
+          "signal": "throw.scissors",
+          "driven": true
+        },
+        {
+          "step": 17,
+          "kind": "signal",
+          "signal": "throw.paper",
+          "driven": true
+        },
+        {
+          "step": 18,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 19,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 20,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 21,
+          "kind": "signal",
+          "signal": "duel.next",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 22,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 23,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 24,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 25,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 26,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 27,
+          "kind": "signal",
+          "signal": "throw.scissors",
+          "driven": true
+        },
+        {
+          "step": 28,
+          "kind": "signal",
+          "signal": "throw.paper",
+          "driven": true
+        },
+        {
+          "step": 29,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 30,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 31,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 32,
+          "kind": "signal",
+          "signal": "duel.next",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 33,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 34,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 35,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 36,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 37,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 38,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 39,
+        "signalSteps": 15,
+        "drivenSteps": 4,
+        "tickSteps": 21,
+        "expectSteps": 3,
+        "uiDrivableRate": 0.26666666666666666
+      }
+    },
+    {
+      "name": "对手会自己打·复读机首回合蓄石出石",
+      "file": "06-ai-plays.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 1,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 2,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 3,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 4,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 5,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 6,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 7,
+        "signalSteps": 0,
+        "drivenSteps": 0,
+        "tickSteps": 3,
+        "expectSteps": 4,
+        "uiDrivableRate": 1
+      }
+    },
+    {
+      "name": "整局闭环·五回合各蓄一层布打死复读机",
+      "file": "07-full-match-victory.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 1,
+          "kind": "signal",
+          "signal": "charge.paper",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 2,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 3,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 4,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 5,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 6,
+          "kind": "signal",
+          "signal": "throw.paper",
+          "driven": true
+        },
+        {
+          "step": 7,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 8,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 9,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 10,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 11,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 12,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 13,
+          "kind": "signal",
+          "signal": "duel.next",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 14,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 15,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 16,
+          "kind": "signal",
+          "signal": "charge.paper",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 17,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 18,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 19,
+          "kind": "signal",
+          "signal": "throw.paper",
+          "driven": true
+        },
+        {
+          "step": 20,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 21,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 22,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 23,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 24,
+          "kind": "signal",
+          "signal": "duel.next",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 25,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 26,
+          "kind": "signal",
+          "signal": "charge.paper",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 27,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 28,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 29,
+          "kind": "signal",
+          "signal": "throw.paper",
+          "driven": true
+        },
+        {
+          "step": 30,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 31,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 32,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 33,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 34,
+          "kind": "signal",
+          "signal": "duel.next",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 35,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 36,
+          "kind": "signal",
+          "signal": "charge.paper",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 37,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 38,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 39,
+          "kind": "signal",
+          "signal": "throw.paper",
+          "driven": true
+        },
+        {
+          "step": 40,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 41,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 42,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 43,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 44,
+          "kind": "signal",
+          "signal": "duel.next",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 45,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 46,
+          "kind": "signal",
+          "signal": "charge.paper",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 47,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 48,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 49,
+          "kind": "signal",
+          "signal": "throw.paper",
+          "driven": true
+        },
+        {
+          "step": 50,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 51,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 52,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 53,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 54,
+        "signalSteps": 14,
+        "drivenSteps": 5,
+        "tickSteps": 30,
+        "expectSteps": 10,
+        "uiDrivableRate": 0.35714285714285715
+      }
+    },
+    {
+      "name": "T2 超时罚血·免费段不罚·出手即停·不替玩家提交",
+      "file": "08-timeout-penalty.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 1,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 2,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 3,
+          "kind": "signal",
+          "signal": "throw.paper",
+          "driven": true
+        },
+        {
+          "step": 4,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 5,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 6,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 7,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 8,
+          "kind": "signal",
+          "signal": "duel.next",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 9,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 10,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 11,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 12,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 13,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 14,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 15,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 16,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 17,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 18,
+          "kind": "signal",
+          "signal": "throw.paper",
+          "driven": true
+        },
+        {
+          "step": 19,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 20,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 21,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 22,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 23,
+        "signalSteps": 3,
+        "drivenSteps": 2,
+        "tickSteps": 12,
+        "expectSteps": 8,
+        "uiDrivableRate": 0.6666666666666666
+      }
+    },
+    {
+      "name": "烟雾·扣次数置旗且蓄力照常",
+      "file": "09-smoke.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 1,
+          "kind": "signal",
+          "signal": "smoke.use",
+          "driven": true
+        },
+        {
+          "step": 2,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 3,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 4,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 5,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 6,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 7,
+        "signalSteps": 2,
+        "drivenSteps": 1,
+        "tickSteps": 2,
+        "expectSteps": 3,
+        "uiDrivableRate": 0.5
+      }
+    },
+    {
+      "name": "大师改表·石反克布",
+      "file": "10-master-rewrites-table.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 1,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 2,
+          "kind": "signal",
+          "signal": "throw.paper",
+          "driven": true
+        },
+        {
+          "step": 3,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 4,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 5,
+        "signalSteps": 1,
+        "drivenSteps": 1,
+        "tickSteps": 2,
+        "expectSteps": 2,
+        "uiDrivableRate": 1
+      }
+    },
+    {
+      "name": "T1 超时·一格都不涨也不罚血",
+      "file": "11-t1-timeout-no-charge.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 1,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 2,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 3,
+          "kind": "signal",
+          "signal": "charge.rock",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 4,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 5,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 6,
+        "signalSteps": 1,
+        "drivenSteps": 0,
+        "tickSteps": 2,
+        "expectSteps": 3,
+        "uiDrivableRate": 0
+      }
+    },
+    {
+      "name": "T4 玩家闸门·不点就不走",
+      "file": "12-t4-player-gate.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 1,
+          "kind": "signal",
+          "signal": "throw.rock",
+          "driven": true
+        },
+        {
+          "step": 2,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 3,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 4,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 5,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 6,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 7,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 8,
+          "kind": "signal",
+          "signal": "duel.next",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 9,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 10,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 11,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 12,
+          "kind": "signal",
+          "signal": "throw.rock",
+          "driven": true
+        },
+        {
+          "step": 13,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 14,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 15,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 16,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 17,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 18,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 19,
+        "signalSteps": 3,
+        "drivenSteps": 2,
+        "tickSteps": 11,
+        "expectSteps": 5,
+        "uiDrivableRate": 0.6666666666666666
+      }
+    }
+  ],
+  "assertions": {
+    "consoleErrors": {
+      "pass": true,
+      "count": 0,
+      "messages": []
+    },
+    "noUncaught": {
+      "pass": true,
+      "count": 0,
+      "messages": []
+    }
+  },
+  "browser": {
+    "execPath": "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+    "via": "explicit"
+  }
+}

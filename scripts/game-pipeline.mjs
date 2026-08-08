@@ -64,7 +64,14 @@ const manifestPath = (root, slug, form) =>
 
 /** 游戏内容指纹：只哈希**这款游戏自己的**输入（manifest/源码/美术/设计档），引擎全局变化由 S8 的 git HEAD 兜。
  *  排除 pipeline.json 自身（记证据不得自我过期）、gen/mock/（mock 预览物不影响出货内容）
- *  与 requests.md（工单池=沟通台账非游戏内容——回执/批注不得作废复查·Lead 2026-07-17 修 game-b S3 误失效）。 */
+ *  与 requests.md（工单池=沟通台账非游戏内容——回执/批注不得作废复查·Lead 2026-07-17 修 game-b S3 误失效）。
+ *
+ *  **同理排除 `public/games/<slug>/probe/`（Lead 2026-08-08 补·同一条「记证据不得自我过期」）**：
+ *  那整个目录是**各阶段机器门自己写出来的证据**（S3-render.png / S4-play-*.png / S4-uiwalk.json / S5-*.png），
+ *  不是游戏的输入。不排除的后果实测复现过——game108 的对局屏有时间驱动的动画，
+ *  同一份源码连跑两次 S3，截图字节就不同（md5 `e5105b6d…` → `72d5a3d9…`）⇒ 指纹变 ⇒
+ *  **跑 S3 把 S4/S5 的证据判过期、跑 S4 又把 S3 的判过期，两者永远不可能同时绿**，
+ *  流程板上是一串永远追不上的 ⚠。这跟当年 pipeline.json 自我过期是同一个形状，只是漏了这个孪生目录。 */
 export function gameHash(root, slug) {
   const roots = [
     join(root, 'library', slug),
@@ -78,7 +85,8 @@ export function gameHash(root, slug) {
     for (const name of readdirSync(d).sort()) {
       const p = join(d, name);
       const st = statSync(p);
-      if (st.isDirectory()) { if (name !== 'mock') walk(p); continue; } // gen/mock/ 预览物不入指纹
+      // gen/mock/ 预览物、probe/ 门禁自产证据 —— 都不入指纹（后者见函数头注的实测复现）。
+      if (st.isDirectory()) { if (name !== 'mock' && name !== 'probe') walk(p); continue; }
       if (name === 'pipeline.json') continue;
       if (name === 'requests.md') continue; // 工单池台账不入指纹（高频回执≠内容变更）
       files.push(p);

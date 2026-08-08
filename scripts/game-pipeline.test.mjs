@@ -52,6 +52,17 @@ describe('游戏内容指纹（证据过期的机器判据）', () => {
     expect(gameHash(root, 'g')).toBe(h2); // 工单池台账不入指纹（回执/批注不作废复查·2026-07-17 修）
     put(root, 'docs/design/g/gdd.md', '# 设计变更');
     expect(gameHash(root, 'g')).not.toBe(h2); // 设计档变更仍然即过期（gdd/plan 真影响复查有效性）
+    // **门自产的证据不入指纹**（Lead 2026-08-08·同「记证据不得自我过期」）：
+    // probe/ 整个目录是各阶段机器门自己写出来的（S3-render.png / S4-play-*.png / S4-uiwalk.json…）。
+    // 不排除的实测后果：game108 对局屏有时间驱动动画 ⇒ 同源码连跑两次 S3 截图字节就不同 ⇒
+    // 跑 S3 把 S4/S5 判过期、跑 S4 又把 S3 判过期，两者永远不可能同时绿。
+    const h3 = gameHash(root, 'g');
+    put(root, 'public/games/g/probe/S3-render.png', 'frame-a');
+    expect(gameHash(root, 'g')).toBe(h3);
+    put(root, 'public/games/g/probe/S3-render.png', 'frame-b-不同字节');
+    expect(gameHash(root, 'g')).toBe(h3);
+    put(root, 'public/games/g/probe/S4-play.json', '{"ok":true}');
+    expect(gameHash(root, 'g')).toBe(h3);
   }));
 });
 
