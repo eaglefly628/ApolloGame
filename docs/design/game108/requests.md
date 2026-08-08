@@ -5,6 +5,19 @@
 
 ## 待处理
 
+### REVIEW-108-S2S5（**owner 2026-08-08 指派：主程要查**·非引擎面·不占引擎槽） · game108 四道复查门（S2/S3/S4/S5）一并复查 · [2026-08-08] · status: **待主程接单** · 优先级: P1 · 类型: 复查门（三门制的第二门）
+> **背景**：S3/S4 的机器门与人门都绿了（owner 2026-08-08 口头签），**复查门四道全空**。
+> 复查人 ≠ 施工人是红线，施工 session（写 GDD/blueprint/UI 的这个）不能自查。
+> **接单第一命令**：`node scripts/game-pipeline.mjs checklist game108 S2`（S3/S4/S5 同）。
+> **导航单**：`docs/design/game108/review/REVIEW-S2-S5.md` —— 含改动面、声明边界、
+> 十分钟机器证据一组、逐关逐条「怎么自己验」、**八个撤修锚点**（撤掉应各红一条）、
+> 以及施工方自判的三处 CONCERNS（capability-plan 未跟上 v5 / 递归复核未重跑 / `check-ui` 未跑新屏）。
+> ⚠ **导航单是导航不是证据**：每条仍须复查人自己复跑，别采信施工方自陈那一列。
+> **范围**：`ec6794a9`…`1f98741d` 的 game108 面（中间两笔 game211 与本单无关）。
+> **落账**：`node scripts/game-pipeline.mjs review game108 <SN> --verdict … --note … --by 主程`
+
+---
+
 
 ### REQ-108-ENG-01-收益缩放（**owner 2026-08-06 判 A：补引擎缺口**·引擎面·降级存放） · `DuelPayoff.damage` 支持按资源线性缩放 · [2026-08-06] · game108 GDD v2 超休闲重构带出（owner 同日定「公开蓄力槽」机制） → **指派：Opus**（spec 写死·边界极窄） · status: **✅ 返工已交付（`perSide` 相对名组装·见下「返工交付」）·待复查侧验收**（打回原因与改判全文见下「复查侧验收（改判）」）（S1/S2 已 owner 签·本条 = game108 S3 唯一卡口·未落地不进玩法骨架） · 优先级: P1 · 类型: 既有能力扩写（`t2-matrix-duel`）
 > **要什么**：`DuelPayoff.damage` 由固定整数扩为可选 `{base, scaleByResource, step}` → 伤害 = `base + 该侧该手资源当前值 × step`（game108 = `10 + 蓄力 × 10`）。资源按**侧 local 寻址**（同 `hpResource` 口径）；纯整数、无浮点；缺省仍收固定整数 = 零回归。
