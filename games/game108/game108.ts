@@ -9,12 +9,28 @@ import { QueuedInputSource } from '@zerocraft/engine/net/index.js';
 import type { Resource, GameFlow, StringVar } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildDuelScreen, emptyView, type DuelView, type Phase } from './duel-screen.js';
-import { DUEL_THEME, VIEW_W, VIEW_H, HANDS, SIDES, HP_MAX, HP_RES, chargeEntity, lastThrowVar, PHASE_TICKS, TPS, OPPONENT_CN, type Hand, type Side } from './theme.js';
+import { DUEL_THEME, VIEW_W, VIEW_H, HANDS, SIDES, HP_MAX, HP_RES, chargeEntity, lastThrowVar, PHASE_TICKS, TPS, type Hand, type Side } from './theme.js';
+import { DEFAULT_CARD, MOOD_AI, type CardCharacter } from './card-character.js';
+import { UI_ACT } from './theme.js';
+import { loadLang, saveLang, type Lang } from './strings.js';
 
 // 舞台外框（画布之外那圈·稿子里是 `#171310` 深木底衬着 1920×1080 的对局屏）。
 const STAGE_BG = '#171310';
 
+/**
+ * 卡片角色（约会对象）—— owner 2026-08-07：「对手是我们传进来的卡片角色……卡片的心情就是它的 AI」。
+ *
+ * **不能挂在 `mount` 的第二个参数上**：`mount(el, host?)` 的第二位已被 launcher 的宿主契约占用
+ * （`src/launcher/game-runner.tsx`·`{exit}`），改签名会把卡带装载面整条打红（tsc 实测）。
+ * 故走「装载前先 `setCard`」这条：宿主拿到卡片 → `setCard(card)` → `mount(el)`。
+ * 没设 = 内置兜底卡片（探针与本机试玩走这条），屏上一切照常。
+ * DokiWorld 真 schema 到手后，在这里加一个适配函数即可，`mount` 一行不动。
+ */
+let currentCard: CardCharacter = DEFAULT_CARD;
+export function setCard(card: CardCharacter): void { currentCard = card; }
+
 export function mount(container: HTMLElement): () => void {
+  const card = currentCard;
   const { scene, teardown } = mountHost(container, {
     fieldW: VIEW_W, fieldH: VIEW_H, sceneBackground: STAGE_BG, wrapperBackground: '#171310',
   });
@@ -23,7 +39,9 @@ export function mount(container: HTMLElement): () => void {
   // （同 game101 口径）——屏上的 `action` 入队成 InputQueue 动作，再由 t2-keybind 转成 Signal。
   const queue = new QueuedInputSource('p1');
   const engine = new Engine({ input: queue });
-  engine.load(buildBlueprint());
+  // 心情 → 出招规律：一张查表（`card-character.ts MOOD_AI`），换心情不写一行代码。
+  engine.load(buildBlueprint(MOOD_AI[card.mood]));
+  let lang: Lang = loadLang();
 
   const num = (eid: string): number => engine.world.getComponent<Resource>(eid, 'Resource')?.current ?? 0;
   const str = (eid: string): string => engine.world.getComponent<StringVar>(eid, 'StringVar')?.value ?? '';
@@ -64,7 +82,9 @@ export function mount(container: HTMLElement): () => void {
       phaseLeft: total > 0 ? Math.max(0, 1 - elapsed / total) : 0,
       // 环心读数（稿子的「N.N 秒」）：剩余 tick / TPS。
       phaseSec: total > 0 ? Math.max(0, (total - elapsed) / TPS) : 0,
-      foeName: OPPONENT_CN['parrot'],
+      foeName: card.name,
+      ...(card.portrait ? { portrait: { p2: card.portrait } } : {}),
+      lang,
       round,
       hp,
       charge,
@@ -103,8 +123,12 @@ export function mount(container: HTMLElement): () => void {
   };
   const screen = (v: DuelView): LayoutNode => resolveBindings(buildDuelScreen(v), dataSource);
 
-  // handlers 传空 {}：屏上没有任何本地 handler，写世界一律经 action 信号（信号铁律）。
-  const ui: MountHandle = mountUI(scene, screen(emptyView()), {}, DUEL_THEME, queue);
+  // handlers **只挂表现层本地动作**（`ui.*`）：换语言是纯显示设置，不该进世界
+  //（进了就会进 hash / 录放 / lockstep，两端语言不同就判不一致——那是灾难）。
+  // 写世界的动作一律不挂 handler，走 `ActionSink` 入队成 Signal（信号铁律不变）。
+  const ui: MountHandle = mountUI(scene, screen(emptyView()), {
+    [UI_ACT.lang]: (): void => { lang = lang === 'zh' ? 'en' : 'zh'; saveLang(lang); ui.update(screen(readView()), DUEL_THEME); },
+  }, DUEL_THEME, queue);
 
   // 运行环走**引擎自己的** `start()`（房屋口径·同 game101）——不许自己搓 rAF 圈直接调
   // `world.tick()`：`Engine.step()` 在 tick 之前那一句 `applyCommands(world, input.commandsForTick(...))`

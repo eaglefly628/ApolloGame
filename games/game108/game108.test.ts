@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   HANDS, HP_MAX, CHARGE_CAP, DMG_BASE, DMG_STEP, TIE_SELF_DAMAGE,
-  PHASE_TICKS, TPS, ACT, SIDES, HP_RES, chargeRes, chargeRelName, chargeEntity,
+  PHASE_TICKS, TPS, ACT, UI_ACT, SIDES, HP_RES, chargeRes, chargeRelName, chargeEntity,
 } from './theme.js';
 
 describe('game108 · 数值钉死（GDD §5）', () => {
@@ -193,13 +193,26 @@ describe('game108 · 对局屏（LayoutNode 纯数据）', () => {
     expect(issues).toEqual([]);
   });
 
-  it('屏上每个 action 都出自【R-108-70】动作词表——UI 与验收剧本同源', () => {
+  it('屏上每个世界动作都出自【R-108-70】动作词表——UI 与验收剧本同源', () => {
     const vocab = new Set<string>([
       ...HANDS.map(ACT.charge), ...HANDS.map(ACT.throw), ACT.smoke, ACT.shardPick, ACT.next,
     ]);
     const used = screenActions(emptyView());
     expect(used.length).toBeGreaterThan(0);
-    for (const a of used) expect(vocab.has(a)).toBe(true);
+    // `ui.*` = 表现层本地动作（换语言这类纯显示设置·只由宿主 handler 消费·永不进世界），
+    // 与世界动作是两类。这里分流：世界动作必须逐字在词表里；`ui.*` 单独验它**不在**词表里
+    // ——两边都不许互相混进去（混进去 = 语言切换会进 hash/录放/lockstep，两端不同语言就判不一致）。
+    for (const a of used) {
+      if (a.startsWith('ui.')) expect(vocab.has(a)).toBe(false);
+      else expect(vocab.has(a)).toBe(true);
+    }
+  });
+
+  it('表现层本地动作只有 `ui.` 前缀那一类，且世界词表里一个都没有', () => {
+    const used = screenActions(emptyView());
+    const local = used.filter((a) => a.startsWith('ui.'));
+    expect(local).toContain(UI_ACT.lang);
+    for (const a of local) expect(a.startsWith('ui.')).toBe(true);
   });
 
   it('蓄力时区：槽满的那只手键禁用且不带 action【R-108-10】', () => {

@@ -36,6 +36,16 @@ export const ACT = {
   next: 'duel.next',
 } as const;
 
+/**
+ * **表现层本地动作**（`ui.` 前缀）——与上面的世界动作是两类，别混。
+ * 世界动作经 `ActionSink` 入 `InputQueue` → 变成 `Signal` 参与仿真（进 hash / 录放 / lockstep）；
+ * `ui.*` 只由宿主的本地 handler 消费（换语言这种纯显示设置），**永远不进世界**。
+ * 验收剧本只用世界动作；`ui.*` 不出现在剧本里。
+ */
+export const UI_ACT = {
+  lang: 'ui.lang',
+} as const;
+
 // ── 世界里的 id 约定 ───────────────────────────────────────────────────
 export const SIDES = ['p1', 'p2'] as const;
 export type Side = (typeof SIDES)[number];
