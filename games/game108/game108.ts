@@ -135,12 +135,16 @@ export function mount(container: HTMLElement): () => void {
     // 【R-108-04】v3：世界里的 `throwPenalty` / `throwPenaltyHit` 是 T2 的读秒尾巴，**不是第五拍**——
     // 屏上仍写「出招」，只是倒计时环换成"你已经欠了多少"。故投影时折回 `throw`。
     const inPenalty = raw === 'throwPenalty' || raw === 'throwPenaltyHit';
-    // `lockIn` 是 T1/T2 之间的**一拍**（AI 定手窗·【R-108-33】），16ms，屏上没有它这一拍：并进「出招」。
-    const phase = (inPenalty || raw === 'lockIn' ? 'throw' : raw) as Phase;
+    // 【R-108-01】v4：`throwLag` = 出手后揭晓前的那半秒（owner 2026-08-08：「等半秒吧」）。
+    // 屏上仍是「出招」——手还扣着，悬念未破；只是**没有倒计时**了（你已经交卷了）。
+    const inLag = raw === 'throwLag';
+    // `lockIn`/`lockIn2` 是 T1/T2 之间的**各一拍**（AI 定手窗·【R-108-33】），共 33ms，
+    // 屏上没有它们这一拍：并进「出招」。
+    const phase = (inPenalty || inLag || raw === 'lockIn' || raw === 'lockIn2' ? 'throw' : raw) as Phase;
     const elapsed = flow?.elapsed ?? 0;
     // T4（`settle: 0`）与罚血读秒都**没有倒计时**：前者是玩家闸门，后者已经超时了。
     // 不能 `?? PHASE_TICKS.charge` 兜底——那会在结算屏画出一圈 2.5 秒的环，玩家以为不点也会自动过。
-    const total = inPenalty ? 0 : PHASE_TICKS[phase as keyof typeof PHASE_TICKS] ?? 0;
+    const total = inPenalty || inLag ? 0 : PHASE_TICKS[phase as keyof typeof PHASE_TICKS] ?? 0;
     const charge = Object.fromEntries(SIDES.map((s) => [
       s, Object.fromEntries(HANDS.map((h) => [h, num(chargeEntity(s, h))])) as Record<Hand, number>,
     ])) as Record<Side, Record<Hand, number>>;

@@ -13,7 +13,7 @@
     { "expect": [ { "res": "p1.charge.rock", "eq": 1 } ] },
     { "tick": 275 },
     { "signal": "throw.scissors" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
-    { "tick": 300 }, { "tick": 92 },
+    { "tick": 35 }, { "tick": 92 },
     { "expect": [ { "sv": "flow", "eq": "settle" }, { "res": "p2.hp", "eq": 90 } ] },
     { "signal": "duel.next" }, { "tick": 3 },
 
@@ -22,7 +22,7 @@
     { "expect": [ { "res": "p1.charge.rock", "eq": 2 } ] },
     { "tick": 275 },
     { "signal": "throw.scissors" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
-    { "tick": 300 }, { "tick": 92 },
+    { "tick": 35 }, { "tick": 92 },
     { "signal": "duel.next" }, { "tick": 3 },
 
     // ── 第 3 回合：石满 3 —— 摆着吓人，出的却是剪 ─────────────────────────
@@ -31,7 +31,7 @@
     { "tick": 275 },
     { "expect": [ { "sv": "flow", "eq": "throw" } ] },
     { "signal": "throw.scissors" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
-    { "tick": 300 }, { "tick": 92 },
+    { "tick": 35 }, { "tick": 92 },
     { "expect": [
       { "sv": "flow", "eq": "settle" },
       { "res": "p2.hp", "eq": 70 },           // 【R-108-13】剪槽 0 → 10 + 0×10 = 10（三回合各 10）

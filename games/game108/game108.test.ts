@@ -5,7 +5,7 @@ import {
   HANDS, HP_MAX, CHARGE_CAP, DMG_BASE, DMG_STEP, TIE_SELF_DAMAGE,
   PHASE_TICKS, PENALTY_PERIOD, PENALTY_HP, CHARGE_PER_ROUND,
   TPS, ACT, UI_ACT, SIDES, HP_RES, chargeRes, chargeRelName, chargeEntity, chargeBudgetRes, penaltyDebtRes,
-  STYLE_MID, STYLE_MAX, MOOD_FSM, READ_RES, READ_MID, READ_LOW, READ_HIGH, FINISH_HP,
+  STYLE_MID, STYLE_MAX, MOOD_FSM, READ_RES, READ_MID, READ_LOW, READ_HIGH, FINISH_HP, THROW_LAG,
   BLUFF_FLAG, SILENT_FLAG, type Memory,
 } from './theme.js';
 
@@ -755,6 +755,45 @@ describe('game108 · v3 节奏（【R-108-01/02/04/05/10】）', () => {
     until(e, 'throw');
     expect(HANDS.filter((h) => flagOn(e, `flag:read:${h}`))).toHaveLength(1);
     expect((e.world.getComponent('p2', 'DuelIntent') as { throw: string } | undefined)?.throw).toBeTruthy();
+  });
+
+  it('【R-108-01】v4：**一出手就走**，不再把免费段跑满（owner 2026-08-08：「出手后不用等了。等半秒吧」）', () => {
+    /**
+     * v3 是「免费 5 秒**跑满**才走」：你 0.5 秒挑完手，剩下 4.5 秒只能盯着倒计时——
+     * 正是 owner 2026-08-07 嫌弃过的那种空等，在 T2 原样复发了一次。
+     * **这条以前一条测试都没有**（改完 63 条全绿，没有一条红）——所以节奏可以被悄悄改坏。
+     * 判据不写死"多少拍"，写**两件玩家真感觉得到的事**：① 出手当拍就离开免费段
+     * ② 从出手到揭晓远短于免费段本身。
+     */
+    const e = fresh();
+    until(e, 'throw');
+    const atThrow = e.world.getComponent<GameFlow>('flow', 'GameFlow')!.elapsed;
+    expect(atThrow).toBeLessThan(PHASE_TICKS.throw / 2);   // 确实是"刚进 T2 就出手"，不是拖到尾巴
+    tap(e, ACT.throw('rock'));
+    e.world.tick();
+    expect(phase(e)).toBe('throwLag');                     // ① 出手当拍就离开免费段
+
+    let n = 0;
+    while (!phase(e).startsWith('clash') && n < 2000) { e.world.tick(); n++; }
+    expect(phase(e)).toBe('clash');
+    // ② 定拍就是半秒那一档（留一拍余量给 after 门），且**远小于**免费段。
+    expect(n).toBeGreaterThanOrEqual(THROW_LAG);
+    expect(n).toBeLessThanOrEqual(THROW_LAG + 3);
+    expect(n).toBeLessThan(PHASE_TICKS.throw / 4);
+    expect(THROW_LAG).toBe(Math.round(0.5 * TPS));         // 半秒 = owner 的判词原文
+  });
+
+  it('【R-108-01】v4 免费段那 5 秒**没变**，它只是改管一件事：不出手能白拖多久', () => {
+    // 一出手就走 ≠ 免费段缩短了。拖着不出手的人照旧有 5 秒白拖，到点才落罚血读秒
+    // （【R-108-04】）。两个数各管一头——合并它们会让"手快的人"和"拖延的人"共用一个旋钮。
+    expect(PHASE_TICKS.throw).toBe(5 * TPS);
+    const e = fresh();
+    until(e, 'throw');
+    for (let i = 0; i < PHASE_TICKS.throw + 2; i++) e.world.tick();
+    expect(phase(e)).toMatch(/^throwPenalty/);             // 全程不点 → 仍然是罚血读秒接手
+    // 再拖两秒：欠账真的开始涨（光看相位名不够——罚血停摆过一次，见 flag:penaltyTick 那笔）。
+    for (let i = 0; i < 2 * PENALTY_PERIOD + 4; i++) e.world.tick();
+    expect(res(e, 'debt:p1')).toBeGreaterThanOrEqual(2);
   });
 
   it('【R-108-33】A 闸独立咬合：大师的判读/出招规则必须挂在**只亮一拍**的窗口上（REQ-108-PE-01）', () => {

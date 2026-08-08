@@ -14,7 +14,7 @@ import { eventWhenCapability, effectApplyCapability, matrixDuelCapability, selfR
 import { flowCapability } from '@zerocraft/engine/skills/tier3/index.js';
 import {
   HANDS, SIDES, HP_MAX, CHARGE_CAP, DMG_BASE, DMG_STEP, TIE_SELF_DAMAGE,
-  PHASE_TICKS, PENALTY_PERIOD, PENALTY_HP, CHARGE_PER_ROUND,
+  PHASE_TICKS, PENALTY_PERIOD, PENALTY_HP, CHARGE_PER_ROUND, THROW_LAG,
   ACT, HP_RES, chargeRes, chargeRelName, chargeEntity, chargeBudgetRes, penaltyDebtRes, penaltyTickFlag, lastThrowVar,
   histRes, STYLE_RES, STYLE_MAX, STYLE_MID, STYLE_GAMBLER, chargedFlag, threwHandFlag, playerThrewHand, playerCounted,
   MOOD_FSM, MOODS, READ_RES, READ_MAX, READ_MID, READ_LOW, READ_HIGH, FINISH_HP,
@@ -199,9 +199,25 @@ function duelFlow(): Record<string, unknown> {
           { kind: 'set-flag', targetId: DECIDE_GATE, value: false },
           { kind: 'set-flag', targetId: THROWING_GATE, value: true },
         ],
-        // 【R-108-01】v3：免费段到点**不推进到对决**，转入罚血读秒（【R-108-04】）。
-        // 玩家在免费段内出手的，读秒态第一条转移当场成立 ⇒ 一拍就过，罚不到。
-        transitions: [{ after: PHASE_TICKS.throw, to: 'throwPenalty' }],
+        // 【R-108-01】**v4**（owner 2026-08-08：「出手后不用等了。等半秒吧」）：
+        // 玩家一提交就走，**不再把免费段跑满**。免费段那 5 秒现在只管「不出手能白拖多久」。
+        // 两条转移的先后是规则：出手优先，到点才落罚血读秒（【R-108-04】）。
+        transitions: [
+          { when: playerThrew, to: 'throwLag' },
+          { after: PHASE_TICKS.throw, to: 'throwPenalty' },
+        ],
+      },
+      // ── 定拍：手已出、还没揭晓的那半秒（悬念归它·屏上仍是「出招」）──────────
+      // 单独一态而不是「在 T2 里少等一会儿」：`flow.elapsed` 只在**进状态**时归零，
+      // 没法表达"从玩家出手那一刻起再走 N 拍"。同罚血读秒用两态当钟的那条理由。
+      {
+        id: 'throwLag',
+        onEnter: [
+          // 罚血读秒到此为止（从读秒里出手的也走这条路，屏上不该还挂着"你在被罚"）。
+          { kind: 'set-flag', targetId: PENALTY_GATE, value: false },
+          { kind: 'set-flag', targetId: penaltyTickFlag('p1'), value: false },
+        ],
+        transitions: [{ after: THROW_LAG, to: 'clash' }],
       },
       // ── T2 尾巴：罚血读秒（屏上仍是「出招」这一拍）────────────────────────
       {
@@ -216,7 +232,7 @@ function duelFlow(): Record<string, unknown> {
         transitions: [
           // 罚死了也要收局：不加这条，玩家血罚到 0 却还卡在读秒里等他出手（clamp 在 0，永远出不去）。
           { when: hpDown('p1'), to: 'p2win' },
-          { when: playerThrew, to: 'clash' },
+          { when: playerThrew, to: 'throwLag' },
           { after: PENALTY_WAIT, to: 'throwPenaltyHit' },
         ],
       },
@@ -230,7 +246,7 @@ function duelFlow(): Record<string, unknown> {
           { kind: 'set-flag', targetId: penaltyTickFlag('p1'), value: true },
         ],
         transitions: [
-          { when: playerThrew, to: 'clash' },
+          { when: playerThrew, to: 'throwLag' },
           { when: { kind: 'always' }, to: 'throwPenalty' },
         ],
       },

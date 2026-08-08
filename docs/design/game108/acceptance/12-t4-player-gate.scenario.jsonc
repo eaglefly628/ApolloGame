@@ -9,7 +9,7 @@
   "steps": [
     { "tick": 275 },
     { "signal": "throw.rock" }, { "tick": 3 },
-    { "tick": 300 }, { "tick": 92 },
+    { "tick": 35 }, { "tick": 92 },
     { "expect": [ { "sv": "flow", "eq": "settle" }, { "flag": "duel.next.armed", "eq": false } ] },
 
     // 空等 20 秒（比 v2 的 T4 长 20 倍）——**无自动兜底**
@@ -23,7 +23,7 @@
     // 闸门旗必须已复位：没复位的话，这一回合的 T4 会被上一次按下的那下直接推过去
     { "tick": 275 },
     { "signal": "throw.rock" }, { "tick": 3 },
-    { "tick": 300 }, { "tick": 92 },
+    { "tick": 35 }, { "tick": 92 },
     { "expect": [ { "sv": "flow", "eq": "settle" } ] },
     { "tick": 600 },
     { "expect": [ { "sv": "flow", "eq": "settle" } ] },

@@ -33,20 +33,20 @@
     "S3": {
       "exit": 0,
       "summary": "编译期游戏免 manifest 校验 · ✓ 渲染探针过（截图 public/games/<slug>/probe/S3-render.png） · ✓ 点击打穿（6 个控件 · 5 个点后 DOM 真的变了 · 零控制台 error）",
-      "at": "2026-08-08T15:09:23.325Z",
-      "gameHash": "b1f714fd573bf264"
+      "at": "2026-08-08T16:03:54.283Z",
+      "gameHash": "089432e942b60194"
     },
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  1 passed (1) ·       Tests  63 passed (63)）· 验收剧本 12 场景绿 · ✓ UI 走查过（可驱动率见 public/games/<slug>/probe/S4-uiwalk.json）",
-      "at": "2026-08-08T15:09:36.124Z",
-      "gameHash": "b1f714fd573bf264"
+      "summary": "walkthrough 绿（ Test Files  1 passed (1) ·       Tests  65 passed (65)）· 验收剧本 12 场景绿 · ✓ UI 走查过（可驱动率见 public/games/<slug>/probe/S4-uiwalk.json）",
+      "at": "2026-08-08T16:04:07.206Z",
+      "gameHash": "089432e942b60194"
     },
     "S5": {
       "exit": 0,
       "summary": "AUDIT: PASS · RATCHET: PASS · ⚠ 无标准照基准·未比对（golden-shot bless 建基准）",
-      "at": "2026-08-08T15:09:36.372Z",
-      "gameHash": "b1f714fd573bf264"
+      "at": "2026-08-08T16:04:07.423Z",
+      "gameHash": "089432e942b60194"
     }
   },
   "history": [
@@ -540,6 +540,42 @@
       "stage": "S5",
       "exit": 0,
       "at": "2026-08-08T15:09:36.372Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "v4 出手即走（owner 2026-08-08 判「等半秒」）后重刷",
+      "at": "2026-08-08T16:03:33.367Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-08-08T16:03:54.283Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "v4 出手即走（owner 2026-08-08 判「等半秒」）后重刷",
+      "at": "2026-08-08T16:03:54.418Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-08-08T16:04:07.206Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S5",
+      "reason": "v4 出手即走（owner 2026-08-08 判「等半秒」）后重刷",
+      "at": "2026-08-08T16:04:07.348Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-08-08T16:04:07.423Z"
     }
   ],
   "outOfOrder": [
@@ -722,18 +758,33 @@
       "stage": "S5",
       "reason": "S6 接背景皮肤槽后重刷（改动面 = game108.ts 一处 + 台账）",
       "at": "2026-08-08T15:09:36.270Z"
+    },
+    {
+      "stage": "S3",
+      "reason": "v4 出手即走（owner 2026-08-08 判「等半秒」）后重刷",
+      "at": "2026-08-08T16:03:33.367Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "v4 出手即走（owner 2026-08-08 判「等半秒」）后重刷",
+      "at": "2026-08-08T16:03:54.418Z"
+    },
+    {
+      "stage": "S5",
+      "reason": "v4 出手即走（owner 2026-08-08 判「等半秒」）后重刷",
+      "at": "2026-08-08T16:04:07.348Z"
     }
   ],
   "selfCheck": {
     "S4": {
-      "at": "2026-08-08T15:09:36.124Z",
+      "at": "2026-08-08T16:04:07.206Z",
       "shots": 12,
-      "gameHash": "b1f714fd573bf264"
+      "gameHash": "089432e942b60194"
     },
     "S5": {
-      "at": "2026-08-08T15:09:36.372Z",
+      "at": "2026-08-08T16:04:07.423Z",
       "shots": 12,
-      "gameHash": "b1f714fd573bf264"
+      "gameHash": "089432e942b60194"
     }
   },
   "reviews": {

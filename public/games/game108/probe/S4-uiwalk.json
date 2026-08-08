@@ -1,15 +1,15 @@
 {
   "slug": "game108",
-  "at": "2026-08-08T15:09:36.078Z",
-  "gameHash": "b1f714fd573bf264",
+  "at": "2026-08-08T16:04:07.160Z",
+  "gameHash": "089432e942b60194",
   "ok": true,
   "form": "compiled",
   "uiDrivableRate": 0,
   "totalSummary": {
     "signalSteps": 74,
     "drivenSteps": 0,
-    "tickSteps": 136,
-    "expectSteps": 61,
+    "tickSteps": 137,
+    "expectSteps": 62,
     "uiDrivableRate": 0
   },
   "scenarios": [
@@ -1578,14 +1578,26 @@
           "kind": "expect",
           "driven": false,
           "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 23,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 24,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
         }
       ],
       "summary": {
-        "totalSteps": 23,
+        "totalSteps": 25,
         "signalSteps": 3,
         "drivenSteps": 0,
-        "tickSteps": 12,
-        "expectSteps": 8,
+        "tickSteps": 13,
+        "expectSteps": 9,
         "uiDrivableRate": 0
       }
     },

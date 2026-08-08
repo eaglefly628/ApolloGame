@@ -21,7 +21,7 @@
     { "tick": 275 },
     { "expect": [ { "sv": "flow", "eq": "throw" } ] },
     { "signal": "throw.paper" }, { "tick": 3 },
-    { "tick": 300 }, { "tick": 92 },
+    { "tick": 35 }, { "tick": 92 },
     { "expect": [
       { "sv": "flow", "eq": "settle" },
       { "res": "p2.hp", "eq": 80 },             // 【R-108-13】10+1×10=20
@@ -37,22 +37,22 @@
 
     // ── 第 2-5 回合：同一套 ─────────────────────────────────────────────
     { "signal": "charge.paper" }, { "tick": 2 }, { "tick": 275 },
-    { "signal": "throw.paper" }, { "tick": 3 }, { "tick": 300 }, { "tick": 92 },
+    { "signal": "throw.paper" }, { "tick": 3 }, { "tick": 35 }, { "tick": 92 },
     { "expect": [ { "res": "p2.hp", "eq": 60 } ] },
     { "signal": "duel.next" }, { "tick": 3 },
 
     { "signal": "charge.paper" }, { "tick": 2 }, { "tick": 275 },
-    { "signal": "throw.paper" }, { "tick": 3 }, { "tick": 300 }, { "tick": 92 },
+    { "signal": "throw.paper" }, { "tick": 3 }, { "tick": 35 }, { "tick": 92 },
     { "expect": [ { "res": "p2.hp", "eq": 40 } ] },
     { "signal": "duel.next" }, { "tick": 3 },
 
     { "signal": "charge.paper" }, { "tick": 2 }, { "tick": 275 },
-    { "signal": "throw.paper" }, { "tick": 3 }, { "tick": 300 }, { "tick": 92 },
+    { "signal": "throw.paper" }, { "tick": 3 }, { "tick": 35 }, { "tick": 92 },
     { "expect": [ { "res": "p2.hp", "eq": 20 } ] },
     { "signal": "duel.next" }, { "tick": 3 },
 
     { "signal": "charge.paper" }, { "tick": 2 }, { "tick": 275 },
-    { "signal": "throw.paper" }, { "tick": 3 }, { "tick": 300 }, { "tick": 92 },
+    { "signal": "throw.paper" }, { "tick": 3 }, { "tick": 35 }, { "tick": 92 },
     { "expect": [
       { "res": "p2.hp", "eq": 0 },              // 【R-108-15】血量归零
       { "flag": "p2.dead", "eq": true },        // 按侧判定（self-rule 读自身 → 各侧唯一旗）

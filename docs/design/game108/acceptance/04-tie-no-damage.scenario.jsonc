@@ -11,7 +11,7 @@
     { "tick": 275 },
     { "expect": [ { "sv": "flow", "eq": "throw" } ] },
     { "signal": "throw.rock" }, { "signal": "throw.rock", "by": "p2" }, { "tick": 3 },
-    { "tick": 300 }, { "tick": 92 },
+    { "tick": 35 }, { "tick": 92 },
     { "expect": [
       { "sv": "flow", "eq": "settle" },
       { "res": "p1.hp", "eq": 100 },          // 【R-108-15】平局双方不掉血

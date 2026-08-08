@@ -12,17 +12,17 @@
     { "expect": [ { "res": "p1.charge.rock", "eq": 1 } ] },
     { "tick": 275 },
     { "signal": "throw.scissors" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
-    { "tick": 300 }, { "tick": 92 }, { "signal": "duel.next" }, { "tick": 3 },
+    { "tick": 35 }, { "tick": 92 }, { "signal": "duel.next" }, { "tick": 3 },
 
     { "signal": "charge.rock" }, { "tick": 2 }, { "tick": 275 },
     { "signal": "throw.scissors" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
-    { "tick": 300 }, { "tick": 92 }, { "signal": "duel.next" }, { "tick": 3 },
+    { "tick": 35 }, { "tick": 92 }, { "signal": "duel.next" }, { "tick": 3 },
 
     { "signal": "charge.rock" }, { "tick": 2 },
     { "expect": [ { "res": "p1.charge.rock", "eq": 3 } ] },
     { "tick": 275 },
     { "signal": "throw.scissors" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
-    { "tick": 300 }, { "tick": 92 }, { "signal": "duel.next" }, { "tick": 3 },
+    { "tick": 35 }, { "tick": 92 }, { "signal": "duel.next" }, { "tick": 3 },
 
     // 第 4 回合：已满 3，额度照发但加不上去（Resource.max 钳位）
     { "signal": "charge.rock" }, { "tick": 2 },

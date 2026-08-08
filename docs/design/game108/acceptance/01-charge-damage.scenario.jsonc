@@ -42,10 +42,10 @@
     // 第 1 回合出剪（不出石 ⇒ 石那一层留着·【R-108-14】只清出过的手）；对手复读机出石 → 石克剪，我挨打
     { "signal": "throw.scissors" }, { "tick": 3 },
     { "expect": [
-      { "sv": "flow", "eq": "throw" },
+      { "sv": "flow", "eq": "throwLag" },     // 【R-108-01】v4：出手即离开免费段，落进定拍
       { "res": "p1.hp", "eq": 100 },          // 【R-108-01】扣血在 T4，出招当下不该掉
     ] },
-    { "tick": 300 },                          // 免费 5 秒走完 → 已出手 ⇒ 直接进对决，不罚血
+    { "tick": 35 },   // 【R-108-01】v4：出手即走——定拍半秒（30 拍·after 门多一拍）→ 对决
     { "expect": [ { "sv": "flow", "eq": "clash" }, { "res": "p1.debt", "eq": 0 } ] },
     { "tick": 92 },
     { "expect": [
@@ -69,10 +69,11 @@
     { "signal": "throw.scissors", "by": "p2" },
     { "tick": 3 },
     { "expect": [
-      { "sv": "flow", "eq": "throw" },
+      // 【R-108-01】v4：出手当拍就离开免费段，落进**定拍**（半秒·揭晓前手还扣着）。
+      { "sv": "flow", "eq": "throwLag" },
       { "res": "p1.charge.rock", "eq": 2 },   // 清零在 T4
     ] },
-    { "tick": 300 },
+    { "tick": 35 },
     { "expect": [ { "sv": "flow", "eq": "clash" } ] },
     { "tick": 92 },
     { "expect": [
