@@ -43,7 +43,11 @@ export const ACT = {
  * 验收剧本只用世界动作；`ui.*` 不出现在剧本里。
  */
 export const UI_ACT = {
-  lang: 'ui.lang',
+  menu: 'ui.menu',      // 开/合设置菜单
+  lang: 'ui.lang',      // 中 / EN
+  bgm: 'ui.bgm',        // 背景音乐开关
+  sfx: 'ui.sfx',        // 音效开关
+  voice: 'ui.voice',    // 角色配音开关
 } as const;
 
 // ── 世界里的 id 约定 ───────────────────────────────────────────────────

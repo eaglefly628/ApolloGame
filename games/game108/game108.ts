@@ -13,6 +13,8 @@ import { DUEL_THEME, VIEW_W, VIEW_H, HANDS, SIDES, HP_MAX, HP_RES, chargeEntity,
 import { DEFAULT_CARD, MOOD_AI, type CardCharacter } from './card-character.js';
 import { UI_ACT } from './theme.js';
 import { loadLang, saveLang, type Lang } from './strings.js';
+import { createAudio, loadAudioFlags, type Sfx } from './audio.js';
+import { createVoice, voiceLine, type VoiceEvent } from './voice.js';
 
 // 舞台外框（画布之外那圈·稿子里是 `#171310` 深木底衬着 1920×1080 的对局屏）。
 const STAGE_BG = '#171310';
@@ -42,6 +44,20 @@ export function mount(container: HTMLElement): () => void {
   // 心情 → 出招规律：一张查表（`card-character.ts MOOD_AI`），换心情不写一行代码。
   engine.load(buildBlueprint(MOOD_AI[card.mood]));
   let lang: Lang = loadLang();
+  let menuOpen = false;
+  // 音频门面（声音=数据·端口在引擎）。无 AudioContext（探针/测试）→ 端口内建静默 no-op。
+  const audio = createAudio(loadAudioFlags());
+  // 角色配音：TTS 链；发不出声（headless / 没装音色）时 `say` 返回 false → 走字幕兜底。
+  const voice = createVoice(card.id, card.mood, lang);
+  let subtitle = '';
+  let subtitleUntil = 0;          // 用**回合数**计时，不用墙钟——同一条纪律：表现层也别引入第二个时钟
+  /** 角色说一句：能出声就出声，出不了声就把台词打成字幕（手册的兜底③）。 */
+  const say = (ev: VoiceEvent): void => {
+    if (!audio.flags.voice) return;
+    voice.say(ev, lang);          // 返回 false 也照打字幕：听得见的人两样都有，听不见的至少看得见
+    subtitle = voiceLine(ev, lang);
+    subtitleUntil = shownRound + 1;
+  };
 
   const num = (eid: string): number => engine.world.getComponent<Resource>(eid, 'Resource')?.current ?? 0;
   const str = (eid: string): string => engine.world.getComponent<StringVar>(eid, 'StringVar')?.value ?? '';
@@ -75,6 +91,27 @@ export function mount(container: HTMLElement): () => void {
     if (phase === 'clash' && prevPhase !== 'clash') { roundAtClash = round; lastOutcome = undefined; tieThisRound = true; }
     const settled = round > roundAtClash;
     if (lastOutcome && lastOutcome.damage > 0) tieThisRound = false;
+    // ── 音画同步（**纯表现**·读世界之后触发·绝不回写）───────────────────
+    // 手册红线：音频/语音是表现层旁路，不进 sim/hash/录放。所以全部挂在"世界已经变成这样"之后。
+    shownRound = round;
+    if (subtitleUntil && round > subtitleUntil) subtitle = '';
+    const myCharge = HANDS.reduce((n, h) => n + charge.p1[h], 0);
+    if (myCharge > prevCharge) audio.play(HANDS.some((h) => charge.p1[h] >= 3) ? 'full' : 'charge');
+    prevCharge = myCharge;
+    const foeFull = HANDS.some((h) => charge.p2[h] >= 3);
+    if (foeFull && !prevFoeFull) { audio.play('full'); say('foeFull'); }
+    prevFoeFull = foeFull;
+    const sub = intent?.throw ?? '';
+    if (sub && sub !== prevSubmitted) audio.play('throw');
+    prevSubmitted = phase === 'charge' ? '' : sub;
+    if (phase === 'clash' && prevPhase !== 'clash') { audio.play('reveal'); say('clash'); }
+    if (phase === 'charge' && prevPhase === 'settle') say('roundStart');
+    for (const s of SIDES) {
+      if (prevHp[s] > hp[s]) { audio.play(s === 'p1' ? 'taken' : 'hit'); say(s === 'p1' ? 'foeWin' : 'youWin'); }
+    }
+    if (phase === 'p1win' && prevPhase !== 'p1win') { audio.play('win'); say('gameWin'); }
+    if (phase === 'p2win' && prevPhase !== 'p2win') { audio.play('lose'); say('gameLose'); }
+
     prevHp = { ...hp }; prevPhase = phase;
 
     return {
@@ -85,6 +122,9 @@ export function mount(container: HTMLElement): () => void {
       foeName: card.name,
       ...(card.portrait ? { portrait: { p2: card.portrait } } : {}),
       lang,
+      menuOpen,
+      audio: audio.flags,
+      ...(subtitle ? { subtitle } : {}),
       round,
       hp,
       charge,
@@ -98,7 +138,11 @@ export function mount(container: HTMLElement): () => void {
     };
   }
 
-  // 表现层记忆（render-only·不进 sim/hash）：用于「上一次结算掉了多少血」的横幅。
+  // 表现层记忆（render-only·不进 sim/hash）：用于「上一次结算掉了多少血」的横幅 + 音画同步。
+  let shownRound = 1;
+  let prevCharge = 0;             // 我方三槽总层数——涨了就是"又蓄了一层"
+  let prevFoeFull = false;        // 对手是否已有满蓄的一手（由无到有 = 一记提醒）
+  let prevSubmitted: Hand | '' = '';
   let prevHp: Record<Side, number> = { p1: HP_MAX, p2: HP_MAX };
   let prevPhase: Phase = 'charge';
   let tieThisRound = false;
@@ -126,8 +170,15 @@ export function mount(container: HTMLElement): () => void {
   // handlers **只挂表现层本地动作**（`ui.*`）：换语言是纯显示设置，不该进世界
   //（进了就会进 hash / 录放 / lockstep，两端语言不同就判不一致——那是灾难）。
   // 写世界的动作一律不挂 handler，走 `ActionSink` 入队成 Signal（信号铁律不变）。
+  const redraw = (): void => { ui.update(screen(readView()), DUEL_THEME); };
   const ui: MountHandle = mountUI(scene, screen(emptyView()), {
-    [UI_ACT.lang]: (): void => { lang = lang === 'zh' ? 'en' : 'zh'; saveLang(lang); ui.update(screen(readView()), DUEL_THEME); },
+    // 每个本地动作都先「起一次 BGM」：浏览器的自动播放策略要求**真实用户手势之后**才准出声，
+    // 而设置菜单这几个键正好都是真手势（`audio.start()` 幂等）。
+    [UI_ACT.menu]: (): void => { menuOpen = !menuOpen; audio.start(); audio.play('ui'); redraw(); },
+    [UI_ACT.lang]: (): void => { lang = lang === 'zh' ? 'en' : 'zh'; saveLang(lang); voice.setLang(lang); audio.play('ui'); redraw(); },
+    [UI_ACT.bgm]: (): void => { audio.toggle('bgm'); audio.start(); audio.play('ui'); redraw(); },
+    [UI_ACT.sfx]: (): void => { audio.toggle('sfx'); audio.play('ui'); redraw(); },
+    [UI_ACT.voice]: (): void => { const f = audio.toggle('voice'); if (!f.voice) voice.stop(); audio.play('ui'); redraw(); },
   }, DUEL_THEME, queue);
 
   // 运行环走**引擎自己的** `start()`（房屋口径·同 game101）——不许自己搓 rAF 圈直接调
@@ -138,7 +189,7 @@ export function mount(container: HTMLElement): () => void {
   engine.subscribe(() => { ui.update(screen(readView()), DUEL_THEME); });
   engine.start();
 
-  return () => { engine.stop(); ui(); teardown(); };
+  return () => { engine.stop(); audio.stop(); voice.dispose(); ui(); teardown(); };
 }
 
 export { lastThrowVar, HP_RES };

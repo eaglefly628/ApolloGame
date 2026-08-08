@@ -10,11 +10,15 @@
 // 内置那五套出招规律不再是"五个关卡"，而是**五种心情的行为实现**（一个没浪费，只是换了语义）。
 // 这正是数据驱动的形状：换心情 = 改一个字段，不写任何代码。
 //
-// ⚠ **卡片契约（DokiWorld 的字段定名）尚未到手**（`docs/workflow/requests.md` REQ-DIALOGUE 里
-//   那段「数值双向契约」被 owner 悬置：「回头再说·我先去要接口」）。所以下面这份 `CardCharacter`
-//   是**本作自持的最小形状**：只取「叫什么 / 长什么样 / 什么心情」三件我们真的要用的。
-//   真 schema 到手后，这里加一个适配函数即可，消费端（屏 + blueprint）一行不动。
-
+// ⚠ **更正（2026-08-07·我先前说错过一次）**：卡片契约**是有的**——
+//   `src/services/character-card/`（`normalizeCharacterCard` / `toSeatCard` / `isCardUsable`），
+//   手册 `docs/playbooks/character-card.md`，a/b/c 三个游戏已在用。我之前只查了 REQ-DIALOGUE 里
+//   那段被悬置的「DokiWorld 数值双向契约」，就下了"没有契约"的结论——**漏查了 services 这一层**。
+//   现在按手册接：平台卡 → `normalizeCharacterCard` → 取 name / 头像 → 本作的 `CardCharacter`。
+//
+// 唯一**平台卡里没有**的是 `mood`：那是「他**今天**的心情」，是**本次对局的参数**，不是角色属性
+//   （同一个人今天上头、明天精明）。所以 mood 由会话侧传入，不从卡里读。
+import { normalizeCharacterCard, isCardUsable, type PlatformCharacterDraft, type NormalizeOptions, type CardIssue } from '@zerocraft/engine/services/character-card/index.js';
 import { OPPONENT_CN, type OpponentId } from './theme.js';
 
 /** 心情（闭集）——**这就是 AI**。 */
@@ -60,3 +64,33 @@ export const DEFAULT_CARD: CardCharacter = {
   name: OPPONENT_CN['parrot'],
   mood: 'stubborn',
 };
+
+/**
+ * 平台角色卡 → 本作的对局角色（**走引擎的卡桥，不自己解析平台字段**·手册 `character-card.md`）。
+ *
+ * - `name` / `id` 由桥收敛（空名 = 坏卡 → `usable:false`，调用方该拒绝开局）；
+ * - 画像取 `media.avatarUrl`，没有就退 `imageUrl`；两个都没有 → 不填，屏上退化成名字首字（不空白）；
+ * - `mood` **不从卡里读**（见文件头）：由会话侧给，缺省"执拗"。
+ * - `issues` 原样带出来给调用方决定要不要上报（桥的纪律是"绝不炸、记 warn"）。
+ *
+ * ⚠ 成年硬闸 `requireAdult`：a/b/c 三个姨太题材游戏是**必开**的。本作是约会向但非成人向，
+ * 默认不开；要不要开由接入方按题材定（`opts` 透传）。
+ */
+export function fromPlatformCard(
+  draft: PlatformCharacterDraft,
+  mood: Mood = 'stubborn',
+  opts: NormalizeOptions = {},
+): { card: CardCharacter; usable: boolean; issues: CardIssue[] } {
+  const res = normalizeCharacterCard(draft, opts);
+  const art = res.card.media.avatarUrl ?? res.card.media.imageUrl;
+  return {
+    card: {
+      id: res.card.id,
+      name: res.card.name,
+      ...(art ? { portrait: art } : {}),
+      mood,
+    },
+    usable: isCardUsable(res),
+    issues: res.issues,
+  };
+}

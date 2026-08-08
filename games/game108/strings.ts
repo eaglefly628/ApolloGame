@@ -72,6 +72,18 @@ export const STRINGS = {
   'end.hpLeft': { en: 'HP left', zh: '剩余血量' },
   'end.again': { en: 'Play again', zh: '再来一局' },
 
+  // ── 设置菜单（owner 2026-08-07：右上角一个菜单键·里面放音乐和语言）──────
+  'menu.title': { en: 'SETTINGS', zh: '设置' },
+  'menu.bgm': { en: 'Music', zh: '背景音乐' },
+  'menu.sfx': { en: 'Sound FX', zh: '音效' },
+  'menu.voice': { en: 'Character voice', zh: '角色配音' },
+  'menu.lang': { en: 'Language', zh: '语言' },
+  'menu.on': { en: 'ON', zh: '开' },
+  'menu.off': { en: 'OFF', zh: '关' },
+  'menu.close': { en: 'Close', zh: '关闭' },
+  'menu.langZh': { en: '中文', zh: '中文' },
+  'menu.langEn': { en: 'English', zh: 'English' },
+
   // ── 心情（卡片角色的 AI 轴）──────────────────────────────────────────
   'mood.stubborn': { en: 'Stubborn', zh: '执拗' },
   'mood.reckless': { en: 'Reckless', zh: '上头' },

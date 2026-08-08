@@ -780,9 +780,32 @@ ENG-04 只给 `KeyBinding` 开了 `source`（玩家那条路），**AI 走的 `E
      接得上；但**台词内容是 GD 的活**，且要不要随心情/胜负分支，得先定。
   3. **模式 B（VS AI 猜拳机）的入口与规则**。owner 描述是「卡片角色说一句对白 → 转成挑战内置 AI」。
      那这时对手换成谁？五种心情轮着打？有排行/连胜吗？
-  4. **卡片契约**。名字/画像/心情三个字段的**定名**还没有（`docs/workflow/requests.md` REQ-DIALOGUE 里
-     那段 DokiWorld 双向契约被 owner 悬置：「回头再说·我先去要接口」）。
-     现在用的是本作自持的最小形状 `CardCharacter{id,name,portrait?,mood}`，真 schema 到手加一个适配函数即可。
+  4. ~~**卡片契约**没有~~ → **✅ 我说错了，已更正并接上（2026-08-07）**：
+     契约**一直都在**——`src/services/character-card/`（`normalizeCharacterCard` / `toSeatCard` / `isCardUsable`），
+     手册 `docs/playbooks/character-card.md`，a/b/c 三个游戏已在用。
+     我先前只查了 REQ-DIALOGUE 里那段被悬置的「DokiWorld 数值双向契约」就下了"没有"的结论，**漏查了 services 层**。
+     现已按手册接：`fromPlatformCard(draft, mood, opts)` → 桥收敛 name/id、画像取 `media.avatarUrl`（退 `imageUrl`）。
+     **唯一平台卡里没有的是 `mood`**——那是「他**今天**的心情」，是**本次对局的参数**不是角色属性
+     （同一个人今天上头、明天精明），故由会话侧传入。
+     待定的只剩：接入时要不要开**成年硬闸** `requireAdult`（a/b/c 姨太题材是必开的；本作约会向非成人向，
+     默认没开）——**这条归 owner 按题材定**。
 - **菜单**：owner 要求「菜单里加多语言设定」——**game108 目前没有菜单屏**（装载即进对局）。
   本轮把语言开关做成屏上一枚自描述胶囊（齿轮正下方）先能用；**真设置面板随模式选择屏一起做**
   （两件事共用同一个"局外屏"，分两次做等于搭两遍）。
+
+### REQ-108-AUDIO-01 · 音频与配音已接（记账·非缺口）· [2026-08-07] · owner 要求 · status: **done（本轮）**
+
+owner：「我们游戏有没有音乐？给我做一下 AI 的配音。」——**先查手册再动手**（`docs/playbooks/audio.md`），
+三样能力全是现成基座，一个都没自造：
+
+| 要的 | 用的基座 | 落点 |
+|---|---|---|
+| 音效 | `SynthAudioPort` + `SfxSpec`（**声音 = 数据**·音色表） | `games/game108/audio.ts` · 11 个事件键 |
+| 背景音乐 | `SynthMusicPort` + `MusicTrack`（音符表·循环合成） | 同上 · I–V–vi–IV 轻柔垫底（约会向：不抢戏） |
+| **角色配音** | `VoicePort` 降级链：`TtsVoicePort`（浏览器合成·零资产零 key）→ 采样包（将来真配音）→ **字幕兜底** | `games/game108/voice.ts` |
+
+- **零外部音频文件**、确定性、无 `AudioContext`（headless/探针/SSR）自动静默 no-op —— 手册红线全守。
+- 配音是**表现层旁路**：只在"世界已经变成这样"之后触发，**绝不进 sim / hash / 录放 / lockstep**。
+- 台词是数据表（`事件 × 语言`），语气按**卡片的心情**取 `rate/pitch`；内容将来由 GD 按人设改写，**改表不改代码**。
+- 兜底：TTS 发不出声（没装音色 / headless）时照样打**字幕**——听不见也要看得见他说了什么。
+- **待补**：真人/真 AI 配音的采样包（`SamplePackVoicePort` 那一档），等有音源再挂；台词内容待 GD。

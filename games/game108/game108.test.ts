@@ -209,10 +209,14 @@ describe('game108 · 对局屏（LayoutNode 纯数据）', () => {
   });
 
   it('表现层本地动作只有 `ui.` 前缀那一类，且世界词表里一个都没有', () => {
-    const used = screenActions(emptyView());
-    const local = used.filter((a) => a.startsWith('ui.'));
-    expect(local).toContain(UI_ACT.lang);
-    for (const a of local) expect(a.startsWith('ui.')).toBe(true);
+    // 菜单合着时屏上只有菜单键；音乐/音效/配音/语言四个开关在菜单**打开**后才在屏上。
+    const closed = screenActions(emptyView()).filter((a) => a.startsWith('ui.'));
+    expect(closed).toEqual([UI_ACT.menu]);
+    const open = screenActions({ ...emptyView(), menuOpen: true }).filter((a) => a.startsWith('ui.'));
+    for (const k of [UI_ACT.menu, UI_ACT.bgm, UI_ACT.sfx, UI_ACT.voice, UI_ACT.lang]) expect(open).toContain(k);
+    // 世界动作与 `ui.*` 不许互相混：混进去 = 语言/音量会进 hash、录放、lockstep，两端设置不同就判不一致。
+    const world = new Set<string>([...HANDS.map(ACT.charge), ...HANDS.map(ACT.throw), ACT.smoke, ACT.shardPick, ACT.next]);
+    for (const a of open) expect(world.has(a)).toBe(false);
   });
 
   it('蓄力时区：槽满的那只手键禁用且不带 action【R-108-10】', () => {

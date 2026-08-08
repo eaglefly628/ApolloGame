@@ -66,6 +66,12 @@ export interface DuelView {
   portrait?: Partial<Record<Side, string>>;
   /** 界面语言（owner 2026-08-07：中英双版·默认中文）。 */
   lang: Lang;
+  /** 设置菜单开着没有（owner 2026-08-07：右上角一个菜单键·里面放音乐和语言）。 */
+  menuOpen?: boolean;
+  /** 三个音频开关的当前状态（纯显示·真状态在宿主的音频门面里）。 */
+  audio?: { bgm: boolean; sfx: boolean; voice: boolean };
+  /** 角色这一刻说的那句（配音发不出声时的**字幕兜底**——听不见也要看得见）。 */
+  subtitle?: string;
 }
 
 const isOver = (p: Phase): boolean => p === 'p1win' || p === 'p2win';
@@ -301,32 +307,18 @@ function topBar(view: DuelView): LayoutNode[] {
     },
     idPlate(view, 'p1'), hpBlock(view, 'p1'), phaseBar(view), hpBlock(view, 'p2'), idPlate(view, 'p2'),
     {
-      type: 'Panel', id: 'gear',
-      props: { skin: plate({ w: L.gear.size, h: L.gear.size, fill: C.cream, border: 4, radius: 999, shadow: 4, shadowColor: 'rgba(0,0,0,.3)' }) },
+      // 稿子把它画成一枚装饰齿轮（点了没定义）。owner 2026-08-07：**右上角要一个菜单键**，
+      // 里面放音乐和语言 —— 正好就是它，加个 `action` 即可，不必再往屏上塞新件。
+      type: 'Panel', id: 'key-menu',
+      props: {
+        skin: plate({ w: L.gear.size, h: L.gear.size, fill: C.cream, border: 4, radius: 999, shadow: 4, shadowColor: 'rgba(0,0,0,.3)' }),
+        action: UI_ACT.menu,
+      },
       layout: {
         x: L.gear.x, y: L.gear.y, width: L.gear.size, height: L.gear.size,
         direction: 'row', align: 'center', justify: 'center', padding: 0, allowOverlap: true,
       },
       children: [{ type: 'Label', id: 'gear-t', props: { text: '⚙', size: S.gear, color: 'ink' } }],
-    },
-    // 语言胶囊（**稿子里没有**·D8 偏差在案）：owner 2026-08-07 要中英双版，
-    // 而这一屏没有菜单可放设置，齿轮又是稿子画的装饰件（点了没定义）。
-    // 折中：在齿轮正下方挂一枚**自描述**的小胶囊，写着「切过去会变成哪种语言」——
-    // 藏进齿轮里点不到、也说不清，比多一个件更糟。真设置面板随「两种模式」那一版做。
-    {
-      type: 'Panel', id: 'key-lang',
-      props: {
-        skin: plate({ w: 52, h: 34, fill: C.cream, border: 3, radius: R.pill, shadow: 3, shadowColor: 'rgba(0,0,0,.3)' }),
-        action: UI_ACT.lang,
-      },
-      layout: {
-        x: L.gear.x, y: L.gear.y + L.gear.size + 8, width: 52, height: 34,
-        direction: 'row', align: 'center', justify: 'center', padding: 0, allowOverlap: true,
-      },
-      children: [{
-        type: 'Label', id: 'key-lang-t',
-        props: { text: view.lang === 'zh' ? 'EN' : '中', size: 17, font: F.cjk, color: 'ink' },
-      }],
     },
   ];
 }
@@ -715,6 +707,81 @@ function bottomBar(view: DuelView): LayoutNode[] {
   ];
 }
 
+/** 设置菜单（owner 2026-08-07）：音乐 / 音效 / 配音 / 语言 —— 只有这四条，别堆。 */
+function settingsMenu(view: DuelView): LayoutNode[] {
+  const a = view.audio ?? { bgm: true, sfx: true, voice: true };
+  const w = 620, hgt = 470;
+  const x = (CANVAS.w - w) / 2, y = (CANVAS.h - hgt) / 2;
+  /** 一行：左边名字，右边一枚可点的值键。 */
+  const row = (id: string, label: string, value: string, action: string, on: boolean, i: number): LayoutNode => ({
+    type: 'Panel', id: `menu-${id}`, props: { bare: true },
+    layout: {
+      width: w - 96, height: 62, direction: 'row', align: 'center', justify: 'between', gap: 12,
+      ...(i === 0 ? {} : {}),
+    },
+    children: [
+      { type: 'Label', id: `menu-${id}-l`, props: { text: label, size: 30, font: F.cjk, color: 'ink' } },
+      {
+        type: 'Panel', id: `key-${id}`,
+        props: {
+          skin: plate({
+            w: 180, h: 56, fill: on ? C.gold : C.disabled, border: B.card, radius: R.card,
+            shadow: SH.chip, shadowColor: on ? C.goldDeep : 'rgba(0,0,0,.3)',
+          }),
+          action,
+        },
+        layout: { width: 180, height: 56, direction: 'row', align: 'center', justify: 'center', padding: 0 },
+        children: [{ type: 'Label', id: `key-${id}-t`, props: { text: value, size: 26, font: F.cjk, color: 'ink' } }],
+      },
+    ],
+  });
+  const on = t(view.lang, 'menu.on'), off = t(view.lang, 'menu.off');
+  return [
+    {
+      // 点幕布也能关——菜单只有一个出口的话，玩家会去找 X（稿子没画 X）。
+      type: 'Image', id: 'menu-veil',
+      props: { src: plate({ w: CANVAS.w, h: CANVAS.h, fill: 'rgba(16,11,8,.62)', radius: 0 }), alt: '', fit: 'fill' },
+      layout: { x: 0, y: 0, width: CANVAS.w, height: CANVAS.h, allowOverlap: true },
+    },
+    {
+      type: 'Panel', id: 'menu',
+      props: { skin: plate({ w, h: hgt, fill: [C.cream, '#f4e2c4'], border: B.end, radius: R.end, shadow: SH.end, shadowColor: 'rgba(0,0,0,.35)' }) },
+      layout: {
+        x, y, width: w, height: hgt, direction: 'column', align: 'center', justify: 'center', gap: 10, padding: 40,
+        anim: 'pop', animMs: 260, allowOverlap: true,
+      },
+      children: [
+        { type: 'Label', id: 'menu-t', props: { text: t(view.lang, 'menu.title'), size: 46, font: F.cjk, color: 'ink' } },
+        row('bgm', t(view.lang, 'menu.bgm'), a.bgm ? on : off, UI_ACT.bgm, a.bgm, 0),
+        row('sfx', t(view.lang, 'menu.sfx'), a.sfx ? on : off, UI_ACT.sfx, a.sfx, 1),
+        row('voice', t(view.lang, 'menu.voice'), a.voice ? on : off, UI_ACT.voice, a.voice, 2),
+        row('lang', t(view.lang, 'menu.lang'), t(view.lang, view.lang === 'zh' ? 'menu.langZh' : 'menu.langEn'), UI_ACT.lang, true, 3),
+        {
+          type: 'Panel', id: 'key-menu-close',
+          props: { skin: plate({ w: 220, h: 60, fill: C.cream, border: B.card, radius: R.card, shadow: SH.card }), action: UI_ACT.menu },
+          layout: { width: 220, height: 60, direction: 'row', align: 'center', justify: 'center', padding: 0 },
+          children: [{ type: 'Label', id: 'key-menu-close-t', props: { text: t(view.lang, 'menu.close'), size: 26, font: F.cjk, color: 'ink' } }],
+        },
+      ],
+    },
+  ];
+}
+
+/** 字幕（配音的兜底·手册「兜底③ = 提示音 + 字幕」）：听不见也要看得见他说了什么。 */
+function subtitle(view: DuelView): LayoutNode | null {
+  if (!view.subtitle) return null;
+  const w = Math.round(view.subtitle.length * 26 * CHAR_W[view.lang] + 80);
+  return {
+    type: 'Panel', id: 'subtitle',
+    props: { skin: plate({ w, h: 52, fill: 'rgba(24,17,12,.86)', border: 4, radius: R.pill }) },
+    layout: {
+      x: (CANVAS.w - w) / 2, y: L.bottom.y - 74, width: w, height: 52,
+      direction: 'row', align: 'center', justify: 'center', padding: 0, allowOverlap: true,
+    },
+    children: [{ type: 'Label', id: 'subtitle-t', props: { text: view.subtitle, size: 26, font: F.cjk, color: 'text' } }],
+  };
+}
+
 /** 终局覆盖层。**对局键整条收起**（稿子：`showHud=false`·"此屏无死路操作"）。 */
 function endPanel(view: DuelView): LayoutNode[] {
   const won = view.phase === 'p1win';
@@ -775,6 +842,7 @@ function endPanel(view: DuelView): LayoutNode[] {
 export function buildDuelScreen(view: DuelView): LayoutNode {
   const over = isOver(view.phase);
   const b = banner(view);
+  const sub = subtitle(view);
   return {
     type: 'Panel', id: 'duel-screen', props: { bare: true },
     layout: { width: CANVAS.w, height: CANVAS.h, padding: 0 },
@@ -787,6 +855,8 @@ export function buildDuelScreen(view: DuelView): LayoutNode {
       handNode(view, 'p1'), handNode(view, 'p2'),
       ...(b ? [b] : []),
       ...(over ? endPanel(view) : bottomBar(view)),
+      ...(sub ? [sub] : []),
+      ...(view.menuOpen ? settingsMenu(view) : []),
     ],
   };
 }
@@ -800,6 +870,7 @@ export function emptyView(): DuelView {
     smoke: { uses: SMOKE_USES, hidden: false },
     foeName: DEFAULT_CARD.name,
     lang: 'zh',
+    audio: { bgm: true, sfx: true, voice: true },
   };
 }
 
