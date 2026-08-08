@@ -918,3 +918,9 @@ GDD 原文登记为「卡在引擎缺口 `REQ-108-ENG-07`·等 owner 判 A/B」�
 ② 欠债清零 → 罚血自动停 ③ 周期性：一个上升沿只罚一次、回落复位后再罚一次，全程另一侧不受影响
 
 **你那边只差把这段数据接上去**——账（`p1.debt`）与演出（环心「已欠 -N」+ 红纱）你们已经做全了。
+
+### REQ-108-PE-01 · A 闸裸防御：DECIDE_GATE 定手窗单独撤除无测试咬合 · [2026-08-08] · 主程复查门实测带出（撤修验红 A 零红）→ **指派：PE-108** · status: open · 优先级: P2 · 类型: 测试防线
+> 实测：`const gate = flag(DECIDE_GATE)`→THROWING_GATE 后 60 测全绿——因账期推迟（B 闸）同路兜住，A 闸现为零覆盖裸防御；将来动账期时 A 即无人看守。修法：加结构点名测试（断言 master:throw:* 的 EventWhen 条件含 DECIDE_GATE 旗）或构造仅 A 可拦的中途变输入路径；测试须自证「改回 THROWING_GATE 即红」。
+
+### REQ-108-GD-02 · capability-plan 补「心态机」消费点 + 自证仪式随 v5 重跑 · [2026-08-08] · 主程复查门（S2 第4条/S4 第12条·施工方自首主程确认）→ **指派：GD/PE-108** · status: open · 优先级: P3 · 类型: 文档同步+自证
+> ①capability-plan.md 补一行心态机（State/set-state/Effect.chance/EventWhen 组合）消费点；②self-check 对齐单+截图序列按 v5 现状重玩重截（现档为 v5 前）。完成后知会主程将 S2/S4 复查升 PASS。

@@ -33,20 +33,20 @@
     "S3": {
       "exit": 0,
       "summary": "编译期游戏免 manifest 校验 · ✓ 渲染探针过（截图 public/games/<slug>/probe/S3-render.png） · ✓ 点击打穿（6 个控件 · 5 个点后 DOM 真的变了 · 零控制台 error）",
-      "at": "2026-08-08T10:50:30.624Z",
-      "gameHash": "2e4969b32da64233"
+      "at": "2026-08-08T14:09:05.432Z",
+      "gameHash": "28581f584256ea5c"
     },
     "S4": {
       "exit": 0,
       "summary": "walkthrough 绿（ Test Files  1 passed (1) ·       Tests  60 passed (60)）· 验收剧本 12 场景绿 · ✓ UI 走查过（可驱动率见 public/games/<slug>/probe/S4-uiwalk.json）",
-      "at": "2026-08-08T10:50:40.639Z",
-      "gameHash": "2e4969b32da64233"
+      "at": "2026-08-08T14:09:14.993Z",
+      "gameHash": "28581f584256ea5c"
     },
     "S5": {
       "exit": 0,
       "summary": "AUDIT: PASS · RATCHET: PASS · ⚠ 无标准照基准·未比对（golden-shot bless 建基准）",
-      "at": "2026-08-08T10:50:40.792Z",
-      "gameHash": "2e4969b32da64233"
+      "at": "2026-08-08T14:09:15.134Z",
+      "gameHash": "28581f584256ea5c"
     }
   },
   "history": [
@@ -402,6 +402,72 @@
       "stage": "S5",
       "exit": 0,
       "at": "2026-08-08T10:50:40.792Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "Lead 复查·v5 后重盖",
+      "at": "2026-08-08T14:08:45.562Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-08-08T14:09:05.432Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "Lead 复查·v5 后重盖",
+      "at": "2026-08-08T14:09:05.527Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-08-08T14:09:14.993Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S5",
+      "reason": "Lead 复查·v5 后重盖",
+      "at": "2026-08-08T14:09:15.074Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-08-08T14:09:15.134Z"
+    },
+    {
+      "action": "review",
+      "stage": "S2",
+      "verdict": "CONCERNS",
+      "at": "2026-08-08T14:14:38.233Z"
+    },
+    {
+      "action": "review",
+      "stage": "S3",
+      "verdict": "PASS",
+      "at": "2026-08-08T14:14:38.427Z"
+    },
+    {
+      "action": "review",
+      "stage": "S4",
+      "verdict": "CONCERNS",
+      "at": "2026-08-08T14:14:38.542Z"
+    },
+    {
+      "action": "review",
+      "stage": "S5",
+      "verdict": "PASS",
+      "at": "2026-08-08T14:14:38.619Z"
+    },
+    {
+      "action": "review",
+      "stage": "S4",
+      "verdict": "CONCERNS",
+      "at": "2026-08-08T14:15:15.918Z"
     }
   ],
   "outOfOrder": [
@@ -539,18 +605,63 @@
       "stage": "S5",
       "reason": "S2/S3 复查门仍待另开 session 补（owner 已知）；本轮改动 = 大师 v5 + 赖皮修复 + 启动画面，重刷机器门",
       "at": "2026-08-08T10:50:40.728Z"
+    },
+    {
+      "stage": "S3",
+      "reason": "Lead 复查·v5 后重盖",
+      "at": "2026-08-08T14:08:45.562Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "Lead 复查·v5 后重盖",
+      "at": "2026-08-08T14:09:05.527Z"
+    },
+    {
+      "stage": "S5",
+      "reason": "Lead 复查·v5 后重盖",
+      "at": "2026-08-08T14:09:15.074Z"
     }
   ],
   "selfCheck": {
     "S4": {
-      "at": "2026-08-08T10:50:40.639Z",
+      "at": "2026-08-08T14:09:14.993Z",
       "shots": 7,
-      "gameHash": "2e4969b32da64233"
+      "gameHash": "28581f584256ea5c"
     },
     "S5": {
-      "at": "2026-08-08T10:50:40.792Z",
+      "at": "2026-08-08T14:09:15.134Z",
       "shots": 7,
-      "gameHash": "2e4969b32da64233"
+      "gameHash": "28581f584256ea5c"
+    }
+  },
+  "reviews": {
+    "S2": {
+      "verdict": "CONCERNS",
+      "note": "1-3 逐条亲验：src/tools/game-i diff=0；State/set-state/Effect.chance/vsResource 四实名核对 components/logic.ts；blueprint 无游戏层解释器（audit 0 红旗佐证）。第4条成立：capability-plan 缺「心态机」消费点一行（施工方自首·属文档同步非能力越界）——补一行即升 PASS，单已开 REQ-108-GD-02。",
+      "by": "主程Lead(session_01MnY2w)",
+      "at": "2026-08-08T14:14:38.233Z",
+      "gameHash": "28581f584256ea5c"
+    },
+    "S3": {
+      "verdict": "PASS",
+      "note": "门绿指纹稳（复查途中逮出并修复 gameHash 门证自污染引擎 bug·eb36e7ef8）；死数据抽查：MOOD_SET_FLAG 生产(blueprint:507)消费(149+握手注释439)闭环；DECIDE_GATE 9 处引用；旗位在装配面非 master 分支内核对过。",
+      "by": "主程Lead(session_01MnY2w)",
+      "at": "2026-08-08T14:14:38.427Z",
+      "gameHash": "28581f584256ea5c"
+    },
+    "S4": {
+      "verdict": "CONCERNS",
+      "note": "60 测+12 剧本独立复跑绿；撤修锚点八处亲撤亲跑：B/C/D/E/F/G 各恰红一条✓·H 经 acceptance-run 红✓（导航单验法笔误记正）·【A 零红=真发现】DECIDE_GATE 闸与账期推迟系同路冗余·单独撤 A 无测试咬合=裸防御→REQ-108-PE-01；剧本改动亲核：除 tick 外另有 6 行实质改动（某本改显式代发 p2 出招·脱钩判定表测试与 AI 行为·理由正当注释在案）——**与自陈『只动 tick』不符**，记诚实性偏差一笔（改动本身照准）；自证对齐单 v5 后未重跑（自首）——重玩重截后升 PASS。",
+      "by": "主程Lead(session_01MnY2w)",
+      "at": "2026-08-08T14:15:15.918Z",
+      "gameHash": "28581f584256ea5c"
+    },
+    "S5": {
+      "verdict": "PASS",
+      "note": "audit+RATCHET 0 红旗亲跑；ui-audit 0 阻断；Math.random 4 命中全系注释告示、DOM 39 命中全在设计参考包非运行时（附整理建议：design_handoff 宜迁 docs/design/game108/ui-refs/ 合新规约）；v5 七张探针截图在档·clash 帧亲阅（真实对局画面成立）；startScreen 走 LayoutNode+plate-art。",
+      "by": "主程Lead(session_01MnY2w)",
+      "at": "2026-08-08T14:14:38.619Z",
+      "gameHash": "28581f584256ea5c"
     }
   }
 }
