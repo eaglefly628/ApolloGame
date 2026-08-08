@@ -27,9 +27,21 @@
   "evidence": {
     "S3": {
       "exit": 0,
-      "summary": "编译期游戏免 manifest 校验 · ✓ 渲染探针过（截图 public/games/<slug>/probe/S3-render.png） · ✓ 点击打穿（3 个控件 · 3 个点后 DOM 真的变了 · 零控制台 error）",
-      "at": "2026-08-07T09:14:43.131Z",
-      "gameHash": "be28b82835b69b9a"
+      "summary": "编译期游戏免 manifest 校验 · ✓ 渲染探针过（截图 public/games/<slug>/probe/S3-render.png） · ✓ 点击打穿（10 个控件 · 8 个点后 DOM 真的变了 · 零控制台 error）",
+      "at": "2026-08-08T08:03:53.824Z",
+      "gameHash": "1d11550473ca701e"
+    },
+    "S4": {
+      "exit": 0,
+      "summary": "walkthrough 绿（ Test Files  1 passed (1) ·       Tests  41 passed (41)）· 验收剧本 12 场景绿 · ✓ UI 走查过（可驱动率见 public/games/<slug>/probe/S4-uiwalk.json）",
+      "at": "2026-08-08T08:04:11.327Z",
+      "gameHash": "1d11550473ca701e"
+    },
+    "S5": {
+      "exit": 0,
+      "summary": "AUDIT: PASS · RATCHET: PASS · ⚠ 无标准照基准·未比对（golden-shot bless 建基准）",
+      "at": "2026-08-08T08:04:11.525Z",
+      "gameHash": "1d11550473ca701e"
     }
   },
   "history": [
@@ -99,6 +111,138 @@
       "action": "signoff",
       "stage": "S3",
       "at": "2026-08-08T03:28:02.997Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "S2 复查门待另开 session 补（同 2026-08-07 已记账的乱序口径）；本次只为刷新 S3 机器门证据——v3 节奏案改了 blueprint/theme/duel-screen，旧证据已被流程板判过期",
+      "at": "2026-08-08T07:28:11.686Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-08-08T07:28:49.839Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "S2/S3 复查门待另开 session 补（同已记账的乱序口径）；本次刷新 S4 机器门证据——v3 节奏案落地后验收剧本 10→12 条全绿、单测 25→38 绿",
+      "at": "2026-08-08T07:28:55.103Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-08-08T07:29:11.013Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S5",
+      "reason": "S2/S3/S4 复查门待另开 session 补（同已记账的乱序口径）；本次刷新 S5 机器门证据——v3 演出改了 duel-screen/plate-art",
+      "at": "2026-08-08T07:29:15.618Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-08-08T07:29:15.674Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "同上·二次刷新看证据是否稳定",
+      "at": "2026-08-08T07:29:25.850Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-08-08T07:29:52.627Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "复现实验：连跑两次 S3，看它自己的截图会不会把自己的证据作废",
+      "at": "2026-08-08T07:30:44.985Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-08-08T07:31:14.583Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "S2 复查门待另开 session 补（同已记账口径）；probe 自产证据修好后重刷三门",
+      "at": "2026-08-08T07:32:28.467Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-08-08T07:32:55.796Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "S2 复查门待另开 session 补（同已记账口径）；probe 自产证据修好后重刷三门",
+      "at": "2026-08-08T07:32:55.869Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-08-08T07:33:08.415Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S5",
+      "reason": "S2 复查门待另开 session 补（同已记账口径）；probe 自产证据修好后重刷三门",
+      "at": "2026-08-08T07:33:08.488Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-08-08T07:33:08.544Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "S2 复查门待另开 session 补（同已记账口径）；罚血接线完成后重刷三门",
+      "at": "2026-08-08T08:03:24.528Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-08-08T08:03:53.824Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "S2 复查门待另开 session 补（同已记账口径）；罚血接线完成后重刷三门",
+      "at": "2026-08-08T08:03:53.945Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-08-08T08:04:11.327Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S5",
+      "reason": "S2 复查门待另开 session 补（同已记账口径）；罚血接线完成后重刷三门",
+      "at": "2026-08-08T08:04:11.442Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-08-08T08:04:11.525Z"
     }
   ],
   "outOfOrder": [
@@ -121,6 +265,73 @@
       "stage": "S3",
       "reason": "S2 复查门待另开 session 补",
       "at": "2026-08-07T09:14:26.457Z"
+    },
+    {
+      "stage": "S3",
+      "reason": "S2 复查门待另开 session 补（同 2026-08-07 已记账的乱序口径）；本次只为刷新 S3 机器门证据——v3 节奏案改了 blueprint/theme/duel-screen，旧证据已被流程板判过期",
+      "at": "2026-08-08T07:28:11.686Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "S2/S3 复查门待另开 session 补（同已记账的乱序口径）；本次刷新 S4 机器门证据——v3 节奏案落地后验收剧本 10→12 条全绿、单测 25→38 绿",
+      "at": "2026-08-08T07:28:55.103Z"
+    },
+    {
+      "stage": "S5",
+      "reason": "S2/S3/S4 复查门待另开 session 补（同已记账的乱序口径）；本次刷新 S5 机器门证据——v3 演出改了 duel-screen/plate-art",
+      "at": "2026-08-08T07:29:15.618Z"
+    },
+    {
+      "stage": "S3",
+      "reason": "同上·二次刷新看证据是否稳定",
+      "at": "2026-08-08T07:29:25.850Z"
+    },
+    {
+      "stage": "S3",
+      "reason": "复现实验：连跑两次 S3，看它自己的截图会不会把自己的证据作废",
+      "at": "2026-08-08T07:30:44.985Z"
+    },
+    {
+      "stage": "S3",
+      "reason": "S2 复查门待另开 session 补（同已记账口径）；probe 自产证据修好后重刷三门",
+      "at": "2026-08-08T07:32:28.467Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "S2 复查门待另开 session 补（同已记账口径）；probe 自产证据修好后重刷三门",
+      "at": "2026-08-08T07:32:55.869Z"
+    },
+    {
+      "stage": "S5",
+      "reason": "S2 复查门待另开 session 补（同已记账口径）；probe 自产证据修好后重刷三门",
+      "at": "2026-08-08T07:33:08.488Z"
+    },
+    {
+      "stage": "S3",
+      "reason": "S2 复查门待另开 session 补（同已记账口径）；罚血接线完成后重刷三门",
+      "at": "2026-08-08T08:03:24.528Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "S2 复查门待另开 session 补（同已记账口径）；罚血接线完成后重刷三门",
+      "at": "2026-08-08T08:03:53.945Z"
+    },
+    {
+      "stage": "S5",
+      "reason": "S2 复查门待另开 session 补（同已记账口径）；罚血接线完成后重刷三门",
+      "at": "2026-08-08T08:04:11.442Z"
     }
-  ]
+  ],
+  "selfCheck": {
+    "S4": {
+      "at": "2026-08-08T08:04:11.327Z",
+      "shots": 7,
+      "gameHash": "1d11550473ca701e"
+    },
+    "S5": {
+      "at": "2026-08-08T08:04:11.525Z",
+      "shots": 7,
+      "gameHash": "1d11550473ca701e"
+    }
+  }
 }

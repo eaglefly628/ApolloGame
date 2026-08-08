@@ -26,6 +26,9 @@ import { GUIDE_COACH } from './lobby-types.js';
 const TABS: { id: string; label: string; anchor?: string }[] = [
   { id: 'home', label: '大厅', anchor: 'home' }, { id: 'campaign', label: '战役' }, { id: 'decks', label: '我的牌组', anchor: 'decks' },
   { id: 'coll', label: '收藏' }, { id: 'craft', label: '改造坊' }, { id: 'ladder', label: '天梯' },
+  // 原型开发（owner 2026-08-07）：不是一页 tab 内容，而是**整屏切到物理对决试验场景**（见 handlers.tab 的特判）。
+  // 战斗重做定稿后此入口随试验台一并撤。
+  { id: 'spike', label: '🧪 原型开发' },
 ];
 
 export interface LobbyDDState { tab: string; coll: CollectionState; craftSel: string; ov: OverlayState; gachaReveal: GachaResult[] | null }
@@ -205,7 +208,10 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
 
   const handlers: HandlerMap = {
     // ── 导航 / 顶栏 ──
-    tab: (k) => { advanceGuide('tab', k); st.tab = k ?? 'home'; rerenderMain(); },
+    tab: (k) => {
+      if (k === 'spike') { h.onSpike?.(); return; } // 原型开发=整屏切场景·不切页签（st.tab 保持不动·返回大厅后仍在原页）
+      advanceGuide('tab', k); st.tab = k ?? 'home'; rerenderMain();
+    },
     openShop: () => openOv({ open: 'shop', shopTab: 'gacha' }),
     recharge: () => openOv({ open: 'shop', shopTab: 'wallet' }),
     shopFoil: () => openOv({ open: 'shop', shopTab: 'foil' }),
@@ -213,6 +219,7 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     settings: () => openOv({ open: 'settings' }),
     // ── 主页 / 战役 ──
     play: () => { advanceGuide('play'); h.onPlay(); },
+    spike: () => h.onSpike?.(), // 物理对决试验台（表现竖切入口）
     lucky: () => { rollLucky(); st.ov = { ...st.ov, open: 'lucky' }; showOverlay(); },
     // ── 收藏（瞬时 UI 态）──
     filterSuit: (k) => { st.coll = { ...st.coll, suit: k ?? 'all', heroId: '' }; rerenderMain(); },

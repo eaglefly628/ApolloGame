@@ -15,7 +15,7 @@ import { flowCapability } from '@zerocraft/engine/skills/tier3/index.js';
 import {
   HANDS, SIDES, HP_MAX, CHARGE_CAP, DMG_BASE, DMG_STEP, TIE_SELF_DAMAGE,
   PHASE_TICKS, PENALTY_PERIOD, PENALTY_HP, CHARGE_PER_ROUND,
-  ACT, HP_RES, chargeRes, chargeRelName, chargeEntity, chargeBudgetRes, penaltyDebtRes, lastThrowVar,
+  ACT, HP_RES, chargeRes, chargeRelName, chargeEntity, chargeBudgetRes, penaltyDebtRes, penaltyTickFlag, lastThrowVar,
   SMOKE_RES, SMOKE_TURNS, SMOKE_FLAG, SMOKE_USES, SMOKE_DURATION,
   type Hand, type Side, type OpponentId,
 } from './theme.js';
@@ -120,6 +120,7 @@ function duelFlow(): Record<string, unknown> {
     { kind: 'set-flag', targetId: PENALTY_GATE, value: false },
     { kind: 'set-flag', targetId: NEXT_GATE, value: false },
     { kind: 'set-flag', targetId: threwFlag('p1'), value: false },
+    { kind: 'set-flag', targetId: penaltyTickFlag('p1'), value: false },
     // 【R-108-10】v3：每回合发一份蓄力额度（双方同规则——AI 也只加一层）。
     ...SIDES.map((s) => ({ kind: 'modify-resource', targetId: chargeBudgetRes(s), op: 'set', value: CHARGE_PER_ROUND })),
     { kind: 'modify-resource', targetId: penaltyDebtRes('p1'), op: 'set', value: 0 },
@@ -149,18 +150,26 @@ function duelFlow(): Record<string, unknown> {
       // ── T2 尾巴：罚血读秒（屏上仍是「出招」这一拍）────────────────────────
       {
         id: 'throwPenalty',
-        onEnter: [{ kind: 'set-flag', targetId: PENALTY_GATE, value: true }],
+        onEnter: [
+          { kind: 'set-flag', targetId: PENALTY_GATE, value: true },
+          { kind: 'set-flag', targetId: penaltyTickFlag('p1'), value: false },   // 节拍旗只亮一拍
+        ],
         transitions: [
+          // 罚死了也要收局：不加这条，玩家血罚到 0 却还卡在读秒里等他出手（clamp 在 0，永远出不去）。
+          { when: hpDown('p1'), to: 'p2win' },
           { when: playerThrew, to: 'clash' },
           { after: PENALTY_WAIT, to: 'throwPenaltyHit' },
         ],
       },
       {
         id: 'throwPenaltyHit',
-        // 记一笔欠债（**全局唯一 id**，故 flow 的 modify-resource 打得中）。
-        // 欠债 → 真掉血这一步**尚缺引擎通路**（见 requests.md REQ-108-ENG-07 的 A/B）：
-        // 全局 Effect 写不到"指定一侧"的 hp（两侧同 id），故本轮先把账记准、演出照做。
-        onEnter: [{ kind: 'modify-resource', targetId: penaltyDebtRes('p1'), op: 'add', value: PENALTY_HP }],
+        onEnter: [
+          // 记一笔欠债（**全局唯一 id**，故 flow 的 modify-resource 打得中）——屏上「已欠 -N」读它。
+          { kind: 'modify-resource', targetId: penaltyDebtRes('p1'), op: 'add', value: PENALTY_HP },
+          // **真扣血的节拍**：点亮全局节拍旗，p1 自己那条 SelfRule 用 whenGlobal 读它、扣自身 hp。
+          // 旗只亮这一拍（下一拍回 throwPenalty 就熄），故 level 模式也恰好一秒一点。
+          { kind: 'set-flag', targetId: penaltyTickFlag('p1'), value: true },
+        ],
         transitions: [
           { when: playerThrew, to: 'clash' },
           { when: { kind: 'always' }, to: 'throwPenalty' },
@@ -401,6 +410,10 @@ export function buildBlueprint(opponent: OpponentId = 'parrot'): WorldBlueprint 
     'fx:threw:p1': { Effect: { onSignal: PLAYER_THREW, kind: 'set-flag', targetId: threwFlag('p1'), value: true } } as EntityBlueprint,
     'fx:next': { Effect: { onSignal: ACT.next, kind: 'set-flag', targetId: NEXT_GATE, value: true } } as EntityBlueprint,
     'debt:p1': { Resource: { id: penaltyDebtRes('p1'), current: 0, min: 0, max: 999 } } as EntityBlueprint,
+    // 【R-108-04】罚血节拍旗（**必须真有这个实体**）：flow 的 `set-flag` 是「按 id 找到已有的 Flag 再改」，
+    // 世界里没有同 id 的 Flag 就**静默什么都不做**——旗永不亮 ⇒ 屏上欠债一路涨、血条纹丝不动。
+    // 接线第一版正是漏了它，验收剧本的 `p1.hp eq 96` 当场逮住（这就是那条断言存在的理由）。
+    'flag:penaltyTick:p1': { Flag: { id: penaltyTickFlag('p1'), active: false } } as EntityBlueprint,
     ...opponentRules(opponent),
     ...smokeWiring(),
     ...chargeEffects(),
@@ -408,17 +421,63 @@ export function buildBlueprint(opponent: OpponentId = 'parrot'): WorldBlueprint 
   };
 
   // 双方：血量各挂一份**同 id**（matrix-duel 的 hpResource 按侧 local 寻址）【R-108-15】。
+  //
+  // ⚠ **一实体一组件，`SelfRule` 只有一格**（实测：同 type 二次 addComponent 是覆盖不是并存）。
+  // v3 要在**同一个 p1 身上**做两件都得碰自身的事：
+  //   ① 【R-108-15】血归零 → 置本侧 dead 旗（**只读判断** + 写自身 Flag）
+  //   ② 【R-108-04】罚血节拍 → 扣本侧 hp（**写自身 Resource**）
+  // 那一格给 ②：**扣血只有自治规则做得到**——全局 Effect / CraftRecipe / flow 的 modify-resource
+  // 一律是全局 id 路由，两侧同 id 分不清哪一侧（主程 2026-08-07 回驳单的等价写法即此）。
+  // ① 则挪到 `watch:p1`，靠 `whenGlobal` 读全局条件（见该实体注释）。
+  // p2 不需要罚血（AI 从不犹豫），它那一格照旧留给死亡判定，读的是**自身** hp，无歧义。
   for (const side of SIDES) {
+    const isPlayer = side === 'p1';
     entities[side] = {
       Resource: { id: HP_RES, current: HP_MAX, min: 0, max: HP_MAX },
-      Flag: { id: deadFlag(side), active: false },
-      // 读自身 hp（不是全局 id）→ 置自身那面唯一 flag：这是「按侧判定」在现有能力里的正解。
-      SelfRule: {
-        when: { kind: 'resource', id: HP_RES, cmp: 'lte', value: 0 },
-        do: [{ kind: 'set-flag', targetId: deadFlag(side), value: true }],
-        once: true,
-      },
+      ...(isPlayer
+        ? {
+          // 【R-108-04】罚血落到实处：`whenGlobal` 读**全局**节拍旗 → `do` 施于**自身** = 本侧那份 hp。
+          // `when` 读自身 hp「还活着才罚」——血归零后不再往下扣（钳位之外的第二道）。
+          // **不带 `once`**：once 的 armed 复位只看 `when` 不看 `whenGlobal`（后者为假是整条 continue，
+          // armed 不动），节拍放 whenGlobal 会「罚第一次就再也不复位」——主程实测撞过，写进了回驳单。
+          // 改用 level 模式 + 节拍旗只亮一拍，「一秒一点」由 flow 的两态互跳保证。
+          SelfRule: {
+            whenGlobal: { kind: 'flag', id: penaltyTickFlag(side) },
+            when: { kind: 'resource', id: HP_RES, cmp: 'gt', value: 0 },
+            do: [{ kind: 'modify-resource', value: -PENALTY_HP }],
+          },
+        }
+        : {
+          Flag: { id: deadFlag(side), active: false },
+          // 读自身 hp（不是全局 id）→ 置自身那面唯一 flag：按侧判定在现有能力里的正解。
+          SelfRule: {
+            when: { kind: 'resource', id: HP_RES, cmp: 'lte', value: 0 },
+            do: [{ kind: 'set-flag', targetId: deadFlag(side), value: true }],
+            once: true,
+          },
+        }),
     } as EntityBlueprint;
+  }
+  /**
+   * 【R-108-15】玩家侧的死亡看守（**另居一实体**·因为 p1 那格 SelfRule 让给了罚血）。
+   *
+   * `whenGlobal` 走**全局 id 路由**——两侧 hp 同 id，取的是「世界里第一个 id='hp' 的 Resource」。
+   * 装配序 `SIDES = ['p1','p2']` ⇒ 那一个恒是 **p1**，正好是本看守要盯的那侧。
+   * **这条依赖是显式的、且有点名测试钉着**（`game108.test.ts`「看守只盯 p1」：把 p2 打到 0
+   * 断言 `p1.dead` 不动、把 p1 打到 0 断言它置位）——不是「碰巧能跑」的静默依赖。
+   * 同样的写法对 p2 **不成立**（它也只会读到 p1），所以 p2 走自身那条路，见上。
+   */
+  entities['watch:p1'] = {
+    Flag: { id: deadFlag('p1'), active: false },
+    SelfRule: {
+      whenGlobal: { kind: 'resource', id: HP_RES, cmp: 'lte', value: 0 },
+      when: { kind: 'always' },
+      do: [{ kind: 'set-flag', targetId: deadFlag('p1'), value: true }],
+      once: true,
+    },
+  } as EntityBlueprint;
+
+  for (const side of SIDES) {
     entities[`var:${side}`] = { StringVar: { id: lastThrowVar(side), value: '' } } as EntityBlueprint;
     // 【R-108-10】v3 蓄力额度：起手就发一份，**不等 T1 的 onEnter**——
     // flow 首帧才跑 `charge` 的 onEnter，起手值留 0 会让第一回合的第一次点击加 0（首局哑一拍）。

@@ -1,35 +1,102 @@
 {
   "slug": "game108",
   "exit": 0,
-  "summary": "✓ 点击打穿（3 个控件 · 3 个点后 DOM 真的变了 · 零控制台 error）",
-  "controls": 3,
-  "changed": 3,
+  "summary": "✓ 点击打穿（10 个控件 · 8 个点后 DOM 真的变了 · 零控制台 error）",
+  "controls": 10,
+  "changed": 8,
   "hits": [
     {
-      "id": "key-rock",
+      "id": "key-menu",
       "changed": true,
       "changedIds": [
-        "cb-p1-rock-v"
+        "menu-veil",
+        "menu",
+        "menu-t",
+        "menu-bgm",
+        "menu-bgm-l",
+        "key-bgm"
       ]
     },
     {
+      "id": "key-rock",
+      "changed": false,
+      "changedIds": []
+    },
+    {
       "id": "key-paper",
-      "changed": true,
-      "changedIds": [
-        "cb-p1-paper-v"
-      ]
+      "changed": false,
+      "changedIds": []
     },
     {
       "id": "key-scissors",
       "changed": true,
       "changedIds": [
-        "cb-p1-scissors-v"
+        "side-p1-hpv",
+        "phase-secu",
+        "phase-chip",
+        "subtitle",
+        "subtitle-t"
+      ]
+    },
+    {
+      "id": "key-smoke",
+      "changed": true,
+      "changedIds": [
+        "side-p1-hpv"
+      ]
+    },
+    {
+      "id": "key-bgm",
+      "changed": true,
+      "changedIds": [
+        "side-p1-hpv",
+        "key-bgm-t",
+        "pen-veil"
+      ]
+    },
+    {
+      "id": "key-sfx",
+      "changed": true,
+      "changedIds": [
+        "pen-veil",
+        "key-sfx-t"
+      ]
+    },
+    {
+      "id": "key-voice",
+      "changed": true,
+      "changedIds": [
+        "key-voice-t"
+      ]
+    },
+    {
+      "id": "key-lang",
+      "changed": true,
+      "changedIds": [
+        "side-p1-n",
+        "side-p1-nt",
+        "side-p1-art",
+        "side-p1-hpv",
+        "round-b",
+        "phase-chip"
+      ]
+    },
+    {
+      "id": "key-menu-close",
+      "changed": true,
+      "changedIds": [
+        "menu-veil",
+        "menu",
+        "menu-t",
+        "menu-bgm",
+        "menu-bgm-l",
+        "key-bgm"
       ]
     }
   ],
   "bindWiring": {
     "ok": true,
-    "detail": "1 处 bind · 已调 resolveBindings"
+    "detail": "未用 props.bind"
   },
   "consoleErrors": []
 }
