@@ -5,6 +5,7 @@ import {
   HANDS, HP_MAX, CHARGE_CAP, DMG_BASE, DMG_STEP, TIE_SELF_DAMAGE,
   PHASE_TICKS, PENALTY_PERIOD, PENALTY_HP, CHARGE_PER_ROUND,
   TPS, ACT, UI_ACT, SIDES, HP_RES, chargeRes, chargeRelName, chargeEntity, chargeBudgetRes, penaltyDebtRes,
+  STYLE_MID, STYLE_MAX,
 } from './theme.js';
 
 describe('game108 · 数值钉死（GDD §5）', () => {
@@ -542,6 +543,100 @@ describe('game108 · v3 节奏（【R-108-01/02/04/05/10】）', () => {
     until(e, 'charge');
     expect(phase(e)).toBe('charge');
     expect(res(e, 'round')).toBe(r);                      // 回合数在结算那一拍就 +1 过了，闸门不重复计
+  });
+
+  it('【R-108-33】不许赖皮：大师**在玩家出手之前**就已定手，玩家再出也改不了它', () => {
+    // 这条是硬红线，而且**最容易在改动中被静默破坏**——一旦 AI 的触发条件从「进 T2 那一拍」
+    // 挪到别处，它就可能读到玩家的 DuelIntent 再决定，玩家永远输，且没有任何报错。
+    const e = new Engine(); e.load(buildBlueprint('master'));
+    until(e, 'throw');
+    const aiHand = (e.world.getComponent('p2', 'DuelIntent') as { throw: string } | undefined)?.throw;
+    expect(aiHand).toBeTruthy();                       // 进 T2 那一拍它就定了
+    expect(e.world.getComponent('p1', 'DuelIntent')).toBeUndefined();   // 此刻玩家还没出手
+    tap(e, ACT.throw('paper'));
+    for (let i = 0; i < 5; i++) e.world.tick();
+    expect((e.world.getComponent('p2', 'DuelIntent') as { throw: string } | undefined)?.throw).toBe(aiHand);  // 不许改
+  });
+
+  it('【R-108-30】v4 只挂第五档：前四档的规则实体一个没换（判 A 的落点）', () => {
+    for (const o of ['parrot', 'brute', 'actor', 'gambler'] as const) {
+      const ids = Object.keys(buildBlueprint(o).entities);
+      expect(ids.some((i) => i.startsWith('master:'))).toBe(false);
+      expect(ids.some((i) => i.startsWith('ai:throw:'))).toBe(true);
+    }
+    const m = Object.keys(buildBlueprint('master').entities);
+    expect(m.some((i) => i.startsWith('master:throw:'))).toBe(true);
+    expect(m.some((i) => i.startsWith('ai:throw:'))).toBe(false);
+    // 台账**所有档都记**（不记就学不到），只是前四档不读。
+    for (const o of ['parrot', 'master'] as const) {
+      expect(Object.keys(buildBlueprint(o).entities)).toContain('style:p1');
+    }
+  });
+
+  it('【R-108-30】v4 维度一：出招记进跨局台账，且**只记玩家那一路**（AI 出手不算你的习惯）', () => {
+    const e = fresh();
+    until(e, 'throw');
+    tap(e, ACT.throw('rock'));
+    // 【R-108-33】入账在**结算那一拍**（T3 揭晓），不是出手当拍——出手当拍记就等于把
+    // 「玩家已经出了什么」喂回大师同一个 T2 的输入里。故这里必须打到 clash 才读。
+    for (let i = 0; i < 3; i++) e.world.tick();
+    expect(res(e, 'hist:rock')).toBe(0);                    // ← 还没结算，台账不许动
+    until(e, 'clash'); e.world.tick();
+    expect(res(e, 'hist:rock')).toBe(1);
+    // 复读机这一回合也出了石（【R-108-30】），要是台账听的是共用的 `throw.rock`，这里会是 2。
+    expect(res(e, 'hist:paper')).toBe(0);
+    expect(res(e, 'hist:scissors')).toBe(0);
+  });
+
+  it('【R-108-30】v4 赌性指针：出刚蓄的那只 +1、出别的 −1', () => {
+    const gamble = (chargeHand: string, throwHand: string): number => {
+      const e = fresh();
+      tap(e, ACT.charge(chargeHand as never)); e.world.tick();
+      until(e, 'throw');
+      tap(e, ACT.throw(throwHand as never));
+      until(e, 'clash'); e.world.tick();                    // 【R-108-33】赌性指针同样在结算才动
+      return res(e, 'style:p1');
+    };
+    expect(gamble('rock', 'rock')).toBe(STYLE_MID + 1);      // 蓄什么出什么 = 赌
+    expect(gamble('rock', 'paper')).toBe(STYLE_MID - 1);     // 蓄一手出另一手 = 诈
+  });
+
+  it('【R-108-21】烟雾对大师**真生效**：雾中它读不到我的满蓄（这才是烟雾的规则那一半）', () => {
+    /** 打到 T2，返回大师定的那只手。`smoke` 为真时先放烟雾。 */
+    const masterPick = (smoke: boolean): string => {
+      const e = new Engine(); e.load(buildBlueprint('master'));
+      // 直接把石槽灌满 = 最响的宣告（决策链第 1 条）。
+      const r = e.world.getComponent<Resource>('slot:p1:rock', 'Resource')!;
+      e.world.addComponent('slot:p1:rock', { ...r, current: CHARGE_CAP });
+      if (smoke) { tap(e, ACT.smoke); e.world.tick(); }
+      until(e, 'throw');
+      return (e.world.getComponent('p2', 'DuelIntent') as { throw: string } | undefined)?.throw ?? '';
+    };
+    // 没雾：它看得见石满 3 → 出布吃石。
+    expect(masterPick(false)).toBe('paper');
+    // 有雾：那一条读不到 ⇒ 它**不会**再吃石（退回习惯/兜底）。
+    expect(masterPick(true)).not.toBe('paper');
+  });
+
+  it('【R-108-33】不许赖皮·第二道：T2 里再按蓄力键也**骗不动**大师（定手窗只有一拍）', () => {
+    // 这一条钉的是 `DECIDE_GATE` 本身，**与上一条互不覆盖**：
+    // 上一条走的是"台账入账推迟到结算"这道闸；本条走的是台账管不到的那个口子——
+    // `fx:chargedflag` 听的是 `charge.<手>` 信号且**没有相位门**（Effect 没有 when），
+    // 所以玩家在 T2 里照样能把 `p1.charged.<手>` 点亮（槽不会涨，额度已清零，但旗会亮）。
+    // 大师的第 ② 条（赌徒型 → 吃他刚蓄的那只）正读这面旗：
+    // 只要它的触发条件还挂在整段 T2 都开着的 `THROWING_GATE` 上，这就是一次新的上升沿 ⇒ 当场改手。
+    const e = new Engine(); e.load(buildBlueprint('master'));
+    // 先把玩家标成赌徒型，好让第 ② 条有资格命中。
+    const st = e.world.getComponent<Resource>('style:p1', 'Resource')!;
+    e.world.addComponent('style:p1', { ...st, current: STYLE_MAX });
+    until(e, 'throw');
+    const locked = (e.world.getComponent('p2', 'DuelIntent') as { throw: string } | undefined)?.throw;
+    expect(locked).toBeTruthy();
+    // T2 里疯按蓄力：布亮起 ⇒ 若定手窗失效，第 ② 条会让大师改出剪刀吃布。
+    tap(e, ACT.charge('paper'));
+    for (let i = 0; i < 5; i++) e.world.tick();
+    expect((e.world.getComponent('flag:charged:paper', 'Flag') as { active: boolean } | undefined)?.active).toBe(true);  // 口子确实在
+    expect((e.world.getComponent('p2', 'DuelIntent') as { throw: string } | undefined)?.throw).toBe(locked);             // 但改不动它
   });
 
   it('蓄力额度的资源 id 不得与 `charge.` 同前缀（会撞进 clearOnSettle 的清零面）', () => {

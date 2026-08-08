@@ -92,7 +92,8 @@ export function mount(container: HTMLElement): () => void {
     // 【R-108-04】v3：世界里的 `throwPenalty` / `throwPenaltyHit` 是 T2 的读秒尾巴，**不是第五拍**——
     // 屏上仍写「出招」，只是倒计时环换成"你已经欠了多少"。故投影时折回 `throw`。
     const inPenalty = raw === 'throwPenalty' || raw === 'throwPenaltyHit';
-    const phase = (inPenalty ? 'throw' : raw) as Phase;
+    // `lockIn` 是 T1/T2 之间的**一拍**（AI 定手窗·【R-108-33】），16ms，屏上没有它这一拍：并进「出招」。
+    const phase = (inPenalty || raw === 'lockIn' ? 'throw' : raw) as Phase;
     const elapsed = flow?.elapsed ?? 0;
     // T4（`settle: 0`）与罚血读秒都**没有倒计时**：前者是玩家闸门，后者已经超时了。
     // 不能 `?? PHASE_TICKS.charge` 兜底——那会在结算屏画出一圈 2.5 秒的环，玩家以为不点也会自动过。

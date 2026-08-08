@@ -132,6 +132,32 @@ export const penaltyDebtRes = (side: Side): string => `${side}.debt`;
  */
 export const penaltyTickFlag = (side: Side): string => `${side}.penaltyTick`;
 
+// ── 【R-108-30】v4 · 大师的两个维度（owner 2026-08-08 判 A：**只挂第五档**）────────
+/** 维度一：玩家每只手**跨局**出过多少次（宿主持久化·装载时写进蓝图初值）。 */
+export const histRes = (hand: Hand): string => `p1.hist.${hand}`;
+/**
+ * 维度一之二：**赌性指针**。起手 `STYLE_MID`，出了刚蓄的那只 +1、出了别的 −1，钳在 0..STYLE_MAX。
+ * `>= STYLE_GAMBLER` 判赌徒型，否则均匀型。
+ * **一个数就够**：存比率要么得心算、要么得两条资源做除法，而 `ConditionExpr` 只会比大小。
+ */
+export const STYLE_RES = 'p1.style';
+export const STYLE_MAX = 20;
+export const STYLE_MID = 10;
+export const STYLE_GAMBLER = 12;
+/** 本回合玩家蓄的是哪只手 / 出的是哪只手（旗·T1 开场清）。大师的「二次思考」读它们。 */
+export const chargedFlag = (hand: Hand): string => `p1.charged.${hand}`;
+export const threwHandFlag = (hand: Hand): string => `p1.threwHand.${hand}`;
+/** 玩家专属的**逐手**出招信号（只有真点/真按键才会走·AI 那一路不走）。 */
+export const playerThrewHand = (hand: Hand): string => `p1.threw.${hand}`;
+/**
+ * **入账信号**（【R-108-33】）：玩家出了 `hand` 这一手，在**结算那一拍**才记进台账。
+ *
+ * 为什么不在出手当拍记：台账（`p1.hist.*` / `p1.style`）是大师的**输入**，
+ * 出手当拍就动 = 大师在同一个 T2 里读到了「玩家已经出了什么」的二手信息 ⇒ 赖皮。
+ * 台账语义本来也是「已打完的回合」，落在结算才对。
+ */
+export const playerCounted = (hand: Hand): string => `p1.counted.${hand}`;
+
 // ── UI ────────────────────────────────────────────────────────────────
 /**
  * 对局屏主题 —— **按设计定稿的令牌表改配**（`design-tokens.ts` 是逐字抄稿的那份）。

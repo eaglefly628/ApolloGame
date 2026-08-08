@@ -16,6 +16,7 @@ import {
   HANDS, SIDES, HP_MAX, CHARGE_CAP, DMG_BASE, DMG_STEP, TIE_SELF_DAMAGE,
   PHASE_TICKS, PENALTY_PERIOD, PENALTY_HP, CHARGE_PER_ROUND,
   ACT, HP_RES, chargeRes, chargeRelName, chargeEntity, chargeBudgetRes, penaltyDebtRes, penaltyTickFlag, lastThrowVar,
+  histRes, STYLE_RES, STYLE_MAX, STYLE_MID, STYLE_GAMBLER, chargedFlag, threwHandFlag, playerThrewHand, playerCounted,
   SMOKE_RES, SMOKE_TURNS, SMOKE_FLAG, SMOKE_USES, SMOKE_DURATION,
   type Hand, type Side, type OpponentId,
 } from './theme.js';
@@ -29,6 +30,20 @@ export const SETTLE_GATE = 'duel.settle';
 /** T1/T2 相位门 Flag（AI 的规则据此只在该时区动手·flow 的 onEnter 开关）。 */
 export const CHARGING_GATE = 'duel.charging';
 export const THROWING_GATE = 'duel.throwing';
+/**
+ * 【R-108-33】**AI 定手窗**——只亮**一拍**（`lockIn` 态进态点亮 → 下一拍进 `throw` 熄灭）。
+ *
+ * 为什么不能让 AI 的出招规则挂在 `THROWING_GATE` 上（那是 2026-08-08 逮到的**真赖皮事故**）：
+ * `THROWING_GATE` 整个 T2 都开着，而 AI 的 `EventWhen` 是**边沿**触发——只要它的**输入**在 T2 中途变了，
+ * 「规则 A 落、规则 B 起」就是一次新的上升沿，AI 会**在玩家出手之后改手**。实测链路：
+ * 玩家出布 → `p1.hist.paper` +1 → `top('paper')` 成立 → `master:throw:scissors` 抬沿 → 接缝覆盖 intent
+ * ⇒ 大师从石头改成剪刀，玩家永远输，**且不报任何错**。
+ *
+ * 定手窗把「读公开信息 + 决定」压进一拍：这一拍**只有一次** EventWhen 评估，边沿只能抬一次。
+ * 一拍的窗口靠 flow 两态相接实现（`{when:'always'}` 的转移要下一拍才判，见 `throwPenaltyHit` 同款），
+ * 故旗从进态那一拍（flow 之后）一直亮到下一拍（flow 之前）——**无论 EventWhen 与 flow 谁先跑都够一次评估**。
+ */
+export const DECIDE_GATE = 'duel.decide';
 
 /** 【R-108-04】v3 罚血读秒门：T2 免费段走完仍没出手 → 开；玩家出手/进 T3 → 关。屏上据它换倒计时形态。 */
 export const PENALTY_GATE = 'duel.penalty';
@@ -117,10 +132,14 @@ function duelFlow(): Record<string, unknown> {
   const roundReset: Array<Record<string, unknown>> = [
     { kind: 'set-flag', targetId: CHARGING_GATE, value: true },
     { kind: 'set-flag', targetId: THROWING_GATE, value: false },
+    { kind: 'set-flag', targetId: DECIDE_GATE, value: false },
     { kind: 'set-flag', targetId: PENALTY_GATE, value: false },
     { kind: 'set-flag', targetId: NEXT_GATE, value: false },
     { kind: 'set-flag', targetId: threwFlag('p1'), value: false },
     { kind: 'set-flag', targetId: penaltyTickFlag('p1'), value: false },
+    // 【R-108-30】v4：本回合「蓄了哪只 / 出了哪只」两组旗每回合清——它们是大师二次思考的输入。
+    ...HANDS.map((h) => ({ kind: 'set-flag', targetId: chargedFlag(h), value: false })),
+    ...HANDS.map((h) => ({ kind: 'set-flag', targetId: threwHandFlag(h), value: false })),
     // 【R-108-10】v3：每回合发一份蓄力额度（双方同规则——AI 也只加一层）。
     ...SIDES.map((s) => ({ kind: 'modify-resource', targetId: chargeBudgetRes(s), op: 'set', value: CHARGE_PER_ROUND })),
     { kind: 'modify-resource', targetId: penaltyDebtRes('p1'), op: 'set', value: 0 },
@@ -132,16 +151,27 @@ function duelFlow(): Record<string, unknown> {
       {
         id: 'charge',
         onEnter: roundReset,
-        transitions: [{ after: PHASE_TICKS.charge, to: 'throw' }],
+        transitions: [{ after: PHASE_TICKS.charge, to: 'lockIn' }],
+      },
+      // ── T1 与 T2 之间的**一拍**：AI 定手窗（【R-108-33】见 DECIDE_GATE 注释）──────────
+      // 屏上不是一拍，投影时并进「出招」（game108.ts readView）。放在这里而不是 T2 里，
+      // 是因为它必须**早于玩家能出手的那一刻**：蓄力门已关、出招门还没开。
+      {
+        id: 'lockIn',
+        onEnter: [
+          { kind: 'set-flag', targetId: CHARGING_GATE, value: false },
+          // 额度当场作废：T1 结束就不能再蓄了（【R-108-01】蓄力只在 T1）。
+          // 靠"按钮禁用"是治不了的——那只是表现层，键位/脚本照样能发信号。
+          ...SIDES.map((s) => ({ kind: 'modify-resource', targetId: chargeBudgetRes(s), op: 'set', value: 0 })),
+          { kind: 'set-flag', targetId: DECIDE_GATE, value: true },
+        ],
+        transitions: [{ when: { kind: 'always' }, to: 'throw' }],
       },
       {
         id: 'throw',
         onEnter: [
-          { kind: 'set-flag', targetId: CHARGING_GATE, value: false },
+          { kind: 'set-flag', targetId: DECIDE_GATE, value: false },
           { kind: 'set-flag', targetId: THROWING_GATE, value: true },
-          // 额度当场作废：T1 结束就不能再蓄了（【R-108-01】蓄力只在 T1）。
-          // 靠"按钮禁用"是治不了的——那只是表现层，键位/脚本照样能发信号。
-          ...SIDES.map((s) => ({ kind: 'modify-resource', targetId: chargeBudgetRes(s), op: 'set', value: 0 })),
         ],
         // 【R-108-01】v3：免费段到点**不推进到对决**，转入罚血读秒（【R-108-04】）。
         // 玩家在免费段内出手的，读秒态第一条转移当场成立 ⇒ 一拍就过，罚不到。
@@ -152,7 +182,10 @@ function duelFlow(): Record<string, unknown> {
         id: 'throwPenalty',
         onEnter: [
           { kind: 'set-flag', targetId: PENALTY_GATE, value: true },
-          { kind: 'set-flag', targetId: penaltyTickFlag('p1'), value: false },   // 节拍旗只亮一拍
+          { kind: 'set-flag', targetId: penaltyTickFlag('p1'), value: false },
+          // ⚠ 这里**绝不能**顺手清 `chargedFlag`/`threwHandFlag`：本态每秒重进一次，
+          // 清了就等于「玩家在读秒里蓄的那一手」每秒被抹掉一次 —— 玩家蓄石又出石，
+          // 到结算时 chargedFlag 已空 ⇒ 被记成「诈」、赌性指针反向走。两组旗是**每回合**清（T1 开场）。
         ],
         transitions: [
           // 罚死了也要收局：不加这条，玩家血罚到 0 却还卡在读秒里等他出手（clamp 在 0，永远出不去）。
@@ -270,6 +303,9 @@ function playerKeys(): Record<string, EntityBlueprint> {
     // 同一个键**再绑一条**玩家专属信号（keybind 逐 KeyBinding 实体匹配，同 key 多绑各发各的，
     // `keybind.ts:84-101`）——罚血的停止条件只能听玩家这一路，听不得 AI 那一路（见 threwFlag 注释）。
     out[`kb:threw:${h}`] = { KeyBinding: { key: throwSignal(h), signal: PLAYER_THREW } } as EntityBlueprint;
+    // 【R-108-30】v4 维度一：**逐手**的玩家专属信号——大师的习惯统计与赌性指针都从这一路记。
+    // 同样绝不能听 `throw.<手>`（那条玩家与 AI 共用），不然 AI 自己出手也会被算进"玩家习惯"。
+    out[`kb:hist:${h}`] = { KeyBinding: { key: throwSignal(h), signal: playerThrewHand(h) } } as EntityBlueprint;
   }
   // 【R-108-05】T4 玩家闸门键。**世界动作**（进 InputQueue → Signal → 置闸门旗），
   // 与终局屏那枚「再来一局」同名同键但落点不同：终局由宿主换一个世界（见 game108.ts restart）。
@@ -297,6 +333,157 @@ function playerKeys(): Record<string, EntityBlueprint> {
  * 只在对应时区动手 = 与相位门 Flag 取 `and`；代表 p2 发信号 = `EventWhen.source`（ENG-05）。
  */
 const BEATEN_BY: Record<Hand, Hand> = { rock: 'paper', paper: 'scissors', scissors: 'rock' };
+
+/**
+ * 【R-108-30】v4 · **大师的记忆**（owner 2026-08-08 判 A：只有第五档用；前四档一格不碰）。
+ *
+ * 维度一 = 两样纯数据台账，全部由**玩家专属的逐手信号** `p1.threw.<手>` 驱动：
+ *   · `p1.hist.<手>` —— 跨局累计出手次数（初值由宿主从 localStorage 灌进来）
+ *   · `p1.style`     —— 赌性指针：出了刚蓄的那只 +1、出了别的 −1，钳在 0..20，起手 10
+ *
+ * 「出了刚蓄的那只」怎么判：本回合蓄了什么记在 `p1.charged.<手>` 旗上、出了什么记在
+ * `p1.threwHand.<手>` 旗上，两旗同手 = 赌，异手 = 诈。两组旗都在 T1 开场清。
+ * （`Effect` 没有 `when`，所以「有条件地 +1」只能走 `EventWhen{when}` → 信号 → `Effect` 这条。）
+ */
+function habitTracking(): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  for (const h of HANDS) {
+    out[`hist:${h}`] = { Resource: { id: histRes(h), current: 0, min: 0, max: 99999 } } as EntityBlueprint;
+    // 【R-108-33】入账**推迟到结算那一拍**（`SETTLE_GATE` 开 = T3 揭晓，那时定手窗早关了）。
+    // 出手当拍入账 = 大师在同一个 T2 里读到玩家刚出的手 ⇒ 赖皮（2026-08-08 实测事故）。
+    out[`ai:count:${h}`] = {
+      EventWhen: {
+        signal: playerCounted(h), mode: 'edge', armed: false,
+        when: { kind: 'and', of: [{ kind: 'flag', id: SETTLE_GATE }, { kind: 'flag', id: threwHandFlag(h) }] },
+      },
+    } as EntityBlueprint;
+    out[`fx:hist:${h}`] = {
+      Effect: { onSignal: playerCounted(h), kind: 'modify-resource', targetId: histRes(h), value: 1, op: 'add' },
+    } as EntityBlueprint;
+    out[`flag:charged:${h}`] = { Flag: { id: chargedFlag(h), active: false } } as EntityBlueprint;
+    out[`fx:chargedflag:${h}`] = {
+      Effect: { onSignal: ACT.charge(h), kind: 'set-flag', targetId: chargedFlag(h), value: true },
+    } as EntityBlueprint;
+    out[`flag:threwhand:${h}`] = { Flag: { id: threwHandFlag(h), active: false } } as EntityBlueprint;
+    out[`fx:threwhand:${h}`] = {
+      Effect: { onSignal: playerThrewHand(h), kind: 'set-flag', targetId: threwHandFlag(h), value: true },
+    } as EntityBlueprint;
+  }
+  out['style:p1'] = { Resource: { id: STYLE_RES, current: STYLE_MID, min: 0, max: STYLE_MAX } } as EntityBlueprint;
+  // 赌 / 诈 两条判定：两旗同手 = 赌（+1），出了没蓄的那只 = 诈（−1）。
+  // 用 `mode:'edge'` 免得一个回合里连记好几次（旗立起来后会一直为真到 T1 复位）。
+  // 同样**与 `SETTLE_GATE` 取 and**：赌性指针也是大师的输入，T2 里不许动（【R-108-33】）。
+  const settled = { kind: 'flag', id: SETTLE_GATE };
+  out['ai:gambled'] = {
+    EventWhen: {
+      signal: 'p1.gambled', mode: 'edge', armed: false,
+      when: { kind: 'and', of: [settled, { kind: 'or', of: HANDS.map((h) => ({ kind: 'and', of: [{ kind: 'flag', id: chargedFlag(h) }, { kind: 'flag', id: threwHandFlag(h) }] })) }] },
+    },
+  } as EntityBlueprint;
+  out['ai:bluffed'] = {
+    EventWhen: {
+      signal: 'p1.bluffed', mode: 'edge', armed: false,
+      when: { kind: 'and', of: [settled, { kind: 'or', of: HANDS.map((h) => ({ kind: 'and', of: [{ kind: 'flag', id: chargedFlag(h), equals: false }, { kind: 'flag', id: threwHandFlag(h) }] })) }] },
+    },
+  } as EntityBlueprint;
+  out['fx:gambled'] = { Effect: { onSignal: 'p1.gambled', kind: 'modify-resource', targetId: STYLE_RES, value: 1, op: 'add' } } as EntityBlueprint;
+  out['fx:bluffed'] = { Effect: { onSignal: 'p1.bluffed', kind: 'modify-resource', targetId: STYLE_RES, value: -1, op: 'add' } } as EntityBlueprint;
+  return out;
+}
+
+/**
+ * 【R-108-30】v4 · **大师的决策链**（owner 2026-08-08 判 A）。自上而下，**互斥构造**：
+ *   ① 玩家某手满 3 且**不在烟雾里** → 出它的克制手（满蓄是最响的宣告）
+ *   ② 上面没命中 + 玩家是**赌徒型** + **不在烟雾里** → 吃他**刚蓄的那只**（二次思考 A）
+ *   ③ 上面没命中 + （均匀型 **或 在烟雾里**）→ 吃他的**统计冠军**（二次思考 B·长期习惯，烟雾遮不住）
+ *   ④ 都没命中（头一局：没习惯也没满蓄）→ **复用自己上一手**（同复读机）
+ *
+ * **为什么用互斥条件而不是"优先级字段"**：`EventWhen` 没有优先级，多条同拍命中会各发一个出招信号，
+ * 接缝「已有 intent 则覆盖」⇒ 谁最后写谁赢 = 靠实体 id 字典序决定规则优先级。那是静默地雷。
+ * 互斥虽然罗嗦，但每一条的成立条件都写在自己身上，改一条不会悄悄改掉另一条。
+ *
+ * **【R-108-33】不许赖皮**：这些 `EventWhen` 全部在**进 T2 那一拍**按边沿触发（`THROWING_GATE` 刚开），
+ * 那时玩家的 `DuelIntent` 还不存在——大师读不到、也没机会改。有点名测试钉死。
+ * 读的全是公开信息：六条槽 / 跨局统计 / 自己的上一手。
+ */
+function masterRules(): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  const hidden = { kind: 'flag', id: SMOKE_FLAG('p1') };
+  const notHidden = { kind: 'flag', id: SMOKE_FLAG('p1'), equals: false };
+  const gate = { kind: 'flag', id: DECIDE_GATE };   // 【R-108-33】只在定手窗那一拍
+  const full = (x: Hand): Record<string, unknown> => ({ kind: 'resource', id: chargeRes('p1', x), cmp: 'gte', value: CHARGE_CAP });
+  /** 「x 是统计冠军」= 它的次数**严格大于**另外两只（并列时不算冠军，落到 ④ 兜底）。 */
+  const top = (x: Hand): Record<string, unknown> => ({
+    kind: 'and',
+    of: HANDS.filter((y) => y !== x).map((y) => ({ kind: 'resource', id: histRes(x), cmp: 'gt', value: 0, vsResource: histRes(y) })),
+  });
+  const gambler = { kind: 'resource', id: STYLE_RES, cmp: 'gte', value: STYLE_GAMBLER };
+  const notGambler = { kind: 'resource', id: STYLE_RES, cmp: 'lt', value: STYLE_GAMBLER };
+
+  const r1 = (x: Hand): Record<string, unknown> => ({ kind: 'and', of: [notHidden, full(x)] });
+  const anyR1 = { kind: 'or', of: HANDS.map(r1) };
+  const noR1 = { kind: 'not', of: anyR1 };
+  const r2 = (x: Hand): Record<string, unknown> => ({ kind: 'and', of: [noR1, notHidden, gambler, { kind: 'flag', id: chargedFlag(x) }] });
+  const anyR2 = { kind: 'or', of: HANDS.map(r2) };
+  const r3 = (x: Hand): Record<string, unknown> => ({
+    kind: 'and',
+    of: [noR1, { kind: 'not', of: anyR2 }, { kind: 'or', of: [notGambler, hidden] }, top(x)],
+  });
+  const anyR3 = { kind: 'or', of: HANDS.map(r3) };
+  const nothing = { kind: 'and', of: [noR1, { kind: 'not', of: anyR2 }, { kind: 'not', of: anyR3 }] };
+
+  for (const t of HANDS) {
+    // 出 t 是为了吃掉 BEATS[t] 那只手。
+    const prey = BEATS[t];
+    out[`master:throw:${t}`] = {
+      EventWhen: {
+        signal: throwSignal(t), mode: 'edge', armed: false, source: 'p2',
+        when: { kind: 'and', of: [gate, { kind: 'or', of: [r1(prey), r2(prey), r3(prey)] }] },
+      },
+    } as EntityBlueprint;
+    // ④ 兜底：三条都没命中 → 复用自己上一手（**不是随机**——随机就读不出来了，见 gdd §9.1 兜底注）。
+    out[`master:fallback:${t}`] = {
+      EventWhen: {
+        signal: throwSignal(t), mode: 'edge', armed: false, source: 'p2',
+        // **开局那一手必须有兜底**：`p2.lastThrow` 起手是空串，只写「复用上一手」的话
+        // 大师**第一回合根本不出手** ⇒ 双方凑不齐 intent、永远结算不了（实测这条测试当场逮住）。
+        // 起手固定出石：确定性、可读，且第二回合起就被上面的记忆链接管了。
+        when: {
+          kind: 'and',
+          of: [gate, nothing, {
+            kind: 'or',
+            of: [
+              { kind: 'string', id: lastThrowVar('p2'), equals: t },
+              ...(t === 'rock' ? [{ kind: 'string', id: lastThrowVar('p2'), equals: '' }] : []),
+            ],
+          }],
+        },
+      },
+    } as EntityBlueprint;
+    // 蓄力：大师照旧蓄自己上一手（蓄力不是它的智能面·【R-108-32】它的强在读牌与记忆）。
+    // 同样要给开局兜底，否则第一回合它一格都不蓄。
+    out[`master:charge:${t}`] = {
+      EventWhen: {
+        signal: aiChargeSignal(t), mode: 'edge', armed: false,
+        when: {
+          kind: 'and',
+          of: [{ kind: 'flag', id: CHARGING_GATE }, {
+            kind: 'or',
+            of: [
+              { kind: 'string', id: lastThrowVar('p2'), equals: t },
+              ...(t === 'rock' ? [{ kind: 'string', id: lastThrowVar('p2'), equals: '' }] : []),
+            ],
+          }],
+        },
+      },
+    } as EntityBlueprint;
+  }
+  return out;
+}
+
+/** `t` 这只手吃掉谁（`BEATEN_BY` 的逆表）。 */
+const BEATS: Record<Hand, Hand> = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
+
 
 function opponentRules(who: OpponentId): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
@@ -328,7 +515,9 @@ function opponentRules(who: OpponentId): Record<string, EntityBlueprint> {
       EventWhen: {
         signal: throwSignal(p.throw), mode: 'edge', armed: false,
         source: 'p2',                                       // ← REQ-108-ENG-05：接缝据此认侧
-        when: { kind: 'and', of: [{ kind: 'flag', id: THROWING_GATE }, when] },
+        // 【R-108-33】前四档读的只有 `p2.lastThrow`（T2 里不会变），本来不会赖皮；
+        // 但把五档统一挂在定手窗上，日后谁给某一档加一条读玩家的条件也不会静默破线。
+        when: { kind: 'and', of: [{ kind: 'flag', id: DECIDE_GATE }, when] },
       },
     } as EntityBlueprint;
   }
@@ -397,6 +586,7 @@ export function buildBlueprint(opponent: OpponentId = 'parrot'): WorldBlueprint 
     seed: { RandomSeed: { seed: 108 } } as EntityBlueprint,
     // 结算门旗（flow 的 onEnter 开关它·matrix-duel 的 Commit 接缝读它）。
     gate: { Flag: { id: SETTLE_GATE, active: false } } as EntityBlueprint,
+    'gate:decide': { Flag: { id: DECIDE_GATE, active: false } } as EntityBlueprint,
     // 回合数（玩家视角复核第 5 问：得知道自己打到第几回合了）——每次结算 +1，纯数据。
     round: { Resource: { id: 'round', current: 1, min: 1, max: 99 } } as EntityBlueprint,
     'fx:round': { Effect: { onSignal: 'duel.resolved', kind: 'modify-resource', targetId: 'round', value: 1, op: 'add' } } as EntityBlueprint,
@@ -414,7 +604,12 @@ export function buildBlueprint(opponent: OpponentId = 'parrot'): WorldBlueprint 
     // 世界里没有同 id 的 Flag 就**静默什么都不做**——旗永不亮 ⇒ 屏上欠债一路涨、血条纹丝不动。
     // 接线第一版正是漏了它，验收剧本的 `p1.hp eq 96` 当场逮住（这就是那条断言存在的理由）。
     'flag:penaltyTick:p1': { Flag: { id: penaltyTickFlag('p1'), active: false } } as EntityBlueprint,
-    ...opponentRules(opponent),
+    // 【R-108-30】v4：**只有第五档大师**换成读牌 + 记忆的决策链（owner 2026-08-08 判 A）；
+    // ①–④ 一格不动，保留可读破绽（前四档的教学曲线是支柱一的落点）。
+    ...(opponent === 'master' ? masterRules() : opponentRules(opponent)),
+    // 台账**所有档都记**——不然打了半天前四档，换到大师那一关它对你一无所知，
+    // 「记忆更长所以更强」就成了空话。只是前四档**不读**它。
+    ...habitTracking(),
     ...smokeWiring(),
     ...chargeEffects(),
     ...playerKeys(),
