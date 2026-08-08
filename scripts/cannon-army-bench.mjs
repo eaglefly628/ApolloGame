@@ -94,6 +94,31 @@ function measure(world, frames, warmup) {
   return { meanMs: mean, p95Ms: samples[Math.floor(samples.length * 0.95)], peakContacts };
 }
 
+/** 稳态肉搏（**混合方案定预算用的最坏情况**）：n 个兵挤在接触带里持续互推——
+ *  没有行军阶段稀释，每一步都是满接触。混合方案里「真刚体」只有前排肉搏那一撮，
+ *  所以要按这个最坏情况给它定额，不能拿「对冲平均值」糊弄。 */
+function buildMelee(n, prof) {
+  const world = new CANNON.World({ gravity: new CANNON.Vec3(0, prof.gravity, 0) });
+  world.solver.iterations = prof.iters;
+  world.defaultContactMaterial.restitution = prof.restitution;
+  world.defaultContactMaterial.friction = prof.friction;
+  world.broadphase = new CANNON.SAPBroadphase(world);
+  world.allowSleep = false; // 肉搏中不许睡（睡了就不是最坏情况）
+  world.addBody(new CANNON.Body({ mass: 0, shape: new CANNON.Plane(), quaternion: new CANNON.Quaternion().setFromEuler(-Math.PI / 2, 0, 0) }));
+  const R = 0.35, H = 1.1;
+  const cols = Math.max(1, Math.round(Math.sqrt(n)));
+  for (let i = 0; i < n; i++) {
+    const row = Math.floor(i / cols), col = i % cols;
+    const b = new CANNON.Body({ mass: 70, position: new CANNON.Vec3((row - cols / 2) * 0.62, H / 2 + R, (col - cols / 2) * 0.62) }); // 0.62 < 2R=0.7 → 出生即互相挤压
+    b.addShape(new CANNON.Cylinder(R, R, H, 8));
+    b.addShape(new CANNON.Sphere(R), new CANNON.Vec3(0, H / 2, 0));
+    b.addShape(new CANNON.Sphere(R), new CANNON.Vec3(0, -H / 2, 0));
+    b.velocity.set((i % 2 ? 1 : -1) * 1.5, 0, 0); // 持续对推·不静止
+    world.addBody(b);
+  }
+  return { world };
+}
+
 const results = [];
 for (const prof of PROFILES) {
   for (const n of SIZES) {
@@ -101,7 +126,16 @@ for (const prof of PROFILES) {
     // 冲锋 → 交汇 → 挤压：120 步足够两阵撞上并堆成接触峰（初速 6m/s·相距 24m）。
     const r = measure(world, 120, 20);
     const awake = world.bodies.filter((b) => b.mass > 0 && b.sleepState !== CANNON.Body.SLEEPING).length;
-    results.push({ profile: prof.name, n, ...r, awake });
+    results.push({ mode: '对冲全场', profile: prof.name, n, ...r, awake });
+  }
+}
+// 稳态肉搏（混合方案的「真刚体」定额依据）
+const MELEE_SIZES = [24, 48, 72, 100, 150];
+for (const prof of PROFILES) {
+  for (const n of MELEE_SIZES) {
+    const { world } = buildMelee(n, prof);
+    const r = measure(world, 120, 20);
+    results.push({ mode: '稳态肉搏', profile: prof.name, n, ...r, awake: n });
   }
 }
 
@@ -112,7 +146,8 @@ if (jsonOut) {
   console.log(`帧预算 ${FRAME_BUDGET_MS}ms · 物理安全线 ${SAFE_MS.toFixed(1)}ms（留 2/3 帧给渲染/UI/sim）\n`);
   let cur = '';
   for (const r of results) {
-    if (r.profile !== cur) { cur = r.profile; console.log(`── ${cur} ──`); console.log('  兵数   均值ms   p95ms   接触峰   判词'); }
+    const key = `${r.mode} · ${r.profile}`;
+    if (key !== cur) { cur = key; console.log(`── ${cur} ──`); console.log('  兵数   均值ms   p95ms   接触峰   判词'); }
     const verdict = r.p95Ms <= SAFE_MS ? '✅ 安全' : r.p95Ms <= FRAME_BUDGET_MS ? '🟡 吃满帧(需减渲染开销)' : '❌ 掉帧';
     console.log(`  ${String(r.n).padStart(4)}  ${r.meanMs.toFixed(2).padStart(7)} ${r.p95Ms.toFixed(2).padStart(7)}  ${String(r.peakContacts).padStart(6)}   ${verdict}`);
   }
