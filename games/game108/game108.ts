@@ -11,7 +11,7 @@ import { buildBlueprint } from './blueprint.js';
 import { buildDuelScreen, emptyView, type DuelView, type Phase } from './duel-screen.js';
 import { DUEL_THEME, VIEW_W, VIEW_H, HANDS, SIDES, HP_MAX, HP_RES, chargeEntity, lastThrowVar, PHASE_TICKS, TPS, type Hand, type Side } from './theme.js';
 import { DEFAULT_CARD, MOOD_AI, type CardCharacter } from './card-character.js';
-import { UI_ACT } from './theme.js';
+import { UI_ACT, ACT } from './theme.js';
 import { loadLang, saveLang, type Lang } from './strings.js';
 import { createAudio, loadAudioFlags, type Sfx } from './audio.js';
 import { createVoice, voiceLine, type VoiceEvent } from './voice.js';
@@ -40,9 +40,19 @@ export function mount(container: HTMLElement): () => void {
   // UI action → 引擎输入：QueuedInputSource 同时是 Engine 的输入源与 mountUI 的 ActionSink
   // （同 game101 口径）——屏上的 `action` 入队成 InputQueue 动作，再由 t2-keybind 转成 Signal。
   const queue = new QueuedInputSource('p1');
-  const engine = new Engine({ input: queue });
-  // 心情 → 出招规律：一张查表（`card-character.ts MOOD_AI`），换心情不写一行代码。
-  engine.load(buildBlueprint(MOOD_AI[card.mood]));
+  /**
+   * 起一台引擎并装载世界。**每局一台**——`Engine.load()` 是「往现有世界里加」不是「换一个世界」
+   * （`src/runtime/engine.ts`：逐个 `addSystem` / `createEntity`），
+   * 对同一台引擎二次 `load` 会把 system 加两遍、实体重建一遍，**是脏局不是新局**。
+   * 所以「再来一局」= 停掉旧的、起一台新的（见 `restart()`）。
+   * 心情 → 出招规律是一张查表（`card-character.ts MOOD_AI`），换心情不写一行代码。
+   */
+  const boot = (): Engine => {
+    const e = new Engine({ input: queue });
+    e.load(buildBlueprint(MOOD_AI[card.mood]));
+    return e;
+  };
+  let engine = boot();
   let lang: Lang = loadLang();
   let menuOpen = false;
   // 音频门面（声音=数据·端口在引擎）。无 AudioContext（探针/测试）→ 端口内建静默 no-op。
@@ -143,6 +153,17 @@ export function mount(container: HTMLElement): () => void {
   let prevCharge = 0;             // 我方三槽总层数——涨了就是"又蓄了一层"
   let prevFoeFull = false;        // 对手是否已有满蓄的一手（由无到有 = 一记提醒）
   let prevSubmitted: Hand | '' = '';
+
+  /**
+   * 表现层记忆归零。**新局必须连它一起清**——否则上一局的血量/回合/结果会跟着进新局：
+   * 血量记忆停在 0 会让新局第一帧就判"掉血"，把上一局的伤害横幅和挨打音再放一遍。
+   */
+  const resetPresentation = (): void => {
+    prevHp = { p1: HP_MAX, p2: HP_MAX };
+    prevPhase = 'charge'; tieThisRound = false; roundAtClash = 0; lastOutcome = undefined;
+    shownRound = 1; prevCharge = 0; prevFoeFull = false; prevSubmitted = '';
+    subtitle = ''; subtitleUntil = 0;
+  };
   let prevHp: Record<Side, number> = { p1: HP_MAX, p2: HP_MAX };
   let prevPhase: Phase = 'charge';
   let tieThisRound = false;
@@ -171,9 +192,31 @@ export function mount(container: HTMLElement): () => void {
   //（进了就会进 hash / 录放 / lockstep，两端语言不同就判不一致——那是灾难）。
   // 写世界的动作一律不挂 handler，走 `ActionSink` 入队成 Signal（信号铁律不变）。
   const redraw = (): void => { ui.update(screen(readView()), DUEL_THEME); };
+
+  /**
+   * 「再来一局」（`duel.next`）——**局的生命周期归宿主**，不是世界里的一次状态跳转。
+   *
+   * 为什么不做成 flow 转移：终局态 `p1win/p2win` 要回到开局，得把**双方**的血、六条槽、
+   * 回合数、上一手全部复位；而判定表那套按侧寻址在「全局 id 路由」上一直吃瘪（本仓第 5 例）。
+   * 与其在世界里堆一串复位规则，不如**重新装载同一份蓝图**——那本来就是"新局"的定义，
+   * 且和 mount 时走的是同一条路（同一个 `boot()`），不会出现"只有重开局才有的状态"。
+   *
+   * 信号铁律不破：`duel.next` 仍是**词表里的世界动作名**，只是它的消费者是宿主的局生命周期，
+   * 不是某个 sim 能力——同 `ui.*` 那条分界，只不过这条不是显示设置而是"换一个世界"。
+   */
+  const restart = (): void => {
+    engine.stop();
+    engine = boot();
+    resetPresentation();
+    engine.subscribe(redraw);
+    engine.start();
+    audio.play('ui');
+    redraw();
+  };
   const ui: MountHandle = mountUI(scene, screen(emptyView()), {
     // 每个本地动作都先「起一次 BGM」：浏览器的自动播放策略要求**真实用户手势之后**才准出声，
     // 而设置菜单这几个键正好都是真手势（`audio.start()` 幂等）。
+    [ACT.next]: restart,
     [UI_ACT.menu]: (): void => { menuOpen = !menuOpen; audio.start(); audio.play('ui'); redraw(); },
     [UI_ACT.lang]: (): void => { lang = lang === 'zh' ? 'en' : 'zh'; saveLang(lang); voice.setLang(lang); audio.play('ui'); redraw(); },
     [UI_ACT.bgm]: (): void => { audio.toggle('bgm'); audio.start(); audio.play('ui'); redraw(); },
@@ -186,7 +229,7 @@ export function mount(container: HTMLElement): () => void {
   // 才是把 UI 入队的动作注进世界的**唯一**接缝，绕过它 = 队列一直填、永远没人取
   // ⇒ 点了没反应，而且**不报错**（2026-08-07 点击探针实测抓到，单测与渲染探针都照绿）。
   // 另有固定步长时钟（真实流逝时间 → 整数模拟步），自搓的圈还会让相位时长随帧率漂。
-  engine.subscribe(() => { ui.update(screen(readView()), DUEL_THEME); });
+  engine.subscribe(redraw);
   engine.start();
 
   return () => { engine.stop(); audio.stop(); voice.dispose(); ui(); teardown(); };

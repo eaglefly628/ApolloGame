@@ -37,7 +37,7 @@ const READ = `(() => {
     return el ? { disabled: !!el.disabled, action: el.getAttribute('data-action') } : null; };
   return { phase: txt('phase-t'),
     hp: { p1: txt('side-p1-hpv'), p2: txt('side-p2-hpv') },
-    charge: { p1: txt('cb-p1-paper-v'), p2r: txt('cb-p2-rock-v') },
+    charge: { p1: txt('cb-p1-paper-v'), rock: txt('cb-p1-rock-v'), p2r: txt('cb-p2-rock-v') },
     keys: { rock: key('rock'), paper: key('paper'), scissors: key('scissors') } };
 })()`;
 
@@ -141,6 +141,31 @@ async function main() {
     // 面是半透的、还没放到原大，看起来像"面板没画出来"（2026-08-07 我自己被这张图骗了一轮）。
     await page.waitForTimeout(600);
     await shot('6-victory');
+
+    // ── 终局之后还得能重开（owner 2026-08-07 报的 bug：点「再来一局」没反应）──────────
+    // **为什么以前没抓到**：这套走查到「分出胜负」就收工了，从没人点过终局屏上的键——
+    // 覆盖面正好在 bug 开始的地方结束。终局屏是**另一屏**（对局键整条收起、只剩一个出口），
+    // 它一旦点不动，玩家就卡死在那儿，比对局里任何一个 bug 都严重。
+    say('\n── 终局：再来一局 ──');
+    const nextBtn = await page.$('#key-next');
+    check('终局屏上有「再来一局」且带 action【R-108-70】',
+      !!nextBtn && (await nextBtn.getAttribute('data-action')) === 'duel.next',
+      nextBtn ? `data-action=${await nextBtn.getAttribute('data-action')}` : '找不到该键');
+    await page.click('#key-next').catch(() => {});
+    await page.waitForTimeout(500);
+    const fresh = await state();
+    say(`  → 重开后：${fresh.phase} · 血 ${fresh.hp.p1}/${fresh.hp.p2}`);
+    check('点完真的重开了：双方满血', fresh.hp.p1 === '100' && fresh.hp.p2 === '100', `实读 ${fresh.hp.p1}/${fresh.hp.p2}`);
+    check('点完真的重开了：回到对局相位（不再停在终局）',
+      ['蓄力', '出招', '对决', '结算'].includes(String(fresh.phase)), `实读 ${fresh.phase}`);
+    check('点完真的重开了：蓄力槽已清零', fresh.charge.p1 === '0/3', `实读 ${fresh.charge.p1}`);
+    // 新局要真的能打——不然"重开"只是把屏刷回去了，世界其实没跟上。
+    await until('蓄力');
+    await page.click('#key-rock').catch(() => {});
+    await page.waitForTimeout(300);
+    const rearmed = await state();
+    check('新局能接着打（点蓄力真的加层）', rearmed.charge.p1 !== null && (await state()).phase !== null, `槽读数 ${rearmed.charge.p1}`);
+    await shot('7-restarted');
     say('');
     check('全程控制台零 error / 零未捕获异常', errors.length === 0, errors.join(' | ') || '干净');
   } finally {
