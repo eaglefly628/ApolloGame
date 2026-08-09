@@ -8,20 +8,18 @@
  },
  "rows": [
   {
-   "skinKey": "108/hand-icon-rock",
-   "desc": "front-facing rock hand icon, cartoon, thick ink outline, cream skin, transparent background",
+   "skinKey": "game108/hand-icon-rock",
+   "desc": "front-facing closed fist hand icon, cartoon, thick ink outline, cream skin, transparent background",
    "kind": "ui-icon",
    "slot": {
-    "entity": "duel-screen:hand-rock",
+    "entity": "duel-screen:hand-icon-rock",
     "component": "Image",
     "field": "src"
    },
    "query": "hand icon rock",
    "spec": {
-    "w": 195,
-    "h": 236,
-    "displayW": 96,
-    "displayH": 104,
+    "w": 220,
+    "h": 245,
     "transparent": true
    },
    "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「rock」手型图标",
@@ -41,20 +39,18 @@
    }
   },
   {
-   "skinKey": "108/hand-icon-paper",
-   "desc": "front-facing paper hand icon, cartoon, thick ink outline, cream skin, transparent background",
+   "skinKey": "game108/hand-icon-paper",
+   "desc": "front-facing open palm hand icon, cartoon, thick ink outline, cream skin, transparent background",
    "kind": "ui-icon",
    "slot": {
-    "entity": "duel-screen:hand-paper",
+    "entity": "duel-screen:hand-icon-paper",
     "component": "Image",
     "field": "src"
    },
    "query": "hand icon paper",
    "spec": {
-    "w": 218,
+    "w": 220,
     "h": 245,
-    "displayW": 96,
-    "displayH": 104,
     "transparent": true
    },
    "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「paper」手型图标",
@@ -74,20 +70,18 @@
    }
   },
   {
-   "skinKey": "108/hand-icon-scissors",
-   "desc": "front-facing scissors hand icon, cartoon, thick ink outline, cream skin, transparent background",
+   "skinKey": "game108/hand-icon-scissors",
+   "desc": "front-facing two-finger scissors hand icon, cartoon, thick ink outline, cream skin, transparent background",
    "kind": "ui-icon",
    "slot": {
-    "entity": "duel-screen:hand-scissors",
+    "entity": "duel-screen:hand-icon-scissors",
     "component": "Image",
     "field": "src"
    },
    "query": "hand icon scissors",
    "spec": {
-    "w": 210,
+    "w": 220,
     "h": 245,
-    "displayW": 96,
-    "displayH": 104,
     "transparent": true
    },
    "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「scissors」手型图标",
@@ -107,13 +101,13 @@
    }
   },
   {
-   "skinKey": "108/scene/stage",
+   "skinKey": "game108/scene/stage",
    "desc": "dim underground fist-dueling hall, warm lantern pools, deep shadow, out-of-focus crowd silhouettes, painterly cartoon, no text",
    "kind": "background",
    "slot": {
-    "entity": "host-scene",
-    "component": "sceneBgSkin",
-    "field": "imageUrl"
+    "entity": "duel-screen:hand-icon-game108/scene/stage",
+    "component": "Image",
+    "field": "src"
    },
    "query": "underground duel hall background",
    "spec": {
@@ -122,8 +116,217 @@
     "transparent": false
    },
    "context": "对局舞台底（1920×1080·`mountHost` 背景皮肤槽·无图时回退纯色 #171310）",
-   "status": "needs-art",
+   "status": "retired",
    "no": "art-04"
+  },
+  {
+   "skinKey": "game108/gesture-p1-rock",
+   "desc": "dramatic closed fist thrusting toward viewer, foreshortened, warm tan skin, gold cuff, thick ink outline, cartoon, transparent background",
+   "kind": "sprite",
+   "slot": {
+    "entity": "duel-screen:gesture-p1-rock",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "gesture p1 rock",
+   "spec": {
+    "w": 512,
+    "h": 512,
+    "transparent": true
+   },
+   "context": "T3 揭晓的亮拳大手（p1 的「rock」·屏上最大的一件·情绪核）",
+   "status": "needs-art",
+   "no": "art-05"
+  },
+  {
+   "skinKey": "game108/gesture-p1-paper",
+   "desc": "dramatic open palm thrusting toward viewer, foreshortened, warm tan skin, gold cuff, thick ink outline, cartoon, transparent background",
+   "kind": "sprite",
+   "slot": {
+    "entity": "duel-screen:gesture-p1-paper",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "gesture p1 paper",
+   "spec": {
+    "w": 512,
+    "h": 512,
+    "transparent": true
+   },
+   "context": "T3 揭晓的亮拳大手（p1 的「paper」·屏上最大的一件·情绪核）",
+   "status": "needs-art",
+   "no": "art-06"
+  },
+  {
+   "skinKey": "game108/gesture-p1-scissors",
+   "desc": "dramatic two-finger scissors thrusting toward viewer, foreshortened, warm tan skin, gold cuff, thick ink outline, cartoon, transparent background",
+   "kind": "sprite",
+   "slot": {
+    "entity": "duel-screen:gesture-p1-scissors",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "gesture p1 scissors",
+   "spec": {
+    "w": 512,
+    "h": 512,
+    "transparent": true
+   },
+   "context": "T3 揭晓的亮拳大手（p1 的「scissors」·屏上最大的一件·情绪核）",
+   "status": "needs-art",
+   "no": "art-07"
+  },
+  {
+   "skinKey": "game108/gesture-p2-rock",
+   "desc": "dramatic closed fist thrusting toward viewer, foreshortened, cool grey-brown skin, crimson cuff, thick ink outline, cartoon, transparent background",
+   "kind": "sprite",
+   "slot": {
+    "entity": "duel-screen:gesture-p2-rock",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "gesture p2 rock",
+   "spec": {
+    "w": 512,
+    "h": 512,
+    "transparent": true
+   },
+   "context": "T3 揭晓的亮拳大手（p2 的「rock」·屏上最大的一件·情绪核）",
+   "status": "needs-art",
+   "no": "art-08"
+  },
+  {
+   "skinKey": "game108/gesture-p2-paper",
+   "desc": "dramatic open palm thrusting toward viewer, foreshortened, cool grey-brown skin, crimson cuff, thick ink outline, cartoon, transparent background",
+   "kind": "sprite",
+   "slot": {
+    "entity": "duel-screen:gesture-p2-paper",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "gesture p2 paper",
+   "spec": {
+    "w": 512,
+    "h": 512,
+    "transparent": true
+   },
+   "context": "T3 揭晓的亮拳大手（p2 的「paper」·屏上最大的一件·情绪核）",
+   "status": "needs-art",
+   "no": "art-09"
+  },
+  {
+   "skinKey": "game108/gesture-p2-scissors",
+   "desc": "dramatic two-finger scissors thrusting toward viewer, foreshortened, cool grey-brown skin, crimson cuff, thick ink outline, cartoon, transparent background",
+   "kind": "sprite",
+   "slot": {
+    "entity": "duel-screen:gesture-p2-scissors",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "gesture p2 scissors",
+   "spec": {
+    "w": 512,
+    "h": 512,
+    "transparent": true
+   },
+   "context": "T3 揭晓的亮拳大手（p2 的「scissors」·屏上最大的一件·情绪核）",
+   "status": "needs-art",
+   "no": "art-10"
+  },
+  {
+   "skinKey": "game108/arm-p1",
+   "desc": "bare forearm with rolled sleeve, warm tan skin, gold cuff, thick ink outline, cartoon, vertical, transparent background",
+   "kind": "sprite",
+   "slot": {
+    "entity": "duel-screen:arm-p1",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "arm p1",
+   "spec": {
+    "w": 256,
+    "h": 512,
+    "transparent": true
+   },
+   "context": "亮拳大手下面的手臂（p1·与大手同侧同色）",
+   "status": "needs-art",
+   "no": "art-11"
+  },
+  {
+   "skinKey": "game108/arm-p2",
+   "desc": "bare forearm with rolled sleeve, cool grey-brown skin, crimson cuff, thick ink outline, cartoon, vertical, transparent background",
+   "kind": "sprite",
+   "slot": {
+    "entity": "duel-screen:arm-p2",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "arm p2",
+   "spec": {
+    "w": 256,
+    "h": 512,
+    "transparent": true
+   },
+   "context": "亮拳大手下面的手臂（p2·与大手同侧同色）",
+   "status": "needs-art",
+   "no": "art-12"
+  },
+  {
+   "skinKey": "game108/slab",
+   "desc": "carved stone tablet, weathered grey rock, thick ink outline, cartoon, chipped edges, blank face for text overlay",
+   "kind": "ui-icon",
+   "slot": {
+    "entity": "duel-screen:slab",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "slab",
+   "spec": {
+    "w": 512,
+    "h": 384,
+    "transparent": true
+   },
+   "context": "判定表石板底（文字仍走 LayoutNode 叠在皮上·凿改时换这张图）",
+   "status": "needs-art",
+   "no": "art-13"
+  },
+  {
+   "skinKey": "game108/smoke-icon",
+   "desc": "smoke bomb pellet with curling grey smoke puff, cartoon, thick ink outline, transparent background",
+   "kind": "ui-icon",
+   "slot": {
+    "entity": "duel-screen:smoke-icon",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "smoke icon",
+   "spec": {
+    "w": 192,
+    "h": 192,
+    "transparent": true
+   },
+   "context": "底栏烟雾键上的道具图标",
+   "status": "needs-art",
+   "no": "art-14"
+  },
+  {
+   "skinKey": "game108/scene/stage",
+   "desc": "dim underground fist-dueling hall, warm lantern pools, deep shadow, out-of-focus crowd silhouettes, painterly cartoon, no text",
+   "kind": "background",
+   "slot": {
+    "entity": "host-scene",
+    "component": "sceneBgSkin",
+    "field": "imageUrl"
+   },
+   "query": "scene/stage",
+   "spec": {
+    "w": 1920,
+    "h": 1080,
+    "transparent": false
+   },
+   "context": "对局舞台底（`mountHost({sceneBgSkin})`·无图时回退纯色 #171310）",
+   "status": "needs-art",
+   "no": "art-15"
   }
  ]
 }

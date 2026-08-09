@@ -118,6 +118,8 @@ import { Engine } from '@zerocraft/engine/runtime/engine.js';
 const ACCEPT_DIR = join(process.cwd(), 'docs/design/game108/acceptance');
 import type { Resource, GameFlow, StringVar } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildBlueprint, throwSignal, aiChargeSignal, deadFlag, DECIDE_GATE, READ_GATE, THROWING_GATE, MASTER_PATCHES } from './blueprint.js';
+import { ART_SLOTS, skinKeyOf, SCENE_SLOT } from './art-slots.js';
+import { SCENE_BG_SKIN } from './game108.js';
 
 const res = (e: Engine, eid: string): number => e.world.getComponent<Resource>(eid, 'Resource')?.current ?? -1;
 const slot = (e: Engine, side: string, h: string): number => res(e, `slot:${side}:${h}`);
@@ -755,6 +757,53 @@ describe('game108 · v3 节奏（【R-108-01/02/04/05/10】）', () => {
     until(e, 'throw');
     expect(HANDS.filter((h) => flagOn(e, `flag:read:${h}`))).toHaveLength(1);
     expect((e.world.getComponent('p2', 'DuelIntent') as { throw: string } | undefined)?.throw).toBeTruthy();
+  });
+
+  it('【S6】皮肤槽登记表 ↔ 美术台账**逐行对得上**（owner 2026-08-08：「我只看到 3 张图片」）', () => {
+    /**
+     * owner review 逮到的那件事：台账只有 3 行 —— 不是因为这游戏只有 3 张图，
+     * 而是因为**只有那 3 样是可替换的**，其余视觉都是代码里现画的、没有皮肤槽，
+     * 按红线不许进台账。于是「美术想重画这游戏」在管线上只能重画那三个图标。
+     *
+     * 修法是把可替换面真正打开（`art-slots.ts`），而这条测试防它再退回去：
+     * **登记表与台账必须逐行对得上**——加了可换面忘了记账、或台账留着没人读的孤儿行，都当场红。
+     */
+    const led = JSON.parse(readFileSync(join(process.cwd(), 'public/games/game108/art/art-ledger.json'), 'utf8')) as
+      { rows: { skinKey: string; status: string }[] };
+    const inLedger = new Set(led.rows.filter((r) => r.status !== 'retired').map((r) => r.skinKey));
+    const declared = new Set(ART_SLOTS.map((a) => skinKeyOf(a.key)));
+    expect([...declared].filter((k) => !inLedger.has(k))).toEqual([]);   // 声明了却没记账
+    expect([...inLedger].filter((k) => !declared.has(k))).toEqual([]);   // 记了账却没人声明（孤儿）
+    expect(declared.size).toBeGreaterThanOrEqual(14);                    // 3 行那次的下限护栏
+  });
+
+  it('【S6】每个皮肤槽**真的有人读**——喂一张假皮进去，屏上必须出现它（防孤儿行）', () => {
+    /**
+     * 台账红线是「只列**有真实消费槽**的行」。光靠上一条（表↔台账对得上）挡不住
+     * 「表里写了、屏上没接」——那样生成出来的图照样上不了画面（换了没反应）。
+     * 判据做成**可证伪的**：给每个 key 灌一个哨兵 URL，然后在真渲染出来的树里找它。
+     */
+    const sentinel = (k: string): string => `SENTINEL://${k}`;
+    const skins = Object.fromEntries(ART_SLOTS.map((a) => [skinKeyOf(a.key), sentinel(skinKeyOf(a.key))]));
+    // 走遍会用到不同素材的相位（亮拳只在对决/结算出现·石板只在非蓄力拍常驻…）。
+    // ⚠ 手工挑几个 view 是不够的：第一版漏了「p1 出布」那一格，`gesture-p1-paper` 当场判成孤儿。
+    //   亮拳素材是 **双方 × 三手 = 6 种**，就**穷举 6 种**——夹具的覆盖面要跟着素材的维度走，
+    //   不跟着我随手想到的几个画面走。
+    const views: DuelView[] = [
+      { ...emptyView(), skins },
+      { ...emptyView(), skins, phase: 'throw' },
+      ...HANDS.map((h) => ({ ...emptyView(), skins, phase: 'clash' as const, shown: { p1: h, p2: h } })),
+    ];
+    const painted = new Set<string>();
+    for (const v of views) {
+      const json = JSON.stringify(buildDuelScreen(v));
+      for (const a of ART_SLOTS) if (json.includes(sentinel(skinKeyOf(a.key)))) painted.add(a.key);
+    }
+    // 背景那张由宿主的 `mountHost({sceneBgSkin})` 消费，不经这棵树——单独核它的键对得上。
+    painted.add(SCENE_SLOT);
+    expect(SCENE_BG_SKIN).toBe(skinKeyOf(SCENE_SLOT));
+    const orphans = ART_SLOTS.map((a) => a.key).filter((k) => !painted.has(k));
+    expect(orphans).toEqual([]);
   });
 
   it('【R-108-01】v4：**一出手就走**，不再把免费段跑满（owner 2026-08-08：「出手后不用等了。等半秒吧」）', () => {

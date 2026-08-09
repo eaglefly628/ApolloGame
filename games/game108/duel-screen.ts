@@ -25,6 +25,7 @@ import { C, S, F, L, R, B, SH, CANVAS, dmgFontSize } from './design-tokens.js';
 import { plate, ring, hpBar, scene, loadBar } from './plate-art.js';
 import { handArt, armArt, HAND_BOX_SCALE, HAND_BOX_SHIFT } from './hand-art.js';
 import { HAND_ICON_SRC } from './hand-icons.js';
+import { pickSkin, gestureSlot, armSlot, handIconSlot, SLAB_SLOT, SMOKE_SLOT } from './art-slots.js';
 import { t, CHAR_W, enSize, type Lang, type StringKey as StringKeyOf } from './strings.js';
 import { DEFAULT_CARD } from './card-character.js';
 
@@ -80,6 +81,12 @@ export interface DuelView {
    * 为真时整屏盖一张开始屏，且宿主**不启动引擎**——不是"暂停"，是根本还没开始跑，
    * 所以玩家点开始那一刻看到的是完完整整的第一拍，不是已经播过一半的。
    */
+  /**
+   * 【S6】**皮肤图**（skinKey → URL·宿主用基座件 `loadGameArtOverrides` 解析后灌进来）。
+   * 空 = 全部回退程序化底，观感与没有美术目录时逐像素相同。
+   * 屏这一层**只认 key**，不认路径——「换了没反应」那条铁律的落点。
+   */
+  skins?: Record<string, string>;
   notStarted?: boolean;
   /** 【启动画面】从挂载起过了多少毫秒——假进度条读它（`notStarted` 时才有意义）。 */
   bootMs?: number;
@@ -200,10 +207,10 @@ function stageBg(): LayoutNode {
 }
 
 /** 前臂：贴屏幕边缘的独立件——**手会摇、前臂不摇**，所以不能和手画在一起（稿子明写）。 */
-function armNode(side: Side): LayoutNode {
+function armNode(view: DuelView, side: Side): LayoutNode {
   return {
     type: 'Image', id: `arm-${side}`,
-    props: { src: armArt(side, L.arm.w, L.arm.h), alt: '', fit: 'fill' },
+    props: { src: pickSkin(view.skins, armSlot(side), armArt(side, L.arm.w, L.arm.h)), alt: '', fit: 'fill' },
     layout: {
       x: side === 'p1' ? 0 : CANVAS.w - L.arm.w, y: L.arm.y,
       width: L.arm.w, height: L.arm.h, allowOverlap: true,
@@ -218,7 +225,11 @@ function handNode(view: DuelView, side: Side): LayoutNode {
   const homeX = side === 'p1' ? L.handBox.off : CANVAS.w - L.handBox.off - L.handBox.size;
   return {
     type: 'Image', id: `hand-${side}`,
-    props: { src: handArt(gestureOf(view, side), side), alt: side === 'p1' ? '你的手' : '对手的手', fit: 'contain' },
+    props: {
+      // 【S6】亮拳大手 = 可换素材（屏上最大的一件·情绪核）。索引里有真图就用真图。
+      src: pickSkin(view.skins, gestureSlot(side, gestureOf(view, side)), handArt(gestureOf(view, side), side)),
+      alt: side === 'p1' ? '你的手' : '对手的手', fit: 'contain',
+    },
     layout: {
       x: homeX - HAND_SHIFT + m.dx * inward,
       y: L.handBox.top - HAND_SHIFT + m.dy,
@@ -453,7 +464,7 @@ function foeChip(view: DuelView, h: Hand): LayoutNode {
     props: { skin: plate({ w, h: hgt, fill: full ? [C.goldFillA, C.goldFillB] : 'rgba(255,246,226,.94)', border: B.oppChip, radius: R.oppChip - 5 }) },
     layout: { width: w, height: hgt, direction: 'row', align: 'center', gap: FOE_CHIP_GAP, padding: FOE_CHIP_PAD },
     children: [
-      { type: 'Image', id: `cb-p2-${h}-i`, props: { src: HAND_ICON_SRC[h], alt: HAND_CN[h], fit: 'contain' }, layout: { width: FOE_ICON_W, height: 34 } },
+      { type: 'Image', id: `cb-p2-${h}-i`, props: { src: pickSkin(view.skins, handIconSlot(h), HAND_ICON_SRC[h]), alt: HAND_CN[h], fit: 'contain' }, layout: { width: FOE_ICON_W, height: 34 } },
       {
         type: 'Panel', id: `cb-p2-${h}-b`, props: { bare: true },
         layout: { width: FOE_PIPS_W, direction: 'row', gap: 4, align: 'center' },
@@ -530,7 +541,8 @@ function foeStrip(view: DuelView): LayoutNode {
 }
 
 // ── 中线区：判定表石板 + 结果横幅（稿子 §④）──────────────────────────────
-function ruleSlab(lang: Lang): LayoutNode {
+function ruleSlab(view: DuelView): LayoutNode {
+  const lang = view.lang;
   const w = L.lane.w;
   const cap = t(lang, 'slab.note');
   const capW = Math.round(cap.length * S.slabCap * CHAR_W[lang] + 16);
@@ -549,10 +561,11 @@ function ruleSlab(lang: Lang): LayoutNode {
       {
         type: 'Panel', id: 'slab',
         props: {
-          skin: plate({
+          // 【S6】石板面 = 可换素材（【R-108-40】凿改时换这张图·文字仍走 LayoutNode 叠在皮上）。
+          skin: pickSkin(view.skins, SLAB_SLOT, plate({
             w, h: 152, fill: C.slabFace, border: 5, radius: R.chip,
             shadow: 6, shadowColor: 'rgba(0,0,0,.3)', insetTop: 'rgba(255,255,255,.22)',
-          }),
+          })),
         },
         layout: { width: w, height: 152, direction: 'column', align: 'center', justify: 'center', gap: 8, padding: 10 },
         children: [
@@ -880,7 +893,7 @@ function moveCard(view: DuelView, h: Hand, idx: number): LayoutNode {
       // → 中英一律只用全名：石头 / 布 / 剪刀 · Rock / Paper / Scissors。
       // 短名（石/剪/布 · RK/PP/SC）只留给判定表和判定结论那种要压缩的地方。
       props: { text: handFull(view.lang, h), size: Math.round(S.cardStrip * (1 + k * 0.5)), font: F.cjk, color: 'text' } }),
-    band(`key-${h}-ib`, undefined, { type: 'Image', id: `key-${h}-i`, props: { src: HAND_ICON_SRC[h], alt: HAND_CN[h], fit: 'contain' }, layout: { width: iconW, height: iconH } }),
+    band(`key-${h}-ib`, undefined, { type: 'Image', id: `key-${h}-i`, props: { src: pickSkin(view.skins, handIconSlot(h), HAND_ICON_SRC[h]), alt: HAND_CN[h], fit: 'contain' }, layout: { width: iconW, height: iconH } }),
     ...(big ? [{
       // 定稿的放大卡**卡底带一排蓄力格**——玩家在放大态挑手时，那只手现在几层要看得见，
       // 不该逼他把视线拉回底栏。小卡态不画（底栏槽就在正下方，重复了）。
@@ -963,7 +976,7 @@ function mySlot(view: DuelView, h: Hand, idx: number): LayoutNode {
         type: 'Panel', id: `cb-p1-${h}-r`, props: { bare: true },
         layout: { direction: 'row', align: 'center', gap: 10 },
         children: [
-          { type: 'Image', id: `cb-p1-${h}-i`, props: { src: HAND_ICON_SRC[h], alt: HAND_CN[h], fit: 'contain' }, layout: { width: 56, height: 62 } },
+          { type: 'Image', id: `cb-p1-${h}-i`, props: { src: pickSkin(view.skins, handIconSlot(h), HAND_ICON_SRC[h]), alt: HAND_CN[h], fit: 'contain' }, layout: { width: 56, height: 62 } },
           {
             type: 'Panel', id: `cb-p1-${h}-n`, props: { bare: true },
             layout: { flex: 1, direction: 'column', gap: 0, align: 'start' },
@@ -1005,7 +1018,10 @@ function smokeKey(view: DuelView): LayoutNode {
       direction: 'column', align: 'center', justify: 'center', gap: 4, padding: 8, allowOverlap: true,
     },
     children: [
-      { type: 'Label', id: 'key-smoke-i', props: { text: '💨', size: S.smokeIcon } },
+      // 【S6】烟雾道具图标 = 可换素材。没有真图时回退到 emoji（**不空着**·同 portrait 的分级降级口径）。
+      view.skins?.[`game108/${SMOKE_SLOT}`]
+        ? { type: 'Image', id: 'key-smoke-i', props: { src: pickSkin(view.skins, SMOKE_SLOT, ''), alt: '', fit: 'contain' }, layout: { width: S.smokeIcon, height: S.smokeIcon } }
+        : { type: 'Label', id: 'key-smoke-i', props: { text: '💨', size: S.smokeIcon } },
       { type: 'Label', id: 'key-smoke-n', props: { text: t(view.lang, 'smoke.name', { n: view.smoke.uses }), size: S.smokeName, font: F.cjk, color: 'ink' } },
       {
         type: 'Label', id: 'key-smoke-s',
@@ -1512,10 +1528,10 @@ export function buildDuelScreen(view: DuelView): LayoutNode {
     layout: { x: sk.dx, y: sk.dy, width: CANVAS.w, height: CANVAS.h, padding: 0 },
     children: [
       stageBg(),
-      armNode('p1'), armNode('p2'),
+      armNode(view, 'p1'), armNode(view, 'p2'),
       ...topBar(view),
       foeStrip(view),
-      ...(view.phase === 'charge' ? [] : [ruleSlab(view.lang)]),
+      ...(view.phase === 'charge' ? [] : [ruleSlab(view)]),
       handNode(view, 'p1'), handNode(view, 'p2'),
       ...(b ? [b] : []),
       ...(over ? endPanel(view) : bottomBar(view)),
@@ -1523,7 +1539,7 @@ export function buildDuelScreen(view: DuelView): LayoutNode {
       ...(view.awaitNext && !b ? [nextKey(view)] : []),
       // T1 放大态：判定表**改画在卡片之上**（定稿 T1b 稿图里它就压在中间那张牌上）——
       // 六条槽与判定表是这一拍唯一要读的两样东西，被自己的牌盖住就等于关掉了。
-      ...(view.phase === 'charge' ? [ruleSlab(view.lang)] : []),
+      ...(view.phase === 'charge' ? [ruleSlab(view)] : []),
       ...(pickHint(view) ? [pickHint(view)!] : []),
       ...(sub ? [sub] : []),
       ...penaltyPanel(view), ...penaltyDrips(view),

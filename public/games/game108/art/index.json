@@ -1,8 +1,8 @@
 {
  "assets": [
   {
-   "key": "108/hand-icon-rock",
-   "path": "icon_rock.png",
+   "key": "game108/hand-icon-rock",
+   "path": "/games/game108/art/icon_rock.png",
    "kind": "texture",
    "spec": {
     "usage": "ui",
@@ -15,11 +15,14 @@
     "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_rock.png",
     "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
     "date": "2026-08-07"
-   }
+   },
+   "tags": [
+    "skin"
+   ]
   },
   {
-   "key": "108/hand-icon-paper",
-   "path": "icon_paper.png",
+   "key": "game108/hand-icon-paper",
+   "path": "/games/game108/art/icon_paper.png",
    "kind": "texture",
    "spec": {
     "usage": "ui",
@@ -32,11 +35,14 @@
     "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_paper.png",
     "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
     "date": "2026-08-07"
-   }
+   },
+   "tags": [
+    "skin"
+   ]
   },
   {
-   "key": "108/hand-icon-scissors",
-   "path": "icon_scissors.png",
+   "key": "game108/hand-icon-scissors",
+   "path": "/games/game108/art/icon_scissors.png",
    "kind": "texture",
    "spec": {
     "usage": "ui",
@@ -49,7 +55,10 @@
     "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_scissors.png",
     "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
     "date": "2026-08-07"
-   }
+   },
+   "tags": [
+    "skin"
+   ]
   }
  ]
 }

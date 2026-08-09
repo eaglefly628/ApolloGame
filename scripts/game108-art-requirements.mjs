@@ -12,8 +12,7 @@
 // ⚠ **只列有真实消费槽的行**（REQ-ART-可消费槽铁律）。想加一行先问：
 //    「生成出来之后，游戏里哪一句代码会把它读上画面？」答不上来就是孤儿行，宁可不列。
 import { mergeLedger } from './art-replace.mjs';
-import { HANDS } from '../games/game108/theme.ts';
-import { SCENE_BG_SKIN } from '../games/game108/game108.ts';
+import { ART_SLOTS, skinKeyOf } from '../games/game108/art-slots.ts';
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -39,48 +38,21 @@ const ART_STYLE = {
   note: 'owner 2026-08-07 设计定稿随件交付；锚咬住定稿以免新生成的图与已有三张手型图标打架',
 };
 
-const HAND_DESC = {
-  rock: 'front-facing rock hand icon, cartoon, thick ink outline, cream skin, transparent background',
-  paper: 'front-facing paper hand icon, cartoon, thick ink outline, cream skin, transparent background',
-  scissors: 'front-facing scissors hand icon, cartoon, thick ink outline, cream skin, transparent background',
-};
-const HAND_SPEC = {
-  rock: { w: 195, h: 236 },
-  paper: { w: 218, h: 245 },
-  scissors: { w: 210, h: 245 },
-};
-
-const rows = [
-  // ── ① 三只手型图标（§4.5 皮肤槽③ 的载体·三处复用）───────────────────────────
-  //    消费点：`games/game108/hand-icons.ts` → 招式卡 / 我方蓄力槽 / 对手蓄力条。
-  ...HANDS.map((h) => ({
-    skinKey: `108/hand-icon-${h}`,
-    desc: HAND_DESC[h],
-    kind: 'ui-icon',
-    // ⚠ **逐手一个 entity**，不是三行共用 `duel-screen`：`mergeLedger` 按**槽**认行身份
-    //   （`rowIdentity = slotKey(row.slot)`），三行共用一个槽形状会在重跑时**塌成一行**
-    //   （实测：三只手全被并到 art-03）。手册说的去重口径是「一行 = 一种素材」，
-    //   而这三只是**三种素材**——所以槽要写得和素材一样细。已同步开单报工具线。
-    slot: { entity: `duel-screen:hand-${h}`, component: 'Image', field: 'src' },
-    query: `hand icon ${h}`,
-    spec: { ...HAND_SPEC[h], displayW: 96, displayH: 104, transparent: true },
-    context: `招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「${h}」手型图标`,
-    status: 'needs-art',
-  })),
-  // ── ② 舞台背景（§4.5 皮肤槽⑥·REQ-ART ② 的可换背景槽）────────────────────────
-  //    消费点：`games/game108/game108.ts` 的 `mountHost({ sceneBgSkin })`。
-  //    **有图叠图、无图纯回退程序化底**——所以这一行今天是 needs-art 也不会让画面空掉。
-  {
-    skinKey: SCENE_BG_SKIN,
-    desc: 'dim underground fist-dueling hall, warm lantern pools, deep shadow, out-of-focus crowd silhouettes, painterly cartoon, no text',
-    kind: 'background',
-    slot: { entity: 'host-scene', component: 'sceneBgSkin', field: 'imageUrl' },
-    query: 'underground duel hall background',
-    spec: { w: 1920, h: 1080, transparent: false },
-    context: '对局舞台底（1920×1080·`mountHost` 背景皮肤槽·无图时回退纯色 #171310）',
-    status: 'needs-art',
-  },
-];
+// 素材清单**不在这里维护** —— 单一真相是 `games/game108/art-slots.ts`，
+// 屏那一层按同一张表取皮（`pickSkin`）。两边同源 = 「加了可换面却忘了记账」会被点名测试逮住。
+const rows = ART_SLOTS.map((a) => ({
+  skinKey: skinKeyOf(a.key),
+  desc: a.desc,
+  kind: a.key.startsWith('scene/') ? 'background' : a.key.startsWith('gesture-') || a.key.startsWith('arm-') ? 'sprite' : 'ui-icon',
+  // ⚠ **逐素材一个 entity**：`mergeLedger` 按**槽**认行身份（`rowIdentity = slotKey(row.slot)`），
+  //   多种素材共用一个槽形状会在重跑时**塌成一行**（实测：三只手全被并到 art-03）。
+  //   手册去重口径是「一行 = 一种素材」——所以槽要写得和素材一样细。已开单报工具线（REQ-ARTTOOL-02）。
+  slot: { entity: a.entity, component: a.key.startsWith('scene/') ? 'sceneBgSkin' : 'Image', field: a.key.startsWith('scene/') ? 'imageUrl' : 'src' },
+  query: a.key.replace(/-/g, ' '),
+  spec: { w: a.w, h: a.h, transparent: a.transparent },
+  context: a.context,
+  status: 'needs-art',
+}));
 
 const prev = existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf8')) : null;
 const fresh = { slug: 'game108', mode: 'compiled', artStyle: ART_STYLE, rows };

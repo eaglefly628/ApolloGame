@@ -4,6 +4,7 @@
 import { mountUI, resolveBindings } from '@zerocraft/engine/ui/components/index.js';
 import type { MountHandle, LayoutNode, UIDataSource } from '@zerocraft/engine/ui/components/index.js';
 import { mountHost } from '@zerocraft/engine/engine/host/mount-host.js';
+import { loadGameArtOverrides } from '@zerocraft/engine/assets/index.js';
 import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { QueuedInputSource } from '@zerocraft/engine/net/index.js';
 import type { Resource, GameFlow, StringVar } from '@zerocraft/engine/engine/protocol/components.js';
@@ -20,7 +21,7 @@ import { createVoice, voiceLine, type VoiceEvent } from './voice.js';
 // 舞台外框（画布之外那圈·稿子里是 `#171310` 深木底衬着 1920×1080 的对局屏）。
 const STAGE_BG = '#171310';
 /** 【S6】舞台背景的**皮肤槽键**（台账 art-04 据此认作有槽·孤儿审计读 `data-scene-bg-skin`）。 */
-export const SCENE_BG_SKIN = '108/scene/stage';
+export const SCENE_BG_SKIN = 'game108/scene/stage';
 /**
  * 背景图的已解析 URL —— **同步取自本游戏的美术索引**（`filledSrc` 只认 `status:'filled'`）。
  * 取不到（今天就是取不到：还没有这张图）→ null → `mountHost` 纯回退程序化底。
@@ -84,6 +85,8 @@ export function mount(container: HTMLElement): () => void {
   // 做法是**根本不启动引擎**（不是暂停）：玩家点下去看到的是完完整整的第一拍，
   // 而不是已经播过一半的 T1。顺带它还是整局第一个真实手势，BGM 从这里起（浏览器自动播放策略）。
   let started = false;
+  /** 【S6】skinKey → URL（异步到货·空表 = 全部回退程序化底）。 */
+  let skins: Record<string, string> = {};
   // 音频门面（声音=数据·端口在引擎）。无 AudioContext（探针/测试）→ 端口内建静默 no-op。
   const audio = createAudio(loadAudioFlags());
   // 角色配音：TTS 链；发不出声（headless / 没装音色）时 `say` 返回 false → 走字幕兜底。
@@ -233,6 +236,7 @@ export function mount(container: HTMLElement): () => void {
       hp,
       charge,
       penalty: { active: inPenalty, debt: num('debt:p1') },
+      ...(Object.keys(skins).length ? { skins } : {}),
       ...(started ? {} : { notStarted: true, bootMs }),
       ...(helpOpen ? { helpOpen: true } : {}),
       ...(phase === 'settle' ? { awaitNext: true } : {}),
@@ -302,6 +306,23 @@ export function mount(container: HTMLElement): () => void {
   //（进了就会进 hash / 录放 / lockstep，两端语言不同就判不一致——那是灾难）。
   // 写世界的动作一律不挂 handler，走 `ActionSink` 入队成 Signal（信号铁律不变）。
   const redraw = (): void => { ui.update(screen(readView()), DUEL_THEME); };
+
+  /**
+   * 【S6】**皮肤图**：把本游戏美术索引里 `filled` 的条目解析成 `skinKey → URL`，交给屏那一层。
+   *
+   * 红线「游戏侧消费必须读台账/skinMap·**禁只读硬编码路径**」的落点：
+   * 少了这一步，创作台把图换进索引了、游戏里照样不上画面（「换了没反应」那个病·game-101 踩过）。
+   * 拉不到 / 解析失败 → 空表 → 屏那边全部回退程序化底，**观感与今天逐像素相同**（美术是增量不是依赖）。
+   * 异步到货后 `redraw()` 一次即换装——不重挂、不重启引擎。
+   */
+  void (async () => {
+    // **走基座件**（`assets/game-art-load` 形态②）而不是自己 fetch+parse：
+    // 它已经把「无 fetch / 非 200 / schema 不合法 / 无真图」四条全兜成空表且绝不抛。
+    const next = await loadGameArtOverrides('game108');
+    if (Object.keys(next).length === 0) return;   // 空表 = 全部回退程序化底（观感零变化）
+    skins = next;
+    redraw();                                      // 异步到货即换装——不重挂、不重启引擎
+  })();
 
   /**
    * 「再来一局」（`duel.next`）——**局的生命周期归宿主**，不是世界里的一次状态跳转。
