@@ -32,7 +32,7 @@
 > **代价**：改手册要重估已打过分的 3D 线游戏（game-z）会不会因判据改写而分数漂移。
 
 
-### REQ-ARTTOOL-01 · `art-replace.mjs batch` 无 key 时**把已填的真图行降级成 mock**（违反本线自己的红线）· [2026-08-08] · game108 S6 实测踩到 · status: open · 优先级: P1 · 类型: 工具修（美术线）
+### REQ-ARTTOOL-01 · `art-replace.mjs batch` 无 key 时**把已填的真图行降级成 mock**（违反本线自己的红线）· [2026-08-08] · game108 S6 实测踩到 · status: **done（`8551d45f8`·待 Lead 验收）** · 优先级: P1 · 类型: 工具修（美术线）
 > **复现**（一条命令）：`node scripts/art-replace.mjs batch game108 cartoon-thick`（环境无 `DASHSCOPE_API_KEY`）。
 > 探针正确地报了 `configured:false → mock 占位（绝不静默顶替）`，**但它照样写回了台账与索引**：
 > 三行 `status: filled → generated`、`gen.mock: true`、`servedPath` 从 `/games/game108/art/icon_rock.png`
@@ -45,7 +45,7 @@
 > **危害面**：任何已配好真图的游戏，只要有人在没 key 的环境里手滑跑一次 batch，真图接线就被 mock 顶掉，
 > 而且**跑完是 `ok:true`**——不看 diff 发现不了。
 
-### REQ-ARTTOOL-02 · `mergeLedger` 按**槽**认行身份，N 种素材共用一个槽时重跑会塌成一行 · [2026-08-08] · game108 S6 实测 · status: open · 优先级: P2 · 类型: 工具修（美术线）
+### REQ-ARTTOOL-02 · `mergeLedger` 按**槽**认行身份，N 种素材共用一个槽时重跑会塌成一行 · [2026-08-08] · game108 S6 实测 · status: **done（`8551d45f8`·待 Lead 验收·回退口径有偏差见下）** · 优先级: P2 · 类型: 工具修（美术线）
 > **复现**：三只手型图标（石/布/剪）是**三种素材**，但消费点同形状（`duel-screen` 的 `Image.src`）。
 > 照手册写台账推导脚本重跑一次 → 三行全被并成 `art-03`（`rowIdentity = slotKey(row.slot)`，见 `art-replace.mjs:274`）。
 > **与手册口径不符**：art-pipeline.md 步 3 写的是「**按素材去重**·一行 = 一种素材·同 query 多实体共用一行·
@@ -54,6 +54,13 @@
 > **要什么**：`rowIdentity` 改按素材（`skinKey` 优先，回退 query/desc），`slot` → `slots[]`（旧数据兼容读单个）。
 > **绕法（game108 已用）**：把槽写细到逐素材（`duel-screen:hand-rock` …）。能绕，但那是让**槽**去迁就工具，
 > 不是槽本来的样子——所以这条仍值一张单。
+> **实现偏差（待 Lead 核）**：`rowIdentity` 落地成 **skinKey 优先 → 回退原槽身份 → 再回退 query/desc**，
+> 没有照单子写的「skinKey 优先，回退 query/desc」直接把槽身份换掉。原因：实查 `styleset-ledger.mjs`
+> 也在用 `mergeLedger`，其 `query` 显式设计成会随风格锚整体漂移（`composeQuery` 拼锚全文·注释「改锚只
+> 改风格包，重跑 derive 即刷新所有行 query」），若把回退口径直接换成 query，`styleset-ledger.test.mjs`
+> ①②（改锚重跑保号）会当场回归——已实测验证（sabotage 改法后确实红）。故回退口径保留原槽身份不变、
+> 仅在**连槽都没有**的畸形行才落到 query/desc；game108 的实际场景（三素材各带独立 skinKey）用 skinKey
+> 优先已完全覆盖，不需要动到这层回退。`slot`→`slots[]` 已加 `rowSlots()` 统一读（旧单值兼容）。
 
 
 
