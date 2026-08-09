@@ -79,7 +79,8 @@ const fmt = (v) => JSON.stringify(v);
 
 // ── 单剧本执行 ─────────────────────────────────────────────────
 /** 逐 step 驱动。返回 {ok, failures:[…], trace:[…], error?}。
- *  trace=每个 expect step 的标量快照序列（供确定性同轨比对）。failures 带步号/期望/实际/快照（bug 单格式）。 */
+ *  trace=每个 expect step 的标量快照 + 每个 waitUntil step 的等待拍数（供确定性同轨比对）。
+ *  failures 带步号/期望/实际/快照（bug 单格式）；waitUntil 超 cap 的另带已等拍数。 */
 export function runScenario(adapter, scenario) {
   const failures = [];
   const trace = [];
@@ -97,6 +98,29 @@ export function runScenario(adapter, scenario) {
       } else if ('tick' in step) {
         if (typeof world.tick !== 'function') throw new Error('world 无 tick()（createWorld 须返回可 tick 的引擎 World）');
         for (let t = 0; t < step.tick; t++) world.tick();
+      } else if ('waitUntil' in step) {
+        // 条件等待（REQ-WAITUNTIL·owner 判 A）：先查后拍——条件已成立=等 0 拍不动世界；
+        // 否则逐拍推进重查，全部断言过即停；到 cap 仍不成立=FAIL（bug 单带已等拍数）。
+        if (typeof world.tick !== 'function') throw new Error('world 无 tick()（createWorld 须返回可 tick 的引擎 World）');
+        const check = () => {
+          const worldLike = adapter.readWorld(world);
+          const scalars = snapshotScalars(worldLike);
+          return { scalars, results: step.waitUntil.map((a) => evaluateAssertion(worldLike, scalars, a)) };
+        };
+        let waited = 0;
+        let c = check();
+        while (c.results.some((r) => !r.ok) && waited < step.cap) {
+          world.tick();
+          waited++;
+          c = check();
+        }
+        const satisfied = c.results.every((r) => r.ok);
+        trace.push({ step: si, waitedTicks: waited, satisfied }); // 等待拍数入轨（同 seed 同轨连它一起比）
+        if (!satisfied) {
+          c.results.forEach((r, ai) => {
+            if (!r.ok) failures.push({ step: si, assertion: ai, ...r, waitedTicks: waited, snapshot: c.scalars });
+          });
+        }
       } else if ('expect' in step) {
         const worldLike = adapter.readWorld(world);
         const scalars = snapshotScalars(worldLike);
@@ -125,6 +149,7 @@ export function formatScenarioResult(label, file, res = {}) {
   lines.push(`FAIL ${label}  [${file}]`);
   for (const f of res.failures ?? []) {
     lines.push(`  ✗ step #${f.step} · 断言[${f.assertion}]（${f.kind} ${f.target}）`);
+    if (f.waitedTicks !== undefined) lines.push(`      等待：waitUntil 已等 ${f.waitedTicks} 拍（封顶）仍未成立`);
     lines.push(`      期望：${f.op} ${fmt(f.expected)}`);
     lines.push(`      实际：${f.actual === undefined ? '（不存在）' : fmt(f.actual)}`);
     lines.push(`      当步机读态：${JSON.stringify(f.snapshot)}`);

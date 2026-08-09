@@ -72,6 +72,52 @@ describe('runner 语义 — 信号步 / tick 步', () => {
   });
 });
 
+describe('runner 语义 — waitUntil 条件等待步（REQ-WAITUNTIL·owner 判 A）', () => {
+  it('中途成立即停：score 每拍 +1·等 gte 3 → 恰等 3 拍不多拍', () => {
+    const r = runScenario(makeAdapter(), scen([
+      { waitUntil: [{ res: 'score', gte: 3 }], cap: 10 },
+      { expect: [{ res: 'score', eq: 3 }] }, // 恰停在 3——多拍一次就是 4
+    ]));
+    expect(r.ok).toBe(true);
+    expect(r.trace[0]).toMatchObject({ step: 0, waitedTicks: 3, satisfied: true });
+  });
+  it('先查后拍：条件已成立=等 0 拍·世界一拍不动', () => {
+    const r = runScenario(makeAdapter(), scen([
+      { waitUntil: [{ res: 'hp', eq: 10 }], cap: 5 },
+      { expect: [{ res: 'score', eq: 0 }] }, // score 未被 tick 过
+    ]));
+    expect(r.ok).toBe(true);
+    expect(r.trace[0]).toMatchObject({ waitedTicks: 0, satisfied: true });
+  });
+  it('多断言 AND 语义：全部成立才停', () => {
+    const r = runScenario(makeAdapter(), scen([
+      { signal: 'open' },
+      { waitUntil: [{ flag: 'open', eq: true }, { res: 'score', gte: 2 }], cap: 10 },
+      { expect: [{ res: 'score', eq: 2 }] },
+    ]));
+    expect(r.ok).toBe(true);
+    expect(r.trace[0].waitedTicks).toBe(2);
+  });
+  it('封顶仍未成立 → FAIL·带已等拍数+快照·报告点名等待', () => {
+    const r = runScenario(makeAdapter(), scen([
+      { waitUntil: [{ flag: 'open', eq: true }], cap: 4 }, // open 永不自转 true
+    ]));
+    expect(r.ok).toBe(false);
+    expect(r.failures[0]).toMatchObject({ step: 0, kind: 'flag', target: 'open', waitedTicks: 4 });
+    expect(r.failures[0].snapshot.res.score).toBe(4); // 快照=封顶时刻的世界（确已拍满 cap）
+    const out = formatScenarioResult('l', 'f', r);
+    expect(out).toContain('已等 4 拍');
+  });
+  it('waitedTicks 入轨：同 seed 同轨·异 seed 等待拍数不同（seed 影响起点）', () => {
+    const steps = [{ waitUntil: [{ res: 'score', gte: 45 }], cap: 100 }, { expect: [{ res: 'score', gte: 45 }] }];
+    const a1 = runScenario(makeAdapter(), scen(steps, { seed: 42 })); // 起点 42 → 等 3 拍
+    const a2 = runScenario(makeAdapter(), scen(steps, { seed: 42 }));
+    expect(a1.trace).toEqual(a2.trace);
+    const b = runScenario(makeAdapter(), scen(steps, { seed: 7 })); // 起点 7 → 等 38 拍
+    expect(b.trace[0].waitedTicks).not.toBe(a1.trace[0].waitedTicks);
+  });
+});
+
 describe('runner 语义 — 各断言算子（闭集）', () => {
   it('res eq/gte/lte 三算子·通过与失败', () => {
     const good = runScenario(makeAdapter(), scen([{ signal: 'add', args: { n: 5 } }, { expect: [{ res: 'score', gte: 5 }, { res: 'score', lte: 5 }, { res: 'score', eq: 5 }] }]));
@@ -178,6 +224,20 @@ describe('schema — 闭集校验（坏剧本装载即错）', () => {
   it('tick 须 ≥1 整数', () => {
     expect(validateScenario({ ...good, steps: [{ tick: 0 }] }).ok).toBe(false);
     expect(validateScenario({ ...good, steps: [{ tick: 1.2 }] }).ok).toBe(false);
+  });
+  it('waitUntil 步：合法形态过·断言复用闭集', () => {
+    expect(validateScenario({ ...good, steps: [{ waitUntil: [{ flag: 'f', eq: true }, { res: 'hp', gte: 1 }], cap: 30 }] }).ok).toBe(true);
+  });
+  it('waitUntil 须非空断言数组·cap 必填 ≥1 整数·坏断言被咬', () => {
+    expect(validateScenario({ ...good, steps: [{ waitUntil: [], cap: 3 }] }).ok).toBe(false); // 空数组
+    expect(validateScenario({ ...good, steps: [{ waitUntil: [{ flag: 'f', eq: true }] }] }).ok).toBe(false); // 缺 cap
+    expect(validateScenario({ ...good, steps: [{ waitUntil: [{ flag: 'f', eq: true }], cap: 0 }] }).ok).toBe(false);
+    expect(validateScenario({ ...good, steps: [{ waitUntil: [{ flag: 'f', eq: true }], cap: 1.5 }] }).ok).toBe(false);
+    expect(validateScenario({ ...good, steps: [{ waitUntil: [{ bogus: 1 }], cap: 3 }] }).ok).toBe(false); // 断言不在闭集
+  });
+  it('waitUntil 与 tick/expect 同现 → 拒（步骤单一类型）', () => {
+    expect(validateScenario({ ...good, steps: [{ waitUntil: [{ flag: 'f', eq: true }], cap: 3, tick: 2 }] }).ok).toBe(false);
+    expect(validateScenario({ ...good, steps: [{ waitUntil: [{ flag: 'f', eq: true }], cap: 3, expect: [{ flag: 'f', eq: true }] }] }).ok).toBe(false);
   });
   it('res 断言须恰一个比较算子·且为数字', () => {
     expect(validateScenario({ ...good, steps: [{ expect: [{ res: 'hp' }] }] }).ok).toBe(false); // 无算子

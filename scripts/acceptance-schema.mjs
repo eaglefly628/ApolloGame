@@ -7,7 +7,9 @@
 //  的**闭集 schema**：坏剧本装载即错（带行位），杜绝「随便写点 JSON 也算剧本」。
 //
 //  剧本形态（docs/design/<game>/acceptance/*.scenario.jsonc）：
-//    { name, game, seed, config?, steps:[ {signal,args?,by?} | {tick:N} | {expect:[断言…]} ] }
+//    { name, game, seed, config?, steps:[ {signal,args?,by?} | {tick:N} | {waitUntil:[断言…],cap:N} | {expect:[断言…]} ] }
+//  waitUntil（REQ-WAITUNTIL·owner 2026-08-09 判 A）：条件等待——断言复用下方闭集（零新词表），
+//  cap=封顶拍数（必填·防死等）。语义细则见 acceptance-run.mjs。裸 tick 仍合法（渐进迁移）。
 //  断言闭集（只读世界机读态·不读 DOM）：
 //    {res:"名", eq|gte|lte:数}      —— Resource.current
 //    {flag:"名", eq:布尔}           —— Flag.active
@@ -220,8 +222,8 @@ function validateAssertion(a, path, errs) {
 
 function validateStep(s, path, errs) {
   if (!isPlainObj(s)) { errs.push(mk(path, s, '步骤须为对象')); return; }
-  const disc = ['signal', 'tick', 'expect'].filter((k) => k in s);
-  if (disc.length === 0) { errs.push(mk(path, s, '步骤须为 signal/tick/expect 之一（闭集）')); return; }
+  const disc = ['signal', 'tick', 'expect', 'waitUntil'].filter((k) => k in s);
+  if (disc.length === 0) { errs.push(mk(path, s, '步骤须为 signal/tick/waitUntil/expect 之一（闭集）')); return; }
   if (disc.length > 1) { errs.push(mk(path, s, `步骤只能是一种：同时含 ${disc.join('+')}`)); return; }
   const kind = disc[0];
   if (kind === 'signal') {
@@ -236,6 +238,11 @@ function validateStep(s, path, errs) {
     if (!Array.isArray(s.expect) || s.expect.length === 0) errs.push(mk(path, s, 'expect 须为非空断言数组'));
     else s.expect.forEach((a, j) => validateAssertion(a, `${path}.expect[${j}]`, errs));
     checkNoExtraKeys(s, ['expect'], path, errs);
+  } else if (kind === 'waitUntil') {
+    if (!Array.isArray(s.waitUntil) || s.waitUntil.length === 0) errs.push(mk(path, s, 'waitUntil 须为非空断言数组（复用 expect 断言闭集）'));
+    else s.waitUntil.forEach((a, j) => validateAssertion(a, `${path}.waitUntil[${j}]`, errs));
+    if (!Number.isInteger(s.cap) || s.cap < 1) errs.push(mk(path, s, 'waitUntil 须带 cap:≥1 整数（封顶拍数·防死等）'));
+    checkNoExtraKeys(s, ['waitUntil', 'cap'], path, errs);
   }
 }
 

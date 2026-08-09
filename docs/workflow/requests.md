@@ -138,18 +138,7 @@ UI 层那个同名件只是个四预设的门面。
 - `Label.tween` 期间**字号同步缩放**（定稿：伤害跳数时字号 .82 → 1）——现在 tween 只管数值。
 - 一个 **steps 节拍**的 `anim`（定稿：罚血「−1」印章每秒跳一下 `steps(1,end)`）。
 
-### REQ-WAITUNTIL-验收剧本条件等待 · 剧本格式加 `waitUntil` 步骤类型 · [2026-08-09] · **owner 判 A**（game108 全程复盘第五缺口·2026-08-09 判词原文「A」） · status: **in-progress** · **施工主体 = Lead 主程（本行即占锁·harness=跨游戏共享面 🔴）** · 复查 = 另一 session 按 Review 单复跑 · 优先级: P1 · 类型: 引擎 harness 扩展
-
-- **病**（game108 复盘实证）：验收剧本只有裸 `{"tick": N}` 定拍等待——游戏节奏一调（充能拍数/结算延迟改一格），十几本剧本的拍数全要人肉重算；game108 十二本剧本里 `"tick"` 出现 103 次，全是写死的魔法数。
-- **owner 判 A 原文**：「A 补引擎：验收剧本格式加 `waitUntil`（等某信号/某状态成立，封顶拍数）步骤类型——一次下沉，所有游戏的剧本从此不怕节奏调整；代价=harness 改造+全游戏剧本渐进迁移」。
-- **spec（写死）**：
-  - 新步骤 `{"waitUntil": [断言…], "cap": N}`——断言**复用现有闭集**（res/flag/sv/comp · eq/gte/lte），零新词表；`cap` 必填 ≥1 整数（封顶拍数·防死等）。
-  - 语义：**先查后拍**（条件已成立=等 0 拍不动世界）；否则逐拍 tick、每拍后重查，全部断言过=停等继续下一步；到 `cap` 仍不成立=FAIL（bug 单格式：步号+逐条断言期望 vs 实际+当步快照+已等拍数）。
-  - 确定性：trace 记 `waitedTicks`（同 seed 同轨比对连等待拍数一起比）。
-  - **裸 `tick` 仍合法**（渐进迁移·不破存量）。
-  - 「等信号」的口径：信号在引擎里落成 Flag/StringVar/Resource 后**等状态即可表达**；纯瞬态、无状态痕迹的信号等待现闭集表达不了——真出现再走缺口裁决，不预设观测通道。
-- **边界**（复查门核对用）：`scripts/acceptance-schema.mjs` + `scripts/acceptance-run.mjs` + `scripts/acceptance.test.mjs`。**不碰任何游戏剧本**——game108 迁移落该游戏 requests（剧本作者=GD 铁律·主程代改=污染 blame）。
-- **验收**：深车道（该测试文件在快车道排除表）点名跑绿 + 撤修验红带锚点命中断言 + 存量真游戏扫仍绿（裸 tick 不破）。
+<!-- REQ-WAITUNTIL-验收剧本条件等待（P1·owner 2026-08-09 判 A·game108 复盘第五缺口）已完结：剧本步骤加 `{"waitUntil":[断言…],cap:N}`——断言复用 expect 闭集零新词表·先查后拍·封顶 FAIL 带已等拍数·waitedTicks 入 trace（同 seed 同轨连它一起比）·裸 tick 仍合法。主程施工（🔴 共享 harness）：schema+runner+13 例守卫·深车道点名跑绿（37 过·2 红=game-103 缺 adapter+game102 剧本漂移，经 HEAD 隔离 worktree 复跑坐实为存量且各有在案工单）·双撤修验红锚点命中（AND 语义反转→「多断言 AND 语义」红·撤 cap 校验→「cap 必填」红）。手册口径入 testing.md 验收剧本节；game108 迁移=REQ-108-GD-03（游戏自治·非强制）。spec 与判词全文查 git 历史。 -->
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 

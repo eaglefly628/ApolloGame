@@ -25,7 +25,8 @@
 
 ## 验收剧本（S4 玩法关裁判·REQ-ACCEPT·「绿门不可玩」复盘）
 
-- **schema**：GD 写纯数据剧本 `docs/design/<game>/acceptance/*.scenario.jsonc`＝`{name,game,seed,config?,steps:[{signal,args?,by?}|{tick:N}|{expect:[断言]}]}`；断言闭集只读机读态 `{res|flag|sv|comp}`（不读 DOM）·坏本装载即报错带行位。
+- **schema**：GD 写纯数据剧本 `docs/design/<game>/acceptance/*.scenario.jsonc`＝`{name,game,seed,config?,steps:[{signal,args?,by?}|{tick:N}|{waitUntil:[断言…],cap:N}|{expect:[断言]}]}`；断言闭集只读机读态 `{res|flag|sv|comp}`（不读 DOM）·坏本装载即报错带行位。
+- **waitUntil 条件等待（REQ-WAITUNTIL·owner 2026-08-09 判 A）**：等某状态成立再继续——断言复用 expect 闭集，`cap`=封顶拍数（必填·防死等）；**先查后拍**（已成立=0 拍），到 cap 仍不成立=FAIL（bug 单带已等拍数）。**新剧本的「等结算/等相位」一律用它，别写死拍数**（裸 `{tick:N}` 仍合法但节奏一调就要人肉重算——game108 十二本剧本 103 处魔法数的教训）；等待拍数入 trace（同 seed 同轨连它一起比）。
 - **runner**：`npx vite-node scripts/acceptance-run.mjs [--game g]`（经薄适配 `games/<game>/acceptance-adapter.ts`＝createWorld/applySignal/readWorld 驱动真引擎·失败报告=步号+期望 vs 实际+机读态快照）；全部剧本也进 vitest（`scripts/acceptance.test.mjs`·推送门禁自动咬）。
 - **分工**：剧本＝**GD 域**（懂规则方）；**PE 修码不改剧本**（剧本错=GD 改+记录）；PE 只落薄适配（纯接线零规则）。S4 门要 ≥3 场景 + conformance 绿才过（`game-pipeline.mjs gate <slug> S4`）——无剧本/无 adapter=门红。
 
