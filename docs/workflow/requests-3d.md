@@ -6,10 +6,12 @@
 
 ---
 
-## REQ-3D-CARD-FACE-AXIS · 薄牌类刚体：正反分色的面与可靠碰撞体**轴向不兼容**（现二者不可兼得）· [2026-08-07] · PE-211 提（game211 物理对决试验台·owner 判「补引擎缺口」）→ P3D · status: **✅ 核心 done（P3D 2026-08-09·取 A=`Mesh3D.faceAxis`·已推·见回执）·待 game211 消费验收（未躺平→0）；顺手记的 3 处口径仍 open** · 优先级: **P2（game211 表现竖切阻塞：牌落地恒倾斜 ~55°、正反读不准；游戏侧已穷举参数无解）** · 类型: 3D 线能力缺口（网格面色轴向 / 刚体形状轴向）
+## REQ-3D-CARD-FACE-AXIS · 薄牌类刚体：正反分色的面与可靠碰撞体**轴向不兼容**（现二者不可兼得）· [2026-08-07] · PE-211 提（game211 物理对决试验台·owner 判「补引擎缺口」）→ P3D · status: **✅ done（P3D 2026-08-09 取 A=`Mesh3D.faceAxis`；PE-211 2026-08-09 消费验收通过 → 见下方验收回执）；顺手记的 3 处口径仍 open** · 优先级: **P2（game211 表现竖切阻塞：牌落地恒倾斜 ~55°、正反读不准；游戏侧已穷举参数无解）** · 类型: 3D 线能力缺口（网格面色轴向 / 刚体形状轴向）
 > **★ P3D 回执（2026-08-09·取 A=`Mesh3D.faceAxis`·纯 render 改·不碰物理/确定性）**：诊断确认（复跑 PE-211 实证）——`box` 正反色恒作用 ±Z、`cylinder` 刚体轴恒 Y·差 90°，且薄凸包必 ~55° 恒斜（cannon 接触伪影）。**A 解**：`Mesh3D.faceAxis?:'x'|'y'|'z'`（缺省 'z'=零回归）让 `frontTint/backTint` 落**指定轴两面**、`edgeTint` 落其余四面 → 牌**沿 Y 薄**（`faceAxis:'y'`·顶=正/底=反色）天然躺平·碰撞体用**引擎原生 `cylinder`**（轴 Y 圆盘·已验证可靠·零 55° 伪影）。实现：`geometry.ts faceAxisSlots`（**单一真相**·面序 [+x,-x,+y,-y,+z,-z]）+ 派生 `faceAxisOrder`，两条 box 上色路（`buildMesh3D` 材质数组 + `buildInstancedMesh3DGeometry` 逐面色烤入）+ `paintMesh3D`（每帧材质设色）**全用同一 slots**（防三处映射漂移）。测试 `face-axis.test` 6 例（slots/order 映射·烤入色落对面·材质槽落对实例）。真浏览器目击 game-z Platform Four `p4-card-*`（三张薄牌抛落**恒躺平**·`card-face-axis.png`：轻旋→正面红朝上·翻滚→反面灰朝上·顶底分色清晰）。tsc0/vitest/build0/manifest（Mesh3D 加可选字段·无新组件）。**通用**：卡牌/瓷砖/硬币/招牌薄片类共用。
 > **顺手记的 3 处 P3D 侧口径（不阻塞 game211·A 解已绕开·仍 open 待拉动）**：① `RigidBody3D` spawn 不读 `Transform3D.quat`（只 set position）② `Pivot3D` 父变换只读 Euler 不读物理 quat ③ `PhysicsWorld3D` 未进 `component-map.ts` 蓝图闭集（蓝图写不了·只能命令式 addComponent·与手册口径不符）。三条各有游戏侧绕法·有真需求再排。
 > **验收口径（game211 侧量）**：`games/game211/duel-spike.ts` 的「未躺平 N/M」(`|upY|<0.7`)·目标连抛恒 0——牌改 `Mesh3D{faceAxis:'y'}` 薄 Y + `RigidBody3D{shape:'cylinder'}` 即可消费。
+
+> **★ PE-211 消费验收回执（2026-08-09·通过）**：game211 `duel-spike` 已接 A 解——牌改 `Mesh3D{shape:'box', width:牌宽, height:牌厚, depth:牌高, faceAxis:'y'}`（正/反色落顶/底、edgeTint 落四侧），碰撞体换回**引擎原生 `cylinder`**（渲染器由 width/2、height 推出与牌面同轴的薄圆盘）。`upYOf` 同步改口径（法线 +Z→+Y：`2(yz−xw)` → `1−2(x²+z²)`），收尖圆盘凸包 `bevelDiscHull` 及其测试随之删除（死代码）。**验收数据：未躺平 0/2，连测三轮全 0**（修前恒 ~55° 倾斜、upY −0.53/+0.47）。附带解掉「牌出生就立着」——沿 Y 薄的牌识别姿态即平躺。测试 26→21 例（删凸包 5 例·upYOf 块改 +Y 口径）。tsc0/vitest/build0/门禁 scope=game:game211 全绿。
 
 **需求一句话**：一张**扑克牌**（薄矩形、正反异色）被抛出、翻滚、落地，要求 ①**永远躺平**（不许立在边上/斜着停）②**正反面能分色**（正面=阵营色=活、反面=统一灰=死）。现在这两条**同时满足不了**。
 

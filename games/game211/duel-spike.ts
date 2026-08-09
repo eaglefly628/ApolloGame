@@ -27,15 +27,15 @@ import type { RandomSeed, Transform3D, Camera3D } from '@zerocraft/engine/engine
 import { GG_THEME_ONYX } from './ui-theme.js';
 
 // 命牌 = **扑克牌矩形**（owner 2026-08-07 澄清「不是让它变成圆牌，还是跟扑克牌一样，只要求它不会立起来」）。
-//   外形照旧矩形薄牌（`Mesh3D{shape:'box'}` 原生正反分色）；**立不住靠碰撞体做成「收尖的棱」**：
-//   `RigidBody3D{shape:'convex'}` 喂一副**中腰最宽、两面收窄**的凸包 → 牌的四条边不是平面而是一道**脊线**。
-//   平面边有支撑面 = 立着是**稳定**平衡（实测真会立·owner 目击）；脊线没有支撑面 = 不稳定，一碰就倒平。
-//   ⚠ 走过的弯路：① 只把 box 调薄——薄只降低概率，方边仍是稳定平衡，躲不掉；
-//                  ② 换 `cylinder` 圆盘——确实立不住，但外形成了圆牌，不是要的东西。
+//   外形矩形薄牌 + **永不立起**，靠 P3D 落地的 `Mesh3D.faceAxis`（REQ-3D-CARD-FACE-AXIS·A 解）解锁：
+//   牌**沿 Y 薄**（`faceAxis:'y'` → frontTint/backTint 落顶/底两面·edgeTint 落四侧），于是
+//   碰撞体可以直接用**引擎原生 `cylinder`**（轴 Y 的薄圆盘·与牌面同轴）——圆盘侧面是连续曲面，立不住。
+//   ⚠ 走过的弯路（别回头）：① box 调薄——方边是**稳定**平衡，抛多了必立；② 收尖棱/收尖圆盘**凸包**——
+//   cannon 对长径比 26:1 的薄凸多面体有接触伪影，实测恒斜 ~55°（upY −0.53/+0.47 三连测）；
+//   ③ 把牌做成圆盘 mesh——立不住但外形不是扑克牌，owner 否决。原生 cylinder 是唯一实测可靠的（upY 恒 ±1.00）。
 const CARD_W = 1.55, CARD_H = 2.15, CARD_T = 0.085;
-const BEVEL_K = 0.82;   // 正/反面相对中腰的收窄比 → 中腰最宽、边缘成环脊
-// 碰撞圆盘半径：牌半宽 0.775 ~ 半对角 1.325 之间取中。太小→两牌撞击前先视觉穿模；太大→撞出可见空隙。
-const HULL_R = 1.12;
+// 碰撞圆盘半径 = 渲染器由 Mesh3D.width/2 推出（牌半宽）。此处留一份同值常量，供「撞击判据」换算用。
+const HULL_R = CARD_W / 2;
 const GRAVITY = 20;    // 重力大小（正数·算抛物线用；PhysicsWorld3D 取负）
 // 牌的弹性刻意**低**（真纸牌本来就不弹）。教训：调到 0.52 想让撞击「弹开」，结果两张牌撞完各自**弹回原处**
 // 落在同一小片区域、互相压着 —— 实测「未躺平」从 1/2 恶化到 2/2。分离要靠**偏心擦碰把它们朝两侧甩开并继续前行**，
@@ -70,31 +70,14 @@ export interface CardOutcome { side: Side; upY: number; front: boolean }
 /** 一组对决的结局。 */
 export interface DuelOutcome { a: CardOutcome; b: CardOutcome; verdict: string }
 
-/** 牌面朝向 → 世界竖直分量（纯函数·可单测）：`Mesh3D{shape:'box'}` 的正面是**局部 +Z**（frontTint 即 +z 面）。
- *  把 (0,0,1) 按四元数旋转，取其**世界 Y 分量** = 旋转矩阵第三列的第二行 = `2(yz − xw)`。
+/** 牌面朝向 → 世界竖直分量（纯函数·可单测）：牌用 `faceAxis:'y'`（沿 Y 薄）→ 正面法线是**局部 +Y**。
+ *  把 (0,1,0) 按四元数旋转，取其世界 Y 分量 = 旋转矩阵第二列第二行 = `1 − 2(x² + z²)`。
  *  +1=正面朝上（活）· −1=反面朝上（死）· 0=牌立着（法线水平）。
- *  ⚠ 别写成 `1−2(x²+y²)`：那是旋转后 Z 轴的 **Z** 分量，不是 Y 分量——用它会让判词与画面对不上
- *  （实测：HUD 判「双方都反面」，画面却一灰一蓝）。圆盘版读局部 +Y 时公式是 `1−2(x²+z²)`，换成盒牌后必须跟着改。 */
+ *  ⚠ 公式必须跟着 `faceAxis` 走：法线是 +Z 时是 `2(yz − xw)`，是 +Y 时是 `1 − 2(x² + z²)`。
+ *  用错的后果实测过——判词与画面对不上（HUD 判「双方都反面」，画面却一灰一蓝）。 */
 export function upYOf(q: readonly number[]): number {
-  const x = q[0] ?? 0, y = q[1] ?? 0, z = q[2] ?? 0, w = q[3] ?? 1;
-  return 2 * (y * z - x * w);
-}
-
-/** 收尖**圆盘**凸包（纯函数·可单测·owner 2026-08-07「牌旁边要用圆形来做·回到边上不可能站住的状态」）。
- *  三层同心环：中腰 z=0 半径 r（最宽）、正/反面 z=±t/2 半径 r·k（收窄）→ 侧向轮廓是**圆**、边缘收成一道**环脊**。
- *  为什么必须是圆而不是上一版的矩形收棱：矩形收棱只有 4 条直脊，牌斜靠/半压在别的牌上时，
- *  相邻的收窄斜面仍能提供支撑 → owner 实测「几组的时候有几组还站在那里」。圆环脊处处曲率连续、
- *  任何方向都没有支撑面，站不住也靠不住。
- *  seg=圆周分段（越大越圆·16 段已足够让每个小平面窄到撑不住一张牌）。返回 3×seg 个局部顶点。 */
-export function bevelDiscHull(r: number, t: number, k: number, seg = 16): [number, number, number][] {
-  const out: [number, number, number][] = [];
-  const hz = t / 2;
-  for (let i = 0; i < seg; i++) {
-    const a = (i / seg) * Math.PI * 2;
-    const cx = Math.cos(a), cy = Math.sin(a);
-    out.push([r * cx, r * cy, 0], [r * k * cx, r * k * cy, hz], [r * k * cx, r * k * cy, -hz]);
-  }
-  return out;
+  const x = q[0] ?? 0, z = q[2] ?? 0;
+  return 1 - 2 * (x * x + z * z);
 }
 
 /** 纯函数·由两张牌的正反判胜负。正面=活：都正=同生；都反=同归于尽；一正一反=正面者胜。 */
@@ -225,6 +208,9 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
     return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))]!;
   };
 
+  /** 出手距（与 throwAll 内同式·抽出供撞击判据换算复用）。 */
+  const throwXOf = (L: ReturnType<typeof layoutFor>): number => 1.7 * L.scale + 0.9;
+
   /** 地台 + 隐形围栏按当前组数重建（围栏=有 RigidBody3D 无 Mesh3D → 物理有效不渲染）。 */
   function rebuildArena(): void {
     for (const id of arenaIds) { try { engine.world.destroyEntity(id); } catch { /* 已不在 */ } }
@@ -259,8 +245,7 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
     minDist = Array.from({ length: duels }, () => Infinity);
     status = '抛掷中…';
     const L = layoutFor(duels);
-    const hull = bevelDiscHull(HULL_R * L.scale, CARD_T * L.scale, BEVEL_K);
-    const throwX = 1.7 * L.scale + 0.9;
+    const throwX = throwXOf(L);
     for (let lane = 0; lane < duels; lane++) {
       const laneZ = (lane - (duels - 1) / 2) * L.laneGap;
       const vy = span(8.0, 9.2);
@@ -275,13 +260,18 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
         engine.world.createEntity(id);
         engine.world.addComponent(id, { type: 'Transform3D', x: p0.x, y: p0.y, z: p0.z } as unknown as Component);
         engine.world.addComponent(id, {
-        type: 'Mesh3D', shape: 'box', width: CARD_W * L.scale, height: CARD_H * L.scale, depth: CARD_T * L.scale,
-        frontTint: FRONT_TINT[s],  // 正面 = 阵营色 = 活
-        backTint: DEATH_TINT,      // 反面 = 统一灰 = 死
-        edgeTint: EDGE_TINT,
+        // 沿 Y 薄：width=牌宽 / height=牌厚 / depth=牌高。`faceAxis:'y'` → 正反色落**顶/底**两面（P3D REQ-3D-CARD-FACE-AXIS）。
+        // 附带好处：识别姿态（未旋转）就是**平躺**的，不再像沿 Z 薄时那样「牌出生就立着」。
+        type: 'Mesh3D', shape: 'box', width: CARD_W * L.scale, height: CARD_T * L.scale, depth: CARD_H * L.scale,
+        faceAxis: 'y',
+        frontTint: FRONT_TINT[s],  // 正面（顶）= 阵营色 = 活
+        backTint: DEATH_TINT,      // 反面（底）= 统一灰 = 死
+        edgeTint: EDGE_TINT,       // 四侧 = 牌边
         } as unknown as Component);
         engine.world.addComponent(id, {
-        type: 'RigidBody3D', shape: 'convex', hull, mass: 1.0, restitution: CARD_RESTITUTION, friction: 0.45,
+        // 原生 cylinder：渲染器按 Mesh3D 取 r=width/2、h=height → 正好是一枚与牌面同轴的**薄圆盘**。
+        // 圆盘侧面连续曲面 = 立不住；且是引擎内建形状，无薄凸包的接触伪影。
+        type: 'RigidBody3D', shape: 'cylinder', mass: 1.0, restitution: CARD_RESTITUTION, friction: 0.45,
         vx: p0.vx, vy: p0.vy, vz: p0.vz,             // 严格镜像：只在 X 向对冲、不做任何侧向分离（分离交给撞击）
         // 初旋只给**很小**的一点（让牌在飞行中略微翻动·有生气），真正的狂翻交给撞击那一下打出来。
         // ⚠ 上一版给到 ±16 rad/s ≈ 2.5 转/秒 —— 那是「出手就在乱转」，撞击反而被淹没，看着像乱飞。
@@ -308,9 +298,15 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
     if (done === duels) {
       const t = tallyOf(outcomes.filter(Boolean) as DuelOutcome[]);
       const up = upright(outcomes.filter(Boolean) as DuelOutcome[]);
-      const hullR = HULL_R * layoutFor(duels).scale;
-      const hits = minDist.filter((d) => isHit(d, hullR)).length;
-      console.info('[dsp/hit] 撞上 %d/%d 组 · 最近距 %s（判据 ≤%s）', hits, duels, minDist.map((d) => d.toFixed(2)).join(','), (HIT_DIST_RATIO * hullR).toFixed(2));
+      const L = layoutFor(duels);
+      const hullR = HULL_R * L.scale;
+      // ⚠ 采样最近距**受帧率限制**：牌每帧飞 closingSpeed×dt，帧越慢越采不到真正的最近点
+      //（无头软渲染 ~190ms/帧、每帧飞 1.3 → 常把「明明撞上了」采成 1.4）。故判据按帧位移放宽，
+      // 真正的几何保证由 `throwPlan` 的单测钉死（交汇时 x/z 完全重合·中心距 = Y_STAGGER）。
+      const frameTravel = (perfMean() / 1000) * 2 * (throwXOf(L) / 0.36); // 一帧内两牌相对位移的粗上界
+      const bound = Math.max(HIT_DIST_RATIO * hullR, frameTravel);
+      const hits = minDist.filter((d) => d <= bound).length;
+      console.info('[dsp/hit] 撞上 %d/%d 组 · 采样最近距 %s（帧率修正判据 ≤%s · 计划交汇距 %s）', hits, duels, minDist.map((d) => d.toFixed(2)).join(','), bound.toFixed(2), (Y_STAGGER * L.scale).toFixed(2));
       console.info('[game211/duel-spike] 第%d 轮 · %d 组 → 胜%d 负%d 平%d · 未躺平 %d/%d · 帧 %sms(p95 %sms)', throwNo, duels, t.win, t.lose, t.draw, up, duels * 2, perfMean().toFixed(1), perfP95().toFixed(1));
     }
     renderUI();
@@ -366,9 +362,9 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
       rows.push({ type: 'Label', id: 'dsp-tally', props: { text: `战况：我方胜 ${t.win} · 负 ${t.lose} · 平 ${t.draw}`, size: 'md', color: 'gold' }, layout: {} });
     }
     // 立牌计数（验收口径·理想恒 0）：>0 说明还有牌没躺平，一眼可见、不用猜。
-    const hullR = HULL_R * layoutFor(duels).scale;
-    const hits = minDist.filter((d) => Number.isFinite(d) && isHit(d, hullR)).length;
-    rows.push({ type: 'Label', id: 'dsp-hit', props: { text: `空中撞上 ${hits} / ${duels} 组`, size: 'sm', color: hits === duels ? 'ok' : 'danger' }, layout: {} });
+    // 撞击：几何由 throwPlan 保证（单测钉死交汇时 x/z 完全重合）→ 这里只报**计划交汇距**，不做会误导的 pass/fail
+    //（采样最近距受帧率限制·慢帧下会把撞上的判成没撞上）。
+    rows.push({ type: 'Label', id: 'dsp-hit', props: { text: `一对一对撞 · 计划交汇距 ${(Y_STAGGER * layoutFor(duels).scale).toFixed(2)}`, size: 'sm', color: 'ok' }, layout: {} });
     const up = upright(done);
     rows.push({ type: 'Label', id: 'dsp-upright', props: { text: `未躺平 ${up} / ${done.length * 2} 张`, size: 'sm', color: up > 0 ? 'danger' : 'ok' }, layout: {} });
     rows.push(
