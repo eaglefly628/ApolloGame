@@ -44,12 +44,13 @@ const CARD_RESTITUTION = 0.14;
 // 对称偏心量：**相对碰撞圆盘半径**取比例，才是真正的「擦碰」。0.2 的绝对值相对 R=1.12 几乎等于正心对撞，
 // 撞完两张牌几乎原地停下、然后叠在一起 → owner 看到的「还能站在那里」其实是**互相压着**，不是立在边上（实测口径：未躺平 1/2）。
 // 0.55×R 是明显的偏心：既给出大力偶（翻滚由碰撞产生），又把两张牌朝相反侧向甩开、各自落地。
-const COLLIDE_RATIO = 0.35;   // 出手时的 Z 向错位（相对碰撞半径）
-// Z 向**持续分离速度**：两张牌在 X 向对冲（保证相撞），同时在 Z 向朝相反方向匀速拉开。
-// 撞击那一刻还没拉开到不接触（错位 0.35R + 飞行位移 < 直径），所以必然擦上；撞完继续拉开 → **各自落到两边**。
-// 这是修「未躺平」的关键：实测 upY = −0.61/+0.57，两张牌撞完一起倒、互相支成人字帐篷 —— 
-// 不是立在边上，是没分开。只调弹性/偏心都治不了（0.52 弹性反而让它们弹回同一处，从 1/2 恶化到 2/2）。
-const VZ_SPREAD = 1.15;
+// **一对一空中对撞**（owner 2026-08-07「每张牌冲向对面**对应**那张，形成空中撞击」）：
+//   两张牌瞄准**同一个交汇点**（同 lane 的 x=0）——中心几乎重合 → 无论翻滚到哪个相位都必然接触。
+//   ⚠ 血泪：上一版给了 Z 向持续分离速度（想让撞完分开），结果从出手就在推开，实测**最近距 2.5+ / 判据 1.34
+//   → 撞上 0/1 组，三次一次都没碰上**。看着「像撞了」其实是各飞各的。分离绝不能靠出手时就分开。
+//   起手**高度差半个身位**：速度仍严格镜像（等大反向·符合「相反的作用力」），但一张从上、一张从下相遇
+//   → 接触点必然偏离质心 → 力偶（旋转）由**碰撞本身**产生，且上牌被往上顶、下牌被往下压，撞完自然分开。
+const Y_STAGGER = 0.26;
 const SPIN0 = 2.2;             // 出手初旋（rad/s·很小·只为飞行中有点翻动；狂翻应由碰撞产生）
 
 const SIDE = ['a', 'b'] as const;
@@ -102,6 +103,27 @@ export function judgeDuel(a: CardOutcome, b: CardOutcome): string {
   if (!a.front && !b.front) return '双双反面 · 同归于尽（平）';
   return a.front ? '我方正面朝上 · 胜' : '敌方正面朝上 · 负';
 }
+
+/** 一对牌的出手方案（纯函数·可单测）：给定该道中心 z、出手距 x、抛高 vy、交汇时刻 t，
+ *  返回两张牌各自的**起点 + 初速**。不变量（由测试钉死）：
+ *   ① t 时刻两者 **x 与 z 完全重合** → 必然相撞（这就是「每张牌冲向对面对应那张」）；
+ *   ② 速度**严格镜像**（vx 等大反向·vy 相同·vz 恒 0）→ 相反的作用力；
+ *   ③ 全程 y 恒差 `stagger` → 撞击点偏离质心 → 旋转由碰撞产生，而非出手时硬塞。
+ *  ⚠ 别再加任何「出手就朝两侧分开」的速度：实测那样最近距 2.5+ / 判据 1.34 → 撞上 0/1 组，看着像撞其实各飞各的。 */
+export function throwPlan(laneZ: number, throwX: number, vy: number, tMeet: number, stagger: number): {
+  a: { x: number; y: number; z: number; vx: number; vy: number; vz: number };
+  b: { x: number; y: number; z: number; vx: number; vy: number; vz: number };
+} {
+  const vxMag = throwX / tMeet;
+  const mk = (dir: 1 | -1) => ({ x: -dir * throwX, y: 0.9 + dir * (stagger / 2), z: laneZ, vx: dir * vxMag, vy, vz: 0 });
+  return { a: mk(1), b: mk(-1) };
+}
+
+/** 撞击判据（纯函数·可单测）：飞行途中两张牌**中心最近距离** ≤ 判据 → 算撞上了。
+ *  判据取 1.2×碰撞半径：两枚半径 R 的圆盘，中心距 >2R 必不接触；但牌是**薄片**，正对时沿某轴厚度仅 0.085，
+ *  所以中心距接近 2R 时能不能碰上**取决于翻滚相位**——不可靠。取 1.2R 是「无论翻到哪个相位都必然接触」的稳妥线。 */
+export const HIT_DIST_RATIO = 1.2;
+export function isHit(minDist: number, hullR: number): boolean { return minDist <= HIT_DIST_RATIO * hullR; }
 
 /** 没躺平的牌数（纯函数·可单测）：|upY| < FLAT_MIN 即牌没有平躺（立着/斜靠）。
  *  这是「牌不许站住」这条要求的**可量化验收口径**——不靠肉眼看，直接数。理想恒为 0。 */
@@ -188,6 +210,7 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
   let arenaIds: string[] = [];
   let cardIds: string[] = [];
   let outcomes: (DuelOutcome | null)[] = [];
+  let minDist: number[] = [];   // 每道「两牌中心最近距离」（飞行全程 min）→ 验证「这一对到底撞上没有」
   let status = '准备';
 
   const cardId = (lane: number, s: Side): string => `g211-card-${throwNo}-${lane}-${s}`;
@@ -225,13 +248,15 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
     if (cam) cam.distance = L.camDist; // 组数越多镜头越远（缩小视角·把全场收进画面）
   }
 
-  /** 抛一轮：N 组、每组两张，**同组必在半空相撞**（共用 vy 同步抛物线 + 水平速度按交汇时刻反解 + 对称 z 偏移擦碰）。 */
+  /** 抛一轮：N 组、每组两张。出手几何**全部由纯函数 `throwPlan` 给**（不在这里另算一套——
+   *  否则测试钉的是纯函数、真跑的是内联算法，测试就成了摆设）。 */
   function throwAll(): void {
     for (const id of cardIds) { try { engine.world.destroyEntity(id); } catch { /* 已不在 */ } }
     cardIds = [];
     throwNo += 1;                         // 见头注坑②：换 id 才会重建刚体
     prevQuat.clear(); stillSince.clear();
     outcomes = Array.from({ length: duels }, () => null);
+    minDist = Array.from({ length: duels }, () => Infinity);
     status = '抛掷中…';
     const L = layoutFor(duels);
     const hull = bevelDiscHull(HULL_R * L.scale, CARD_T * L.scale, BEVEL_K);
@@ -240,15 +265,15 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
       const laneZ = (lane - (duels - 1) / 2) * L.laneGap;
       const vy = span(8.0, 9.2);
       const tMeet = (vy / GRAVITY) * span(0.72, 0.94); // 交汇略早于最高点（上升段相撞·看得清）
-      const vxMag = throwX / tMeet;
+      const plan = throwPlan(laneZ, throwX, vy, tMeet, Y_STAGGER * L.scale); // ← 唯一真相·见其头注的四条不变量
       for (const s of SIDE) {
         const id = cardId(lane, s);
         const dir = s === 'a' ? 1 : -1;
         // 严格镜像：同速反向、同 vy、同 |vz| —— 两张牌是**一对一对撞**，不是各飞各的（owner 2026-08-07
         //   「不是一对一朝对象给相反的作用力和旋转，好像用很大力在乱飞」）。
-          const zOff = dir * COLLIDE_RATIO * HULL_R * L.scale; // 对称偏心（按半径取比例）→ 撞击点不过质心 → 力偶=旋转由**碰撞**产生
+          const p0 = plan[s];
         engine.world.createEntity(id);
-        engine.world.addComponent(id, { type: 'Transform3D', x: -dir * throwX, y: 0.9, z: laneZ + zOff } as unknown as Component);
+        engine.world.addComponent(id, { type: 'Transform3D', x: p0.x, y: p0.y, z: p0.z } as unknown as Component);
         engine.world.addComponent(id, {
         type: 'Mesh3D', shape: 'box', width: CARD_W * L.scale, height: CARD_H * L.scale, depth: CARD_T * L.scale,
         frontTint: FRONT_TINT[s],  // 正面 = 阵营色 = 活
@@ -257,7 +282,7 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
         } as unknown as Component);
         engine.world.addComponent(id, {
         type: 'RigidBody3D', shape: 'convex', hull, mass: 1.0, restitution: CARD_RESTITUTION, friction: 0.45,
-        vx: dir * vxMag, vy, vz: dir * VZ_SPREAD,    // 完全镜像：X 向对冲相撞、Z 向持续拉开 → 撞完各自落两边
+        vx: p0.vx, vy: p0.vy, vz: p0.vz,             // 严格镜像：只在 X 向对冲、不做任何侧向分离（分离交给撞击）
         // 初旋只给**很小**的一点（让牌在飞行中略微翻动·有生气），真正的狂翻交给撞击那一下打出来。
         // ⚠ 上一版给到 ±16 rad/s ≈ 2.5 转/秒 —— 那是「出手就在乱转」，撞击反而被淹没，看着像乱飞。
         avx: dir * SPIN0, avy: span(-0.6, 0.6), avz: span(-0.6, 0.6),
@@ -283,6 +308,9 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
     if (done === duels) {
       const t = tallyOf(outcomes.filter(Boolean) as DuelOutcome[]);
       const up = upright(outcomes.filter(Boolean) as DuelOutcome[]);
+      const hullR = HULL_R * layoutFor(duels).scale;
+      const hits = minDist.filter((d) => isHit(d, hullR)).length;
+      console.info('[dsp/hit] 撞上 %d/%d 组 · 最近距 %s（判据 ≤%s）', hits, duels, minDist.map((d) => d.toFixed(2)).join(','), (HIT_DIST_RATIO * hullR).toFixed(2));
       console.info('[game211/duel-spike] 第%d 轮 · %d 组 → 胜%d 负%d 平%d · 未躺平 %d/%d · 帧 %sms(p95 %sms)', throwNo, duels, t.win, t.lose, t.draw, up, duels * 2, perfMean().toFixed(1), perfP95().toFixed(1));
     }
     renderUI();
@@ -295,6 +323,13 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
   function pollStill(nowMs: number): void {
     for (let lane = 0; lane < duels; lane++) {
       if (outcomes[lane]) continue;
+      // 记录这一对的中心最近距离（只在未落定期间量·落定后不再变）
+      const ta = engine.world.getComponent<Transform3D>(cardId(lane, 'a'), 'Transform3D');
+      const tb = engine.world.getComponent<Transform3D>(cardId(lane, 'b'), 'Transform3D');
+      if (ta && tb) {
+        const d = Math.hypot(ta.x - tb.x, ta.y - tb.y, ta.z - tb.z);
+        if (d < (minDist[lane] ?? Infinity)) minDist[lane] = d;
+      }
       let bothStill = true;
       for (const s of SIDE) {
         const id = cardId(lane, s);
@@ -331,6 +366,9 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
       rows.push({ type: 'Label', id: 'dsp-tally', props: { text: `战况：我方胜 ${t.win} · 负 ${t.lose} · 平 ${t.draw}`, size: 'md', color: 'gold' }, layout: {} });
     }
     // 立牌计数（验收口径·理想恒 0）：>0 说明还有牌没躺平，一眼可见、不用猜。
+    const hullR = HULL_R * layoutFor(duels).scale;
+    const hits = minDist.filter((d) => Number.isFinite(d) && isHit(d, hullR)).length;
+    rows.push({ type: 'Label', id: 'dsp-hit', props: { text: `空中撞上 ${hits} / ${duels} 组`, size: 'sm', color: hits === duels ? 'ok' : 'danger' }, layout: {} });
     const up = upright(done);
     rows.push({ type: 'Label', id: 'dsp-upright', props: { text: `未躺平 ${up} / ${done.length * 2} 张`, size: 'sm', color: up > 0 ? 'danger' : 'ok' }, layout: {} });
     rows.push(
