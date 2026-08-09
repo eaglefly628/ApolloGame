@@ -36,6 +36,12 @@ export interface ArtSlot {
   context: string;
   /** 消费槽（台账 `slot`·孤儿审计据此认槽）。**逐素材一个 entity**，见推导脚本里的注释。 */
   entity: string;
+  /**
+   * **现状一句话**（owner 2026-08-08：「我看不到本来是什么样子」）。
+   * 落进台账 `gen.style`，与预览图并排显示——图 + 这句话，一眼看出「今天长这样、值不值得先画」。
+   * **写实话**：是一根色条就写一根色条，别写成「精致的手臂」。
+   */
+  look: string;
 }
 
 const HAND_EN: Record<Hand, string> = { rock: 'closed fist', paper: 'open palm', scissors: 'two-finger scissors' };
@@ -59,6 +65,7 @@ export const ART_SLOTS: readonly ArtSlot[] = [
     w: 220, h: 245, transparent: true,
     context: `招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「${h}」手型图标`,
     entity: `duel-screen:hand-icon-${h}`,
+    look: 'owner 设计定稿切图（已是真图）',
   })),
   // ── ② **亮拳大手** ×6（双方 × 三手）──────────────────────────────────────────
   //    揭晓那一刻全屏最大的东西 = 本作的情绪核（§13 演出）。现在是程序矢量画的。
@@ -69,6 +76,7 @@ export const ART_SLOTS: readonly ArtSlot[] = [
     w: 512, h: 512, transparent: true,
     context: `T3 揭晓的亮拳大手（${side} 的「${h}」·屏上最大的一件·情绪核）`,
     entity: `duel-screen:gesture-${side}-${h}`,
+    look: '程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口',
   }))),
   // ── ③ 手臂 ×2（接在大手下面·跟着侧走）───────────────────────────────────────
   ...SIDES2.map((side) => ({
@@ -77,6 +85,7 @@ export const ART_SLOTS: readonly ArtSlot[] = [
     w: 256, h: 512, transparent: true,
     context: `亮拳大手下面的手臂（${side}·与大手同侧同色）`,
     entity: `duel-screen:arm-${side}`,
+    look: '程序矢量：**就是一根渐变色条**（无手腕 / 袖口 / 结构）——12 行里最该先画的一行',
   })),
   // ── ④ 判定表石板（常驻台面中央·【R-108-40】规则可视化的载体）──────────────────
   {
@@ -85,6 +94,7 @@ export const ART_SLOTS: readonly ArtSlot[] = [
     w: 512, h: 384, transparent: true,
     context: '判定表石板底（文字仍走 LayoutNode 叠在皮上·凿改时换这张图）',
     entity: 'duel-screen:slab',
+    look: '程序矢量：纯色圆角板 + 文字叠上去——**看不出是石板**',
   },
   // ── ⑤ 烟雾道具图标（【R-108-20】）──────────────────────────────────────────
   {
@@ -93,6 +103,7 @@ export const ART_SLOTS: readonly ArtSlot[] = [
     w: 192, h: 192, transparent: true,
     context: '底栏烟雾键上的道具图标',
     entity: 'duel-screen:smoke-icon',
+    look: '现状是一个 emoji 💨（根本不是美术资产）',
   },
   // ── ⑥ 舞台背景（`mountHost` 背景皮肤槽·有图叠图/无图回退程序化底）──────────────
   {
@@ -101,6 +112,7 @@ export const ART_SLOTS: readonly ArtSlot[] = [
     w: 1920, h: 1080, transparent: false,
     context: '对局舞台底（`mountHost({sceneBgSkin})`·无图时回退纯色 #171310）',
     entity: 'host-scene',
+    look: '程序矢量：天空 + 两道山丘 + 斜纹草地 + 云——**是通用底纹，与「地下拳馆」的定位并不搭**',
   },
 ] as const;
 

@@ -50,7 +50,7 @@ const rows = ART_SLOTS.map((a) => ({
   slot: { entity: a.entity, component: a.key.startsWith('scene/') ? 'sceneBgSkin' : 'Image', field: a.key.startsWith('scene/') ? 'imageUrl' : 'src' },
   query: a.key.replace(/-/g, ' '),
   spec: { w: a.w, h: a.h, transparent: a.transparent },
-  context: a.context,
+  context: `${a.context}｜现状：${a.look}`,
   status: 'needs-art',
 }));
 

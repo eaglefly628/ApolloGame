@@ -22,7 +22,7 @@
     "h": 245,
     "transparent": true
    },
-   "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「rock」手型图标",
+   "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「rock」手型图标｜现状：owner 设计定稿切图（已是真图）",
    "status": "filled",
    "no": "art-01",
    "gen": {
@@ -53,7 +53,7 @@
     "h": 245,
     "transparent": true
    },
-   "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「paper」手型图标",
+   "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「paper」手型图标｜现状：owner 设计定稿切图（已是真图）",
    "status": "filled",
    "no": "art-02",
    "gen": {
@@ -84,7 +84,7 @@
     "h": 245,
     "transparent": true
    },
-   "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「scissors」手型图标",
+   "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「scissors」手型图标｜现状：owner 设计定稿切图（已是真图）",
    "status": "filled",
    "no": "art-03",
    "gen": {
@@ -134,9 +134,16 @@
     "h": 512,
     "transparent": true
    },
-   "context": "T3 揭晓的亮拳大手（p1 的「rock」·屏上最大的一件·情绪核）",
-   "status": "needs-art",
-   "no": "art-05"
+   "context": "T3 揭晓的亮拳大手（p1 的「rock」·屏上最大的一件·情绪核）｜现状：程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+   "status": "placeholder",
+   "no": "art-05",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+    "servedPath": "/games/game108/art/preview/gesture-p1-rock.svg"
+   },
+   "provenance": null
   },
   {
    "skinKey": "game108/gesture-p1-paper",
@@ -153,9 +160,16 @@
     "h": 512,
     "transparent": true
    },
-   "context": "T3 揭晓的亮拳大手（p1 的「paper」·屏上最大的一件·情绪核）",
-   "status": "needs-art",
-   "no": "art-06"
+   "context": "T3 揭晓的亮拳大手（p1 的「paper」·屏上最大的一件·情绪核）｜现状：程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+   "status": "placeholder",
+   "no": "art-06",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+    "servedPath": "/games/game108/art/preview/gesture-p1-paper.svg"
+   },
+   "provenance": null
   },
   {
    "skinKey": "game108/gesture-p1-scissors",
@@ -172,9 +186,16 @@
     "h": 512,
     "transparent": true
    },
-   "context": "T3 揭晓的亮拳大手（p1 的「scissors」·屏上最大的一件·情绪核）",
-   "status": "needs-art",
-   "no": "art-07"
+   "context": "T3 揭晓的亮拳大手（p1 的「scissors」·屏上最大的一件·情绪核）｜现状：程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+   "status": "placeholder",
+   "no": "art-07",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+    "servedPath": "/games/game108/art/preview/gesture-p1-scissors.svg"
+   },
+   "provenance": null
   },
   {
    "skinKey": "game108/gesture-p2-rock",
@@ -191,9 +212,16 @@
     "h": 512,
     "transparent": true
    },
-   "context": "T3 揭晓的亮拳大手（p2 的「rock」·屏上最大的一件·情绪核）",
-   "status": "needs-art",
-   "no": "art-08"
+   "context": "T3 揭晓的亮拳大手（p2 的「rock」·屏上最大的一件·情绪核）｜现状：程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+   "status": "placeholder",
+   "no": "art-08",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+    "servedPath": "/games/game108/art/preview/gesture-p2-rock.svg"
+   },
+   "provenance": null
   },
   {
    "skinKey": "game108/gesture-p2-paper",
@@ -210,9 +238,16 @@
     "h": 512,
     "transparent": true
    },
-   "context": "T3 揭晓的亮拳大手（p2 的「paper」·屏上最大的一件·情绪核）",
-   "status": "needs-art",
-   "no": "art-09"
+   "context": "T3 揭晓的亮拳大手（p2 的「paper」·屏上最大的一件·情绪核）｜现状：程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+   "status": "placeholder",
+   "no": "art-09",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+    "servedPath": "/games/game108/art/preview/gesture-p2-paper.svg"
+   },
+   "provenance": null
   },
   {
    "skinKey": "game108/gesture-p2-scissors",
@@ -229,9 +264,16 @@
     "h": 512,
     "transparent": true
    },
-   "context": "T3 揭晓的亮拳大手（p2 的「scissors」·屏上最大的一件·情绪核）",
-   "status": "needs-art",
-   "no": "art-10"
+   "context": "T3 揭晓的亮拳大手（p2 的「scissors」·屏上最大的一件·情绪核）｜现状：程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+   "status": "placeholder",
+   "no": "art-10",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+    "servedPath": "/games/game108/art/preview/gesture-p2-scissors.svg"
+   },
+   "provenance": null
   },
   {
    "skinKey": "game108/arm-p1",
@@ -248,9 +290,16 @@
     "h": 512,
     "transparent": true
    },
-   "context": "亮拳大手下面的手臂（p1·与大手同侧同色）",
-   "status": "needs-art",
-   "no": "art-11"
+   "context": "亮拳大手下面的手臂（p1·与大手同侧同色）｜现状：程序矢量：**就是一根渐变色条**（无手腕 / 袖口 / 结构）——12 行里最该先画的一行",
+   "status": "placeholder",
+   "no": "art-11",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：**就是一根渐变色条**（无手腕 / 袖口 / 结构）——12 行里最该先画的一行",
+    "servedPath": "/games/game108/art/preview/arm-p1.svg"
+   },
+   "provenance": null
   },
   {
    "skinKey": "game108/arm-p2",
@@ -267,9 +316,16 @@
     "h": 512,
     "transparent": true
    },
-   "context": "亮拳大手下面的手臂（p2·与大手同侧同色）",
-   "status": "needs-art",
-   "no": "art-12"
+   "context": "亮拳大手下面的手臂（p2·与大手同侧同色）｜现状：程序矢量：**就是一根渐变色条**（无手腕 / 袖口 / 结构）——12 行里最该先画的一行",
+   "status": "placeholder",
+   "no": "art-12",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：**就是一根渐变色条**（无手腕 / 袖口 / 结构）——12 行里最该先画的一行",
+    "servedPath": "/games/game108/art/preview/arm-p2.svg"
+   },
+   "provenance": null
   },
   {
    "skinKey": "game108/slab",
@@ -286,9 +342,16 @@
     "h": 384,
     "transparent": true
    },
-   "context": "判定表石板底（文字仍走 LayoutNode 叠在皮上·凿改时换这张图）",
-   "status": "needs-art",
-   "no": "art-13"
+   "context": "判定表石板底（文字仍走 LayoutNode 叠在皮上·凿改时换这张图）｜现状：程序矢量：纯色圆角板 + 文字叠上去——**看不出是石板**",
+   "status": "placeholder",
+   "no": "art-13",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：纯色圆角板 + 文字叠上去——**看不出是石板**",
+    "servedPath": "/games/game108/art/preview/slab.svg"
+   },
+   "provenance": null
   },
   {
    "skinKey": "game108/smoke-icon",
@@ -305,9 +368,16 @@
     "h": 192,
     "transparent": true
    },
-   "context": "底栏烟雾键上的道具图标",
-   "status": "needs-art",
-   "no": "art-14"
+   "context": "底栏烟雾键上的道具图标｜现状：现状是一个 emoji 💨（根本不是美术资产）",
+   "status": "placeholder",
+   "no": "art-14",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "现状是一个 emoji 💨（根本不是美术资产）",
+    "servedPath": "/games/game108/art/preview/smoke-icon.svg"
+   },
+   "provenance": null
   },
   {
    "skinKey": "game108/scene/stage",
@@ -324,9 +394,16 @@
     "h": 1080,
     "transparent": false
    },
-   "context": "对局舞台底（`mountHost({sceneBgSkin})`·无图时回退纯色 #171310）",
-   "status": "needs-art",
-   "no": "art-15"
+   "context": "对局舞台底（`mountHost({sceneBgSkin})`·无图时回退纯色 #171310）｜现状：程序矢量：天空 + 两道山丘 + 斜纹草地 + 云——**是通用底纹，与「地下拳馆」的定位并不搭**",
+   "status": "placeholder",
+   "no": "art-15",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：天空 + 两道山丘 + 斜纹草地 + 云——**是通用底纹，与「地下拳馆」的定位并不搭**",
+    "servedPath": "/games/game108/art/preview/scene-stage.svg"
+   },
+   "provenance": null
   }
  ]
 }

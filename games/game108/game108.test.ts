@@ -111,7 +111,7 @@ describe('game108 · 蓄力槽 id 约定（capability-plan §5 实现约定 1）
 });
 
 // ── S3 骨架关：引擎吃得下 + 空跑（机器门）+ 条款走查 ────────────────────────
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { Engine } from '@zerocraft/engine/runtime/engine.js';
 
@@ -799,11 +799,41 @@ describe('game108 · v3 节奏（【R-108-01/02/04/05/10】）', () => {
       const json = JSON.stringify(buildDuelScreen(v));
       for (const a of ART_SLOTS) if (json.includes(sentinel(skinKeyOf(a.key)))) painted.add(a.key);
     }
-    // 背景那张由宿主的 `mountHost({sceneBgSkin})` 消费，不经这棵树——单独核它的键对得上。
-    painted.add(SCENE_SLOT);
+    // ⚠ 这里**曾经有个后门**：我给背景开了 `painted.add(SCENE_SLOT)` 豁免，理由是"它由 mountHost 消费"。
+    // 那正是尺子照着被测物做——真渲染截图当场打脸：屏上可见的背景是 `stageBg()` 画的那张，
+    // wrapper 底色只是兜底层。**豁免掉的那一格恰好就是接错的那一格**。后门已拆，它现在照常参与判定。
+    // wrapper 那一路（`mountHost({sceneBgSkin})`）另外核键名对得上即可。
     expect(SCENE_BG_SKIN).toBe(skinKeyOf(SCENE_SLOT));
     const orphans = ART_SLOTS.map((a) => a.key).filter((k) => !painted.has(k));
     expect(orphans).toEqual([]);
+  });
+
+  it('【S6】台账每一行都**看得见现状**——不是真图就必须有程序化预览 + 一句实话（owner 2026-08-08）', () => {
+    /**
+     * owner review：「占位符，但是我看不到原来的样子。哪怕你用矢量画一个样子出来我也知道。」
+     * 病根：那 12 行标着 needs-art、墙上一律通用占位块，可**游戏里明明正画着它们**。
+     * 于是「替换」变成盲替——美术不知道要顶掉什么，owner 看不出这行指屏上哪一块。
+     *
+     * 判据三条，缺一即红：① 有 servedPath ② 文件真的在盘上（不是写了个路径就算数）
+     * ③ 有一句现状说明。另外**钉死 placeholder ≠ mock**：mock 永不上画面、不可 approve，
+     * 把预览错标成 mock 会让整条美术线判断失据。
+     */
+    const led = JSON.parse(readFileSync(join(process.cwd(), 'public/games/game108/art/art-ledger.json'), 'utf8')) as
+      { rows: { no: string; skinKey: string; status: string; gen?: { servedPath?: string; source?: string; style?: string; mock?: boolean } }[] };
+    const blind: string[] = [];
+    for (const r of led.rows) {
+      if (r.status === 'retired') continue;
+      const sp = r.gen?.servedPath;
+      if (!sp) { blind.push(`${r.no} 没有可看的图`); continue; }
+      // servedPath 是站点绝对路径 → 映回 public/ 下的真实文件
+      if (!existsSync(join(process.cwd(), 'public', sp.replace(/^\//, '')))) blind.push(`${r.no} 的图不在盘上：${sp}`);
+      if (!r.gen?.style) blind.push(`${r.no} 没有现状说明`);
+      if (r.gen?.mock === true) blind.push(`${r.no} 标成了 mock（mock 永不上画面·不可 approve）`);
+      if (r.status !== 'filled' && r.status !== 'approved' && r.gen?.source !== 'procedural-preview') {
+        blind.push(`${r.no} 不是真图却也不是程序化预览：source=${r.gen?.source}`);
+      }
+    }
+    expect(blind).toEqual([]);
   });
 
   it('【R-108-01】v4：**一出手就走**，不再把免费段跑满（owner 2026-08-08：「出手后不用等了。等半秒吧」）', () => {

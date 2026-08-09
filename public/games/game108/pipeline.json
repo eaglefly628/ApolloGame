@@ -33,20 +33,20 @@
     "S3": {
       "exit": 0,
       "summary": "编译期游戏免 manifest 校验 · ✓ 渲染探针过（截图 public/games/<slug>/probe/S3-render.png） · ✓ 点击打穿（6 个控件 · 5 个点后 DOM 真的变了 · 零控制台 error）",
-      "at": "2026-08-09T05:02:53.041Z",
-      "gameHash": "b3a6fe5923a88602"
+      "at": "2026-08-09T14:00:27.140Z",
+      "gameHash": "5349c330dd943d78"
     },
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  1 passed (1) ·       Tests  67 passed (67)）· 验收剧本 12 场景绿 · ✓ UI 走查过（可驱动率见 public/games/<slug>/probe/S4-uiwalk.json）",
-      "at": "2026-08-09T05:03:03.660Z",
-      "gameHash": "b3a6fe5923a88602"
+      "summary": "walkthrough 绿（ Test Files  1 passed (1) ·       Tests  68 passed (68)）· 验收剧本 12 场景绿 · ✓ UI 走查过（可驱动率见 public/games/<slug>/probe/S4-uiwalk.json）",
+      "at": "2026-08-09T14:00:39.746Z",
+      "gameHash": "5349c330dd943d78"
     },
     "S5": {
       "exit": 0,
       "summary": "AUDIT: PASS · RATCHET: PASS · ⚠ 无标准照基准·未比对（golden-shot bless 建基准）",
-      "at": "2026-08-09T05:03:03.832Z",
-      "gameHash": "b3a6fe5923a88602"
+      "at": "2026-08-09T14:00:39.959Z",
+      "gameHash": "5349c330dd943d78"
     }
   },
   "history": [
@@ -612,6 +612,42 @@
       "stage": "S5",
       "exit": 0,
       "at": "2026-08-09T05:03:03.832Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "程序化预览落地（台账每行看得见现状）后重刷",
+      "at": "2026-08-09T14:00:05.811Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-08-09T14:00:27.140Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "程序化预览落地（台账每行看得见现状）后重刷",
+      "at": "2026-08-09T14:00:27.277Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-08-09T14:00:39.746Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S5",
+      "reason": "程序化预览落地（台账每行看得见现状）后重刷",
+      "at": "2026-08-09T14:00:39.889Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-08-09T14:00:39.959Z"
     }
   ],
   "outOfOrder": [
@@ -824,18 +860,33 @@
       "stage": "S5",
       "reason": "S6 皮肤槽打开（3→15 行）后重刷",
       "at": "2026-08-09T05:03:03.768Z"
+    },
+    {
+      "stage": "S3",
+      "reason": "程序化预览落地（台账每行看得见现状）后重刷",
+      "at": "2026-08-09T14:00:05.811Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "程序化预览落地（台账每行看得见现状）后重刷",
+      "at": "2026-08-09T14:00:27.277Z"
+    },
+    {
+      "stage": "S5",
+      "reason": "程序化预览落地（台账每行看得见现状）后重刷",
+      "at": "2026-08-09T14:00:39.889Z"
     }
   ],
   "selfCheck": {
     "S4": {
-      "at": "2026-08-09T05:03:03.660Z",
+      "at": "2026-08-09T14:00:39.746Z",
       "shots": 12,
-      "gameHash": "b3a6fe5923a88602"
+      "gameHash": "5349c330dd943d78"
     },
     "S5": {
-      "at": "2026-08-09T05:03:03.832Z",
+      "at": "2026-08-09T14:00:39.959Z",
       "shots": 12,
-      "gameHash": "b3a6fe5923a88602"
+      "gameHash": "5349c330dd943d78"
     }
   },
   "reviews": {

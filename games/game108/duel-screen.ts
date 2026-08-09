@@ -25,7 +25,7 @@ import { C, S, F, L, R, B, SH, CANVAS, dmgFontSize } from './design-tokens.js';
 import { plate, ring, hpBar, scene, loadBar } from './plate-art.js';
 import { handArt, armArt, HAND_BOX_SCALE, HAND_BOX_SHIFT } from './hand-art.js';
 import { HAND_ICON_SRC } from './hand-icons.js';
-import { pickSkin, gestureSlot, armSlot, handIconSlot, SLAB_SLOT, SMOKE_SLOT } from './art-slots.js';
+import { pickSkin, gestureSlot, armSlot, handIconSlot, SLAB_SLOT, SMOKE_SLOT, SCENE_SLOT } from './art-slots.js';
 import { t, CHAR_W, enSize, type Lang, type StringKey as StringKeyOf } from './strings.js';
 import { DEFAULT_CARD } from './card-character.js';
 
@@ -198,10 +198,13 @@ const SCENE_SRC = scene(CANVAS.w, CANVAS.h, C);
 const HAND_BOX = Math.round(L.handBox.size * HAND_BOX_SCALE);
 const HAND_SHIFT = Math.round(L.handBox.size * HAND_BOX_SHIFT);
 
-function stageBg(): LayoutNode {
+function stageBg(view: DuelView): LayoutNode {
   return {
     type: 'Image', id: 'scene',
-    props: { src: SCENE_SRC, alt: '', fit: 'cover' },
+    // 【S6】舞台背景 = 可换素材。**槽必须接在这一层**——玩家真正看见的背景是这张图，
+    // 不是 `mountHost` 那层 wrapper 底色（那只在图透明/缺失时露出来当兜底）。
+    // 第一版把槽只接在 wrapper 上：换了图也盖不住真正可见的这一层，**换了没反应**。
+    props: { src: pickSkin(view.skins, SCENE_SLOT, SCENE_SRC), alt: '', fit: 'cover' },
     layout: { x: 0, y: 0, width: CANVAS.w, height: CANVAS.h, allowOverlap: true },
   };
 }
@@ -1527,7 +1530,7 @@ export function buildDuelScreen(view: DuelView): LayoutNode {
     type: 'Panel', id: 'duel-screen', props: { bare: true },
     layout: { x: sk.dx, y: sk.dy, width: CANVAS.w, height: CANVAS.h, padding: 0 },
     children: [
-      stageBg(),
+      stageBg(view),
       armNode(view, 'p1'), armNode(view, 'p2'),
       ...topBar(view),
       foeStrip(view),
