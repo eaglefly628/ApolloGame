@@ -11,39 +11,6 @@
 <!-- REQ-ARTTOOL-01/02（P1/P2·game108 S6 实测带出）已完结：batch 无 key 零回写+非占位行跳过点名·rowIdentity 按素材（skinKey→槽→query 三级回退·护住 styleset 消费方）·Lead 终审 PASS（8551d45f8·58 测独立复跑绿·双撤修验红在案·回退链偏差照准=兼顾双消费方的正解·顺带发现已落 REQ-108-ART-02）。 -->
 
 
-### REQ-SCORECARD-2D · 视觉评分卡八维是 **3D 线口径**，2D 数据 UI 游戏套不上（**不得自行跳维·请裁**）· [2026-08-08] · game108 S7 实测带出 · status: open · 优先级: P2 · 类型: 手册/判据口径
-> **先查过**（协议第一步）：`docs/playbooks/visual-scorecard.md` §五明写「维度不适配新品类（如纯文字游戏无"世界密度"）
-> → 提缺口**由 Lead 裁维度豁免**，**不得自行跳维**」。故本条不是自作主张，是照手册走的那一步。
->
-> **哪两维套不上**（第三维「世界密度」其实适配，不申请豁免）：
-> · **材质**：2 分底线是「主要表面用了**材质系统**（preset/贴图/surface）」——2D 数据 UI 没有 3D 材质系统，
->   一个 preset 都挂不上。等价问题应是「表面有没有质感：描边/纹理/渐变层次，而非全场 flat」。
-> · **渲染管线**：2 分底线是「**主光 + 补光**有意图；Post3D/氛围至少一项」——本作没有光照与后处理，一盏灯都没有。
->   等价问题应是「有没有做过整屏的明暗 / 景深 / 氛围处理」。
->
-> **不裁会怎样**（这才是它值一张单的原因）：这两维会被判 1 分 ⇒ 拖垮 premium，而**低分不指向任何可执行的修法**
-> ——PE 看着「材质 1 分」除了给素坯糊特效没别的可做，而糊特效正是手册 §四红线禁的那件事。
-> **分数必须能指导施工，否则它只是个装饰。**
->
-> **两条路**（Lead/owner 判·我不自裁）：
-> · **A 加一套 2D 口径**：八维不变、每维给「3D 底线 / 2D 底线」两行判据（改的是手册，影响全库 2D 线：
->   game-a/b/c/d/e/f/g/i/101/102/103/108 —— 其实**多数游戏都是 2D**，现在都在拿 3D 尺子量）。
-> · **B 逐游戏豁免**：本作在 pipeline 里记两维豁免（改的是数据，只影响 game108；但下一个 2D 游戏还得再申请一次）。
->
-> **我的推荐（只是推荐）**：**A**。理由是这不是 game108 的特例——本库 2D 游戏占绝大多数，
-> B 会让每个 2D 游戏都重走一遍同样的申请，而「重复申请同一件事」正是该下沉的信号。
-> **代价**：改手册要重估已打过分的 3D 线游戏（game-z）会不会因判据改写而分数漂移。
-
-
-<!-- REQ-STYLESET-风格库 apollo-toon（PA+PUI）→ **owner 2026-08-05 令暂停后移出池**（不占槽）。图纸唯一真相仍在 `docs/design/styleset-artlib-plan-2026-07-16.md`。**已落地未验收的存量**：M0 台账底座 + M0.5 现装可视版 + 三游戏风格锚（均 Lead 验收 PASS）· **M0.6 主题指针 = PUI 已 done 但未经 Lead 对抗性验收，随暂停冻结**——重启时 Lead 必须先补验 M0.6 再往下走。未做：M1 试产/M2 建库（等真 key·连 REQ-AIGEN 卡口）· M3 对齐 · M4 出口游戏换装。遗留债：ui-audit border-image 盲区 + 亮主题 dim 假阳（PUI 工具债）· 默认主题是否切 apollo-toon 等 owner。重启即重开本条。 -->
-
-<!-- REQ-UIRECON-换根重挂（P1·PUI）+ REQ-UIAUDIT-叠层与动效（①②③·PUI·Lead 验收 PASS）已完结（查 git 历史）；REQ-UIAUDIT 余 ④bounce+border-image 后置工具债（不占槽·要做时重开小条）。 -->
-
-
-<!-- REQ-RETRO-引擎大扫除（P0·owner 全权授 Lead）已完结（查 git 历史）。 -->
-
-<!-- REQ-RETRO2-能力库整理（P1·owner 三裁缩范围）已完结（查 git 历史）。 -->
-
 ### REQ-DIALOGUE-剧情基础线 · 剧情向 Dialogue 能力做成基础件+Sample+Template · [2026-08-03] · owner 令（约会性单机超休闲转型线·owner 同日令启动） → **图纸在档：`docs/design/dialogue-line-blueprint-2026-08.md`（派工唯一真相）** · status: **in-progress（M1 ✅ PUI done·待 Lead 对抗性验收；M2/M3 next）** · 优先级: P1（转型关键路径） · 类型: 能力线（引擎+UI 基座+样板）
 > 四里程碑详见图纸。**M1 ✅ 全闭环**（三控件+整改真跑展台+ui/vn 已退役 `6c425414a`·Lead 抽验绿·判词全文查 git 历史）；**M3 伴侣在场件 ✅ done（PUI·2026-08-05·待 Lead 验收）**：`@ui/starters/presence.ts`——`ReactionTable`(gameEvent→反应候选[]·纯数据) + `pickReaction(table,event,seed)`(确定性选句·加权·无裸 Math.random·录放一致) + `buildPresence(...)`(用 M1 三件拼装：立绘金框高亮 + dialog kind:'choice' 被动气泡·非新控件) + `SAMPLE_REACTIONS`；守卫 `presence.test.ts`(6) + game-i `🫂 伴侣在场件`展台(`presence-demo.ts`·四 event·+测试+audit 0 阻断·截图在案)。**M2 立绘/表情链 ✅ PUI 半 done（PUI·2026-08-05·待 Lead 验收；PA 半=真图走美术台账·未阻塞接线）**：`@ui/starters/emotion-art.ts`——`EmotionArtTable`(characterId×emotion→assetKey·纯数据表) + `resolveEmotionArt`(**分级降级**：指定情绪→neutral 锚→none·绝不空白) + `emotionArtResolver`(合成 `resolveArt(emotion)→URL` 回调·**双级降级**：表缺情绪→neutral·key 缺图→neutral 图) + `SAMPLE_EMOTION_ART`；`buildPresence` 加 `resolveArt` 参数按情绪出图。守卫 `emotion-art.test.ts`(8·exact/neutral/none 降级链 + resolver 接线 + buildPresence 贯通)；game-i `🫂` 展台接 emotionArtResolver（happy/excited 出图·gentle/calm 缺表→降级 neutral·程序化占位·截图在案）。真 assetKey 由 PA 台账填（等文生图·不影响接线）。**M4 剧情起手包 ✅ PUI 半 done（PUI·2026-08-05·待 Lead 验收）**：`@ui/starters/story-starter.ts` `buildStoryStarter({dialogueEntityId,speakerName?,listenerName?,place?,affinityBind?})`——复制即跑的 VN 剧情屏模板（对标 buildStarterHome/Result）：portrait+dialog+choiceList **bind 已接线**（resolveDialogue 投影 speaker/text/emotion/**art**/options）+ 好感 pill（bind Resource）+ 环境微光 + house 金框货架起手。**M1↔M2 缝合**：`DialogueView` 加 `art?`（源侧经 emotionArtResolver 出图）·`resolveDialogue` 填 `portrait.art` → 立绘随节点情绪换脸（分级降级）。守卫 `story-starter.test.ts`(4·合法闭集/投影后信号全通+立绘换脸/好感 bind/复制即跑 mountUI)。**M4 Sample 示范游戏（GD 剧本+PE slug）= 待 GD/PE 协作**（起手包已就位·复制即用）。**悬置段=DokiWorld 数值双向契约 → owner 2026-08-05：「回头再说·我先去要接口」**（owner 自去索取真卡 schema/宿主接口文档/双人确认三样材料）——**故本段不挂在池子里等、也不阻塞 M2/M4**；材料到手再重启该段。若最终要不到，M4 Sample 按「不依赖 Doki」形态收口（Lead 已备此退路）。
 
