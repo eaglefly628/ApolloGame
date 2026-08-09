@@ -48,6 +48,10 @@ describe('游戏内容指纹（证据过期的机器判据）', () => {
     put(root, 'public/games/g/golden/boot.png', 'baseline');
     put(root, 'public/games/g/golden/golden-ledger.json', { states: [] });
     expect(gameHash(root, 'g')).toBe(h0); // 标准照基准同理不入指纹
+    put(root, 'docs/design/g/self-check/S7-scorecard-selfassess.md', '自评一行');
+    put(root, 'docs/design/g/self-check/shots/r1/a.png', 'shot');
+    put(root, 'docs/design/g/review/REVIEW-S2-S5.md', '导航单');
+    expect(gameHash(root, 'g')).toBe(h0); // 自证单/复查单=门证产物不入指纹（REQ-PIPEHASH-03·第三次同形）
     put(root, 'public/games/g/art/gen/art-01.png', 'real');
     const h1 = gameHash(root, 'g');
     expect(h1).not.toBe(h0); // 真图入指纹

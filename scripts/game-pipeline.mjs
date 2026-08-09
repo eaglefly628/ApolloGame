@@ -72,6 +72,8 @@ const manifestPath = (root, slug, form) =>
  *  同一份源码连跑两次 S3，截图字节就不同（md5 `e5105b6d…` → `72d5a3d9…`）⇒ 指纹变 ⇒
  *  **跑 S3 把 S4/S5 的证据判过期、跑 S4 又把 S3 的判过期，两者永远不可能同时绿**，
  *  流程板上是一串永远追不上的 ⚠。这跟当年 pipeline.json 自我过期是同一个形状，只是漏了这个孪生目录。 */
+const EVIDENCE_DIRS = new Set(['mock', 'probe', 'golden', 'self-check', 'review']);
+
 export function gameHash(root, slug) {
   const roots = [
     join(root, 'library', slug),
@@ -85,9 +87,11 @@ export function gameHash(root, slug) {
     for (const name of readdirSync(d).sort()) {
       const p = join(d, name);
       const st = statSync(p);
-      // gen/mock/ 预览物、probe/ 门禁自产证据、golden/ 标准照基准 —— 都不入指纹
-      // （probe 见函数头注的实测复现；golden 同形：bless 转正基准若入指纹会把 S3/S4 判过期·Lead 2026-08-08 并集）。
-      if (st.isDirectory()) { if (name !== 'mock' && name !== 'probe' && name !== 'golden') walk(p); continue; }
+      // 证据目录判据（REQ-PIPEHASH-03 终态·三次同形复盘）：指纹只答「游戏变了没有」；
+      // 凡回答「门跑过没有」的目录（门自产证据）一律排除——mock 预览物·probe 探针门证·
+      // golden 标准照基准·self-check 自证单与截图·review 复查导航单。
+      // ⚠ gdd/capability-plan/acceptance 是**规格**必须继续入指纹（改了就该重验）——只排证据不排被验物。
+      if (st.isDirectory()) { if (!EVIDENCE_DIRS.has(name)) walk(p); continue; }
       if (name === 'pipeline.json') continue;
       if (name === 'requests.md') continue; // 工单池台账不入指纹（高频回执≠内容变更）
       files.push(p);
