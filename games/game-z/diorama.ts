@@ -310,6 +310,18 @@ function platformFour(): Record<string, Ent> {
     Material3D: { preset: 'iron' },
     RigidBody3D: { shape: 'box', mass: 2.4, friction: 0.8 },
   };
+  // ④ 薄牌落定（REQ-3D-CARD-FACE-AXIS·game211 竖切能力自证）：薄矩形牌**沿 Y 薄**（height 薄）+ `faceAxis:'y'`
+  //    → 正/反色落顶/底面（正=阵营红·反=统一灰）；碰撞体用引擎原生 `cylinder`（轴 Y 圆盘·已验证可靠）→ 抛落**恒躺平**
+  //    （不立边/不斜停·根治薄凸包 ~55° 恒斜伪影）。三张错峰高度翻滚落下·验收=落定 |upY|→1（躺平）+ 顶底能读正反。
+  const card = (id: string, x: number, spin: number): void => {
+    out[id] = {
+      Transform3D: { x, y: 11, z: Z + 4 },
+      Mesh3D: { shape: 'box', width: 8, height: 0.5, depth: 11, faceAxis: 'y', frontTint: 0xef5350, backTint: 0x9aa4ad, edgeTint: 0x2b2f36 },
+      RigidBody3D: { shape: 'cylinder', mass: 1, restitution: 0.15, friction: 0.6, avx: spin, avy: 0.4, avz: spin * 0.6 }, // 初角速度翻滚（确定性·坐标派生）
+    };
+  };
+  card('p4-card-a', X - 14, 0.3); card('p4-card-b', X, 6.5); card('p4-card-c', X + 14, 4); // a 轻旋→正面朝上(红)·b/c 翻滚→随机正反
+  out['p4-card-label'] = { Transform3D: { x: X, y: 10, z: Z + 4 }, WorldUI3D: { text: '④ 薄牌落定 faceAxis:y + cylinder（恒躺平·顶底分色）', offsetY: 0, size: 'sm', color: 'jade' } };
   return out;
 }
 

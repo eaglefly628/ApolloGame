@@ -9,7 +9,7 @@ import {
   renderablePose, poseBounds, mesh3dBatchKey, type Pose3D,
   transform3dPose, groundPose, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D, rayAabbT,
 } from './three-projection.js';
-import { mesh3dPose, applyPose, buildMesh3D, buildDieMesh3D, dieMode, buildVoxelMesh3D, voxelMode, buildGlowTexture, buildGeometry, buildSkyTexture, disposeMesh } from './three/geometry.js';
+import { mesh3dPose, applyPose, buildMesh3D, buildDieMesh3D, dieMode, buildVoxelMesh3D, voxelMode, buildGlowTexture, buildGeometry, buildSkyTexture, disposeMesh, faceAxisSlots } from './three/geometry.js';
 import { buildPbrMesh3D, buildPbrGeoMat, pbrTransmissive, pbrSig, applyMaterialRef, type PbrMaps } from './three/material.js';
 import { hashPoses, camSig, postSig } from './three/stats.js';
 import { LightRig } from './three/lights.js';
@@ -839,10 +839,11 @@ export class ThreeRenderer implements RendererBackend {
   private paintMesh3D(mesh: THREE.Mesh, m: Mesh3D, alpha: number): void {
     const mats = mesh.material;
     if (Array.isArray(mats)) {
-      const a = mats as THREE.MeshStandardMaterial[]; // BoxGeometry 面序 px,nx,py,ny,pz(正),nz(反)
-      a[4]!.color.setHex(m.frontTint & 0xffffff);
-      a[5]!.color.setHex((m.backTint ?? m.frontTint) & 0xffffff);
-      a[0]!.color.setHex((m.edgeTint ?? 0x1f2937) & 0xffffff); // 四边共用同一材质实例
+      const a = mats as THREE.MeshStandardMaterial[]; // BoxGeometry 面序 px,nx,py,ny,pz,nz
+      const s = faceAxisSlots(m.faceAxis); // 正反面槽按 faceAxis（与 buildMesh3D 同一真相·缺省 z=4/5）
+      a[s.front]!.color.setHex(m.frontTint & 0xffffff);
+      a[s.back]!.color.setHex((m.backTint ?? m.frontTint) & 0xffffff);
+      a[s.edge]!.color.setHex((m.edgeTint ?? 0x1f2937) & 0xffffff); // edge 共享材质实例·设一个即全上色
       for (const mat of a) mat.opacity = alpha;
     } else {
       const mat = mats as THREE.MeshStandardMaterial;

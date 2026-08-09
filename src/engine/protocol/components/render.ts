@@ -54,9 +54,13 @@ export interface Mesh3D extends Component {
   height: number; // 物体高。sphere：忽略（取 width 作直径·正球）；cylinder/cone/capsule：柱/锥高；torus：忽略
   depth?: number; // box 厚度；缺省=短边*薄板比（下限 1）。plane/圆润图元忽略
   tube?: number; // torus 专用·管半径占主半径的比例（缺省 0.35）；其它图元忽略
-  frontTint: number; // 正面(+z)色 0xRRGGBB
-  backTint?: number; // 反面(-z)色；缺省=frontTint
-  edgeTint?: number; // box 四边色；缺省深灰
+  frontTint: number; // 正/反面主色 0xRRGGBB（作用面由 faceAxis 定·缺省 +z）
+  backTint?: number; // 反面色；缺省=frontTint
+  edgeTint?: number; // box 其余四面色；缺省深灰
+  /** box 正反分色作用在哪条轴的两面（REQ-3D-CARD-FACE-AXIS·render-only·缺省 'z'=+z/−z·零回归）。
+   *  'y' → frontTint=+y(顶)/backTint=−y(底)·edgeTint=其余四面：薄牌沿 Y 薄时天然躺平 + 顶底分色（配 RigidBody3D
+   *  cylinder 原生 Y 轴圆盘刚体·可靠躺平）；'x' → +x/−x 两面。通用于卡牌/瓷砖/硬币/招牌等薄片类物件。 */
+  faceAxis?: 'x' | 'y' | 'z';
   flipAxis?: 'x' | 'y'; // Transform.rotation 作为绕此轴的翻面角；缺省 'x'（前后翻）
   /** 六面 pip 骰子（render-only·程序化贴图·复刻美术设计案 3D 命运骰）。在场 → box 建成 6 面元素色 + 白点材质，
    *  替代 frontTint/backTint 纯色（size 取 width）。面序 = BoxGeometry [右,左,顶,底,前,后]。骰盅/掷骰/战利品/Title 共用。 */

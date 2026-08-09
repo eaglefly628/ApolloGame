@@ -58,7 +58,27 @@ export function buildMesh3D(m: Mesh3D): THREE.Mesh {
   const edge = matte();
   const front = matte();
   const back = matte();
-  return new THREE.Mesh(new THREE.BoxGeometry(m.width, m.height, depth), [edge, edge, edge, edge, front, back]);
+  // 正反面材质按 faceAxis 落到对应两面（缺省 z=+z/−z·零回归）；paintMesh3D 每帧据同序设色。
+  return new THREE.Mesh(new THREE.BoxGeometry(m.width, m.height, depth), faceAxisOrder(m.faceAxis, front, back, edge));
+}
+
+// 正反面轴向 → BoxGeometry 面槽下标（面序 [+x,-x,+y,-y,+z,-z]·**单一真相**）。REQ-3D-CARD-FACE-AXIS：
+// front/back 落该轴两面·edge 取任一其余面（buildMesh3D 里 edge 是共享材质实例·设一个即全上色）。缺省 'z'=零回归。
+export function faceAxisSlots(axis: 'x' | 'y' | 'z' | undefined): { front: number; back: number; edge: number } {
+  switch (axis) {
+    case 'x': return { front: 0, back: 1, edge: 2 };
+    case 'y': return { front: 2, back: 3, edge: 0 };
+    default: return { front: 4, back: 5, edge: 0 }; // 'z'（缺省·零回归）
+  }
+}
+
+// 六面序值（材质数组 / 逐面色数组共用·两条 box 上色路径口径一致）：其余四面=edge、该轴两面=front/back。
+// 从 faceAxisSlots 派生（同一真相·防两处映射漂移）。泛型：材质对象或 hex 数皆可。
+export function faceAxisOrder<T>(axis: 'x' | 'y' | 'z' | undefined, front: T, back: T, edge: T): [T, T, T, T, T, T] {
+  const s = faceAxisSlots(axis);
+  const a: T[] = [edge, edge, edge, edge, edge, edge];
+  a[s.front] = front; a[s.back] = back;
+  return a as [T, T, T, T, T, T];
 }
 
 // W1-A 实例化批几何：逐面色烤进 `vertexColors`（实例共享一个材质，色靠几何携带）。
@@ -77,7 +97,7 @@ export function buildInstancedMesh3DGeometry(m: Mesh3D): THREE.BufferGeometry {
   const depth = mesh3dDepth('box', m.width, m.height, m.depth);
   const edge = m.edgeTint ?? 0x1f2937;
   const geo = new THREE.BoxGeometry(m.width, m.height, depth);
-  bakeFaceColors(geo, [edge, edge, edge, edge, m.frontTint, m.backTint ?? m.frontTint]);
+  bakeFaceColors(geo, faceAxisOrder(m.faceAxis, m.frontTint, m.backTint ?? m.frontTint, edge)); // 正反色按 faceAxis 落面
   return geo;
 }
 
