@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "slug": "game108",
+  "states": {
+    "boot": {
+      "status": "candidate",
+      "sha256": "0dae0c0871b33ba8ff20dc1f6b0eb8a9b10f7e8f86cc1075b7f56884f460a7e2",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "capturedAt": "2026-08-09T14:19:19.552Z",
+      "gameHash": "5349c330dd943d78",
+      "flaky": false
+    }
+  },
+  "history": [
+    {
+      "action": "capture",
+      "state": "boot",
+      "at": "2026-08-09T14:19:19.552Z",
+      "sha256": "0dae0c0871b33ba8ff20dc1f6b0eb8a9b10f7e8f86cc1075b7f56884f460a7e2",
+      "stable": true,
+      "attempts": 2,
+      "wasBlessed": false
+    }
+  ]
+}
