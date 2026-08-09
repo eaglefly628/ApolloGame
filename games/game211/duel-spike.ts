@@ -102,6 +102,17 @@ export function throwPlan(laneZ: number, throwX: number, vy: number, tMeet: numb
   return { a: mk(1), b: mk(-1) };
 }
 
+/** 相遇统计（纯函数·可单测）：越过（Δx 变号）或近接（|Δx|min ≤ 2R）都算这一对真的碰上了。
+ *  **不依赖采样密度**——越过是拓扑事实，慢帧也漏不掉。 */
+export function metCounts(minDx: readonly number[], crossed: readonly boolean[], hullR: number): { total: number; crossed: number; near: number } {
+  let c = 0, n = 0;
+  for (let i = 0; i < minDx.length; i++) {
+    if (crossed[i]) c += 1;
+    else if ((minDx[i] ?? Infinity) <= 2 * hullR) n += 1;
+  }
+  return { total: c + n, crossed: c, near: n };
+}
+
 /** 撞击判据（纯函数·可单测）：飞行途中两张牌**中心最近距离** ≤ 判据 → 算撞上了。
  *  判据取 1.2×碰撞半径：两枚半径 R 的圆盘，中心距 >2R 必不接触；但牌是**薄片**，正对时沿某轴厚度仅 0.085，
  *  所以中心距接近 2R 时能不能碰上**取决于翻滚相位**——不可靠。取 1.2R 是「无论翻到哪个相位都必然接触」的稳妥线。 */
@@ -193,7 +204,13 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
   let arenaIds: string[] = [];
   let cardIds: string[] = [];
   let outcomes: (DuelOutcome | null)[] = [];
-  let minDist: number[] = [];   // 每道「两牌中心最近距离」（飞行全程 min）→ 验证「这一对到底撞上没有」
+  // 相遇判据（**帧率无关**）：本方案里同组两牌 z 恒相等（vz=0）、y 差恒为 stagger，
+  //   故两牌距离只取决于 |Δx| —— 于是「Δx 是否越过 0」就是一个不依赖采样密度的铁证：
+  //   越过 0 ⇒ 必然经过 Δx=0 那一刻，那时距离 = stagger（远小于接触范围）⇒ 一定撞上了。
+  //   没越过 0 但 |Δx| 一度很小 ⇒ 撞上后被弹回来了，同样算相遇。
+  //   两者都不满足 ⇒ 这一对**真的没碰到**（不是采样漏了）。
+  let minDx: number[] = [];      // 每道 |Δx| 的最小值
+  let crossed: boolean[] = [];   // 每道 Δx 是否变过号
   let status = '准备';
 
   const cardId = (lane: number, s: Side): string => `g211-card-${throwNo}-${lane}-${s}`;
@@ -209,22 +226,33 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
   };
 
   /** 出手距（与 throwAll 内同式·抽出供撞击判据换算复用）。 */
-  const throwXOf = (L: ReturnType<typeof layoutFor>): number => 1.7 * L.scale + 0.9;
+  // 出手距：与 tMeet 一起决定**接近速度** = 2·throwX/tMeet。
+  // owner 2026-08-07「一组对、多组乱」→ 定位到接近速度 14.6 单位/秒、整个对撞不到 0.2 秒：
+  //   ① 你看不清（一闪而过，剩下全是牌在地上滑）② 我也测不准（无头 200ms/帧 → 每帧飞 2.9，采样整段漏掉）。
+  // 现在 throwX 1.8 + tMeet ~0.56 → 接近速度 ~6.4（原来的 44%），对撞过程 ~0.5 秒，看得见也测得到。
+  const throwXOf = (L: ReturnType<typeof layoutFor>): number => 1.2 * L.scale + 0.6;
 
-  /** 地台 + 隐形围栏按当前组数重建（围栏=有 RigidBody3D 无 Mesh3D → 物理有效不渲染）。 */
+  /** 地台 + 隐形围栏按当前组数重建（围栏=有 RigidBody3D 无 Mesh3D → 物理有效不渲染）。
+   *  ⚠ **每次重建必须换实体 id**（`arenaGen` 后缀）——与牌同一个坑：`PhysicsSystem` 只在 `!bodies.has(id)` 时建刚体，
+   *  销毁后用同名 id 重建，刚体**不会重建**、尺寸停留在上一档。实证：从 1 组切到 5 组，围栏还停在 1 组的 z=±4.2
+   *  （盒半宽 2 → 占 z∈[2.2,6.2]），而第 1/3 道的牌生在 z=±3.2 **正好在墙体内部** → 出生即被弹开、永不相遇
+   *  （|Δx|min 4.54 > 出手间距 3.6·隔一道坏一个的诡异分布就是这么来的）。 */
+  let arenaGen = 0;
   function rebuildArena(): void {
+    arenaGen += 1;
     for (const id of arenaIds) { try { engine.world.destroyEntity(id); } catch { /* 已不在 */ } }
     arenaIds = [];
     const L = layoutFor(duels);
-    engine.world.createEntity('g211-ground');
-    engine.world.addComponent('g211-ground', { type: 'Transform3D', x: 0, y: -0.4, z: 0 } as unknown as Component);
+    const groundId = `g211-ground-${arenaGen}`;
+    engine.world.createEntity(groundId);
+    engine.world.addComponent(groundId, { type: 'Transform3D', x: 0, y: -0.4, z: 0 } as unknown as Component);
     // 地台必须**包住围栏**（围栏在 ±(half+1.0)）：否则落在「地台边缘～围栏」之间的牌会从桌沿掉出去（实测目击）。
-    engine.world.addComponent('g211-ground', { type: 'Mesh3D', shape: 'box', width: (L.halfX + 1.4) * 2, height: 0.8, depth: (L.halfZ + 1.4) * 2, frontTint: 0x2f6b4f, edgeTint: 0x14301f } as unknown as Component);
-    engine.world.addComponent('g211-ground', { type: 'RigidBody3D', shape: 'box', mass: 0 } as unknown as Component);
-    arenaIds.push('g211-ground');
+    engine.world.addComponent(groundId, { type: 'Mesh3D', shape: 'box', width: (L.halfX + 1.4) * 2, height: 0.8, depth: (L.halfZ + 1.4) * 2, frontTint: 0x2f6b4f, edgeTint: 0x14301f } as unknown as Component);
+    engine.world.addComponent(groundId, { type: 'RigidBody3D', shape: 'box', mass: 0 } as unknown as Component);
+    arenaIds.push(groundId);
     const wallX = L.halfX + 1.0, wallZ = L.halfZ + 1.0;
     ([[wallX, 0], [-wallX, 0], [0, wallZ], [0, -wallZ]] as const).forEach(([dx, dz], k) => {
-      const id = `g211-wall-${k}`;
+      const id = `g211-wall-${arenaGen}-${k}`;
       engine.world.createEntity(id);
       engine.world.addComponent(id, { type: 'Transform3D', x: dx, y: 2, z: dz } as unknown as Component);
       engine.world.addComponent(id, { type: 'RigidBody3D', shape: 'box', mass: 0 } as unknown as Component);
@@ -242,14 +270,15 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
     throwNo += 1;                         // 见头注坑②：换 id 才会重建刚体
     prevQuat.clear(); stillSince.clear();
     outcomes = Array.from({ length: duels }, () => null);
-    minDist = Array.from({ length: duels }, () => Infinity);
+    minDx = Array.from({ length: duels }, () => Infinity);
+    crossed = Array.from({ length: duels }, () => false);
     status = '抛掷中…';
     const L = layoutFor(duels);
     const throwX = throwXOf(L);
     for (let lane = 0; lane < duels; lane++) {
       const laneZ = (lane - (duels - 1) / 2) * L.laneGap;
-      const vy = span(8.0, 9.2);
-      const tMeet = (vy / GRAVITY) * span(0.72, 0.94); // 交汇略早于最高点（上升段相撞·看得清）
+      const vy = span(12.4, 13.6);          // 抛更高 → 滞空更长 → 交汇点可以推后
+      const tMeet = (vy / GRAVITY) * span(0.80, 0.92); // 交汇更靠近最高点（撞在滞空顶点·停得住·看得清）
       const plan = throwPlan(laneZ, throwX, vy, tMeet, Y_STAGGER * L.scale); // ← 唯一真相·见其头注的四条不变量
       for (const s of SIDE) {
         const id = cardId(lane, s);
@@ -299,14 +328,8 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
       const t = tallyOf(outcomes.filter(Boolean) as DuelOutcome[]);
       const up = upright(outcomes.filter(Boolean) as DuelOutcome[]);
       const L = layoutFor(duels);
-      const hullR = HULL_R * L.scale;
-      // ⚠ 采样最近距**受帧率限制**：牌每帧飞 closingSpeed×dt，帧越慢越采不到真正的最近点
-      //（无头软渲染 ~190ms/帧、每帧飞 1.3 → 常把「明明撞上了」采成 1.4）。故判据按帧位移放宽，
-      // 真正的几何保证由 `throwPlan` 的单测钉死（交汇时 x/z 完全重合·中心距 = Y_STAGGER）。
-      const frameTravel = (perfMean() / 1000) * 2 * (throwXOf(L) / 0.36); // 一帧内两牌相对位移的粗上界
-      const bound = Math.max(HIT_DIST_RATIO * hullR, frameTravel);
-      const hits = minDist.filter((d) => d <= bound).length;
-      console.info('[dsp/hit] 撞上 %d/%d 组 · 采样最近距 %s（帧率修正判据 ≤%s · 计划交汇距 %s）', hits, duels, minDist.map((d) => d.toFixed(2)).join(','), bound.toFixed(2), (Y_STAGGER * L.scale).toFixed(2));
+      const met = metCounts(minDx, crossed, HULL_R * L.scale);
+      console.info('[dsp/hit] 相遇 %d/%d 组（越过 %d · 近接 %d）· |Δx|min %s', met.total, duels, met.crossed, met.near, minDx.map((d) => d.toFixed(2)).join(','));
       console.info('[game211/duel-spike] 第%d 轮 · %d 组 → 胜%d 负%d 平%d · 未躺平 %d/%d · 帧 %sms(p95 %sms)', throwNo, duels, t.win, t.lose, t.draw, up, duels * 2, perfMean().toFixed(1), perfP95().toFixed(1));
     }
     renderUI();
@@ -319,12 +342,13 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
   function pollStill(nowMs: number): void {
     for (let lane = 0; lane < duels; lane++) {
       if (outcomes[lane]) continue;
-      // 记录这一对的中心最近距离（只在未落定期间量·落定后不再变）
+      // 相遇判据：记 |Δx| 最小值 + Δx 是否变号（a 出手在 −x 侧 → 初始 Δx<0；变正=两牌交错而过）
       const ta = engine.world.getComponent<Transform3D>(cardId(lane, 'a'), 'Transform3D');
       const tb = engine.world.getComponent<Transform3D>(cardId(lane, 'b'), 'Transform3D');
       if (ta && tb) {
-        const d = Math.hypot(ta.x - tb.x, ta.y - tb.y, ta.z - tb.z);
-        if (d < (minDist[lane] ?? Infinity)) minDist[lane] = d;
+        const dx = ta.x - tb.x;
+        if (Math.abs(dx) < (minDx[lane] ?? Infinity)) minDx[lane] = Math.abs(dx);
+        if (dx > 0) crossed[lane] = true;
       }
       let bothStill = true;
       for (const s of SIDE) {
@@ -362,9 +386,8 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
       rows.push({ type: 'Label', id: 'dsp-tally', props: { text: `战况：我方胜 ${t.win} · 负 ${t.lose} · 平 ${t.draw}`, size: 'md', color: 'gold' }, layout: {} });
     }
     // 立牌计数（验收口径·理想恒 0）：>0 说明还有牌没躺平，一眼可见、不用猜。
-    // 撞击：几何由 throwPlan 保证（单测钉死交汇时 x/z 完全重合）→ 这里只报**计划交汇距**，不做会误导的 pass/fail
-    //（采样最近距受帧率限制·慢帧下会把撞上的判成没撞上）。
-    rows.push({ type: 'Label', id: 'dsp-hit', props: { text: `一对一对撞 · 计划交汇距 ${(Y_STAGGER * layoutFor(duels).scale).toFixed(2)}`, size: 'sm', color: 'ok' }, layout: {} });
+    const met = metCounts(minDx, crossed, HULL_R * layoutFor(duels).scale);
+    rows.push({ type: 'Label', id: 'dsp-hit', props: { text: `空中相遇 ${met.total} / ${duels} 组`, size: 'sm', color: met.total === duels ? 'ok' : 'danger' }, layout: {} });
     const up = upright(done);
     rows.push({ type: 'Label', id: 'dsp-upright', props: { text: `未躺平 ${up} / ${done.length * 2} 张`, size: 'sm', color: up > 0 ? 'danger' : 'ok' }, layout: {} });
     rows.push(
