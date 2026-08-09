@@ -8,6 +8,9 @@
 
 ## 待处理 / 进行中
 
+<!-- REQ-ARTTOOL-01/02（P1/P2·game108 S6 实测带出）已完结：batch 无 key 零回写+非占位行跳过点名·rowIdentity 按素材（skinKey→槽→query 三级回退·护住 styleset 消费方）·Lead 终审 PASS（8551d45f8·58 测独立复跑绿·双撤修验红在案·回退链偏差照准=兼顾双消费方的正解·顺带发现已落 REQ-108-ART-02）。 -->
+
+
 ### REQ-SCORECARD-2D · 视觉评分卡八维是 **3D 线口径**，2D 数据 UI 游戏套不上（**不得自行跳维·请裁**）· [2026-08-08] · game108 S7 实测带出 · status: open · 优先级: P2 · 类型: 手册/判据口径
 > **先查过**（协议第一步）：`docs/playbooks/visual-scorecard.md` §五明写「维度不适配新品类（如纯文字游戏无"世界密度"）
 > → 提缺口**由 Lead 裁维度豁免**，**不得自行跳维**」。故本条不是自作主张，是照手册走的那一步。
@@ -30,39 +33,6 @@
 > **我的推荐（只是推荐）**：**A**。理由是这不是 game108 的特例——本库 2D 游戏占绝大多数，
 > B 会让每个 2D 游戏都重走一遍同样的申请，而「重复申请同一件事」正是该下沉的信号。
 > **代价**：改手册要重估已打过分的 3D 线游戏（game-z）会不会因判据改写而分数漂移。
-
-
-### REQ-ARTTOOL-01 · `art-replace.mjs batch` 无 key 时**把已填的真图行降级成 mock**（违反本线自己的红线）· [2026-08-08] · game108 S6 实测踩到 · status: **done（`8551d45f8`·待 Lead 验收）** · 优先级: P1 · 类型: 工具修（美术线）
-> **复现**（一条命令）：`node scripts/art-replace.mjs batch game108 cartoon-thick`（环境无 `DASHSCOPE_API_KEY`）。
-> 探针正确地报了 `configured:false → mock 占位（绝不静默顶替）`，**但它照样写回了台账与索引**：
-> 三行 `status: filled → generated`、`gen.mock: true`、`servedPath` 从 `/games/game108/art/icon_rock.png`
-> 改指 `/games/game108/art/gen/mock/art-01.png`；`index.json` 的条目顺序与 key↔path 对应关系也被打乱重写。
-> 那三张是 **owner 自己的设计定稿切图**（`design_handoff_rule_of_three_battle`）。
-> **与手册红线直接冲突**：`art-pipeline.md` 写着 mock「**不写回 manifest、不登记 skinKey 别名、不可 approve**」
-> 与「不拿空/未审图盖掉手绘背景」。现在它三样全做了，只差没 approve。
-> **要什么**：无 key 时 batch 只产 mock 预览 + 探针回执，**一个字节都不许回写台账/索引**
-> （或至少：`status` 不是 `placeholder`/`needs-art` 的行一律跳过并在回执里点名列出跳过了谁）。
-> **危害面**：任何已配好真图的游戏，只要有人在没 key 的环境里手滑跑一次 batch，真图接线就被 mock 顶掉，
-> 而且**跑完是 `ok:true`**——不看 diff 发现不了。
-
-### REQ-ARTTOOL-02 · `mergeLedger` 按**槽**认行身份，N 种素材共用一个槽时重跑会塌成一行 · [2026-08-08] · game108 S6 实测 · status: **done（`8551d45f8`·待 Lead 验收·回退口径有偏差见下）** · 优先级: P2 · 类型: 工具修（美术线）
-> **复现**：三只手型图标（石/布/剪）是**三种素材**，但消费点同形状（`duel-screen` 的 `Image.src`）。
-> 照手册写台账推导脚本重跑一次 → 三行全被并成 `art-03`（`rowIdentity = slotKey(row.slot)`，见 `art-replace.mjs:274`）。
-> **与手册口径不符**：art-pipeline.md 步 3 写的是「**按素材去重**·一行 = 一种素材·同 query 多实体共用一行·
-> `slots[]` 记全部槽位」——身份该是**素材**（query/desc），槽位该是数组；实现却拿单个 `slot` 当身份。
-> manifest 驱动的卡带线每个 `art:` 槽天然唯一，所以一直没暴露；**编译期游戏**里一个组件画 N 种素材是常态。
-> **要什么**：`rowIdentity` 改按素材（`skinKey` 优先，回退 query/desc），`slot` → `slots[]`（旧数据兼容读单个）。
-> **绕法（game108 已用）**：把槽写细到逐素材（`duel-screen:hand-rock` …）。能绕，但那是让**槽**去迁就工具，
-> 不是槽本来的样子——所以这条仍值一张单。
-> **实现偏差（待 Lead 核）**：`rowIdentity` 落地成 **skinKey 优先 → 回退原槽身份 → 再回退 query/desc**，
-> 没有照单子写的「skinKey 优先，回退 query/desc」直接把槽身份换掉。原因：实查 `styleset-ledger.mjs`
-> 也在用 `mergeLedger`，其 `query` 显式设计成会随风格锚整体漂移（`composeQuery` 拼锚全文·注释「改锚只
-> 改风格包，重跑 derive 即刷新所有行 query」），若把回退口径直接换成 query，`styleset-ledger.test.mjs`
-> ①②（改锚重跑保号）会当场回归——已实测验证（sabotage 改法后确实红）。故回退口径保留原槽身份不变、
-> 仅在**连槽都没有**的畸形行才落到 query/desc；game108 的实际场景（三素材各带独立 skinKey）用 skinKey
-> 优先已完全覆盖，不需要动到这层回退。`slot`→`slots[]` 已加 `rowSlots()` 统一读（旧单值兼容）。
-
-
 
 
 <!-- REQ-STYLESET-风格库 apollo-toon（PA+PUI）→ **owner 2026-08-05 令暂停后移出池**（不占槽）。图纸唯一真相仍在 `docs/design/styleset-artlib-plan-2026-07-16.md`。**已落地未验收的存量**：M0 台账底座 + M0.5 现装可视版 + 三游戏风格锚（均 Lead 验收 PASS）· **M0.6 主题指针 = PUI 已 done 但未经 Lead 对抗性验收，随暂停冻结**——重启时 Lead 必须先补验 M0.6 再往下走。未做：M1 试产/M2 建库（等真 key·连 REQ-AIGEN 卡口）· M3 对齐 · M4 出口游戏换装。遗留债：ui-audit border-image 盲区 + 亮主题 dim 假阳（PUI 工具债）· 默认主题是否切 apollo-toon 等 owner。重启即重开本条。 -->
