@@ -50,6 +50,7 @@
   - **机器守卫**：`npm run ledger:audit`（=`node scripts/ledger-audit.mjs [<game>|--all]`）——报 `ORPHAN-LEDGER-ROW`（无 skinKey 且无 manifest `art:`）。默认顾问态不阻推送；PE 清完自己游戏可 `--strict` 单游戏门禁（有孤儿即退 1）。完工判据=该游戏零孤儿（样板 game-g 110/110）。
 - **游戏侧消费必须读台账/skinMap·禁只读硬编码路径（owner 2026-07-27「换了没反应」铁律）**：视觉加载先取 `skinMap['<skinKey>']`（=台账当前图·含创作台替换图——编译期游戏替换写 `row.gen.servedPath`+别名登记），**硬编码路径只作回退**。有 skinKey 但渲染读死路径=创作台替换进了台账也不上画面（「换了没反应」）；生成器/物品/立绘/背景走**同一条皮肤槽装载路径**。诊断「换了没反应」第一步=查该视觉是否 skinMap 优先。反面教材=game-101 订单卡立绘读死 `CUST_PORTRAITS`（art-49~54 换脸无效·2026-07-27 修）。
 - **占位最低标准=成形矢量图（owner 2026-08-08 立·game108 S6 账单复盘）**：台账每行落账即须有一张**真实入游戏渲染的 SVG 矢量图**——造型明确、看得出是什么东西（牌面像牌面·图标像图标）；**灰块/字框/空框式「无图占位」不再合法**。程序化 SVG 允许且鼓励（保号在档·风格锚到位后逐行替真图·替换语义不变）；出 S6 账单给 owner 时，「占位」列展示的必须是这张矢量图而非空位符。判据：逐行点开有图、图有形。
+- **设计稿切图入账（owner 设计定稿的正路·2026-08-08 立·game108 复盘）**：Claude Design 稿的参考包归 `docs/design/<slug>/ui-refs/`（经收稿箱·**不放 games/<slug>/ 运行时树**）；从稿中切出的**真图**逐张走台账行（status:filled·provenance 记「design-handoff:<稿名>」·接 skinKey/art: 消费槽），**禁散放+硬编码路径直读**（反面教材=game108 手型图标·REQ-108-ART-02）。稿是参考、切图是资产，两者账目分开。
 - **编号 append-only**：台账编号永不挪号（重跑合并·墓碑保号）；改提示词改台账行，**勿手改 md 当真相**。
 - **mock 只许显式，且永不上画面（owner 07-10）**：不勾=真调尝试；无 key 必须见探针输出——静默顶替=假绿（testing.md 红线）。mock 产物只落独立命名空间 `gen/mock/`（gitignored）供平台墙预览（⚙MOCK 标）：**不写回 manifest、不登记 skinKey 别名、不可 approve**——真图到位前游戏保持原始 placeholder 观感。把 mock 钉进游戏=事故（game-j/m 2026-07-10 反面教材）。
 - **写回必过校验门**：library 线 parseManifest 零 error；编译期线只走别名登记，**绝不改蓝图代码来换皮**。
