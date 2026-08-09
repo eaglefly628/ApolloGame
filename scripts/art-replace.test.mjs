@@ -161,6 +161,76 @@ describe('T1 ④ 批量生成 + 断点续跑', () => {
   }));
 });
 
+describe('REQ-ARTTOOL-01·batch 无 key 时零字节回写台账/索引 + 已有真图行一律跳过（2026-08-08 game108 S6 实测踩到）', () => {
+  // 模拟 game108 实况：hero 行已是「设计定稿切图」（status 非 art-replace 自产的 placeholder/needs-art），
+  // slime 仍是待填占位——同一批里既有该护住的真图行，也有该正常预览的占位行。
+  const ledgerWithRealRow = () => {
+    const l = deriveLedger(MANIFEST, { game: 'g' }); // 4 行·全 placeholder
+    const hero = l.rows.find((r) => r.slot.entity === 'hero');
+    hero.status = 'filled'; // 已有真图/定稿切图（非本工具生成——如设计手切图）
+    hero.gen = { source: 'design-handoff', servedPath: '/games/g/art/hero-final.png' };
+    hero.provenance = { generator: 'owner-reference-art', pulledFrom: 'design/hero.png' };
+    return l;
+  };
+
+  it('①无 key 跑 batch → 台账（内存态）与 index.json（磁盘）逐字节不变（快照比对）', () => withRoot(async (root) => {
+    const idxFile = join(root, 'public/games/g/art/index.json');
+    const preExisting = {
+      version: 1,
+      assets: [{
+        id: 'g/hero-final', type: 'texture', description: '设计切图', status: 'filled',
+        path: '/games/g/art/hero-final.png', category: 'ai-gen', tags: ['skin'],
+        license: 'owner-provided', source: 'design-handoff', provenance: { generator: 'owner-reference-art' },
+      }],
+    };
+    mkdirSync(dirname(idxFile), { recursive: true });
+    writeFileSync(idxFile, JSON.stringify(preExisting, null, 2) + '\n');
+    const idxBefore = readFileSync(idxFile, 'utf8');
+
+    const l = ledgerWithRealRow();
+    const ledgerBefore = JSON.stringify(l);
+
+    const res = await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: false, env: {} }); // 无 key·非显式 --mock（真实一键复现口径）
+    expect(res.ok).toBe(true);
+
+    expect(JSON.stringify(l)).toBe(ledgerBefore); // 台账一个字节没变（连 row.orig 快照都没加）
+    expect(readFileSync(idxFile, 'utf8')).toBe(idxBefore); // index.json 一个字节没变
+
+    // 只产了 mock 预览 + 探针回执：placeholder 行（slime/background/coin3d）落了预览文件、进了 previewOnly。
+    expect(res.summary.previewOnly.length).toBeGreaterThan(0);
+    expect(res.summary.probes.length).toBeGreaterThan(0);
+  }));
+
+  it('②有真图行（status=filled）被跳过·回执点名（skippedFilled 含名单+理由）——有 key 也一样跳', () => withRoot(async (root) => {
+    for (const mock of [false, true]) {
+      const l = ledgerWithRealRow();
+      const res = await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock, env: mock ? process.env : {} });
+      const hero = l.rows.find((r) => r.slot.entity === 'hero');
+      expect(hero.status).toBe('filled'); // 没被顶成 generated
+      expect(hero.gen.servedPath).toBe('/games/g/art/hero-final.png'); // servedPath 没被换成 mock 路径
+      expect(res.summary.skippedFilled).toContainEqual(expect.objectContaining({ no: hero.no, status: 'filled' }));
+      expect(res.summary.skippedFilled[0].reason).toContain('已有真图');
+    }
+  }));
+
+  it('显式 --mock（mock:true）不受本单收紧影响：照旧登记 gen/mock 命名空间（墙预览用）', () => withRoot(async (root) => {
+    const l = deriveLedger(MANIFEST, { game: 'g' }); // 全 placeholder，没什么好跳过的
+    const res = await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: true }); // 显式 --mock
+    expect(res.summary.skippedFilled).toHaveLength(0);
+    expect(res.summary.previewOnly).toHaveLength(0); // 显式 mock ≠「意外 mock」，走老路径不进 previewOnly
+    const idx = JSON.parse(readFileSync(join(root, 'public/games/g/art/index.json'), 'utf8'));
+    expect(idx.assets.some((a) => a.id === 'gen/mock/art-03')).toBe(true); // 老行为原样保留
+  }));
+
+  it('only 点名（fill/regen）绕过跳过关：显式点名的行即使已 filled 也照常处理', () => withRoot(async (root) => {
+    const l = ledgerWithRealRow();
+    const hero = l.rows.find((r) => r.slot.entity === 'hero');
+    const res = await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: true, only: hero.no, allowMock: true });
+    expect(res.summary.skippedFilled).toHaveLength(0); // only 命中的那行不算「跳过」
+    expect(hero.status).toBe('generated'); // 点名就是要它重来
+  }));
+});
+
 describe('T1 ⑤ 对位替换', () => {
   it('generated 行重钉 manifest 引用为本地 id·status→replaced·原 manifest 不改', () => withRoot(async (root) => {
     const l = deriveLedger(MANIFEST, { game: 'g' });
@@ -568,6 +638,98 @@ describe('台账按素材去重（owner 2026-07-12「100 平台共图却出 40 �
     const prev2 = prevRows.map((r) => (r.no === 'art-05' ? { ...r, status: 'generated', gen: { localId: 'gen/x', mock: false } } : r));
     const merged2 = mergeLedger({ version: 1, game: 'g', rows: prev2 }, deriveLedger(mf, { game: 'g' }), mf);
     expect(merged2.rows.some((r) => r.gen && r.gen.localId === 'gen/x')).toBe(true);
+  });
+});
+
+describe('REQ-ARTTOOL-02·rowIdentity 按素材(skinKey 优先)·N 种素材共用一槽不塌行（2026-08-08 game108 S6 实测）', () => {
+  // 三只手型图标（石/布/剪）= 三种素材，但消费点是同一个 Image.src（同一处轮换显示三种手型·
+  // game108-art-requirements.mjs 的真实动机：旧 rowIdentity=slotKey(row.slot) 会把这三行并成 art-03）。
+  const SAME_SLOT = { entity: 'duel-screen:hand-icon', component: 'Image', field: 'src' };
+  const threeHands = () => ['rock', 'paper', 'scissors'].map((h, i) => ({
+    no: 'art-' + String(i + 1).padStart(2, '0'),
+    skinKey: `game108/hand-icon-${h}`,
+    kind: 'ui-icon', slot: SAME_SLOT, query: `hand icon ${h}`,
+    spec: { w: 220, h: 245, transparent: true }, desc: `${h} hand icon`, context: '',
+    status: 'needs-art', gen: null, provenance: null,
+  }));
+
+  it('三素材共用一槽重跑：三行各自保号，不被并成一行', () => {
+    const fresh1 = { version: 1, game: 'game108', mode: 'compiled', rows: threeHands() };
+    const merged1 = mergeLedger(null, fresh1); // 首跑
+    expect(merged1.rows.map((r) => r.no)).toEqual(['art-01', 'art-02', 'art-03']); // 首跑三行不塌
+
+    // rock 那行已经真出图——模拟「已填一行·其余待填」的现实台账（旧 bug 下重跑会被 paper/scissors 顶掉）。
+    merged1.rows[0].status = 'generated';
+    merged1.rows[0].gen = { localId: 'gen/art-01', mock: false, servedPath: '/games/game108/art/gen/art-01.png' };
+
+    // 重跑推导（脚本每次都吐出全部三行·status 仍是 needs-art，等 mergeLedger 保号/保状态）。
+    const fresh2 = { version: 1, game: 'game108', mode: 'compiled', rows: threeHands() };
+    const merged2 = mergeLedger(merged1, fresh2);
+
+    // 核心断言：仍是三行，各自保号——不被 rowIdentity=slotKey(row.slot) 并成一行 art-03。
+    expect(merged2.rows.filter((r) => r.status !== 'retired')).toHaveLength(3);
+    expect(merged2.rows.map((r) => r.no)).toEqual(['art-01', 'art-02', 'art-03']);
+    const rock = merged2.rows.find((r) => r.skinKey === 'game108/hand-icon-rock');
+    const paper = merged2.rows.find((r) => r.skinKey === 'game108/hand-icon-paper');
+    const scissors = merged2.rows.find((r) => r.skinKey === 'game108/hand-icon-scissors');
+    expect(rock.status).toBe('generated'); // 已投入的那行保住·没被 paper/scissors 顶掉
+    expect(rock.gen?.localId).toBe('gen/art-01');
+    expect(paper.status).toBe('needs-art');
+    expect(scissors.status).toBe('needs-art');
+  });
+
+  it('batchGenerate 端到端：共槽三素材各自独立登记 skinKey 别名（不互相覆盖）', () => withRoot(async (root) => {
+    const l = { version: 1, game: 'game108', mode: 'compiled', rows: threeHands() };
+    const res = await batchGenerate(l, 'pixel-retro', { root, game: 'game108', mock: true, allowMock: true });
+    expect(res.summary.generated).toBe(3);
+    const idx = JSON.parse(readFileSync(join(root, 'public/games/game108/art/index.json'), 'utf8'));
+    const ids = idx.assets.map((a) => a.id);
+    expect(ids).toContain('game108/hand-icon-rock');
+    expect(ids).toContain('game108/hand-icon-paper');
+    expect(ids).toContain('game108/hand-icon-scissors');
+    // 三个别名各指向自己的产物文件（没有互相覆盖成同一份）
+    const paths = new Set(['rock', 'paper', 'scissors'].map((h) => idx.assets.find((a) => a.id === `game108/hand-icon-${h}`).path));
+    expect(paths.size).toBe(3);
+  }));
+});
+
+describe('REQ-ARTTOOL-02·旧单值 slot 数据读写兼容（rowSlots 统一读 slots[]/slot）', () => {
+  it('mergeLedger：老行只有单值 slot（无 slots[]/skinKey）——回退原槽身份·重跑保号保状态', () => {
+    const legacyPrev = {
+      version: 1, game: 'g',
+      rows: [{
+        no: 'art-01', kind: 'sprite', slot: { entity: 'hero', component: 'Sprite', field: 'textureKey' },
+        query: 'brave knight', spec: {}, desc: '', context: '',
+        status: 'generated', gen: { localId: 'gen/art-01', mock: false }, provenance: { model: 'm' },
+      }],
+    };
+    expect('slots' in legacyPrev.rows[0]).toBe(false); // 确认是老单值形态
+    const fresh = deriveLedger(MANIFEST, { game: 'g' }); // 重新扫描同一份 manifest（hero 仍是 art:brave knight）
+    const merged = mergeLedger(legacyPrev, fresh, MANIFEST);
+    const hero = merged.rows.find((r) => r.query === 'brave knight');
+    expect(hero.no).toBe('art-01'); // 老单值 slot 行的编号保住
+    expect(hero.status).toBe('generated'); // 生成态保留（没被判成新行/墓碑）
+    expect(hero.gen?.localId).toBe('gen/art-01');
+  });
+
+  it('applyReplacements：老单值 slot 行（无 slots[]）照常写回目标槽', () => {
+    const l = deriveLedger(MANIFEST, { game: 'g' });
+    const heroRow = l.rows.find((r) => r.slot.entity === 'hero');
+    delete heroRow.slots; // 强制模拟老数据形态（只有单值 slot·deriveLedger 平时会带 slots[]）
+    heroRow.status = 'generated'; heroRow.gen = { localId: 'gen/legacy-hero', mock: false };
+    const rep = applyReplacements(MANIFEST, l);
+    expect(rep.manifest.entities.hero.Sprite.textureKey).toBe('gen/legacy-hero');
+    expect(rep.replaced).toBe(1);
+  });
+
+  it('rowSlots 兜底：既无 slots[] 也无 slot 的畸形行不炸（走 query/desc 兜底身份）', () => {
+    const row = { no: 'art-01', kind: 'sprite', query: 'weird', status: 'placeholder', gen: null, provenance: null };
+    const prev = { version: 1, game: 'g', rows: [row] };
+    const fresh = { version: 1, game: 'g', rows: [{ ...row }] };
+    expect(() => mergeLedger(prev, fresh)).not.toThrow();
+    const merged = mergeLedger(prev, fresh);
+    expect(merged.rows).toHaveLength(1);
+    expect(merged.rows[0].no).toBe('art-01');
   });
 });
 

@@ -269,9 +269,25 @@ export function deriveRequirements(manifest, { game = '' } = {}) {
 }
 
 // ═══ 编号 append-only（owner 07-09「ID 错位」定案·工作流档 §三「重跑不漂移·只追加不重排」）═══
-// 身份键：requirements 模式=slot.entity（组件升级 Shape→Sprite 不换号）；manifest 模式=槽位三元组。
-
-const rowIdentity = (row, mode) => (mode === 'requirements' ? row.slot.entity : slotKey(row.slot));
+// 身份键（REQ-ARTTOOL-02·2026-08-08 game108 S6 实测「N 种素材共用一个消费槽」重跑塌行修正）：
+// **skinKey 优先**（编译期游戏线的皮肤 key 本就逐素材唯一——同一消费槽轮换显示的几种素材各自独立
+// 保号，不再被槽身份并成一行）；没 skinKey 才回退**原槽身份**（requirements 模式=slot.entity·manifest
+// 模式=槽位三元组）——这条回退**刻意不换成 query**：`styleset-ledger.mjs`/`deriveLedger` 去重分组都
+// 靠槽身份跨改锚/改风格重跑保号（query 会随风格锚整体漂移，拿它当身份会让那些行每次改锚就被判
+// "新行"丢号，见 styleset-ledger.test.mjs①②——已实查，回退口径改 query 会砸这条既有稳定性，故只在
+// 「连槽都没有」的畸形行才兜底 query/desc）。`rowSlots` 统一读 slots[]（新）与单值 slot（旧数据兼容）。
+function rowSlots(row) {
+  if (Array.isArray(row?.slots) && row.slots.length) return row.slots;
+  return row?.slot ? [row.slot] : [];
+}
+const rowIdentity = (row, mode) => {
+  if (typeof row.skinKey === 'string' && row.skinKey) return 'skin ' + row.skinKey;
+  const slots = rowSlots(row);
+  if (slots.length) return mode === 'requirements' ? 'ent ' + slots[0].entity : 'slot ' + slotKey(slots[0]);
+  if (typeof row.query === 'string' && row.query) return 'query ' + row.query;
+  if (typeof row.desc === 'string' && row.desc) return 'desc ' + row.desc;
+  return 'no ' + (row.no || '');
+};
 const noNum = (no) => parseInt(String(no).replace(/^art-/, ''), 10) || 0;
 
 /** 把 fresh 推导并进 prev 台账：已有身份**保原 no**、保状态/生成/provenance/prompt/history，只刷新推导字段；
@@ -317,8 +333,10 @@ export function mergeLedger(prev, fresh, manifest = null) {
     }
   }
   // 去重吸收（07-12「40 行该是 5 行」）：fresh 行现在背 slots[]——它已覆盖的槽位集合。
+  // REQ-ARTTOOL-02：改走 rowSlots()（新 slots[] / 旧单值 slot 统一读），且对旧行要求**全部**槽位
+  // 都已被覆盖才吸收（旧数据兼容读——单值 slot 时等价原判据，不改变既有行为）。
   const covered = new Set();
-  for (const f of fresh.rows) for (const s of (Array.isArray(f.slots) ? f.slots : [f.slot])) covered.add(slotKey(s));
+  for (const f of fresh.rows) for (const s of rowSlots(f)) covered.add(slotKey(s));
   for (const p of prev.rows) {
     if (seen.has(rowIdentity(p, mode))) continue;
     // 已钉死的槽位（replaced/filled/approved）从 fresh 消失是**正常态**——art: 引用已被替换成真资产 id，
@@ -326,10 +344,12 @@ export function mergeLedger(prev, fresh, manifest = null) {
     if (['replaced', 'filled', 'approved'].includes(p.status)) { rows.push({ ...p }); continue; }
     // 被去重行吸收的旧重复行（同素材另一槽位·零资产零人工投入）→ 直接删（不留墓碑：需求没消失，
     // 只是并进了代表行；留墓碑反而把台账又撑回 40 行）。有人工痕迹（history）的不吸收，保留待人裁。
-    if (p.status in { placeholder: 1, 'needs-art': 1 } && covered.has(slotKey(p.slot)) && !(Array.isArray(p.history) && p.history.length)) continue;
+    const pSlots = rowSlots(p);
+    const allCovered = pSlots.length > 0 && pSlots.every((s) => covered.has(slotKey(s)));
+    if (p.status in { placeholder: 1, 'needs-art': 1 } && allCovered && !(Array.isArray(p.history) && p.history.length)) continue;
     // slot 仍在 manifest（引用只是非 art:——已钉死等真图/mock regen 中）→ 不是真消失，保留原行
     // （REQ-WORKSHOP C1 回归：PUT 即自动 derive 后，误墓碑会吃掉 mock regen 的 generated 行）。
-    if (manifest && slotExists(manifest, p.slot)) { rows.push({ ...p }); continue; }
+    if (manifest && pSlots.some((s) => slotExists(manifest, s))) { rows.push({ ...p }); continue; }
     rows.push({ ...p, status: 'retired' });
   }
   rows.sort((a, b) => noNum(a.no) - noNum(b.no));
@@ -573,7 +593,7 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
   const byId = new Map(index.assets.map((a) => [a.id, a]));
   // debug：每行回显「实际发给文生图的完整提示词 + 完整请求（含 curl 命令行·key 打码）」——owner 2026-07-22
   // 「知道我到底传了什么」。mock 也带（genRowAsset 向 adapter 要 request）→ 免花 key 就能核对。
-  const summary = { total: 0, generated: 0, cached: 0, mock: 0, failed: 0, skipped: 0, probes: [], errors: [], debug: [] };
+  const summary = { total: 0, generated: 0, cached: 0, mock: 0, failed: 0, skipped: 0, probes: [], errors: [], debug: [], skippedFilled: [], previewOnly: [] };
   const gameStyle = (ledger.artStyle && typeof ledger.artStyle.stylePrompt === 'string') ? ledger.artStyle.stylePrompt : '';
   for (const row of ledger.rows) {
     if (only && row.no !== only) { summary.skipped++; continue; } // 单槽点名（fill/regen）
@@ -585,15 +605,31 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
     const apiKey = env[ENVKEY[provider]] || null;
     if (!mock && !apiKey) summary.probes.push({ no: row.no, provider, envKey: ENVKEY[provider], configured: false, note: '未配 key → mock 占位（绝不静默顶替）' });
     const useMock = mock || !apiKey;
+    // REQ-ARTTOOL-01：「无 key」= 调用方没打 --mock（真调尝试）却没配 key——这是探针该报的「意外 mock」，
+    // 不是「我就是要 mock 预览」。意外 mock 只许落一张预览图 + 探针回执 + debug 回显，绝不许回写台账/
+    // 索引（row.status/gen/provenance/orig 与 index.json 一个字节都不碰）。显式 --mock（mock===true）
+    // 维持原行为——那是刻意要的墙预览，允许登记进 index 的 gen/mock 命名空间（供平台墙展示）。
+    const implicitNoKey = !mock && !apiKey;
     // mock 产物独立命名空间 gen/mock/*（owner 2026-07-10「Mock 数据不该这样做」）：mock 的文件路径与
     // index id 绝不与真图 gen/art-NN 同名——否则已钉死真图的游戏一跑 mock 批就被覆盖上画面（后门泄漏）。
     const outRel = useMock ? `gen/mock/${row.no}.${ext}` : `gen/${row.no}.${ext}`;
     const outAbs = genAbs(root, game, outRel);
     const ck = cacheKey(provider, dialectPrompt(row, pack, gameStyle), pack.params);
     if (!only && ['generated', 'replaced'].includes(row.status) && row.gen?.cacheKey === ck && existsSync(outAbs)) { summary.cached++; continue; } // 命中·不重扣费（点名 regen=only→恒重出·不吃缓存·同词也换新卷）
+    // REQ-ARTTOOL-01（2026-08-08 game108 S6 实测踩到）：非点名（!only）全量扫描时，过了上面的缓存命中
+    // 关仍留下来的行——只要 status 已不是 placeholder/needs-art，就是「已有真图/定稿切图」（filled/
+    // generated-但缓存未命中/replaced/approved/failed…）——一律跳过，不管有没有 key（有 key 也不许覆盖；
+    // 无 key 更不许拿 mock 顶替）。回执点名跳过了谁、为什么。真要重来：fill/regen 点名单槽（only=该行·
+    // 绕过此关）或 reskin 先整批 resetAllRows 回 placeholder。
+    if (!only && !['placeholder', 'needs-art'].includes(row.status)) {
+      summary.skipped++;
+      summary.skippedFilled.push({ no: row.no, status: row.status, reason: '已有真图/定稿切图（非 placeholder/needs-art）——batch 全量跑不覆盖，用 fill/regen 点名单槽或 reskin 整批重置' });
+      continue;
+    }
     // 首次覆盖前存原始态快照（供「一键还原」·对齐上传路径 handle_art_upload·owner 2026-07-21 报「还原变色块」修）：
     // 之前 orig 只在上传路径存·AI 生成不存 → 生成后还原找不到快照走 fallback=色块。此处补齐 → 还原精确复位。
-    if (!('orig' in row)) {
+    // REQ-ARTTOOL-01：意外 mock（implicitNoKey）不快照——不打算碰 row 任何字段，快照也无从谈起。
+    if (!implicitNoKey && !('orig' in row)) {
       const skinEntry = row.skinKey ? byId.get(row.skinKey) : null;
       const curServed = (skinEntry && skinEntry.path) || (row.gen && row.gen.servedPath) || null;
       const backupPath = backupOrigFile(root, game, row.no, curServed); // 原图文件独立备份（永不被覆盖·还原精确复原）
@@ -605,8 +641,11 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
       const em = errText(e); summary.failed++; summary.errors.push({ no: row.no, provider, error: em });
       // 失败=对图无副作用（owner 2026-07-27「生成失败→图没了→色块」）：此前已有真图就保住·只记 lastError；
       // 本就无图（首生成失败）才标 failed。绝不因一次失败抹掉上一版好图（配合 resetRow 非破坏化）。
-      if (['generated', 'replaced'].includes(row.status) && row.gen && row.gen.servedPath) row.lastError = em;
-      else { row.status = 'failed'; row.gen = { provider, error: em }; }
+      // REQ-ARTTOOL-01：意外 mock 分支理论上不会真抛（mock 路径无网络调用）——防御性地也不碰台账。
+      if (!implicitNoKey) {
+        if (['generated', 'replaced'].includes(row.status) && row.gen && row.gen.servedPath) row.lastError = em;
+        else { row.status = 'failed'; row.gen = { provider, error: em }; }
+      }
       continue;
     }
     // debug 回显：实际（或本该）发给文生图的完整提示词 + 请求 + curl 命令行（key 打码·mock 也有）。
@@ -617,7 +656,14 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
       console.log(`  prompt: ${a.prompt}`);
       if (dbg.curl) console.log(`  ${dbg.curl}`);
     }
-    mkdirSync(dirname(outAbs), { recursive: true }); writeFileSync(outAbs, a.buffer);
+    mkdirSync(dirname(outAbs), { recursive: true }); writeFileSync(outAbs, a.buffer); // 预览图落盘（mock 命名空间·独立于台账/索引）
+    // REQ-ARTTOOL-01：意外 mock 到此为止——只落了预览图 + probe 回执 + debug 回显，台账行（status/gen/
+    // provenance）与 index.json 一个字节不碰（不给「有 key 时算数、没 key 也算数」留后门）。
+    if (implicitNoKey) {
+      if (a.mock) summary.mock++;
+      summary.previewOnly.push({ no: row.no, previewPath: `/games/${game}/art/${outRel}` });
+      continue;
+    }
     const id = useMock ? `gen/mock/${row.no}` : `gen/${row.no}`;
     const servedPath = `/games/${game}/art/${outRel}`;
     const entry = {
@@ -657,8 +703,9 @@ export function applyReplacements(manifest, ledger, { allowMock = false } = {}) 
   for (const row of ledger.rows) {
     if (row.status !== 'generated' || !row.gen?.localId) continue;
     if (row.gen.mock && !allowMock) { skippedMock++; continue; } // mock 永不写回（真图前保持原始 placeholder 观感）
-    // 去重台账：一行可背多个槽位（slots[]·07-12），逐槽位扇出回写；旧单槽行照旧走 row.slot。
-    const targets = Array.isArray(row.slots) && row.slots.length ? row.slots : [row.slot];
+    // 去重台账：一行可背多个槽位（slots[]·07-12），逐槽位扇出回写；旧单槽行照旧走 row.slot
+    // （REQ-ARTTOOL-02：与 mergeLedger 共用同一条 rowSlots() 读法，新旧数据形态一致处理）。
+    const targets = rowSlots(row);
     let hit = 0;
     for (const { entity, component, field } of targets) {
       let comp = null;
