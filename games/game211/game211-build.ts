@@ -3,6 +3,7 @@
 // aggregateTengang/tengangFxOf)还经 game211.tsx 再导出供 deck-wiring/live-combat 测试用。
 import { FORMATION_PRESETS, PRESET_NAMES, TIANGANG_BY_ID, cardFavorIndex, rankOfCardId, deployCost, heroCardByName, type ArmyCard } from './index.js';
 import { cardPoints, P_MAX } from './clash-resolve.js';
+import { metaShuffle } from './meta-random.js';
 import { NO_TENGANG, type TengangFx } from './combat-types.js';
 import { type PokerCard } from './turn-combat.js';
 import { aggregateModifiers, type ModifierRow, type ModifierCtx } from '@zerocraft/engine/skills/tier2/modifier-stack.js';
@@ -19,14 +20,10 @@ export function describeFormation(off: number[]): string {
   }
   return `自定义 ${off[0]}/${off[1]}/${off[2]}`;
 }
-// 场间三选一：从增益池随机取 3 张（Fisher–Yates；元层奖励，非确定性 gameplay，用 Math.random 即可）。
+// 场间三选一：从增益池随机取 3 张（Fisher–Yates；元层奖励·非确定性 gameplay，但仍走引擎种子 PRNG——
+// 硬红线禁裸 Math.random，见 `meta-random.ts` 头注）。
 export function pick3<T>(xs: readonly T[]): T[] {
-  const a = [...xs];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a.slice(0, 3);
+  return metaShuffle(xs).slice(0, 3);
 }
 
 // favor → 战力（公平骨架 doc19）：rank→points(fair) 走 cardPoints；该牌全部强度经 favor 折算进 buff，使 P_eff=clamp(favorToP(favor))

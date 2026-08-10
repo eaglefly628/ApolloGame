@@ -5,6 +5,7 @@ import { type ClashEvent } from './combat-types.js';
 // 抽出的纯函数模块（Phase 2 拆分·见各文件头注）：存档/出战编排/掷命特写视图。公共 API(buildPickDeck/bossHeroCard/
 // aggregateTengang/tengangFxOf/freshSave)在文件尾从这里再导出，保 deck-wiring/live-combat/turnmatch 测试 import 不变。
 import { freshSave, loadSave, persist, resetFortuneIfNewDay, FORTUNE_MAX, activeDeck, syncTiangangs, newDeckId, rollBoss, TIANGANG_DECK_SIZE, MAX_TIANGANG_DECKS, DEFAULT_STARTER_TIANGANGS } from './game211-save.js';
+import { metaInt } from './meta-random.js';
 import { favorToP, cardRank, avg, describeFormation, pick3, buildPickDeck, bossHeroCard, aggregateTengang, seededShuffleArr } from './game211-build.js';
 import { clashToTurnView } from './game211-clash-view.js';
 import { initTurnBattle, drawCard, deployUnit, castTengang, castTengangAt, swapCard, advanceMovePhase, resolveClashAt, endTurnFinish, aiDecide, bossOpeningGarrison, debugGrantTengang, debugAddMana, OPENING_HAND, DRAW_COST, CAST_COST, SWAP_PER_TURN, type PokerCard, type TengangHandCard, type Card } from './turn-combat.js';
@@ -163,7 +164,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       onRecharge: (packId, password) => { const p = RECHARGE_PACKS.find((x) => x.id === packId); if (!p) return false; if (save.rechargeCount >= 1 && password !== RECHARGE_PASSWORD) return false; save.diamond += rechargeTotal(p); save.rechargeCount += 1; persist(save); return true; },
       onExchange: (exId) => { const x = DIAMOND_EXCHANGES.find((e) => e.id === exId); if (!x || save.diamond < x.diamond) return; save.diamond -= x.diamond; save.materials += x.gold; persist(save); },
       // 今日卦象（owner 2026-06-21 · 纯趣味不进战斗）：每日限掷 FORTUNE_MAX 次（跨日刷新）；收下=持久化选中→主页顶展示。
-      onRollFortune: () => { resetFortuneIfNewDay(save); if (save.fortune.rolls >= FORTUNE_MAX) return null; save.fortune.rolls += 1; const v = 1 + Math.floor(Math.random() * 100); persist(save); return v; },
+      onRollFortune: () => { resetFortuneIfNewDay(save); if (save.fortune.rolls >= FORTUNE_MAX) return null; save.fortune.rolls += 1; const v = 1 + metaInt(100); persist(save); return v; },
       onKeepFortune: (val) => { resetFortuneIfNewDay(save); save.fortune.keptVal = Math.max(1, Math.min(100, Math.round(val))); persist(save); },
       onBuyShards: (exId) => { const x = DIZHI_SHARD_PACKS.find((e) => e.id === exId); if (!x || save.diamond < x.diamond) return; save.diamond -= x.diamond; save.dizhiShards += x.shards; persist(save); },
       // 抽卡（doc25 §四 · Demo）：从已解锁池随机；天罡重复→碎片，地支新得=铜/重复升档/满金→碎片。返回抽取结果供开包演出。
@@ -176,7 +177,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
           save.materials -= c.gold; save.diamond -= c.diamond;
           const res = [];
           for (let i = 0; i < count; i++) {
-            const t = poolCards[Math.floor(Math.random() * poolCards.length)];
+            const t = poolCards[metaInt(poolCards.length)];
             if (save.ownedTiangangs.includes(t.id)) { save.tiangangShards += GACHA.tiangang.dupShards; res.push({ kind: 'tiangang' as const, id: t.id, name: t.name, rarity: t.rarity, outcome: 'dup-shard' as const, detail: `重复 · +${GACHA.tiangang.dupShards} 天罡碎片` }); }
             else { save.ownedTiangangs.push(t.id); const d = activeDeck(save); if (d && d.cards.length < TIANGANG_DECK_SIZE) { d.cards.push(t.id); syncTiangangs(save); } res.push({ kind: 'tiangang' as const, id: t.id, name: t.name, rarity: t.rarity, outcome: 'new' as const, detail: '新获得！' }); }
           }
@@ -185,7 +186,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         save.materials -= c.gold; save.diamond -= c.diamond;
         const res = [];
         for (let i = 0; i < count; i++) {
-          const z = DIZHI_ZODIACS[Math.floor(Math.random() * DIZHI_ZODIACS.length)];
+          const z = DIZHI_ZODIACS[metaInt(DIZHI_ZODIACS.length)];
           // 抽地支 = 进卡包一张「铜」活化 → 自动三合升档（满3铜→1银→1金；封顶金·钻待开放·满金溢出转碎片）。
           const before = save.dizhiBag[z.branch] ?? [0, 0, 0];
           const wasNew = dizhiTotal(before) === 0;
@@ -355,7 +356,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     // 玩家牌库（契约A·甲读·owner 2026-06-21 #16：52 牌组是唯一真相·16 张按 ID 带 favor+地支附魔进场）：
     //   = 你配的 16 张 pokerPicks，每张挂自己的 effectiveDeckFavors(base+附魔)→战力；空 picks=自动构筑一副；
     //   主将=favor 最高那张(留士气机制)。lane 由放牌时自选·非预派。
-    const seed = Math.floor(Math.random() * 1e9);
+    const seed = metaInt(1e9);
     const toPoker = (c: ArmyCard): PokerCard => ({ kind: 'poker', id: c.id, rank: cardRank(c), suit: c.suit, general: c.general, buff: Math.round(favorToP(c.favor) - cardPoints(cardRank(c))), cost: deployCost(cardRank(c)) });
     const effFav = effectiveDeckFavors(save.deck, save.inlays);
     const myPicks = activeDeck(save).pokerPicks.length ? activeDeck(save).pokerPicks : autoBuildPokerPicks({ favors: effFav, isOwned: isHeroOwned });
@@ -533,7 +534,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     };
     // 敌方思考中蒙层（owner 2026-06-21：平均缩 2 秒 → 1-3 秒随机，均值 2s）
     const startThinking = (onDone: () => void): void => {
-      const ms = 1000 + Math.floor(Math.random() * 2000);
+      const ms = 1000 + metaInt(2000);
       if (!document.getElementById('gg-spin-css')) { const s = document.createElement('style'); s.id = 'gg-spin-css'; s.textContent = '@keyframes gg-spin{to{transform:rotate(360deg)}}'; document.head.appendChild(s); }
       thinkEl = document.createElement('div'); thinkEl.style.cssText = 'position:fixed;inset:0;z-index:250;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;pointer-events:none;background:rgba(6,9,13,.45)';
       thinkEl.innerHTML = `<div style="width:52px;height:52px;border:4px solid rgba(58,134,212,.25);border-top:4px solid #3a86d4;border-radius:50%;animation:gg-spin 1s linear infinite"></div><span style="font-size:20px;font-weight:700;color:#3a86d4;text-shadow:0 0 24px rgba(58,134,212,.8);letter-spacing:.18em;font-family:'Rajdhani',sans-serif;">敌方思考中</span>`;

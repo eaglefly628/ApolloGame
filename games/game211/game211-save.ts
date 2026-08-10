@@ -2,6 +2,7 @@
 // 全是纯函数（除 localStorage 读写），不依赖 mount() 运行态；驱动层(game211.tsx)与各模块共享 Save 类型从这里取。
 import { LEVER_START, RUN_LIVES, RUN_BATTLES, BOSS_ROSTER, GAME_G_TIANGANGS, TIANGANG_BY_ID, unlockStageOf, isPoolCardId, POKER_PICK_SIZE, effectiveLives, POOL_CARD_IDS, rankOfCardId, type InlayEntry } from './index.js';
 import { cardPoints } from './clash-resolve.js'; // 牌点（军衔=点数·公平骨架）→ 基线 favor 用
+import { metaInt } from './meta-random.js';
 import { ggCloudSave } from './platform-hooks.js'; // 存档镜像上（真/假）Steam 云
 
 const DECK_SIZE = 52;
@@ -53,9 +54,9 @@ export function activeDeck(s: Save): TiangangDeck {
   return s.tiangangDecks.find((d) => d.id === s.activeDeckId) ?? s.tiangangDecks[0];
 }
 export function syncTiangangs(s: Save): void { s.tiangangs = [...(activeDeck(s)?.cards ?? [])]; }
-export const newDeckId = (): string => `deck_${Date.now().toString(36)}_${Math.floor(Math.random() * 1e4)}`;
+export const newDeckId = (): string => `deck_${Date.now().toString(36)}_${metaInt(1e4)}`;
 
-export const rollBoss = (): number => Math.floor(Math.random() * BOSS_ROSTER.length);
+export const rollBoss = (): number => metaInt(BOSS_ROSTER.length);
 // 新手引导天罡（owner 2026-07-04·「默认一开始没天罡·抽不到」）：默认出战牌组塞两张 common 已实装天罡——
 //   虎符(全军+2战力·直观) + 鬼手(改掷+2·展示掷骰系)。关1 loadoutCap=2 正好满 loadout·让新手战斗抽得到天罡。
 export const DEFAULT_STARTER_TIANGANGS: readonly string[] = ['tigertally', 'ghosthand'];

@@ -84,7 +84,36 @@ describe('layoutFor · 组数 → 场地缩放', () => {
       expect(n * L.laneGap).toBeLessThanOrEqual(L.halfZ * 2);
     }
   });
+
+  // ⚠ 回归护栏（2026-08-10·`scripts/game211-throw-lab.mjs` 控制变量实测换来的）：
+  //   围栏是**无 Mesh3D 的刚体** → 引擎 spawn() 回落 w=h=4 → 恒 Box(2,2,2)，尺寸改不了，只能推远。
+  //   牌斜靠在围栏上会被读成「未躺平」——而「牌不许站住」是 owner 的硬要求。
+  //   同种子同抛掷、只改围栏距离的实测曲线：
+  //     内表面距道心 2.2 → 未躺平 6.42%（靠墙 99.6%）· 3.4 → 3.25% · 5.0 → 1.13% · 6.6 → 0.42%（到底）· 96.2 → 0.47%
+  //   故阈值取 6.6。旧式 `halfZ = max(3.2, n·laneGap/2 + 1.2)` 在 n=1 时只给 2.2、20 组时最外道只剩 1.8
+  //   （**比牌长 2.15 还短**）——两处都在这条线以下。
+  const FENCE_HALF = 2;            // 围栏 Box 半宽（引擎回落值·非本游戏可选）
+  const MIN_CLEARANCE = 6.6;       // 实测阈值
+  it('每一档：最外道到围栏内表面的余量 ≥ 6.6（牌不许靠在墙上站住）', () => {
+    for (const n of DUEL_COUNTS) {
+      const L = layoutFor(n);
+      const fenceInner = (L.halfZ + 1.0) - FENCE_HALF;      // 围栏中心 halfZ+1.0 · 内表面再减半宽
+      const outerLane = ((n - 1) / 2) * L.laneGap;          // 最外道中心
+      expect(fenceInner - outerLane).toBeGreaterThanOrEqual(MIN_CLEARANCE - 1e-9); // 设计值正好等于阈值·留浮点容差
+    }
+  });
+  it('旧口径确实踩在阈值以下 —— 记死它为什么不行', () => {
+    for (const [n, oldInner] of [[1, 2.2], [20, 32.2]] as const) {
+      const outerLane = ((n - 1) / 2) * LANE_GAP_EXPECTED;
+      expect(oldInner - outerLane).toBeLessThan(MIN_CLEARANCE);
+    }
+  });
+  it('推远围栏**不得**改变取景 —— 镜头按内容深算，不按场地深算（1 组仍是原来的近景）', () => {
+    expect(layoutFor(1).camDist).toBeCloseTo(7.2 + 3.2 * 1.15, 9);   // 修复前的历史值
+    expect(layoutFor(20).camDist).toBeCloseTo(7.2 + (20 * 3.2 / 2 + 1.2) * 1.15, 9);
+  });
 });
+const LANE_GAP_EXPECTED = 3.2;
 
 describe('翻面自旋 · 落面 50/50 的前提（owner「一半正一半反」+「旋转再弱一点点」）', () => {
   // 出手参数取运行时口径：y0=0.9（throwPlan 的起手高）· vy∈[12.4,13.6] · 落地读数高 ≈0.09（牌半厚+地面）。

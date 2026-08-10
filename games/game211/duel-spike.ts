@@ -188,6 +188,23 @@ export function tallyOf(list: readonly DuelOutcome[]): { win: number; lose: numb
 
 /** 组数 → 场地/牌尺缩放（纯函数·可单测）：组数越多，牌越小、道越密、镜头越远——把 N 组塞进同一块桌面。 */
 const LANE_SPAN = 3.2; // 道距：≥ 牌长 2.15 + 撞飞余量
+// 场地最小半深（围栏内表面 = halfZ + 1.0 − 2 = halfZ − 1.0，故 7.6 ⇒ 内表面 6.6）。
+// ⚠ 这个数是**量出来的**，不是拍的（`scripts/game211-throw-lab.mjs` 控制变量实验·同种子同抛掷只改场地大小）：
+//   围栏内表面距道心 2.2 → 未躺平 6.42%（其中 **99.6% 是靠在围栏上**）
+//                   3.4 → 3.25%（靠墙 96%）
+//                   5.0 → 1.13%（靠墙 85%）
+//                   6.6 → 0.42%（靠墙 30%）      ← 到底了
+//                  96.2 → 0.47%（靠墙 5%）       ← 无墙基线，与 6.6 齐平
+// 即：小组数下「牌站住了」有 93% 根本不是物理性质，是**牌斜靠在隐形围栏上**——而牌长 2.15，
+// 旧口径把围栏内表面放在 2.2，正好在牌翻滚够得着的距离内。owner 的硬要求是「牌不许站住」，
+// 这条是直接违反。**围栏尺寸改不了**（围栏无 Mesh3D → 引擎 spawn() 回落 w=h=4 → 恒 Box(2,2,2)），
+// 所以只能把它推远。
+// 实现成「**最外道到围栏内表面恒留 6.6**」这一条规则（比拍一个下限干净，且大组数同样受益）：
+//   内表面 = halfZ − 1.0，最外道在 (n−1)·laneGap/2 → 余量 = laneGap/2 + EDGE_CLEARANCE − 1.0 = EDGE_CLEARANCE + 0.6。
+//   取 6.0 ⇒ 余量恒 6.6（n=1 时 halfZ=7.6·n=20 时 38·n=60 时 102）。
+//   旧式 `+1.2` 在 20 组时只给最外道留 1.8——**比牌长 2.15 还短**，最外两道等于贴着墙落地：
+//   实测 20 组 1.16% → 0.88%（靠墙占比 28% → 4%）。
+const EDGE_CLEARANCE = 6.0;
 export function layoutFor(n: number): { scale: number; laneGap: number; halfZ: number; halfX: number; camDist: number } {
   // ⚠ **牌尺寸恒定不缩**（scale 恒 1）——组数多了靠**放大桌面 + 拉远镜头**来容纳，绝不靠缩小牌。
   // 血泪：原本按组数把牌缩到 1/4~1/12，但碰撞盘厚度被引擎钳在 `Math.max(0.1, h)` **不跟着缩**
@@ -196,9 +213,13 @@ export function layoutFor(n: number): { scale: number; laneGap: number; halfZ: n
   // 三个症状同一个根因。碰撞体几何必须在所有档位保持同一个形状，这是不可让的。
   const scale = 1;
   const laneGap = LANE_SPAN;                       // 恒定道距（≥ 牌长 + 余量）
-  const halfZ = Math.max(3.2, (n * laneGap) / 2 + 1.2);
-  const halfX = 6.6;
-  return { scale, laneGap, halfZ, halfX, camDist: 7.2 + halfZ * 1.15 };
+  // **内容深**（N 道牌本身占多深）与**场地深**（地台/围栏放多远）拆开：
+  //   镜头按内容取景 → 推远围栏不会把画面拉远（1 组时仍是原来的近景·无视觉回退）；
+  //   地台仍跟着场地走 → 「地台必须包住围栏」那条不变（见 rebuildArena 头注：否则牌从桌沿掉出去）。
+  const contentHalfZ = Math.max(3.2, (n * laneGap) / 2 + 1.2);
+  const halfZ = (n * laneGap) / 2 + EDGE_CLEARANCE;
+  const halfX = 6.6;   // x 向不用加宽：实测把内表面从 5.6 推到 13.0，未躺平一张不差（55/6000 恒定）
+  return { scale, laneGap, halfZ, halfX, camDist: 7.2 + contentHalfZ * 1.15 };
 }
 
 /** 静态场地蓝图（相机/光/天空/后处理·纯数据）。地台/围栏随组数重建，故不写在这。 */

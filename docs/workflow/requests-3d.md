@@ -6,6 +6,27 @@
 
 ---
 
+## REQ-3D-RB-MATERIAL · `RigidBody3D.restitution` / `.friction` 声明了但 `spawn()` 从不读 —— 全库游戏的每张「弹性/摩擦」旋钮都是死的 · [2026-08-10] · PE-211 提（game211 大样本物理验证时撞出）→ **P3D** · status: open · 优先级: **P2（不吃表现·但会持续制造错误归因·见下方实测）** · 类型: 3D 线契约缺口（契约声明 ≠ 实现）
+
+> **实证（实查·非印象）**：
+> - `src/engine/protocol/components/render.ts:221-222` 明文声明并写了缺省值：`restitution?: number; // 弹性 0..1·缺省 0.3` / `friction?: number; // 摩擦·缺省 0.4`。
+> - `src/renderer/three/physics.ts` 的 `spawn()`（194-227 行）读了 `shape/heights/elementSize/hull/mass/vx..vz/avx..avz/angularFactor`，**唯独没有 `rb.restitution` / `rb.friction`**。全库 `grep -rn restitution src/` 只有 182-183 行的 `cw.defaultContactMaterial`（世界级·来自 `PhysicsWorld3D`）。**没有任何 per-body `CANNON.Material` / `ContactMaterial` 通路。**
+> - 后果：游戏在牌/骰/筹码上写的每一个 `restitution`/`friction` 都是**静默 no-op**——不报错、不告警、TS 还照收（契约里有）。这正是 CLAUDE.md 日志基准守则点名的「什么都没发生」那类分支形状。
+>
+> **实测这个缺口目前吃掉了多少表现**（`scripts/game211-throw-lab.mjs --per-body`·8000 张牌对照）：把 game211 牌上声明的 `0.34/0.45` 真接成 cannon `ContactMaterial` 后 —— 正面率 50.63% vs 50.50%、未躺平 0.95% vs 0.92%（z=1.3·**p≈0.19 不显著**）。**即：现在补上不会改变已有表现**，所以这是契约/可信度缺陷，不是性能事故，不必急着热修。
+>
+> **但它已经在造成实害**：`games/game211/design/HANDOFF-duel-physics.md` §5 曾把两条「实测调参结论」（`restitution 0.5+ → 弹回原处`、`friction 0.72 → 未躺平 3/40→8/40`）归因到这两个死旋钮上。旋钮根本没接线，那些观察只能是小样本噪声。**旋钮是死的，但基于它写下的经验会被后人当真去遵守。** 已在该文档标红更正。
+>
+> **两条路（Lead 给推荐·不下裁决·owner/P3D 判）**：
+> - **A｜接线**：`spawn()` 里按 `(restitution, friction)` 做 `CANNON.Material` 缓存池 + 惰性 `addContactMaterial`（键 = 数对，避免 N² 组合爆炸）。代价：P3D 域改动，需回归掷骰/叠叠乐/筹码三处已调好的手感（世界级值不变 ⇒ 未声明 per-body 的实体行为逐位不变，回归面可控）。收益：契约兑现，游戏侧调参从此可信。
+> - **B｜删字段**：从 `RigidBody3D` 契约里删掉这两个字段，游戏一律走 `PhysicsWorld3D` 世界级档。代价：game211 等已写了这两个字段的游戏要清（TS 会报错，找得全）；失去 per-body 差异化能力（同场「弹的骰子 + 不弹的牌」表达不了）。收益：契约与实现一致，零歧义。
+>
+> **Lead 推荐 A**——已经有 `angularFactor` 这种 per-body 物理旋钮的先例，且「同场不同材质」是真实需求（牌不弹 / 骰子弹）；B 会把能力削掉去迁就实现。但**不阻塞**：实测证明现状不吃表现，可排期做。
+>
+> **同族**：`REQ-3D-CARD-FACE-AXIS` 的「顺手记的 3 处口径」里已有一条同形的 —— `spawn()` 不读 `Transform3D.quat`。建议一并处理（都是 spawn() 漏读契约字段）。
+
+---
+
 ## REQ-3D-CARD-FACE-AXIS · 薄牌类刚体：正反分色的面与可靠碰撞体**轴向不兼容**（现二者不可兼得）· [2026-08-07] · PE-211 提（game211 物理对决试验台·owner 判「补引擎缺口」）→ P3D · status: **✅ done（P3D 2026-08-09 取 A=`Mesh3D.faceAxis`；PE-211 2026-08-09 消费验收通过 → 见下方验收回执）；顺手记的 3 处口径仍 open** · 优先级: **P2（game211 表现竖切阻塞：牌落地恒倾斜 ~55°、正反读不准；游戏侧已穷举参数无解）** · 类型: 3D 线能力缺口（网格面色轴向 / 刚体形状轴向）
 > **★ P3D 回执（2026-08-09·取 A=`Mesh3D.faceAxis`·纯 render 改·不碰物理/确定性）**：诊断确认（复跑 PE-211 实证）——`box` 正反色恒作用 ±Z、`cylinder` 刚体轴恒 Y·差 90°，且薄凸包必 ~55° 恒斜（cannon 接触伪影）。**A 解**：`Mesh3D.faceAxis?:'x'|'y'|'z'`（缺省 'z'=零回归）让 `frontTint/backTint` 落**指定轴两面**、`edgeTint` 落其余四面 → 牌**沿 Y 薄**（`faceAxis:'y'`·顶=正/底=反色）天然躺平·碰撞体用**引擎原生 `cylinder`**（轴 Y 圆盘·已验证可靠·零 55° 伪影）。实现：`geometry.ts faceAxisSlots`（**单一真相**·面序 [+x,-x,+y,-y,+z,-z]）+ 派生 `faceAxisOrder`，两条 box 上色路（`buildMesh3D` 材质数组 + `buildInstancedMesh3DGeometry` 逐面色烤入）+ `paintMesh3D`（每帧材质设色）**全用同一 slots**（防三处映射漂移）。测试 `face-axis.test` 6 例（slots/order 映射·烤入色落对面·材质槽落对实例）。真浏览器目击 game-z Platform Four `p4-card-*`（三张薄牌抛落**恒躺平**·`card-face-axis.png`：轻旋→正面红朝上·翻滚→反面灰朝上·顶底分色清晰）。tsc0/vitest/build0/manifest（Mesh3D 加可选字段·无新组件）。**通用**：卡牌/瓷砖/硬币/招牌薄片类共用。
 > **顺手记的 3 处 P3D 侧口径（不阻塞 game211·A 解已绕开·仍 open 待拉动）**：① `RigidBody3D` spawn 不读 `Transform3D.quat`（只 set position）② `Pivot3D` 父变换只读 Euler 不读物理 quat ③ `PhysicsWorld3D` 未进 `component-map.ts` 蓝图闭集（蓝图写不了·只能命令式 addComponent·与手册口径不符）。三条各有游戏侧绕法·有真需求再排。
