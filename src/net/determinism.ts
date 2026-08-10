@@ -16,10 +16,11 @@ export function hashSnapshot(snap: WorldSnapshot): string {
 // 纯表现/可由表现层重算的组件不进哈希：它们含浮点（zoom/offset），跨端 JIT/FMA 可能 1 ULP 漂移，
 // 若纳入校验会误判 desync（Gemini Q2）。Camera 即此类——逻辑不读它，渲染期每帧由 camera-follow 重算。
 // 名单靠手维护，拼错一个名字即静默失效（多算→误报 desync，少算→假绿）。
-// determinism.test.ts 用 COMPONENT_MAP 全集对账，保证每一项都是真实组件名。
+// determinism.test.ts 用运行时组件全集（component-universe.gen.ts·build-component-map.mjs 生成）
+// 对账，保证每一项都是真实组件名。
 // Mesh3D/Coachmark 的组件契约（render.ts）明写「绝不进 hash」，故必须在此排除——
 // 二者曾漏登记，是潜伏雷：任何人按契约在渲染侧改它们，lockstep 立刻误报 desync。
-export const NON_DETERMINISTIC = new Set<string>(['Camera', 'Camera3D', 'Mesh3D', 'Coachmark', 'Transform3D', 'Sky3D', 'Model3D', 'AnimState3D', 'Anim3D', 'Pivot3D', 'Light3D', 'Post3D', 'Fog3D', 'Material3D', 'Vfx3D', 'Trail3D', 'Line3D', 'Decal3D', 'Path3D', 'Billboard3D', 'WorldUI3D', 'Diegetic3D', 'RigidBody3D', 'Impulse3D', 'Joint3D', 'Glow3D', 'Pickable3D', 'ScoreTrace', 'DebugTrace', 'PhysicsWorld3D']);
+export const NON_DETERMINISTIC = new Set<string>(['Camera','Camera3D', 'Mesh3D', 'Coachmark', 'Transform3D', 'Sky3D', 'Model3D', 'AnimState3D', 'Anim3D', 'Pivot3D', 'Light3D', 'Post3D', 'Fog3D', 'Material3D', 'Vfx3D', 'Trail3D', 'Line3D', 'Decal3D', 'Path3D', 'Billboard3D', 'WorldUI3D', 'Diegetic3D', 'RigidBody3D', 'Impulse3D', 'Joint3D', 'Glow3D', 'Pickable3D', 'ScoreTrace', 'DebugTrace', 'PhysicsWorld3D']);
 
 function canonical(snap: WorldSnapshot): string {
   const parts: string[] = [];
