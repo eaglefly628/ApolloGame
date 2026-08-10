@@ -37,6 +37,8 @@ export interface LobbyHandlers {
   onPlay: () => void;
   /** 物理对决试验台入口（owner 2026-08-07 表现验证竖切·战斗重做落地后随试验台一并撤）。 */
   onSpike?: () => void;
+  /** 大混战 demo 入口（owner 2026-08-10：240 张牌 10 组行军厮杀·打到只剩一色）。 */
+  onMelee?: () => void;
   onBuyTiangang?: (id: string) => void;
   onBuyPlanet?: (id: string) => void;
   onBuyFoil?: (id: string) => void;

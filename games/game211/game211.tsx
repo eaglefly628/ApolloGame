@@ -163,6 +163,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       getView: buildLobbyView,
       onPlay: () => startBattle(),
       onSpike: () => showDuelSpike(),
+      onMelee: () => showMeleeDemo(),
       // 金币解锁（doc25）：需该关已抵达(unlockStage ≤ campaignMax) + 金币够 → ownedTiangangs；牌组未满自动选入
       onBuyTiangang: (id) => { const j = TIANGANG_BY_ID.get(id); if (!j || save.ownedTiangangs.includes(id) || unlockStageOf(id) > save.campaignMax) return; buy(j.cost, () => { save.ownedTiangangs.push(id); const d = activeDeck(save); if (d && d.cards.length < TIANGANG_DECK_SIZE) { d.cards.push(id); syncTiangangs(save); } }); },
       // 钻石速购（doc25 · 跳 grind·只加速）：无视关门槛，花钻石(=unlockStage)直解。
@@ -281,6 +282,15 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     root.style.cssText = 'position:absolute;inset:0;overflow:hidden;background:#121a2a';
     const spike = mountDuelSpike(root, { onExit: () => showLobby() }); // 返回键在试验台自己的面板里（避开启动器齿轮）
     battle = { update: () => {}, destroy: () => spike.destroy() }; // 交给 clear() 统一回收
+  }
+
+  // 大混战 demo（owner 2026-08-10）：从大厅「⚔️ 大混战」页签一键进，面板上「返回」出。
+  // 与 `?spike=melee` 深链是同一个挂载器。
+  function showMeleeDemo(): void {
+    clear();
+    root.style.cssText = 'position:absolute;inset:0;overflow:hidden;background:#121a2a';
+    const demo = mountMeleeDemo(root, { onExit: () => showLobby() });
+    battle = { update: () => {}, destroy: () => demo.destroy() }; // 交给 clear() 统一回收
   }
 
   function startBattle(): void {
