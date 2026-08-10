@@ -1,6 +1,10 @@
 // 编排器核自检（REQ-PIPESOFT P1a·图纸 docs/design/pipeline-orchestrator-spec-2026-08.md §P1a「测试·点名」）：
 //   ① 锁互斥（双 dispatch 第二个必拒）② 看门狗（stub 慢进程→stalled→重派一次→failed）
 //   ③ gate 独立重验（会话谎报完成 → 编排器落 FAIL 证据）④ CLI 缺失优雅拒绝
+// 复查会话（dispatch --review·owner 2026-08-10 令「复查人≠施工人」自动化半边）：
+//   ⑤ 豁免关拒绝（S1/S6/S7）+ 复查档预算 ⑥ 复查喂料（手册+checklist 实时输出+板/目录+复查尾注）
+//   ⑦ 复查独立重验三判（缺记录/过期/by 不符=失败·FAIL verdict=成功——FAIL 也是合格交付）
+//   ⑧ 串行锁共用（stage 记 SN:review·台账走既有通道）
 //
 // **零 token 铁律**：全部用替身进程（临时目录里 chmod 755 的 node 小脚本冒充 claude CLI），
 // 任何一条测试都不许起真 LLM 会话——所有 dispatch 调用必须显式注入 claudeBin（本容器真有 claude，
@@ -18,9 +22,13 @@ import {
   budgetFor, STAGE_BUDGET, NO_SESSION_STAGES, detectRuntime, NO_RUNTIME_MSG,
   buildSessionPrompt, sessionFooter, sessionArgs, gameDirFor, decideStatus, verifyStage,
   dispatch, statusFor, abort, IDLE_TIMEOUT_MS, MAX_ATTEMPTS,
+  reviewBudgetFor, REVIEW_BUDGET, NO_REVIEW_STAGES, REVIEW_BY_PREFIX,
+  buildReviewSessionPrompt, reviewSessionFooter, checklistText, boardText, verifyReview,
 } from './pipeline-orchestrator.mjs';
+import { gameHash as pipelineGameHash, pipelineFile as pipelinePath } from './game-pipeline.mjs';
 
 const ORCH_CLI = join(dirname(fileURLToPath(import.meta.url)), 'pipeline-orchestrator.mjs');
+const PIPELINE_CLI = join(dirname(fileURLToPath(import.meta.url)), 'game-pipeline.mjs');
 const MANIFEST = { name: 'GX', capabilities: [], entities: { hero: { Sprite: { textureKey: 'art:knight' } } } };
 
 const withRoot = async (fn) => {
@@ -308,13 +316,17 @@ describe('喂料只有三样 + 固定尾注', () => {
     expect(gameDirFor(root, slug)).toBe(`public/games/${slug}`);
   }));
 
-  it('固定尾注逐条到位：完成动作=跑门量退出码 · 禁跨阶段 · 禁碰他人文件 · 禁代签人门', () => {
+  it('固定尾注逐条到位：完成动作=跑门量退出码 · 禁跨阶段 · 禁碰他人文件 · 禁代签（新口径）', () => {
     const f = sessionFooter('gx', 'S4');
     expect(f).toContain('game-pipeline.mjs gate gx S4');
     expect(f).toContain('退出码直接量');
     expect(f).toContain('禁跨阶段抢跑');
     expect(f).toContain('禁碰他人文件');
-    expect(f).toContain('禁代签人门');
+    // 措辞修正（owner 2026-08-10 令）：施工会话不许自记复查门——review 由编排器另派的复查会话或人落账
+    expect(f).toContain('禁代签');
+    expect(f).toContain('复查门**不许施工会话自记**');
+    expect(f).toContain('owner 2026-08-10 令');
+    expect(f).not.toContain('禁代签人门：signoff / review 永远真人点');  // 旧措辞已废（review 不再归「真人点」口径）
     expect(f).toContain('无特权通道');
     expect(f).toContain('你自称完成不算数');              // 尾注里就把「绿不靠嘴」说死
     expect(sessionFooter('gx', 'S1')).toContain('board gx'); // S1 无 gate 命令 → 完成动作改口径
@@ -374,4 +386,204 @@ describe('abort（终止在跑会话 → 标「中止·需人工」）', () => {
     expect(r.reason).toContain('other');
     expect(existsSync(lockPath(root))).toBe(true);        // 别人的锁原封不动
   }));
+});
+
+// ═══ ⑤ dispatch --review：闭集 S2-S5/S8·豁免关拒绝（owner 2026-08-10 令·复查会话）═══
+describe('⑤ --review：复查闭集与豁免', () => {
+  it('S1/S6/S7 拒绝并说明豁免语义（照 NO_SESSION_STAGES 风格）·不占锁不脏台账·未知阶段同拒', () => withRoot(async (root) => {
+    const slug = fakeGame(root);
+    for (const s of ['S1', 'S6', 'S7']) {
+      expect(reviewBudgetFor(s)).toMatchObject({ ok: false, code: 'NO_REVIEW_STAGE' });
+      const r = await dispatch({ root, slug, stage: s, review: true, claudeBin: '/definitely/not/here' });
+      expect(r.code).toBe('NO_REVIEW_STAGE');
+      expect(r.reason).toBe(NO_REVIEW_STAGES[s]);
+      expect(existsSync(lockPath(root))).toBe(false);
+    }
+    expect(NO_REVIEW_STAGES.S1).toContain('owner 亲提');     // 豁免语义各说各的去处
+    expect(NO_REVIEW_STAGES.S6).toContain('美术平台');
+    expect(NO_REVIEW_STAGES.S7).toContain('评分卡');
+    expect((await dispatch({ root, slug, stage: 'S9', review: true, claudeBin: '/nope' })).code).toBe('UNKNOWN_STAGE');
+    expect(readRuns(root)).toEqual({});                      // 拒绝 ≠ 该关失败：不脏台账
+  }));
+
+  it('复查档预算：闭集五关全部 effort=high·maxTurns=80（对抗性核证要复跑测试）', () => {
+    for (const s of ['S2', 'S3', 'S4', 'S5', 'S8']) {
+      expect(reviewBudgetFor(s)).toMatchObject({ ok: true, effort: 'high', maxTurns: 80 });
+    }
+    expect(REVIEW_BUDGET).toEqual({ effort: 'high', maxTurns: 80 });
+    const a = sessionArgs({ effort: REVIEW_BUDGET.effort, maxTurns: REVIEW_BUDGET.maxTurns });
+    expect(a[a.indexOf('--effort') + 1]).toBe('high');       // 复查会话走同一 sessionArgs 通道
+    expect(a[a.indexOf('--max-turns') + 1]).toBe('80');
+  });
+
+  it('CLI 端到端：dispatch gx S7 --review → 退出码 2 + NO_REVIEW_STAGE（豁免=用法级拒绝·不烧运行时）', () => withRoot(async (root) => {
+    fakeGame(root);
+    const r = spawnSync(process.execPath, [ORCH_CLI, 'dispatch', 'gx', 'S7', '--review', '--json'], {
+      cwd: root, encoding: 'utf8', timeout: 60_000,
+      env: { ...process.env, ZEROCRAFT_PIPELINE_ROOT: root, ZEROCRAFT_ORCH_CLAUDE: join(root, 'no-such-claude') },
+    });
+    expect(r.status).toBe(2);                                // 用法级拒绝（≠1 失败·≠3 无运行时）
+    const out = JSON.parse(r.stdout.trim().split('\n').pop());
+    expect(out.code).toBe('NO_REVIEW_STAGE');
+    expect(out.reason).toContain('评分卡');
+  }), 60000);
+});
+
+// ═══ ⑥ 复查喂料：手册 + checklist 实时输出 + 板/目录 + 复查尾注 ═══════════════
+describe('⑥ 复查喂料三样 + 复查尾注', () => {
+  it('恰好三样：复查手册 + checklist 实时输出 + 板/游戏目录；尾注含四步铁律与唯一允许写', () => withRoot(async (root) => {
+    const slug = fakeGame(root);
+    const p = buildReviewSessionPrompt({
+      root, slug, stage: 'S4',
+      boardText: '●S4 玩法关 机器门绿·复查门 dim',
+      checklistText: '□ 走查测试断言的是行为而非常量',
+    });
+    expect(p.match(/【喂料/g)).toHaveLength(3);              // 三样，一样不多
+    expect(p).toContain('docs/playbooks/review-gates.md');   // 一·复查手册=唯一必读
+    expect(p).toContain('□ 走查测试断言的是行为而非常量');     // 二·checklist 实时输出原样
+    expect(p).toContain('●S4 玩法关 机器门绿·复查门 dim');    // 三·板实时输出原样
+    expect(p).toContain(`public/games/${slug}`);             // 三·游戏目录（按形态）
+    const f = reviewSessionFooter(slug, 'S4');
+    expect(f).toContain('复查人≠施工人');                    // 天然成立·施工自陈不采信
+    expect(f).toContain('四步铁律');
+    expect(f).toContain('撤修验红');
+    expect(f).toContain('只读产物');
+    expect(f).toContain(`review ${slug} S4`);                // 唯一允许的写 = review 落账
+    expect(f).toContain(`--by ${REVIEW_BY_PREFIX}`);
+    expect(f).toContain('FAIL 是合法结论');                  // 不许为了绿而绿
+    expect(f).toContain('review 落账后停');                  // 完成动作
+    expect(f).toContain('你自称查完不算数');                  // 对标施工尾注「绿不靠嘴」口径
+  }));
+
+  it('真 spawn 组合：checklist/board 现取现喂 → prompt 含清单文本与「复查人≠施工人」句', () => withRoot(async (root) => {
+    const slug = fakeGame(root);
+    const cl = checklistText(root, slug, 'S3');
+    expect(cl).toContain('S3 复查清单');                     // 真跑 game-pipeline checklist
+    expect(cl).toContain('范围核查');                        // 每关复查第一条（REQ-CTX③）
+    expect(cl).toContain('manifest 纯 JSON');
+    const p = buildReviewSessionPrompt({ root, slug, stage: 'S3', boardText: boardText(root, slug), checklistText: cl });
+    expect(p).toContain('manifest 纯 JSON');
+    expect(p).toContain('复查人≠施工人');
+    expect(p).toContain('生产流程板');
+  }), 30000);
+
+  it('豁免/未知阶段直接抛（别默默喂空清单）', () => {
+    expect(() => buildReviewSessionPrompt({ root: '/x', slug: 'gx', stage: 'S1' })).toThrow(/复查闭集/);
+    expect(() => buildReviewSessionPrompt({ root: '/x', slug: 'gx', stage: 'S9' })).toThrow(/复查闭集/);
+  });
+});
+
+// ═══ ⑦ 复查独立重验（照「绿不靠嘴」：编排器自查 pipeline.json·verdict 不影响成败）═══
+/** 照 game-pipeline.mjs review 子命令的落账形状直接写 pipeline.json（指纹默认现算·测试可注入偏差）。 */
+const recordReview = (root, slug, stage, over = {}) => {
+  const f = pipelinePath(root, slug);
+  const pf = existsSync(f) ? JSON.parse(readFileSync(f, 'utf8')) : { version: 1, slug, concept: {}, signoffs: {}, evidence: {} };
+  pf.reviews = { ...(pf.reviews || {}), [stage]: {
+    verdict: 'PASS', note: '逐条核证在案', by: REVIEW_BY_PREFIX, at: new Date().toISOString(),
+    gameHash: pipelineGameHash(root, slug), ...over } };
+  put(root, `public/games/${slug}/pipeline.json`, pf);
+};
+
+describe('⑦ 复查独立重验：缺/过期/by 不符=失败·FAIL verdict=成功', () => {
+  it('三判 + FAIL=合格交付：缺记录→红；指纹过期（真改文件重算）→红；by 不符→红；FAIL+对齐+前缀对→绿', () => withRoot(async (root) => {
+    const slug = fakeGame(root);
+    let v = verifyReview(root, slug, 'S3');                  // 判一：没落账
+    expect(v).toMatchObject({ kind: 'review', exit: 1 });
+    expect(v.summary).toContain('没落账');
+
+    recordReview(root, slug, 'S3');
+    expect(verifyReview(root, slug, 'S3').exit).toBe(0);     // 新鲜时先证明是过的（对照）
+    put(root, `public/games/${slug}/manifest.json`, { ...MANIFEST, name: 'GX-改' });
+    v = verifyReview(root, slug, 'S3');                      // 判二：落账后游戏文件又动过
+    expect(v.exit).toBe(1);
+    expect(v.summary).toContain('过期');
+
+    recordReview(root, slug, 'S3', { by: '施工会话本人' });   // 判三：署名不以 orch-review 起头
+    v = verifyReview(root, slug, 'S3');
+    expect(v.exit).toBe(1);
+    expect(v.summary).toContain(REVIEW_BY_PREFIX);
+
+    recordReview(root, slug, 'S3', { verdict: 'FAIL', by: `${REVIEW_BY_PREFIX}-7` });
+    v = verifyReview(root, slug, 'S3');                      // FAIL 也是合格交付（verdict 与成败解耦）
+    expect(v).toMatchObject({ kind: 'review', exit: 0, verdict: 'FAIL' });
+    expect(v.summary).toContain('FAIL');
+  }));
+
+  it('端到端：复查会话真落 FAIL 账（by=orch-review-stub）→ done·台账带 verdict（FAIL 也是合格交付）', () => withRoot(async (root) => {
+    const slug = fakeGame(root);
+    const bin = stub(root, 'fail-reviewer', [
+      `const { spawnSync } = require('child_process');`,
+      `console.log('{"type":"stream","text":"独立复跑中"}');`,
+      `const r = spawnSync('node', [${JSON.stringify(PIPELINE_CLI)}, 'review', ${JSON.stringify(slug)}, 'S3', '--verdict', 'FAIL', '--note', '独立复跑红了：撤修验红锚点命中（file:line 在案）', '--by', '${REVIEW_BY_PREFIX}-stub'],`,
+      `  { encoding: 'utf8', env: { ...process.env, ZEROCRAFT_PIPELINE_ROOT: ${JSON.stringify(root)} } });`,
+      `if ((r.status ?? 1) !== 0) { console.error('review 落账失败: ' + (r.stderr || r.stdout)); process.exit(1); }`,
+      `process.exit(0);`,
+    ].join('\n'));
+    const r = await dispatch({ root, slug, stage: 'S3', review: true, claudeBin: bin, idleTimeoutMs: 15000 });
+    expect(r.ok).toBe(true);                                 // ← FAIL verdict 照样=交付成立
+    expect(r.code).toBe('DONE');
+    expect(r.verify).toMatchObject({ kind: 'review', exit: 0, verdict: 'FAIL' });
+    expect(r.entry.verdict).toBe('FAIL');                    // 台账带 verdict
+    expect(readRuns(root)[slug]).toMatchObject({ stage: 'S3:review', state: 'done', verdict: 'FAIL' });
+    expect(existsSync(lockPath(root))).toBe(false);
+  }), 30000);
+
+  it('端到端：复查会话嘴上说「全部 PASS」但没落账 → failed（谎报不通过·嘴不算数）', () => withRoot(async (root) => {
+    const slug = fakeGame(root);
+    const bin = stub(root, 'liar-reviewer', [
+      `console.log('{"type":"result","result":"复查完成，逐条核证，全部 PASS，无任何问题"}');`,
+      `process.exit(0);`,
+    ].join('\n'));
+    const r = await dispatch({ root, slug, stage: 'S4', review: true, claudeBin: bin, idleTimeoutMs: 15000 });
+    expect(r.session.code).toBe(0);                          // 会话自称成功、退出码也是 0
+    expect(r.ok).toBe(false);                                // ← 判定跟着落账走，不跟着嘴走
+    expect(r.code).toBe('REVIEW_FAIL');
+    expect(r.verify.exit).toBe(1);
+    expect(r.entry).toMatchObject({ stage: 'S4:review', state: 'failed', needsHuman: true });
+    expect(r.reason).toContain('自称查完');
+    expect(readRuns(root)[slug].state).toBe('failed');
+  }), 30000);
+
+  it('端到端：落账后又动游戏文件 → 现算指纹≠落账指纹=failed（过期不收·重验时点在会话退出后）', () => withRoot(async (root) => {
+    const slug = fakeGame(root);
+    const manifest = join(root, 'public', 'games', slug, 'manifest.json');
+    const bin = stub(root, 'stale-reviewer', [
+      `const { spawnSync } = require('child_process');`,
+      `spawnSync('node', [${JSON.stringify(PIPELINE_CLI)}, 'review', ${JSON.stringify(slug)}, 'S5', '--verdict', 'PASS', '--note', '核证在案', '--by', '${REVIEW_BY_PREFIX}-stub'],`,
+      `  { encoding: 'utf8', env: { ...process.env, ZEROCRAFT_PIPELINE_ROOT: ${JSON.stringify(root)} } });`,
+      `require('fs').appendFileSync(${JSON.stringify(manifest)}, '\\n');`,   // 落账后又动游戏文件
+      `process.exit(0);`,
+    ].join('\n'));
+    const r = await dispatch({ root, slug, stage: 'S5', review: true, claudeBin: bin, idleTimeoutMs: 15000 });
+    expect(r.ok).toBe(false);
+    expect(r.code).toBe('REVIEW_FAIL');
+    expect(r.verify.exit).toBe(1);
+    expect(r.verify.summary).toContain('过期');
+  }), 30000);
+});
+
+// ═══ ⑧ 串行锁共用：复查会话与施工会话一把锁·stage 记 SN:review ═══════════════
+describe('⑧ 复查会话共用串行锁（stage 记 SN:review）', () => {
+  it('复查在跑=施工被拒（同一把锁）；锁与台账 stage 均记 SN:review', () => withRoot(async (root) => {
+    const slug = fakeGame(root);
+    const marker = join(root, 'spawned.txt');
+    const bin = stub(root, 'slow-reviewer', [
+      `require('fs').appendFileSync(${JSON.stringify(marker)}, 'x\\n');`,
+      `const t = setInterval(() => console.log('{"type":"stream","text":"reviewing"}'), 100);`,
+      `setTimeout(() => { clearInterval(t); process.exit(0); }, 1200);`,
+    ].join('\n'));
+    const first = dispatch({ root, slug, stage: 'S3', review: true, claudeBin: bin, idleTimeoutMs: 15000 });
+    expect(await waitFor(() => !!readLock(root))).toBe(true);
+    expect(readLock(root).stage).toBe('S3:review');          // 共用锁里记 SN:review
+
+    const second = await dispatch({ root, slug, stage: 'S4', claudeBin: bin, idleTimeoutMs: 15000 });
+    expect(second.code).toBe('LOCKED');                      // 施工 dispatch 同刻被同一把锁拒
+    expect(second.holder.stage).toBe('S3:review');
+    expect(second.reason).toContain('S3:review');
+
+    await first;
+    expect(lines(marker)).toHaveLength(1);                   // 全程只起过复查这一个会话
+    expect(existsSync(lockPath(root))).toBe(false);          // 跑完放锁（走既有通道）
+    expect(readRuns(root)[slug].stage).toBe('S3:review');    // 台账同样记 SN:review
+  }), 30000);
 });

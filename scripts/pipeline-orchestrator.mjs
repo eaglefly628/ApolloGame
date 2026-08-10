@@ -14,7 +14,12 @@
 //  这里不复制任何门逻辑，只负责「起会话 / 看门狗 / 串行锁 / 独立重验」。
 //
 //  用法：
-//    node scripts/pipeline-orchestrator.mjs dispatch <slug> <SN>   为该游戏该阶段派一个匿名无头会话
+//    node scripts/pipeline-orchestrator.mjs dispatch <slug> <SN>   为该游戏该阶段派一个匿名无头**施工**会话
+//    node scripts/pipeline-orchestrator.mjs dispatch <slug> <SN> --review
+//                                                                 为该关派一个匿名无头**复查**会话（owner 2026-08-10 令
+//                                                                 「每步开工前，上一步必须由不同 agent 真复查」的派工半边；
+//                                                                 硬闸半边=game-pipeline.mjs orderGate 复查前置硬闸。
+//                                                                 闭集 S2-S5/S8·唯一允许的写=review 落账·FAIL 也是合格交付）
 //    node scripts/pipeline-orchestrator.mjs status [slug] [--json] 在跑/最近一次会话：阶段·起始·心跳·状态
 //    node scripts/pipeline-orchestrator.mjs abort <slug>           终止在跑会话并标「中止·需人工」
 //
@@ -37,7 +42,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, openSync, w
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn, spawnSync } from 'node:child_process';
-import { STAGES, GATE_STAGES, detectForm } from './game-pipeline.mjs';
+import { STAGES, GATE_STAGES, REVIEW_STAGES, detectForm, gameHash, pipelineFile } from './game-pipeline.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 /** 仓库根。ZEROCRAFT_PIPELINE_ROOT 与 game-pipeline.mjs 同名同义（仅测试注入临时根用·生产不设）。 */
@@ -82,6 +87,27 @@ export function budgetFor(stage) {
       reason: `未知阶段 ${stage}（可派会话的闭集：${Object.keys(STAGE_BUDGET).join('/')}；S6/S7 见 --help）` };
   }
   return { ok: true, ...b };
+}
+
+// ── 复查档位与豁免（owner 2026-08-10 令·「每步开工前，上一步必须由不同 agent 真复查」的派工半边）──
+//  复查适用闭集 = REVIEW_STAGES（S2-S5/S8·与 game-pipeline.mjs 复查门同源·不另抄一张表）。
+//  effort=high（CLAUDE.md 档位表「UI 复查/review=high」）·maxTurns=80（对抗性核证要独立复跑测试，
+//  比施工 S2/S3 的 medium/60 高，比 S4/S5 施工的 120 低——复查只核证不施工）。
+export const REVIEW_BUDGET = { effort: 'high', maxTurns: 80 };
+/** 复查豁免关（拒绝 dispatch --review 并说明豁免语义·照 NO_SESSION_STAGES 风格）。 */
+export const NO_REVIEW_STAGES = {
+  S1: 'S1 立项卡免复查（owner 亲提·无需复查）——编排器不派复查会话；豁免表 docs/playbooks/review-gates.md §三',
+  S6: 'S6 美术关免复查（复核已内嵌美术平台逐行 ☑）——编排器不派复查会话；手册 docs/playbooks/art-pipeline.md',
+  S7: 'S7 品质关的复查形态=**评分卡**（复查人打分·scorecard 落账·非 review 会话）——跑 `node scripts/game-pipeline.mjs checklist <slug> S7`',
+};
+/** 阶段 → 复查档位。豁免关（S1/S6/S7）与未知阶段一律拒（带去处说明）。 */
+export function reviewBudgetFor(stage) {
+  if (NO_REVIEW_STAGES[stage]) return { ok: false, code: 'NO_REVIEW_STAGE', reason: NO_REVIEW_STAGES[stage] };
+  if (!REVIEW_STAGES.includes(stage)) {
+    return { ok: false, code: 'UNKNOWN_STAGE',
+      reason: `未知阶段 ${stage}（可派复查会话的闭集：${REVIEW_STAGES.join('/')}；S1/S6/S7 豁免见 --help）` };
+  }
+  return { ok: true, ...REVIEW_BUDGET };
 }
 
 // ── 编排运行时探测（图纸 §会话契约 2·编排器是加速器不是依赖）──────────────
@@ -191,7 +217,8 @@ export function sessionFooter(slug, stage) {
       + (gated ? '' : `（${stage} 无机器门命令：把该阶段板上「机器门」一栏做成绿，然后停。）`),
     `禁跨阶段抢跑：只做 ${stage} 这一步，做完就停——下一阶段由编排器另派。`,
     '禁碰他人文件：只碰本游戏目录与本阶段产物，引擎/别的游戏/别人的在途改动一律不动。',
-    '禁代签人门：signoff / review 永远真人点，编排会话**无特权通道**，与手动会话同门同板。',
+    '禁代签：人门 signoff 永远真人点；复查门**不许施工会话自记**——review 由编排器另派的复查会话或人落账'
+      + '（owner 2026-08-10 令）。编排会话**无特权通道**，与手动会话同门同板。',
     '注：你退出后编排器会**独立重跑一次该阶段门**，以它自己量到的退出码落证据——你自称完成不算数。',
   ].join('\n');
 }
@@ -213,12 +240,57 @@ export function buildSessionPrompt({ root = REPO_ROOT, slug, stage, boardText = 
   ].join('\n');
 }
 
+// ── 复查会话契约（--review·对标施工会话契约·喂料同样闭口）──────────────────
+/** 复查落账人前缀（独立重验以它核对 by·复查会话署名须以它起头）。 */
+export const REVIEW_BY_PREFIX = 'orch-review';
+
+/** 复查尾注（对标 sessionFooter 语气·**不可协商**·每次 --review dispatch 逐字相同）。 */
+export function reviewSessionFooter(slug, stage) {
+  return [
+    '【复查尾注·不可协商】',
+    '你是编排器另派的**独立复查 agent**——复查人≠施工人天然成立；施工会话的任何自陈（「全绿」「已修复」）一律不采信。',
+    '逐条按 review 四步铁律核证：① 独立复跑 ② 撤修验红（sabotage 必须带锚点命中断言）③ 实证复现 ④ 读告警'
+      + '（WARN/成环只打 stderr 不改退出码·绿灯不等于没话说）。结论带 file:line 或实数。',
+    `只读产物：唯一允许的写 = \`node scripts/game-pipeline.mjs review ${slug} ${stage} --verdict PASS|CONCERNS|FAIL `
+      + `--note "逐条结论" --by ${REVIEW_BY_PREFIX}\`（--by 须以 ${REVIEW_BY_PREFIX} 起头·如实署名）。`,
+    '**FAIL 是合法结论**——打回也是合格交付，不许为了绿而绿。',
+    `完成动作 = review 落账后停。注：你退出后编排器会**独立核对** pipeline.json 的复查记录`
+      + `（在案·指纹对齐·by 以 ${REVIEW_BY_PREFIX} 起头）——verdict 是什么不影响交付成立，你自称查完不算数。`,
+  ].join('\n');
+}
+
+/** 复查喂料三样 + 复查尾注（照 buildSessionPrompt 三样式风格·别的一律不喂）。
+ *  checklistText/boardText = 对应 CLI 的实时输出（调用方现 spawn 现喂·不喂陈货）。 */
+export function buildReviewSessionPrompt({ root = REPO_ROOT, slug, stage, boardText = '', checklistText = '' }) {
+  if (!REVIEW_STAGES.includes(stage)) throw new Error(`阶段 ${stage} 不在复查闭集（${REVIEW_STAGES.join('/')}）`);
+  const dir = gameDirFor(root, slug);
+  return [
+    '【喂料一·复查手册（唯一必读·别翻别的）】docs/playbooks/review-gates.md',
+    '',
+    `【喂料二·本关复查清单实时输出（node scripts/game-pipeline.mjs checklist ${slug} ${stage}）】`,
+    checklistText.trim() || '（清单输出为空——按 checklist 命令自查）',
+    '',
+    `【喂料三·生产流程板实时输出（node scripts/game-pipeline.mjs board ${slug}）＋ 游戏目录】`,
+    boardText.trim() || '（板输出为空——按 board 命令自查）',
+    `游戏目录：${dir || `（未知形态：${slug}）`}`,
+    '',
+    reviewSessionFooter(slug, stage),
+  ].join('\n');
+}
+
 // ── 薄封装：调 game-pipeline.mjs（不复制其逻辑）──────────────────────────────
 const pipelineEnv = (root) => ({ ...process.env, ZEROCRAFT_PIPELINE_ROOT: root });
 
-/** 现取 board 文本（喂料二）。 */
+/** 现取 board 文本（施工喂料二 / 复查喂料三）。 */
 export function boardText(root, slug) {
   const r = spawnSync('node', [PIPELINE_CLI, 'board', slug],
+    { cwd: root, encoding: 'utf8', env: pipelineEnv(root), timeout: 120_000 });
+  return (r.stdout || '').trim() || (r.stderr || '').trim();
+}
+
+/** 现取该关复查清单文本（复查喂料二·现 spawn 现喂）。 */
+export function checklistText(root, slug, stage) {
+  const r = spawnSync('node', [PIPELINE_CLI, 'checklist', slug, stage],
     { cwd: root, encoding: 'utf8', env: pipelineEnv(root), timeout: 120_000 });
   return (r.stdout || '').trim() || (r.stderr || '').trim();
 }
@@ -246,6 +318,31 @@ export function verifyStage(root, slug, stage, { cmd } = {}) {
   try { state = (JSON.parse(r.stdout || '{}').stages || []).find((s) => s.id === stage)?.machine?.state ?? null; }
   catch { state = null; }
   return { kind: 'board', exit: state === 'ok' ? 0 : 1, summary: `板推导 ${stage} 机器门=${state ?? '解析失败'}` };
+}
+
+/**
+ * **复查独立重验**（照 verifyStage「绿不靠嘴」·--review 专用）：复查会话退出后，编排器自查
+ * pipeline.json 的 reviews[SN]——**存在 && gameHash 等于现算 && by 以 orch-review 起头** = 成功；
+ * 缺 / 过期 / by 不符 = 失败。**verdict 是什么不影响成功判定**——复查的交付物是「真查过并落了账」，
+ * 不是「查出来是绿的」，FAIL 也是合格交付（为了绿而绿正是这门要治的病）。
+ * 会话 stdout 声称什么，本函数一个字都不读。
+ */
+export function verifyReview(root, slug, stage) {
+  let pf = null;
+  try { pf = JSON.parse(readFileSync(pipelineFile(root, slug), 'utf8')); } catch { pf = null; }
+  const rv = pf?.reviews?.[stage];
+  if (!rv) return { kind: 'review', exit: 1, verdict: null, summary: `复查没落账（pipeline.json 无 reviews.${stage}）` };
+  const fresh = gameHash(root, slug);
+  if (rv.gameHash !== fresh) {
+    return { kind: 'review', exit: 1, verdict: rv.verdict ?? null,
+      summary: `复查已过期（落账指纹 ${rv.gameHash || '缺'} ≠ 现算 ${fresh}——落账后游戏文件又动过·须重查）` };
+  }
+  if (!String(rv.by || '').startsWith(REVIEW_BY_PREFIX)) {
+    return { kind: 'review', exit: 1, verdict: rv.verdict ?? null,
+      summary: `复查主体不符（by=${rv.by || '缺'}·编排器派的复查会话须以 ${REVIEW_BY_PREFIX} 起头如实署名）` };
+  }
+  return { kind: 'review', exit: 0, verdict: rv.verdict, by: rv.by, at: rv.at,
+    summary: `复查落账在案：${rv.verdict} by ${rv.by}（verdict 不影响交付成立——FAIL 也是合格交付）` };
 }
 
 const tail = (s, n = 240) => (s || '').trim().split('\n').slice(-3).join(' / ').slice(-n);
@@ -309,47 +406,55 @@ export function sessionArgs({ effort, maxTurns, extraFlags = [] }) {
 
 // ── dispatch ───────────────────────────────────────────────────────────────
 /**
- * 为 <slug> 的 <SN> 阶段派一个匿名无头会话。返回结构化结果（永不抛）。
+ * 为 <slug> 的 <SN> 阶段派一个匿名无头会话（review=true 时派**复查**会话）。返回结构化结果（永不抛）。
  * 顺序：形态 → 阶段档位 → 运行时探测 → 占锁 → 喂料 → 会话(+看门狗+重派一次) → **独立重验** → 落台账 → 放锁。
+ * 复查模式复用同一条通道，只有四处分叉：档位（reviewBudgetFor）· 喂料（buildReviewSessionPrompt）·
+ * 锁/台账 stage 记 `SN:review` · 独立重验改核 pipeline.json 的复查记录（verifyReview·verdict 不影响成败）。
  */
 export async function dispatch(opts = {}) {
   const {
     root = REPO_ROOT, slug, stage,
+    review = false,     // true=派复查会话（owner 2026-08-10 令·复查人≠施工人的自动化半边）
     idleTimeoutMs = Number(process.env.ZEROCRAFT_ORCH_IDLE_MS) || IDLE_TIMEOUT_MS,
     maxAttempts = MAX_ATTEMPTS,
     killGraceMs = KILL_GRACE_MS,
     claudeBin = process.env.ZEROCRAFT_ORCH_CLAUDE || 'claude',
     extraFlags = (process.env.ZEROCRAFT_ORCH_FLAGS || '').split(/\s+/).filter(Boolean),
-    verifyCmd = null,   // 测试注入替身门；生产恒 null → 走 verifyStage 真门
+    verifyCmd = null,   // 测试注入替身门（仅施工模式）；生产恒 null → 走 verifyStage 真门。
+                        // 复查模式不接注入：重验=纯 fs+指纹核对（verifyReview），测试造真记录即可。
     pid = process.pid,
   } = opts;
 
   const attemptCap = Math.max(1, Number(maxAttempts) || MAX_ATTEMPTS);          // 至少派一次
   const idleMs = Math.max(1, Number(idleTimeoutMs) || IDLE_TIMEOUT_MS);         // 0/NaN 不当秒杀用
 
-  if (!slug || !stage) return { ok: false, code: 'USAGE', reason: '用法：dispatch <slug> <SN>' };
+  if (!slug || !stage) return { ok: false, code: 'USAGE', reason: '用法：dispatch <slug> <SN> [--review]' };
   const form = detectForm(root, slug);
   if (!form) return { ok: false, code: 'UNKNOWN_GAME', slug, reason: `未知游戏: ${slug}（library/ · public/games/ · games/ 均无）` };
 
-  const budget = budgetFor(stage);
-  if (!budget.ok) return { ok: false, code: budget.code, slug, stage, reason: budget.reason };
+  const budget = review ? reviewBudgetFor(stage) : budgetFor(stage);
+  if (!budget.ok) return { ok: false, code: budget.code, slug, stage, review, reason: budget.reason };
 
   const rt = detectRuntime({ bin: claudeBin });
   if (!rt.ok) return { ok: false, code: 'NO_RUNTIME', slug, stage, reason: rt.reason };
 
   const startedAt = new Date();
-  const got = acquireLock(root, { slug, stage, pid, at: startedAt });
+  // 串行锁与施工会话共用一把（同库同刻只许一个·不分施工/复查）；复查在锁与台账里记 `SN:review`。
+  const lockStage = review ? `${stage}:review` : stage;
+  const got = acquireLock(root, { slug, stage: lockStage, pid, at: startedAt });
   if (!got.ok) {
     const h = got.holder;
-    return { ok: false, code: 'LOCKED', slug, stage, holder: h,
+    return { ok: false, code: 'LOCKED', slug, stage, review, holder: h,
       reason: `已有会话在跑：${h.slug} ${h.stage}（pid ${h.pid}·起于 ${(h.startedAt || '').slice(0, 19).replace('T', ' ')}）。`
         + '同库同刻只许一个（M1 撞车事故律：双头施工=浪费+冲突）。要抢占先 `abort ' + h.slug + '`。' };
   }
 
-  const prompt = buildSessionPrompt({ root, slug, stage, boardText: boardText(root, slug) });
+  const prompt = review
+    ? buildReviewSessionPrompt({ root, slug, stage, boardText: boardText(root, slug), checklistText: checklistText(root, slug, stage) })
+    : buildSessionPrompt({ root, slug, stage, boardText: boardText(root, slug) });
   const args = sessionArgs({ effort: budget.effort, maxTurns: budget.maxTurns, extraFlags });
   mkdirSync(logDir(root), { recursive: true });
-  const logFile = join(logDir(root), `${slug}-${stage}-${startedAt.toISOString().replace(/[:.]/g, '-')}.log`);
+  const logFile = join(logDir(root), `${slug}-${lockStage.replace(':', '-')}-${startedAt.toISOString().replace(/[:.]/g, '-')}.log`);
 
   let session = null, attempts = 0, lastBeat = 0;
   try {
@@ -374,31 +479,37 @@ export async function dispatch(opts = {}) {
 
     const endedAt = new Date();
     if (session.outcome === 'stalled') {          // 再停 = failed「需人工」（不再重验：会话根本没跑完）
-      const entry = { stage, startedAt: startedAt.toISOString(), endedAt: endedAt.toISOString(), state: 'failed',
+      const entry = { stage: lockStage, startedAt: startedAt.toISOString(), endedAt: endedAt.toISOString(), state: 'failed',
         attempts, needsHuman: true, reason: `看门狗：连续 ${attempts} 次 ${idleMs}ms 无输出（停滞）→ 已杀·需人工接手`,
         session: { outcome: session.outcome, code: session.code, signal: session.signal, bytes: session.bytes }, logFile };
       writeRun(root, slug, entry);
-      return { ok: false, code: 'STALLED', slug, stage, attempts, session, verify: null, entry, reason: entry.reason };
+      return { ok: false, code: 'STALLED', slug, stage, review, attempts, session, verify: null, entry, reason: entry.reason };
     }
     if (session.outcome === 'spawn-error') {
-      const entry = { stage, startedAt: startedAt.toISOString(), endedAt: endedAt.toISOString(), state: 'failed',
+      const entry = { stage: lockStage, startedAt: startedAt.toISOString(), endedAt: endedAt.toISOString(), state: 'failed',
         attempts, needsHuman: true, reason: `会话起不来：${session.error}`, session, logFile };
       writeRun(root, slug, entry);
-      return { ok: false, code: 'NO_RUNTIME', slug, stage, attempts, session, entry, reason: NO_RUNTIME_MSG(claudeBin) };
+      return { ok: false, code: 'NO_RUNTIME', slug, stage, review, attempts, session, entry, reason: NO_RUNTIME_MSG(claudeBin) };
     }
 
     // ── 绿不靠嘴：会话说什么不看，编排器自己量 ──
-    const verify = verifyStage(root, slug, stage, { cmd: verifyCmd });
+    //   施工=重跑该阶段门（verifyStage）；复查=自查 pipeline.json 复查记录（verifyReview·verdict 不影响成败）。
+    const verify = review ? verifyReview(root, slug, stage) : verifyStage(root, slug, stage, { cmd: verifyCmd });
     const state = decideStatus(verify);
-    const entry = { stage, startedAt: startedAt.toISOString(), endedAt: new Date().toISOString(), state, attempts,
+    const entry = { stage: lockStage, startedAt: startedAt.toISOString(), endedAt: new Date().toISOString(), state, attempts,
       needsHuman: state !== 'done', verify, logFile,
+      ...(review && verify.verdict != null ? { verdict: verify.verdict } : {}),   // 台账带 verdict（FAIL 也是合格交付）
       session: { outcome: session.outcome, code: session.code, signal: session.signal, bytes: session.bytes },
-      reason: state === 'done'
-        ? `独立重验 ${verify.kind} 退出码 0 —— 该阶段落绿`
-        : `独立重验 ${verify.kind} 退出码 ${verify.exit} —— 会话${session.code === 0 ? '自称完成但' : ''}没把门跑绿·需人工（${verify.summary}）` };
+      reason: review
+        ? (state === 'done'
+          ? `独立重验 review 过 —— ${verify.summary}`
+          : `独立重验 review 未过 —— 会话${session.code === 0 ? '自称查完但' : ''}复查交付不成立·需人工（${verify.summary}）`)
+        : (state === 'done'
+          ? `独立重验 ${verify.kind} 退出码 0 —— 该阶段落绿`
+          : `独立重验 ${verify.kind} 退出码 ${verify.exit} —— 会话${session.code === 0 ? '自称完成但' : ''}没把门跑绿·需人工（${verify.summary}）`) };
     writeRun(root, slug, entry);
-    return { ok: state === 'done', code: state === 'done' ? 'DONE' : 'GATE_FAIL',
-      slug, stage, attempts, session, verify, entry, reason: entry.reason };
+    return { ok: state === 'done', code: state === 'done' ? 'DONE' : (review ? 'REVIEW_FAIL' : 'GATE_FAIL'),
+      slug, stage, review, attempts, session, verify, entry, reason: entry.reason };
   } finally {
     releaseLock(root, { pid });
   }
@@ -452,16 +563,20 @@ const EXIT = { DONE: 0, FAILED: 1, USAGE: 2, NO_RUNTIME: 3, LOCKED: 4 };
 const exitCodeFor = (code) => code === 'DONE' ? EXIT.DONE
   : code === 'NO_RUNTIME' ? EXIT.NO_RUNTIME
     : code === 'LOCKED' ? EXIT.LOCKED
-      : ['USAGE', 'UNKNOWN_GAME', 'UNKNOWN_STAGE', 'NO_SESSION_STAGE'].includes(code) ? EXIT.USAGE
+      : ['USAGE', 'UNKNOWN_GAME', 'UNKNOWN_STAGE', 'NO_SESSION_STAGE', 'NO_REVIEW_STAGE'].includes(code) ? EXIT.USAGE
         : EXIT.FAILED;
 
 const USAGE = `用法：
-  node scripts/pipeline-orchestrator.mjs dispatch <slug> <SN> [--idle-ms N] [--max-attempts N] [--json]
+  node scripts/pipeline-orchestrator.mjs dispatch <slug> <SN> [--review] [--idle-ms N] [--max-attempts N] [--json]
+      （--review = 为该关派独立**复查**会话：闭集 ${REVIEW_STAGES.join('/')}·effort=${REVIEW_BUDGET.effort}·
+        唯一允许的写=review 落账·FAIL 也是合格交付；owner 2026-08-10 令）
   node scripts/pipeline-orchestrator.mjs status [slug] [--json]
   node scripts/pipeline-orchestrator.mjs abort <slug> [--json]
-退出码：0=done · 1=failed · 2=用法/未知游戏/该阶段无会话 · 3=本机无编排运行时 · 4=已有会话在跑
+退出码：0=done · 1=failed · 2=用法/未知游戏/该阶段无会话（含复查豁免关） · 3=本机无编排运行时 · 4=已有会话在跑
 可派会话阶段：${Object.keys(STAGE_BUDGET).map((s) => `${s}(${STAGE_BUDGET[s].effort})`).join(' · ')}
-  ${Object.entries(NO_SESSION_STAGES).map(([k, v]) => `${k}: ${v}`).join('\n  ')}`;
+  ${Object.entries(NO_SESSION_STAGES).map(([k, v]) => `${k}: ${v}`).join('\n  ')}
+复查豁免关（--review 拒）：
+  ${Object.entries(NO_REVIEW_STAGES).map(([k, v]) => `${k}: ${v}`).join('\n  ')}`;
 
 async function main() {
   const argv = process.argv.slice(2);
@@ -471,14 +586,14 @@ async function main() {
   const out = (obj, exit) => { console.log(json ? JSON.stringify(obj) : (obj.reason || obj.message || '')); process.exit(exit); };
 
   if (cmd === 'dispatch') {
-    const o = { root: REPO_ROOT, slug: a2, stage: a3 };
+    const o = { root: REPO_ROOT, slug: a2, stage: a3, review: argv.includes('--review') };
     if (opt('--idle-ms')) o.idleTimeoutMs = Number(opt('--idle-ms'));
     if (opt('--max-attempts')) o.maxAttempts = Number(opt('--max-attempts'));
-    if (!a2 || !a3) { console.error(USAGE); process.exit(EXIT.USAGE); }
+    if (!a2 || !a3 || a3.startsWith('--')) { console.error(USAGE); process.exit(EXIT.USAGE); }
     const r = await dispatch(o);
     if (json) console.log(JSON.stringify(r));
     else {
-      console.log(`${r.ok ? '✅' : '❌'} dispatch ${r.slug} ${r.stage}：${r.reason}`);
+      console.log(`${r.ok ? '✅' : '❌'} dispatch ${r.slug} ${r.stage}${r.review ? '（复查）' : ''}：${r.reason}`);
       if (r.verify) console.log(`   独立重验（${r.verify.kind}）退出码 ${r.verify.exit} · ${r.verify.summary}`);
       if (r.entry?.logFile) console.log(`   会话日志：${r.entry.logFile}`);
     }
