@@ -35,7 +35,7 @@
 
 ### REQ-ENGINEAUDIT-引擎全量评审落地 · 15 子系统深审（110+ 发现）· [2026-08-04] · owner 令 → **报告=唯一真相 `docs/design/engine-review-2026-08-04.md`** · status: **in-progress（P0 + 21 处已修推·门禁全绿；余 3 项见下）** · 优先级: P1（P0 已清·降档） · 类型: 引擎质量总账
 > **已修并推（Lead·全部「先实证复现→修→撤修复验红」）**：批0 确定性护栏/注入面/voxel 崩溃 13 处（`0031b950d`/`3b8e2757c`/`29cf511ba`）→ **P0 lockstep 加入死锁**（`ce3903c1`·输入按 epoch 缓存·实测 A 停 2×inputDelay/B 停 inputDelay）→ 存档装配批（envelope checksum 覆盖持久化形态 · save 读档校验 fail-closed · manifest `__proto__` 拒收）→ sim 正确性批（card-pile 空出牌 · effect-apply NaN/mul 清零 · friction/ground-sense 漏过滤 Sensor=二段跳 · merge-on-place 撞名硬崩 · matrix-duel ≥3 死锁）→ owner 四裁（共用组件推断不猜+守卫 · 快照带创建序 · TS 卡带执行侧闸门）→ Sprite.anchor 真消费。
-> **余下 3 项 → owner 2026-08-10 全分配**（并入 REQ-DEEPREVIEW 深审战役·排程见其图纸轨 B）：①根因① reads/writes 对账守卫+§3.1 补齐（🔴 主程亲做·等轨 A 定序证据）②根因② 运行时组件全集基准（已派工先行）③Q1 消费路径（根因② 落地后派）。
+> **余下 3 项 → owner 2026-08-10 全分配**：②根因② **✅ done**（`e8a0b02c3`·150 组件运行时全集+NON_DETERMINISTIC⊆全集对账+漂移门双保险·Lead 双轮破坏亲验）。①根因① 🔴 主程亲做·**spec 已按深审证据扩充**（三方对账：申报 reads/writes vs 实际 getComponent/setComponent vs 相位落桶 + 成环告警棘轮——A1 探针4/5 实证：相位错位 acceptance 全绿纯靠注册序巧合、告警每趟 12~58 条无人收割）。③Q1 已派工（worktree·**注意 game102 红旗清理剔出范围**——REQ-G102-HARDLINE 裁决未下）。
 > **已转派/已裁**：UI 契约批→PUI（已完结）· 渲染专项→P3D（`REQ-3D-RENDERHYG` 在 3D 池）· **根因④ 受信执行环境→owner 2026-08-05 令搁置**（未理解·待重讲后再定）。
 
 <!-- REQ-UICONTRACT-UI 契约批（P1·引擎评审 §6⑨）已完结：PUI 三条（modalClose/comboClick 补 ActionSink 回退 · 键控锚点改 firstContentAnchor · 动效扫描抽 initDynamics 幂等且 mount/update 各扫一次）+ Lead item④（Sprite.anchorX/Y 抽 spriteAnchorOffset 纯函数真消费）全部落地。Lead 对抗性验收 PASS：6 例守卫独立复跑绿·撤 update 侧 initDynamics 实测转红 2 例·撤 item④ 修复转红 2 例。P2/P3 尾巴（bindings 不递归 node props / layout-solver 忽略 cols / typewriter+emoji 掉字 / apollo-kit 像素字体退化 / onboarding 缩放错位…）按报告 §5 原文另清·不占槽。全文查 git 历史。 -->
@@ -140,8 +140,19 @@ UI 层那个同名件只是个四预设的门面。
 
 <!-- REQ-WAITUNTIL-验收剧本条件等待（P1·owner 2026-08-09 判 A·game108 复盘第五缺口）已完结：剧本步骤加 `{"waitUntil":[断言…],cap:N}`——断言复用 expect 闭集零新词表·先查后拍·封顶 FAIL 带已等拍数·waitedTicks 入 trace（同 seed 同轨连它一起比）·裸 tick 仍合法。主程施工（🔴 共享 harness）：schema+runner+13 例守卫·深车道点名跑绿（37 过·2 红=game-103 缺 adapter+game102 剧本漂移，经 HEAD 隔离 worktree 复跑坐实为存量且各有在案工单）·双撤修验红锚点命中（AND 语义反转→「多断言 AND 语义」红·撤 cap 校验→「cap 必填」红）。手册口径入 testing.md 验收剧本节；game108 迁移=REQ-108-GD-03（游戏自治·非强制）。spec 与判词全文查 git 历史。 -->
 
-### REQ-DEEPREVIEW-引擎底层深审战役 · 地基实证复审 + 8/4 余账 + 108 变更总审 · [2026-08-10] · **owner 令（三轨全选）** · status: **in-progress** · **施工主体 = Lead 主程（本行即占锁·统筹+终审+根因① 亲做）** · 优先级: P1 · 类型: 引擎质量总账
-> **图纸唯一真相 `docs/design/engine-deep-review-2026-08.md`**：轨 A 破坏性探针实证（确定性/定序/快照/lockstep/存档·每条结论跑出来非读出来）· 轨 B 清 8/4 余账（根因② 先行已派·根因① 🔴 主程等轨 A 证据·Q1 殿后）· 轨 C 108 引擎变更逐笔总审 + 全量告警收割。证据标准/隔离施工配方/汇口见图纸。产出=「地基体检报告」：实证护住 / 裸奔已开单 / 明知不修（附理由）三清单。
+<!-- REQ-DEEPREVIEW-引擎底层深审战役（P1·owner 2026-08-10 令三轨全选）已完结：四路证据全回·Lead 终审毕。**体检报告全文 = `docs/design/engine-deep-review-2026-08.md` 体检结果节**（实证护住 6 面 / 裸奔 6 项已开单：REQ-GUARDGATE/DESYNC/SAVEORDER+根因① spec 扩充+3D 池 G211 单 / 记债 5 笔附理由）。战果：根因② 全集基准合入 e8a0b02c3（A1 探针当验收对照·当日闭环幽灵名裸奔）；RandomSeed.sequence NaN 潜伏 bug 直接修（撤修验红在案）；108 变更 38 笔逐笔过账体系判定=转的。余下施工挂 REQ-ENGINEAUDIT（根因①主程/Q1 已派）。 -->
+
+### REQ-DESYNC-lockstep 分歧要大声报告 · [2026-08-10] · 深审 A2 发现①（Lead 读码坐实） · status: open · 归属: 🔴 主程（lockstep 面） · 优先级: P1 · 类型: 联机可靠性
+> **病**（实证：双端 60/60 拍 hash 全分叉、零报警、照跑）：hash 报文照发照收，但唯一消费点是 `lockstep-tab.ts` `view().inSync` 显示位；且 `peerHashAt.get(simTick)` **缺对端数据默认 true**——领先一拍的那端永远看不见分叉；UI 只画一行「对齐中」。
+> **做法**：① 缺数据不得默认 true（三态或对最近可比拍判定）② 首次确认分叉一次性大声报告（console.error + 事件信号，供上层拦截/停机/重同步决策）③ 显示侧把「分叉」与「对齐中」分开画。**边界**：`src/net/lockstep-tab.ts` + `mp-client.ts` 显示 + 点名测试（含「领先端也能看见分叉」断言）。
+
+### REQ-SAVEORDER-存档 order 段入指纹 fail-closed · [2026-08-10] · 深审 A2 发现②（Lead 读码坐实） · status: open · 归属: 🔴 主程（存档面） · 优先级: P2 · 类型: 存档完整性
+> **病**（实证：order 整段反转→带病加载零报错）：`save-system.ts` `load()` 只验 `hashSnapshot(data.snapshot)`；`data.order` 未入指纹直通 `world.restore`，而 order 决定 restore 后的 query 序——序敏感世界静默变行为，canonical hash 抓不到。
+> **做法**：`meta.hash` 输入并入 order（或另加 order 指纹）·fail-closed；**旧档兼容**：无 order 的旧档仍可读（现行退回键序语义不动），带 order 的必验。**边界**：`src/services/storage/save-system.ts`（必要时 envelope 同步）+ 点名测试（order 篡改必拒 + 旧档仍读）。
+
+### REQ-GUARDGATE-引擎面守卫接线批 · 禁裸随机静态守卫 + hygiene 修红接门 · [2026-08-10] · 深审 A1 探针2/顺手发现（Lead 复跑坐实） · status: open · 指派: 可派工（守卫属 Lead 域·Lead review） · 优先级: P1 · 类型: 门禁基建
+> **病**（实证）：① 往 matrix-duel 结算插 `Math.random()`——game-skill-audit 只扫 `games/`、门禁无引擎层随机扫描步，被咬全靠碰巧存在的精确数值断言；② `test-hygiene-check.mjs` 在 HEAD 即 FAIL（`src/runtime/engine.loop-stop.test.ts:25` [time-wait] 用 `performance.now()`）且未接进 scoped-gate 任何 scope——红着也拦不了推送。
+> **做法**：① 新静态守卫：引擎面（`src/{engine,skills,assembly,net,services}` 非测试文件）禁裸 `Math.random`（白名单 = `atoms/random` 实现文件），接 scoped-gate；② 修掉 loop-stop.test 的墙钟违规 + hygiene 接门。**边界**：新守卫脚本 + `scoped-gate.mjs` 接线 + `engine.loop-stop.test.ts` 一处 + 各点名测试。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 

@@ -10,7 +10,7 @@ export function nextRandom(state: RandomSeed): number {
   let t = state.seed;
   t = Math.imul(t ^ (t >>> 15), t | 1);
   t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-  state.sequence += 1;
+  state.sequence = (state.sequence ?? 0) + 1; // 蓝图只给 {seed} 时 sequence 缺省——undefined+1=NaN 会废掉重放校验计数
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
 

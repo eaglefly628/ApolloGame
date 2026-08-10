@@ -33,6 +33,12 @@ describe('random atom', () => {
     expect(s.sequence).toBe(100);
   });
 
+  it('sequence 缺省（蓝图只给 {seed}）→ 首次取数后为 1 而非 NaN（深审 A1 探针带出）', () => {
+    const s = { type: 'RandomSeed', seed: 108 } as never as ReturnType<typeof seed>;
+    nextRandom(s);
+    expect(s.sequence).toBe(1); // 撤修（sequence += 1）→ NaN，本断言红
+  });
+
   it('randomInt stays within [min, max)', () => {
     const s = seed(123);
     for (let i = 0; i < 200; i++) {
