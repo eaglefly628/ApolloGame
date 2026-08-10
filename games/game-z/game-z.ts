@@ -9,7 +9,7 @@ import { ThreeRenderer, type RenderStats } from '@zerocraft/engine/renderer/thre
 import { AssetManager, registerAssetIndex } from '@zerocraft/engine/assets/index.js';
 import { mountUI } from '@zerocraft/engine/ui/components/index.js';
 import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
-import type { Velocity, Camera3D, Post3D, Fog3D, Transform, AnimState3D } from '@zerocraft/engine/engine/protocol/components.js';
+import type { Velocity, Camera3D, Post3D, Fog3D, Transform, AnimState3D, Material3D } from '@zerocraft/engine/engine/protocol/components.js';
 import { dioramaBlueprint, HOME_CAM, PLATFORM_TWO_CAM, PLATFORM_THREE_CAM, PLATFORM_FOUR_CAM, PLATFORM_FIVE_CAM, TRACK_R } from './diorama.js';
 import { GAME_Z_INDEX, GAME_Z_MATERIALS, DioramaLoader } from './assets.js';
 
@@ -319,12 +319,19 @@ export function mount(container: HTMLElement): () => void {
   // 帧率：每帧测壁钟差 → 平滑 fps，~4 次/秒刷 HUD（含 profiler·读 renderer.readStats）。
   let lastT = performance.now();
   let lastHud = 0;
+  let lastDissolve = 0; // 中心溶解水晶自播节拍（render-only·同 shake/flash trigger bump 先例）
   const unsub = engine.subscribe(() => {
     const now = performance.now();
     const dt = now - lastT;
     lastT = now;
     autoRun(); // 鸭子每帧自动绕赛道跑（无 WASD 时）
     syncGait(); // 迈腿倍速随地速（消滑步·auto/手动通用·读刚写的 Velocity）
+    // 溶解水晶循环：每 2.4s bump 一次 trigger·奇=溶解消散(out)/偶=重现(in) → 中心水晶不停溶解-重现。
+    if (now - lastDissolve > 2400) {
+      lastDissolve = now;
+      const md = engine.world.getComponent<Material3D>('arena-dissolve', 'Material3D');
+      if (md?.dissolve) { const t = (md.dissolve.trigger ?? 0) + 1; md.dissolve.trigger = t; md.dissolve.direction = t % 2 ? 'out' : 'in'; renderer.invalidate(); }
+    }
     if (dt > 0) fps = fps * 0.9 + (1000 / dt) * 0.1;
     if (now - lastHud > 250) { lastHud = now; ui.update(hudTree(Math.round(fps), renderer.readStats(), showProfiler, lastPicked)); }
   });

@@ -463,6 +463,17 @@ export function dioramaBlueprint(): WorldBlueprint {
         },
       },
 
+      // 溶解水晶（REQ-3D-DISSOLVE·自播循环展示·owner「场景里加一个」）：悬于中心信标上方的水晶球，**每几秒
+      //   自播一轮「溶解消散 → 重现」**——game-z.ts 定时 bump `dissolve.trigger` + 翻转 `direction`（render-only·
+      //   同 shake/flash trigger 先例）。默认跟随视角里鸭子绕它跑·常在框内 → 不用传送就看得见溶解在跑。
+      'arena-dissolve': {
+        Transform3D: { x: 0, y: 16, z: 0 },
+        Mesh3D: { shape: 'sphere', width: 7, height: 7, frontTint: 0xffffff },
+        Material3D: { preset: 'steel', color: 0x39d0ff, dissolve: { trigger: 0, dur: 1.5, direction: 'out', pattern: 'voronoi', shape: 'euclid', edgeColor: 0x39d0ff, glow: 2.2, scale: 34 } },
+        Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.6 }] },
+        WorldUI3D: { text: '溶解 dissolve（循环自播·溶解→重现）', offsetY: 6, size: 'sm', color: 'jade' },
+      },
+
       // 三只追兵（从鸭子后方出发·鸭子起步在 (30,0) 向 +Z 跑 → 后方=−Z 侧·循 NavGraph 追逐）。前两只带动态点光。
       seeker: pursuer(30, -16, 0xff7043, 0xffab91, '追兵·橙', 'warn', { color: 0xffb060, intensity: 120, range: 30 }),
       'seeker-2': pursuer(38, -26, 0x42a5f5, 0x90caf9, '追兵·蓝', 'jade', { color: 0x6cc6ff, intensity: 110, range: 28 }),
