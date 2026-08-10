@@ -1,6 +1,6 @@
 // duel-spike 纯函数测试（物理表现不可测·但「朝向→生死→判词」「凸包形状」「组数→布局」这三步是纯函数·必须钉死）。
 import { describe, it, expect } from 'vitest';
-import { judgeDuel, upYOf, tallyOf, layoutFor, throwPlan, isHit, HIT_DIST_RATIO, DUEL_COUNTS, type CardOutcome, type DuelOutcome } from './duel-spike.js';
+import { judgeDuel, upYOf, tallyOf, layoutFor, throwPlan, isHit, HIT_DIST_RATIO, DUEL_COUNTS, SPIN_BAND, flightTime, flipPhaseSpanHalfTurns, type CardOutcome, type DuelOutcome } from './duel-spike.js';
 
 const c = (side: 'a' | 'b', upY: number): CardOutcome => ({ side, upY, front: upY > 0 });
 const duel = (aUp: number, bUp: number): DuelOutcome => {
@@ -83,6 +83,27 @@ describe('layoutFor · 组数 → 场地缩放', () => {
       const L = layoutFor(n);
       expect(n * L.laneGap).toBeLessThanOrEqual(L.halfZ * 2);
     }
+  });
+});
+
+describe('翻面自旋 · 落面 50/50 的前提（owner「一半正一半反」+「旋转再弱一点点」）', () => {
+  // 出手参数取运行时口径：y0=0.9（throwPlan 的起手高）· vy∈[12.4,13.6] · 落地读数高 ≈0.09（牌半厚+地面）。
+  const flight = (vy: number) => flightTime(0.9, vy, 0.09);
+
+  it('飞行时间随抛高单调增（公式自洽）', () => {
+    expect(flight(13.6)).toBeGreaterThan(flight(12.4));
+    expect(flight(13)).toBeCloseTo((13 + Math.sqrt(13 * 13 + 2 * 20 * 0.81)) / 20, 9);
+  });
+  it('**相位跨度 ≥1 个半圈** —— 调弱旋转不得把落面调回系统性偏向某一面', () => {
+    const span = flipPhaseSpanHalfTurns(SPIN_BAND.min, SPIN_BAND.max, flight(12.4)); // 取最短飞行=最保守
+    expect(span).toBeGreaterThanOrEqual(1);
+  });
+  it('**最慢的牌也必须转过至少半圈** —— 下限太低会让慢牌恒定正面落地', () => {
+    expect((SPIN_BAND.min * flight(12.4)) / Math.PI).toBeGreaterThanOrEqual(1);
+  });
+  it('回归护栏：旧值 SPIN0=2.2 恒定（无跨度）正是「大多反面朝上」的病根', () => {
+    expect(flipPhaseSpanHalfTurns(2.2, 2.2, flight(13))).toBe(0);       // 跨度 0 → 所有牌同相位
+    expect((2.2 * 0.56) / Math.PI).toBeLessThan(0.5);                   // 当时飞行 ~0.56s → 连半圈都不到
   });
 });
 

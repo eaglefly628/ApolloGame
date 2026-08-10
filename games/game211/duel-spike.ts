@@ -67,8 +67,26 @@ const Z_SPREAD = 0.82;   // 上限 = sqrt((1.2R)² − Y_STAGGER²) ≈ 0.89（�
 //   取 9~24 rad/s（0.8~2.1 圈）→ 相位跨度 >2 个半圈，落面接近均匀。
 //   ⚠ 与「别乱飞」不矛盾：乱飞的病根是**出手就在疯转把碰撞淹没**，那次是 ±16 **恒定**值；
 //   这里是绕**水平轴**的翻面自旋、每张牌独立随机，碰撞依然是主角。
-const SPIN_FLIP_MIN = 9, SPIN_FLIP_MAX = 24;
-const SPIN_SELF = 5;           // 绕牌面法线的自旋（纯观感·不改变正反·牌在空中打转更好看）
+//   owner 2026-08-10「旋转力度太强了一点点」→ 收到 7~18 rad/s。**50/50 不会因此丢**（由测试钉死）：
+//   实际抛高 vy≈13、g=20 → 飞行 `flightTime(0.9, 13, 0.09)` ≈ 1.36s，
+//   翻转角跨度 = (18−7)×1.36 ≈ 15 rad ≈ **4.8 个半圈**，远超「把落面相位洗匀」所需的 1 个半圈（π）。
+//   真正会打破均匀的是**下限太低**（最慢的牌转不满半圈就落地 → 恒正面），故下限只从 9 收到 7、不再往下。
+const SPIN_FLIP_MIN = 7, SPIN_FLIP_MAX = 18;
+const SPIN_SELF = 4;           // 绕牌面法线的自旋（纯观感·不改变正反·牌在空中打转更好看）
+/** 翻面自旋区间（导出仅供测试钉「调旋转不能把落面调偏」这条不变量）。 */
+export const SPIN_BAND = { min: SPIN_FLIP_MIN, max: SPIN_FLIP_MAX } as const;
+
+/** 抛物线飞行时间（纯函数）：从 y0 以 vy 竖直抛出、落到 yEnd 的时间。 */
+export function flightTime(y0: number, vy: number, yEnd: number, g: number = GRAVITY): number {
+  return (vy + Math.sqrt(vy * vy + 2 * g * (y0 - yEnd))) / g;
+}
+
+/** 落面相位跨度（纯函数）：飞行期内「最快牌与最慢牌」的翻转角差，**单位 = 半圈（π）**。
+ *  牌出生正面朝上，每转过半圈正反就翻一次 → 跨度 ≥1 才可能把落面洗匀；
+ *  <1 时所有牌的落面相位挤在同一段，必然系统性偏向某一面（实测 SPIN0=2.2 就是这个病：全飞行只转 ~70°）。 */
+export function flipPhaseSpanHalfTurns(spinMin: number, spinMax: number, flightSec: number): number {
+  return ((spinMax - spinMin) * flightSec) / Math.PI;
+}
 
 const SIDE = ['a', 'b'] as const;
 type Side = (typeof SIDE)[number];
