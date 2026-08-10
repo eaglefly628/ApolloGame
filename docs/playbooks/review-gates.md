@@ -16,6 +16,7 @@
 
 ## 二、复查 session 怎么干活（开工三步）
 
+0. **派复查最省事的正路** = `node scripts/pipeline-orchestrator.mjs dispatch <slug> <SN> --review`——编排器派一个独立复查会话（复查人≠施工人天然成立），查完自动 review 落账、编排器只认账本指纹不认嘴。手动复查走下面三步。
 1. `node scripts/game-pipeline.mjs checklist <slug> <SN>` —— 打印该关复查清单（唯一开工命令）。
 2. **逐条按 review 四步铁律核证**（CLAUDE.md 2026-08-06 立·出错全是跑出来的不是读出来的）：
    ① **独立复跑**（不采信施工方自陈的全绿）② **撤修验红**——撤掉修复确认真转红，破坏**必须带锚点命中断言**
