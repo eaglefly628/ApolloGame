@@ -3,11 +3,15 @@
 // 用法：node scripts/game-skill-audit.mjs [game-g game-i ...]（缺省=全部游戏）
 // 体检输出每个游戏的引擎能力接入面 + 分层旗标，末行判词 token + 退出码可接门禁。
 //
-// 分层（REQ-QA-测试审计强化三件 · 主程 spec 2026-07-04）：
+// 分层（REQ-QA-测试审计强化三件 · 主程 spec 2026-07-04；8/4 大评审 Q1 补三 regex · 2026-08-10）：
 //   🔴 红 = 已破不变量（游戏层红线，CLAUDE.md「游戏能力总览铁律」）：
-//        裸 Math.random（须用引擎种子 PRNG）· innerHTML · document.createElement（手写 DOM，须走 LayoutNode）。
+//        裸 Math.random（须用引擎种子 PRNG）· innerHTML · document.createElement（手写 DOM，须走 LayoutNode）
+//        · React 屏逃逸（.tsx 文件 / from 'react'——JSX 编译期才变 createElement，源码层抓文件与 import·
+//          评审实证 game-e.tsx 1163 行反面教材靠零 DOM 关键字过关）
+//        · DOM 逃生（insertAdjacentHTML / document.write——与 innerHTML 同级的手写 DOM 旁路）。
 //   🟡 黄 = 缺失防线（未破线但少了护栏）：零能力接入（绕开 capabilities 体系）· 零测试。
-//   ⚠ 建议 = 非红线的迁移提示（bg 裸色串→色库）：只提示、不进判词、不改退出码。
+//   ⚠ 建议 = 非红线的迁移提示：bg 裸色串→色库；墙钟（Date.now/performance.now·sim 面非确定性来源·
+//        评审 E3·先建议档不阻断——存量命中面广，升红另裁）：只提示、不进判词、不改退出码。
 //   判词（REQ-AUDIT-守门·owner 2026-07-16）：任一**未被 Lead 批注基线覆盖**的红 → FAIL（退出码 1）；
 //        红旗全被 Lead 批注基线覆盖（approvedBy:"LEAD"+date+reason·计数未超）→ 仍显示但不红判；
 //        无未覆盖红 · 有黄 → WARNINGS（退出码 0）；全清 → PASS（退出码 0）。
@@ -53,13 +57,17 @@ function audit(game) {
 
   let loc = 0;
   const capImports = new Set(); // 引擎能力/原子导入源
-  const flags = { mathRandom: [], innerHTML: [], createElement: [], nakedFill: [], zeroCap: false };
+  const flags = { mathRandom: [], innerHTML: [], createElement: [], nakedFill: [], reactScreen: [], domEscape: [], wallClock: [], zeroCap: false };
   let usesWorldOrManifest = 0;
 
   for (const f of src) {
     const text = readFileSync(f, 'utf8');
     const lines = text.split('\n');
     loc += lines.length;
+
+    // 🔴 React 屏逃逸①：.tsx 文件本身即违规（按文件计一次·文件内 react import 不再重复计）。
+    const isTsx = /\.tsx$/.test(f);
+    if (isTsx) flags.reactScreen.push(`${f} (.tsx)`);
 
     for (let i = 0; i < lines.length; i++) {
       const ln = lines[i];
@@ -72,6 +80,12 @@ function audit(game) {
       if (/\bMath\.random\s*\(/.test(ln)) flags.mathRandom.push(`${f}:${i + 1}`);
       if (/\binnerHTML\b/.test(ln)) flags.innerHTML.push(`${f}:${i + 1}`);
       if (/document\.createElement/.test(ln)) flags.createElement.push(`${f}:${i + 1}`);
+      // 🔴 React 屏逃逸②：.ts 文件里 import react（.tsx 已按文件计过，不重复）
+      if (!isTsx && /\bfrom\s+['"]react[^'"]*['"]/.test(ln)) flags.reactScreen.push(`${f}:${i + 1}`);
+      // 🔴 DOM 逃生：innerHTML 同级的手写 DOM 旁路
+      if (/\binsertAdjacentHTML\b|\bdocument\.write/.test(ln)) flags.domEscape.push(`${f}:${i + 1}`);
+      // ⚠ 墙钟（非确定性·先建议档不阻断·评审 E3）
+      if (/\bDate\.now\b|\bperformance\.now\b/.test(ln)) flags.wallClock.push(`${f}:${i + 1}`);
       // ⚠ 色库化建议（非红线·phase-1）：bg 裸 hex/gradient/url 串 → 应迁 SurfaceToken/FillPreset/{custom}（owner 2026-07-04）
       if (/\bbg:\s*['"](#[0-9a-fA-F]|linear-gradient|radial-gradient|url\()/.test(ln)) flags.nakedFill.push(`${f}:${i + 1}`);
     }
@@ -99,6 +113,8 @@ function redBits(r) {
   if (r.flags.mathRandom.length) bits.push(`裸Math.random×${r.flags.mathRandom.length}`);
   if (r.flags.innerHTML.length) bits.push(`innerHTML×${r.flags.innerHTML.length}`);
   if (r.flags.createElement.length) bits.push(`createElement×${r.flags.createElement.length}`);
+  if (r.flags.reactScreen.length) bits.push(`React屏×${r.flags.reactScreen.length}`);
+  if (r.flags.domEscape.length) bits.push(`DOM逃生×${r.flags.domEscape.length}`);
   return bits;
 }
 /** 黄旗（缺失防线·进判词）文字列表 */
@@ -114,16 +130,20 @@ function yellowBits(r) {
 function adviceBits(r) {
   const bits = [];
   if (r.flags.nakedFill.length) bits.push(`裸bg色×${r.flags.nakedFill.length}`);
+  if (r.flags.wallClock.length) bits.push(`墙钟×${r.flags.wallClock.length}`);
   return bits;
 }
 // ── 红旗棘轮基线（机读·随本工具同目录·ZEROCRAFT_AUDIT_BASELINE 可覆盖供对抗测试用固定基线·
 //    旧名 APOLLO_AUDIT_BASELINE 过渡期仍读）──
 const BASELINE_PATH = process.env.ZEROCRAFT_AUDIT_BASELINE || process.env.APOLLO_AUDIT_BASELINE || join('scripts', 'audit-baseline.json');
-/** 基线三指标 → audit flags 键 → 展示名。 */
+/** 基线红旗指标 → audit flags 键 → 展示名（Q1 批 2026-08-10 增 reactScreen/domEscape 两指标·同棘轮语义：
+ *  存量灌基线豁免可见·新增拦截）。 */
 const RATCHET_METRICS = [
   ['nakedRandom', 'mathRandom', '裸Math.random'],
   ['innerHTML', 'innerHTML', 'innerHTML'],
   ['createElement', 'createElement', 'document.createElement'],
+  ['reactScreen', 'reactScreen', 'React屏(.tsx/from-react)'],
+  ['domEscape', 'domEscape', 'DOM逃生(insertAdjacentHTML/document.write)'],
 ];
 /** 读基线 games 表（失败=null·棘轮段判 FAIL）。 */
 const baseline = (() => {
@@ -179,14 +199,17 @@ for (const r of rows) {
 
 // ── 明细（有任一旗标的游戏） ──
 for (const r of rows) {
-  const { mathRandom, innerHTML, createElement, nakedFill } = r.flags;
+  const { mathRandom, innerHTML, createElement, nakedFill, reactScreen, domEscape, wallClock } = r.flags;
   const redDetails = [
     ['🔴 裸 Math.random（应用引擎种子 PRNG）', mathRandom],
     ['🔴 innerHTML（应走 LayoutNode/mountUI）', innerHTML],
     ['🔴 document.createElement（手写 DOM，应走 LayoutNode）', createElement],
+    ['🔴 React 屏逃逸（.tsx / from react·应走 LayoutNode 纯数据）', reactScreen],
+    ['🔴 DOM 逃生（insertAdjacentHTML/document.write·innerHTML 同级）', domEscape],
   ].filter(([, v]) => v.length);
   const adviceDetails = [
     ['⚠ bg 裸色串（建议迁 SurfaceToken/FillPreset/{custom}·非红线）', nakedFill],
+    ['⚠ 墙钟 Date.now/performance.now（sim 面应走 tick/引擎时钟·先建议档不阻断）', wallClock],
   ].filter(([, v]) => v.length);
   if (!redDetails.length && !adviceDetails.length && !yellowBits(r).length) continue;
   console.log(`\n── ${r.game} 明细 ──`);

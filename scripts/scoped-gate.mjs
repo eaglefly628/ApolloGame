@@ -17,6 +17,11 @@
 //   node scripts/scoped-gate.mjs --run         按计划真跑门禁（退出码=门禁结果）
 //   node scripts/scoped-gate.mjs --base <ref>  改比较基线（默认 origin/claude/mainbranch）
 // 判词 token：`SCOPED-GATE: FULL|GAME:<g>|DOCS-ONLY|NONE`（审计/日志可 grep）。
+//
+// audit 进推送门（8/4 大评审 Q1 消费路径批·2026-08-10）：改动面涉及 games/<g>/** 非文档文件时，
+// 门禁附带 `node scripts/game-skill-audit.mjs <改动游戏…>`（红旗/棘轮红=拦推送）。只扫改动面涉及的
+// 游戏，绝不把全库扫描塞进每次门禁（全库兜底=S5 流程门 + 主程每日巡检）。此前 audit 只挂 S5 门——
+// 游戏带 audit 实况 FAIL 也能照常推（评审 E6 实证），本步收口。
 import { execSync, spawnSync } from 'node:child_process';
 
 // ── 引擎/共享面前缀（碰到=full·与 CLAUDE.md 引擎域界一致）───────────────────────
@@ -68,6 +73,20 @@ export function classify(files) {
   return { scope: 'full', reason: `多游戏同改（${[...games].join(', ')}）→ 安全兜底 full` };
 }
 
+/**
+ * 纯提取（可单测）：改动文件列表 → 需跑 game-skill-audit 的游戏名（去重·字典序）。
+ * 只认 games/<g>/** 下的非 .md 文件——audit 只读游戏源码（.ts/.tsx），纯文档改动不可能改变
+ * audit 结果，不为它加门；public/games/**（资产）与 docs/design/**（设计档）同理不触发。
+ */
+export function auditGamesOf(files) {
+  const set = new Set();
+  for (const f of files.filter(Boolean)) {
+    const m = f.match(/^games\/([a-z0-9-]+)\//);
+    if (m && !f.endsWith('.md')) set.add(m[1]);
+  }
+  return [...set].sort();
+}
+
 function changedFiles(base) {
   const runs = [
     `git diff --name-only ${base}...HEAD`, // 本分支相对基线的提交
@@ -83,8 +102,8 @@ function changedFiles(base) {
   return [...set];
 }
 
-// 门禁计划（scope → 要跑哪些步）。每步 {name, cmd}。
-function planFor(c) {
+// 门禁计划（scope + 改动游戏 → 要跑哪些步）。每步 {name, cmd}。导出供行为契约测试。
+export function planFor(c, auditGames = []) {
   // 常驻守卫（任何 scope 都跑·纯 fs 扫描+regex·秒级）：文档引用 + token 预算 + 引擎/内容边界
   // （decouple-check·REQ-SPLIT-引擎内容分离图纸②·跟双守卫并列，防 games/src 边界回潮）。
   const GUARDS = [
@@ -97,13 +116,19 @@ function planFor(c) {
   ];
   const TSC = { name: 'tsc', cmd: ['npx', ['tsc', '--noEmit']] };
   const BUILD = { name: 'build', cmd: ['npm', ['run', 'build']] };
+  // audit 进推送门（Q1·见文件头）：改动涉及 games/<g>/** 非文档 → 附带只扫这些游戏的 audit。
+  // 放最前（秒级·红旗直接拦，省得先烧几分钟 tsc/vitest 才发现）。docs-only/none 时 auditGames
+  // 必为空（非文档游戏文件会把 scope 推成 game/full），不额外加门。
+  const AUDIT = auditGames.length
+    ? [{ name: `audit:${auditGames.join('+')}`, cmd: ['node', ['scripts/game-skill-audit.mjs', ...auditGames]] }]
+    : [];
   if (c.scope === 'none') return [];
   if (c.scope === 'docs-only') return GUARDS;
   if (c.scope === 'game') {
-    return [TSC, { name: `vitest:${c.game}`, cmd: ['npx', ['vitest', 'run', `games/${c.game}`]] }, BUILD, ...GUARDS];
+    return [...AUDIT, TSC, { name: `vitest:${c.game}`, cmd: ['npx', ['vitest', 'run', `games/${c.game}`]] }, BUILD, ...GUARDS];
   }
   // full
-  return [TSC, { name: 'vitest:full', cmd: ['npx', ['vitest', 'run']] }, BUILD, ...GUARDS];
+  return [...AUDIT, TSC, { name: 'vitest:full', cmd: ['npx', ['vitest', 'run']] }, BUILD, ...GUARDS];
 }
 
 function main() {
@@ -118,8 +143,9 @@ function main() {
     : c.scope === 'docs-only' ? 'DOCS-ONLY'
     : c.scope === 'none' ? 'NONE' : 'FULL';
 
-  console.log(`[scoped-gate] 基线=${base} · 改动 ${files.length} 文件 · 判定=${c.scope}（${c.reason}）`);
-  const plan = planFor(c);
+  const auditGames = auditGamesOf(files);
+  console.log(`[scoped-gate] 基线=${base} · 改动 ${files.length} 文件 · 判定=${c.scope}（${c.reason}）${auditGames.length ? ` · audit 改动游戏=${auditGames.join(',')}` : ''}`);
+  const plan = planFor(c, auditGames);
   console.log(`[scoped-gate] 计划：${plan.length ? plan.map((s) => s.name).join(' → ') : '（无·无改动）'}`);
   console.log(`SCOPED-GATE: ${token}`);
 

@@ -33,7 +33,7 @@ function runAudit(games = [], env = {}) {
 
 const BASELINE = JSON.parse(readFileSync(join(ROOT, 'scripts/audit-baseline.json'), 'utf8')).games;
 const BASELINE_GAMES = Object.keys(BASELINE);
-const METRIC_KEYS = ['nakedRandom', 'innerHTML', 'createElement'];
+const METRIC_KEYS = ['nakedRandom', 'innerHTML', 'createElement', 'reactScreen', 'domEscape']; // Q1 批 2026-08-10 增后两指标
 
 // 对抗测试用临时固定基线（ZEROCRAFT_AUDIT_BASELINE 覆盖·不碰真基线·mkdtemp 并行安全）。
 const TMP = mkdtempSync(join(tmpdir(), 'audit-ratchet-'));
