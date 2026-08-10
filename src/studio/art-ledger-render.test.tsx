@@ -185,19 +185,36 @@ async function clickRegen(): Promise<void> {
 }
 
 describe('ArtLedgerPanel · mock 回退必须当场说破', () => {
-  it('重生成落到 mock（row.gen.mock）→ toast 明说 MOCK + 不会写回，绝不报「✓ 成功」', async () => {
+  it('row.gen.mock=true（显式 mock·台账已记）→ 说是试跑产物·永不写回，绝不报「✓ 成功」', async () => {
+    // 无 previewOnly ⇒ 不是「无 key 意外 mock」，只可能是人自己勾了 mock 试跑（意外 mock 不碰 row）。
     stubRegen({ success: true, no: 'art-001', row: { no: 'art-001', gen: { mock: true } } });
     await clickRegen();
     const html = container.innerHTML;
-    expect(html).toContain('MOCK');
-    expect(html).toContain('不会写回');
+    expect(html).toContain('mock 试跑产物');
+    expect(html).toContain('永不写回');
     expect(html).not.toContain('✓ 重生成');   // 不许伪装成功
   });
 
-  it('summary.mock>0 同样说破（批量口径复用同一判据）', async () => {
+  it('无 key 意外 mock（summary.previewOnly 非空）→ 明说没 key + 台账未动 + 黑户属正常别去登记', async () => {
+    // REQ-ARTTOOL-01 语义：无 key 时只落孤儿预览图、台账一个字节不碰 → 浏览器里必然显黑户。
+    // owner 2026-08-06 正是在这一步被「⚠黑户·拖入登记补建 provenance」误导（照做=把 mock 钉进游戏）。
+    stubRegen({ success: true, no: 'art-001', summary: { mock: 1, previewOnly: [{ no: 'art-001', previewPath: '/games/g/art/gen/mock/art-001.png' }] } });
+    await clickRegen();
+    const html = container.innerHTML;
+    expect(html).toContain('没配 key');
+    expect(html).toContain('台账未改动');
+    expect(html).toContain('别去登记');
+    expect(html).toContain('按供应商分');   // 真根因=选中的那家没 key，不是一个 key 都没有
+    expect(html).not.toContain('✓ 重生成');
+  });
+
+  it('显式勾 mock 试跑（summary.mock>0·无 previewOnly）→ 说是试跑产物，不误报「没 key」', async () => {
     stubRegen({ success: true, no: 'art-001', summary: { mock: 1 } });
     await clickRegen();
-    expect(container.innerHTML).toContain('MOCK');
+    const html = container.innerHTML;
+    expect(html).toContain('mock 试跑产物');
+    expect(html).not.toContain('没配 key');   // 别把「你自己勾的」说成「没 key」
+    expect(html).not.toContain('✓ 重生成');
   });
 
   it('真图（mock 假）→ 照旧报成功', async () => {

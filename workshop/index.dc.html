@@ -1180,7 +1180,12 @@
                       <div style="display:flex;flex-wrap:wrap;gap:5px;margin:6px 0">
                         <sc-for list="{{ abPackChips }}" as="pk" hint-placeholder-count="3"><button onClick="{{ pk.pick }}" style="{{ pk.style }}">{{ pk.label }}</button></sc-for>
                       </div>
+                      <div style="font-family:'Fredoka';font-weight:700;color:#8a5a2c;font-size:9.5px;letter-spacing:.04em;margin:2px 0 4px">生图模型（⚠=未配 key·选错=回退 mock 噪声图）</div>
+                      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">
+                        <sc-for list="{{ artProvChips }}" as="pv" hint-placeholder-count="3"><button onClick="{{ pv.pick }}" title="{{ pv.tip }}" style="{{ pv.style }}">{{ pv.label }}</button></sc-for>
+                      </div>
                       <button onClick="{{ abRegenGo }}" style="{{ abRegenBtnStyle }}" style-active="{{ abRegenBtnActive }}">{{ abRegenLabel }}</button>
+                      <button onClick="{{ abCleanMock }}" title="删除该游戏 art/gen/mock/ 下的全部 mock 预览图（孤儿产物·守卫必报黑户·不碰真图）" style="{{ abCleanMockStyle }}">{{ abCleanMockLabel }}</button>
                     </div>
 
                     <div style="border-top:2px solid rgba(58,35,18,.18);padding-top:10px;margin-top:10px">
@@ -1969,12 +1974,30 @@ class Component extends DCLogic {
     const pack = this.state.abRegenPack || (((this.state.artPacks || [])[0] || {}).packId) || 'pixel';
     this.setState({ abConsBusy: 'regen' });
     fetch('/api/art/regenerate', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug: it.slug, no: it.no, packId: pack, query: (this.state.abRegenQuery || '').trim() || undefined }) })
+      // provider 必须带上（owner 2026-08-06 实测根因）：风格包全部钉死 qwen，而 key 是按供应商取的
+      // （qwen=DASHSCOPE_API_KEY·seedream=ARK_API_KEY）。此处漏传 → 恒落 qwen → 没配千问 key 就回退
+      // mock 噪声图。artProv 是素材屏那份「按 keyConfigured 自动选中」的选择，两屏共用同一个。
+      body: JSON.stringify({ slug: it.slug, no: it.no, packId: pack, query: (this.state.abRegenQuery || '').trim() || undefined,
+        provider: (this.state.artProv || '').trim() || undefined }) })
       .then(r => r.json()).then(d => {
         this.setState({ abConsBusy: null });
         if (!d || !d.success) throw new Error((d && d.error) || '重新生成失败');
         this.showToast('✓ 重新生成 ' + it.no);
         this._abRefreshSelected(it.slug, it.no);
+      }).catch(e => { this.setState({ abConsBusy: null }); this.showToast('✕ ' + ((e && e.message) || '失败').slice(0, 100)); });
+  }
+  // 🧹 清 mock 预览图（owner 2026-08-06「生成的这些黑户怎么删除·没有删除按钮」）：mock 产物按设计是
+  // 孤儿（落 art/gen/mock/·gitignored·永不写回台账），守卫必报黑户，此前无回收口。只清这一棵子树。
+  abCleanMock() {
+    const it = this.state.abSel;
+    if (!it || this.state.abConsBusy) return;
+    this.setState({ abConsBusy: 'cleanmock' });
+    fetch('/api/art/cleanup-mock', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: it.slug }) }).then(r => r.json()).then(d => {
+        this.setState({ abConsBusy: null });
+        if (!d || !d.success) throw new Error((d && d.error) || '清理失败');
+        this.showToast('✓ 已清 ' + (d.removed || 0) + ' 张 mock 预览图');
+        this._abRefreshSelected(it.slug, it.no);   // 重拉该游戏分组（黑户组随之消失）
       }).catch(e => { this.setState({ abConsBusy: null }); this.showToast('✕ ' + ((e && e.message) || '失败').slice(0, 100)); });
   }
   abSwapGo() {
@@ -3832,6 +3855,8 @@ class Component extends DCLogic {
       abConsApplicableOn, abConsNotApplicableText, abConsLoadingText, abConsRows, abConsNote, abConsCountText,
       abRegenQuery: s.abRegenQuery, abRegenQueryType: (e) => this.setState({ abRegenQuery: e.target.value }),
       abPackChips, abRegenGo: () => this.abRegenGo(), abRegenLabel, abRegenBtnStyle: apply.style, abRegenBtnActive: apply.active,
+      abCleanMock: () => this.abCleanMock(), abCleanMockLabel: s.abConsBusy === 'cleanmock' ? '清理中…' : '🧹 清 mock 预览图',
+      abCleanMockStyle: mini.style,
       abRegenDisabled: abRegenBusy,
       abSwapId: s.abSwapId, abSwapIdType: (e) => this.setState({ abSwapId: e.target.value }),
       abSwapGo: () => this.abSwapGo(), abSwapLabel, abSwapBtnStyle: mini.style, abSwapBtnActive: mini.active,

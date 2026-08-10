@@ -12,6 +12,7 @@
 """
 import os
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -155,3 +156,36 @@ def handle_art_sync(body: dict) -> dict:
         state = '已推送' if out.get('pushed') else '已本地提交'
         print(c("  [ART]", 'g'), f"sync {slug} → {len(out.get('files') or [])} 文件 {state}（{out.get('committed', '')}）")
     return out
+
+
+# ── mock 预览物清理（owner 2026-08-06「生成的这些黑户怎么删除·没有删除按钮」）──────────────
+# mock 产物按设计是**孤儿**：落独立命名空间 art/gen/mock/（gitignored·永不写回台账/索引），
+# 故守卫必然把它们报成「黑户」。它们既不该登记、也没有回收口 → 只能靠人手动删。
+# 本端点只清 `gen/mock/` 这一棵子树（**闭集·不接受任意路径**），删不到真图，安全可重复。
+def handle_art_cleanup_mock(body: dict) -> dict:
+    """POST /api/art/cleanup-mock {slug}。清空该游戏的 mock 预览图（art/gen/mock/**）。
+    只删这一棵子树；真图 gen/art-NN 与其它一律不碰。返回删除的文件数。"""
+    from .paths import art_root  # 局部导入：避免与本模块既有导入顺序纠缠
+    slug = str(body.get('slug', '')).strip()
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
+    root = art_root(slug)
+    if not root.is_dir():
+        return {'success': False, 'error': f'该游戏无美术目录: {slug}'}
+    mock_dir = root / 'gen' / 'mock'
+    if not mock_dir.is_dir():
+        return {'success': True, 'removed': 0, 'note': '无 mock 预览图（已是干净的）'}
+    # 纵深断言：解析后必须仍在该游戏美术根内（防 slug 侧的意外穿越）
+    try:
+        mock_dir.resolve().relative_to(root.resolve())
+    except ValueError:
+        return {'success': False, 'error': '路径越界'}
+    files = [p for p in mock_dir.rglob('*') if p.is_file()]
+    for p in files:
+        try:
+            p.unlink()
+        except Exception:
+            pass  # 单个删不掉不阻断其余（只读/占用）
+    shutil.rmtree(mock_dir, ignore_errors=True)
+    print(c("  [ART]", 'g'), f"cleanup-mock {slug} → 清 {len(files)} 张 mock 预览图")
+    return {'success': True, 'removed': len(files)}

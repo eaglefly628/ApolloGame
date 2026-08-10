@@ -188,6 +188,26 @@ try:
         check('卡带' in str(handle_art_sync({'slug': 'art-sync-smoke-lib'}).get('error')), '⑦ library 卡带拒绝（自带版本化）', '')
     finally:
         shutil.rmtree(lib_probe, ignore_errors=True)
+    # ⑨ cleanup-mock（owner 2026-08-06「生成的这些黑户怎么删除」）：只清 gen/mock 一棵子树·真图不动
+    from main_entry.art_sync import handle_art_cleanup_mock  # noqa: E402
+    CM = 'cleanmock-smoke'
+    cd = ROOT / 'public' / 'games' / CM / 'art'
+    try:
+        (cd / 'gen' / 'mock').mkdir(parents=True, exist_ok=True)
+        (cd / 'gen' / 'mock' / 'art-01.png').write_bytes(b'm1')
+        (cd / 'gen' / 'mock' / 'art-02.png').write_bytes(b'm2')
+        (cd / 'gen' / 'art-01.png').write_bytes(b'REAL')
+        (cd / 'index.json').write_text('{"version":1,"assets":[]}')
+        r = handle_art_cleanup_mock({'slug': CM})
+        check(r.get('success') and r.get('removed') == 2, '⑨ 清 mock 预览图 2 张', str(r))
+        check(not (cd / 'gen' / 'mock').exists(), '⑨ mock 目录已移除', '')
+        check((cd / 'gen' / 'art-01.png').read_bytes() == b'REAL', '⑨ **真图 gen/art-NN 原样保留**（只清 mock 子树）', '')
+        check((cd / 'index.json').is_file(), '⑨ 索引未被碰', '')
+        check(handle_art_cleanup_mock({'slug': CM}).get('removed') == 0, '⑨ 幂等：再清 0 张', '')
+        check(not handle_art_cleanup_mock({'slug': '../evil'}).get('success'), '⑨ 非法 slug 拒绝', '')
+        check('无美术目录' in str(handle_art_cleanup_mock({'slug': 'no-such-game-zz'}).get('error')), '⑨ 不存在游戏拒绝', '')
+    finally:
+        shutil.rmtree(ROOT / 'public' / 'games' / CM, ignore_errors=True)
 finally:
     shutil.rmtree(TMP, ignore_errors=True)
 

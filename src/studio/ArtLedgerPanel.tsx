@@ -241,13 +241,20 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
     setBusy(true);
     try {
       const res = await fetch(`${API}${url}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-        .then((r) => r.json() as Promise<{ success?: boolean; error?: string; newSlug?: string; row?: LedgerRow; summary?: { mock?: number } }>);
+        .then((r) => r.json() as Promise<{ success?: boolean; error?: string; newSlug?: string; row?: LedgerRow;
+          summary?: { mock?: number; previewOnly?: Array<{ no?: string; previewPath?: string }> } }>);
       if (res.success) {
-        // ⚙ mock 必须当场说破（owner 2026-08-06 实战踩坑：单槽「重新生成」无 key → 服务端探针失败自动回退
-        // mock → 弹「✓ 重生成 art-15」，人以为拿到了真图，实际是 gen/mock/ 下一张噪声占位）。项目红线
+        // ⚙ mock 必须当场说破（owner 2026-08-06 实战踩坑：单槽「重新生成」无 key → 服务端探针失败回退 mock
+        // → 弹「✓ 重生成 art-15」，人以为拿到真图，实际是 gen/mock/ 下一张噪声占位）。项目红线
         // 「无 key 必须见探针输出·静默顶替=假绿」此前只有「一键全量」守住，单槽这条路是漏的。
-        const mocked = res.row?.gen?.mock === true || (res.summary?.mock ?? 0) > 0;
-        if (mocked) flash(false, `⚙ ${okMsg.replace(/^✓\s*/, '')} 走的是 MOCK 占位（无可用 API key）——噪声图仅供预览，不会写回游戏。配好 key 后重生成`);
+        // 两态分开说（REQ-ARTTOOL-01 的「意外 mock」语义）：
+        //   · previewOnly 非空 = **无 key 的意外 mock**——台账一个字节都没碰，图是孤儿预览（浏览器里会显黑户）；
+        //   · 否则 summary.mock/row.gen.mock = **你自己勾了 mock 试跑**——落 gen/mock 墙预览，同样永不写回游戏。
+        const noKeyPreview = (res.summary?.previewOnly?.length ?? 0) > 0;
+        const mocked = noKeyPreview || res.row?.gen?.mock === true || (res.summary?.mock ?? 0) > 0;
+        const what = okMsg.replace(/^✓\s*/, '');
+        if (noKeyPreview) flash(false, `⚙ ${what} 落的是 MOCK 噪声图——本次所用生图供应商没配 key（key 按供应商分：千问=DASHSCOPE·Seedream=ARK；风格包默认走千问，要用别家须在「模型」里点名）。台账未改动、不会写回游戏（该文件在资产浏览器会显示为「黑户」，属正常，别去登记）`);
+        else if (mocked) flash(false, `⚙ ${what} 是 mock 试跑产物——仅供墙预览，永不写回游戏。要真图请取消「mock 试跑」勾选`);
         else flash(true, res.newSlug ? `${okMsg} → ${res.newSlug}` : okMsg);
         load(); loadSync(); onChanged?.();
       }
@@ -330,6 +337,7 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
         <select value={genProvider} onChange={(e) => setGenProvider(e.target.value)} style={{ ...sInput(), padding: '6px 8px' }} title="默认=风格包钉死的供应商（同款成套的保证）；点名覆盖只在需要时用">
           <option value="">默认（随风格包）</option>
           <option value="qwen">🖼 千问万相 2D</option>
+          <option value="seedream">🖼 Seedream 2D</option>
           <option value="tripo">🧊 Tripo 3D</option>
           <option value="meshy">🗿 Meshy 3D</option>
         </select>
