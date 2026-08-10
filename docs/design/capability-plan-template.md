@@ -49,6 +49,11 @@
 - **起手包**：主菜单/结算等常见屏是否 import `@ui/starters`（`buildStarterHome`/`buildStarterResult`）？不用则说明用什么富屏替代（不接受"从空白搭朴素屏"）。
 - **成熟件清单**：按游戏「有什么」列将用的成熟华丽件（`docs/playbooks/ui.md`「华丽起手·橱窗货架」对照）——如 卡牌→`faceArt`/翻面 · 选关→`LevelPath` · 庆祝→`Particles` · 主 CTA→`sheen-hover`+`Panel.skin` · 数值→`Label.format` · 异形→`shape` · 立体→3D UI。**零成熟件 = 朴素缺陷**，须在此说明为何该玩法确实用不上（PUI 复查可打回）。
 
+## 4.65 对手/敌人 AI 设定（**有 AI 必填**·2026-08-10 补·owner「做完以后敌人没有 AI 算什么」）
+
+- 游戏有对手/敌人/NPC 决策吗？**有 → AI 设定必须在档**（本节写摘要 + 详设落 `docs/design/<slug>/`：gdd「对手 AI」章或独立档）——**初版可基本**（性格一句话 + 决策口径 + 难度阶怎么爬），**随迭代同步更新**，但**不许没有**。
+- 写法与八件坑对照手册 `docs/playbooks/opponent-ai.md`（定手窗/账期/心态机/种子骰等·game108 大师 v5 沉淀）；随机一律引擎种子 PRNG。
+
 ## 4.7 代码准入阶梯申报（必填·2026-08-03 补·`docs/design/pipeline-software-plan-2026-08.md` §二）
 
 **每条玩法规则**逐条标注落级，降级须留痕（不许跳级不写理由）：
