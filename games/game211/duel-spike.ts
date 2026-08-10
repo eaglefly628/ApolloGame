@@ -51,6 +51,9 @@ const CARD_RESTITUTION = 0.14;
 //   起手**高度差半个身位**：速度仍严格镜像（等大反向·符合「相反的作用力」），但一张从上、一张从下相遇
 //   → 接触点必然偏离质心 → 力偶（旋转）由**碰撞本身**产生，且上牌被往上顶、下牌被往下压，撞完自然分开。
 const Y_STAGGER = 0.26;
+// 交汇时的横向（z）错位：给撞击一个横向分量，让两张牌撞完朝 z 两侧分开落地，而不是叠在一起。
+// 取值上限由「必须撞上」定死：hypot(Y_STAGGER, Z_SPREAD) 必须 < 2R = CARD_W（=1.55）。0.9 → 交汇距 0.94，留足余量。
+const Z_SPREAD = 0.82;   // 上限 = sqrt((1.2R)² − Y_STAGGER²) ≈ 0.89（撞击判据）·取 0.82 留余量
 const SPIN0 = 2.2;             // 出手初旋（rad/s·很小·只为飞行中有点翻动；狂翻应由碰撞产生）
 
 const SIDE = ['a', 'b'] as const;
@@ -89,16 +92,20 @@ export function judgeDuel(a: CardOutcome, b: CardOutcome): string {
 
 /** 一对牌的出手方案（纯函数·可单测）：给定该道中心 z、出手距 x、抛高 vy、交汇时刻 t，
  *  返回两张牌各自的**起点 + 初速**。不变量（由测试钉死）：
- *   ① t 时刻两者 **x 与 z 完全重合** → 必然相撞（这就是「每张牌冲向对面对应那张」）；
+ *   ① t 时刻两者 **x 完全重合**，z 相距恒为 `zSpread` → 交汇距 = hypot(stagger, zSpread)，
+ *      只要它 < 2R 就必然相撞（这就是「每张牌冲向对面对应那张」）；
  *   ② 速度**严格镜像**（vx 等大反向·vy 相同·vz 恒 0）→ 相反的作用力；
- *   ③ 全程 y 恒差 `stagger` → 撞击点偏离质心 → 旋转由碰撞产生，而非出手时硬塞。
+ *   ③ 全程 y 恒差 `stagger`、z 恒差 `zSpread` → 撞击点偏离质心 → 旋转由碰撞产生，而非出手时硬塞。
+ *      **zSpread 的用处**：只差高度（zSpread=0）时冲量几乎全在竖直方向，两张牌撞完仍落在同一处、
+ *      上面那张压住下面那张（20 组实测未躺平 3/40 就是这么来的）。给一点横向错位，撞击才有横向分量、
+ *      两张牌才会朝 z 两侧分开各自落地。⚠ 必须是**静态错位**，绝不能用速度发散——那会随时间放大到撞不上。
  *  ⚠ 别再加任何「出手就朝两侧分开」的速度：实测那样最近距 2.5+ / 判据 1.34 → 撞上 0/1 组，看着像撞其实各飞各的。 */
-export function throwPlan(laneZ: number, throwX: number, vy: number, tMeet: number, stagger: number): {
+export function throwPlan(laneZ: number, throwX: number, vy: number, tMeet: number, stagger: number, zSpread = 0): {
   a: { x: number; y: number; z: number; vx: number; vy: number; vz: number };
   b: { x: number; y: number; z: number; vx: number; vy: number; vz: number };
 } {
   const vxMag = throwX / tMeet;
-  const mk = (dir: 1 | -1) => ({ x: -dir * throwX, y: 0.9 + dir * (stagger / 2), z: laneZ, vx: dir * vxMag, vy, vz: 0 });
+  const mk = (dir: 1 | -1) => ({ x: -dir * throwX, y: 0.9 + dir * (stagger / 2), z: laneZ + dir * (zSpread / 2), vx: dir * vxMag, vy, vz: 0 });
   return { a: mk(1), b: mk(-1) };
 }
 
@@ -279,7 +286,7 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
       const laneZ = (lane - (duels - 1) / 2) * L.laneGap;
       const vy = span(12.4, 13.6);          // 抛更高 → 滞空更长 → 交汇点可以推后
       const tMeet = (vy / GRAVITY) * span(0.80, 0.92); // 交汇更靠近最高点（撞在滞空顶点·停得住·看得清）
-      const plan = throwPlan(laneZ, throwX, vy, tMeet, Y_STAGGER * L.scale); // ← 唯一真相·见其头注的四条不变量
+      const plan = throwPlan(laneZ, throwX, vy, tMeet, Y_STAGGER * L.scale, Z_SPREAD * L.scale); // ← 唯一真相·见其头注的不变量
       for (const s of SIDE) {
         const id = cardId(lane, s);
         const dir = s === 'a' ? 1 : -1;

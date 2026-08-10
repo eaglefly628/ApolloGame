@@ -80,31 +80,35 @@ describe('layoutFor · 组数 → 场地缩放', () => {
 });
 
 describe('throwPlan · 一对一空中对撞（owner「每张牌冲向对面对应那张」）', () => {
-  const laneZ = 1.4, throwX = 2.6, vy = 8.6, tMeet = 0.36, stag = 0.26;
-  const { a, b } = throwPlan(laneZ, throwX, vy, tMeet, stag);
+  const laneZ = 1.4, throwX = 2.6, vy = 8.6, tMeet = 0.36, stag = 0.26, zsp = 0.82, R = 1.55 / 2;
+  const { a, b } = throwPlan(laneZ, throwX, vy, tMeet, stag, zsp);
   const at = (c: typeof a, t: number, g = 20): { x: number; y: number; z: number } =>
     ({ x: c.x + c.vx * t, y: c.y + c.vy * t - 0.5 * g * t * t, z: c.z + c.vz * t });
 
-  it('① 交汇时刻 x 与 z 完全重合 —— 这就是「撞得上」的几何保证', () => {
+  it('① 交汇时刻 x 完全重合、z 恒差 zSpread —— 撞得上的几何保证', () => {
     const pa = at(a, tMeet), pb = at(b, tMeet);
     expect(pa.x).toBeCloseTo(pb.x, 9);
     expect(pa.x).toBeCloseTo(0, 9);
-    expect(pa.z).toBeCloseTo(pb.z, 9);
-    expect(pa.z).toBeCloseTo(laneZ, 9);
+    expect(pa.z - pb.z).toBeCloseTo(zsp, 9);
+    expect((pa.z + pb.z) / 2).toBeCloseTo(laneZ, 9); // 仍以本道中线为对称轴·不串道
   });
   it('② 速度严格镜像（等大反向的作用力·vz 恒 0）', () => {
     expect(a.vx).toBeCloseTo(-b.vx, 9);
     expect(a.vy).toBeCloseTo(b.vy, 9);
     expect(a.vz).toBe(0); expect(b.vz).toBe(0);
   });
-  it('③ 全程 y 恒差 stagger —— 撞击点偏离质心·旋转由碰撞产生', () => {
-    for (const t of [0, 0.1, tMeet, 0.5]) expect(at(a, t).y - at(b, t).y).toBeCloseTo(stag, 9);
+  it('③ 全程 y 恒差 stagger、z 恒差 zSpread（静态错位·不随时间放大）', () => {
+    for (const t of [0, 0.1, tMeet, 0.5]) {
+      expect(at(a, t).y - at(b, t).y).toBeCloseTo(stag, 9);
+      expect(at(a, t).z - at(b, t).z).toBeCloseTo(zsp, 9);
+    }
   });
-  it('④ 交汇时中心距 = stagger，远小于撞击判据 → 任何翻滚相位都必然接触', () => {
+  it('④ 交汇距 = hypot(stagger, zSpread) 且 < 2R → 任何翻滚相位都必然接触', () => {
     const pa = at(a, tMeet), pb = at(b, tMeet);
     const d = Math.hypot(pa.x - pb.x, pa.y - pb.y, pa.z - pb.z);
-    expect(d).toBeCloseTo(stag, 9);
-    expect(isHit(d, 1.55 / 2)).toBe(true);
+    expect(d).toBeCloseTo(Math.hypot(stag, zsp), 9);
+    expect(d).toBeLessThan(2 * R);   // ← zSpread 的上限由这条钉死：再大就撞不上了
+    expect(isHit(d, R)).toBe(true);
   });
   it('⑤ 回归护栏：上一版「出手即侧向分离」的写法交汇距离超判据 → 根本撞不上（记死这个坑）', () => {
     // 上一版：起手 z 错位 ±0.35R，再叠 Z 向持续分离速度 ±1.15 —— 两者都在把牌推开。
@@ -118,8 +122,9 @@ describe('throwPlan · 一对一空中对撞（owner「每张牌冲向对面对�
     for (const n of DUEL_COUNTS) {
       const L = layoutFor(n);
       const z = (n - 1) * L.laneGap;
-      const p = throwPlan(z, 1.7 * L.scale + 0.9, vy, tMeet, stag * L.scale);
-      expect(p.a.z).toBeCloseTo(z, 9); expect(p.b.z).toBeCloseTo(z, 9);
+      const p = throwPlan(z, 1.7 * L.scale + 0.9, vy, tMeet, stag * L.scale, zsp * L.scale);
+      expect((p.a.z + p.b.z) / 2).toBeCloseTo(z, 9);              // 对称轴仍是本道中线
+      expect(Math.abs(p.a.z - p.b.z)).toBeLessThan(L.laneGap);    // 错位不得超过道距·否则串到隔壁道
     }
   });
   it('HIT_DIST_RATIO 判据本身：≤1.2R 算撞上·超出不算', () => {
