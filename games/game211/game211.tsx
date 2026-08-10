@@ -15,6 +15,7 @@ import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBat
 // 模块 coin-flip.ts 保留（含测试），此屏不再消费。未来「各自掷战力骰」向见 docs/design/game-g-clash-fate-roll-vision.md。
 import { loadLevel } from './level.js';
 import { mountDuelSpike } from './duel-spike.js'; // 物理对决试验台（?spike=duel 深链·owner 2026-08-07 表现验证竖切）
+import { mountMeleeDemo } from './melee-demo.js'; // 大混战 demo（?spike=melee 深链·owner 2026-08-10：240 张打到只剩一色）
 import { cardPoints } from './clash-resolve.js';
 import { playSfx, isSfxOn, toggleSfx } from './sound.js';
 import { startBgm, stopBgm, toggleBgm as toggleBgmState, selectBgm as selectBgmState, setBgmVolume, isBgmOn, bgmTrackIdx, bgmVolume, BGM_TRACKS } from './bgm.js';
@@ -67,8 +68,15 @@ const LOBBY_ROOT_CSS = 'position:absolute;inset:0;overflow:auto';
 export function mount(container: HTMLElement, shell?: { exit?: () => void }): () => void {
   // 物理对决试验台（owner 2026-08-07「先把表现做出来看看是不是我想要的」）：深链 `?spike=duel` 直挂，
   // 不碰大厅/战斗现有流程（零风险旁路）。截图：SHOOT_QUERY='&spike=duel' node scripts/shoot-game.mjs game211 out.png
-  if (typeof location !== 'undefined' && new URLSearchParams(location.search).get('spike') === 'duel') {
+  const spikeParam = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('spike') : null;
+  if (spikeParam === 'duel') {
     const h = mountDuelSpike(container);
+    return () => h.destroy();
+  }
+  // 大混战 demo（owner 2026-08-10）：`?spike=melee`。240 张牌 10 组在大地图上行军遭遇、打到只剩一色。
+  // 截图：SHOOT_QUERY='&spike=melee' node scripts/shoot-game.mjs game211 out.png
+  if (spikeParam === 'melee') {
+    const h = mountMeleeDemo(container);
     return () => h.destroy();
   }
   const save = loadSave();
