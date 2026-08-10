@@ -128,25 +128,30 @@
 | **战役规则** | `melee-campaign.ts`（本次新增·**纯函数**：配对/判生死/重编组/胜负/最近遭遇） | 23 例测试（17 核心 + 6 统计） |
 | **随机** | `meta-random.ts` → 引擎种子 PRNG | 硬红线：禁裸 `Math.random` |
 
-### 三、🔴 一个真缺口（**缺口裁决协议 · 摆两条路 · 待 owner/P3D 判 · 未自裁**）
+### 三、✅ 原以为的缺口**不成立**（2026-08-10 自我更正 · 重组表达得了）
 
-**行军单位的位置：2D sim ↔ 3D 渲染之间没有桥。**
+我一度报了个缺口：「行军单位 2D sim ↔ 3D 渲染之间没有桥」。**查错了，收回。**
 
-**先查留痕**（实查·非印象）：
-- `t2-steering` / `t1-motion-apply` 全部读写 **2D** `Transform{x,y}` + `Velocity{vx,vy}`（`src/skills/tier2/steering.ts` 全文只认 `t.x/t.y`）。
-- 3D 渲染器**只读 `Transform3D`**（`src/renderer/three-projection.ts:30` `transform3dPose(t3)`；全文无 2D `Transform` 路径）。
-- 全库 **无** 2D→3D 位置桥、**无** 3D 版 steering/motion（`src/skills/atoms/` 下 3D 系只有 `overlap-detect-3d` / `collision-resolve-3d`）。
-- §0.3 的 P2 记过一条相邻事实（steering 驱动不了刚体），但那说的是**刚体**；本条说的是**非刚体行军单位怎么显示到 3D 场上**，是另一个洞。
+`src/renderer/three/geometry.ts:16` 就是那座桥：
 
-| | **A｜下沉一个投影能力** | **B｜Demo 走 2D 俯视** |
-|---|---|---|
-| 做什么 | 加 `t1-transform-project-3d`：把 `Transform{x,y}` 镜像成 `Transform3D{x, y:groundY, z:y}`（纯搬运·确定性·render-only 方向单向写） | 行军阶段用 2D canvas 渲染器（大平板地图本来就是俯视），对决时切到 3D 物理视图 |
-| 代价 | 引擎级下沉·占 `requests.md` 硬槽；但极小（十几行·无新概念） | 两套渲染观感不统一；3D 的「盒庭」质感在行军阶段没了 |
-| 收益 | 全 3D 一致；**任何游戏**要「2D 逻辑 + 3D 表现」都受益（这是通用形状，不是 game211 专属） | 零引擎改动·今天就能做 |
-| 风险 | 需确认「sim 写 render-only 组件」是否越界（3d.md 铁律说 sim 不读 `Transform3D`——**写**是不是也禁，需 P3D 确认） | demo 视觉与 owner 一路看下来的 3D 预期不符 |
+```ts
+if (r.transform3d || cam3d) return r.transform3d ? transform3dPose(r.transform3d) : groundPose(r, m.height);
+```
 
-**Lead 推荐 A**，但那条「sim 能不能写 `Transform3D`」的红线归 P3D/owner 判——所以**不自裁**。
-**不阻塞的部分已先做**：战役核心 + 统计验证（上面第一节）与这条无关，已落地。
+即：**场景里有 `Camera3D` 且该实体没挂 `Transform3D` → 渲染器自动调 `groundPose` 把 2D `Transform{x,y}`
+投到地面（x→X · 2D y→Z 景深 · Y=物高/2 下沿坐地）**。`three-projection.ts:35-37` 的注释写的正是本用例：
+
+> 「让用现成 input/velocity/motion 能力驱动的 2D 实体在盒庭里走来走去，即**同一份 2D sim 数据，换 3D 后端当盒庭看**」
+
+**所以零引擎改动**：
+- **行军单位** = 2D `Transform` + `Velocity` + `Steering{separation}` + `Tag` + `Mesh3D`（不挂 `Transform3D`）
+  → 自动落地面 + 自动按视觉签名归批成 `InstancedMesh`。
+- **对决牌** = `Transform3D` + `RigidBody3D`（物理写回 `Transform3D`）。
+- 两者**同场共存**，各走各的分支——正是 §0.1b 混合 LOD 想要的形状。
+
+> 教训（记给下一个人）：缺口裁决协议第①步「先实查」不是走过场。我第一遍只 grep 了
+> `three-projection.ts` 里的 `Transform3D` 就下了「没有桥」的结论，而桥在**同文件下面 8 行**、
+> 且调用点在 `geometry.ts`。**按协议，第①步就解决的不上报**——本条只留更正痕迹，不占裁决位。
 
 ---
 
