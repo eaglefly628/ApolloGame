@@ -81,7 +81,7 @@ export interface MeleeDemoHandle { destroy: () => void }
 type Phase = 'march' | 'duel' | 'over';
 
 /** 挂载大混战 demo。 */
-export function mountMeleeDemo(container: HTMLElement, opts?: { seed?: number; onExit?: () => void }): MeleeDemoHandle {
+export function mountMeleeDemo(container: HTMLElement, opts?: { seed?: number; onExit?: () => void; onSpike?: () => void }): MeleeDemoHandle {
   const shell = mountStageShell(container, GG_THEME_ONYX, 'g211-melee');
   const w = Math.max(360, Math.min(1280, container.clientWidth || 1040));
   const h = Math.max(260, Math.min(720, Math.round(w * 0.56)));
@@ -271,8 +271,9 @@ export function mountMeleeDemo(container: HTMLElement, opts?: { seed?: number; o
     rows.push({
       type: 'Panel', id: 'md-btns', props: { bare: true }, layout: { direction: 'row', gap: 8 },
       children: [
-        { type: 'Button', id: 'md-restart', props: { text: '重开一局', action: 'restart' }, layout: {} },
-        { type: 'Button', id: 'md-exit', props: { text: '返回', action: 'exit' }, layout: {} },
+        { type: 'Button', id: 'md-restart', props: { label: '重开一局', kind: 'primary', action: 'restart' }, layout: {} },
+        { type: 'Button', id: 'md-spike', props: { label: '← 回对决台', kind: 'ghost', action: 'spike' }, layout: {} },
+        { type: 'Button', id: 'md-exit', props: { label: '返回大厅', kind: 'ghost', action: 'exit' }, layout: {} },
       ],
     });
     return { type: 'Panel', id: 'md-root', props: { bare: true }, layout: { direction: 'column', gap: 6, padding: 10 }, children: rows };
@@ -282,6 +283,7 @@ export function mountMeleeDemo(container: HTMLElement, opts?: { seed?: number; o
     hudTeardown?.();
     hudTeardown = mountUI(shell.hud, hudTree(), {
       restart: () => restart(),
+      spike: () => opts?.onSpike?.(),   // 回对决台（同一原型页的另一种模式）
       exit: () => opts?.onExit?.(),
     }, GG_THEME_ONYX);
   }

@@ -240,7 +240,7 @@ function arenaBlueprint(): WorldBlueprint {
 export interface DuelSpikeHandle { destroy: () => void }
 
 /** 挂载物理对决试验台。 */
-export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; onExit?: () => void }): DuelSpikeHandle {
+export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; onExit?: () => void; onMelee?: () => void }): DuelSpikeHandle {
   // 布局按 game-z 可用范式：wrapper=有真实尺寸的定位盒·stage=`position:relative` 收紧包住 canvas。
   const wrapper = document.createElement('div');
   wrapper.style.cssText = 'position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#121a2a;overflow:hidden';
@@ -481,6 +481,8 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
           layout: {},
         })) },
     );
+    // 模式开关（owner 2026-08-10「直接在原型验证里面加一个开关」）：同一个原型页两种模式。
+    if (opts?.onMelee) rows.push({ type: 'Button', id: 'dsp-melee', props: { label: '⚔️ 切到大混战（240 张）', kind: 'primary', action: 'melee' }, layout: {} });
     if (opts?.onExit) rows.push({ type: 'Button', id: 'dsp-exit', props: { label: '← 返回大厅', kind: 'ghost', action: 'exit' }, layout: {} });
     return { type: 'Panel', id: 'dsp-panel', props: {}, layout: { x: 18, y: 14, direction: 'column', gap: 8, padding: 14, width: 300 }, children: rows };
   }
@@ -491,6 +493,7 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
       throw: () => throwAll(),
       count: (arg) => { const n = Number(arg); if (!Number.isFinite(n) || n === duels) return; duels = n; frameMs.length = 0; rebuildArena(); throwAll(); },
       exit: () => opts?.onExit?.(),
+      melee: () => opts?.onMelee?.(),   // 切到大混战模式（owner 2026-08-10：同一个原型页两种模式）
     }, GG_THEME_ONYX);
   }
 

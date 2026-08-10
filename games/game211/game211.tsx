@@ -69,15 +69,13 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
   // 物理对决试验台（owner 2026-08-07「先把表现做出来看看是不是我想要的」）：深链 `?spike=duel` 直挂，
   // 不碰大厅/战斗现有流程（零风险旁路）。截图：SHOOT_QUERY='&spike=duel' node scripts/shoot-game.mjs game211 out.png
   const spikeParam = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('spike') : null;
-  if (spikeParam === 'duel') {
-    const h = mountDuelSpike(container);
-    return () => h.destroy();
-  }
-  // 大混战 demo（owner 2026-08-10）：`?spike=melee`。240 张牌 10 组在大地图上行军遭遇、打到只剩一色。
-  // 截图：SHOOT_QUERY='&spike=melee' node scripts/shoot-game.mjs game211 out.png
-  if (spikeParam === 'melee') {
-    const h = mountMeleeDemo(container);
-    return () => h.destroy();
+  // 深链也带模式开关（否则 `?spike=duel` 进来面板上没有任何按钮——按钮全是 opts 条件渲染的）。
+  if (spikeParam === 'duel' || spikeParam === 'melee') {
+    let cur: { destroy: () => void } | null = null;
+    const toSpike = (): void => { cur?.destroy(); cur = mountDuelSpike(container, { onMelee: toMelee }); };
+    const toMelee = (): void => { cur?.destroy(); cur = mountMeleeDemo(container, { onSpike: toSpike }); };
+    if (spikeParam === 'melee') toMelee(); else toSpike();
+    return () => cur?.destroy();
   }
   const save = loadSave();
   let stopLoop: (() => void) | null = null; // live-combat rAF 驱动停手（替掉旧 Engine 时钟）
@@ -163,7 +161,6 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       getView: buildLobbyView,
       onPlay: () => startBattle(),
       onSpike: () => showDuelSpike(),
-      onMelee: () => showMeleeDemo(),
       // 金币解锁（doc25）：需该关已抵达(unlockStage ≤ campaignMax) + 金币够 → ownedTiangangs；牌组未满自动选入
       onBuyTiangang: (id) => { const j = TIANGANG_BY_ID.get(id); if (!j || save.ownedTiangangs.includes(id) || unlockStageOf(id) > save.campaignMax) return; buy(j.cost, () => { save.ownedTiangangs.push(id); const d = activeDeck(save); if (d && d.cards.length < TIANGANG_DECK_SIZE) { d.cards.push(id); syncTiangangs(save); } }); },
       // 钻石速购（doc25 · 跳 grind·只加速）：无视关门槛，花钻石(=unlockStage)直解。
@@ -280,7 +277,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
   function showDuelSpike(): void {
     clear();
     root.style.cssText = 'position:absolute;inset:0;overflow:hidden;background:#121a2a';
-    const spike = mountDuelSpike(root, { onExit: () => showLobby() }); // 返回键在试验台自己的面板里（避开启动器齿轮）
+    const spike = mountDuelSpike(root, { onExit: () => showLobby(), onMelee: () => showMeleeDemo() }); // 返回键 + 模式开关都在试验台自己的面板里
     battle = { update: () => {}, destroy: () => spike.destroy() }; // 交给 clear() 统一回收
   }
 
@@ -289,7 +286,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
   function showMeleeDemo(): void {
     clear();
     root.style.cssText = 'position:absolute;inset:0;overflow:hidden;background:#121a2a';
-    const demo = mountMeleeDemo(root, { onExit: () => showLobby() });
+    const demo = mountMeleeDemo(root, { onExit: () => showLobby(), onSpike: () => showDuelSpike() });
     battle = { update: () => {}, destroy: () => demo.destroy() }; // 交给 clear() 统一回收
   }
 
