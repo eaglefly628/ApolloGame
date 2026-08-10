@@ -61,7 +61,14 @@ const Y_STAGGER = 0.05;                // < 2×COLLIDER_HALF_H = 0.1 → 两盘�
 // 交汇时的横向（z）错位：给撞击一个横向分量，让两张牌撞完朝 z 两侧分开落地，而不是叠在一起。
 // 取值上限由「必须撞上」定死：hypot(Y_STAGGER, Z_SPREAD) 必须 < 2R = CARD_W（=1.55）。0.9 → 交汇距 0.94，留足余量。
 const Z_SPREAD = 0.82;   // 上限 = sqrt((1.2R)² − Y_STAGGER²) ≈ 0.89（撞击判据）·取 0.82 留余量
-const SPIN0 = 2.2;             // 出手初旋（rad/s·很小·只为飞行中有点翻动；狂翻应由碰撞产生）
+// 翻面自旋（owner 2026-08-07「旋转量不够·结果大多是反面朝上·希望一半正一半反」）：
+//   牌出生就是**正面朝上平躺**，落面由「总翻转角」决定。SPIN0=2.2 在 ~0.56s 飞行里只转 ~70°——
+//   远不够把相位洗匀，于是系统性偏向某一面。要 50/50，翻转量必须**大且随机到跨过多个半圈**：
+//   取 9~24 rad/s（0.8~2.1 圈）→ 相位跨度 >2 个半圈，落面接近均匀。
+//   ⚠ 与「别乱飞」不矛盾：乱飞的病根是**出手就在疯转把碰撞淹没**，那次是 ±16 **恒定**值；
+//   这里是绕**水平轴**的翻面自旋、每张牌独立随机，碰撞依然是主角。
+const SPIN_FLIP_MIN = 9, SPIN_FLIP_MAX = 24;
+const SPIN_SELF = 5;           // 绕牌面法线的自旋（纯观感·不改变正反·牌在空中打转更好看）
 
 const SIDE = ['a', 'b'] as const;
 type Side = (typeof SIDE)[number];
@@ -140,6 +147,14 @@ export function upright(list: readonly DuelOutcome[]): number {
   let n = 0;
   for (const o of list) for (const c of [o.a, o.b]) if (Math.abs(c.upY) < FLAT_MIN) n += 1;
   return n;
+}
+
+/** 正面朝上的牌数（纯函数·可单测）：落面公平性的验收口径——目标 ≈50%（owner「一半正一半反」）。
+ *  偏离 50% 太多说明翻转量不够、落面相位没洗匀。 */
+export function frontRate(list: readonly DuelOutcome[]): { front: number; total: number } {
+  let f = 0, t = 0;
+  for (const o of list) for (const c of [o.a, o.b]) { t += 1; if (c.front) f += 1; }
+  return { front: f, total: t };
 }
 
 /** 多组对决 → 战况统计（纯函数·可单测）。 */
@@ -321,7 +336,10 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
         vx: p0.vx, vy: p0.vy, vz: p0.vz,             // 严格镜像：只在 X 向对冲、不做任何侧向分离（分离交给撞击）
         // 初旋只给**很小**的一点（让牌在飞行中略微翻动·有生气），真正的狂翻交给撞击那一下打出来。
         // ⚠ 上一版给到 ±16 rad/s ≈ 2.5 转/秒 —— 那是「出手就在乱转」，撞击反而被淹没，看着像乱飞。
-        avx: dir * SPIN0, avy: span(-0.6, 0.6), avz: span(-0.6, 0.6),
+        // 每张牌**独立**随机翻转（不镜像）——镜像会让同组两张的落面强相关，出不了独立的 50/50。
+        avx: (rnd() < 0.5 ? -1 : 1) * span(SPIN_FLIP_MIN, SPIN_FLIP_MAX),
+        avy: span(-SPIN_SELF, SPIN_SELF),                       // 自旋·观感
+        avz: (rnd() < 0.5 ? -1 : 1) * span(0, SPIN_FLIP_MAX * 0.35),
         } as unknown as Component);
         cardIds.push(id);
       }
@@ -346,6 +364,8 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
       const up = upright(outcomes.filter(Boolean) as DuelOutcome[]);
       const L = layoutFor(duels);
       const met = metCounts(minDx, crossed, HULL_R * L.scale);
+      const fr = frontRate(outcomes.filter(Boolean) as DuelOutcome[]);
+      console.info('[dsp/fair] 正面朝上 %d/%d = %s%%（目标 ~50%%）', fr.front, fr.total, ((fr.front / Math.max(1, fr.total)) * 100).toFixed(0));
       console.info('[dsp/cost] %d 组 · 刚体 %d · 帧均 %sms (%sfps) · p95 %sms · 每刚体 %sms', duels, duels * 2, perfMean().toFixed(1), (1000 / Math.max(0.001, perfMean())).toFixed(0), perfP95().toFixed(1), (perfMean() / Math.max(1, duels * 2)).toFixed(3));
       console.info('[dsp/hit] 相遇 %d/%d 组（越过 %d · 近接 %d）· |Δx|min %s', met.total, duels, met.crossed, met.near, minDx.map((d) => d.toFixed(2)).join(','));
       console.info('[game211/duel-spike] 第%d 轮 · %d 组 → 胜%d 负%d 平%d · 未躺平 %d/%d · 帧 %sms(p95 %sms)', throwNo, duels, t.win, t.lose, t.draw, up, duels * 2, perfMean().toFixed(1), perfP95().toFixed(1));
@@ -406,6 +426,9 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
     // 立牌计数（验收口径·理想恒 0）：>0 说明还有牌没躺平，一眼可见、不用猜。
     const met = metCounts(minDx, crossed, HULL_R * layoutFor(duels).scale);
     rows.push({ type: 'Label', id: 'dsp-hit', props: { text: `空中相遇 ${met.total} / ${duels} 组`, size: 'sm', color: met.total === duels ? 'ok' : 'danger' }, layout: {} });
+    const fr = frontRate(done);
+    const pct = fr.total ? Math.round((fr.front / fr.total) * 100) : 0;
+    rows.push({ type: 'Label', id: 'dsp-fair', props: { text: `正面朝上 ${fr.front}/${fr.total} = ${pct}%（目标 ~50%）`, size: 'sm', color: fr.total === 0 ? 'dim' : Math.abs(pct - 50) <= 15 ? 'ok' : 'warn' }, layout: {} });
     const up = upright(done);
     rows.push({ type: 'Label', id: 'dsp-upright', props: { text: `未躺平 ${up} / ${done.length * 2} 张`, size: 'sm', color: up > 0 ? 'danger' : 'ok' }, layout: {} });
     rows.push(
