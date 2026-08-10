@@ -159,3 +159,52 @@ describe('ArtLedgerPanel · 内置游戏一键提交推送', () => {
     expect(container.innerHTML).not.toContain('提交推送');
   });
 });
+
+// ═══ mock 当场说破（owner 2026-08-06 实战踩坑）═══
+// 单槽「重新生成」在无 key 时服务端探针失败自动回退 mock，此前 toast 仍是「✓ 重生成 art-15」，
+// 人以为拿到真图、实际是 gen/mock/ 下一张噪声占位。红线「静默顶替=假绿」此前只有一键全量守住。
+function stubRegen(resp: Record<string, unknown>): void {
+  const L = { success: true, mode: 'requirements', game: 'g', count: 1, rows: [PH_NO_FILE] };
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+    if (url.includes('/api/art/regenerate')) return { ok: true, json: async () => resp };
+    if (url.includes('/api/art/ledger')) return { ok: true, json: async () => L };
+    if (url.includes('/api/art/style-packs')) return { ok: true, json: async () => ({ packs: [{ packId: 'p', name: 'P' }] }) };
+    return { ok: true, json: async () => ({}) };
+  }));
+}
+async function clickRegen(): Promise<void> {
+  await act(async () => { root.render(<ArtLedgerPanel slug="g" onBack={() => {}} />); });
+  await flush();
+  // 点编号 span（React 事件委托会冒泡到卡片的 onClick·点外层 div 命不中）
+  const noEl = [...container.querySelectorAll('span')].find((s) => s.textContent === 'art-001');
+  await act(async () => { noEl!.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+  await flush();
+  const btn = [...container.querySelectorAll('button')].find((b) => b.textContent === '生成');
+  await act(async () => { btn!.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+  await flush();
+}
+
+describe('ArtLedgerPanel · mock 回退必须当场说破', () => {
+  it('重生成落到 mock（row.gen.mock）→ toast 明说 MOCK + 不会写回，绝不报「✓ 成功」', async () => {
+    stubRegen({ success: true, no: 'art-001', row: { no: 'art-001', gen: { mock: true } } });
+    await clickRegen();
+    const html = container.innerHTML;
+    expect(html).toContain('MOCK');
+    expect(html).toContain('不会写回');
+    expect(html).not.toContain('✓ 重生成');   // 不许伪装成功
+  });
+
+  it('summary.mock>0 同样说破（批量口径复用同一判据）', async () => {
+    stubRegen({ success: true, no: 'art-001', summary: { mock: 1 } });
+    await clickRegen();
+    expect(container.innerHTML).toContain('MOCK');
+  });
+
+  it('真图（mock 假）→ 照旧报成功', async () => {
+    stubRegen({ success: true, no: 'art-001', row: { no: 'art-001', gen: { mock: false, servedPath: '/x.png' } } });
+    await clickRegen();
+    const html = container.innerHTML;
+    expect(html).toContain('✓ 重生成');
+    expect(html).not.toContain('MOCK');
+  });
+});

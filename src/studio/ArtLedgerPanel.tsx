@@ -240,8 +240,17 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
     if (busy) return;
     setBusy(true);
     try {
-      const res = await fetch(`${API}${url}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json() as Promise<{ success?: boolean; error?: string; newSlug?: string }>);
-      if (res.success) { flash(true, res.newSlug ? `${okMsg} → ${res.newSlug}` : okMsg); load(); loadSync(); onChanged?.(); }
+      const res = await fetch(`${API}${url}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        .then((r) => r.json() as Promise<{ success?: boolean; error?: string; newSlug?: string; row?: LedgerRow; summary?: { mock?: number } }>);
+      if (res.success) {
+        // ⚙ mock 必须当场说破（owner 2026-08-06 实战踩坑：单槽「重新生成」无 key → 服务端探针失败自动回退
+        // mock → 弹「✓ 重生成 art-15」，人以为拿到了真图，实际是 gen/mock/ 下一张噪声占位）。项目红线
+        // 「无 key 必须见探针输出·静默顶替=假绿」此前只有「一键全量」守住，单槽这条路是漏的。
+        const mocked = res.row?.gen?.mock === true || (res.summary?.mock ?? 0) > 0;
+        if (mocked) flash(false, `⚙ ${okMsg.replace(/^✓\s*/, '')} 走的是 MOCK 占位（无可用 API key）——噪声图仅供预览，不会写回游戏。配好 key 后重生成`);
+        else flash(true, res.newSlug ? `${okMsg} → ${res.newSlug}` : okMsg);
+        load(); loadSync(); onChanged?.();
+      }
       else flash(false, `✕ ${res.error ?? '失败'}`);
     } catch (e) { flash(false, `✕ ${String(e)}`); }
     finally { setBusy(false); }

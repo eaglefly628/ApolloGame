@@ -49,6 +49,7 @@
 > **根因**：`blackHouseholdFiles()` 只拿 `art-ledger.json` 的 servedPath 做 covered 集，**完全不读 `art/index.json`**。于是"记账在资产索引、不在需求台账"的合法 vendored 资产被永久判成黑户 → 判词长期钉死 WARN、**真信号被 62 条噪声淹没**；且这 65 条已全部写进棘轮基线 `scripts/art-ledger-baseline.json`（game-a:57/game-103:4/game101:3/game-c:1），等于把噪声固化了。
 > **建议判据（Lead 裁）**：文件不算黑户当满足其一——① 被台账行 servedPath 覆盖（现规则不变）；② 在该游戏 `art/index.json` 有 `path` 命中的条目**且有来源登记**（`provenance` 对象存在 **或** `license`+`source` 齐）。落地后同步**瘦身基线**只留真黑户（棘轮只紧不松）。
 > **明确不做**：给 55 张扑克逐张编台账号——违背 owner「一行=一种素材」去重原则，它们不是 55 个独立美术需求而是一副成套 vendored 牌面。
+> **⚠ 追加实证（2026-08-06 owner 实战踩坑带出·同一守卫的第二处构造性假阳）**：`SKIP_DIR_PREFIXES = ['orig','ai/pending']` **不含 `gen/mock`**。而 mock 产物按设计**永远不上台账**（「mock 永不写回·不登别名·不可 approve」是手册红线）且已被 `.gitignore` 挡在仓外——**它必然、永久地被判成黑户**，判据与设计直接打架。owner 在 game108 点单槽重生成、无 key 回退 mock 后，资产浏览器把 `/games/game108/art/gen/mock/art-15.png` 标成「⚠ 黑户」并提示「拖入登记补建 provenance」——**照做就等于把 mock 钉进游戏**（手册明令的事故形态）。故本单加一项：`SKIP_DIR_PREFIXES` 补 `gen/mock`；浏览器对 mock 命名空间应显「⚙ MOCK 预览物·不可登记」而非黑户+登记指引。
 > **需 Lead 权衡的取舍**：认索引记账 = 把"记账可信度"下放给 index.json（与台账同信任级）。好处是判词恢复可用；代价是伪造索引条目也能过——但那与伪造台账行同级，且需留下 license/source 痕迹。另：`SKIP_DIR_PREFIXES` 已含 `orig`/`ai/pending`，备份目录不是新假阳源（已核）。
 > **验收**：改后全仓黑户从 65 → 3（且这 3 个正是 game101 那单要清的）；判词随之可回 PASS。
 
