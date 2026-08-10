@@ -27,6 +27,7 @@
 | 运动与寻路 | `playbooks/movement-pathfinding.md` | motion/tween/steering/grid-move(hex A*)/pathfind | 各游戏 PE |
 | 事件与逻辑链 | `playbooks/events-logic.md` | event-when/condition/effect-apply/flow/keybind 信号铁律 | 各游戏 PE |
 | 战斗 | `playbooks/combat.md` | hitbox/mortal/stats/over-time/aggro/dice 族/opposedRoll | 甲（game-g 战斗核先例） |
+| 对手/敌人 AI | `playbooks/opponent-ai.md` | behavior-tree/event-when+flow 相位门/State 心态机/Effect.chance 种子骰/aggro；AI 设定必填（§4.65） | 各游戏 PE；正样例=game108 大师 v5 / game-a BT |
 | 卡牌 | `playbooks/cards.md` | card-pile/card-play/poker-hand(wild)/card-scoring | 各游戏 PE；正样例=game-e 计分核 |
 | 随机与确定性 | `playbooks/randomness.md` | RandomSeed/nextRandom/seededShuffle · **裸 Math.random=红线** | 全员必读（最短的一本） |
 | 资产 | `playbooks/assets.md` | art:检索/AssetManifest/asset-index | **asset-manager agent** / resource-manager 技能 |
