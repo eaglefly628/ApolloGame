@@ -63,19 +63,26 @@ describe('tallyOf · 多组战况统计', () => {
 });
 
 describe('layoutFor · 组数 → 场地缩放', () => {
-  it('1 组不缩（原尺寸）', () => { expect(layoutFor(1).scale).toBe(1); });
-  it('组数越多牌越小、镜头越远（单调）', () => {
-    let prevScale = Infinity, prevCam = 0;
+  it('**牌尺寸恒定不缩**（scale 恒 1）—— 缩牌会让碰撞盘退化成方块·圆盘立不住的性质失效', () => {
+    for (const n of DUEL_COUNTS) expect(layoutFor(n).scale).toBe(1);
+  });
+  it('道距恒定 ≥ 牌长 —— 相邻道的牌不会互相压住', () => {
+    for (const n of DUEL_COUNTS) expect(layoutFor(n).laneGap).toBeGreaterThanOrEqual(2.15);
+  });
+  it('组数越多：桌子越深、镜头越远（单调）', () => {
+    let prevZ = 0, prevCam = 0;
     for (const n of DUEL_COUNTS) {
       const L = layoutFor(n);
-      expect(L.scale).toBeLessThanOrEqual(prevScale);
+      expect(L.halfZ).toBeGreaterThanOrEqual(prevZ);
       expect(L.camDist).toBeGreaterThanOrEqual(prevCam);
-      prevScale = L.scale; prevCam = L.camDist;
+      prevZ = L.halfZ; prevCam = L.camDist;
     }
   });
-  it('20 组仍能塞进桌面（总深 ≤ 桌深）', () => {
-    const L = layoutFor(20);
-    expect(20 * L.laneGap).toBeLessThanOrEqual(L.halfZ * 2);
+  it('各档都塞得进桌面（总深 ≤ 桌深）', () => {
+    for (const n of DUEL_COUNTS) {
+      const L = layoutFor(n);
+      expect(n * L.laneGap).toBeLessThanOrEqual(L.halfZ * 2);
+    }
   });
 });
 

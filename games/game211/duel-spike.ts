@@ -40,7 +40,7 @@ const GRAVITY = 20;    // 重力大小（正数·算抛物线用；PhysicsWorld3
 // 牌的弹性刻意**低**（真纸牌本来就不弹）。教训：调到 0.52 想让撞击「弹开」，结果两张牌撞完各自**弹回原处**
 // 落在同一小片区域、互相压着 —— 实测「未躺平」从 1/2 恶化到 2/2。分离要靠**偏心擦碰把它们朝两侧甩开并继续前行**，
 // 不是靠对撞回弹。
-const CARD_RESTITUTION = 0.14;
+const CARD_RESTITUTION = 0.34;   // owner「接触非常 soft」→ 抬弹性。0.14 是当初为防撞完叠压压的，现在靠 zSpread 分离，不必再压这么死
 // 对称偏心量：**相对碰撞圆盘半径**取比例，才是真正的「擦碰」。0.2 的绝对值相对 R=1.12 几乎等于正心对撞，
 // 撞完两张牌几乎原地停下、然后叠在一起 → owner 看到的「还能站在那里」其实是**互相压着**，不是立在边上（实测口径：未躺平 1/2）。
 // 0.55×R 是明显的偏心：既给出大力偶（翻滚由碰撞产生），又把两张牌朝相反侧向甩开、各自落地。
@@ -154,14 +154,17 @@ export function tallyOf(list: readonly DuelOutcome[]): { win: number; lose: numb
 }
 
 /** 组数 → 场地/牌尺缩放（纯函数·可单测）：组数越多，牌越小、道越密、镜头越远——把 N 组塞进同一块桌面。 */
+const LANE_SPAN = 3.2; // 道距：≥ 牌长 2.15 + 撞飞余量
 export function layoutFor(n: number): { scale: number; laneGap: number; halfZ: number; halfX: number; camDist: number } {
-  // 道间距必须 ≥ 牌的最长边（牌平躺时沿 Z 最多占 CARD_H×scale），否则相邻两道的牌会互相压到一起，
-  // 20 组时全堆到场中央、看着是一坨而不是 20 组对决（实测目击）。故 laneGap = 2.5×scale（含余量）。
-  const LANE_SPAN = 3.2, DEPTH_BUDGET = 16; // 道距要容得下「擦碰后朝两侧甩开」的落点，否则相邻道的牌会叠到一起
-  const scale = Math.min(1, DEPTH_BUDGET / (LANE_SPAN * n));
-  const laneGap = LANE_SPAN * scale;
+  // ⚠ **牌尺寸恒定不缩**（scale 恒 1）——组数多了靠**放大桌面 + 拉远镜头**来容纳，绝不靠缩小牌。
+  // 血泪：原本按组数把牌缩到 1/4~1/12，但碰撞盘厚度被引擎钳在 `Math.max(0.1, h)` **不跟着缩**
+  //（`three/physics.ts`）→ 60 组时半径 0.064 / 半高 0.05，圆盘退化成**近似方块**，
+  // 「圆盘立不住」这个性质彻底失效 → owner 实测「数量多时未躺平暴增、空中接触很 soft、像没碰上」。
+  // 三个症状同一个根因。碰撞体几何必须在所有档位保持同一个形状，这是不可让的。
+  const scale = 1;
+  const laneGap = LANE_SPAN;                       // 恒定道距（≥ 牌长 + 余量）
   const halfZ = Math.max(3.2, (n * laneGap) / 2 + 1.2);
-  const halfX = Math.max(5.4, 3.4 * scale + 3.2); // 场地留够横向余量：牌擦碰后要飞出去落地，别撞到围栏斜靠着
+  const halfX = 6.6;
   return { scale, laneGap, halfZ, halfX, camDist: 7.2 + halfZ * 1.15 };
 }
 
