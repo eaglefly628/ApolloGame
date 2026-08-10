@@ -80,7 +80,7 @@ describe('layoutFor · 组数 → 场地缩放', () => {
 });
 
 describe('throwPlan · 一对一空中对撞（owner「每张牌冲向对面对应那张」）', () => {
-  const laneZ = 1.4, throwX = 2.6, vy = 8.6, tMeet = 0.36, stag = 0.26, zsp = 0.82, R = 1.55 / 2;
+  const laneZ = 1.4, throwX = 2.6, vy = 8.6, tMeet = 0.36, stag = 0.05, zsp = 0.82, R = 1.55 / 2;
   const { a, b } = throwPlan(laneZ, throwX, vy, tMeet, stag, zsp);
   const at = (c: typeof a, t: number, g = 20): { x: number; y: number; z: number } =>
     ({ x: c.x + c.vx * t, y: c.y + c.vy * t - 0.5 * g * t * t, z: c.z + c.vz * t });
@@ -126,6 +126,14 @@ describe('throwPlan · 一对一空中对撞（owner「每张牌冲向对面对�
       expect((p.a.z + p.b.z) / 2).toBeCloseTo(z, 9);              // 对称轴仍是本道中线
       expect(Math.abs(p.a.z - p.b.z)).toBeLessThan(L.laneGap);    // 错位不得超过道距·否则串到隔壁道
     }
+  });
+  it('⑦ 高度差必须 < 碰撞圆盘合厚，否则牌只是从对方上方掠过（owner「空中没有碰撞」的真因）', () => {
+    const COLLIDER_HALF_H = 0.05;                 // 引擎把圆盘厚度钳到 0.1 → 半高恒 0.05
+    expect(stag).toBeLessThan(2 * COLLIDER_HALF_H);
+    expect(0.26).toBeGreaterThan(2 * COLLIDER_HALF_H); // ← 旧值，记死它为什么不行
+  });
+  it('⑧ 横向错位必须 < 2R，否则两盘侧向不重叠', () => {
+    expect(zsp).toBeLessThan(2 * R);
   });
   it('HIT_DIST_RATIO 判据本身：≤1.2R 算撞上·超出不算', () => {
     expect(isHit(1.2 * 0.775, 0.775)).toBe(true);

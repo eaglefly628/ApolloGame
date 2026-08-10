@@ -50,7 +50,14 @@ const CARD_RESTITUTION = 0.14;
 //   → 撞上 0/1 组，三次一次都没碰上**。看着「像撞了」其实是各飞各的。分离绝不能靠出手时就分开。
 //   起手**高度差半个身位**：速度仍严格镜像（等大反向·符合「相反的作用力」），但一张从上、一张从下相遇
 //   → 接触点必然偏离质心 → 力偶（旋转）由**碰撞本身**产生，且上牌被往上顶、下牌被往下压，撞完自然分开。
-const Y_STAGGER = 0.26;
+// ⚠ 高度差必须 **< 两枚碰撞圆盘的合厚**，否则牌只是从对方上方平平掠过、根本不接触。
+// 碰撞体是 cylinder：半径 = Mesh3D.width/2，厚度 = Mesh3D.height 但**被引擎下限钳到 0.1**
+// （`three/physics.ts`：`new Cylinder(r, r, Math.max(0.1, h), 12)`）→ 半高恒 0.05、合厚恒 0.1。
+// 血泪：这里原本是 0.26 —— 中心明明擦着过（|Δx|min 0.01）、仪表报「相遇 20/20」，
+// 但两张牌垂直差 0.26 而各自只有 0.05 半厚，**物理上一次都没碰到**（owner：「抛出力度和角度都 OK，但空中没有碰撞」）。
+// 教训：「中心靠得近」≠「碰撞体接触」，判据必须按碰撞体的**真实尺寸**来，不能按中心距。
+const COLLIDER_HALF_H = 0.05;          // 引擎钳定的圆盘半高（Math.max(0.1, h)/2）
+const Y_STAGGER = 0.05;                // < 2×COLLIDER_HALF_H = 0.1 → 两盘垂直必然重叠
 // 交汇时的横向（z）错位：给撞击一个横向分量，让两张牌撞完朝 z 两侧分开落地，而不是叠在一起。
 // 取值上限由「必须撞上」定死：hypot(Y_STAGGER, Z_SPREAD) 必须 < 2R = CARD_W（=1.55）。0.9 → 交汇距 0.94，留足余量。
 const Z_SPREAD = 0.82;   // 上限 = sqrt((1.2R)² − Y_STAGGER²) ≈ 0.89（撞击判据）·取 0.82 留余量
@@ -66,7 +73,7 @@ const DEATH_TINT = 0x5b6068;
 const EDGE_TINT = 0x2a2e34;
 
 /** 可切的同场对决组数（压测档·owner 2026-08-07「3 个对决、5 个对决，直到同时 20 个」）。 */
-export const DUEL_COUNTS = [1, 3, 5, 10, 20] as const;
+export const DUEL_COUNTS = [1, 3, 5, 10, 20, 40, 60] as const; // owner 2026-08-07：20 组不是压测上限·要真实规模 → 加 40/60（=80/120 刚体）
 
 /** 一张牌的落定读数。upY=牌**正面法线**转到世界后的竖直分量（+1=正面朝上·−1=反面朝上·0=立在边上）。 */
 export interface CardOutcome { side: Side; upY: number; front: boolean }
@@ -336,6 +343,7 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
       const up = upright(outcomes.filter(Boolean) as DuelOutcome[]);
       const L = layoutFor(duels);
       const met = metCounts(minDx, crossed, HULL_R * L.scale);
+      console.info('[dsp/cost] %d 组 · 刚体 %d · 帧均 %sms (%sfps) · p95 %sms · 每刚体 %sms', duels, duels * 2, perfMean().toFixed(1), (1000 / Math.max(0.001, perfMean())).toFixed(0), perfP95().toFixed(1), (perfMean() / Math.max(1, duels * 2)).toFixed(3));
       console.info('[dsp/hit] 相遇 %d/%d 组（越过 %d · 近接 %d）· |Δx|min %s', met.total, duels, met.crossed, met.near, minDx.map((d) => d.toFixed(2)).join(','));
       console.info('[game211/duel-spike] 第%d 轮 · %d 组 → 胜%d 负%d 平%d · 未躺平 %d/%d · 帧 %sms(p95 %sms)', throwNo, duels, t.win, t.lose, t.draw, up, duels * 2, perfMean().toFixed(1), perfP95().toFixed(1));
     }
@@ -381,7 +389,7 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
     const rows: LayoutNode[] = [
       { type: 'Label', id: 'dsp-title', props: { text: '物理对决试验台 · 抛掷定生死', size: 'lg', color: 'gold' }, layout: {} },
       { type: 'Label', id: 'dsp-status', props: { text: `第 ${throwNo} 轮 · ${duels} 组同时对决 · ${status}`, size: 'sm', color: 'dim' }, layout: {} },
-      { type: 'Label', id: 'dsp-perf', props: { text: `帧 ${perfMean().toFixed(1)}ms · p95 ${p95.toFixed(1)}ms · 刚体 ${duels * 2}`, size: 'sm', color: p95 > 16.7 ? 'danger' : p95 > 11 ? 'warn' : 'ok' }, layout: {} },
+      { type: 'Label', id: 'dsp-perf', props: { text: `帧 ${perfMean().toFixed(1)}ms (${(1000 / Math.max(0.001, perfMean())).toFixed(0)}fps) · p95 ${p95.toFixed(1)}ms · 刚体 ${duels * 2} · ${(perfMean() / Math.max(1, duels * 2)).toFixed(2)}ms/刚体`, size: 'sm', color: p95 > 16.7 ? 'danger' : p95 > 11 ? 'warn' : 'ok' }, layout: {} },
     ];
     if (duels === 1) {
       rows.push(
