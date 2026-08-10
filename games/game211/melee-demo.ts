@@ -149,6 +149,16 @@ export function mountMeleeDemo(container: HTMLElement, opts?: { seed?: number; o
     }
   }
 
+  /** 全场停住（owner 2026-08-10「其他的牌就可以停下来，不要再移动了，不然移动太快导致最终成一团」）。
+   *  实现走 steering 自己的语义：把 `Relation.kind` 从 'target' 摘掉 → steering 每 tick 落到
+   *  「无目标 → 速度归零」那条分支。**不自己写位移代码**，也不必新增「冻结」概念。 */
+  function freezeAll(): void {
+    for (const id of unitIds) {
+      const rel = engine.world.getComponent<Relation>(id, 'Relation');
+      if (rel) rel.kind = 'idle';
+    }
+  }
+
   /** 每 tick 更新索敌：本组所有单位都朝「最近敌组的组心代表」走。 */
   function retarget(): void {
     for (const g of groups) {
@@ -184,46 +194,86 @@ export function mountMeleeDemo(container: HTMLElement, opts?: { seed?: number; o
     });
   }
 
-  /** 开打：在两组之间的中点，把双方各 N 张牌抛成真刚体。 */
+  /** 读一个行军单位当前在场上的位置（2D sim 口径：x→世界 X、y→世界 Z）。 */
+  function unitPos(cardId: string): { x: number; z: number } | null {
+    const t = engine.world.getComponent<Transform>(unitEntity(cardId), 'Transform');
+    return t ? { x: t.x, z: t.y } : null;
+  }
+
+  /** 开打（owner 2026-08-10 澄清）：**每张牌找到对面对应那张**，按两者连线算冲击方向与翻转轴，
+   *  从**各自站的位置**对扑到半空相遇——不是搬到另一块场地上按 lane 排开抛。
+   *
+   *  做法：把 `throwPlan` 的一维不变量（x 对冲 / y 高度差 / z 横向错位）当作**该对牌的局部坐标**，
+   *  再整体旋进世界：局部 +x = A→B 的水平方向 `d`，局部 +z = 其水平法向 `perp`。
+   *  于是 `throwPlan` 那 8 条测试钉死的不变量（必相撞 / 严格镜像 / 撞点偏心）**逐条继承**，
+   *  只是换了个朝向——这正是「算出对应的旋转角度和冲击方向」。
+   *  翻转自旋也跟着转：角速度轴取 `perp`（水平且垂直于飞行方向）→ 牌是**朝对手翻跟头**，
+   *  而不是绕世界 X 轴乱翻（后者在斜向对扑时看起来像侧滚）。 */
   function startDuel(a: Group, b: Group): void {
     const pairs = Math.min(a.cards.length, b.cards.length);
-    const cx = (a.x + b.x) / 2, cz = (a.y + b.y) / 2;
     duelNo += 1;
     duelIds.length = 0;
     const aIds: string[] = [], bIds: string[] = [];
-    for (let lane = 0; lane < pairs; lane++) {
-      const laneZ = cz + (lane - (pairs - 1) / 2) * 3.2;
+    let cx = 0, cz = 0, n = 0;
+
+    for (let i = 0; i < pairs; i++) {
+      const pa = unitPos(a.cards[i]!), pb = unitPos(b.cards[i]!);
+      if (!pa || !pb) continue;
+      const mx = (pa.x + pb.x) / 2, mz = (pa.z + pb.z) / 2;
+      cx += mx; cz += mz; n += 1;
+      // 连线方向（A→B）与其水平法向。两点重合的兜底方向取 +X（极罕见·不至于让这一对静默消失）。
+      const dxw = pb.x - pa.x, dzw = pb.z - pa.z;
+      const len = Math.hypot(dxw, dzw) || 1;
+      const dx = dxw / len, dz = dzw / len;      // 局部 +x
+      const px = -dz, pz = dx;                    // 局部 +z（水平法向）
+      // 出手距 = 两牌实距的一半（各自从自己位置起跳，在中点上空相遇）。太近则给个下限，保证有滞空。
+      const throwX = Math.max(1.2, len / 2);
       const vy = 12.4 + metaRandom() * 1.2;
       const tMeet = (vy / GRAVITY) * (0.80 + metaRandom() * 0.12);
-      const plan = throwPlan(0, 1.8, vy, tMeet, 0.05, 0.82);   // 复用 duel-spike 的出手几何（唯一真相）
+      const plan = throwPlan(0, throwX, vy, tMeet, 0.05, 0.82);   // 局部一维方案（唯一真相·不另算一套）
+
       for (const side of ['a', 'b'] as const) {
         const p0 = plan[side];
         const grp = side === 'a' ? a : b;
-        const id = `duel-${duelNo}-${lane}-${side}`;           // 换 id 才会重建刚体（duel-spike 头注坑②）
+        const id = `duel-${duelNo}-${i}-${side}`;   // 换 id 才会重建刚体（duel-spike 头注坑②）
         (side === 'a' ? aIds : bIds).push(id);
+        // 局部 (x,z) → 世界：mid + d*localX + perp*localZ
+        const wx = mx + dx * p0.x + px * p0.z;
+        const wz = mz + dz * p0.x + pz * p0.z;
+        const wvx = dx * p0.vx + px * p0.vz;
+        const wvz = dz * p0.vx + pz * p0.vz;
+        // 翻转自旋绕 perp 轴（朝对手翻跟头）；再叠一点绕竖轴的自旋纯观感。
+        const spin = (metaRandom() < 0.5 ? -1 : 1) * (7 + metaRandom() * 11);
         engine.world.createEntity(id);
-        engine.world.addComponent(id, { type: 'Transform3D', x: cx + p0.x, y: p0.y, z: laneZ + p0.z } as unknown as Component);
+        engine.world.addComponent(id, { type: 'Transform3D', x: wx, y: p0.y, z: wz } as unknown as Component);
         engine.world.addComponent(id, {
           type: 'Mesh3D', shape: 'box', width: CARD_W, height: CARD_T, depth: CARD_H,
           faceAxis: 'y', frontTint: TINT[grp.side], backTint: DEATH_TINT, edgeTint: EDGE_TINT,
         } as unknown as Component);
         engine.world.addComponent(id, {
           type: 'RigidBody3D', shape: 'cylinder', mass: 1.0,
-          vx: p0.vx, vy: p0.vy, vz: p0.vz,
-          avx: (metaRandom() < 0.5 ? -1 : 1) * (7 + metaRandom() * 11),
-          avy: -4 + metaRandom() * 8,
-          avz: (metaRandom() < 0.5 ? -1 : 1) * (metaRandom() * 6.3),
+          vx: wvx, vy: p0.vy, vz: wvz,
+          avx: px * spin, avy: -4 + metaRandom() * 8, avz: pz * spin,
         } as unknown as Component);
         duelIds.push(id);
       }
     }
+
+    // 参战的两队行军单位**撤下场**（它们此刻就是天上那些刚体）；活下来的等落定后再由 syncUnits 重建。
+    for (const cardId of [...a.cards, ...b.cards]) {
+      const id = unitEntity(cardId);
+      if (!unitIds.has(id)) continue;
+      try { engine.world.destroyEntity(id); } catch { /* 已不在 */ }
+      unitIds.delete(id);
+    }
+
     duelCtx = { a, b, pairs, aIds, bIds };
     duelEnd = performance.now() + DUEL_SETTLE_MS;
     phase = 'duel';
     status = `第 ${duelNo} 场对决 · ${pairs}v${pairs}`;
-    // 镜头推近到战场
+    freezeAll();   // owner：打的时候其他军团停下来，别再移动（否则全场挤成一团）
     const cam = engine.world.getComponent<Camera3D>('cam', 'Camera3D');
-    if (cam) { cam.pivotX = cx; cam.pivotZ = cz; cam.distance = 34; }
+    if (cam && n) { cam.pivotX = cx / n; cam.pivotZ = cz / n; cam.distance = 34; }
   }
 
   /** 读牌面 → 判生死 → 写回战役状态 → 重编组。 */
