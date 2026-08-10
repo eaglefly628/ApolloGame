@@ -29,7 +29,7 @@
 - **需求池**：`docs/workflow/requests.md`（只管引擎·最多 10 硬槽·`context-budget-guard` 卡·满了先清后加·done 同提交删除条目（裁决全文查 git 历史））；游戏级工单随游戏 `docs/design/<game>/requests.md`（不占槽）；3D 独立池 `requests-3d.md`。**派工**：评审通过的实现类需求标「指派：Opus」+ 附写死 spec；归属与抢锁走上面「施工与复查」。
 - **开发新 capability 前查知识库** `wiki/skills/index.md`（按需读对应分类·别一次读完）。
 - **游戏能力总览铁律**：新游戏/新玩法开工前先交 `docs/design/<game>/capability-plan.md`（模板 `docs/design/capability-plan-template.md`）：① 消费哪些引擎 capability（对 registry 实名）② 规则摆数据表 + 由现有能力解释（禁「数据表 + 游戏层自写解释器」）③ 逐条申请游戏层例外（Lead 裁·记债）。**plan 未过审不写游戏层 system 代码**；偏差用 `node scripts/game-skill-audit.mjs [game]` 体检。硬红线 = 游戏层禁裸 Math.random（用引擎种子 PRNG）·禁 innerHTML/createElement（走 LayoutNode）·禁零能力接入·禁零测试。
-- **TS 卡带例外**：`features.tsCarts`（默认开）+ 卡带 `meta.allowTs` → 允许 `library/<slug>/logic.ts`（`cartCapability` 契约·`scripts/cart-logic-check.mjs` 门·记债）；除此游戏仍 = 纯数据。价值排序：**「能出复杂的东西」= 第一要素**，「最弱 LLM 也能产出」尺子降级。词表缺口走 capgap 快速通道（`.apollo/cap-gaps.jsonl` → Lead 裁）。
+- **TS 卡带例外**：`features.tsCarts`（默认开）+ 卡带 `meta.allowTs` → 允许 `library/<slug>/logic.ts`（`cartCapability` 契约·`scripts/cart-logic-check.mjs` 门·记债）；除此游戏仍 = 纯数据。价值排序：**「能出复杂的东西」= 第一要素**，「最弱 LLM 也能产出」尺子降级。词表缺口走 capgap 快速通道（`scripts/capgap.mjs add`·台账 `.zerocraft/cap-gaps.jsonl` → Lead 裁）。
 - **角色启动协议**：owner 宣告「角色 = X·任务 = Y」→ 第一步读 `docs/roles/index.md` 找角色卡照办（域边界/必读/工具以卡为准）；未宣告 = 通用 session 按本文件。
 - **生产线手册铁律**：动手任何生产任务（UI/特效/3D/寻路/事件/战斗/卡牌/随机/资产/音频/存档）前先读 `docs/playbooks/index.md` 找对应线手册照做——查得到的用基座件·查不到提 requests.md 等裁决绝不自造。绕基座 = 手册缺陷（修游戏同时回填手册）。
 - **⛔ 收工律（owner 2026-08-06 立·治「干一半就停」通病）**：回合只有两种合法中途交回——①缺口 A/B 裁决点（owner 独裁面）②复查门（复查人≠施工人）。其余**做完再停**：交付=清单空+门禁绿+已推送，缺一即未完；**禁把可执行项整理成「欠账清单」交回**（整理≠完成）。机器围栏：Stop 钩子拦未收尾停车（`.claude/hooks/stop-completion-check.sh`）+ 每输入注入提醒。
