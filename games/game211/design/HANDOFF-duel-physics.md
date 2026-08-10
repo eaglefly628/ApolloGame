@@ -132,13 +132,24 @@ game211: 裸Math.random×8 · innerHTML×29 · createElement×34 · React屏×1
 新游戏带红旗即 FAIL——豁免不自写基线
 ```
 
-**这些全部是从 game-g fork 过来的存量**（game-g 的对应文件计数完全一致），**不是新写的代码**：`duel-spike.ts` / `duel-scheduler.ts` 里出现的 `Math.random` 只在注释里、写的正是「禁用它」，实际走引擎种子 PRNG（`RandomSeed` + `nextRandom`）。8 处裸随机全在局外元层：卦象、抽卡、生肖、战斗种子、UI 延时、增益洗牌、牌组 id、Boss 抽取。
+**⚠ 2026-08-10 复查更正（原文写「全部是 fork 存量」，差 3 处·已核实）**：逐文件对 game-g 数过之后，口径是——
 
-已有工单：**`REQ-3D-G211-HARDLINE`（`docs/workflow/requests-3d.md`·P1·open·指派 P3D triage）**，要求 ① 建 `docs/design/game211/requests.md` ② 裁「补基线豁免（带理由·可见名单）」还是「重构走引擎种子 PRNG / LayoutNode」。
+| 指标 | game211 | game-g 基线 | 差 |
+|---|---|---|---|
+| 裸 Math.random | 8 | 8 | 0 → **全继承** |
+| innerHTML | 29 | 29 | 0 → **全继承** |
+| React 屏 | 1 | 1 | 0 → **全继承** |
+| createElement | **34** | **31** | **+3 → 是本原型新写的** |
 
-**红线：豁免不得自写基线。** 新 session 有两条路，**都要先拿到裁决**：
-* **A**：给 game211 和 game-g 同等的局外豁免（写进 `scripts/audit-baseline.json`·须 Lead/owner 批注）；
-* **B**：清掉那 8 处裸 `Math.random`（机械活，半小时；DOM 那 60 处是另一码事，量大得多）。
+那 3 处新增在 `duel-spike.ts:224/226/229`（wrapper / stage / uiHost 三个挂载脚手架 div，即 §8 坑②③④ 对应的那段）。**不是存量**。
+
+裸随机与 innerHTML 确实全部继承：`duel-spike.ts` / `duel-scheduler.ts` 里出现的 `Math.random` 只在注释里、写的正是「禁用它」，实际走引擎种子 PRNG（`RandomSeed` + `nextRandom`）。8 处裸随机全在局外元层：卦象、抽卡、生肖、战斗种子、UI 延时、增益洗牌、牌组 id、Boss 抽取。
+
+**这条更正会改变裁决**：「给 game211 和 game-g 同等豁免」若按 game-g 字面计数写（createElement **31**），**门禁仍然红**——实测 34。裁 A 必须写 34 且给那 3 处单独具名批注。
+
+工单：**`REQ-3D-G211-HARDLINE`**（`docs/workflow/requests-3d.md`·P1）的 ① 已完成 → 池子建在 **`docs/design/game211/requests.md`**，裁决细节（A/B/C 三条路 + 先查留痕 + Lead 推荐 A）全在那条 **`REQ-G211-HARDLINE`** 里，**别在本文件重复维护**。
+
+**红线：豁免不得自写基线**（`audit-baseline.json` 的 `_doc` 明文·点名过历史自写事故）。三条路都要先拿裁决。
 
 ---
 

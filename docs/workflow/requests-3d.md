@@ -320,3 +320,5 @@
 ## REQ-3D-G211-HARDLINE · game211 三项硬红线违规无跟踪 + 无工单池文件 · [2026-08-10] · 引擎深审轨 C 发现（Lead 坐实） → **指派：P3D triage** · status: open · 优先级: P1 · 类型: 治理缺口（红旗棘轮/硬红线）
 > **实证**（`node scripts/game-skill-audit.mjs` 全扫·深车道 `audit-ratchet.test.mjs` 因此常红）：game211 裸 Math.random×8 + innerHTML×29 + createElement×34，**无基线条目**；且 `docs/design/game211/` 目录不存在——该游戏连工单池文件都没有（3D 池里仅 REQ-3D-CARD-FACE-AXIS 一条物理面单，与本条无关）。
 > **请 P3D**：① 建 `docs/design/game211/requests.md`（工单随游戏走）；② 按 REQ-G102-HARDLINE 同款路径裁「补基线豁免（带理由·可见名单）」或「重构走引擎种子 PRNG / LayoutNode」——裁前这 3 项在深车道红着，别静默。
+> **① ✅ done（2026-08-10·复查 session 抢锁做的·只取①·② 仍 open 待裁）**：池已建 = `docs/design/game211/requests.md`，条目 `REQ-G211-HARDLINE`（含逐条归属核算 + 先查留痕 + A/B/C 三条路 + Lead 推荐）。
+> **⚠ ② 裁决前必读这条更正**：逐文件对 game-g 核过——裸随机 8/innerHTML 29/React屏 1 **全部继承**（计数与 game-g 逐文件相等），但 **createElement 34 ≠ game-g 31，多出的 3 处是新写的**：`games/game211/duel-spike.ts:224/226/229`（3D 试验台 wrapper/stage/uiHost 挂载脚手架·与已获 Lead 批准的 `game-z` createElement×4 同形同域）。**故「照 game-g 同等豁免」= 写 31 = 门禁仍红**；裁 A 须写 **34** 且对这 3 处单独具名批注，否则等于把新债混入「既往不咎」（正是 `audit-baseline.json` `_doc` 点名的历史事故形状）。
