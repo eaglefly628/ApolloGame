@@ -32,6 +32,7 @@
 
 - 伤害/死亡/属性**全用能力 + 组件数据**，游戏层不写战斗系统代码（`capability-plan` 未过审不得写）。
 - 掷骰/概率一律种子化（randomness.md），**禁裸 `Math.random`**。
+- **带逻辑的结算代码同提交接 trace**（日志基准守则·CLAUDE.md）：`src/skills/debug-trace.ts`，只记 decision/transition/**reject**/commit 四类·样板 `matrix-duel.test.ts`「DebugTrace 试点」。
 - 数据表必须有现成能力消费——填了 buff 文案却无解释器 = 虚胖数据（比没有更糟）。
 - 修正/加成聚合**禁游戏层自写聚合器**（各写一套 add/max/or 循环）：逐字段单策略走 `t2-modifier-stack`，实体属性走 `t2-stats`。应用序固定 add→mul→max→min→or→floor（乘性非交换 → 靠 order/id 定序，禁墙钟/Math.random）。
 

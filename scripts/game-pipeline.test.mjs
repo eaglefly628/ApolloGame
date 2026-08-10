@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { detectForm, gameHash, boardFor, artSubState, STAGES, GATE_STAGES, pipelineFile, mockDebt, writeConcept, priorGaps, orderGate, acceptanceScenarioCount, MIN_ACCEPTANCE_SCENARIOS, REVIEW_CHECKLISTS, selfCheckArtifacts, selfCheckBlock, selfCheckNote, MIN_SELFCHECK_SHOTS } from './game-pipeline.mjs';
+import { detectForm, gameHash, boardFor, artSubState, STAGES, GATE_STAGES, pipelineFile, mockDebt, writeConcept, priorGaps, orderGate, reviewPrereqGaps, acceptanceScenarioCount, MIN_ACCEPTANCE_SCENARIOS, REVIEW_CHECKLISTS, selfCheckArtifacts, selfCheckBlock, selfCheckNote, MIN_SELFCHECK_SHOTS } from './game-pipeline.mjs';
 
 const withRoot = async (fn) => { const r = mkdtempSync(join(tmpdir(), 'gpipe-')); try { return await fn(r); } finally { rmSync(r, { recursive: true, force: true }); } };
 const put = (root, rel, content) => { const p = join(root, rel); mkdirSync(join(p, '..'), { recursive: true }); writeFileSync(p, typeof content === 'string' ? content : JSON.stringify(content, null, 2)); };
@@ -208,16 +208,31 @@ describe('priorGaps / orderGate（顺序闸判定·纯函数）', () => {
     const allGreen = { stages: board.stages.map((s) => ({ ...s, status: 'ok', machine: { state: 'ok' }, review: { state: 'ok' }, human: { state: 'ok' } })) };
     expect(priorGaps(allGreen, 'S4')).toEqual([]);
   });
-  it('有欠+无理由 → 拒跑；有欠+带理由 → 放行且生成落痕记录', () => {
-    expect(orderGate(board, 'S4', undefined).allowed).toBe(false);
-    expect(orderGate(board, 'S4', '   ').allowed).toBe(false); // 空白理由不算
-    const ok = orderGate(board, 'S4', '赶 demo 先跑玩法关');
+  it('复查前置硬闸（owner 2026-08-10 令）：前置「已施工未复查」→ 带理由也拒跑·点名欠查关', () => {
+    // 夹具 S2 = machine ok + review dim = game108 当年「建完不复查往下跑」的原型——现在一律拦。
+    expect(reviewPrereqGaps(board, 'S4').map((g) => g.id)).toEqual(['S2']);
+    const d = orderGate(board, 'S4', '赶 demo 先跑玩法关');
+    expect(d.allowed).toBe(false); // 撤硬闸（orderGate 忽略 reviewGaps）→ 本断言红
+    expect(d.reviewGaps.map((g) => g.id)).toEqual(['S2']);
+    expect(d.outOfOrder).toBeUndefined(); // 拒跑就不能同时落乱序放行痕
+  });
+  it('复查 stale（游戏变了没重查）同样硬拦；CONCERNS（评为 ok）放行', () => {
+    const staleBoard = { stages: [{ id: 'S2', title: 'x', status: 'warn', machine: { state: 'ok' }, review: { state: 'stale' }, human: { state: 'ok' } }] };
+    expect(reviewPrereqGaps(staleBoard, 'S3').map((g) => g.id)).toEqual(['S2']);
+    expect(orderGate(staleBoard, 'S3', '理由').allowed).toBe(false);
+  });
+  it('未施工的前置（machine dim）仍走老规矩：无理由拒跑·带理由放行且落痕（跳关记账语义不变）', () => {
+    const unbuilt = { stages: [{ id: 'S2', title: 'x', status: 'dim', machine: { state: 'dim' }, review: { state: 'dim' }, human: { state: 'dim' } }] };
+    expect(reviewPrereqGaps(unbuilt, 'S3')).toEqual([]); // 没建过=不欠复查
+    expect(orderGate(unbuilt, 'S3', undefined).allowed).toBe(false);
+    expect(orderGate(unbuilt, 'S3', '   ').allowed).toBe(false); // 空白理由不算
+    const ok = orderGate(unbuilt, 'S3', '赶 demo 先跑玩法关');
     expect(ok.allowed).toBe(true);
-    expect(ok.outOfOrder).toMatchObject({ stage: 'S4', reason: '赶 demo 先跑玩法关' });
+    expect(ok.outOfOrder).toMatchObject({ stage: 'S3', reason: '赶 demo 先跑玩法关' });
     expect(ok.outOfOrder.at).toBeTruthy();
   });
   it('前置全绿 → allowed 且无落痕（不冤记乱序）', () => {
-    const allGreen = { stages: board.stages.map((s) => ({ ...s, status: 'ok' })) };
+    const allGreen = { stages: board.stages.map((s) => ({ ...s, status: 'ok', machine: { state: 'ok' }, review: { state: 'ok' }, human: { state: 'ok' } })) };
     const d = orderGate(allGreen, 'S4', '理由');
     expect(d.allowed).toBe(true);
     expect(d.outOfOrder).toBeUndefined();

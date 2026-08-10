@@ -366,9 +366,28 @@ export function priorGaps(board, stage) {
   return gaps;
 }
 
-/** 顺序闸判定：前置全绿→allowed；有欠且给了 --out-of-order 理由→allowed+落痕记录；有欠且无理由→拒跑。 */
+// ── 复查前置硬闸（owner 2026-08-10 令「每步开工前，上一步必须已被不同 agent 真复查」）──
+/** 已施工未复查清单：目标阶段之前，凡机器门已过（ok/warn=建过）而复查门未过的关（dim=没查·
+ *  stale=游戏变了没重查·fail=查了红着）。这类欠账**不可被 --out-of-order 自赦**——复查门是唯一
+ *  不能由施工方自己豁免的门（game108 曾 S2-S5 复查全空跑到 S7 的通道就是自助跳关）。
+ *  未施工的前置（machine dim/fail）仍走老规矩：跳关可以但记账（「从悄悄跳变记录在案」不动）。导出供单测。 */
+export function reviewPrereqGaps(board, stage) {
+  const idx = STAGES.findIndex((s) => s.id === stage);
+  if (idx <= 0) return [];
+  const gaps = [];
+  for (const st of (board?.stages || []).slice(0, idx)) {
+    const built = st.machine?.state === 'ok' || st.machine?.state === 'warn';
+    if (built && st.review?.state !== 'ok') gaps.push({ id: st.id, title: st.title, state: st.review?.state ?? '?', detail: st.review?.detail ?? '' });
+  }
+  return gaps;
+}
+
+/** 顺序闸判定：①前置里有「已施工未复查」→ 一律拒跑（reviewGaps 非空·理由不放行）；
+ *  ②其余欠账：无欠→allowed；有欠且给了 --out-of-order 理由→allowed+落痕；有欠无理由→拒跑。 */
 export function orderGate(board, stage, reason) {
+  const reviewGaps = reviewPrereqGaps(board, stage);
   const gaps = priorGaps(board, stage);
+  if (reviewGaps.length) return { allowed: false, gaps, reviewGaps };
   if (!gaps.length) return { allowed: true, gaps: [] };
   const r = (reason || '').trim();
   if (r) return { allowed: true, gaps, outOfOrder: { stage, reason: r.slice(0, 200), at: new Date().toISOString() } };
@@ -640,8 +659,15 @@ if (isMain) {
     const oooReason = opt('--out-of-order');
     const decision = orderGate(boardFor(ROOT, slug), stage, oooReason);
     if (!decision.allowed) {
-      console.error(`✗ 阶段顺序闸：${stage} 前置阶段未全绿，拒跑（要跳关须带 --out-of-order "<理由>" 显式记账放行）：`);
-      for (const g of decision.gaps) console.error(`  · ${g.id} ${g.title} 欠：${g.owes.join(' / ')}`);
+      if (decision.reviewGaps?.length) {
+        console.error(`✗ 复查前置硬闸：${stage} 的前置里有「已施工未复查」的关——复查门不可自赦，--out-of-order 也不放行（owner 2026-08-10 令）：`);
+        for (const g of decision.reviewGaps) console.error(`  · ${g.id} ${g.title} 复查门=${g.state}${g.detail ? `（${g.detail}）` : ''}`);
+        console.error(`  → 派一个非施工 agent 复查（复查人≠施工人·四步铁律见 CLAUDE.md）：`);
+        console.error(`     node scripts/game-pipeline.mjs checklist ${slug} <SN>  →  复核后 review ${slug} <SN> --verdict PASS|CONCERNS|FAIL --note "…" --by 复查人`);
+      } else {
+        console.error(`✗ 阶段顺序闸：${stage} 前置阶段未全绿，拒跑（要跳关须带 --out-of-order "<理由>" 显式记账放行）：`);
+        for (const g of decision.gaps) console.error(`  · ${g.id} ${g.title} 欠：${g.owes.join(' / ')}`);
+      }
       process.exit(1);
     }
     const res = gateRun(slug, stage, form);

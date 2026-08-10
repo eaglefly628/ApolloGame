@@ -32,6 +32,9 @@
 
 ## 递归复核：**用实现反过来判剧本**（owner 2026-08-07 立）
 
+> **隔离施工配方（深审 2026-08-10 验证）**：破坏性验证要临时改代码——**绝不碰共享工作树**：
+> `git worktree add <scratchpad>/probe-XX HEAD` + 软链 node_modules，验完撤树；破坏前**预告锚点**（哪条测试该红），全绿先怀疑「没改到文件」。
+
 > 病：「剧本作者 = GD 非 PE」靠**两个人**防「实现错了剧本也跟着错」。owner 2026-08-07 裁：
 > **同一个人可以接受，但判定时候的逻辑需要有一个递归。**
 
@@ -80,7 +83,7 @@
 - **存档/回放改动必测边界**：旧版本档载入（save-port migrate 链）+ 损坏档优雅拒绝（`CorruptSaveError` 基座已给）。
 - **冒烟脚本 fail-fast**：前置缺失（无 build/无 manifest）立即非零退出 + 指出补救命令，禁静默跳过造假绿。
 - **凭证探针（TGS 吸收·owner 2026-07-06 批）**：任何「无 key/无环境所以跳过」的回执必须附探针输出（缺哪个 env、调用返回什么）——空口 skip 不采信，视同未测。
-- **红旗棘轮（只降不升·进门禁）**：8 款游戏的裸随机/innerHTML/createElement 计数以 `scripts/audit-baseline.json` 为机读基线，任一超基线 → `scripts/game-skill-audit.mjs` 打 `RATCHET: FAIL` + 退出码 1，`scripts/audit-ratchet.test.mjs` 在 vitest 里守着。降基线是还债仪式（消灭红旗必须同提交改 baseline）；抬基线唯一合法姿势=给该游戏条目挂 `reason:"REQ-xxx"` 缺口单号。
+- **红旗棘轮（只降不升·进门禁）**：在册游戏（以 `audit-baseline.json` 实收为准·不抄数字）的裸随机/innerHTML/createElement 计数以 `scripts/audit-baseline.json` 为机读基线，任一超基线 → `scripts/game-skill-audit.mjs` 打 `RATCHET: FAIL` + 退出码 1，`scripts/audit-ratchet.test.mjs` 在 vitest 里守着。降基线是还债仪式（消灭红旗必须同提交改 baseline）；抬基线唯一合法姿势=给该游戏条目挂 `reason:"REQ-xxx"` 缺口单号。
 
 ## 验收纪律（Lead / 判官侧）
 

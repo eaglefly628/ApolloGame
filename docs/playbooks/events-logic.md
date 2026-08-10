@@ -67,6 +67,10 @@ game108 一个游戏撞了五次，全是这条：
 且**输入接缝要和输出一起设计**——game108 的 ENG-02(输出)与 ENG-04(输入接不上)本该是同一张单，
 拆成两轮就是因为第一轮只想了输出。对不上时是**静默**的。
 
+## ③″ 日志基准（写规则解释器必接）
+
+带逻辑的判定/路由代码**同提交接 trace**（CLAUDE.md 日志基准守则）：`src/skills/debug-trace.ts` opt-in 零开销，「什么都没发生」的分支必记 `reject`；样板 `matrix-duel.test.ts`。
+
 ## ④ 正样例 / 反面教材
 
 - ✅ `src/skills/tier2/event-when.ts` + `effect-apply.ts`：条件→信号→效果全数据。
