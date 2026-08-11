@@ -102,3 +102,13 @@
 
 **PST 可立即施工**：第一步（job 化）+ P3 的 Python 半 + P4。
 **需 Lead**：P1/P2 与第二三步（都在 `scripts/art-replace.mjs`）。
+
+---
+
+# Lead 追认判词（2026-08-11·REQ-ARTPAR 三笔 + provider fix）
+
+**判：PASS·越界照准**（`b35c11d94`/`7f96dda50`/`0c0a4c2aa`·art-replace.mjs 属 Lead 域·owner 明示授权+诚实记债，改法本身是对的：只并发网络相、变异序一字不动、逐行落账、单游戏拒重）。复查证据：三套冒烟（45/42/18）+ 58 测独立复跑绿；derive 回退修与快照挪位读码核对无语义破坏。
+
+**复查逮到并已当场补上**：**逐行落账零守卫**——Lead 实测撤掉 persist 调用后 45 冒烟+58 测**全绿照过**（终态断言天然抓不到「逐行」）。已补 2 例守卫（persist 间谍：成功路径恰 N 次调用 + 无 key 隐式 mock 零调用=ARTTOOL-01 零回写在三相化下仍成立），撤修验红在案（撤 persist → 恰 1 红）。
+
+**残余（记档）**：① P3 原子写（tmp+rename 两处）与 P4 末行 JSON 解析**未随批落地**——按本页原分工仍归 PST，下批补；② P1 提示词编辑被忽略 → Lead 已开 `REQ-ARTPROMPT`（合并 owner 提示词精简）；③ P2 跨进程残余：slug 锁只在 server 进程内，CLI 直跑与 server job 并行仍可互覆（单操作员现实下低危·记债不修）；④ slug 锁排队路径零覆盖（拒绝走 is_running 注册表·锁是防查起竞窗的第二道闸）——正是 opponent-ai 手册「冗余闸配结构测试」同型，PST 随 P3/P4 一并补一条；⑤ art-replace-smoke 不在门禁内（PST 建议纳入·Lead 裁：**纳**）→ 并入 REQ-GUARDGATE 扩一条。

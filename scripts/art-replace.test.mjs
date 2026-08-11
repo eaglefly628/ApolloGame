@@ -231,6 +231,27 @@ describe('REQ-ARTTOOL-01·batch 无 key 时零字节回写台账/索引 + 已有
   }));
 });
 
+describe('REQ-ARTPAR 第二步·逐行落账守卫（Lead 复查补·2026-08-11）', () => {
+  // 终态断言天然抓不到「逐行」——persist 禁用后跑完的最终产物一字不差（Lead 复查实测：45 冒烟+58 测全绿照过）。
+  // 唯一可靠判据 = persist 间谍数调用：每处理一行（成功或失败）恰好各调一次。
+  it('成功路径：4 行 mock 批量 → persist 恰调 4 次（撤 flush 里的 persist 调用 → 0·本断言红）', () => withRoot(async (root) => {
+    const l = deriveLedger(MANIFEST, { game: 'g' });
+    let calls = 0;
+    const r = await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: true, persist: () => { calls++; } });
+    expect(r.ok).toBe(true);
+    expect(r.summary.generated).toBe(4);
+    expect(calls).toBe(4);
+  }));
+  it('无 key 隐式 mock：persist 零调用——ARTTOOL-01 零回写在三相化+逐行落账下仍成立（撤 implicitNoKey 分流 → 非零·本断言红）', () => withRoot(async (root) => {
+    const l = deriveLedger(MANIFEST, { game: 'g' });
+    let calls = 0;
+    const r = await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: false, env: {}, persist: () => { calls++; } });
+    expect(r.ok).toBe(true);
+    expect(r.summary.probes.length).toBeGreaterThan(0); // 无 key 必须见探针（红线：静默顶替=假绿）
+    expect(calls).toBe(0); // 隐式 mock 不打算碰 row 任何字段 → 一次 persist 都不许有
+  }));
+});
+
 describe('T1 ⑤ 对位替换', () => {
   it('generated 行重钉 manifest 引用为本地 id·status→replaced·原 manifest 不改', () => withRoot(async (root) => {
     const l = deriveLedger(MANIFEST, { game: 'g' });

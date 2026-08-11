@@ -153,7 +153,11 @@ UI 层那个同名件只是个四预设的门面。
 
 ### REQ-GUARDGATE-引擎面守卫接线批 · 禁裸随机静态守卫 + hygiene 修红接门 · [2026-08-10] · 深审 A1 探针2/顺手发现（Lead 复跑坐实） · status: open · 指派: 可派工（守卫属 Lead 域·Lead review） · 优先级: P1 · 类型: 门禁基建
 > **病**（实证）：① 往 matrix-duel 结算插 `Math.random()`——game-skill-audit 只扫 `games/`、门禁无引擎层随机扫描步，被咬全靠碰巧存在的精确数值断言；② `test-hygiene-check.mjs` 在 HEAD 即 FAIL（`src/runtime/engine.loop-stop.test.ts:25` [time-wait] 用 `performance.now()`）且未接进 scoped-gate 任何 scope——红着也拦不了推送。
-> **做法**：① 新静态守卫：引擎面（`src/{engine,skills,assembly,net,services}` 非测试文件）禁裸 `Math.random`（白名单 = `atoms/random` 实现文件），接 scoped-gate；② 修掉 loop-stop.test 的墙钟违规 + hygiene 接门。**边界**：新守卫脚本 + `scoped-gate.mjs` 接线 + `engine.loop-stop.test.ts` 一处 + 各点名测试。
+> **做法**：① 新静态守卫：引擎面（`src/{engine,skills,assembly,net,services}` 非测试文件）禁裸 `Math.random`（白名单 = `atoms/random` 实现文件），接 scoped-gate；② 修掉 loop-stop.test 的墙钟违规 + hygiene 接门。**边界**：新守卫脚本 + `scoped-gate.mjs` 接线 + `engine.loop-stop.test.ts` 一处 + 各点名测试③（2026-08-11 追加·ARTPAR 复查裁定）`art-replace-smoke.py` 纳入门禁——碰美术面（`scripts/art-replace*`/`main_entry/art_*`）时跑（PST 实证：三处假红漏检一整天）。
+
+### REQ-ARTPROMPT-提示词编辑被忽略 · UI 改词存 query 而生成读 prompt · [2026-08-11] · PST 复查 P1（Lead 复核属实）+ owner 提示词精简旧请求合并 · status: open · 归属: Lead（`art-replace.mjs`·与 rowIdentity 身份耦合须谨慎） · 优先级: P1 · 类型: 美术工具正确性
+> **病**（PST 实证复现）：`dialectPrompt` 主体优先级 `row.prompt` > `query+desc`，而 `resetRow` 只改 `row.query` 不动 `row.prompt`，面板又预填 `r.prompt || r.query`——人改了字、存进 query、生成仍用旧 prompt = **「改了没反应」**（owner 最恨的一类）。
+> **做法（设计时并办）**：① resetRow 语义修正——用户编辑文本应成为生效主体（动 prompt 还是清 prompt 落回 query+desc·须先定 query 的身份职责边界——`rowIdentity` 三级回退里 query 是末级身份键，改身份≠改提示词要拆开）；② 顺办 owner 的「提示词精简」（subject 从 query+desc 收敛）。**边界**：`scripts/art-replace.mjs`（resetRow/dialectPrompt）+ `ArtLedgerPanel.tsx` 预填口径 + 点名测试。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
