@@ -43,6 +43,10 @@ def check(cond, label):
 SLUG = 'art-replace-smoke'
 LIBDIR = ROOT / 'library' / SLUG
 PUBDIR = ROOT / 'public' / 'games' / SLUG
+# REQ-CARTART（2026-08-06）后：本冒烟的 SLUG 是 **library 卡带**，其美术根已归位到
+# library/<slug>/art（不再是 public/games/<slug>/art）。断言一律走 ARTDIR，别再写死 PUBDIR，
+# 否则存储归位一动这里就整片假红/假绿（本次即因该冒烟不在门禁内而漏检了一整天）。
+ARTDIR = LIBDIR / 'art'
 CLEAN = []  # reskin 产出的新卡带 (lib, pub) 对·结束清理
 
 MANIFEST = {
@@ -107,8 +111,8 @@ try:
     check(all(r['status'] == 'generated' for r in gen_rows), '全行 status=generated')
     check(all((r.get('gen') or {}).get('mock') is True for r in gen_rows), '全行 gen.mock=true（台账明标·墙上 ⚙MOCK）')
     check(all(r.get('provenance') and r['provenance'].get('model') and r['provenance'].get('prompt') and r['provenance'].get('date') and r['provenance'].get('license') for r in gen_rows), 'provenance 四硬字段齐（M2.5 口径）')
-    check((PUBDIR / 'art' / 'gen' / 'mock' / 'art-01.png').is_file(), 'mock 产物落独立命名空间 gen/mock/（仅平台墙预览）')
-    check(not (PUBDIR / 'art' / 'gen' / 'art-01.png').exists(), '真图命名空间 gen/art-NN 未被 mock 占用（防覆盖后门）')
+    check((ARTDIR / 'gen' / 'mock' / 'art-01.png').is_file(), 'mock 产物落独立命名空间 gen/mock/（仅平台墙预览）')
+    check(not (ARTDIR / 'gen' / 'art-01.png').exists(), '真图命名空间 gen/art-NN 未被 mock 占用（防覆盖后门）')
 
     print('④a 写回政策门（owner 2026-07-10：mock 永不写回·观感=原始 placeholder）')
     st, rp = req('POST', '/api/art/replace', {'slug': SLUG})
@@ -184,7 +188,7 @@ try:
     check(new_mf['entities']['hero']['Shape'] == mf['entities']['hero']['Shape'], '换皮后玩法数据 diff=空（Shape 不变）')
     check(new_mf['entities']['hero']['Sprite']['textureKey'] == mf['entities']['hero']['Sprite']['textureKey'], 'mock 换皮不重钉：新卡带引用与源一致（真图后才换观感）')
     check(new_mf['entities']['enemy']['Sprite']['textureKey'] == 'dungeon/monsters/orc', '库资产引用原样保留')
-    new_led = json.loads((NEW_PUB / 'art' / 'art-ledger.json').read_text(encoding='utf-8'))
+    new_led = json.loads((NEW_LIB / 'art' / 'art-ledger.json').read_text(encoding='utf-8'))  # 新卡带美术同样在卡带屋
     check(all(r['status'] == 'generated' and (r.get('gen') or {}).get('mock') for r in new_led.get('rows', [])), '新卡带台账全行 generated·gen.mock=true（等真图重钉）')
 
 except Exception as e:

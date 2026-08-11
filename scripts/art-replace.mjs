@@ -582,8 +582,26 @@ export function backupOrigFile(root, game, no, servedPath) {
   return `${prefix}${bakRel}`;
 }
 
+// 有限并发池（REQ-ARTPAR 第三步）：N 个 worker 抢同一条下标游标，**结果按原下标回填** →
+// 调用方拿到的 results 与输入同序，故下游按行序落账时确定性不受并发影响。
+// 默认 4：文生图供应商普遍有 QPS/并发限流，开太大只会换来 429 重试而非更快。
+export const DEFAULT_CONCURRENCY = 4;
+async function mapLimit(items, limit, fn) {
+  const out = new Array(items.length);
+  let next = 0;
+  const worker = async () => {
+    for (;;) {
+      const i = next++;
+      if (i >= items.length) return;
+      out[i] = await fn(items[i], i);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
 /** 逐行生成落盘 + 登记游戏本地 index + 更新台账。断点续跑=命中缓存(cacheKey+文件在)不重扣费；无 key=探针+mock。 */
-export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = true, env = process.env, at = new Date().toISOString(), only = null, provider: providerOverride = null, allowMock = false, debug = false } = {}) {
+export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = true, env = process.env, at = new Date().toISOString(), only = null, provider: providerOverride = null, allowMock = false, debug = false, concurrency = DEFAULT_CONCURRENCY, persist = null } = {}) {
   const pack = STYLE_PACKS[packId];
   if (!pack) return { ok: false, error: `未知风格包: ${packId}` };
   if (!game) return { ok: false, error: 'batchGenerate 需要 game' };
@@ -595,6 +613,23 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
   // 「知道我到底传了什么」。mock 也带（genRowAsset 向 adapter 要 request）→ 免花 key 就能核对。
   const summary = { total: 0, generated: 0, cached: 0, mock: 0, failed: 0, skipped: 0, probes: [], errors: [], debug: [], skippedFilled: [], previewOnly: [] };
   const gameStyle = (ledger.artStyle && typeof ledger.artStyle.stylePrompt === 'string') ? ledger.artStyle.stylePrompt : '';
+  // ═══ 三相执行（REQ-ARTPAR·owner 2026-08-10 令）═══
+  // 原为单层 `for … await genRowAsset`（串行）。改造铁律：**只把网络调用并发化，变异顺序一字不动**——
+  // byId 插入序决定 index.json 条目序（上文「不整表重排」铁律），summary 数组序=回执可读性，
+  // 故相①③ 严格按行序顺序跑，只有相② 的网络调用并发。产物与改前逐字节一致，只是快了 N 倍。
+  //   相① 顺序·廉价：过滤/探针/**缓存命中**（必须在网络之前——命中就不该发请求·省钱）/已填跳过 → 排生成计划
+  //   相② 并发·纯网络：genRowAsset（有限并发池·默认 4·受供应商限流约束）
+  //   相③ 顺序·落账：快照→写文件→登记 index→改台账行→**逐行 persist**（中断只丢当前行·不再批量产黑户）
+  // persist 缺省 no-op：调用方（CLI）传入「把台账+索引写盘」的闭包才真落盘；库内调用（测试）不落盘。
+  // 逐行落账（REQ-ARTPAR 第二步）：**索引与台账必须同步推进**——只写其一，中断后仍会留下
+  // 「图在磁盘·另一账空白」的黑户。索引由本函数写（idxFile 在此作用域），台账由调用方经 persist 写
+  // （文件路径只有 CLI 知道）。库内调用不传 persist → 只落索引、不落台账（测试用·不写别人的盘）。
+  const flush = () => {
+    index.assets = [...byId.values()];
+    writeJson(idxFile, index);
+    if (typeof persist === 'function') persist();
+  };
+  const plan = [];
   for (const row of ledger.rows) {
     if (only && row.no !== only) { summary.skipped++; continue; } // 单槽点名（fill/regen）
     if (row.status === 'retired') { summary.skipped++; continue; } // 墓碑行（编号保留·槽位已消失）
@@ -626,19 +661,21 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
       summary.skippedFilled.push({ no: row.no, status: row.status, reason: '已有真图/定稿切图（非 placeholder/needs-art）——batch 全量跑不覆盖，用 fill/regen 点名单槽或 reskin 整批重置' });
       continue;
     }
-    // 首次覆盖前存原始态快照（供「一键还原」·对齐上传路径 handle_art_upload·owner 2026-07-21 报「还原变色块」修）：
-    // 之前 orig 只在上传路径存·AI 生成不存 → 生成后还原找不到快照走 fallback=色块。此处补齐 → 还原精确复位。
-    // REQ-ARTTOOL-01：意外 mock（implicitNoKey）不快照——不打算碰 row 任何字段，快照也无从谈起。
-    if (!implicitNoKey && !('orig' in row)) {
-      const skinEntry = row.skinKey ? byId.get(row.skinKey) : null;
-      const curServed = (skinEntry && skinEntry.path) || (row.gen && row.gen.servedPath) || null;
-      const backupPath = backupOrigFile(root, game, row.no, curServed); // 原图文件独立备份（永不被覆盖·还原精确复原）
-      row.orig = { status: row.status ?? null, gen: row.gen ?? null, indexEntry: skinEntry ? JSON.parse(JSON.stringify(skinEntry)) : null, backupPath };
-    }
-    let a;
-    try { a = await genRowAsset(row, pack, { mock: useMock, apiKey, gameStyle, provider: providerOverride }); }
-    catch (e) {
-      const em = errText(e); summary.failed++; summary.errors.push({ no: row.no, provider, error: em });
+    plan.push({ row, provider, apiKey, useMock, implicitNoKey, outRel, outAbs, ck });
+  }
+
+  // 相②：只并发网络调用。失败在此只**捕获不处理**——处理留到相③按行序做，保证回执顺序确定。
+  const results = await mapLimit(plan, Math.max(1, concurrency | 0), async (t) => {
+    try { return { a: await genRowAsset(t.row, pack, { mock: t.useMock, apiKey: t.apiKey, gameStyle, provider: providerOverride }) }; }
+    catch (e) { return { err: e }; }
+  });
+
+  // 相③：严格按行序落账（与改前逐条同序同效），每行落完即 persist。
+  for (let i = 0; i < plan.length; i++) {
+    const { row, provider, useMock, implicitNoKey, outRel, outAbs, ck } = plan[i];
+    const { a, err } = results[i];
+    if (err) {
+      const em = errText(err); summary.failed++; summary.errors.push({ no: row.no, provider, error: em });
       // 失败=对图无副作用（owner 2026-07-27「生成失败→图没了→色块」）：此前已有真图就保住·只记 lastError；
       // 本就无图（首生成失败）才标 failed。绝不因一次失败抹掉上一版好图（配合 resetRow 非破坏化）。
       // REQ-ARTTOOL-01：意外 mock 分支理论上不会真抛（mock 路径无网络调用）——防御性地也不碰台账。
@@ -646,7 +683,17 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
         if (['generated', 'replaced'].includes(row.status) && row.gen && row.gen.servedPath) row.lastError = em;
         else { row.status = 'failed'; row.gen = { provider, error: em }; }
       }
+      flush();
       continue;
+    }
+    // 首次覆盖前存原始态快照（供「一键还原」·对齐上传路径 handle_art_upload·owner 2026-07-21 报「还原变色块」修）。
+    // REQ-ARTPAR：由「生成之前」挪到「落盘之前」——生成失败时不再留下无对应覆盖的空快照（更正确），
+    // 且仍严格早于 writeFileSync 覆盖原图，还原精度不变。意外 mock 不快照（不打算碰 row 任何字段）。
+    if (!implicitNoKey && !('orig' in row)) {
+      const skinEntry = row.skinKey ? byId.get(row.skinKey) : null;
+      const curServed = (skinEntry && skinEntry.path) || (row.gen && row.gen.servedPath) || null;
+      const backupPath = backupOrigFile(root, game, row.no, curServed); // 原图文件独立备份（永不被覆盖·还原精确复原）
+      row.orig = { status: row.status ?? null, gen: row.gen ?? null, indexEntry: skinEntry ? JSON.parse(JSON.stringify(skinEntry)) : null, backupPath };
     }
     // debug 回显：实际（或本该）发给文生图的完整提示词 + 请求 + curl 命令行（key 打码·mock 也有）。
     const dbg = { no: row.no, provider: a.provider, model: a.model, kind: row.kind, mock: !!a.mock, prompt: a.prompt, size: a.request?.size ?? null, endpoint: a.request?.endpoint ?? null, body: a.request?.body ?? null, curl: a.request ? curlFor(a.request, ENVKEY[a.provider]) : null };
@@ -682,6 +729,7 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
     row.gen = { provider: a.provider, model: a.model, prompt: a.prompt, cacheKey: ck, pack: packId, servedPath, localId: id, mock: !!a.mock };
     row.provenance = { model: a.model, prompt: a.prompt, date: at, license: LICENSE[a.provider] }; delete row.lastError; // M2.5 口径硬字段·成功清失败标
     summary.generated++; if (a.mock) summary.mock++;
+    flush();   // REQ-ARTPAR 第二步：逐行落账——中断只丢当前行，绝不再「图在磁盘·台账空白」批量产黑户
   }
   // 保留既有条目顺序（Map 从原数组建·set 改在原位·新条目追加末尾）——**不整表重排**，
   // 否则原索引若非 id 序（如 game-c）整表重排=全文 diff（owner 2026-07-22「只该那一行变」）。
@@ -777,15 +825,23 @@ export function swapSlot(manifest, ledger, no, assetId, { source = 'library', at
 
 // 台账推导（美术库地基）：优先 deriveLedger（扫 art: 皮肤槽）；纯色块生成游戏无 art: 槽 → 会空 →
 // 回退 deriveRequirements（扫所有视觉实体·连色块都列出「该配什么美术」）。让美术库对任何生成的游戏都有内容。
-export function deriveForGame(manifest, game = '') {
+export function deriveForGame(manifest, game = '', { allowFallback = true } = {}) {
   const led = deriveLedger(manifest, { game });
-  return led.rows.length ? led : deriveRequirements(manifest, { game });
+  if (led.rows.length) return led;
+  // 实体名回退推导（owner 2026-07-11「生成的游戏美术库空」）**只为开荒**：manifest 一个 `art:` 都没有
+  // 且台账还是空的时候，拿实体名兜出一份初始需求。**台账已建立后必须关掉**——因为「没有 art: 了」的
+  // 常态成因是**替换已把引用全部重钉死**（正常终态），此时再按实体名造一遍，产出的身份与既有 art:
+  // 推导行撞不上，mergeLedger 只能当新素材追加 ⇒ 台账每过一轮 replace 就膨胀一批重复行（这些行没有
+  // 对应文件，随后又被守卫记成账面问题）。2026-08-10 实测：3 行的冒烟游戏跑完一轮变 6 行。
+  return allowFallback ? deriveRequirements(manifest, { game }) : led;
 }
 
 async function run(argv) {
   const cmd = argv[0], slug = argv[1];
   // 全命令共享的开关（提前声明·避免 fill 分支在 const 声明前引用 → TDZ ReferenceError）。
   const pvi = argv.indexOf('--provider'); const providerArg = pvi >= 0 ? argv[pvi + 1] : null;
+  const _ci = argv.indexOf('--concurrency');  // REQ-ARTPAR 第三步：并发度 1..16（默认 4·供应商普遍限流）
+  const concurrency = _ci >= 0 ? Math.max(1, Math.min(16, parseInt(argv[_ci + 1], 10) || DEFAULT_CONCURRENCY)) : DEFAULT_CONCURRENCY;
   const allowMock = argv.includes('--allow-mock'); // 仅测试/冒烟机械验证·端点永不传
   const debug = argv.includes('--debug'); // 回显发给文生图的完整提示词 + 请求 + curl 命令行（key 打码·owner 2026-07-22）
   if (cmd === 'packs') { console.log(JSON.stringify({ packs: listStylePacks() })); return; }
@@ -813,7 +869,9 @@ async function run(argv) {
     if (!mf) { console.error(`无 manifest: library/${slug}/manifest.json`); process.exit(1); }
     const prev = readJson(ledgerFile(ROOT, slug), null); // append-only：重跑并入现台账·编号不漂移
     // deriveForGame：art: 槽为主，纯色块游戏回退需求推导（owner 2026-07-11「生成的游戏美术库空」）。
-    const ledger = mergeLedger(prev, deriveForGame(mf, slug), mf); // 带 manifest：slot 还在只是已钉死 ≠ 墓碑
+    // 已有台账 → 关掉实体名回退（见 deriveForGame 注释：替换后 art: 全没了是正常终态，不是「库空」）。
+    const hadRows = !!(prev && Array.isArray(prev.rows) && prev.rows.length);
+    const ledger = mergeLedger(prev, deriveForGame(mf, slug, { allowFallback: !hadRows }), mf); // 带 manifest：slot 还在只是已钉死 ≠ 墓碑
     writeJson(ledgerFile(ROOT, slug), ledger);
     console.log(JSON.stringify({ ok: true, slug, rows: ledger.rows.length, ledger }));
     return;
@@ -828,7 +886,8 @@ async function run(argv) {
     if (!ledger) { console.error(`无台账: ${ledgerFile(ROOT, slug)}`); process.exit(1); }
     const rr = resetRow(ledger, no, { query, targetSize });
     if (!rr.ok) { console.log(JSON.stringify(rr)); process.exit(1); }
-    const b = await batchGenerate(ledger, packId, { game: slug, mock, only: no, provider: providerArg, debug });
+    const b = await batchGenerate(ledger, packId, { game: slug, mock, only: no, provider: providerArg, debug, concurrency,
+      persist: () => writeJson(ledgerFile(ROOT, slug), ledger) });
     if (!b.ok) { console.log(JSON.stringify(b)); process.exit(1); }
     writeJson(ledgerFile(ROOT, slug), ledger);
     console.log(JSON.stringify({ ok: true, slug, no, summary: b.summary, row: ledger.rows.find((r) => r.no === no) }));
@@ -839,7 +898,8 @@ async function run(argv) {
     const mock = argv.includes('--mock');
     const ledger = readJson(ledgerFile(ROOT, slug), null);
     if (!ledger) { console.error(`无台账: 先 derive ${slug}`); process.exit(1); }
-    const res = await batchGenerate(ledger, packId, { game: slug, mock, provider: providerArg, debug });
+    const res = await batchGenerate(ledger, packId, { game: slug, mock, provider: providerArg, debug, concurrency,
+      persist: () => writeJson(ledgerFile(ROOT, slug), ledger) });
     if (res.ok) writeJson(ledgerFile(ROOT, slug), res.ledger);
     console.log(JSON.stringify(res.ok ? { ok: true, slug, packId, summary: res.summary } : res));
     if (!res.ok) process.exit(1);
@@ -864,7 +924,8 @@ async function run(argv) {
     if (!mf || !ledger) { console.error('缺 manifest 或台账'); process.exit(1); }
     const rr = resetRow(ledger, no, { query, targetSize });
     if (!rr.ok) { console.log(JSON.stringify(rr)); process.exit(1); }
-    const b = await batchGenerate(ledger, packId, { game: slug, mock, only: no, provider: providerArg, debug });
+    const b = await batchGenerate(ledger, packId, { game: slug, mock, only: no, provider: providerArg, debug, concurrency,
+      persist: () => writeJson(ledgerFile(ROOT, slug), ledger) });
     if (!b.ok) { console.log(JSON.stringify(b)); process.exit(1); }
     const rep = applyReplacements(mf, ledger, { allowMock });
     writeJson(ledgerFile(ROOT, slug), ledger);
