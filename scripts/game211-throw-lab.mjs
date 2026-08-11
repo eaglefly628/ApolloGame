@@ -81,6 +81,19 @@ const ARENA = parseInt(flag('--arena', String(GROUPS)), 10);
 const EDGE_CLEARANCE = parseFloat(flag('--edge-clearance', '6.0'));
 // x 向半宽（生产现值 6.6 → 围栏内表面 5.6）。牌沿 x 对冲飞行，落点在 x 上摊得更开，故单独可调。
 const HALF_X = parseFloat(flag('--halfx', '6.6'));
+// ── 落面「瞄准」实验（owner 2026-08-10「这是个数值游戏，怎么让正反面达到一定的控制」）──
+// 原理：牌出生正面朝上，落面只由**总翻转角** θ=ω·T 决定（每转过半圈翻一次面）。ω 和 T 都是出手时给的，
+// 所以不必改判定、不必作弊——**把 ω 解出来瞄准想要的那个半圈区间**即可。
+// jitter = 在目标半圈内叠加的随机量（单位：半圈）。jitter→0 = 全控；jitter≥0.5 开始漏到隔壁半圈；
+// 大 jitter 退化回 50/50。**这就是那个数值旋钮**：给定想要的胜率 p，反解 jitter。
+// 真实物理还会被「空中对撞 + 落地回弹」扰动，所以实际能控到多少必须测——这就是本实验存在的理由。
+const AIM = flag('--aim', '');            // '' | 'front' | 'back'
+const JITTER = parseFloat(flag('--jitter', '0.3'));
+// 横向错位覆盖：调到 > 2R(=1.55) 两牌就**不会相撞**（各飞各的）。用来把「空中对撞」这个变量单独摘出来，
+// 回答「瞄不准到底是出手瞄不准，还是撞击把相位打乱了」。
+const ZSPREAD = parseFloat(flag('--zspread', String(Z_SPREAD)));
+// 世界弹性覆盖：落地回弹是落面的另一个打乱源，单独可关（0 = 落地不弹）。
+const WREST = parseFloat(flag('--restitution', String(WORLD_RESTITUTION)));
 
 // ── PRNG：`src/skills/atoms/random/index.ts` nextRandom 逐位复刻（同 seed 可与浏览器对账）──
 function makeRng(seed) {
@@ -111,7 +124,7 @@ function upYOf(q) { return 1 - 2 * (q[0] * q[0] + q[2] * q[2]); }
 // ── 建场：严格照 three/physics.ts initWorld + duel-spike rebuildArena ──
 function buildWorld(n) {
   const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -GRAVITY, 0) });
-  world.defaultContactMaterial.restitution = WORLD_RESTITUTION;
+  world.defaultContactMaterial.restitution = WREST;
   world.defaultContactMaterial.friction = WORLD_FRICTION;
   world.solver.iterations = SOLVER_ITERS;
   world.allowSleep = true;
@@ -152,7 +165,7 @@ function throwRound(world, L, n, rnd) {
     const laneZ = (lane - (n - 1) / 2) * L.laneGap;
     const vy = 12.4 + rnd() * (13.6 - 12.4);                       // 抽 1
     const tMeet = (vy / GRAVITY) * (0.80 + rnd() * (0.92 - 0.80)); // 抽 2
-    const plan = throwPlan(laneZ, throwX, vy, tMeet, Y_STAGGER * L.scale, Z_SPREAD * L.scale);
+    const plan = throwPlan(laneZ, throwX, vy, tMeet, Y_STAGGER * L.scale, ZSPREAD * L.scale);
     const pair = {};
     for (const s of ['a', 'b']) {
       const p0 = plan[s];
@@ -161,7 +174,18 @@ function throwRound(world, L, n, rnd) {
       body.position.set(p0.x, p0.y, p0.z);
       body.velocity.set(p0.vx, p0.vy, p0.vz);
       // 抽 3/4（符号+大小）· 抽 5（自旋）· 抽 6/7（avz）——顺序与 duel-spike 一致
-      const avx = (rnd() < 0.5 ? -1 : 1) * (SPIN_FLIP_MIN + rnd() * (SPIN_FLIP_MAX - SPIN_FLIP_MIN));
+      let avx;
+      if (AIM === 'front' || AIM === 'back') {
+        // 飞行时间（与 duel-spike.flightTime 同式）：y0=0.9±stagger/2，落到 ≈0.09。
+        const T = (vy + Math.sqrt(vy * vy + 2 * GRAVITY * (0.9 - 0.09))) / GRAVITY;
+        // 目标半圈序号：偶数 = 正面朝上（出生即正面·每半圈翻一次）。取 k=6 附近，翻得够多才好看。
+        const k = AIM === 'front' ? 6 : 7;
+        // 落在该半圈**中点** + jitter（单位半圈）→ |jitter|<0.5 才不漏到隔壁。
+        const halfTurns = k + 0.5 + (rnd() * 2 - 1) * JITTER;
+        avx = (rnd() < 0.5 ? -1 : 1) * ((halfTurns * Math.PI) / T);
+      } else {
+        avx = (rnd() < 0.5 ? -1 : 1) * (SPIN_FLIP_MIN + rnd() * (SPIN_FLIP_MAX - SPIN_FLIP_MIN));
+      }
       const avy = -SPIN_SELF + rnd() * (2 * SPIN_SELF);
       const avz = (rnd() < 0.5 ? -1 : 1) * (rnd() * SPIN_FLIP_MAX * 0.35);
       body.angularVelocity.set(avx, avy, avz);
@@ -279,6 +303,7 @@ const [lo, hi] = wilson(agg.front, agg.total);
 const pv = binomP(agg.front, agg.total);
 const result = {
   mode: perBody ? 'per-body 材质（假想·引擎现状不生效）' : '引擎现状（世界级材质）',
+  aim: AIM || 'none', jitter: AIM ? JITTER : null,
   rounds: ROUNDS, groups: GROUPS, cards: agg.total, duels: agg.lanes,
   frontRate: agg.front / agg.total, frontCI95: [lo, hi], binomP: pv,
   notFlatRate: agg.notFlat / agg.total,
