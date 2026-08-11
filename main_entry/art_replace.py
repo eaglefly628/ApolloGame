@@ -2,6 +2,7 @@
 import json
 import re
 
+from .art_jobs import is_running, start_batch
 from .library import _art_replace_cli
 from .paths import _valid_slug, art_root
 from .sysutil import ROOT, c
@@ -51,6 +52,15 @@ def handle_art_batch(body: dict) -> dict:
     prov = str(body.get('provider', '')).strip()
     if prov and GEN_PROVIDER_RE.fullmatch(prov):
         args += ['--provider', prov]
+    conc = body.get('concurrency')
+    if isinstance(conc, int) and 1 <= conc <= 16:
+        args += ['--concurrency', str(conc)]
+    # REQ-ARTPAR 第一步：async=true → 起后台 job 立刻返回 jobId（不阻塞·无 300s 上限）。
+    # 缺省仍走同步老路——既有调用方（工作台素材屏 artBatchGen 等）零回归。
+    if body.get('async'):
+        if is_running(slug):
+            return {'success': False, 'error': f'{slug} 已有批量在跑（同游戏串行·防两个批量互相整份覆盖台账）'}
+        return start_batch(slug, args, pack)
     res = _art_replace_cli(args)
     if res.get('ok'):
         s = res.get('summary', {})

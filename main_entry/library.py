@@ -29,10 +29,12 @@ def _git_ok() -> bool:
         _GIT_OK = shutil.which('git') is not None
     return _GIT_OK
 
-def _art_replace_cli(args: list) -> dict:
-    """shell scripts/art-replace.mjs → 解析末行 JSON（前面可能有 warn）。"""
+def _art_replace_cli(args: list, timeout: int = 300) -> dict:
+    """shell scripts/art-replace.mjs → 解析末行 JSON（前面可能有 warn）。
+    timeout 缺省 300s（同步端点用·别让 HTTP 请求吊死）；**后台 job 线传 7200**——批量在真 key 下
+    本就该跑几十分钟，其上限不该由一次 HTTP 请求的生命周期决定（REQ-ARTPAR 第一步）。"""
     try:
-        proc = subprocess.run(**_spawn(['node', 'scripts/art-replace.mjs', *args]), cwd=ROOT, capture_output=True, timeout=300, env=_gen_env())
+        proc = subprocess.run(**_spawn(['node', 'scripts/art-replace.mjs', *args]), cwd=ROOT, capture_output=True, timeout=timeout, env=_gen_env())
     except subprocess.TimeoutExpired:
         return {'ok': False, 'error': '美术工作流超时'}
     out = proc.stdout.decode('utf-8', 'replace').strip()

@@ -288,7 +288,24 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
     if (busy) return;
     setBusy(true);
     try {
-      const b = await fetch(`${API}/api/art/batch`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug, packId: reskinPack, mock: mockRun, ...(genProvider ? { provider: genProvider } : {}) }) }).then((r) => r.json() as Promise<{ success?: boolean; error?: string; summary?: { generated?: number; cached?: number; mock?: number } }>);
+      // REQ-ARTPAR 第一步：批量改走后台 job（async:true）——HTTP 立刻返回 jobId，不再阻塞到跑完，
+      // 也不再撞子进程 300s 上限（game-g 110 行真 key 下要跑几十分钟，此前必然超时且批量产黑户）。
+      // **进度不另发明协议**：CLI 已逐行落账 → 轮 /api/art/ledger（load()）即实时进度，台账仍是唯一真相。
+      const started = await fetch(`${API}/api/art/batch`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug, packId: reskinPack, mock: mockRun, async: true, ...(genProvider ? { provider: genProvider } : {}) }) })
+        .then((r) => r.json() as Promise<{ success?: boolean; error?: string; jobId?: string }>);
+      if (!started.success || !started.jobId) { flash(false, `✕ ${started.error ?? '批量启动失败'}`); return; }
+      flash(true, '⏳ 已在后台开跑——可以去干别的，缩略图墙会逐张刷新');
+      const b = await new Promise<{ success?: boolean; error?: string; summary?: { generated?: number; cached?: number; mock?: number } }>((resolve) => {
+        const tick = async () => {
+          const j = await fetch(`${API}/api/art/job?id=${encodeURIComponent(started.jobId!)}`).then((r) => r.json()).catch(() => null);
+          const st = j?.job?.state;
+          load();  // 每轮重拉台账 = 逐张出图的实时进度
+          if (st === 'done') return resolve({ success: true, summary: j.job.summary });
+          if (st === 'failed') return resolve({ success: false, error: j.job.error });
+          window.setTimeout(tick, 2500);
+        };
+        window.setTimeout(tick, 2500);
+      });
       if (!b.success) { flash(false, `✕ ${b.error ?? '批量失败'}`); return; }
       let mockSkipNote = '';
       if (mode === 'library') {

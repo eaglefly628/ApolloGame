@@ -13,6 +13,7 @@ from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
 from .agent_chat import handle_agent_chat
 from .art_replace import handle_art_batch, handle_art_derive, handle_art_ledger, handle_art_packs, handle_art_replace, handle_art_style_save, handle_art_style_delete
 from .art_review import handle_asset_pending, handle_asset_review
+from .art_jobs import handle_art_job_get, handle_art_jobs_list
 from .art_sync import handle_art_cleanup_mock, handle_art_sync, handle_art_sync_status
 from .artbrowser import handle_artbrowser_consumers, handle_artbrowser_history, handle_artbrowser_restore, handle_artbrowser_tree, resolve_history_blob
 from .asset_annotate import handle_asset_autotag
@@ -469,6 +470,18 @@ class APIHandler(BaseHTTPRequestHandler):
         elif path == '/api/art/ledger':
             qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
             data = handle_art_ledger((qs.get('slug') or [''])[0])
+        elif path == '/api/art/job':  # 后台批量任务状态（进度请轮 /api/art/ledger——逐行落账即实时进度）
+            qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
+            try:
+                data = handle_art_job_get((qs.get('id') or [''])[0])
+            except Exception as e:
+                data = {'success': False, 'error': f'art job 异常: {e}'}
+        elif path == '/api/art/jobs':  # 最近批量任务（刷新/切屏后恢复「生成中」看板）
+            qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
+            try:
+                data = handle_art_jobs_list((qs.get('slug') or [''])[0])
+            except Exception as e:
+                data = {'success': False, 'error': f'art jobs 异常: {e}'}
         elif path == '/api/art/sync/status':  # 内置游戏美术待同步改动数（一键提交推送按钮角标）
             qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
             try:

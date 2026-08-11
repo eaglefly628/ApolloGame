@@ -208,6 +208,43 @@ try:
         check('无美术目录' in str(handle_art_cleanup_mock({'slug': 'no-such-game-zz'}).get('error')), '⑨ 不存在游戏拒绝', '')
     finally:
         shutil.rmtree(ROOT / 'public' / 'games' / CM, ignore_errors=True)
+    # ⑩ 后台批量任务（REQ-ARTPAR 第一步）：async 起 job 立刻返回 + 单游戏串行锁 + 无 300s 上限
+    import time as _t
+    from main_entry import art_jobs  # noqa: E402
+    from main_entry.art_replace import handle_art_batch  # noqa: E402
+    JOBSLUG = 'artjob-smoke'
+    jd = ROOT / 'public' / 'games' / JOBSLUG / 'art'
+    try:
+        jd.mkdir(parents=True, exist_ok=True)
+        (jd / 'art-ledger.json').write_text('{"game":"' + JOBSLUG + '","mode":"requirements","rows":[]}', 'utf-8')
+        (jd / 'index.json').write_text('{"version":1,"assets":[]}', 'utf-8')
+        t0 = _t.monotonic()
+        r = handle_art_batch({'slug': JOBSLUG, 'packId': 'pixel-retro', 'mock': True, 'async': True})
+        dt = _t.monotonic() - t0
+        check(r.get('success') and r.get('jobId'), '⑩ async 批量起 job 并返回 jobId', str(r)[:160])
+        check(dt < 3, f'⑩ **立刻返回不阻塞**（实测 {dt:.2f}s·同步老路要等跑完）', f'{dt:.2f}s')
+        jid = r.get('jobId')
+        for _ in range(60):
+            st = art_jobs.handle_art_job_get(jid).get('job') or {}
+            if st.get('state') != 'running':
+                break
+            _t.sleep(0.5)
+        st = art_jobs.handle_art_job_get(jid).get('job') or {}
+        check(st.get('state') == 'done', f'⑩ 任务跑到终态 done（实得 {st.get("state")}）', str(st)[:200])
+        check(art_jobs.handle_art_job_get('nope-not-a-job').get('success') is False, '⑩ 未知 jobId 拒绝', '')
+        lst = art_jobs.handle_art_jobs_list(JOBSLUG)
+        check(lst.get('success') and any(j['id'] == jid for j in lst.get('jobs', [])), '⑩ 任务列表可按 slug 查（刷新后恢复看板）', '')
+        # 串行锁：手工占住该 slug 的锁 → 同游戏再起必须被拒（防两个批量互相整份覆盖台账）
+        lk = art_jobs._slug_lock(JOBSLUG); lk.acquire()
+        try:
+            art_jobs._ART_JOBS[jid]['state'] = 'running'   # 伪装成在跑（is_running 判据）
+            r2 = handle_art_batch({'slug': JOBSLUG, 'packId': 'pixel-retro', 'mock': True, 'async': True})
+            check(not r2.get('success') and '已有批量在跑' in str(r2.get('error')),
+                  '⑩ **单游戏串行**：同游戏并发批量被拒（防台账整份互覆盖）', str(r2)[:160])
+        finally:
+            art_jobs._ART_JOBS[jid]['state'] = 'done'; lk.release()
+    finally:
+        shutil.rmtree(ROOT / 'public' / 'games' / JOBSLUG, ignore_errors=True)
 finally:
     shutil.rmtree(TMP, ignore_errors=True)
 
