@@ -94,6 +94,11 @@ const JITTER = parseFloat(flag('--jitter', '0.3'));
 const ZSPREAD = parseFloat(flag('--zspread', String(Z_SPREAD)));
 // 世界弹性覆盖：落地回弹是落面的另一个打乱源，单独可关（0 = 落地不弹）。
 const WREST = parseFloat(flag('--restitution', String(WORLD_RESTITUTION)));
+// a 方牌的质量（b 方恒 1.0）。owner 2026-08-10 问「改变牌的重量会不会有影响」。
+// 物理上：自由飞行段质量**完全无影响**（重力加速度与质量无关；自由自转只取决于惯量**比值**，
+// 而比值由形状定不由质量定）。唯一可能起作用的是**空中对撞**——质量不等则动量交换不对称。
+// 能不能传导到落面，只能测。本开关就是为此。
+const MASS_A = parseFloat(flag('--mass-a', '1.0'));
 
 // ── PRNG：`src/skills/atoms/random/index.ts` nextRandom 逐位复刻（同 seed 可与浏览器对账）──
 function makeRng(seed) {
@@ -169,7 +174,7 @@ function throwRound(world, L, n, rnd) {
     const pair = {};
     for (const s of ['a', 'b']) {
       const p0 = plan[s];
-      const body = new CANNON.Body({ mass: 1.0 });
+      const body = new CANNON.Body({ mass: s === 'a' ? MASS_A : 1.0 });
       body.addShape(new CANNON.Cylinder(Math.max(0.1, CARD_W / 2), Math.max(0.1, CARD_W / 2), Math.max(0.1, CARD_T), 12));
       body.position.set(p0.x, p0.y, p0.z);
       body.velocity.set(p0.vx, p0.vy, p0.vz);
@@ -246,6 +251,7 @@ function runRound(n, seed) {
   }
 
   let front = 0, total = 0, notFlat = 0, met = 0, notFlatNearWall = 0;
+  let frontA = 0, totA = 0, frontB = 0, totB = 0;
   for (let i = 0; i < n; i++) {
     for (const s of ['a', 'b']) {
       const b = lanes[i][s];
@@ -253,6 +259,7 @@ function runRound(n, seed) {
       const upY = upYOf([q.x, q.y, q.z, q.w]);
       total += 1;
       if (upY > 0) front += 1;
+      if (s === 'a') { totA += 1; if (upY > 0) frontA += 1; } else { totB += 1; if (upY > 0) frontB += 1; }
       if (Math.abs(upY) < FLAT_MIN) {
         notFlat += 1;
         // 靠墙判据：牌中心到某面围栏**内表面**（中心 ∓2）的距离 < 一个牌长（2.15）→ 算「够得着墙」
@@ -264,7 +271,7 @@ function runRound(n, seed) {
     if (crossed[i] || minDx[i] <= 2 * HULL_R) met += 1;
   }
   return {
-    front, total, notFlat, notFlatNearWall, met, lanes: n,
+    front, total, notFlat, notFlatNearWall, met, lanes: n, frontA, totA, frontB, totB,
     touchAir: touchedAir.filter(Boolean).length,
     touchAny: touchedAny.filter(Boolean).length,
     settleSec: simT, stepMsPerStep: stepMs / Math.max(1, steps),
@@ -289,9 +296,10 @@ function binomP(k, n) {
   return Math.min(1, p);
 }
 
-const agg = { front: 0, total: 0, notFlat: 0, notFlatNearWall: 0, met: 0, lanes: 0, touchAir: 0, touchAny: 0, settle: 0, stepMs: 0 };
+const agg = { frontA: 0, totA: 0, frontB: 0, totB: 0, front: 0, total: 0, notFlat: 0, notFlatNearWall: 0, met: 0, lanes: 0, touchAir: 0, touchAny: 0, settle: 0, stepMs: 0 };
 for (let r = 0; r < ROUNDS; r++) {
   const s = runRound(GROUPS, (SEED0 + r * 7919) | 0);
+  agg.frontA += s.frontA; agg.totA += s.totA; agg.frontB += s.frontB; agg.totB += s.totB;
   agg.front += s.front; agg.total += s.total; agg.notFlat += s.notFlat; agg.notFlatNearWall += s.notFlatNearWall;
   agg.met += s.met; agg.lanes += s.lanes; agg.touchAir += s.touchAir; agg.touchAny += s.touchAny;
   agg.settle += s.settleSec; agg.stepMs += s.stepMsPerStep;
@@ -326,6 +334,8 @@ console.log('');
 console.log(`  ① 正面朝上   ${agg.front}/${agg.total} = ${pct(agg.front, agg.total)}%`);
 console.log(`     95% CI    [${(lo * 100).toFixed(2)}%, ${(hi * 100).toFixed(2)}%]   对 50% 的双尾 p = ${pv < 1e-4 ? pv.toExponential(2) : pv.toFixed(4)}`);
 console.log(`     判词      ${lo <= 0.5 && hi >= 0.5 ? '✅ 与 50/50 不矛盾（CI 覆盖 50%）' : '🔴 显著偏离 50/50（CI 不覆盖 50%）'}`);
+{ const [al,ah]=wilson(agg.frontA,agg.totA), [bl,bh]=wilson(agg.frontB,agg.totB);
+  console.log(`     逐方      a(质量 ${MASS_A}) ${pct(agg.frontA,agg.totA)}% [${(al*100).toFixed(1)},${(ah*100).toFixed(1)}]  ·  b(质量 1.0) ${pct(agg.frontB,agg.totB)}% [${(bl*100).toFixed(1)},${(bh*100).toFixed(1)}]`); }
 console.log('');
 console.log(`  ② 未躺平     ${agg.notFlat}/${agg.total} = ${pct(agg.notFlat, agg.total)}%   ${agg.notFlat === 0 ? '✅ 零' : '（目标 0）'}`);
 console.log(`     其中靠墙   ${agg.notFlatNearWall}/${agg.notFlat} = ${pct(agg.notFlatNearWall, Math.max(1, agg.notFlat))}%   ← 场地按 ${ARENA} 组建（围栏内表面距道心 ${(layoutFor(ARENA).halfZ - 1.0).toFixed(1)}）`);
