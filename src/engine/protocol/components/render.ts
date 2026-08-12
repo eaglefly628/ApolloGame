@@ -435,6 +435,18 @@ export interface Material3D extends Component {
     spread?: number;     // 碎片消散错峰 0..1（缺省 0.35·越大越像「前沿推进」·0=整体同时变小）
     cutoff?: number;     // 碎片 alpha 裁剪阈值 0..1（缺省 0.4·tex 模式用）
   };
+  // ── 进阶物理波瓣（REQ-3D-PBR-LOBES·render-only·三 native·任一在场→MeshPhysical·需 Sky3D.env IBL 才显）──
+  //   预设也可带（carpaint/pearl/soap/velvet/brushed）；此处 per-object 覆盖（同 color/roughness 覆盖语义）。
+  clearcoat?: number;           // 清漆层 0..1（车漆/糖衣/上釉·罩一层镜面高光）
+  clearcoatRoughness?: number;  // 清漆粗糙 0..1（缺省 0=镜面）
+  sheen?: number;               // 绒光 0..1（天鹅绒/绸缎·边缘掠射回光）
+  sheenColor?: number;          // 绒光色 0xRRGGBB（缺省白）
+  sheenRoughness?: number;      // 绒光粗糙 0..1（缺省 1）
+  iridescence?: number;         // 彩虹薄膜 0..1（肥皂泡/油膜/珠光·随视角变彩）
+  iridescenceIor?: number;      // 薄膜折射率（缺省 1.3）
+  iridescenceThickness?: number;// 薄膜厚度上限 nm（缺省 400）
+  anisotropy?: number;          // 各向异性 0..1（拉丝金属/唱片·高光拉长）
+  anisotropyRotation?: number;  // 各向异性方向（弧度·缺省 0）
 }
 
 // 程序化表面细节（render-only·TA Phase 5）：渲染器据参数生成 normal + roughness 贴图（DataTexture）—— **不需美术贴图文件**，

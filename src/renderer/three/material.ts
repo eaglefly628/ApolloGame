@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { Mesh3D, Material3D, SurfaceDetail } from '@engine/protocol/components.js';
-import { resolvePbr, type PbrMaterialDef, type MaterialSpec } from '@assets/index.js';
+import { resolvePbr, hasPbrLobes, type PbrMaterialDef, type MaterialSpec } from '@assets/index.js';
 import { buildSurfaceMaps } from './surface-tex.js';
 import { roundGeo } from './geometry.js';
 import { injectDissolve, dissolveSig } from './dissolve.js';
@@ -86,18 +86,22 @@ export function buildShadedMaterial(def: PbrMaterialDef, shading: 'toon' | 'flat
 }
 
 // 预设 → three 材质。surface 在场 → 程序化生成 normal/roughness 挂上；**显式 maps 覆盖同通道**（真实贴图优先·render-only）。
+// 玻璃(transmission) 或任一进阶波瓣(clearcoat/sheen/iridescence/anisotropy) 在场 → MeshPhysicalMaterial（其余走 MeshStandard）。
 export function buildPbrMaterial(def: PbrMaterialDef, surface?: SurfaceDetail, maps?: PbrMaps): THREE.MeshStandardMaterial {
   let m: THREE.MeshStandardMaterial;
-  if (def.transmission && def.transmission > 0) {
-    m = new THREE.MeshPhysicalMaterial({
-      color: def.color & 0xffffff, roughness: def.roughness, metalness: def.metalness,
-      transmission: def.transmission, ior: def.ior ?? 1.5,
-      transparent: true, opacity: def.opacity ?? 1, thickness: 1,
-    });
+  const transmissive = !!(def.transmission && def.transmission > 0);
+  if (transmissive || hasPbrLobes(def)) {
+    const p = new THREE.MeshPhysicalMaterial({ color: def.color & 0xffffff, roughness: def.roughness, metalness: def.metalness });
+    if (transmissive) { p.transmission = def.transmission!; p.ior = def.ior ?? 1.5; p.transparent = true; p.opacity = def.opacity ?? 1; p.thickness = 1; }
+    if (def.clearcoat) { p.clearcoat = def.clearcoat; p.clearcoatRoughness = def.clearcoatRoughness ?? 0; } // 清漆层
+    if (def.sheen) { p.sheen = def.sheen; p.sheenColor.setHex((def.sheenColor ?? 0xffffff) & 0xffffff); p.sheenRoughness = def.sheenRoughness ?? 1; } // 绒光
+    if (def.iridescence) { p.iridescence = def.iridescence; p.iridescenceIOR = def.iridescenceIor ?? 1.3; p.iridescenceThicknessRange = [100, def.iridescenceThickness ?? 400]; } // 彩虹薄膜
+    if (def.anisotropy) { p.anisotropy = def.anisotropy; p.anisotropyRotation = def.anisotropyRotation ?? 0; } // 各向异性
+    m = p;
   } else {
     m = new THREE.MeshStandardMaterial({ color: def.color & 0xffffff, roughness: def.roughness, metalness: def.metalness });
-    if (def.emissive !== undefined) { m.emissive.setHex(def.emissive & 0xffffff); m.emissiveIntensity = def.emissiveIntensity ?? 1; }
   }
+  if (def.emissive !== undefined) { m.emissive.setHex(def.emissive & 0xffffff); m.emissiveIntensity = def.emissiveIntensity ?? 1; } // 自发光（两类材质通用）
   if (surface) {
     const s = buildSurfaceMaps(surface, def.roughness);
     m.normalMap = s.normalMap;
@@ -180,5 +184,7 @@ export function pbrSig(m: Mesh3D, mat: Material3D): string {
   const mk = `${mat.map ?? ''}.${mat.normalMap ?? ''}.${mat.roughnessMap ?? ''}.${mat.aoMap ?? ''}.${mat.metalnessMap ?? ''}.${mat.emissiveMap ?? ''}.${mat.ormMap ?? ''}`;
   const tl = mat.tiling ? `${mat.tiling.repeat ?? ''}.${mat.tiling.offset?.[0] ?? ''}.${mat.tiling.offset?.[1] ?? ''}` : '';
   const ol = mat.outline ? `${mat.outline.width ?? ''}.${mat.outline.color ?? ''}` : '';
-  return `pbr|${mat.preset}|${mat.shading ?? ''}|${mat.toonSteps ?? ''}|${ol}|${mat.color ?? ''}|${mat.roughness ?? ''}|${mat.metalness ?? ''}|${mat.emissive ?? ''}|${m.shape}|${m.width}|${m.height}|${m.depth ?? ''}|${ss}|${mk}|${tl}|${mat.alphaTest ?? ''}|${mat.transparent ? 't' : ''}|${mat.dissolve ? dissolveSig(mat.dissolve) : ''}`;
+  // 进阶波瓣覆盖（preset 自带的由 mat.preset 捕获；此处只纳 per-object 覆盖·同 color/roughness 惯例）。
+  const lb = `${mat.clearcoat ?? ''}.${mat.clearcoatRoughness ?? ''}.${mat.sheen ?? ''}.${mat.sheenColor ?? ''}.${mat.sheenRoughness ?? ''}.${mat.iridescence ?? ''}.${mat.iridescenceIor ?? ''}.${mat.iridescenceThickness ?? ''}.${mat.anisotropy ?? ''}.${mat.anisotropyRotation ?? ''}`;
+  return `pbr|${mat.preset}|${mat.shading ?? ''}|${mat.toonSteps ?? ''}|${ol}|${mat.color ?? ''}|${mat.roughness ?? ''}|${mat.metalness ?? ''}|${mat.emissive ?? ''}|${m.shape}|${m.width}|${m.height}|${m.depth ?? ''}|${ss}|${mk}|${tl}|${mat.alphaTest ?? ''}|${mat.transparent ? 't' : ''}|${mat.dissolve ? dissolveSig(mat.dissolve) : ''}|${lb}`;
 }

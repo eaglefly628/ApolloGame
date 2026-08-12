@@ -157,3 +157,41 @@ describe('REQ-3D-MAT-ALPHA 透明贴图路（alphaTest/transparent opt-in）', (
     expect(pbrSig(mesh(), wood)).not.toBe(pbrSig(mesh(), { ...wood, transparent: true }));
   });
 });
+
+// 进阶物理波瓣（REQ-3D-PBR-LOBES）：clearcoat/sheen/iridescence/anisotropy → MeshPhysical + 参数落位·pbrSig 纳入·不透明可实例化。
+describe('REQ-3D-PBR-LOBES 进阶物理波瓣', () => {
+  it('任一波瓣在场 → 走 MeshPhysicalMaterial（MeshStandard 不支持这些通道）', () => {
+    expect(buildPbrMaterial(resolvePbr('matte', { clearcoat: 1 }))).toBeInstanceOf(THREE.MeshPhysicalMaterial);
+    expect(buildPbrMaterial(resolvePbr('matte', { sheen: 0.8 }))).toBeInstanceOf(THREE.MeshPhysicalMaterial);
+    expect(buildPbrMaterial(resolvePbr('matte', { iridescence: 1 }))).toBeInstanceOf(THREE.MeshPhysicalMaterial);
+    expect(buildPbrMaterial(resolvePbr('matte', { anisotropy: 0.9 }))).toBeInstanceOf(THREE.MeshPhysicalMaterial);
+    // 无波瓣无透射 → 仍 MeshStandard（不平白升级·零回归）
+    const plain = buildPbrMaterial(resolvePbr('steel'));
+    expect(plain).toBeInstanceOf(THREE.MeshStandardMaterial);
+    expect(plain).not.toBeInstanceOf(THREE.MeshPhysicalMaterial);
+  });
+  it('参数落到 three 对应通道（含 iridescence 厚度范围 [100,厚度]）', () => {
+    const m = buildPbrMaterial(resolvePbr('plastic', {
+      clearcoat: 1, clearcoatRoughness: 0.1, sheen: 0.6, sheenColor: 0xff0000, sheenRoughness: 0.4,
+      iridescence: 1, iridescenceIor: 1.4, iridescenceThickness: 500, anisotropy: 0.7, anisotropyRotation: 1.2,
+    })) as THREE.MeshPhysicalMaterial;
+    expect(m.clearcoat).toBe(1); expect(m.clearcoatRoughness).toBeCloseTo(0.1);
+    expect(m.sheen).toBeCloseTo(0.6); expect(m.sheenColor.getHex()).toBe(0xff0000); expect(m.sheenRoughness).toBeCloseTo(0.4);
+    expect(m.iridescence).toBe(1); expect(m.iridescenceIOR).toBeCloseTo(1.4);
+    expect(m.iridescenceThicknessRange).toEqual([100, 500]);
+    expect(m.anisotropy).toBeCloseTo(0.7); expect(m.anisotropyRotation).toBeCloseTo(1.2);
+  });
+  it('预设自带波瓣（carpaint/pearl/velvet/brushed）→ resolvePbr 带出·建材质即生效', () => {
+    expect(resolvePbr('carpaint').clearcoat).toBe(1);
+    expect(resolvePbr('pearl').iridescence).toBe(1);
+    expect(resolvePbr('velvet').sheen).toBe(1);
+    expect(resolvePbr('brushed').anisotropy).toBeGreaterThan(0);
+    expect(buildPbrMaterial(resolvePbr('velvet'))).toBeInstanceOf(THREE.MeshPhysicalMaterial);
+  });
+  it('per-object 覆盖赢预设；pbrSig 纳入波瓣（变则重建·不同波瓣不误并批）', () => {
+    expect(resolvePbr('carpaint', { clearcoat: 0.2 }).clearcoat).toBe(0.2); // 覆盖赢
+    const base: Material3D = { type: 'Material3D', preset: 'plastic' };
+    expect(pbrSig(mesh(), { ...base, iridescence: 1 })).not.toBe(pbrSig(mesh(), base));
+    expect(pbrSig(mesh(), { ...base, iridescence: 1 })).not.toBe(pbrSig(mesh(), { ...base, iridescence: 0.5 }));
+  });
+});

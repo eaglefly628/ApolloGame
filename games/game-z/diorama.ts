@@ -54,6 +54,12 @@ const MAT_SAMPLES: { preset: string; label: string; color?: number; surface?: SD
   { preset: 'copper', label: '铜' },
   { preset: 'glass', label: '玻璃' },
   { preset: 'emissive', label: '自发光' },
+  // 进阶物理波瓣（REQ-3D-PBR-LOBES·华丽材质·需 IBL 环境才显反射/彩虹）：
+  { preset: 'carpaint', label: '车漆·清漆' },
+  { preset: 'pearl', label: '珠光·幻彩' },
+  { preset: 'soap', label: '肥皂泡·薄膜' },
+  { preset: 'velvet', label: '天鹅绒·绒光' },
+  { preset: 'brushed', label: '拉丝·各向异性' },
 ];
 // 材质陈列台（可放到任意平台·ox/oz 偏移·prefix 防跨平台 id 撞）。
 function materialBoard(ox = 0, oz = -58, prefix = 'mat'): Record<string, Ent> {

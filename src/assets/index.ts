@@ -29,7 +29,7 @@ export {
   type GameArtLoadOptions,
 } from './game-art-load.js';
 export { ModelAssetLoader, isModelHandle } from './model-loader.js';
-export { PBR_MATERIALS, resolvePbr, type PbrMaterialDef, type PbrPreset, type PbrOverrides } from './pbr-materials.js';
+export { PBR_MATERIALS, resolvePbr, hasPbrLobes, type PbrMaterialDef, type PbrPreset, type PbrOverrides } from './pbr-materials.js';
 export {
   parseAssetIndex,
   pendingAssets,

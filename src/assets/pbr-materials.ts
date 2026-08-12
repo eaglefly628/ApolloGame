@@ -20,6 +20,17 @@ export interface PbrMaterialDef {
   ior?: number; // 折射率（玻璃 ~1.5）
   opacity?: number; // 透明度（玻璃 <1）
   transparent?: boolean;
+  // ── 进阶物理波瓣（REQ-3D-PBR-LOBES·任一在场 → 走 MeshPhysicalMaterial·全 three 原生·需 IBL 环境才显）──
+  clearcoat?: number; // 清漆层 0..1（车漆/糖衣/上釉陶瓷·主体外再罩一层高光镜面）
+  clearcoatRoughness?: number; // 清漆层粗糙 0..1（缺省 0=镜面清漆）
+  sheen?: number; // 绒光 0..1（天鹅绒/绸缎·掠射边缘回光·布料质感）
+  sheenColor?: number; // 绒光色 0xRRGGBB（缺省白）
+  sheenRoughness?: number; // 绒光粗糙 0..1（缺省 1）
+  iridescence?: number; // 彩虹薄膜干涉 0..1（肥皂泡/油膜/珠光/甲虫壳·随视角变彩）
+  iridescenceIor?: number; // 薄膜折射率（缺省 1.3）
+  iridescenceThickness?: number; // 薄膜厚度上限 nm（缺省 400·范围 [100,厚度]·决定彩虹带）
+  anisotropy?: number; // 各向异性 0..1（拉丝金属/唱片/毛发·高光沿一个方向拉长）
+  anisotropyRotation?: number; // 各向异性方向（弧度·缺省 0）
 }
 
 // 闭集预设（owner「不用太多·几种就够」：金属/玻璃/土/钢/岩石… + 默认哑光）。金属 base color=Filament 实测 sRGB 表。
@@ -35,20 +46,33 @@ export const PBR_MATERIALS = {
   dirt: { color: 0x6b4f37, roughness: 0.95, metalness: 0 }, // 土（干土壤 albedo）
   wood: { color: 0x8a5a30, roughness: 0.6, metalness: 0 }, // 木（橡木 albedo）
   emissive: { color: 0x222222, roughness: 0.5, metalness: 0, emissive: 0xfff0a0, emissiveIntensity: 1.6 }, // 自发光
+  // 进阶波瓣现成预设（REQ-3D-PBR-LOBES·华丽起手直接选）：
+  carpaint: { color: 0xb01030, roughness: 0.42, metalness: 0.55, clearcoat: 1, clearcoatRoughness: 0.06 }, // 车漆（金属底 + 镜面清漆）
+  pearl: { color: 0xf3f0ee, roughness: 0.25, metalness: 0, clearcoat: 0.7, iridescence: 1, iridescenceIor: 1.4, iridescenceThickness: 500 }, // 珠光/贝母
+  soap: { color: 0xffffff, roughness: 0.03, metalness: 0, transmission: 0.4, transparent: true, opacity: 0.7, iridescence: 1, iridescenceThickness: 620 }, // 肥皂泡（透 + 彩虹薄膜）
+  velvet: { color: 0x5a1030, roughness: 0.95, metalness: 0, sheen: 1, sheenColor: 0xff6ea8, sheenRoughness: 0.5 }, // 天鹅绒（绒光）
+  brushed: { color: 0xc4c7c7, roughness: 0.34, metalness: 1, anisotropy: 0.9 }, // 拉丝金属（各向异性高光）
 } as const satisfies Record<string, PbrMaterialDef>;
 
 export type PbrPreset = keyof typeof PBR_MATERIALS;
 
-// 覆盖参数（Material3D 给）：在预设基础上微调。
+// 覆盖参数（Material3D 给）：在预设基础上微调。进阶波瓣同 color/roughness 一样可 per-object 覆盖。
 export interface PbrOverrides {
   color?: number; roughness?: number; metalness?: number; emissive?: number; emissiveIntensity?: number;
+  clearcoat?: number; clearcoatRoughness?: number;
+  sheen?: number; sheenColor?: number; sheenRoughness?: number;
+  iridescence?: number; iridescenceIor?: number; iridescenceThickness?: number;
+  anisotropy?: number; anisotropyRotation?: number;
 }
+
+const LOBE_KEYS = ['clearcoat', 'clearcoatRoughness', 'sheen', 'sheenColor', 'sheenRoughness',
+  'iridescence', 'iridescenceIor', 'iridescenceThickness', 'anisotropy', 'anisotropyRotation'] as const;
 
 // 解析：预设 + 覆盖 → 最终材质数据。未知预设回退 matte（健壮·弱 LLM 拼错不崩）。
 export function resolvePbr(preset: string, ov?: PbrOverrides): PbrMaterialDef {
   const base = (PBR_MATERIALS as Record<string, PbrMaterialDef>)[preset] ?? PBR_MATERIALS.matte;
   if (!ov) return base;
-  return {
+  const out: PbrMaterialDef = {
     ...base,
     ...(ov.color !== undefined ? { color: ov.color } : {}),
     ...(ov.roughness !== undefined ? { roughness: ov.roughness } : {}),
@@ -56,4 +80,11 @@ export function resolvePbr(preset: string, ov?: PbrOverrides): PbrMaterialDef {
     ...(ov.emissive !== undefined ? { emissive: ov.emissive } : {}),
     ...(ov.emissiveIntensity !== undefined ? { emissiveIntensity: ov.emissiveIntensity } : {}),
   };
+  for (const k of LOBE_KEYS) if (ov[k] !== undefined) (out as unknown as Record<string, number>)[k] = ov[k]!; // 进阶波瓣覆盖（在场才覆·缺省沿用预设）
+  return out;
+}
+
+// 任一进阶波瓣在场 → 该材质需走 MeshPhysicalMaterial（MeshStandard 不支持这些通道）。
+export function hasPbrLobes(def: PbrMaterialDef): boolean {
+  return !!(def.clearcoat || def.sheen || def.iridescence || def.anisotropy);
 }
