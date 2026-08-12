@@ -26,6 +26,7 @@ from .design_ingest import design_preview_path, handle_design_finalize, handle_d
 from .games_list import handle_catalog, handle_game_cover_generate, handle_games_list
 from .generate_api import handle_generate
 from .groups import handle_matlib_groups_get, handle_matlib_groups_put
+from .job_board import handle_job_board
 from .jobs import handle_generate_job_get, handle_generate_job_start, handle_generate_jobs_list
 from .library_api import handle_library_stats, library_bench, library_create, library_delete, library_design_put, library_get, library_install_sample, library_put_manifest, library_rollback
 from .llm_log import handle_llm_logs
@@ -470,6 +471,12 @@ class APIHandler(BaseHTTPRequestHandler):
         elif path == '/api/art/ledger':
             qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
             data = handle_art_ledger((qs.get('slug') or [''])[0])
+        elif path == '/api/jobs':  # 统一任务托盘（薄聚合三家注册表·只读归一·零新状态）
+            qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
+            try:
+                data = handle_job_board(int((qs.get('n') or ['30'])[0]))
+            except Exception as e:
+                data = {'success': False, 'error': f'任务托盘异常: {e}'}
         elif path == '/api/art/job':  # 后台批量任务状态（进度请轮 /api/art/ledger——逐行落账即实时进度）
             qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
             try:

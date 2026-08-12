@@ -99,6 +99,41 @@
             </sc-if>
           </div>
           <div style="flex:1"></div>
+
+          <!-- ===== 任务托盘（REQ-ARTPAR 第四步·owner 2026-08-10「右上角能点开看的后台任务窗口」）=====
+               角标=在跑数（排队+进行）；点开=归一清单（美术批量/产游戏/打包三家聚合·GET /api/jobs）。
+               沉浸/常规两态都显——后台任务两态都在跑，藏起来就等于又看不见了。 -->
+          <div style="position:relative">
+            <button onClick="{{ trayToggle }}" title="后台任务：排队/进行/已完成（点条目跳回去）" style="{{ trayBtnStyle }}" style-active="{{ miniBtnActive }}">{{ trayLabel }}</button>
+            <sc-if value="{{ trayOpen }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;top:110%;right:0;width:340px;max-height:60vh;overflow:auto;z-index:60;background:#fff8e8;border:3px solid #3a2312;border-radius:14px;box-shadow:0 10px 0 rgba(58,35,18,.25);padding:10px">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                  <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:14px;color:#3a2312">🗂 后台任务</span>
+                  <span style="flex:1"></span>
+                  <span style="font-family:'Fredoka';font-weight:700;font-size:10px;color:#8a5a2c">{{ trayCountsText }}</span>
+                </div>
+                <sc-for list="{{ trayRows }}" as="jb" hint-placeholder-count="3">
+                  <div onClick="{{ jb.jump }}" title="{{ jb.tip }}" style="{{ jb.rowStyle }}">
+                    <div style="display:flex;align-items:center;gap:6px">
+                      <span style="{{ jb.dotStyle }}"></span>
+                      <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11.5px;color:#3a2312;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ jb.title }}</span>
+                      <span style="font-family:'Fredoka';font-weight:700;font-size:9.5px;color:#8a5a2c">{{ jb.stateText }}</span>
+                    </div>
+                    <div style="font-family:'Fredoka';font-weight:600;font-size:9.5px;color:#8a5a2c;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ jb.detail }}</div>
+                    <sc-if value="{{ jb.hasBar }}" hint-placeholder-val="{{ false }}">
+                      <div style="height:6px;background:rgba(58,35,18,.14);border-radius:4px;margin-top:5px;overflow:hidden">
+                        <div style="{{ jb.barStyle }}"></div>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ trayEmpty }}" hint-placeholder-val="{{ true }}">
+                  <div style="font-family:'Noto Sans SC';font-size:11px;color:#8a5a2c;padding:10px 4px;text-align:center">暂无后台任务——点「一键全量」或产游戏后会出现在这里</div>
+                </sc-if>
+              </div>
+            </sc-if>
+          </div>
+
           <!-- currencies（沉浸模式隐藏·装饰角标=杂讯） -->
           <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
           <div style="display:flex;gap:8px;align-items:center">
@@ -1404,6 +1439,7 @@ class Component extends DCLogic {
     gameView: 'grid', gameStatus: 'all',
     liveGames: null, carts: null, version: null, settings: null,
     coins: 5000, gems: 340,   // 虚拟金币经济：初始 5000·生成按 token 扣（1万 tok=100 币）·点金币充 +1000
+    trayOpen: false, trayData: null,   // 任务托盘（REQ-ARTPAR 第四步）：trayData=GET /api/jobs 归一清单+计数
     pkgJobs: {},              // 打包任务态：{ 'slug:platform': {status:idle|building|ready|error, id, name, error} }
     prompt: '一款太空题材的竖版飞机大战，卡通风，有护盾和火力道具，一个大 Boss。',
     // 生成=服务端后台任务（owner 07-11·切屏/刷新不丢）：本地只是看板状态
@@ -1490,6 +1526,7 @@ class Component extends DCLogic {
           .catch(() => {});
       }
     }).catch(() => {});
+    this.trayPoll();   // 任务托盘轮询（进程内注册表·刷新后照样看得见还在跑的活）
     // 刷新页面恢复「生成中」看板（任务在服务端跑·状态放在会话之外）
     fetch('/api/generate/jobs').then(r => r.json()).then(d => {
       const active = d && d.success && (d.jobs || []).find(j => !j.done);
@@ -1863,6 +1900,28 @@ class Component extends DCLogic {
   // 三栏：目录树（游戏/共享库/类型分组·懒加载）→ 缩略图网格 → 详情栏。数据薄封装
   // GET /api/artbrowser/tree?scope=index|shared|<slug>（服务端拼台账/设计稿账/共享索引/守卫 JSON，
   // 前端零二次判定，只管渲染）。拖入登记复用既有 /api/art/upload 语义（同 ArtLedgerPanel doUpload 先例）。
+  // ── 任务托盘（REQ-ARTPAR 第四步·owner 2026-08-10「右上角能点开看的后台任务窗口」）──────────
+  // 数据=薄聚合读口 GET /api/jobs（美术批量/产游戏/打包三家现读现拼·零新状态）。
+  // 轮询常开但**很轻**：有在跑的 3s、全闲 15s——闲时别拿轮询烧 CPU，忙时要跟得上。
+  trayPoll() {
+    if (this._trayTimer) window.clearTimeout(this._trayTimer);
+    const tick = () => {
+      fetch('/api/jobs?n=30').then(r => r.json()).then(d => {
+        if (d && d.success) this.setState({ trayData: d });
+        const active = (d && d.counts && d.counts.active) || 0;
+        this._trayTimer = window.setTimeout(tick, active > 0 ? 3000 : 15000);
+      }).catch(() => { this._trayTimer = window.setTimeout(tick, 15000); });
+    };
+    tick();
+  }
+  trayJump(job) {
+    // 「点它们可以迅速跳转回去」：托盘只拿到跳转**意图**（jumpTo.screen/slug），路由归前端。
+    this.setState({ trayOpen: false });
+    const to = job && job.jumpTo;
+    if (!to) return;
+    if (to.screen === 'assets') { this.setState({ screen: 'assets' }); if (to.slug) this.pickAssetGame(to.slug); return; }
+    this.setState({ screen: 'games' });
+  }
   goBrowser() { this.setState({ screen: 'browser' }); this.abLoadIndex(); }
   abLoadIndex() {
     if (this._abIdxLoading) return;
@@ -3430,6 +3489,41 @@ class Component extends DCLogic {
       goGames: () => this.setState({ screen: 'games' }), goNewGame: () => this.setState({ screen: 'newgame' }),
       goTemplates: () => this.setState({ screen: 'templates' }), goCreate: () => this.setState({ screen: 'create' }),
       goAssets: () => { this.setState({ screen: 'assets' }); if (!s.assetsSlug && mergedSlugs.length) this.pickAssetGame(mergedSlugs[0]); },
+      // ── 任务托盘视图（REQ-ARTPAR 第四步）：counts 直接来自 /api/jobs，前端不再自己数一遍 ──
+      trayOpen: s.trayOpen,
+      trayToggle: () => this.setState({ trayOpen: !s.trayOpen }),
+      trayLabel: (() => {
+        const c = (s.trayData && s.trayData.counts) || {};
+        return c.active ? ('⏳ 任务 ' + c.active) : '🗂 任务';
+      })(),
+      trayBtnStyle: (() => {
+        const active = ((s.trayData && s.trayData.counts) || {}).active > 0;
+        // 有活在跑=高亮金；全闲=常规 mini 钮。一眼可辨「后台还在忙没忙」。
+        return active
+          ? 'padding:7px 13px;border:2.5px solid #3a2312;border-radius:11px;background:linear-gradient(180deg,#ffe08a,#f5b731);box-shadow:0 3px 0 #c98a1e;font-family:"Fredoka";font-weight:700;font-size:11px;color:#3a2312;cursor:pointer'
+          : 'padding:7px 13px;border:2.5px solid #3a2312;border-radius:11px;background:rgba(255,255,255,.55);font-family:"Fredoka";font-weight:700;font-size:11px;color:#3a2312;cursor:pointer';
+      })(),
+      trayCountsText: (() => {
+        const c = (s.trayData && s.trayData.counts) || {};
+        return '排队 ' + (c.queued || 0) + ' · 进行 ' + (c.running || 0) + ' · 完成 ' + (c.done || 0) + (c.failed ? (' · 失败 ' + c.failed) : '');
+      })(),
+      trayEmpty: !((s.trayData && s.trayData.jobs) || []).length,
+      trayRows: (((s.trayData && s.trayData.jobs) || [])).map((jb) => {
+        const DOT = { queued: '#c98a1e', running: '#37b6ef', done: '#5fa845', failed: '#d05a5a' };
+        const TXT = { queued: '排队中', running: '进行中', done: '已完成', failed: '失败' };
+        const pr = jb.progress;
+        const pct = pr && pr.total ? Math.round((pr.done / pr.total) * 100) : 0;
+        return {
+          title: jb.title, detail: (jb.detail || '') + (pr ? ('　' + pr.done + '/' + pr.total) : ''),
+          stateText: TXT[jb.state] || jb.state,
+          tip: jb.title + '（' + (TXT[jb.state] || jb.state) + '·已跑 ' + (jb.elapsedSec || 0) + 's）——点击跳回该游戏',
+          dotStyle: 'width:9px;height:9px;border-radius:5px;flex:none;border:1.5px solid #3a2312;background:' + (DOT[jb.state] || '#8a5a2c'),
+          rowStyle: 'padding:7px 8px;border:2px solid rgba(58,35,18,.18);border-radius:10px;margin-bottom:6px;cursor:pointer;background:' + (jb.state === 'running' ? 'rgba(55,182,239,.10)' : 'rgba(255,255,255,.6)'),
+          hasBar: !!pr,
+          barStyle: 'height:100%;width:' + pct + '%;background:linear-gradient(90deg,#5fcdf5,#37b6ef)',
+          jump: () => this.trayJump(jb),
+        };
+      }),
       goBrowser: () => this.goBrowser(),
       goMatlib: () => { this.setState({ screen: 'matlib' }); this.ensureFreeLib(); },
       goPublish: () => this.setState({ screen: 'publish' }), goSettings: () => { this.setState({ screen: 'settings' }); this.refreshSettings(); this.refreshLogs(); },

@@ -245,6 +245,39 @@ try:
             art_jobs._ART_JOBS[jid]['state'] = 'done'; lk.release()
     finally:
         shutil.rmtree(ROOT / 'public' / 'games' / JOBSLUG, ignore_errors=True)
+    # ⑪ 统一任务托盘聚合口（REQ-ARTPAR 第四步·owner「右上角能点开看的后台任务窗口」）
+    from main_entry import job_board, jobs as _genjobs  # noqa: E402
+    import time as _t2
+    board = job_board.handle_job_board(30)
+    check(board.get('success') and set(board['counts']) >= {'queued', 'running', 'done', 'failed', 'active'},
+          '⑪ 托盘返回四态计数 + active（角标用）', str(board.get('counts')))
+    # 造三家各一条：美术(done) / 产游戏(running) / 打包(done) → 验归一 + 排序（在跑的排最前）
+    with art_jobs._ART_JOBS_LOCK:
+        art_jobs._ART_JOBS['t-art'] = {'id': 't-art', 'slug': 'game-x', 'packId': 'p', 'state': 'done',
+                                       'startedAt': _t2.time() - 50, 'finishedAt': _t2.time(), 'summary': {'generated': 3, 'cached': 1}, 'error': None, 'queued': False}
+    with _genjobs._GEN_JOBS_LOCK:
+        _genjobs._GEN_JOBS['t-gen'] = {'id': 't-gen', 'prompt': 'p', 'provider': 'x', 'step': 1, 'done': False,
+                                       'error': None, 'slug': 'g2', 'name': '测试游戏', 'startedAt': _t2.time(), 'tokens': 0}
+    try:
+        b = job_board.handle_job_board(30)
+        kinds = {j['kind'] for j in b['jobs']}
+        check({'art', 'generate'} <= kinds, '⑪ 三家注册表被归一到同一清单', str(kinds))
+        check(b['counts']['running'] >= 1 and b['counts']['done'] >= 1, '⑪ 计数按状态分档', str(b['counts']))
+        check(b['jobs'][0]['state'] in ('queued', 'running'), '⑪ **在跑的排最前**（打开先看见没完的）', b['jobs'][0]['state'])
+        art_row = next(j for j in b['jobs'] if j['id'] == 't-art')
+        check(art_row['jumpTo'] == {'screen': 'assets', 'slug': 'game-x'}, '⑪ 美术任务带跳转意图（点了跳回该游戏）', str(art_row['jumpTo']))
+        check('生成 3' in art_row['detail'], '⑪ 完成态摘要可读', art_row['detail'])
+        # 排队态：被单游戏串行锁挡住的要显示成 queued（owner 要看的正是「几个在排队」）
+        with art_jobs._ART_JOBS_LOCK:
+            art_jobs._ART_JOBS['t-art2'] = {'id': 't-art2', 'slug': 'game-y', 'packId': 'p', 'state': 'running',
+                                            'startedAt': _t2.time(), 'finishedAt': None, 'summary': None, 'error': None, 'queued': True}
+        b2 = job_board.handle_job_board(30)
+        check(b2['counts']['queued'] >= 1, '⑪ 被串行锁挡住的记作「排队中」', str(b2['counts']))
+    finally:
+        with art_jobs._ART_JOBS_LOCK:
+            art_jobs._ART_JOBS.pop('t-art', None); art_jobs._ART_JOBS.pop('t-art2', None)
+        with _genjobs._GEN_JOBS_LOCK:
+            _genjobs._GEN_JOBS.pop('t-gen', None)
 finally:
     shutil.rmtree(TMP, ignore_errors=True)
 

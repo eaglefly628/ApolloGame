@@ -16,7 +16,7 @@ from main_entry import (
     sysutil, paths, config, llm_log, blueprints, design_prompts, mock, templates,
     claude_code, llm_transport, generation, lowmodel, design_flow, generate_api,
     agent_prompts, workshop_store, agent_chat, protocols, ts_carts, settings_api,
-    assets, games_list, jobs, packaging, groups, placeholder, workshop_state,
+    assets, games_list, jobs, job_board, packaging, groups, placeholder, workshop_state,
     art_review, art_replace, art_jobs, art_sync, t2_replace, pipeline_board, asset_annotate, library,
     library_api, design_drafts, artbrowser, server, cli,
 )
@@ -25,7 +25,7 @@ _MODULES = [
     sysutil, paths, config, llm_log, blueprints, design_prompts, mock, templates,
     claude_code, llm_transport, generation, lowmodel, design_flow, generate_api,
     agent_prompts, workshop_store, agent_chat, protocols, ts_carts, settings_api,
-    assets, games_list, jobs, packaging, groups, placeholder, workshop_state,
+    assets, games_list, jobs, job_board, packaging, groups, placeholder, workshop_state,
     art_review, art_replace, art_jobs, art_sync, t2_replace, pipeline_board, asset_annotate, library,
     library_api, design_drafts, artbrowser, server, cli,
 ]
