@@ -26,13 +26,13 @@
 </style>
 </helmet>
 
-<div style="position:relative;min-height:100%;background:linear-gradient(180deg,#7dd3fb 0%,#5cc0f2 60%,#84d0f4 100%);overflow:hidden;font-family:'Baloo 2','Noto Sans SC',sans-serif;display:flex;justify-content:center;align-items:flex-start;padding:30px 20px 46px">
+<div style="position:relative;min-height:100%;background:linear-gradient(180deg,#7dd3fb 0%,#5cc0f2 60%,#84d0f4 100%);overflow:hidden;font-family:'Baloo 2','Noto Sans SC',sans-serif;display:flex;justify-content:center;align-items:flex-start;padding:0">
   <div style="position:absolute;top:70px;left:-30px;width:220px;height:66px;background:rgba(255,255,255,.8);border-radius:60px;animation:drift 11s ease-in-out infinite alternate;pointer-events:none"></div>
   <div style="position:absolute;top:300px;right:-20px;width:160px;height:52px;background:rgba(255,255,255,.6);border-radius:50px;animation:drift 13s ease-in-out infinite alternate;pointer-events:none"></div>
 
   <!-- ===== DESKTOP WINDOW ===== -->
-  <div style="position:relative;width:1280px;max-width:100%;height:800px;background:#2a1a0d;border:5px solid #3a2312;border-radius:26px;padding:5px;box-shadow:0 16px 0 rgba(0,0,0,.32),0 34px 60px rgba(0,0,0,.42);flex:none">
-    <div style="position:relative;width:100%;height:100%;border-radius:21px;overflow:hidden;display:flex">
+  <div style="{{ winStyle }}">
+    <div style="{{ winInnerStyle }}">
 
       <!-- ===== SIDEBAR（沉浸模式收起·owner 2026-08-04：进编辑工坊整栏隐藏不压窄，见 chromeOn；
            2026-08-11 界面最大化：sbOn = chromeOn 且未手动收起且非 ⛶ 专注——手动收起走 ◂ 钮，
@@ -3590,6 +3590,11 @@ class Component extends DCLogic {
       // ── 沉浸模式（owner 2026-08-04：进编辑工坊自动收起侧栏+顶栏瘦身+杂讯清理·无开关不持久化，退出即恢复） ──
       immersiveOn: s.screen === 'edit', chromeOn: chromeNow,
       // ── 界面最大化（owner 2026-08-11：侧栏可收/顶栏可藏/⛶ 专注/各屏大块就地可收·全手动可控） ──
+      // 柜体贴边（owner 2026-08-12「边框拉到最边上」）：普通=撑满视口留 5px 柜框；专注=零框零圆角真贴边。
+      winStyle: 'position:relative;background:#2a1a0d;flex:none;box-sizing:border-box;width:100%;' + (s.focusOn
+        ? 'height:100vh;border:0;border-radius:0;padding:0;box-shadow:none'
+        : 'height:100vh;border:5px solid #3a2312;border-radius:26px;padding:5px;box-shadow:0 16px 0 rgba(0,0,0,.32),0 34px 60px rgba(0,0,0,.42)'),
+      winInnerStyle: 'position:relative;width:100%;height:100%;overflow:hidden;display:flex;' + (s.focusOn ? 'border-radius:0' : 'border-radius:21px'),
       sbOn: chromeNow && !s.sbCollapsed && !s.focusOn,               // 侧栏（沉浸自动藏 ∧ 手动收 ∧ 专注 三重叠加）
       sbExpanderOn: chromeNow && s.sbCollapsed && !s.focusOn,        // 左缘浮动 ▸（专注时不显——专注只从复原钮/Esc 出）
       sbCollapse: () => this.uiFlagToggle('sbCollapsed', 'zc.workshop.sidebarCollapsed'),
