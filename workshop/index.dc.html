@@ -32,11 +32,14 @@
 
   <!-- ===== DESKTOP WINDOW ===== -->
   <div style="position:relative;width:1280px;max-width:100%;height:800px;background:#2a1a0d;border:5px solid #3a2312;border-radius:26px;padding:5px;box-shadow:0 16px 0 rgba(0,0,0,.32),0 34px 60px rgba(0,0,0,.42);flex:none">
-    <div style="width:100%;height:100%;border-radius:21px;overflow:hidden;display:flex">
+    <div style="position:relative;width:100%;height:100%;border-radius:21px;overflow:hidden;display:flex">
 
-      <!-- ===== SIDEBAR（沉浸模式收起·owner 2026-08-04：进编辑工坊整栏隐藏不压窄，见 chromeOn） ===== -->
-      <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
-      <div style="flex:none;width:236px;background:repeating-linear-gradient(180deg,#c88a52 0 11px,#bd7f47 11px 22px);border-right:4px solid #3a2312;box-shadow:inset -6px 0 0 rgba(0,0,0,.18),inset 0 4px 0 rgba(255,255,255,.25);display:flex;flex-direction:column;padding:20px 16px">
+      <!-- ===== SIDEBAR（沉浸模式收起·owner 2026-08-04：进编辑工坊整栏隐藏不压窄，见 chromeOn；
+           2026-08-11 界面最大化：sbOn = chromeOn 且未手动收起且非 ⛶ 专注——手动收起走 ◂ 钮，
+           左缘浮动 ▸ 可再展开·localStorage 记住选择） ===== -->
+      <sc-if value="{{ sbOn }}" hint-placeholder-val="{{ true }}">
+      <div style="position:relative;flex:none;width:236px;background:repeating-linear-gradient(180deg,#c88a52 0 11px,#bd7f47 11px 22px);border-right:4px solid #3a2312;box-shadow:inset -6px 0 0 rgba(0,0,0,.18),inset 0 4px 0 rgba(255,255,255,.25);display:flex;flex-direction:column;padding:20px 16px">
+        <button onClick="{{ sbCollapse }}" title="收起左侧菜单（收起后左缘浮动 ▸ 可再展开·记住选择）" style="position:absolute;top:9px;right:7px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:2px solid #3a2312;border-radius:8px;background:rgba(255,245,219,.85);cursor:pointer;font-size:11px;line-height:1;color:#3a2312;padding:0;z-index:5">◂</button>
         <!-- logo -->
         <div style="text-align:center;margin-bottom:22px">
           <div style="display:inline-block;background:linear-gradient(180deg,#ffe08a,#f5b731);border:3px solid #3a2312;border-radius:14px;padding:9px 16px;box-shadow:0 5px 0 #c98a1e,inset 0 2px 0 rgba(255,255,255,.6)">
@@ -82,9 +85,30 @@
       </div>
       </sc-if>
 
+      <!-- ===== 界面最大化浮动件（owner 2026-08-11「侧栏可收/顶栏可藏/⛶ 专注」）：绝对定位盖层，
+           缺省（全展开）一个都不渲染=界面与改前一致。四件：①侧栏展开箭头 ②顶栏召回把手
+           ③⛶ 专注复原簇（含浏览器真全屏第二档）④顶栏藏起时「← 返回」最小替身（不把人困死在屏里） ===== -->
+      <sc-if value="{{ sbExpanderOn }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ sbExpand }}" title="展开左侧菜单" style="position:absolute;left:0;top:50%;transform:translateY(-50%);z-index:80;width:22px;height:64px;border:2.5px solid #3a2312;border-left:none;border-radius:0 12px 12px 0;background:linear-gradient(180deg,#ffe08a,#f5b731);cursor:pointer;font-size:13px;line-height:1;color:#3a2312;padding:0;box-shadow:2px 3px 0 rgba(58,35,18,.3)">▸</button>
+      </sc-if>
+      <sc-if value="{{ tbRecallOn }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ tbToggle }}" title="召回顶栏" style="position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:80;width:120px;height:16px;border:2.5px solid #3a2312;border-top:none;border-radius:0 0 12px 12px;background:linear-gradient(180deg,#ffe08a,#f5b731);cursor:pointer;font-size:10px;line-height:1;color:#3a2312;padding:0;box-shadow:0 3px 0 rgba(58,35,18,.3)">▾</button>
+      </sc-if>
+      <sc-if value="{{ focusClusterOn }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:8px;right:12px;z-index:80;display:flex;gap:6px">
+          <button onClick="{{ realFsToggle }}" title="第二档：浏览器真全屏（再点或 Esc 退出真全屏）" style="{{ floatCtlStyle }}">⛶ 真全屏</button>
+          <button onClick="{{ focusToggle }}" title="退出专注模式（Esc 同效）——侧栏/顶栏/次要面板原样复原" style="{{ floatCtlStyle }}">▣ 复原</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ floatBackOn }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ goGames }}" title="返回游戏库（顶栏藏起时的最小替身）" style="position:absolute;top:8px;left:12px;z-index:80;border:2.5px solid #3a2312;border-radius:10px;background:linear-gradient(180deg,#fffdf5,#fff0cf);cursor:pointer;font-family:'Noto Sans SC',sans-serif;font-weight:700;font-size:12px;color:#3a2312;padding:6px 10px;box-shadow:0 3px 0 rgba(58,35,18,.3)">← 返回</button>
+      </sc-if>
+
       <!-- ===== MAIN ===== -->
       <div style="flex:1;display:flex;flex-direction:column;background:linear-gradient(180deg,#8ad4f7,#5cc0f2 45%,#8fd0f5)">
-        <!-- topbar（沉浸模式瘦身·owner 2026-08-04：编辑工坊换成「← 返回+库名+当前游戏名」，去装饰副标+货币角标） -->
+        <!-- topbar（沉浸模式瘦身·owner 2026-08-04：编辑工坊换成「← 返回+库名+当前游戏名」，去装饰副标+货币角标；
+             2026-08-11 界面最大化：整栏可手动藏（▴）·藏后顶缘把手召回·⛶ 专注一键全收） -->
+        <sc-if value="{{ tbOn }}" hint-placeholder-val="{{ true }}">
         <div style="flex:none;display:flex;align-items:center;gap:14px;padding:16px 22px;border-bottom:4px solid #3a2312;background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,.12))">
           <sc-if value="{{ immersiveOn }}" hint-placeholder-val="{{ false }}">
             <button onClick="{{ goGames }}" title="返回游戏库（固定可达·不随内容滚动）" style="{{ immersiveBackStyle }}" style-active="{{ backBtnActive }}">← 返回游戏库</button>
@@ -147,7 +171,12 @@
             </div>
           </div>
           </sc-if>
+
+          <!-- 界面最大化钮（owner 2026-08-11）：⛶ 专注（一键全收·Esc 复原）+ ▴ 藏顶栏 -->
+          <button onClick="{{ focusToggle }}" title="⛶ 专注模式：一键收起侧栏/顶栏/本屏次要面板，内容区吃满（再点或 Esc 复原；专注态右上另有浏览器真全屏第二档）" style="{{ winCtlStyle }}">⛶</button>
+          <button onClick="{{ tbToggle }}" title="藏起顶栏（顶缘留把手可召回·记住选择）" style="{{ winCtlStyle }}">▴</button>
         </div>
+        </sc-if>
 
         <!-- content -->
         <div class="scr" style="flex:1;overflow-y:auto;padding:24px 26px 34px">
@@ -430,9 +459,14 @@
             <!-- 沉浸态布局比例修正（owner 2026-08-04 实时反馈「左边太大右边太小」）：右侧对话/创作面板升为
                  主体（固定窄左列 300px + 右列吃满剩余，≈70%+ 宽·内容区已因侧栏/货币角标隐藏而更宽敞）；
                  左列非核心项（下载包/删除/TS 例外/路径统计）收进「⋯ 更多」折叠，见下 editMoreOpen。 -->
-            <div style="display:grid;grid-template-columns:300px minmax(0,1fr);gap:20px;align-items:start">
-              <!-- left: project card + 8-stage lamps + actions + pending（沉浸态压窄——见上） -->
-              <div>
+            <div style="{{ editGridStyle }}">
+              <!-- left: project card + 8-stage lamps + actions + pending（沉浸态压窄——见上；
+                   2026-08-11 界面最大化：整列可收（◂ 收起面板→26px 窄条·▸ 再展开）·⛶ 专注时整列隐·对话区吃满 -->
+              <div style="{{ editLeftWrapStyle }}">
+                <sc-if value="{{ editLeftStripOn }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ editLeftToggle }}" title="展开左列项目面板" style="{{ stripBtnStyle }}">▸</button>
+                </sc-if>
+                <sc-if value="{{ editLeftOn }}" hint-placeholder-val="{{ true }}">
                 <div style="background:#fffdf5;border:4px solid #3a2312;border-radius:20px;padding:16px;box-shadow:0 6px 0 rgba(58,35,18,.28)">
                   <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
                     <div style="width:54px;height:54px;border-radius:14px;border:3px solid #3a2312;background:linear-gradient(180deg,#ffe08a,#f5b731);display:flex;align-items:center;justify-content:center;font-size:26px;flex:none">🎮</div>
@@ -461,6 +495,7 @@
                     <button onClick="{{ openOldBench }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⇄ 旧工作台（试玩 / 美术台）</button>
                     <button onClick="{{ wizardToggle }}" title="向导模式（REQ-PIPESOFT P1b·第三入口）：一句话入口 / 步进器只亮下一步 / 跑机器门 / 请人门——详情仍可去旧工作台 🏭 生产板" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">{{ wizardToggleLabel }}</button>
                     <button onClick="{{ editMoreToggle }}" title="下载包 / 删除卡带 / TS 例外开关这类低频操作" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">{{ editMoreLabel }}</button>
+                    <button onClick="{{ editLeftToggle }}" title="收起整个左列项目面板——对话区吃满（收起后左缘窄条 ▸ 可再展开·记住选择）" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">◂ 收起面板</button>
                   </div>
                   <sc-if value="{{ editMoreOpenOn }}" hint-placeholder-val="{{ false }}">
                     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:2px dashed rgba(58,35,18,.25)">
@@ -704,6 +739,7 @@
                     </sc-if>
                   </div>
                 </sc-if>
+                </sc-if>
               </div>
               <!-- right: triple-role chat（owner 07-11 三入口：策划/美术/程序） -->
               <div style="background:#fffdf5;border:4px solid #3a2312;border-radius:20px;box-shadow:0 6px 0 rgba(58,35,18,.28);display:flex;flex-direction:column;height:600px">
@@ -776,6 +812,10 @@
               <sc-for list="{{ assetGameTabs }}" as="t" hint-placeholder-count="5">
                 <button onClick="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}</button>
               </sc-for>
+              <!-- 界面最大化（2026-08-11）：封面/整体风格两块工具卡可收——台账树上顶 -->
+              <sc-if value="{{ assetsSlug }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ asToolsToggle }}" title="收起/展开「游戏封面」「整体美术风格」两块工具面板（记住选择）" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">{{ asToolsLabel }}</button>
+              </sc-if>
             </div>
             <!-- 生成结果持久横幅（owner 2026-07-21「toast 一闪就没·看不到失败原因」）：顶层·不随详情面板开关消失·失败显全文原因·点 ✕ 关 -->
             <sc-if value="{{ artResultBox }}" hint-placeholder-val="{{ false }}">
@@ -786,8 +826,9 @@
                 </div>
               </div>
             </sc-if>
-            <!-- 游戏封面/图标（文生图）·生成后替换「我的游戏库」卡片外观（owner 07-12） -->
-            <sc-if value="{{ assetsSlug }}" hint-placeholder-val="{{ false }}">
+            <!-- 游戏封面/图标（文生图）·生成后替换「我的游戏库」卡片外观（owner 07-12）
+                 ——asToolsOn：可收工具面板（2026-08-11 界面最大化·⛶ 专注时同隐） -->
+            <sc-if value="{{ asToolsOn }}" hint-placeholder-val="{{ false }}">
               <div style="display:flex;align-items:center;gap:14px;background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:13px 15px;box-shadow:0 4px 0 rgba(58,35,18,.18);margin-bottom:16px">
                 <div style="width:74px;height:74px;border-radius:13px;border:3px solid #3a2312;overflow:hidden;background:linear-gradient(180deg,#ffe0ef,#ff9ec4);display:flex;align-items:center;justify-content:center;font-size:33px;flex:none">
                   <sc-if value="{{ coverPreview }}" hint-placeholder-val="{{ false }}"><img src="{{ coverPreview }}" style="width:100%;height:100%;object-fit:cover"></sc-if>
@@ -809,8 +850,8 @@
                 <span style="font-family:'Noto Sans SC';font-weight:600;font-size:11px;color:#8a5a2c">每行任务=编号+尺寸+透明底要求+提示词·出图后回这里逐行 ⤵ 替换</span>
               </div>
             </sc-if>
-            <!-- 本游戏整体美术风格锚（owner 07-13·拼进每张生成提示词·统一画风） -->
-            <sc-if value="{{ assetsSlug }}" hint-placeholder-val="{{ false }}">
+            <!-- 本游戏整体美术风格锚（owner 07-13·拼进每张生成提示词·统一画风）——asToolsOn 同上 -->
+            <sc-if value="{{ asToolsOn }}" hint-placeholder-val="{{ false }}">
               <div style="background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:13px 15px;box-shadow:0 4px 0 rgba(58,35,18,.18);margin-bottom:16px">
                 <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312">本游戏整体美术风格</div>
                 <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:11px;margin-bottom:8px">这段风格会自动拼进每一张美术件的生成提示词（连同各件自己的需求一起扔给文生图）→ 整套画风统一。例：「迪士尼×皮克斯厚涂·暖色·圆润·卡通」。</div>
@@ -939,11 +980,17 @@
                 <span style="font-family:'Noto Sans SC';font-weight:600;color:#3a2312;font-size:13px">加载共享资产库（4892 项·首次略等）…</span>
               </div>
             </sc-if>
-            <!-- 我的分组（owner 07-12 虚拟分组·拖素材进组·不动真目录） -->
+            <!-- 我的分组（owner 07-12 虚拟分组·拖素材进组·不动真目录）
+                 ——mlGroupsOn：整块可收（2026-08-11 界面最大化·分类树上顶·⛶ 专注时同隐） -->
             <div style="margin-bottom:16px">
+              <sc-if value="{{ mlGroupsStripOn }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ mlGroupsToggle }}" title="展开「我的分组」面板" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">▸ 我的分组（已收起）</button>
+              </sc-if>
+              <sc-if value="{{ mlGroupsOn }}" hint-placeholder-val="{{ true }}">
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
                 <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312">📁 我的分组（虚拟·把素材拖进组名即可收藏）</span>
                 <button onClick="{{ mlNewGroup }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">＋ 新建分组</button>
+                <button onClick="{{ mlGroupsToggle }}" title="收起「我的分组」整块（分类树上顶·记住选择）" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">▴ 收起</button>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px">
                 <sc-for list="{{ mlGroupRows }}" as="mg" hint-placeholder-count="2">
@@ -975,6 +1022,7 @@
                   </div>
                 </sc-for>
               </div>
+              </sc-if>
             </div>
             <!-- 搜索结果（扁平网格） -->
             <sc-if value="{{ flSearching }}" hint-placeholder-val="{{ false }}">
@@ -1063,11 +1111,18 @@
               </div>
             </div>
 
-            <!-- 三栏：目录树 / 缩略图网格 / 详情栏 -->
+            <!-- 三栏：目录树 / 缩略图网格 / 详情栏（2026-08-11 界面最大化：左右两栏各自可收成窄条·网格吃满） -->
             <div style="display:flex;gap:14px;align-items:flex-start">
-              <!-- 目录树 -->
+              <!-- 目录树（可收：◂ → 26px 窄条·▸ 再展开） -->
+              <sc-if value="{{ abLeftStripOn }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ abLeftToggle }}" title="展开目录树" style="{{ stripBtnStyle }}">▸</button>
+              </sc-if>
+              <sc-if value="{{ abLeftOn }}" hint-placeholder-val="{{ true }}">
               <div class="scr" style="width:250px;flex:none;background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:10px;box-shadow:0 4px 0 rgba(58,35,18,.18);max-height:640px;overflow-y:auto">
-                <div style="font-family:'Fredoka';font-weight:700;color:#8a5a2c;font-size:10.5px;padding:2px 4px 8px;letter-spacing:.04em">🎮 游戏</div>
+                <div style="display:flex;align-items:center;padding:2px 4px 8px">
+                  <span style="font-family:'Fredoka';font-weight:700;color:#8a5a2c;font-size:10.5px;letter-spacing:.04em">🎮 游戏</span>
+                  <button onClick="{{ abLeftToggle }}" title="收起目录树（左缘窄条可再展开·记住选择）" style="margin-left:auto;border:2px solid #3a2312;border-radius:7px;background:rgba(255,255,255,.7);cursor:pointer;font-size:10px;line-height:1;color:#3a2312;padding:3px 7px">◂</button>
+                </div>
                 <div style="display:flex;flex-direction:column;gap:6px">
                   <sc-for list="{{ abGameRows }}" as="gr" hint-placeholder-count="4">
                     <div>
@@ -1112,6 +1167,7 @@
                   </sc-if>
                 </div>
               </div>
+              </sc-if>
 
               <!-- 缩略图网格 -->
               <div class="scr" style="flex:1;min-width:0;background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:12px;box-shadow:0 4px 0 rgba(58,35,18,.18);max-height:640px;overflow-y:auto">
@@ -1138,10 +1194,12 @@
                 <sc-if value="{{ abGridEmptyText }}" hint-placeholder-val="{{ false }}"><div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:12px;text-align:center;padding:24px">{{ abGridEmptyText }}</div></sc-if>
               </div>
 
-              <!-- 详情栏 -->
+              <!-- 详情栏（可收：▸ → 26px 窄条·◂ 再展开） -->
+              <sc-if value="{{ abRightOn }}" hint-placeholder-val="{{ true }}">
               <div class="scr" style="width:296px;flex:none;background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:13px;box-shadow:0 4px 0 rgba(58,35,18,.18);max-height:640px;overflow-y:auto">
                 <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
                   <sc-for list="{{ abTabs }}" as="tb" hint-placeholder-count="3"><button onClick="{{ tb.pick }}" style="{{ tb.style }}">{{ tb.label }}</button></sc-for>
+                  <button onClick="{{ abRightToggle }}" title="收起详情栏（右缘窄条可再展开·记住选择）" style="margin-left:auto;align-self:center;border:2px solid #3a2312;border-radius:7px;background:rgba(255,255,255,.7);cursor:pointer;font-size:10px;line-height:1;color:#3a2312;padding:3px 7px">▸</button>
                 </div>
                 <!-- 历史 / 回滚（REQ-ARTPIPE2 A3）：git log --follow 提交列表 + 任意版本预览（git show rev:path）
                      + 当前↔历史版并排对比 + 「回退到此版」（既有 /api/art/upload 语义落盘·台账留痕）。 -->
@@ -1279,6 +1337,10 @@
                   <sc-if value="{{ abDetailEmptyText }}" hint-placeholder-val="{{ false }}"><div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:12px;text-align:center;margin-top:24px">{{ abDetailEmptyText }}</div></sc-if>
                 </sc-if>
               </div>
+              </sc-if>
+              <sc-if value="{{ abRightStripOn }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ abRightToggle }}" title="展开详情栏" style="{{ stripBtnStyle }}">◂</button>
+              </sc-if>
             </div>
           </sc-if>
 
@@ -1492,10 +1554,40 @@ class Component extends DCLogic {
     abRegenQuery: '', abRegenPack: null, abSwapId: '', abReskinPack: null,
     abApproveNote: '', abApproveBy: 'owner', abApproveBusy: null,  // note 永远起空·不代填（wizardSignoff 铁律）
     tokenInput: '', genKeyInputs: {}, provKeyInputs: {}, genOptSel: {}, defaultProv: null, cfgModel: null, saving: false,
-    toast: null
+    toast: null,
+    // ── 界面最大化（owner 2026-08-11「左菜单可收·顶栏可藏·⛶ 一键最大化」）：全部手动收缩态，
+    // localStorage 持久化（全新键 zc.workshop.*·绝不改名任何既有键）。focusOn=⛶ 专注模式，
+    // 是「盖层」不是改底值：可见性一律派生（xxOn = !collapsed && !focusOn），退出专注即原样复原。
+    sbCollapsed: this._lsOn('zc.workshop.sidebarCollapsed'),      // 侧栏手动收起
+    tbHidden: this._lsOn('zc.workshop.topbarHidden'),             // 顶栏手动藏起
+    focusOn: this._lsOn('zc.workshop.focusMode'),                 // ⛶ 专注模式（Esc 复原）
+    editLeftCollapsed: this._lsOn('zc.workshop.editLeftCollapsed'),   // 编辑工坊左列项目面板
+    abLeftCollapsed: this._lsOn('zc.workshop.abLeftCollapsed'),       // 资产浏览器目录树栏
+    abRightCollapsed: this._lsOn('zc.workshop.abRightCollapsed'),     // 资产浏览器详情栏
+    mlGroupsCollapsed: this._lsOn('zc.workshop.mlGroupsCollapsed'),   // 素材库「我的分组」块
+    asToolsCollapsed: this._lsOn('zc.workshop.assetsToolsCollapsed')  // 美术库封面/风格工具卡
   };
 
-  componentWillUnmount() { clearInterval(this._g); clearInterval(this._cl); clearInterval(this._ol); clearTimeout(this._t); Object.values(this._pk || {}).forEach(clearInterval); }
+  componentWillUnmount() { clearInterval(this._g); clearInterval(this._cl); clearInterval(this._ol); clearTimeout(this._t); Object.values(this._pk || {}).forEach(clearInterval); if (this._esc) window.removeEventListener('keydown', this._esc); }
+
+  // ── 界面最大化（owner 2026-08-11）：localStorage 读写 + 收缩/专注开关 ─────────────
+  // 新键族 zc.workshop.*（'1'/'0'）；隐私模式等存不了也不碍用（只丢持久化）。
+  _lsOn(k) { try { return window.localStorage.getItem(k) === '1'; } catch (e) { return false; } }
+  _lsFlag(k, v) { try { window.localStorage.setItem(k, v ? '1' : '0'); } catch (e) { /* 存不了就不记 */ } }
+  uiFlagToggle(key, lsKey) {
+    this.setState(st => { const v = !st[key]; this._lsFlag(lsKey, v); return { [key]: v }; });
+  }
+  // ⛶ 专注模式：不动各面板底值，只翻盖层开关——退出即回到进入前的样子（含手动收起的记忆）。
+  focusToggle() {
+    this.setState(st => { const v = !st.focusOn; this._lsFlag('zc.workshop.focusMode', v); return { focusOn: v }; });
+  }
+  // 第二档：浏览器真全屏（页内最大化是主体·此仅锦上添花）。不支持/被拒绝时静默——页内档不受影响。
+  realFsToggle() {
+    try {
+      if (document.fullscreenElement) { const p = document.exitFullscreen(); if (p && p.catch) p.catch(() => {}); }
+      else { const p = document.documentElement.requestFullscreen(); if (p && p.catch) p.catch(() => {}); }
+    } catch (e) { /* 环境不支持真全屏 */ }
+  }
 
   // 嵌入我们的接口：真游戏列表（卡带=/api/library·引擎游戏=/api/games）+ 版本 + 设置（打码视图）。
   refreshGames() {
@@ -1504,6 +1596,9 @@ class Component extends DCLogic {
       .catch(() => this.setState({ liveGames: [] }));
   }
   componentDidMount() {
+    // ⛶ 专注模式 Esc 复原（owner 2026-08-11）。真全屏时 Esc 先退真全屏（浏览器原生行为），不连带退专注。
+    this._esc = (e) => { if (e.key === 'Escape' && !document.fullscreenElement && this.state.focusOn) this.focusToggle(); };
+    window.addEventListener('keydown', this._esc);
     this.refreshCarts();
     fetch('/api/features').then(r => r.json())  // 功能开关（capgap/tsCarts·owner 07-11）
       .then(d => this.setState({ features: d && d.success ? d : null }))
@@ -3473,6 +3568,18 @@ class Component extends DCLogic {
     const genLiveText = s.genLive ? ('模型实况 · 已流出 ' + this.fmt(s.genLive.chars) + ' 字') : '';
     const traceLogText = s.traceLog || '';
 
+    // ── 界面最大化（owner 2026-08-11）：可见性全派生——focusOn 是盖层（xxOn = 底值 && !focusOn），
+    // 缺省（全展开·非专注）时各 xxOn 与改前的显隐条件逐位相等=零回归。chromeOn 沉浸自动藏不动。
+    const chromeNow = s.screen !== 'edit';
+    const winCtl = { border: '2.5px solid #3a2312', borderRadius: '10px', background: 'rgba(255,255,255,.55)', cursor: 'pointer',
+      fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: '13px', color: '#3a2312', padding: '7px 10px', lineHeight: 1,
+      boxShadow: '0 2px 0 rgba(58,35,18,.18)', flex: 'none' };
+    const floatCtl = Object.assign({}, winCtl, { background: 'linear-gradient(180deg,#fffdf5,#fff0cf)', boxShadow: '0 3px 0 rgba(58,35,18,.3)' });
+    const stripBtn = { width: '26px', minHeight: '180px', flex: 'none', border: '2.5px solid #3a2312', borderRadius: '10px',
+      background: 'rgba(255,255,255,.5)', cursor: 'pointer', color: '#3a2312', fontFamily: "'Fredoka',sans-serif", fontWeight: 700,
+      fontSize: '13px', lineHeight: 1, padding: '10px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center',
+      boxShadow: '0 3px 0 rgba(58,35,18,.18)' };
+
     return {
       pageTitle: titles[s.screen][0], pageSub: titles[s.screen][1],
       coinsFmt: this.fmt(s.coins), gemsFmt: this.fmt(s.gems), topUp: () => this.topUp(),
@@ -3481,7 +3588,43 @@ class Component extends DCLogic {
       isTemplates: s.screen === 'templates', isCreate: s.screen === 'create', isEdit: s.screen === 'edit',
       isAssets: s.screen === 'assets', isBrowser: s.screen === 'browser', isMatlib: s.screen === 'matlib', isPublish: s.screen === 'publish', isSettings: s.screen === 'settings',
       // ── 沉浸模式（owner 2026-08-04：进编辑工坊自动收起侧栏+顶栏瘦身+杂讯清理·无开关不持久化，退出即恢复） ──
-      immersiveOn: s.screen === 'edit', chromeOn: s.screen !== 'edit',
+      immersiveOn: s.screen === 'edit', chromeOn: chromeNow,
+      // ── 界面最大化（owner 2026-08-11：侧栏可收/顶栏可藏/⛶ 专注/各屏大块就地可收·全手动可控） ──
+      sbOn: chromeNow && !s.sbCollapsed && !s.focusOn,               // 侧栏（沉浸自动藏 ∧ 手动收 ∧ 专注 三重叠加）
+      sbExpanderOn: chromeNow && s.sbCollapsed && !s.focusOn,        // 左缘浮动 ▸（专注时不显——专注只从复原钮/Esc 出）
+      sbCollapse: () => this.uiFlagToggle('sbCollapsed', 'zc.workshop.sidebarCollapsed'),
+      sbExpand: () => this.uiFlagToggle('sbCollapsed', 'zc.workshop.sidebarCollapsed'),
+      tbOn: !s.tbHidden && !s.focusOn,                               // 顶栏
+      tbRecallOn: s.tbHidden && !s.focusOn,                          // 顶缘召回把手
+      tbToggle: () => this.uiFlagToggle('tbHidden', 'zc.workshop.topbarHidden'),
+      focusClusterOn: !!s.focusOn,                                   // 专注态右上浮动簇（复原 + 真全屏第二档）
+      focusToggle: () => this.focusToggle(),
+      realFsToggle: () => this.realFsToggle(),
+      floatBackOn: s.screen === 'edit' && (s.tbHidden || !!s.focusOn),  // 顶栏不在时「← 返回」最小替身（不困死人）
+      winCtlStyle: winCtl, floatCtlStyle: floatCtl, stripBtnStyle: stripBtn,
+      // 编辑工坊左列（项目面板）可收：26px 窄条 ▸ 再展开；专注时整列 display:none（grid 单列·对话吃满）
+      editGridStyle: s.focusOn
+        ? 'display:grid;grid-template-columns:minmax(0,1fr);gap:0;align-items:start'
+        : ('display:grid;grid-template-columns:' + (s.editLeftCollapsed ? '26px' : '300px') + ' minmax(0,1fr);gap:20px;align-items:start'),
+      editLeftWrapStyle: s.focusOn ? 'display:none' : '',
+      editLeftOn: !s.editLeftCollapsed && !s.focusOn,
+      editLeftStripOn: s.editLeftCollapsed && !s.focusOn,
+      editLeftToggle: () => this.uiFlagToggle('editLeftCollapsed', 'zc.workshop.editLeftCollapsed'),
+      // 资产浏览器左右两栏可收（网格吃满）
+      abLeftOn: !s.abLeftCollapsed && !s.focusOn,
+      abLeftStripOn: s.abLeftCollapsed && !s.focusOn,
+      abLeftToggle: () => this.uiFlagToggle('abLeftCollapsed', 'zc.workshop.abLeftCollapsed'),
+      abRightOn: !s.abRightCollapsed && !s.focusOn,
+      abRightStripOn: s.abRightCollapsed && !s.focusOn,
+      abRightToggle: () => this.uiFlagToggle('abRightCollapsed', 'zc.workshop.abRightCollapsed'),
+      // 素材库「我的分组」整块可收（分类树上顶）
+      mlGroupsOn: !s.mlGroupsCollapsed && !s.focusOn,
+      mlGroupsStripOn: s.mlGroupsCollapsed && !s.focusOn,
+      mlGroupsToggle: () => this.uiFlagToggle('mlGroupsCollapsed', 'zc.workshop.mlGroupsCollapsed'),
+      // 美术库封面/风格两块工具卡可收（asToolsOn 含原 assetsSlug 门=零回归）
+      asToolsOn: !!s.assetsSlug && !s.asToolsCollapsed && !s.focusOn,
+      asToolsLabel: s.asToolsCollapsed ? '▸ 封面·风格工具' : '▴ 收起工具',
+      asToolsToggle: () => this.uiFlagToggle('asToolsCollapsed', 'zc.workshop.assetsToolsCollapsed'),
       immersiveTitle: '零手K工作室 · ' + (s.editName || s.editSlug || '编辑工坊'),
       immersiveBackStyle: Object.assign({}, back.style, { marginBottom: 0 }),
       navGamesStyle: navBase(['games', 'newgame', 'templates', 'create', 'edit'].indexOf(s.screen) >= 0),
