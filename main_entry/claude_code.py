@@ -255,6 +255,13 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list, 
             # （"cache_read_input_tokens":0,"output_tokens":0…）无条件命中 —— 那玩意儿几乎每次都在输出末尾，
             # 于是**不论真实死因是什么都被贴成「额度满」**，把真因盖死（owner 明明没用过额度却收到此报错）。
             # 现在只认限流的确凿形态；认不出就落到下面的通用分支，**原样把 tail 摆出来**，绝不假装知道原因。
+            # 认证失效**先于**额度判定（owner 2026-08-07 实撞：401 被人肉当成「额度满」查了三轮）。
+            # 这条要给**能照做的下一步**，不是把 401 原文甩出来——凭据链是
+            # `llm_transport` 存的 token → env CLAUDE_CODE_OAUTH_TOKEN；哨兵 'cli' 表示改靠本机已登录 CLI。
+            if 'authentication_error' in low or 'invalid bearer token' in low or ' 401' in low or '401 {' in low:
+                return {'success': False, 'error':
+                        '订阅凭据失效（不是额度问题）——重出一个 token：`claude setup-token` 后把新值填回控制台；'
+                        '或清掉存的 token 改用本机已登录 CLI（配置留空 = 走 cli 哨兵）。原文: ' + (diag or tail)[:200]}
             RATE_SIGNS = ('rate limit', 'rate_limit', 'usage limit', 'quota', 'too many requests',
                           '429', 'insufficient_quota', 'overloaded_error')
             if any(k in low for k in RATE_SIGNS) or '额度' in tail:
