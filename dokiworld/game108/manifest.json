@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 2,
+  "version": "0.1.0",
+  "id": "game108",
+  "kind": "game",
+  "status": "active",
+  "capability": "game.duel.charge-rps",
+  "entry": "index.html",
+  "launchRequirements": {
+    "minPlayers": 2
+  },
+  "context": {
+    "requiredScopes": [],
+    "optionalScopes": [
+      "character.identity",
+      "character.avatar"
+    ]
+  },
+  "locales": {
+    "en": {
+      "name": "Rule of Three",
+      "description": "A 60-90 second charge-up rock-paper-scissors duel: charge slots are public, so you read declarations, not memory.",
+      "aliases": [
+        "Rule of Three",
+        "Rock Paper Scissors",
+        "RPS",
+        "charge-up RPS",
+        "RPS duel"
+      ]
+    },
+    "zh-cn": {
+      "name": "拳律",
+      "description": "60-90 秒一局的蓄力猜拳对决：蓄力槽全公开，读的是宣告不是记忆。",
+      "aliases": [
+        "拳律",
+        "石头剪刀布",
+        "猜拳",
+        "蓄力猜拳",
+        "剪刀石头布"
+      ]
+    }
+  },
+  "selection": {
+    "activationPolicy": "explicit-or-contextual",
+    "promptHint": {
+      "en": "Use when the player explicitly asks to play rock-paper-scissors or a charge-up RPS duel, or the scene genuinely calls for a short one-on-one mind-game match against the current character.",
+      "zh-cn": "玩家明确要玩石头剪刀布/猜拳蓄力对决，或剧情确实需要与当前角色来一场简短的一对一斗心眼比试时使用。"
+    },
+    "avoidHint": {
+      "en": "Do not launch for casual mentions of fists, punches, or rock-paper-scissors in ordinary conversation.",
+      "zh-cn": "普通对话里只是随口提到拳头、出拳或猜拳时不要拉起。"
+    }
+  },
+  "runtime": {
+    "protocol": "dokiworld.app",
+    "protocolVersion": 2,
+    "input": {
+      "contract": "doki.game.game108-input",
+      "version": 1
+    },
+    "outputs": [
+      {
+        "contract": "doki.game.result",
+        "version": 1
+      }
+    ],
+    "extensions": []
+  }
+}

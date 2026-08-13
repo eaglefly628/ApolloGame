@@ -135,6 +135,10 @@ export default defineConfig({
     // 缩范围只减「每次推」的负担、不减总覆盖——慢车道仍是完整安全网。判据见 docs/playbooks/testing.md「双车道」。
     exclude: [
       '**/node_modules/**', '**/dist/**', '**/.claude/**',
+      // DokiWorld 出包线（docs/playbooks/dokiworld-pack.md）：dokiworld/<app>/ 是自带 package.json 的
+      // 独立 npm 包，tests 按对方规范走 `node --test`（node:test 风格·vitest 收进来只会报
+      // 「No test suite found」假红）。各包 `npm test` 自跑；出包改动照常过本门禁的 tsc/build。
+      'dokiworld/**',
       ...((process.env.ZEROCRAFT_DEEP ?? process.env.APOLLO_DEEP) === '1' ? [] : [
         'games/game-f/**', // 冻结游戏（owner 勿删勿迁·2026-08-03 owner 改判「不删了要还原·上架但代码纪律仍冻结」）·26s/133 测·没人开发→只慢车道跑
         'games/game-g/flow-walk.test.ts', // 整局通关走查 8.4s/1 测·33 个单元文件已覆盖各片段

@@ -41,6 +41,19 @@ const sceneBgUrl: string | null = null;
 let currentCard: CardCharacter = DEFAULT_CARD;
 export function setCard(card: CardCharacter): void { currentCard = card; }
 
+/**
+ * 世界只读观察口（DokiWorld 出包线·REQ-DOKIPACK）—— 与 `setCard` 同款的宿主侧通道：
+ * 装载前 `setWorldObserver(fn)`，此后**每帧 redraw 之后**把当前引擎的 world 递出去一次。
+ *
+ * 为什么需要它：`mount()` 把引擎收在闭包里，外层宿主（DokiWorld 接线层）要把终局
+ * 投影成 GameResult（读 `flow` 的 GameFlow / 两侧 hp——与验收剧本 readWorld 同口径），
+ * 没有这条缝就只能撬 DOM。**只读投影，零规则**：观察者不写世界、不进 sim/hash/录放，
+ * 与 readView 同属表现层旁路；「再来一局」换引擎后闭包里的 `engine` 已是新台，天然跟随。
+ */
+type WorldObserver = (world: Engine['world']) => void;
+let worldObserver: WorldObserver | undefined;
+export function setWorldObserver(fn?: WorldObserver): void { worldObserver = fn; }
+
 export function mount(container: HTMLElement): () => void {
   const card = currentCard;
   const { scene, teardown } = mountHost(container, {
@@ -305,7 +318,7 @@ export function mount(container: HTMLElement): () => void {
   // handlers **只挂表现层本地动作**（`ui.*`）：换语言是纯显示设置，不该进世界
   //（进了就会进 hash / 录放 / lockstep，两端语言不同就判不一致——那是灾难）。
   // 写世界的动作一律不挂 handler，走 `ActionSink` 入队成 Signal（信号铁律不变）。
-  const redraw = (): void => { ui.update(screen(readView()), DUEL_THEME); };
+  const redraw = (): void => { ui.update(screen(readView()), DUEL_THEME); worldObserver?.(engine.world); };
 
   /**
    * 【S6】**皮肤图**：把本游戏美术索引里 `filled` 的条目解析成 `skinKey → URL`，交给屏那一层。

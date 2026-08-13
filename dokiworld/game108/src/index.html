@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>拳律 · Rule of Three</title>
+    <link rel="icon" href="data:," />
+    <style>
+      /* 接线层只有这一屏壳样式（游戏画面全部由引擎 mountHost 自绘）。 */
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #171310; }
+      #stage { width: 100%; height: 100%; }
+      /* 无宿主时 connect 挂起属预期（规范 §6）——页面不得白屏，故摆一块等待宿主的静态底。 */
+      #standby {
+        position: fixed; inset: 0; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 12px;
+        color: #d8c8a8; font-family: "Songti SC", "Noto Serif CJK SC", serif;
+        background: radial-gradient(ellipse at center, #2a2118 0%, #171310 70%);
+        text-align: center; padding: 24px;
+      }
+      #standby h1 { margin: 0; font-size: 44px; letter-spacing: 0.3em; }
+      #standby p { margin: 0; font-size: 15px; opacity: 0.75; }
+      #standby .pulse { margin-top: 10px; width: 10px; height: 10px; border-radius: 50%;
+        background: #c9a227; animation: pulse 1.6s ease-in-out infinite; }
+      @keyframes pulse { 0%, 100% { opacity: 0.25; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <div id="standby">
+      <h1>拳律</h1>
+      <p>Rule of Three</p>
+      <p>等待 DokiWorld 宿主连接… / Waiting for the DokiWorld host…</p>
+      <div class="pulse"></div>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
