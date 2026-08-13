@@ -83,6 +83,7 @@ import type {
   PerCardRetrigger,
   Pickable3D,
   Post3D,
+  Reflector3D,
   PerCardRule,
   PerCardScore,
   Perception,
@@ -219,6 +220,7 @@ export interface ComponentDataMap {
   PerCardRetrigger: Omit<PerCardRetrigger, 'type'>;
   Post3D: Omit<Post3D, 'type'>;
   Pickable3D: Omit<Pickable3D, 'type'>;
+  Reflector3D: Omit<Reflector3D, 'type'>;
   PerCardRule: Omit<PerCardRule, 'type'>;
   PerCardScore: Omit<PerCardScore, 'type'>;
   Perception: Omit<Perception, 'type'>;

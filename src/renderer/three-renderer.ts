@@ -27,6 +27,7 @@ import { UvAnimSystem } from './three/uv-anim.js';
 import { DissolveSystem } from './three/dissolve.js';
 import { BillboardSystem } from './three/billboard.js';
 import { DiegeticLayer } from './three/diegetic.js';
+import { ReflectorSystem } from './three/reflector.js';
 import { Anim3DSystem } from './three/anim3d.js';
 import { PathSystem } from './three/path.js';
 import { pivotMatrix, applyPivot } from './three/pivot.js';
@@ -96,6 +97,7 @@ export class ThreeRenderer implements RendererBackend {
   private readonly dissolve = new DissolveSystem(); // 溶解消散（Material3D.dissolve·shader 溶解 + 发光前沿·render-only·REQ-3D-DISSOLVE）
   private readonly billboards = new BillboardSystem(); // 世界空间贴图广告牌（Billboard3D·朝相机·深度排序·render-only）
   private readonly diegetic = new DiegeticLayer(); // UI 贴进 3D 空间（Diegetic3D·CSS3DObject 真 DOM 面片·render-only）
+  private readonly reflectors = new ReflectorSystem(); // 平面反射镜面（Reflector3D·RTT 倒影·render-only·REQ-3D-PLANAR-REFLECT）
   private readonly anim3d = new Anim3DSystem(); // 程序化位姿动画（Anim3D·spin/bob·render-only·把 title 骰自转等从游戏层手写下沉成数据）
   private readonly paths = new PathSystem(); // 路径跟随（Path3D·沿控制点走·移动平台/巡逻/dolly·render-only）
   private readonly worldUi = new WorldUiLayer(); // 世界空间 UI 头顶飘字（TA Phase 3·render-only·走主程 UI 库）
@@ -270,6 +272,7 @@ export class ThreeRenderer implements RendererBackend {
     const decalLive = this.decals.sync(this.scene, world, (k) => this.pbrMapTexture(k, true)); // tex 路取真图（sRGB·同 billboard 先例）
     // 世界空间广告牌（Billboard3D·render-only·Sprite 自朝相机）：管理精灵 + 定位 + 取贴图（sRGB）。有变化 >0 → 折进 renderSig。
     const billboardLive = this.billboards.sync(this.scene, world, (k) => this.pbrMapTexture(k, true));
+    this.reflectors.sync(this.scene, world, Math.min(globalThis.devicePixelRatio ?? 1, this.dprCap)); // 平面反射镜面（倒影随场景/相机变自动更新·内容变进 renderSig 脏帧）
     // 程序化位姿动画（Anim3D·render-only）：据壁钟改 Transform3D 分量（spin/bob）——须在 collect 前（渲染读更新后的位姿）。
     const animPoseLive = this.anim3d.sync(world, performance.now());
     // 路径跟随（Path3D·render-only）：据壁钟沿控制点写 Transform3D 位（移动平台/巡逻/dolly）——须在 collect 前。
@@ -413,7 +416,7 @@ export class ThreeRenderer implements RendererBackend {
     const camTweenActive = this.cameras.tickTween(cam3d?.tween, performance.now());
     // 命中闪白：据 Post3D.flash.trigger 算衰减量——>0 时折进 renderSig 持续重渲直至归零。
     const flashAmt = this.flash.update(post?.flash, performance.now());
-    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${this.debugIndices ? 'ix' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${camTweenActive ? this.frame : 'ct0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${billboardLive > 0 ? this.frame : 'bb0'}|${uvLive > 0 ? this.frame : 'uv0'}|${dissolveLive > 0 ? this.frame : 'ds0'}|${this.lines.contentSig(world)}|${this.diegetic.contentSig(world)}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}|ag${this.assetReady.gen}`;
+    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${this.debugIndices ? 'ix' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${camTweenActive ? this.frame : 'ct0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${billboardLive > 0 ? this.frame : 'bb0'}|${uvLive > 0 ? this.frame : 'uv0'}|${dissolveLive > 0 ? this.frame : 'ds0'}|${this.lines.contentSig(world)}|${this.diegetic.contentSig(world)}|${this.reflectors.contentSig(world)}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}|ag${this.assetReady.gen}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -589,6 +592,7 @@ export class ThreeRenderer implements RendererBackend {
     this.billboards.dispose(this.scene);
     this.uvAnim.dispose();
     this.dissolve.dispose();
+    this.reflectors.dispose(this.scene);
     this.anim3d.dispose();
     this.paths.dispose();
     this.camShake.dispose();

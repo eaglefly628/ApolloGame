@@ -83,6 +83,20 @@ export interface Glow3D extends Component {
   opacity?: number; // 基础不透明度（缺省 0.6·可被脉动改·此处静态基值）
 }
 
+// ── Reflector3D（render-only·平面反射镜面·REQ-3D-PLANAR-REFLECT）─────────────────────────────────
+// 一块**镜面平面**：渲染器每帧把场景从镜像相机渲进一张贴图 → 平面上照出真实倒影（three.Reflector·RTT）。
+// 比 SSR 干净（无屏幕空间噪声/掠射漏光）·适合**平地板/水面/冰面/casino 镜面大堂**。位姿走同实体 Transform3D。
+// 纯表现（NON_DETERMINISTIC）：绝不进 sim/hash。挂 Reflector3D + Transform3D 即成镜面（不需 Mesh3D）。
+export interface Reflector3D extends Component {
+  readonly type: 'Reflector3D';
+  width: number;   // 镜面宽（世界单位）
+  height: number;  // 镜面高/进深（floor 时=Z 向进深·世界单位）
+  color?: number;  // 反射染色 0xRRGGBB（缺省冷银 0x8892a0·casino 可染金/蓝·blendOverlay 叠加）
+  opacity?: number;// 反射不透明度 0..1（缺省 1=纯镜；<1 让下方底色/平台透出=半反射湿地板）
+  orientation?: 'floor' | 'wall'; // floor=水平镜(法线+Y·缺省)·wall=竖直镜(法线+Z·由 Transform3D.rotY 转向)
+  quality?: number; // 反射贴图边长（像素·缺省 512·越大越清越贵）
+}
+
 // ── Model3D（render-only，导入式 3D 模型 · glTF）──────────────────────────────────────────────
 // Mesh3D 的 box/plane 原语表达不了圆润模型（蘑菇人、道具、生物…）→ 用真模型：渲染器据 modelKey 从
 // AssetManager 取 glTF 字节、解析成 three 场景显示。位姿走同实体 Transform3D（盒庭真三维）或 2D Transform

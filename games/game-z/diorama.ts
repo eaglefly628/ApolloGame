@@ -236,6 +236,12 @@ function platformThree(): Record<string, Ent> {
     'p3-decal-rune': { Transform3D: { x: X - 8, y: 0, z: 10 }, Decal3D: { tex: TEX_RUNE_EMISSIVE, radius: 7, opacity: 0.95 }, WorldUI3D: { text: '贴图贴花 Decal3D.tex（符文法阵）', offsetY: 2, size: 'sm', color: 'jade' } },
     // ② 下注线样式（长条·非等比 width×height + rotation 朝向·= game-c 下注线要的形态；此处用木纹图当占位美术）。
     'p3-decal-line': { Transform3D: { x: X + 16, y: 0, z: 10 }, Decal3D: { tex: TEX_PLANK_ALBEDO, width: 24, height: 3.5, rotation: 0.4, opacity: 0.9 }, WorldUI3D: { text: '下注线样式（长条+朝向）', offsetY: 2, size: 'sm', color: 'gold' } },
+    // 平面反射（REQ-3D-PLANAR-REFLECT·Reflector3D）：一块**镜面地板**照出上方物件真倒影（three.Reflector·RTT·
+    //   比 SSR 干净）。前方悬三颗彩色/自发光球 → 镜中见倒影。冷银微染 + opacity 0.9（半反射湿地板·平台微透）。
+    'p3-refl': { Transform3D: { x: X, y: 0.2, z: 34 }, Reflector3D: { width: 46, height: 26, color: 0x9fb2c4, opacity: 0.9, quality: 512 }, WorldUI3D: { text: '平面反射 Reflector3D（镜面地板·真倒影）', offsetY: 0, size: 'sm', color: 'jade' } },
+    'p3-refl-a': { Transform3D: { x: X - 14, y: 6, z: 34 }, Mesh3D: { shape: 'sphere', width: 6, height: 6, frontTint: 0xffffff }, Material3D: { preset: 'plastic', color: 0xef4060, clearcoat: 1 }, Anim3D: { channels: [{ kind: 'osc', field: 'y', wave: 'sine', amp: 1.4, freq: 1.1 }] } },
+    'p3-refl-b': { Transform3D: { x: X, y: 8, z: 34 }, Mesh3D: { shape: 'sphere', width: 5.5, height: 5.5, frontTint: 0xffffff }, Material3D: { preset: 'emissive', color: 0x101820, emissive: 0x30e0ff, emissiveIntensity: 2.2 }, Glow3D: { color: 0x30e0ff, scale: 12, opacity: 0.5 }, Anim3D: { channels: [{ kind: 'osc', field: 'y', wave: 'sine', amp: 1.6, freq: 0.9 }] } },
+    'p3-refl-c': { Transform3D: { x: X + 14, y: 6.5, z: 34 }, Mesh3D: { shape: 'torus', width: 7, height: 7, frontTint: 0xffd991, tube: 0.4, rotX: 1.1 }, Material3D: { preset: 'gold' }, Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 1.3 }] } },
   };
 }
 
