@@ -211,7 +211,14 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list, 
                 if session is not None:
                     session['id'] = None
                 return _claude_code_request(api_key, model, system, messages, effort, session)
-            if 'limit' in low or 'rate' in low or 'usage' in low or '额度' in tail:
+            # 额度判定必须认**真信号**，不能认裸词（owner 2026-08-07 撞出）：
+            # 旧写法 `'usage' in low or 'rate' in low` 会被 Claude Code 流式输出里的 usage JSON 块
+            # （"cache_read_input_tokens":0,"output_tokens":0…）无条件命中 —— 那玩意儿几乎每次都在输出末尾，
+            # 于是**不论真实死因是什么都被贴成「额度满」**，把真因盖死（owner 明明没用过额度却收到此报错）。
+            # 现在只认限流的确凿形态；认不出就落到下面的通用分支，**原样把 tail 摆出来**，绝不假装知道原因。
+            RATE_SIGNS = ('rate limit', 'rate_limit', 'usage limit', 'quota', 'too many requests',
+                          '429', 'insufficient_quota', 'overloaded_error')
+            if any(k in low for k in RATE_SIGNS) or '额度' in tail:
                 return {'success': False, 'error': f'订阅额度暂满或受限（额度窗恢复后重试）: {tail[:200]}'}
             return {'success': False, 'error': f'Claude Code 退出码 {proc.returncode}: {tail[:300]}'}
         text = result_text if isinstance(result_text, str) else (''.join(text_acc) or None)
