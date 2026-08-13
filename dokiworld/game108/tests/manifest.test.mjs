@@ -55,11 +55,53 @@ test("manifest：entry 有源（src/index.html 存在）", async () => {
   await readFile(resolve(root, "src", "index.html"), "utf8");
 });
 
-test("manifest：extensions 声明与接线代码一致（声明 [] ⇔ createAppClient 不传 extensions）", async () => {
+test("manifest：extensions 声明与接线代码一致（character+storage 三处齐·规范 §7 五步的前两步）", async () => {
   const manifest = await load("manifest.json");
-  assert.deepEqual(manifest.runtime.extensions, []);
+  assert.deepEqual([...manifest.runtime.extensions].sort(), ["character", "storage"]);
   const main = await readFile(resolve(root, "src", "main.ts"), "utf8");
-  assert.ok(!/createAppClient[^;]*extensions\s*:/s.test(main), "manifest 声明零 extension，接线层不得创建任何 extension");
+  // 锚点①：createAppClient 声明同一组名字
+  assert.ok(/createAppClient[^;]*extensions:\s*\['character',\s*'storage'\]/s.test(main),
+    "createAppClient 必须声明 extensions: ['character', 'storage']（与 manifest 一致）");
+  // 锚点②：两个模块各真建了一个 Client extension（§7 第 3 步）
+  assert.ok(main.includes("createStorageClientExtension(app"), "须真建 storage Client extension");
+  assert.ok(main.includes("createCharacterClientExtension(app"), "须真建 character Client extension");
+  // 锚点③：没建声明之外的模块（dialogue/media/speech/persona/apps/episode 都判了不适用）
+  for (const absent of ["Dialogue", "Media", "Speech", "Persona", "Apps", "Episode"]) {
+    assert.ok(!main.includes(`create${absent}ClientExtension`), `未声明的 ${absent} 模块不得创建 extension`);
+  }
+  // 锚点④：§7 第 5 步——退出决定里释放两个 extension
+  assert.ok(/storage\.dispose\(\)/.test(main) && /character\.dispose\(\)/.test(main),
+    "onExitDecision 须释放 storage/character extension（§7 第 5 步）");
+});
+
+test("manifest：cover 必填、包内相对路径、真图在源里（§3/§5·禁灰块占位）", async () => {
+  const manifest = await load("manifest.json");
+  assert.equal(manifest.cover, "assets/cover.webp");
+  const cover = await readFile(resolve(root, "src", manifest.cover));
+  // 锚点：RIFF....WEBP 魔数——防「改了后缀的灰块 PNG」这类占位混包
+  assert.equal(cover.subarray(0, 4).toString("ascii"), "RIFF", "cover 必须是真 WebP（RIFF 头）");
+  assert.equal(cover.subarray(8, 12).toString("ascii"), "WEBP", "cover 必须是真 WebP（WEBP 标）");
+  assert.ok(cover.length > 4096, `cover 疑似占位图（${cover.length} 字节太小——真对局屏截图不可能这么小）`);
+});
+
+test("manifest：缺 cover / cover 逃包被校验器拒绝（§5 点名校验·各红一次）", async () => {
+  const manifest = await load("manifest.json");
+  const pkg = await load("package.json");
+  const noCover = { ...manifest };
+  delete noCover.cover;
+  assert.throws(() => validateManifest(noCover, pkg), /cover/);
+  assert.throws(() => validateManifest({ ...manifest, cover: "/etc/cover.webp" }, pkg), /cover/);
+  assert.throws(() => validateManifest({ ...manifest, cover: "../cover.webp" }, pkg), /cover/);
+});
+
+test("manifest：extensions 声明漂移被校验器拒绝（声明≠真实创建是规范红线）", async () => {
+  const manifest = await load("manifest.json");
+  const pkg = await load("package.json");
+  const drifted = structuredClone(manifest);
+  drifted.runtime.extensions = ["character", "storage", "progress"];   // 多声明（match3 踩过的坑）
+  assert.throws(() => validateManifest(drifted, pkg), /extensions/);
+  drifted.runtime.extensions = ["storage"];                            // 少声明
+  assert.throws(() => validateManifest(drifted, pkg), /extensions/);
 });
 
 test("manifest：坏输入被校验器拒绝（id 错 / 缺 promptHint 各红一次）", async () => {

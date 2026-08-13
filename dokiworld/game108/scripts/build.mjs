@@ -3,7 +3,8 @@
 // 打包器 = 仓根的 vite + engine-aliases（借 vite.config.cartridge.ts 先例的别名单一真相，
 // `@zerocraft/engine/*` → 仓内 src/*；SDK 从本 App 的 node_modules 解析并打进 bundle）。
 import { access, copyFile, cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { createHash } from "node:crypto";
+import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "vite";
 import { engineAliases } from "../../../scripts/engine-aliases.mjs";
@@ -69,7 +70,35 @@ for (const file of await readdir(resolve(dist, "assets"))) {
   await writeFile(path, code);
 }
 
-// 规范 §9 收尾校验：dist/manifest.json.entry 必须真实存在。
-const { entry } = JSON.parse(await readFile(resolve(dist, "manifest.json"), "utf8"));
-await access(resolve(dist, entry));
+// ── cover 进包（规范 §3/§5：cover 是运行资源，必须位于 App 包内）─────────────────
+// cover 是**未被代码引用的静态资源**——vite 只带被 import/引用的资产，不显式复制它就会
+// 「manifest 指着 assets/cover.webp、包里却没有」（§5 校验点名的那类洞）。
+const { cover } = JSON.parse(await readFile(resolve(appRoot, "manifest.json"), "utf8"));
+await mkdir(dirname(resolve(dist, cover)), { recursive: true });
+await copyFile(resolve(appRoot, "src", cover), resolve(dist, cover));
+
+// 规范 §9 收尾校验：dist/manifest.json 的 entry 与 cover 必须真实存在。
+const distManifest = JSON.parse(await readFile(resolve(dist, "manifest.json"), "utf8"));
+await access(resolve(dist, distManifest.entry));
+await access(resolve(dist, distManifest.cover));
+
+// ── SHA256SUMS.txt（match3 同款完整性清单·大写十六进制 + 两空格 + 包内相对路径）────
+// 收尾最后一步生成：覆盖 dist 里**除它自己外的全部文件**，消费方逐行核对即可发现缺件/被改。
+const listFiles = async (dir) => {
+  const out = [];
+  for (const e of await readdir(dir, { withFileTypes: true })) {
+    const p = resolve(dir, e.name);
+    if (e.isDirectory()) out.push(...await listFiles(p));
+    else out.push(p);
+  }
+  return out;
+};
+const sums = [];
+for (const file of (await listFiles(dist)).sort()) {
+  const rel = relative(dist, file).replaceAll("\\", "/");
+  if (rel === "SHA256SUMS.txt") continue;
+  const digest = createHash("sha256").update(await readFile(file)).digest("hex").toUpperCase();
+  sums.push(`${digest}  ${rel}`);
+}
+await writeFile(resolve(dist, "SHA256SUMS.txt"), `${sums.join("\n")}\n`, "utf8");
 console.log(`Built game108 DokiWorld app to ${dist}`);

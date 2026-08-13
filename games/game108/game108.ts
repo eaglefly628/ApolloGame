@@ -8,6 +8,7 @@ import { loadGameArtOverrides } from '@zerocraft/engine/assets/index.js';
 import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { QueuedInputSource } from '@zerocraft/engine/net/index.js';
 import type { Resource, GameFlow, StringVar } from '@zerocraft/engine/engine/protocol/components.js';
+import type { WorldSnapshot, EntityId } from '@zerocraft/engine/engine/core/types.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildDuelScreen, emptyView, loadPct, type DuelView, type Phase } from './duel-screen.js';
 import { DUEL_THEME, VIEW_W, VIEW_H, HANDS, SIDES, HP_MAX, HP_RES, chargeEntity, lastThrowVar, PHASE_TICKS, TPS, type Hand, type Side } from './theme.js';
@@ -54,6 +55,26 @@ type WorldObserver = (world: Engine['world']) => void;
 let worldObserver: WorldObserver | undefined;
 export function setWorldObserver(fn?: WorldObserver): void { worldObserver = fn; }
 
+/**
+ * 世界恢复口（DokiWorld 挂起/恢复·规范 §6 checkpoint）—— `setWorldObserver` 的孪生缝：
+ * 装载前 `setWorldRestore({snapshot, order})`，下一次 `mount()` 起局时把快照灌回世界
+ * （`world.restore()`——引擎自己的读档原语，system/蓝图不动，只换实体状态），并跳过
+ * 「点开始」闸门直接续局（玩家早开过局了，挂起恢复不该再问一次）。
+ *
+ * **纯接线零规则**：快照来自世界自身 `snapshot()/snapshotOrder()`，本缝不解释内容、
+ * 不挑字段——挑字段就是把「哪些状态算局面」这条规则写进了宿主层。**只吃一次**
+ * （`consumeWorldRestore` 拿走即清）：「再来一局」仍走全新蓝图，不会把旧快照又灌回来。
+ */
+export interface WorldRestorePayload { snapshot: WorldSnapshot; order?: readonly EntityId[] }
+let pendingRestore: WorldRestorePayload | undefined;
+export function setWorldRestore(r?: WorldRestorePayload): void { pendingRestore = r; }
+/** mount 起局时消费（拿走即清·独立导出为的是不起 DOM 也能点名测试这条一次性语义）。 */
+export function consumeWorldRestore(): WorldRestorePayload | undefined {
+  const r = pendingRestore;
+  pendingRestore = undefined;
+  return r;
+}
+
 export function mount(container: HTMLElement): () => void {
   const card = currentCard;
   const { scene, teardown } = mountHost(container, {
@@ -91,13 +112,17 @@ export function mount(container: HTMLElement): () => void {
     return e;
   };
   let engine = boot();
+  // 【DokiWorld 挂起/恢复】装载前塞了快照 → 灌回世界续局（只影响首局；「再来一局」走全新蓝图）。
+  const resume = consumeWorldRestore();
+  if (resume) engine.world.restore(resume.snapshot, resume.order);
   let lang: Lang = loadLang();
   let menuOpen = false;
   let helpOpen = false;
   // owner 2026-08-08：「我还没有点开始，它就直接三个牌飞上来了」——**第一次进来必须先有开始键**。
   // 做法是**根本不启动引擎**（不是暂停）：玩家点下去看到的是完完整整的第一拍，
   // 而不是已经播过一半的 T1。顺带它还是整局第一个真实手势，BGM 从这里起（浏览器自动播放策略）。
-  let started = false;
+  // 挂起恢复（resume）例外：玩家早点过开始了，续局直接开跑（见文件头 setWorldRestore）。
+  let started = !!resume;
   /** 【S6】skinKey → URL（异步到货·空表 = 全部回退程序化底）。 */
   let skins: Record<string, string> = {};
   // 音频门面（声音=数据·端口在引擎）。无 AudioContext（探针/测试）→ 端口内建静默 no-op。
@@ -428,10 +453,23 @@ export function mount(container: HTMLElement): () => void {
   // ⇒ 点了没反应，而且**不报错**（2026-08-07 点击探针实测抓到，单测与渲染探针都照绿）。
   // 另有固定步长时钟（真实流逝时间 → 整数模拟步），自搓的圈还会让相位时长随帧率漂。
   engine.subscribe(redraw);
-  // **不 start()**：等玩家点「开始」（见 startGame）。先画一帧把启动屏摆出来，
-  // 再起那圈只服务加载条的 rAF（走完自停·见 tickBoot）。
-  redraw();
-  bootRaf = requestAnimationFrame(tickBoot);
+  if (resume) {
+    // 【DokiWorld 挂起/恢复】表现层参照系对齐恢复后的世界（render-only·零规则）：
+    // 这些 prev* 缺省按「开局满血零蓄力」初始化，不对齐的话恢复后第一帧会把
+    // 「恢复前后差值」误判成刚发生的事——假挨打横幅 + 假音效 + 亮上一回合的手。
+    prevHp = { p1: num('p1'), p2: num('p2') };
+    prevCharge = HANDS.reduce((n, h) => n + num(chargeEntity('p1', h)), 0);
+    prevChargeByHand = Object.fromEntries(HANDS.map((h) => [h, num(chargeEntity('p1', h))])) as Record<Hand, number>;
+    prevFoeFull = HANDS.some((h) => num(chargeEntity('p2', h)) >= 3);
+    roundAtClash = num('round') || 1;   // 恢复帧不算「本回合已结算」——不亮存档前那回合的手/横幅
+    engine.start();                     // 续局直接开跑（闸门语义见 started 初始化处）
+    redraw();
+  } else {
+    // **不 start()**：等玩家点「开始」（见 startGame）。先画一帧把启动屏摆出来，
+    // 再起那圈只服务加载条的 rAF（走完自停·见 tickBoot）。
+    redraw();
+    bootRaf = requestAnimationFrame(tickBoot);
+  }
 
   return () => { stopBoot(); engine.stop(); audio.stop(); voice.dispose(); ui(); teardown(); };
 }

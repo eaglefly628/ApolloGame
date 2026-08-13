@@ -1,6 +1,6 @@
 // dokiworld/game108 · manifest 生成器（规范 §5：读 package.json → 校验 → 回写源 manifest；
 // build 再把同一份复制进 dist——**不手编 dist**）。
-// 校验清单照规范 §5 逐条：id 规则/目录一致、semver 与版本同步、entry 在包内、
+// 校验清单照规范 §5 逐条：id 规则/目录一致、semver 与版本同步、entry/cover 在包内、
 // 双语字段齐、runtime contract 齐、Game 双语 promptHint、extensions 与代码一致（tests 里核）。
 import { readFile, writeFile, access } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
@@ -28,6 +28,9 @@ export function validateManifest(manifest, packageJson) {
   if (typeof manifest.capability !== "string" || manifest.capability.length === 0) fail("capability 必填");
   if (!semverPattern.test(packageJson.version)) fail("package.json version 必须是 semver");
   if (manifest.entry !== "index.html") fail("entry 必须是 index.html");
+  // 规范 §3/§5：cover 必填且必须是包内相对路径（真图存在性在 generateManifest 里查盘）。
+  if (typeof manifest.cover !== "string" || manifest.cover.length === 0) fail("cover 必填（规范 §3）");
+  if (manifest.cover.startsWith("/") || manifest.cover.includes("..")) fail("cover 必须是包内相对路径（不得逃出 App 包）");
   if (!Number.isInteger(manifest.launchRequirements?.minPlayers) || manifest.launchRequirements.minPlayers < 1) {
     fail("launchRequirements.minPlayers 必须是 >=1 的整数");
   }
@@ -50,6 +53,12 @@ export function validateManifest(manifest, packageJson) {
     fail("runtime.outputs 必须声明 doki.game.result/1");
   }
   if (!Array.isArray(rt?.extensions)) fail("runtime.extensions 必须是数组（只声明真用到的）");
+  // 规范 §5/§7：声明的 extension 必须与业务代码真实创建的 SDK extension 一致。
+  // 本 App 真实创建的是 character + storage 两个 Client extension（main.ts），一个不多一个不少；
+  // 与 createAppClient({extensions}) 的一致性由 tests/manifest.test.mjs 对源码锚点核。
+  if (JSON.stringify([...rt.extensions].sort()) !== JSON.stringify(["character", "storage"])) {
+    fail(`runtime.extensions 必须恰为 ["character","storage"]（与 main.ts 真实创建的一致），实为 ${JSON.stringify(rt.extensions)}`);
+  }
 }
 
 export async function generateManifest(output = manifestPath) {
@@ -58,8 +67,10 @@ export async function generateManifest(output = manifestPath) {
     readFile(packagePath, "utf8").then(JSON.parse),
   ]);
   validateManifest(manifest, packageJson);
-  // entry 必须真的在包内（规范 §5：entry/资源位于 App 包内）。
+  // entry/cover 必须真的在包内（规范 §5：entry、cover 和所有运行资源位于 App 包内）。
   await access(resolve(root, "src", "index.html")).catch(() => fail("src/index.html 不存在（entry 无源）"));
+  await access(resolve(root, "src", manifest.cover)).catch(() =>
+    fail(`src/${manifest.cover} 不存在（cover 无真图——灰块占位是美术线红线，用 scripts/capture-cover.mjs 截真对局屏生成）`));
   manifest.version = packageJson.version;   // package.json 是版本唯一事实来源
   await writeFile(output, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
   return output;

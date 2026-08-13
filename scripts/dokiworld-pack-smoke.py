@@ -127,6 +127,25 @@ if job and job.get('done') and not job.get('error'):
             mf = json.loads(z.read('manifest.json'))
             check('manifest.id = game108 · entry 在包内', mf.get('id') == 'game108'
                   and mf.get('entry') in names, f'id={mf.get("id")} entry={mf.get("entry")}')
+            # ── 规范满配二期（cover + SHA256SUMS·owner 2026-08-13「文档里的东西都做到」）────
+            check('manifest.cover 声明且真图在包内', bool(mf.get('cover')) and mf.get('cover') in names,
+                  f'cover={mf.get("cover")}')
+            if mf.get('cover') in names:
+                cover = z.read(mf['cover'])
+                check('cover 是真 WebP 且非占位（RIFF/WEBP 魔数 + >4KB）',
+                      cover[:4] == b'RIFF' and cover[8:12] == b'WEBP' and len(cover) > 4096,
+                      f'head={cover[:4]!r} size={len(cover)}')
+            check('zip 含 SHA256SUMS.txt（完整性清单·match3 同款）', 'SHA256SUMS.txt' in names)
+            if 'SHA256SUMS.txt' in names:
+                import hashlib
+                sums = dict(line.split('  ', 1)[::-1] for line in
+                            z.read('SHA256SUMS.txt').decode('utf-8').strip().splitlines())
+                covered = [n for n in names if n != 'SHA256SUMS.txt']
+                check('SHA256SUMS 覆盖包内全部文件（除清单自身）', set(sums) == set(covered),
+                      f'缺={sorted(set(covered) - set(sums))[:3]} 多={sorted(set(sums) - set(covered))[:3]}')
+                mf_hash = hashlib.sha256(z.read('manifest.json')).hexdigest().upper()
+                check('SHA256SUMS 里 manifest.json 的哈希与实物一致（清单不是装饰）',
+                      sums.get('manifest.json') == mf_hash, f'{sums.get("manifest.json")} vs {mf_hash}')
 
 print(f'\n[smoke] PASS={PASS}  FAIL={FAIL}')
 sys.exit(1 if FAIL else 0)

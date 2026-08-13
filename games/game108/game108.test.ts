@@ -1031,3 +1031,37 @@ describe('game108 · v3 节奏（【R-108-01/02/04/05/10】）', () => {
     }
   });
 });
+
+// ── DokiWorld 挂起/恢复接缝（setWorldRestore·规范 §6 checkpoint）────────────────
+// 缝本身零规则：快照进、快照出。这里钉死两条会静默坏掉的性质：
+//   ① 一次性语义（不清会把旧快照灌进「再来一局」的新局）；
+//   ② 快照跨引擎 restore 后世界指纹一致（确定性续局的前提——engine 的 hash 与 lockstep 同源）。
+import { setWorldRestore, consumeWorldRestore } from './game108.js';
+
+describe('game108 · DokiWorld 挂起/恢复接缝（setWorldRestore）', () => {
+  it('一次性语义：set 后第一次 consume 拿到原引用，第二次必须是 undefined', () => {
+    const payload = { snapshot: { flow: {} }, order: ['flow'] } as never;
+    setWorldRestore(payload);
+    expect(consumeWorldRestore()).toBe(payload);          // 锚点：同一引用，不是拷贝
+    expect(consumeWorldRestore()).toBeUndefined();        // 锚点：拿走即清
+  });
+
+  it('中盘快照跨引擎 restore → hash 逐字节一致，且续跑 60 tick 仍一致（确定性续局）', () => {
+    const a = fresh();
+    for (let i = 0; i < 150; i++) a.world.tick();         // 跑进 T1 中段（相位时钟已走）
+    const snap = a.world.snapshot();
+    const order = a.world.snapshotOrder();
+    const b = fresh();                                    // 同蓝图新引擎（mount 的 boot 同款路径）
+    b.world.restore(snap, order);
+    expect(b.hash()).toBe(a.hash());                      // 锚点：恢复瞬间指纹一致
+    for (let i = 0; i < 60; i++) { a.world.tick(); b.world.tick(); }
+    expect(b.hash()).toBe(a.hash());                      // 锚点：续跑不分叉（无输入路径）
+    expect(phase(b)).toBe(phase(a));
+  });
+
+  it('set(undefined) = 显式清空（宿主取消恢复不留脏快照）', () => {
+    setWorldRestore({ snapshot: {}, order: [] });
+    setWorldRestore(undefined);
+    expect(consumeWorldRestore()).toBeUndefined();
+  });
+});
