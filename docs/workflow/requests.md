@@ -159,8 +159,7 @@ UI 层那个同名件只是个四预设的门面。
 > **病**（PST 实证复现）：`dialectPrompt` 主体优先级 `row.prompt` > `query+desc`，而 `resetRow` 只改 `row.query` 不动 `row.prompt`，面板又预填 `r.prompt || r.query`——人改了字、存进 query、生成仍用旧 prompt = **「改了没反应」**（owner 最恨的一类）。
 > **做法（设计时并办）**：① resetRow 语义修正——用户编辑文本应成为生效主体（动 prompt 还是清 prompt 落回 query+desc·须先定 query 的身份职责边界——`rowIdentity` 三级回退里 query 是末级身份键，改身份≠改提示词要拆开）；② 顺办 owner 的「提示词精简」（subject 从 query+desc 收敛）。**边界**：`scripts/art-replace.mjs`（resetRow/dialectPrompt）+ `ArtLedgerPanel.tsx` 预填口径 + 点名测试。
 
-### REQ-DOKIPACK-DokiWorld 出包线 · game108 首包 + 出包能力常备化 · [2026-08-12] · **owner 令（材料已交付：SDK 规范+样例仓·「以后 ZeroCraft 产物都要往这里打包」）** · status: **in-progress（已派工·Lead 终审）** · 优先级: P1（Doki 对接关键路径·剧情线悬置段的宿主材料随之到位） · 类型: 出口产线
-> **手册=`docs/playbooks/dokiworld-pack.md`·规范快照=`docs/design/dokiworld/app-sdk-app-development.zh-CN.md`·样例仓 raptoravis/dokiworld-apps（匿名克隆在 /workspace）**。首件=game108 打包成 Game App（`dokiworld/game108/`·manifest 生成器+SDK 薄接线+终局→GameResult 纯函数映射+自包含 dist+点名测试）。**薄接线零规则**红线同 acceptance-adapter。后续：约会线/其它出口游戏照同一形态；World 形态等首个剧情向产物。**注**：REQ-DIALOGUE 的 DokiWorld 悬置段材料（宿主接口文档）已随本单到位——数值双向契约待真卡 schema 再启。
+<!-- REQ-DOKIPACK-DokiWorld 出包线（P1·owner 2026-08-12 令「以后产物都往这里打包」）首件已完结出池：手册 docs/playbooks/dokiworld-pack.md + 规范快照 docs/design/dokiworld/ 在档=常备产线；game108 首包 ✅ Lead 终审 PASS——dokiworld/game108/（manifest 生成器§5 逐条校验·SDK 薄接线零规则·toGameResult 纯函数=血差线性投影与验收剧本同口径·12 测独立复跑绿·施工方 outcome 反转验红+Lead 钳位破坏恰中边界测·无宿主等待屏与 createAppHost 真握手挂载双目击截图在档）。game108 加 setWorldObserver 只读观察口（照 setCard 形态·render-only）。**下一步触发者=owner**：整目录复制/PR 到 dokiworld-apps 仓 + 真宿主跑一遍（§12 末项·本仓无那边推送权）。**记债**：引擎两条站点绝对资产约定（/games/<slug>/art·/ui-fonts）在 iframe 子路径下逃包，现由打包层改写+复制资产兜住——「资产 URL 基准可配置」是引擎缺口候选,下个游戏出包再撞就立单下沉。后续游戏照手册,World 形态等首个剧情向产物。 -->
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
