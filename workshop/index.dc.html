@@ -1348,7 +1348,7 @@
           <sc-if value="{{ isPublish }}" hint-placeholder-val="{{ false }}">
             <div style="max-width:840px">
               <div style="display:inline-flex;align-items:center;gap:8px;background:#37b6ef;border:3px solid #3a2312;border-radius:12px;padding:6px 14px;box-shadow:0 4px 0 #1f86bd;margin-bottom:18px">
-                <span style="font-family:'Noto Sans SC';font-weight:700;color:#fff5db;font-size:13px">发布 = 每个游戏选平台「打包」→ 就绪后「下载」可运行产物（网页版=双击即玩·Mac=.dmg）</span>
+                <span style="font-family:'Noto Sans SC';font-weight:700;color:#fff5db;font-size:13px">发布 = 每个游戏选平台「打包」→ 就绪后「下载」可运行产物（网页版=双击即玩·Mac=.dmg·DokiWorld=App 自包含 .zip）</span>
               </div>
               <div style="display:flex;flex-direction:column;gap:14px">
                 <sc-for list="{{ publishRows }}" as="p" hint-placeholder-count="3">
@@ -1500,6 +1500,7 @@ class Component extends DCLogic {
     // 我的游戏库·视图切换 + 状态筛选（Feature A·来源筛选复用既有 gameFilter）
     gameView: 'grid', gameStatus: 'all',
     liveGames: null, carts: null, version: null, settings: null,
+    dokiApps: null,           // DokiWorld App 出包线已接入 slug（GET /api/package/dokiworld-apps·null=还没拉到）
     coins: 5000, gems: 340,   // 虚拟金币经济：初始 5000·生成按 token 扣（1万 tok=100 币）·点金币充 +1000
     trayOpen: false, trayData: null,   // 任务托盘（REQ-ARTPAR 第四步）：trayData=GET /api/jobs 归一清单+计数
     pkgJobs: {},              // 打包任务态：{ 'slug:platform': {status:idle|building|ready|error, id, name, error} }
@@ -1594,6 +1595,10 @@ class Component extends DCLogic {
     fetch('/api/games').then(r => r.json())
       .then(d => this.setState({ liveGames: (d && d.games) || [] }))
       .catch(() => this.setState({ liveGames: [] }));
+    // 发布屏 DokiWorld 列可用性（dokiworld/<slug>/ 存在=已接入·未接入的格明示指引不隐藏）
+    fetch('/api/package/dokiworld-apps').then(r => r.json())
+      .then(d => this.setState({ dokiApps: (d && d.success && d.apps) || [] }))
+      .catch(() => this.setState({ dokiApps: [] }));
   }
   componentDidMount() {
     // ⛶ 专注模式 Esc 复原（owner 2026-08-11）。真全屏时 Esc 先退真全屏（浏览器原生行为），不连带退专注。
@@ -3461,23 +3466,32 @@ class Component extends DCLogic {
       { key: 'react', label: '⚛️ React 独立工程 · .zip（内嵌网页/React）' },
       { key: 'doki', label: '🌸 DokiWorld 卡带 · .zip（源码工程）' },
       { key: 'doki-dist', label: '🌸 DokiWorld 部署产物 · dist.zip（构建好·独立卡带）' },
+      { key: 'dokiworld', label: '🌸 DokiWorld App 包 · .zip（dokiworld/<slug>/ 出包线·npm build·dist 自包含）' },
     ];
     const pkgState = s.pkgJobs || {};
+    const dokiApps = Array.isArray(s.dokiApps) ? s.dokiApps : [];
     const mkPkgGame = (slug, cn, desc, icon) => ({
       cn, slug, icon: icon || '📦', desc: (desc || '').slice(0, 42) || slug,
       platforms: PKG_PLATFORMS.map(pl => {
         const jb = pkgState[slug + ':' + pl.key] || {};
         const st3 = jb.status || 'idle';
-        const stTxt = st3 === 'building' ? '⏳ 打包中…'
+        // DokiWorld App 线可用性=dokiworld/<slug>/ 已建包；未接入的格明示指引（不隐藏——让人知道有这条线）。
+        const dokiOff = pl.key === 'dokiworld' && dokiApps.indexOf(slug) < 0;
+        const stTxt = dokiOff ? '未接入 · 照 docs/playbooks/dokiworld-pack.md 建包'
+          : st3 === 'building' ? '⏳ 打包中…'
           : st3 === 'ready' ? ('✓ 就绪：' + (jb.name || '产物') + '（点「下载」）')
           : st3 === 'error' ? ('✕ ' + (jb.error || '失败'))
           : '未打包 · 点「打包」生成产物';
-        const stColor = st3 === 'error' ? '#a03222' : st3 === 'ready' ? '#4e8a24' : '#8a5a2c';
+        const stColor = st3 === 'error' && !dokiOff ? '#a03222' : st3 === 'ready' && !dokiOff ? '#4e8a24' : '#8a5a2c';
         return { label: pl.label, statusText: stTxt,
           statusStyle: "font-family:'Noto Sans SC',sans-serif;font-weight:600;font-size:10.5px;line-height:1.4;margin-top:2px;word-break:break-word;color:" + stColor,
-          pkgLabel: st3 === 'building' ? '打包中' : '打包',
-          pkg: () => this.startPackage(slug, pl.key),
-          dl: () => this.downloadPackage(slug, pl.key) };
+          pkgLabel: st3 === 'building' && !dokiOff ? '打包中' : '打包',
+          pkg: () => dokiOff
+            ? this.showToast('未接入 DokiWorld——照 docs/playbooks/dokiworld-pack.md 在 dokiworld/' + slug + '/ 建 App 工程')
+            : this.startPackage(slug, pl.key),
+          dl: () => dokiOff
+            ? this.showToast('未接入 DokiWorld——先照 docs/playbooks/dokiworld-pack.md 建包，再打包下载')
+            : this.downloadPackage(slug, pl.key) };
       })
     });
     const publishRows = allCarts.filter(cc => cc.valid)

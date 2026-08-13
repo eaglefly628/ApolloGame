@@ -31,7 +31,7 @@ from .jobs import handle_generate_job_get, handle_generate_job_start, handle_gen
 from .library_api import handle_library_stats, library_bench, library_create, library_delete, library_design_put, library_get, library_install_sample, library_put_manifest, library_rollback
 from .llm_log import handle_llm_logs
 from .llm_transport import get_available_providers
-from .packaging import _PKG_JOBS, _PKG_JOBS_LOCK, handle_package_job_get, handle_package_job_start
+from .packaging import _PKG_JOBS, _PKG_JOBS_LOCK, handle_dokiworld_apps, handle_package_job_get, handle_package_job_start
 from .paths import LIBRARY_DIR, _design_parts, _lib_parts, _valid_slug
 from .pipeline_board import handle_pipeline_board, handle_pipeline_concept, handle_pipeline_gate, handle_pipeline_orch_abort, handle_pipeline_orch_dispatch, handle_pipeline_orch_status, handle_pipeline_signoff, handle_pipeline_wizard_concept
 from .placeholder import handle_art_resolve
@@ -548,6 +548,8 @@ class APIHandler(BaseHTTPRequestHandler):
         elif path == '/api/package/job':
             qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
             data = handle_package_job_get((qs.get('id') or [''])[0])
+        elif path == '/api/package/dokiworld-apps':  # 发布屏 DokiWorld 列可用性（dokiworld/<slug>/ 存在=已接入）
+            data = handle_dokiworld_apps()
         elif path == '/api/agent/chats':
             qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
             data = handle_agent_chats_get((qs.get('slug') or [''])[0])

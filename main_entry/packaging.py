@@ -1,4 +1,5 @@
 """打包任务（发布屏·每游戏×平台）。"""
+import re
 import subprocess
 import sys
 import os
@@ -29,7 +30,12 @@ _PKG_PLATFORMS = {
     'react':    {'label': 'React 独立工程 .zip', 'ext': 'zip', 'needMac': False},
     'doki':     {'label': 'DokiWorld 卡带 .zip', 'ext': 'zip', 'needMac': False},
     'doki-dist': {'label': 'DokiWorld 部署产物 dist .zip', 'ext': 'zip', 'needMac': False},
+    'dokiworld': {'label': 'DokiWorld App 包 .zip', 'ext': 'zip', 'needMac': False},
 }
+# DokiWorld App 出包线（dokiworld/<slug>/ 独立 App 工程·手册 docs/playbooks/dokiworld-pack.md·
+# 首件 game108 = 912e03c0）。可用性判据 = 目录里有 package.json；没接入的游戏发布屏明示指引不隐藏。
+DOKIWORLD_DIR = ROOT / 'dokiworld'
+_DOKI_GUIDE = '未接入 DokiWorld——照 docs/playbooks/dokiworld-pack.md 在 dokiworld/<slug>/ 建 App 工程后此格即通'
 # 内置卡带工程游戏（有 games 入口·可打卡带/桌面）——与 scripts/dist.py 的 GAME_META 对齐。
 _PKG_BUILTIN_META = {
     'game-e': ('ApolloBalatroDeck', 'com.apollo.gamee'),
@@ -77,6 +83,14 @@ def _run_pkg_job(jid: str, slug: str, platform: str) -> None:
             _pkg_job_update(jid, step=1)
             with _PKG_BUILD_LOCK:  # 串行真实构建（vite 共享缓存）
                 out = _pkg_build_export_dist(slug)
+            _pkg_job_update(jid, done=True, artifact=str(out), artifactName=out.name); return
+        # dokiworld=DokiWorld App 包（dokiworld/<slug>/ 独立 App 工程线·REQ-DOKIPACK 首件形态）：
+        # app 目录内 npm ci（缺 node_modules 才装）→ npm run build（内部含 manifest 生成+校验）→
+        # dist/ 打成 <slug>-dokiworld.zip（zip 根=dist 内容·自包含）。
+        if platform == 'dokiworld':
+            _pkg_job_update(jid, step=1)
+            with _PKG_BUILD_LOCK:  # 串行真实构建（vite 共享缓存）
+                out = _pkg_build_dokiworld_app(slug)
             _pkg_job_update(jid, done=True, artifact=str(out), artifactName=out.name); return
         # 单文件/桌面/掌机：现管线只支持内置工程游戏。生成的库卡带 → 明确指路（不伪造产物）。
         is_builtin = slug in _PKG_BUILTIN_META
@@ -304,6 +318,72 @@ def _pkg_build_export_dist(slug: str):
         z.writestr('README.txt', _review_readme(slug))
     return out
 
+def list_dokiworld_apps() -> list:
+    """已接入 DokiWorld App 出包线的 slug（dokiworld/<slug>/package.json 存在=已接入·首件 game108）。"""
+    if not DOKIWORLD_DIR.is_dir():
+        return []
+    return sorted(p.name for p in DOKIWORLD_DIR.iterdir() if p.is_dir() and (p / 'package.json').is_file())
+
+def handle_dokiworld_apps() -> dict:
+    """GET /api/package/dokiworld-apps → 发布屏 DokiWorld 列可用性（未接入的格明示指引不隐藏）。"""
+    return {'success': True, 'apps': list_dokiworld_apps()}
+
+def _proc_tail(r, n: int = 6) -> str:
+    """子进程输出尾部（stderr 优先拼 stdout·压成一行）——失败原文带回 UI，不吞错。"""
+    txt = ((r.stderr or '') + '\n' + (r.stdout or '')).strip()
+    lines = [ln.strip() for ln in txt.splitlines() if ln.strip()]
+    return ' / '.join(lines[-n:])[:220] if lines else '(无输出)'
+
+# zip 层产物卫生（手册红线 §9：dist 绝不装源码引用/token/.env——build 已保证·打包前再断言一次）。
+_DOKI_SECRET_RE = re.compile(r'sk-ant-[0-9A-Za-z_-]{8,}|sk-proj-[0-9A-Za-z_-]{8,}|ghp_[0-9A-Za-z]{20,}|github_pat_[0-9A-Za-z_]{20,}|AKIA[0-9A-Z]{16}|xox[baprs]-[0-9A-Za-z-]{8,}')
+_DOKI_TEXT_EXTS = {'.html', '.htm', '.js', '.mjs', '.css', '.json', '.txt', '.svg', '.map', '.md'}
+
+def _assert_doki_dist_hygiene(dist, files) -> None:
+    """打进 zip 的文件逐个过卫生门：node_modules/.env 零容忍 + 文本文件零 token。违规=硬抛不出包。"""
+    for p in files:
+        rel = p.relative_to(dist)
+        if 'node_modules' in rel.parts:
+            raise RuntimeError(f'产物卫生：dist 混入 node_modules（{rel.as_posix()}）——拒绝出包')
+        name = p.name.lower()
+        if name == '.env' or name.startswith('.env.'):
+            raise RuntimeError(f'产物卫生：dist 发现 {rel.as_posix()}（.env 红线）——拒绝出包')
+        if p.suffix.lower() in _DOKI_TEXT_EXTS:
+            try:
+                m = _DOKI_SECRET_RE.search(p.read_text(encoding='utf-8', errors='ignore'))
+            except OSError:
+                continue
+            if m:
+                raise RuntimeError(f'产物卫生：{rel.as_posix()} 疑似含密钥（{m.group(0)[:10]}…）——拒绝出包')
+
+def _pkg_build_dokiworld_app(slug: str):
+    """DokiWorld App 包（dokiworld/<slug>/ 出包线·手册 docs/playbooks/dokiworld-pack.md）：
+    app 目录内 npm ci（缺 node_modules 才装·registry 直连）→ npm run build（内部含 manifest
+    生成+校验+自包含改写）→ dist/ 全量打成 release/<slug>/<slug>-dokiworld.zip（zip 根=dist
+    内容·解压即自包含静态包）。任一步失败把子进程输出尾部原样抛给 UI。"""
+    app = DOKIWORLD_DIR / slug
+    if not (app / 'package.json').is_file():
+        raise RuntimeError(f'{slug} {_DOKI_GUIDE}')
+    if not (app / 'node_modules').is_dir():
+        r = subprocess.run(['npm', 'ci', '--no-audit', '--no-fund'], cwd=app, capture_output=True, text=True)
+        if r.returncode != 0:
+            raise RuntimeError(f'npm ci 失败（退出码 {r.returncode}）：{_proc_tail(r)}')
+    b = subprocess.run(['npm', 'run', 'build'], cwd=app, capture_output=True, text=True)
+    if b.returncode != 0:
+        raise RuntimeError(f'npm run build 失败（退出码 {b.returncode}）：{_proc_tail(b)}')
+    dist = app / 'dist'
+    missing = [f for f in ('index.html', 'manifest.json') if not (dist / f).is_file()]
+    if not dist.is_dir() or missing:
+        raise RuntimeError(f'构建完成但 dist/ 缺 {"、".join(missing) or "目录"}（见服务端日志）')
+    files = sorted(p for p in dist.rglob('*') if p.is_file())
+    _assert_doki_dist_hygiene(dist, files)
+    out_dir = ROOT / 'release' / slug
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out = out_dir / f'{slug}-dokiworld.zip'
+    with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
+        for p in files:
+            z.write(p, p.relative_to(dist).as_posix())
+    return out
+
 def _pkg_build_platform(slug: str, platform: str):
     """内置工程游戏的真实构建。web=卡带单文件 HTML；handheld=掌机单HTML；mac/win=electron-builder。"""
     env = os.environ.copy()
@@ -357,11 +437,14 @@ def handle_package_job_start(body: dict) -> dict:
     if not _valid_slug(slug):
         return {'success': False, 'error': f'非法 slug: {slug}'}
     if platform not in _PKG_PLATFORMS:
-        return {'success': False, 'error': f'未知平台: {platform}（web/mac/win/handheld/zip/react）'}
+        return {'success': False, 'error': f'未知平台: {platform}（{"/".join(_PKG_PLATFORMS)}）'}
     exists = (LIBRARY_DIR / slug / 'manifest.json').is_file() or (ROOT / 'games' / slug).is_dir() \
         or (ROOT / 'public' / 'games' / slug / 'manifest.json').is_file()
     if not exists:
         return {'success': False, 'error': f'游戏不存在: {slug}'}
+    # DokiWorld App 线前置判据（同步拒·不烧后台线程）：未接入 = 明确指引，不伪造产物。
+    if platform == 'dokiworld' and not (DOKIWORLD_DIR / slug / 'package.json').is_file():
+        return {'success': False, 'error': f'{slug} {_DOKI_GUIDE}'}
     jid = uuid.uuid4().hex[:12]
     with _PKG_JOBS_LOCK:
         for old in sorted(_PKG_JOBS.values(), key=lambda x: x['startedAt'])[:-19]:  # 只留最近 20

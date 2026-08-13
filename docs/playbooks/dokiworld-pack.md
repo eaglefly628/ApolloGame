@@ -21,6 +21,7 @@ App = **独立构建的自包含浏览器静态包**（`dist/` 里 manifest+html
 | 引擎游戏独立打包 | 借 `vite.config.cartridge.ts` 先例（`build:cartridge:single` 单文件形态）或 esbuild 自包含 | `base:'./'`·字体/图/音全进 dist·不漏动态分包 |
 | 结果映射 | **从世界机读态取**（终局 Flag/StringVar/Resource——与验收剧本同一套判读·不另造口径） | 每游戏一个纯函数 `toGameResult(world)` + 点名测试 |
 | 本地验证 | 静态起 dist + headless chromium 载入（无宿主时 `connect` 挂起属预期·页面不得白屏/报错） | 交付前照规范 §12 验收清单逐项 |
+| 出包（不敲命令） | 工坊发布屏「DokiWorld App 包 .zip」（owner 2026-08-13 令·job=缺 node_modules 才 `npm ci`→`npm run build`→zip dist·`main_entry/packaging.py` dokiworld 平台） | 可用性=`dokiworld/<slug>/` 存在，未接入的格显示指引不隐藏；产物 `release/<slug>/<slug>-dokiworld.zip`（zip 根=dist 内容）；冒烟 `scripts/dokiworld-pack-smoke.py` |
 
 ## 我们的约定（规范之外的本仓口径）
 
