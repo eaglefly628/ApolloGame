@@ -80,6 +80,41 @@ def _claude_code_transcript(system: str, messages: list) -> str:
     lines.append('[助手]')
     return '\n'.join(lines)
 
+def _diag_from_stream(raw_lines, keep=40):
+    """从 Claude Code 的 stream-json 输出里挖出**真死因**（owner 2026-08-07 两次撞到同一堵墙）。
+
+    为什么不能用 `''.join(raw_lines)[-400:]`：result 事件的 JSON 里，说人话的字段
+    （`subtype` / `is_error` / `result` / `error`）排在 `usage` 与 `modelUsage` 两个**大块之前**，
+    而末尾切片落点必然在 token 计数中间 —— 于是无论真因是什么，报出来的永远是
+    `"cache_read_input_tokens":0,"output_tokens":0,…`，一个字的线索都没有。
+    改为**从后往前逐行解析 JSON、按字段取值**，取不到再退回原样文本。
+    """
+    for line in reversed(raw_lines[-keep:]):
+        try:
+            ev = json.loads(line)
+        except Exception:
+            continue
+        if not isinstance(ev, dict):
+            continue
+        bits = []
+        for k in ('type', 'subtype'):
+            if isinstance(ev.get(k), str):
+                bits.append(f'{k}={ev[k]}')
+        if ev.get('is_error') is True:
+            bits.append('is_error=true')
+        err = ev.get('error')
+        if isinstance(err, dict):
+            bits.append('error=' + '/'.join(str(err[k])[:160] for k in ('type', 'message') if k in err))
+        elif isinstance(err, str) and err.strip():
+            bits.append(f'error={err.strip()[:200]}')
+        r = ev.get('result')
+        if isinstance(r, str) and r.strip():
+            bits.append(f'result={r.strip()[:240]}')
+        if bits:
+            return ' · '.join(bits)
+    return ''
+
+
 def _claude_code_request(api_key: str, model: str, system: str, messages: list, effort: str = 'high', session: dict = None) -> dict:
     """订阅通道·流式版：Popen + stream-json 逐行读——思考/正文 delta 实时进 _LLM_LIVE（前端可见「在干什么」），
     result 行收尾。存活判据=心跳非闹钟（owner 07-11「边生成边看到就不用超时杀」）：只要还在吐流就不杀，
@@ -200,7 +235,11 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list, 
             return {'success': False, 'error': '订阅通道超过绝对上限（30 分钟）——简化描述或降思考档后重试'}
         if proc.returncode != 0:
             tail = ((proc.stderr.read() or '').strip() or ''.join(raw_lines).strip())[-400:]
-            low = tail.lower()
+            # 真死因要从 stream-json 里**挖字段**，不能靠末尾切片（owner 2026-08-07 连撞两次）：
+            # result 事件里说人话的 subtype/is_error/result/error 排在 usage/modelUsage 两个大块**之前**，
+            # 取末 400 字符切到的永远是 token 计数（"cache_read_input_tokens":0,…），真因被挤出窗口。
+            diag = _diag_from_stream(raw_lines)
+            low = (tail + ' ' + diag).lower()
             if 'unknown option' in low or 'unknown argument' in low or 'unrecognized' in low:
                 _CLAUDE_CODE_LEGACY['on'] = True  # 旧版 CLI 不认流式旗标 → 本进程降级非流式（功能不断·无实况）
                 print(c('  [LLM]', 'y'), '检测到旧版 claude CLI（不认流式旗标）——已降级兼容模式；升级 CLI 可获实况（claude doctor）', flush=True)
@@ -220,7 +259,7 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list, 
                           '429', 'insufficient_quota', 'overloaded_error')
             if any(k in low for k in RATE_SIGNS) or '额度' in tail:
                 return {'success': False, 'error': f'订阅额度暂满或受限（额度窗恢复后重试）: {tail[:200]}'}
-            return {'success': False, 'error': f'Claude Code 退出码 {proc.returncode}: {tail[:300]}'}
+            return {'success': False, 'error': f'Claude Code 退出码 {proc.returncode}: {diag or tail[:300]}'}
         text = result_text if isinstance(result_text, str) else (''.join(text_acc) or None)
         if not isinstance(text, str) or not text.strip():
             return {'success': False, 'error': f'Claude Code 无 result 字段: {"".join(raw_lines)[:200]}'}
