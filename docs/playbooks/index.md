@@ -34,6 +34,7 @@
 | **美术管线（配美术/换皮）** | `playbooks/art-pipeline.md` | 美术平台+台账 art-NN+风格包+批量生成/写回（终态档=唯一权威） | 全员（做游戏必读）；平台=PST |
 | 音频 | `playbooks/audio.md` | SynthAudioPort/SfxSpec（声音=数据） | 各游戏 PE；正样例=game-g |
 | 存档与平台 | `playbooks/save-platform.md` | storage/platform-hooks（云存档/成就） | 各游戏 PE；发布=**game-publisher agent** |
+| **DokiWorld 出包** | `playbooks/dokiworld-pack.md` | 产物→DokiWorld App（manifest/SDK/自包含 dist） | 出包前必读 |
 | **外部引擎交付（DokiWorld 卡带）** | `playbooks/dokiworld-export.md` | 导出插件 `tools/export-targets/dokiworld.mjs` · 协议桥 v1 + game.json + 计分注入 + 资源展平 · 卡片桥权威不冲突 | 全员（导 a/b/c 给 DokiWorld 前必读）；工具=主程 |
 | 平台角色卡桥（外部数据→席位） | `playbooks/character-card.md` | `services/character-card`（normalizeCharacterCard/toSeatCard/isCardUsable）· 媒体取优 · 成年硬闸 · passthrough 对账 | 各游戏 PE（a/b/c 接卡）；桥=引擎 services |
 | **测试与验收** | `playbooks/testing.md` | vitest·registry-guard·ZeroCraftBench·数值 sim·e2e·smoke·game-skill-audit | **全员（交付前必过）**；验收纪律=Lead |

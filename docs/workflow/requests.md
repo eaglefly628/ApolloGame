@@ -159,6 +159,9 @@ UI 层那个同名件只是个四预设的门面。
 > **病**（PST 实证复现）：`dialectPrompt` 主体优先级 `row.prompt` > `query+desc`，而 `resetRow` 只改 `row.query` 不动 `row.prompt`，面板又预填 `r.prompt || r.query`——人改了字、存进 query、生成仍用旧 prompt = **「改了没反应」**（owner 最恨的一类）。
 > **做法（设计时并办）**：① resetRow 语义修正——用户编辑文本应成为生效主体（动 prompt 还是清 prompt 落回 query+desc·须先定 query 的身份职责边界——`rowIdentity` 三级回退里 query 是末级身份键，改身份≠改提示词要拆开）；② 顺办 owner 的「提示词精简」（subject 从 query+desc 收敛）。**边界**：`scripts/art-replace.mjs`（resetRow/dialectPrompt）+ `ArtLedgerPanel.tsx` 预填口径 + 点名测试。
 
+### REQ-DOKIPACK-DokiWorld 出包线 · game108 首包 + 出包能力常备化 · [2026-08-12] · **owner 令（材料已交付：SDK 规范+样例仓·「以后 ZeroCraft 产物都要往这里打包」）** · status: **in-progress（已派工·Lead 终审）** · 优先级: P1（Doki 对接关键路径·剧情线悬置段的宿主材料随之到位） · 类型: 出口产线
+> **手册=`docs/playbooks/dokiworld-pack.md`·规范快照=`docs/design/dokiworld/app-sdk-app-development.zh-CN.md`·样例仓 raptoravis/dokiworld-apps（匿名克隆在 /workspace）**。首件=game108 打包成 Game App（`dokiworld/game108/`·manifest 生成器+SDK 薄接线+终局→GameResult 纯函数映射+自包含 dist+点名测试）。**薄接线零规则**红线同 acceptance-adapter。后续：约会线/其它出口游戏照同一形态；World 形态等首个剧情向产物。**注**：REQ-DIALOGUE 的 DokiWorld 悬置段材料（宿主接口文档）已随本单到位——数值双向契约待真卡 schema 再启。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。

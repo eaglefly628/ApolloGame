@@ -67,3 +67,7 @@ library/
 # 真图 gen/art-NN 是游戏观感一部分该入库，mock 命名空间 gen/mock/ 机械挡在仓外）
 public/games/*/art/gen/mock/
 .cache-fonts/
+
+# DokiWorld 出包线（docs/playbooks/dokiworld-pack.md）：dist=构建产物不入库·依赖不入库
+dokiworld/*/dist/
+dokiworld/*/node_modules/
