@@ -27,7 +27,7 @@ App = **独立构建的自包含浏览器静态包**（`dist/` 里 manifest+html
 | 三形态降级目击（§12） | SDK 真 `createAppHost` 假宿主起三形态（零授权/只 input 卡/带 character 资料）+ 挂起/恢复 + resize 实测（先例 `dokiworld/game108/scripts/host-witness.mjs`·同源静态服务直接 serve SDK 源） | 断言落 DOM 机读量（对手名/蓄力读数/血量）·不采信自陈；挂起腿断 checkpoint 真落宿主 |
 | 完整性清单 | build 收尾产 `SHA256SUMS.txt` 进 dist（match3 同款：大写 SHA256 + 两空格 + 包内相对路径·覆盖除自身全部文件） | 冒烟核到哈希与实物一致（清单不是装饰） |
 | 本地验证 | 静态起 dist + headless chromium 载入（无宿主时 `connect` 挂起属预期·页面不得白屏/报错） | 交付前照规范 §12 验收清单逐项 |
-| 出包（不敲命令） | 工坊发布屏「DokiWorld App 包 .zip」（owner 2026-08-13 令·job=缺 node_modules 才 `npm ci`→`npm run build`→zip dist·`main_entry/packaging.py` dokiworld 平台） | 可用性=`dokiworld/<slug>/` 存在，未接入的格显示指引不隐藏；产物 `release/<slug>/<slug>-dokiworld.zip`（zip 根=dist 内容）；冒烟 `scripts/dokiworld-pack-smoke.py` |
+| 出包（不敲命令） | 工坊发布屏「DokiWorld App 包 .zip」——**发布屏唯一 DokiWorld 出口**（旧 doki 卡带/doki-dist 两行 2026-08-13 退役·服务端墓碑拒绝）（owner 2026-08-13 令·job=缺 node_modules 才 `npm ci`→`npm run build`→zip dist·`main_entry/packaging.py` dokiworld 平台） | 可用性=`dokiworld/<slug>/` 存在，未接入的格显示指引不隐藏；产物 `release/<slug>/<slug>-dokiworld.zip`（zip 根=dist 内容）；冒烟 `scripts/dokiworld-pack-smoke.py` |
 
 ## 我们的约定（规范之外的本仓口径）
 

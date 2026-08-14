@@ -1598,7 +1598,7 @@ class Component extends DCLogic {
     // 发布屏 DokiWorld 列可用性（dokiworld/<slug>/ 存在=已接入·未接入的格明示指引不隐藏）
     fetch('/api/package/dokiworld-apps').then(r => r.json())
       .then(d => this.setState({ dokiApps: (d && d.success && d.apps) || [] }))
-      .catch(() => this.setState({ dokiApps: [] }));
+      .catch(() => this.setState({ dokiApps: 'error' }));  // 查询失败≠未接入（旧服务无此接口·须重启工作台）
   }
   componentDidMount() {
     // ⛶ 专注模式 Esc 复原（owner 2026-08-11）。真全屏时 Esc 先退真全屏（浏览器原生行为），不连带退专注。
@@ -3464,20 +3464,22 @@ class Component extends DCLogic {
       { key: 'handheld', label: '🎮 掌机版 · 单 HTML' },
       { key: 'zip', label: '📦 工程包 · .zip（卡带+资产）' },
       { key: 'react', label: '⚛️ React 独立工程 · .zip（内嵌网页/React）' },
-      { key: 'doki', label: '🌸 DokiWorld 卡带 · .zip（源码工程）' },
-      { key: 'doki-dist', label: '🌸 DokiWorld 部署产物 · dist.zip（构建好·独立卡带）' },
+      // 旧 doki / doki-dist 两行 2026-08-13 退役（owner「只要一个」）——官方 SDK App 线一到位,
+      // 协议桥旧形态的产物对方已不收;服务端对旧 key 留墓碑拒绝（防陈旧页面静默走错线）。
       { key: 'dokiworld', label: '🌸 DokiWorld App 包 · .zip（dokiworld/<slug>/ 出包线·npm build·dist 自包含）' },
     ];
     const pkgState = s.pkgJobs || {};
     const dokiApps = Array.isArray(s.dokiApps) ? s.dokiApps : [];
+    const dokiQueryFailed = s.dokiApps === 'error';
     const mkPkgGame = (slug, cn, desc, icon) => ({
       cn, slug, icon: icon || '📦', desc: (desc || '').slice(0, 42) || slug,
       platforms: PKG_PLATFORMS.map(pl => {
         const jb = pkgState[slug + ':' + pl.key] || {};
         const st3 = jb.status || 'idle';
         // DokiWorld App 线可用性=dokiworld/<slug>/ 已建包；未接入的格明示指引（不隐藏——让人知道有这条线）。
-        const dokiOff = pl.key === 'dokiworld' && dokiApps.indexOf(slug) < 0;
-        const stTxt = dokiOff ? '未接入 · 照 docs/playbooks/dokiworld-pack.md 建包'
+        const dokiOff = pl.key === 'dokiworld' && !dokiQueryFailed && dokiApps.indexOf(slug) < 0;
+        const stTxt = pl.key === 'dokiworld' && dokiQueryFailed ? '可用性查询失败——工作台服务是旧版,重启（python zerocraft.py workshop）后再看'
+          : dokiOff ? '未接入 · 照 docs/playbooks/dokiworld-pack.md 建包'
           : st3 === 'building' ? '⏳ 打包中…'
           : st3 === 'ready' ? ('✓ 就绪：' + (jb.name || '产物') + '（点「下载」）')
           : st3 === 'error' ? ('✕ ' + (jb.error || '失败'))
