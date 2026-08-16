@@ -35,6 +35,7 @@ from .packaging import _PKG_JOBS, _PKG_JOBS_LOCK, handle_dokiworld_apps, handle_
 from .paths import LIBRARY_DIR, _design_parts, _lib_parts, _valid_slug
 from .pipeline_board import handle_pipeline_board, handle_pipeline_concept, handle_pipeline_gate, handle_pipeline_orch_abort, handle_pipeline_orch_dispatch, handle_pipeline_orch_status, handle_pipeline_signoff, handle_pipeline_wizard_concept
 from .placeholder import handle_art_resolve
+from .projects import handle_project_save
 from .protocols import handle_capgaps_list
 from .settings_api import handle_settings_get, handle_settings_put, handle_settings_test
 from .sysutil import ROOT, VITE_PORT, c, env, get_project_status, handle_version, is_port_in_use, run_command
@@ -759,6 +760,11 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_design_ui_brief(body)
             except Exception as e:
                 data = {'success': False, 'error': f'ui-brief 异常: {e}'}
+        elif path == '/api/projects':  # 「存为项目」S1/S2 落点（REQ-S18PANEL ①·docs/design/<slug>/ + 对话认领）
+            try:
+                data = handle_project_save(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'project save 异常: {e}'}
         elif path == '/api/pipeline/gate':
             try:
                 data = handle_pipeline_gate(body)
