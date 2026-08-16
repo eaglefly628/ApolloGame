@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import {
   blackHouseholdFiles, deadAccountRows, missingProvenanceRows,
   discoverArtRoots, auditGame, discoverGames, ratchetCheck,
+  readArtIndex, indexEntryHasProvenance, indexCoveredPaths,
 } from './art-ledger-guard.mjs';
 
 const withRoot = (fn) => {
@@ -50,6 +51,90 @@ describe('REQ-ARTPIPE2 A1 · 黑户判定', () => {
     };
     const bh = blackHouseholdFiles(root, 'game-x', ledger);
     expect(bh).not.toContain('/games/game-x/art/ui/old-placeholder.svg');
+  }));
+});
+
+/** 在临时根下写 `public/games/<game>/art/index.json`（{version:1, assets} 真实格式）。 */
+function putIndex(root, game, assets) {
+  const abs = join(root, 'public', 'games', game, 'art', 'index.json');
+  mkdirSync(join(abs, '..'), { recursive: true });
+  writeFileSync(abs, JSON.stringify({ version: 1, assets }));
+}
+
+describe('REQ-ARTGUARD · 判据②：索引记账（path 命中 + 来源登记）免黑户', () => {
+  it('腿一：索引条目 path 命中 + `provenance` 对象存在 → 免罪；同目录无索引条目的文件仍黑', () => withRoot((root) => {
+    putFile(root, 'game-x', 'cards/ace.svg');
+    putFile(root, 'game-x', 'cards/stray.svg'); // 索引没提过的邻居——判据②绝不顺带赦免
+    putIndex(root, 'game-x', [{
+      id: 'card/ace', type: 'texture', status: 'filled',
+      path: '/games/game-x/art/cards/ace.svg',
+      provenance: { pulledFrom: 'https://example.com/AC.svg', license: 'Public Domain', date: '2026-07-17' },
+    }]);
+    const bh = blackHouseholdFiles(root, 'game-x', { rows: [], pending: [] });
+    expect(bh).not.toContain('/games/game-x/art/cards/ace.svg');
+    expect(bh).toContain('/games/game-x/art/cards/stray.svg');
+  }));
+
+  it('腿一变体：无 provenance 但 `license`+`source` 双齐 → 同样免罪', () => withRoot((root) => {
+    putFile(root, 'game-x', 'fx/flame.png');
+    putIndex(root, 'game-x', [{
+      id: 'fx/flame', type: 'texture', status: 'filled',
+      path: '/games/game-x/art/fx/flame.png',
+      license: 'CC0', source: 'apollo-procedural',
+    }]);
+    const bh = blackHouseholdFiles(root, 'game-x', { rows: [], pending: [] });
+    expect(bh).not.toContain('/games/game-x/art/fx/flame.png');
+  }));
+
+  it('腿二：path 命中但**无来源登记**（无 provenance·无 license/source）→ 仍黑（只挂 path 不免罪）', () => withRoot((root) => {
+    putFile(root, 'game-x', 'ui/naked.svg');
+    putIndex(root, 'game-x', [{
+      id: 'ui/naked', type: 'texture', status: 'filled',
+      path: '/games/game-x/art/ui/naked.svg',
+    }]);
+    const bh = blackHouseholdFiles(root, 'game-x', { rows: [], pending: [] });
+    expect(bh).toContain('/games/game-x/art/ui/naked.svg');
+  }));
+
+  it('腿二边界：license 有 source 无（双齐不成立）→ 仍黑；provenance 是字符串非对象 → 仍黑', () => withRoot((root) => {
+    putFile(root, 'game-x', 'ui/half.svg');
+    putFile(root, 'game-x', 'ui/strprov.svg');
+    putIndex(root, 'game-x', [
+      { id: 'ui/half', path: '/games/game-x/art/ui/half.svg', license: 'CC0' }, // source 缺
+      { id: 'ui/strprov', path: '/games/game-x/art/ui/strprov.svg', provenance: 'legacy-string' }, // 非对象
+    ]);
+    const bh = blackHouseholdFiles(root, 'game-x', { rows: [], pending: [] });
+    expect(bh).toContain('/games/game-x/art/ui/half.svg');
+    expect(bh).toContain('/games/game-x/art/ui/strprov.svg');
+    expect(indexEntryHasProvenance({ license: 'CC0' })).toBe(false);
+    expect(indexEntryHasProvenance({ provenance: 'legacy-string' })).toBe(false);
+    expect(indexEntryHasProvenance({ license: 'CC0', source: 'apollo-procedural' })).toBe(true);
+    expect(indexEntryHasProvenance({ provenance: { pulledFrom: 'x' } })).toBe(true);
+  }));
+
+  it('索引缺失/解析失败 → 空索引不抛错·判据②不参与（行为同旧规则）', () => withRoot((root) => {
+    putFile(root, 'game-x', 'icons/lonely.png');
+    expect(readArtIndex(root, 'game-x')).toEqual({ assets: [] }); // 无 index.json
+    writeFileSync(join(root, 'public', 'games', 'game-x', 'art', 'index.json'), '{broken');
+    expect(readArtIndex(root, 'game-x')).toEqual({ assets: [] }); // 坏 JSON 同空
+    const bh = blackHouseholdFiles(root, 'game-x', { rows: [], pending: [] });
+    expect(bh).toContain('/games/game-x/art/icons/lonely.png');
+  }));
+
+  it('indexCoveredPaths 只收「path 非空 + 有登记」的条目（auditGame 全链默认接入索引）', () => withRoot((root) => {
+    const covered = indexCoveredPaths({ assets: [
+      { path: '/a.png', provenance: { x: 1 } },
+      { path: '/b.png', license: 'CC0', source: 's' },
+      { path: '/c.png' },            // 无登记 → 不入
+      { path: '', license: 'CC0', source: 's' }, // 空 path → 不入
+      { license: 'CC0', source: 's' },           // 无 path → 不入
+    ] });
+    expect([...covered].sort()).toEqual(['/a.png', '/b.png']);
+    // 全链：auditGame（不显式传 index）也走判据②
+    putFile(root, 'game-x', 'cards/king.svg');
+    putIndex(root, 'game-x', [{ id: 'card/king', path: '/games/game-x/art/cards/king.svg', license: 'Public Domain', source: 'notpeter/Vector-Playing-Cards' }]);
+    const r = auditGame(root, 'game-x');
+    expect(r.blackHouseholds).not.toContain('/games/game-x/art/cards/king.svg');
   }));
 });
 

@@ -18,6 +18,16 @@
 // 死账判定则严格只看 `gen.servedPath`（当前真相），历史/占位路径失效不算死账。
 // 备份目录 `orig/`（人工替换前的原图备份）不参与黑户扫描——它是台账自己的历史记录，不是散件。
 //
+// ── 判据②：索引记账同信任级（REQ-ARTGUARD · Lead 裁 2026-08-16）─────────
+// 只认台账 servedPath 会把「记账在 art/index.json、不在需求台账」的合法 vendored 资产
+// （game-a 55 张 CC0 扑克等 60 件）永久判成黑户——判词长期钉死 WARN、真信号被噪声淹没。
+// 故文件不算黑户当满足其一：
+//   ① 被台账任意行任意 servedPath 提到（原规则不变）；
+//   ② 在该游戏 `art/index.json` 有 `path` 命中的条目**且有来源登记**——
+//      `provenance` 对象存在 或 `license`+`source` 双齐。
+// 认索引记账与台账同信任级（伪造索引条目与伪造台账行同罪·须留 license/source 痕迹）；
+// 只挂 path 不留来源登记的索引条目**不免罪**——仍是黑户。
+//
 // ── 棘轮基线 ─────────────────────────────────────────────────────────
 // `scripts/art-ledger-baseline.json` 记录「已知黑户」（存量挂账，允许暂不清）。新出现、不在
 // 基线内的黑户 = 棘轮违规（真正拦推送的唯一条件）；死账/缺来源/基线内黑户 = 警告（进 JSON 供
@@ -104,7 +114,31 @@ export function missingProvenanceRows(ledger) {
   return out;
 }
 
-// ── 黑户（扫磁盘文件 ↔ 台账任意 servedPath 提及过）──────────────────────
+// ── 判据②：art/index.json 索引记账（带来源登记才免罪）────────────────────
+
+/** 读一款游戏的 art/index.json 资产索引（缺失/解析失败 → 空资产表，不抛错）。 */
+export function readArtIndex(root, game) {
+  const parsed = readJson(join(artRoot(root, game), 'index.json'), null);
+  return { assets: Array.isArray(parsed?.assets) ? parsed.assets : [] };
+}
+
+/** 索引条目「有来源登记」：`provenance` 对象存在 或 `license`+`source` 双齐（非空字符串）。 */
+export function indexEntryHasProvenance(entry) {
+  if (entry?.provenance && typeof entry.provenance === 'object') return true;
+  return typeof entry?.license === 'string' && entry.license.trim() !== ''
+    && typeof entry?.source === 'string' && entry.source.trim() !== '';
+}
+
+/** 判据② covered 集：索引中 `path` 非空**且有来源登记**的条目的 path（无登记条目不入集）。 */
+export function indexCoveredPaths(index) {
+  const out = new Set();
+  for (const e of index?.assets || []) {
+    if (typeof e?.path === 'string' && e.path && indexEntryHasProvenance(e)) out.add(e.path);
+  }
+  return out;
+}
+
+// ── 黑户（扫磁盘文件 ↔ 台账任意 servedPath / 带来源的索引 path 提及过）────
 
 const NON_ASSET_NAME = (base) =>
   base.startsWith('.') ||
@@ -159,10 +193,12 @@ export function discoverArtRoots(root, game, ledger) {
   return [...roots.entries()].map(([dir, servedPrefix]) => ({ dir, servedPrefix }));
 }
 
-/** 黑户文件列表（servedPath 风格字符串·排序）：磁盘有、台账任何行任何 servedPath 都没提过。 */
-export function blackHouseholdFiles(root, game, ledger) {
+/** 黑户文件列表（servedPath 风格字符串·排序）：磁盘有、台账任何行任何 servedPath 都没提过、
+ * art/index.json 里也没有带来源登记的 path 条目（判据②·REQ-ARTGUARD）。 */
+export function blackHouseholdFiles(root, game, ledger, index = readArtIndex(root, game)) {
   const covered = new Set();
   for (const row of allRows(ledger)) for (const sp of collectRowServedPaths(row)) covered.add(sp);
+  for (const sp of indexCoveredPaths(index)) covered.add(sp); // 判据②：索引记账（带来源）同免
   const found = [];
   for (const { dir, servedPrefix } of discoverArtRoots(root, game, ledger)) {
     for (const sp of listArtFiles(dir, servedPrefix)) {
