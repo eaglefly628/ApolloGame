@@ -30,13 +30,10 @@
 > **三条纪律**（全来自 SDK 源码实读）：① 未声明就不发（未声明消息被拒的形态是"静默等到超时"，
 > 最难查的那一类）② 降级不抛，`cancelled` 与 `unavailable` 分开报 ③ `launch` 超时一小时不是 30 秒。
 >
-> **⚠ 仍待 owner 定的一件（唯一卡口）**：game108 要不要当第一个消费者、在哪一屏、什么时机拉卡带。
-> 现状是「能力就位、零消费者」——**这是有意的**：给 game108 加 `apps` 声明必须有真实消费位置，
-> 否则就成了手册红线点名的反例（match3 多声明）。owner 一句话即可接：
-> **A** 结算屏「再来一局 / 换一个游戏」= 拉 `list()` 给同伴的其它卡带（最自然·Game 形态里唯一说得通的位置）
-> **B** 不接，能力留给将来的 Episode World（编排者本来就是它）——那 game108 的 manifest 永不写 `apps`。
-> 推荐 **B**：`apps` 语义是「App 里开 App」，而 game108 是 60-90 秒的一局对决，
-> 在它里面开另一个 App 等于把编排职责下放给被编排者；A 的价值也只在"宿主没有回到 Episode 的出口"时才成立。
+>
+> **⚖ owner 2026-08-16 判（Lead 转录·压过施工方「推荐 B」）**：**game108 当第一个消费者——结算屏加入口**。
+> 打完一局结算屏出「换个游戏玩」推荐位（`apps.list` 拉列表·点了 `launch` 跳转）；game108 manifest 随真消费加 `apps` 声明（五步一致）。
+> 共享层已交付 ⇒ 本单余项 = game108 结算屏接线（施工方续做·薄接线零规则·推荐位 render-only 不进 sim/hash）+ 主程复查。
 >
 > **后续①（🔴 主程面·随本单一起复查·不另占硬槽——池子 10 槽满）**：**`dokiworld/**` 的测试跑在没人跑的地方。**
 > 实查：`scoped-gate.mjs` 全文无 `dokiworld` 字样；出包 job（`main_entry/packaging.py:_pkg_build_dokiworld_app`）
@@ -45,6 +42,7 @@
 > 与「从来就没对过」同形（本轮 game108 AI 恒石那条的教训）。
 > 建议：`scoped-gate` 改动面命中 `dokiworld/**` 时，在受影响的 app 目录追加 `npm test`
 > （缺 node_modules 才 `npm ci`·同出包 job 口径）。落地前手册已写死「改这些目录必须手跑」。
+
 
 ### REQ-S18PANEL-开发面板补 S1–S8 八关 · 控制台把「立项→对齐→生成」压成了「生成」一步 · [2026-08-16] · **owner 令**（原话：「我需要这些都有一个 S1 到 S8 的按钮，在我的开发面板上……因为我这要开发给用户用的，不能采用老路子了」） · status: **open·待派工** · 优先级: **P1** · 类型: 流程软件（面板 + 门）
 
@@ -87,7 +85,7 @@
 > 而系统 `reads` 里**没有申报**，且 `matrix-duel.test.ts` 还断言 `settle.reads).not.toContain('Resource')` 替这个不诚实背书。
 > **是我那次扩写造成的**（此前它确实不读 Resource）。**实测**：诚实补上申报会当场闭合环
 > `[resource-apply, self-rule, matrix-duel]`（闭环组件 Resource/ResourceModify），而 CYCLEHAZ B 之后**只告警不抛**。
-> ⇒ 三条路**都不干净**，须 owner 判：**A 诚实申报**（每个含这三系统的世界常驻一条环告警）·
+> ⇒ **⚖ owner 2026-08-16 判 C：根治——`ResourceModify` 加 `op:'set'`**（结算清零改 set 即不必读 Resource·环根本不形成·matrix-duel 撤不诚实断言改诚实申报）。🔴 全库最核心写入面=主程亲做专项（本条内跟踪·不另占槽）：spec=① `ResourceModify` 加可选 `op:'set'|'add'`（缺省 'add'=存量零变）② effect-apply/消费面接 set 语义+点名测试 ③ matrix-duel 结算改 set+申报诚实化+撤背书断言 ④ 全量门禁+验收剧本全绿。原三选项留档：~~A 诚实申报~~（每个含这三系统的世界常驻一条环告警）·
 > **B 维持现状记债**（守卫一上线就报它）· **C 给 `ResourceModify` 加 `op:'set'`**（清零就不必读 Resource，
 > 但那是全库最核心的写入面、影响每一款游戏，须另开单）。判词与实测原文见 `docs/design/game108/review/REQ-108-ENG-04-05-06.md` §五。
 
