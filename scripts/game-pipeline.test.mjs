@@ -297,11 +297,11 @@ describe('readCapabilityGaps（闭集校验·纯 fs·不抛）', () => {
   }));
   it('合法台账全量读出（含 route/blocks/ticket）', () => withRoot(async (root) => {
     put(root, 'games/g/index.ts', '// compiled');
-    put(root, 'docs/design/g/capability-gaps.json', [gap(), gap({ id: 'GAP-02', route: '3d', priority: 'P0', state: 'accepted', ticket: 'requests-3d.md#REQ-3D-X', blocks: ['S4', 'S5'] })]);
+    put(root, 'docs/design/g/capability-gaps.json', [gap(), gap({ id: 'GAP-02', route: 'requests-3d', priority: 'P0', state: 'accepted', ticket: 'requests-3d.md#REQ-3D-X', blocks: ['S4', 'S5'] })]);
     const r = readCapabilityGaps(root, 'g');
     expect(r.errors).toEqual([]);
     expect(r.gaps.map((g) => g.id)).toEqual(['GAP-01', 'GAP-02']);
-    expect(r.gaps[1]).toMatchObject({ route: '3d', state: 'accepted', ticket: 'requests-3d.md#REQ-3D-X', blocks: ['S4', 'S5'] });
+    expect(r.gaps[1]).toMatchObject({ route: 'requests-3d', state: 'accepted', ticket: 'requests-3d.md#REQ-3D-X', blocks: ['S4', 'S5'] });
   }));
   it('坏 JSON / 非数组顶层 → 各自一条点名错（不抛不崩）', () => withRoot(async (root) => {
     put(root, 'games/g/index.ts', '// compiled');
@@ -318,7 +318,7 @@ describe('readCapabilityGaps（闭集校验·纯 fs·不抛）', () => {
     ]);
     const errs = readCapabilityGaps(root, 'g').errors.join('\n');
     expect(errs).toContain('priority 非法 "P9"');
-    expect(errs).toContain('route 非法 "game"'); // 池闭集=engine/3d/pui
+    expect(errs).toContain('route 非法 "game"'); // 池闭集=engine/requests-3d/pui（与 projects.py 逐字对齐）
     expect(errs).toContain('state 非法 "待定"');
     expect(errs).toContain('blocks 含未知阶段 "S9"');
     expect(errs).toContain('id 重复');
@@ -333,6 +333,24 @@ describe('readCapabilityGaps（闭集校验·纯 fs·不抛）', () => {
     put(root, 'docs/design/g/capability-gaps.json', [gap({ state: 'open' })]); // open 免 ticket（还没裁哪来的单）
     expect(readCapabilityGaps(root, 'g').errors).toEqual([]);
   }));
+});
+
+describe('缺口契约跨侧对齐（落盘端 main_entry/projects.py ×  判门端本文件）', () => {
+  // 一头先落盘、一头判门——两套闭集就等于「端点收下的合法文件被自己人判非法」。
+  // 这条测试直接从 Python 源码抠出那张表比对（抄一份常量就等于没对过）。
+  it('route 闭集与 projects.py::_GAP_ROUTES 逐字相同', () => {
+    const py = readFileSync(fileURLToPath(new URL('../main_entry/projects.py', import.meta.url)), 'utf8');
+    const m = py.match(/_GAP_ROUTES\s*=\s*\(([^)]*)\)/);
+    expect(m).toBeTruthy(); // 端点那头改了名/改了写法 → 本断言红（提醒重新对账，别静默分叉）
+    const pyRoutes = [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]);
+    expect(GAP_ROUTES).toEqual(pyRoutes);
+  });
+  it('priority 闭集 P0–P3 与端点同（端点 upper 归一后落盘）', () => {
+    expect(GAP_PRIORITIES).toEqual(['P0', 'P1', 'P2', 'P3']);
+  });
+  it('state：端点只查形状（小写 token）·语义闭集归本门——本门认这五个', () => {
+    expect(GAP_STATES).toEqual(['open', 'accepted', 'in-progress', 'delivered', 'wontfix']);
+  });
 });
 
 describe('evalCapabilityGaps（S2 机器门判词·board 与 gate 共用一只嘴）', () => {
@@ -373,7 +391,7 @@ describe('blockingGaps / orderGate 缺口锁（REQ-S18PANEL③·整关阻塞第�
     expect(blockingGaps({ stages: [] }, 'S3')).toEqual([]); // 无 gaps 字段=零回归
   });
   it('缺口锁 --out-of-order 也不放行（跳过去只能在游戏层写逃生代码）', () => {
-    const d = orderGate(boardWith([g({ id: 'GAP-3D-01', priority: 'P0', route: '3d' })]), 'S3', '赶 demo 先跑骨架');
+    const d = orderGate(boardWith([g({ id: 'GAP-3D-01', priority: 'P0', route: 'requests-3d' })]), 'S3', '赶 demo 先跑骨架');
     expect(d.allowed).toBe(false); // 撤缺口锁（orderGate 忽略 blockedBy）→ 本断言红
     expect(d.blockedBy.map((x) => x.id)).toEqual(['GAP-3D-01']);
     expect(d.outOfOrder).toBeUndefined(); // 拒跑就不能同时落乱序放行痕
@@ -398,7 +416,7 @@ describe('boardFor 接缺口台账（S2 机器态 + 各关 🔒 + 板带 gaps）
     expect(s2.machine.detail).toContain('capability-plan.md 在档');
   }));
   it('6 条缺口未裁 → S2 机器门 ⚠ 点名条数；blocks 命中的关带 blockedBy（面板画 🔒）', () => withRoot(async (root) => {
-    mk(root, [0, 1, 2, 3, 4, 5].map((i) => ({ id: `GAP-0${i + 1}`, title: `缺口${i}`, priority: i < 4 ? 'P1' : 'P2', route: i < 4 ? '3d' : 'engine', state: 'open', blocks: ['S3'] })));
+    mk(root, [0, 1, 2, 3, 4, 5].map((i) => ({ id: `GAP-0${i + 1}`, title: `缺口${i}`, priority: i < 4 ? 'P1' : 'P2', route: i < 4 ? 'requests-3d' : 'engine', state: 'open', blocks: ['S3'] })));
     const b = boardFor(root, 'g');
     const s2 = b.stages.find((s) => s.id === 'S2');
     expect(s2.machine.state).toBe('warn'); // owner 验收原话「S1✅ S2⚠(缺口 6) S3🔒」
@@ -574,7 +592,7 @@ describe('gate 顺序闸 CLI（真退出码+落痕+板 ⚠·REQ-GATE-硬化 F �
       concept(root);
       put(root, 'docs/design/g/capability-plan.md', '# 能力计划');
       putGaps(root, [
-        { id: 'GAP-01', title: '球体刚体', priority: 'P1', route: '3d', state: 'open', blocks: ['S3'] },
+        { id: 'GAP-01', title: '球体刚体', priority: 'P1', route: 'requests-3d', state: 'open', blocks: ['S3'] },
         { id: 'GAP-02', title: '液面件', priority: 'P2', route: 'pui', state: 'open', blocks: [] },
       ]);
       const red = runCli(root, ['gate', 'g', 'S2', '--out-of-order', '测缺口门']);
@@ -582,7 +600,7 @@ describe('gate 顺序闸 CLI（真退出码+落痕+板 ⚠·REQ-GATE-硬化 F �
       expect(red.stdout + red.stderr).toContain('GAP-01');
       // owner 逐条判完（A=补引擎缺口→accepted·B=回驳→wontfix），S2 门即转绿。
       putGaps(root, [
-        { id: 'GAP-01', title: '球体刚体', priority: 'P1', route: '3d', state: 'accepted', ticket: 'requests-3d.md#REQ-3D-BALL', blocks: ['S3'] },
+        { id: 'GAP-01', title: '球体刚体', priority: 'P1', route: 'requests-3d', state: 'accepted', ticket: 'requests-3d.md#REQ-3D-BALL', blocks: ['S3'] },
         { id: 'GAP-02', title: '液面件', priority: 'P2', route: 'pui', state: 'wontfix', ticket: 'requests.md#REQ-UIFX', blocks: [] },
       ]);
       const green = runCli(root, ['gate', 'g', 'S2', '--out-of-order', '测缺口门']);
@@ -596,7 +614,7 @@ describe('gate 顺序闸 CLI（真退出码+落痕+板 ⚠·REQ-GATE-硬化 F �
     try {
       concept(root);
       put(root, 'docs/design/g/capability-plan.md', '# 能力计划');
-      putGaps(root, [{ id: 'GAP-3D-01', title: '薄牌刚体轴向', priority: 'P0', route: '3d', state: 'accepted', ticket: 'requests-3d.md#REQ-3D-CARD-FACE-AXIS', blocks: ['S3'] }]);
+      putGaps(root, [{ id: 'GAP-3D-01', title: '薄牌刚体轴向', priority: 'P0', route: 'requests-3d', state: 'accepted', ticket: 'requests-3d.md#REQ-3D-CARD-FACE-AXIS', blocks: ['S3'] }]);
       const locked = runCli(root, ['gate', 'g', 'S3', '--out-of-order', '赶 demo 先跑骨架']);
       expect(locked.status).not.toBe(0);
       const out = locked.stdout + locked.stderr;
@@ -609,7 +627,7 @@ describe('gate 顺序闸 CLI（真退出码+落痕+板 ⚠·REQ-GATE-硬化 F �
       expect(b.stdout).toContain('缺口台账 1 条');
       // 缺口交付后锁自动开（compiled 游戏 S3=免 manifest 校验·沙盒根跳探针 → 走得到绿）。
       // S2 复查落账是既有硬闸（S2 机器门已绿=已施工·未复查一律拦）——与缺口锁各管各的，两道都过才跑得动。
-      putGaps(root, [{ id: 'GAP-3D-01', title: '薄牌刚体轴向', priority: 'P0', route: '3d', state: 'delivered', ticket: 'requests-3d.md#REQ-3D-CARD-FACE-AXIS', blocks: ['S3'] }]);
+      putGaps(root, [{ id: 'GAP-3D-01', title: '薄牌刚体轴向', priority: 'P0', route: 'requests-3d', state: 'delivered', ticket: 'requests-3d.md#REQ-3D-CARD-FACE-AXIS', blocks: ['S3'] }]);
       expect(runCli(root, ['review', 'g', 'S2', '--verdict', 'PASS', '--note', '缺口逐条核过', '--by', '复查人']).status).toBe(0);
       const opened = runCli(root, ['gate', 'g', 'S3', '--out-of-order', '前置未签·测锁已开']);
       expect(opened.status).toBe(0);

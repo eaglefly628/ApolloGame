@@ -144,14 +144,16 @@ export function acceptanceScenarioCount(root, slug) {
 //
 // 台账 = docs/design/<slug>/capability-gaps.json（PST 建项端点落盘·本文件只读不写）：
 //   [{ id, title, priority:P0|P1|P2|P3, route:engine|3d|pui, state:…, ticket, blocks:[SN…] }]
-// · route 不是装饰——缺口按池分流（engine=10 硬槽 / 3d=独立池 / pui=UI 基座）；
+// · route 不是装饰——缺口按池分流（engine=10 硬槽 / requests-3d=P3D 独立池 / pui=UI 基座）；
+//   闭集与 ① 的落盘端点 main_entry/projects.py::_GAP_ROUTES **逐字对齐**（那一头先落盘、这一头判门，
+//   两套写法就等于合法文件被自己人判非法——工单明示「以 projects.py 归一后形状为准」）。
 //   一股脑丢引擎池会当场撑爆槽位（叠叠乐那 6 条里 4 条是 3D 线）。
 // · state 闭集：open=未裁决（owner 还没判 A/B）· accepted=已裁待做 · in-progress=施工中 ·
 //   delivered=已交付（能力真在了）· wontfix=回驳（用现有能力重组·不阻塞任何关）。
 // · blocks=这条缺口**卡住哪几关**（第一版粗粒度整关阻塞·owner 明示 YAGNI：不做「只阻塞
 //   依赖它的那部分规则」，那要把「哪条规则依赖哪个缺口」也结构化，等真被卡烦了再说）。
 export const GAP_PRIORITIES = ['P0', 'P1', 'P2', 'P3'];
-export const GAP_ROUTES = ['engine', '3d', 'pui'];
+export const GAP_ROUTES = ['engine', 'requests-3d', 'pui'];
 export const GAP_STATES = ['open', 'accepted', 'in-progress', 'delivered', 'wontfix'];
 /** 只有 P0/P1 锁关（owner 边界：「有未解 P0/P1 → 该关锁」）——P2/P3 板上可见但不拦路。 */
 export const GAP_BLOCKING_PRIORITIES = ['P0', 'P1'];

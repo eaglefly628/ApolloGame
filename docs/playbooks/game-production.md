@@ -54,8 +54,8 @@
 一路生成下去」是合法路径（owner 2026-08-16 叠叠乐实撞）。怎么裁仍走既有协议（先查→摆 A/B→owner 判），
 本文件只是那份裁决的机读投影：`[{id,title,priority,route,state,ticket,blocks}]`。
 
-- `priority` `P0|P1|P2|P3`——**只有 P0/P1 锁关**；`route` `engine|3d|pui`——**按池分流**
-  （engine=10 硬槽 / 3d=独立池 / pui=UI 基座；一股脑进引擎池会当场撑爆槽位）。
+- `priority` `P0|P1|P2|P3`——**只有 P0/P1 锁关**；`route` `engine|requests-3d|pui`（与 `POST /api/projects` 落盘端点逐字同集）——**按池分流**
+  （10 硬槽 / P3D 独立池 / PUI 基座；一股脑进引擎池会当场撑爆槽位）。
 - `state` `open`(未裁)`accepted`(判过 A/B 待做)`in-progress``delivered``wontfix`(回驳·附等价数据写法)；
   **`≠open` 必带 `ticket`**（面板跳过去看裁词）。有 `open` = S2 门红 / 板 ⚠。
 - `blocks`=卡住哪几关：**被锁的关 `gate` 拒跑且 `--out-of-order` 不放行**——跳过去施工只能在游戏层写
