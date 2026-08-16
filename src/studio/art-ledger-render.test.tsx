@@ -160,6 +160,31 @@ describe('ArtLedgerPanel · 内置游戏一键提交推送', () => {
   });
 });
 
+// ═══ REQ-ARTPROMPT·改词入口接线（2026-08-16·PST P1「改了没反应」根修）═══
+// 行带旧回填 prompt（LEDGER art-12 正是这形状）时：预填必须是 prompt（生效主体）而非 query（身份键），
+// 提交的编辑文字走 body.query（服务端旧契约名）→ CLI --query → resetRow 写 row.prompt。
+describe('ArtLedgerPanel · REQ-ARTPROMPT 预填=生效主体·提交=编辑文字', () => {
+  it('点开带回填 prompt 的行：textarea 预填 r.prompt（非身份 query）；点「生成」提交该文字（body.query=生效提示词）', async () => {
+    await act(async () => { root.render(<ArtLedgerPanel slug="sample-game" onBack={() => {}} />); });
+    await flush();
+    const noEl = [...container.querySelectorAll('span')].find((s) => s.textContent === 'art-12');
+    await act(async () => { noEl!.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    await flush();
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement;
+    expect(ta.value).toBe('top-down neon drone, pink #ff5c7a'); // = r.prompt（旧实现预填 r.prompt||r.query 同值·此锚防退回纯 query）
+    expect(ta.value).not.toBe('enemy basic body');              // 绝不是身份键 query
+    const btn = [...container.querySelectorAll('button')].find((b) => b.textContent === '生成');
+    await act(async () => { btn!.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    await flush();
+    const calls = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls;
+    const regen = calls.find(([url]) => String(url).includes('/api/art/regenerate'));
+    expect(regen).toBeTruthy();
+    const body = JSON.parse((regen![1] as RequestInit).body as string) as { no: string; query?: string };
+    expect(body.no).toBe('art-12');
+    expect(body.query).toBe('top-down neon drone, pink #ff5c7a'); // 提交=编辑框现词（生效提示词·服务端映到 row.prompt）
+  });
+});
+
 // ═══ mock 当场说破（owner 2026-08-06 实战踩坑）═══
 // 单槽「重新生成」在无 key 时服务端探针失败自动回退 mock，此前 toast 仍是「✓ 重生成 art-15」，
 // 人以为拿到真图、实际是 gen/mock/ 下一张噪声占位。红线「静默顶替=假绿」此前只有一键全量守住。

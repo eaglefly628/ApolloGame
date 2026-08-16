@@ -22,8 +22,8 @@ export interface LedgerRow {
   readonly desc?: string; // 人读短描述（authored-inventory 台账有·如 game-c；derive 线无）
   readonly slot?: { entity: string; component: string; field: string }; // derive 线（manifest 推导·历史实例 game-q·已随 REQ-RETRO 引擎大扫除 2026-08-03 删除）
   readonly ref?: { mechanism?: string; component?: string; field?: string; resolver?: string; servedPath?: string }; // authored-inventory 线（声明式台账·game-c）
-  readonly query: string;
-  readonly prompt?: string; // 回填的完整提示词（skinKey 行有·needs-art 行 null）
+  readonly query: string; // 素材身份键+机器推导查询词（rowIdentity 末级回退·界面编辑永不写它·REQ-ARTPROMPT）
+  readonly prompt?: string; // 生效提示词主体（人工编辑/回填·dialectPrompt 最高优先；无则主体=query）
   readonly placeholder?: { ref?: string; current?: string; source?: string; count?: number };
   readonly spec?: Record<string, unknown>;
   readonly context?: string;
@@ -278,6 +278,9 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
     finally { setBusy(false); loadSync(); }
   }, [busy, slug, loadSync]);
 
+  // REQ-ARTPROMPT（2026-08-16）：编辑框文字=生效提示词整体。body 字段名 query 是服务端 t2_replace.py 的
+  // 旧契约名——链路 query → CLI --query（旧名同义 --prompt）→ resetRow 写 row.prompt·**永不写身份键 row.query**
+  // （此前编辑存 query 而生成读 row.prompt = 改了没反应）。预填=r.prompt||r.query（卡片 onClick）=dialectPrompt 现算主体。
   const doRegen = () => sel && act('/api/art/regenerate', { slug, no: sel.no, packId: regenPack, query: regenPrompt.trim() || undefined, mock: mockRun, ...(genProvider ? { provider: genProvider } : {}) }, `✓ 重生成 ${sel.no}`);
   const doSaveStyle = () => act('/api/art/style', { slug, stylePrompt: stylePrompt.trim() }, '✓ 风格锚已存').then(() => setStyleDirty(false));
   const doApprove = (no: string) => act('/api/art/approve', { slug, no }, no === 'all' ? '✓ 全部复核通过' : `✓ ${no} 复核通过`);
@@ -432,7 +435,7 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
               )}
               {/* 🔄 重新生成 */}
               <div style={{ borderTop: `1px solid ${SHELL.line}`, paddingTop: 10 }}>
-                <div style={sLabel}>🔄 重新生成（可改描述）</div>
+                <div style={sLabel}>🔄 重新生成（可改提示词）</div>
                 <textarea value={regenPrompt} onChange={(e) => setRegenPrompt(e.target.value)} rows={2} style={{ ...sInput(), width: '100%', margin: '6px 0', resize: 'vertical', fontFamily: SHELL.fontMono, fontSize: 11 }} />
                 <div style={{ display: 'flex', gap: 6 }}>
                   <select value={regenPack} onChange={(e) => setRegenPack(e.target.value)} style={{ ...sInput(), flex: 1, padding: '6px 8px' }}>{packs.map((p) => <option key={p.packId} value={p.packId}>{p.name}</option>)}</select>

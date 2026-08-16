@@ -2055,7 +2055,8 @@ class Component extends DCLogic {
   abPickItem(it) {
     // 换了选中项 → 历史/替换两个 tab 的临时态清零（含人审 note——wizardSignoff 铁律：永远起空·绝不带着上一张的签名过来）。
     const patch = { abSel: it, abDetailTab: 'info', abHistSel: null, abApproveNote: '', abApproveBy: 'owner',
-      abRegenQuery: (it && (it.query || it.desc)) || '', abSwapId: '' };
+      // 预填=生效主体 prompt>query>desc（REQ-ARTPROMPT·artbrowser.py 条目暂未回带 prompt 字段→现值同旧·带上即生效）
+      abRegenQuery: (it && (it.prompt || it.query || it.desc)) || '', abSwapId: '' };
     // 点了某游戏的台账行 → 顺手把「拖入登记」目标预填成同一槽（owner「点开就是想换这张」的最短路径·
     // A4「上传替换」按钮直接复用这套既有拖入登记机关，零逻辑重写）。
     if (it && it.source === 'art-ledger' && it.slug && it.no) { patch.abDropSlug = it.slug; patch.abDropNo = it.no; }
@@ -3305,7 +3306,9 @@ class Component extends DCLogic {
       const swatchText = (served || phColor) ? '' : '程序占位';
       return { no: r.no, q: r.query || (r.slot && r.slot.entity) || '', badge: badge[0], swatchStyle, swatchText,
         specText: artSpecText(r),  // 出图规格（owner 07-15「没有尺寸让我文生图怎么干」）：行卡就亮尺寸·不用点开
-        pick: () => this.setState({ artSel: r.no, artQ: r.query || '', artSize: (r.targetSize && r.targetSize.w && r.targetSize.h) ? (r.targetSize.w + 'x' + r.targetSize.h) : '' }),  // 点开详情卡（一站式处理·07-12·带尺寸覆盖）
+        // 点开详情卡（一站式处理·07-12·带尺寸覆盖）。预填=生效主体 r.prompt||r.query（REQ-ARTPROMPT 2026-08-16：
+        // 此前预填 query、提交也存 query，而生成主体优先读 row.prompt → 有回填 prompt 的行「改了没反应」）。
+        pick: () => this.setState({ artSel: r.no, artQ: r.prompt || r.query || '', artSize: (r.targetSize && r.targetSize.w && r.targetSize.h) ? (r.targetSize.w + 'x' + r.targetSize.h) : '' }),
         cardStyle: { borderRadius: '16px', overflow: 'hidden', cursor: 'pointer',
           border: '3px solid ' + (s.artSel === r.no ? '#7ecb45' : '#ffd257'),
           boxShadow: '0 4px 0 rgba(58,35,18,.25),0 0 0 2px #3a2312', background: '#fff' },
@@ -3997,7 +4000,7 @@ class Component extends DCLogic {
           const size = r.kind === 'model3d' ? ('低模3D·≤' + (sp.polyBudget || 3000) + '面')
             : ((sp.w && sp.h) ? (sp.w + 'x' + sp.h + 'px·' + (sp.transparent ? '透明底PNG' : '不透明')) : '尺寸未定');
           const st = r.status === 'replaced' ? '升级替换(现=程序图)' : '待出图';
-          return r.no + ' | ' + st + ' | ' + size + ' | ' + (r.desc || '') + ' | 提示词: ' + (r.query || '');
+          return r.no + ' | ' + st + ' | ' + size + ' | ' + (r.desc || '') + ' | 提示词: ' + (r.prompt || r.query || '');
         });
         this.copyText(['# ' + s.assetsSlug + ' 出图任务清单 · ' + ledRowsAll.length + ' 张（编号|状态|规格|需求|提示词·出图后回工坊逐行⤵替换）', ...lines].join('\n'));
       },
@@ -4024,8 +4027,9 @@ class Component extends DCLogic {
       artSelInfo: artSelRow ? [
         // 出图规格置顶（owner 07-15「每张 2D 图要确定尺寸·没有尺寸让我文生图怎么干」）：尺寸/底格式是硬约束，先于提示词。
         '📐 出图规格：' + (artSpecText(artSelRow) || '（未定·联系主程补台账 spec）'),
-        '提示词全文：' + (artSelRow.query || '（无）'),
-        artSelRow.prompt ? '成图 prompt：' + artSelRow.prompt : '',
+        // 生效主体=prompt||query（REQ-ARTPROMPT）；成图 prompt=上次真实发给文生图的全文（provenance）
+        '提示词全文：' + (artSelRow.prompt || artSelRow.query || '（无）'),
+        (artSelRow.provenance && artSelRow.provenance.prompt) ? '成图 prompt：' + artSelRow.provenance.prompt : '',
         artSelRow.desc ? '需求：' + artSelRow.desc : '',
         artSelRow.context ? '上下文：' + artSelRow.context : '',
         '槽位：' + artSlotN + ' 处' + (artSlotN > 1 ? '（一张图生成后自动写回全部）' : '') + ' · 首槽 ' + ((artSelRow.slot && artSelRow.slot.entity) || ''),
@@ -4042,7 +4046,7 @@ class Component extends DCLogic {
         .concat(artProvsArr.map(p => ({ id: p.id, label: p.id + (p.keyConfigured === false ? ' ⚠' : ''), tip: p.keyConfigured === false ? ('未配 key（' + (p.envKey || '') + '）——设置页可填') : (p.license || '') })))
         .map(p => ({ label: p.label, tip: p.tip, style: chipStyle((s.artProv || '') === p.id), pick: () => this.setState({ artProv: p.id }) })),
       // 复制提示词/完整任务书（owner 07-15「要提示词+确定尺寸·外部文生图」）：提示词=编辑框现词(改过就复制改过的)。
-      artCopyPrompt: () => { if (artSelRow) this.copyText(((s.artQ || '').trim() || artSelRow.query || '')); },
+      artCopyPrompt: () => { if (artSelRow) this.copyText(((s.artQ || '').trim() || artSelRow.prompt || artSelRow.query || '')); },
       artCopyBrief: () => {
         if (!artSelRow) return;
         const sp = artSelRow.spec || {};
@@ -4051,8 +4055,10 @@ class Component extends DCLogic {
           : ((sp.w && sp.h) ? (sp.w + 'x' + sp.h + ' px · ' + (sp.transparent ? '透明背景 PNG' : '不透明')) : '（尺寸未定）');
         this.copyText(['【' + artSelRow.no + ' · ' + s.assetsSlug + '】' + (artSelRow.desc || ''),
           '出图规格：' + size,
-          '提示词：' + ((s.artQ || '').trim() || artSelRow.query || '')].join('\n'));
+          '提示词：' + ((s.artQ || '').trim() || artSelRow.prompt || artSelRow.query || '')].join('\n'));
       },
+      // REQ-ARTPROMPT：编辑框 artQ=生效提示词整体。body 字段名 query 是服务端旧契约名——链路
+      // query → CLI --query（旧名同义 --prompt）→ resetRow 写 row.prompt·永不写身份键 row.query。
       artRegen: () => { if (artSelRow) this.artCall('重新生成 ' + artSelRow.no, '/api/art/regenerate',
         { slug: s.assetsSlug, no: artSelRow.no, packId: artCurPack, query: (s.artQ || '').trim() || undefined, size: (s.artSize || '').trim() || undefined, provider: s.artProv || undefined }); },
       artBatchGen: () => this.artCall('批量生成占位行', '/api/art/batch', { slug: s.assetsSlug, packId: artCurPack, provider: s.artProv || undefined }),

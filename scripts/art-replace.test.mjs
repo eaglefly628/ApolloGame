@@ -285,11 +285,12 @@ describe('resetRow 非破坏性 + 点名 regen 恒重出（owner 2026-07-27「�
     row.status = 'generated';
     row.gen = { provider: 'qwen', servedPath: '/games/g/art/gen/art-03.png', cacheKey: 'ck1' };
     row.provenance = { model: 'm', prompt: 'p', date: 'd', license: 'l' };
-    const rr = resetRow(l, 'art-03', { query: '新词' });
+    const rr = resetRow(l, 'art-03', { prompt: '新词' });
     expect(rr.ok).toBe(true);
     expect(row.status).toBe('generated');                // 没被清成 placeholder（否则失败=空槽/色块）
     expect(row.gen && row.gen.servedPath).toBeTruthy();  // 旧图指针还在
-    expect(row.query).toBe('新词');                       // query 照常更新
+    expect(row.prompt).toBe('新词');                      // REQ-ARTPROMPT：编辑落 prompt（生效主体）
+    expect(row.query).toBe('brave knight');               // 身份键不动
   });
   it('点名 regen（only）恒重出·不吃缓存（同词也换新卷·非 only 批处理仍走缓存续跑）', () => withRoot(async (root) => {
     const l = deriveLedger(MANIFEST, { game: 'g' });
@@ -408,15 +409,17 @@ describe('需求推导（retrofit·色块游戏无 art: 槽位时）', () => {
 });
 
 describe('T2 单槽重解析地基（点名优化/三式替换）', () => {
-  it('resetRow：改 query·留 history·非破坏（旧图保留·owner 2026-07-27 修「失败→图没了→色块」）', () => {
+  it('resetRow：改生效提示词（写 prompt·不动身份 query）·留 history·非破坏（旧图保留·owner 2026-07-27 修「失败→图没了→色块」）', () => {
     const l = deriveLedger(MANIFEST, { game: 'g' });
+    const q0 = l.rows[0].query;
     l.rows[0].status = 'generated'; l.rows[0].gen = { cacheKey: 'x', servedPath: '/g/x.png' };
-    const r = resetRow(l, l.rows[0].no, { query: 'new prompt' });
+    const r = resetRow(l, l.rows[0].no, { prompt: 'new prompt' });
     expect(r.ok).toBe(true);
-    expect(l.rows[0].query).toBe('new prompt');
+    expect(l.rows[0].prompt).toBe('new prompt'); // REQ-ARTPROMPT：编辑落 prompt
+    expect(l.rows[0].query).toBe(q0);            // 身份键不漂移
     expect(l.rows[0].status).toBe('generated'); // 非破坏：不再预清成 placeholder（否则失败=空槽/色块）
     expect(l.rows[0].gen && l.rows[0].gen.servedPath).toBeTruthy(); // 旧图保留·生成成功才覆盖
-    expect(l.rows[0].history[0].action).toBe('regen');
+    expect(l.rows[0].history[0]).toMatchObject({ action: 'regen', prevPrompt: null, newPrompt: 'new prompt' });
     expect(resetRow(l, 'art-99', {}).ok).toBe(false); // 无此编号
   });
   it('swapSlot：把某槽引用直接钉到已存在资产 id·status→replaced·原 manifest 不改', () => {
@@ -521,8 +524,10 @@ describe('owner 07-09 review 四条修正', () => {
     const r = deriveRequirements(REQ, { game: 'g' }).rows[0];
     expect(r.desc).toContain('defensive turret');
     expect(r.desc).toContain('#38bdf8');
-    // 无手拼 prompt 时，desc 拼进生成主体
-    expect(dialectPrompt(r, STYLE_PACKS['pixel-retro'])).toContain('defensive turret');
+    // REQ-ARTPROMPT·owner 提示词精简（2026-08-16）：desc 只入台账供人读/复制任务书，**不再拼进生成主体**
+    // （旧断言 toContain('defensive turret') 即旧规则 query+desc·已随精简翻转）；主体=query。
+    expect(dialectPrompt(r, STYLE_PACKS['pixel-retro'])).not.toContain('#38bdf8');
+    expect(dialectPrompt(r, STYLE_PACKS['pixel-retro']).startsWith(`${r.query}, `)).toBe(true);
   });
   it('② 每游戏风格锚：ledger.artStyle.stylePrompt 拼进 prompt·merge 保留', () => {
     const pack = STYLE_PACKS['pixel-retro'];
@@ -751,6 +756,92 @@ describe('REQ-ARTTOOL-02·旧单值 slot 数据读写兼容（rowSlots 统一读
     const merged = mergeLedger(prev, fresh);
     expect(merged.rows).toHaveLength(1);
     expect(merged.rows[0].no).toBe('art-01');
+  });
+});
+
+// ═══ REQ-ARTPROMPT·界面改词写 prompt 不写身份 query（2026-08-16·PST P1「改了没反应」根修 + owner 提示词精简）═══
+describe('REQ-ARTPROMPT·职责拆分：query=身份键（编辑永不写）·prompt=生效主体（编辑一律写）', () => {
+  const pack = STYLE_PACKS['pixel-retro'];
+
+  it('P1 复现修复：行带旧回填 prompt 时改词 → dialectPrompt 主体=新文字（不再被旧 prompt 无声压住）·query 不变·cacheKey 变', () => {
+    // PST 实证复现的原始形状（art-pipeline-review-2026-08-10.md P1）：{query:'旧', prompt:'早先回填的完整提示词'}
+    const l = { version: 1, game: 'g', rows: [{ no: 'art-01', kind: 'sprite', query: '旧query', prompt: '早先回填的完整提示词', status: 'generated', gen: { cacheKey: 'ck0' }, provenance: null }] };
+    const keyBefore = cacheKey('qwen', dialectPrompt(l.rows[0], pack), pack.params);
+    const rr = resetRow(l, 'art-01', { prompt: '新提示词' });
+    expect(rr.ok).toBe(true);
+    const p = dialectPrompt(l.rows[0], pack);
+    expect(p).toContain('新提示词');                 // 改词后主体=新文字（此前：仍是旧 prompt=「改了没反应」）
+    expect(p).not.toContain('早先回填的完整提示词'); // 旧主体已被整体替代
+    expect(l.rows[0].query).toBe('旧query');          // 身份键一字不动
+    expect(l.rows[0].prompt).toBe('新提示词');
+    expect(cacheKey('qwen', p, pack.params)).not.toBe(keyBefore); // 换词必换 key → 点名重出真出新图
+    expect(l.rows[0].history.at(-1)).toMatchObject({ action: 'regen', prevPrompt: '早先回填的完整提示词', newPrompt: '新提示词' });
+  });
+
+  it('身份不漂移：query 兜底身份的行（无 skinKey/slot）改词后 re-derive 合并仍同号一行·prompt 跨重跑保留', () => {
+    // rowIdentity 三级回退落到末级 query 的行——正是「编辑写 query=身份漂移」的高危形状：
+    // 旧实现在这形状上改词 → 身份变 → merge 判新行（旧行墓碑+新号顺延）。新实现改的是 prompt，身份稳。
+    const mkRow = () => ({ no: 'art-01', kind: 'sprite', query: 'hand icon rock', status: 'needs-art', gen: null, provenance: null });
+    const prev = { version: 1, game: 'g', rows: [mkRow()] };
+    resetRow(prev, 'art-01', { prompt: '玉石材质的石头拳' });
+    const merged = mergeLedger(prev, { version: 1, game: 'g', rows: [mkRow()] });
+    expect(merged.rows.filter((r) => r.status !== 'retired')).toHaveLength(1); // 没裂行/没墓碑
+    expect(merged.rows[0].no).toBe('art-01');
+    expect(merged.rows[0].query).toBe('hand icon rock');       // 身份键仍是机器推导值
+    expect(merged.rows[0].prompt).toBe('玉石材质的石头拳');     // 人改的主体保留
+  });
+
+  it('owner 提示词精简：无 prompt 主体=query（不再拼 query+desc）·query 空的 desc-only 行兜底 desc（game-i/z/102 形状·免空主体）', () => {
+    const p1 = dialectPrompt({ no: 'a', kind: 'sprite', query: 'brave knight', desc: 'heroic humanoid, #38bdf8' }, pack);
+    expect(p1.startsWith('brave knight, ')).toBe(true);
+    expect(p1).not.toContain('#38bdf8'); // desc 不再进主体
+    const p2 = dialectPrompt({ no: 'b', kind: 'sprite', query: '', desc: 'a red potion bottle' }, pack);
+    expect(p2.startsWith('a red potion bottle, ')).toBe(true); // desc-only 行主体=desc（与旧规则逐字节同）
+  });
+
+  it('prompt:null 显式清除 → 删 row.prompt·主体落回 query（与 targetSize:null 同口径）', () => {
+    const l = { version: 1, game: 'g', rows: [{ no: 'art-01', kind: 'sprite', query: 'knight', prompt: '手拼词', status: 'placeholder', gen: null, provenance: null }] };
+    resetRow(l, 'art-01', { prompt: null });
+    expect('prompt' in l.rows[0]).toBe(false);
+    expect(dialectPrompt(l.rows[0], pack).startsWith('knight, ')).toBe(true);
+    expect(l.rows[0].history.at(-1)).toMatchObject({ action: 'regen', prevPrompt: '手拼词', newPrompt: null });
+  });
+
+  it('CLI 链路：fill --query（旧名·t2_replace.py 现契约）与 --prompt 同义——写 row.prompt·row.query 不动', () => {
+    // UI 改词的真实链路 = /api/art/regenerate {query} → CLI --query → resetRow。此测钉死 CLI 半段
+    //（服务端半段由 art-replace-smoke.py ⑦ 钉）。临时台账落 public/games/<slug>/art（fill=编译期线·无 manifest）。
+    const slug = 'zz-artprompt-cli';
+    const artDir = join(__dirnameCli, '..', 'public', 'games', slug, 'art');
+    const cli = (args) => spawnSync(process.execPath, [join(__dirnameCli, 'art-replace.mjs'), ...args], { encoding: 'utf8' });
+    try {
+      for (const [flag, word] of [['--query', '旧名改词'], ['--prompt', '正名改词']]) {
+        rmSync(join(__dirnameCli, '..', 'public', 'games', slug), { recursive: true, force: true });
+        mkdirSync(artDir, { recursive: true });
+        writeFileSync(join(artDir, 'art-ledger.json'), JSON.stringify({ version: 1, game: slug, mode: 'requirements', rows: [
+          { no: 'art-01', kind: 'sprite', query: '身份词', spec: { w: 32, h: 32, transparent: true }, status: 'needs-art', gen: null, provenance: null },
+        ] }, null, 2) + '\n');
+        const r = cli(['fill', slug, 'art-01', 'pixel-retro', flag, word, '--mock']);
+        expect(r.status).toBe(0);
+        const led = JSON.parse(readFileSync(join(artDir, 'art-ledger.json'), 'utf8'));
+        expect(led.rows[0].prompt).toBe(word);   // 编辑词落 prompt（生效主体）
+        expect(led.rows[0].query).toBe('身份词'); // 身份键不动
+        expect(led.rows[0].gen && led.rows[0].gen.prompt).toContain(word); // 实际发给文生图的全文吃到了新词
+      }
+    } finally {
+      rmSync(join(__dirnameCli, '..', 'public', 'games', slug), { recursive: true, force: true });
+    }
+  });
+});
+
+// ═══ REQ-ARTPROMPT·工坊入口接线锚（workshop/index.dc.html 无渲染测试基座 → 文本锚防「入口又改回存 query」）═══
+describe('REQ-ARTPROMPT·工坊素材屏详情卡接线（文本锚）', () => {
+  const dc = readFileSync(join(__dirnameCli, '..', 'workshop', 'index.dc.html'), 'utf8');
+  it('详情卡预填=生效主体（artQ: r.prompt || r.query）', () => {
+    expect(dc).toMatch(/artQ:\s*r\.prompt\s*\|\|\s*r\.query/);
+  });
+  it('「提示词全文」显示生效主体·导出任务单同口径（prompt 优先）', () => {
+    expect(dc).toMatch(/提示词全文：' \+ \(artSelRow\.prompt \|\| artSelRow\.query/);
+    expect(dc).toMatch(/提示词: ' \+ \(r\.prompt \|\| r\.query/);
   });
 });
 

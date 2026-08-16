@@ -155,12 +155,16 @@ try:
     st, lg = req('GET', f'/api/art/ledger?slug={SLUG}')
     check([r['no'] for r in lg.get('rows', [])] == nos0, '编号与初次 derive 一致')
 
-    print('⑦ T2 点名重生成单槽（改 prompt·mock 不重钉·其余不动）')
+    print('⑦ T2 点名重生成单槽（改词落 prompt·query 身份键不动·REQ-ARTPROMPT·mock 不重钉·其余不动）')
     st, rg = req('POST', '/api/art/regenerate', {'slug': SLUG, 'no': 'art-01', 'packId': 'pixel-retro', 'query': 'dark forest night', 'mock': True})
     check(st == 200 and rg.get('success'), f'regenerate art-01 成功 · {rg.get("error", "")[:80]}')
     st, lg = req('GET', f'/api/art/ledger?slug={SLUG}')
     rows = {r['no']: r for r in lg.get('rows', [])}
-    check(rows['art-01']['query'] == 'dark forest night', 'art-01 query 已改')
+    # REQ-ARTPROMPT（2026-08-16）：UI/端点的 query 字段=编辑生效提示词 → 写 row.prompt；row.query 是
+    # rowIdentity 身份键·界面编辑永不写它（旧行为「改词存 query·生成读 prompt」= P1 改了没反应）。
+    check(rows['art-01'].get('prompt') == 'dark forest night', 'art-01 编辑词落 prompt（生效主体）')
+    check(rows['art-01']['query'] == 'forest scenery', 'art-01 query（身份键）不动·仍=derive 推导值')
+    check('dark forest night' in ((rows['art-01'].get('gen') or {}).get('prompt') or ''), 'art-01 实发文生图全文吃到新词（不再被忽略）')
     check(any(h.get('action') == 'regen' for h in rows['art-01'].get('history', [])), 'art-01 台账留 regen 历史')
     check(rows['art-01']['status'] == 'generated', 'regen 后 mock 行停在 generated（生产端点不重钉·等真图）')
     check([r['no'] for r in lg.get('rows', [])] == nos0, '§六④ 其余行编号不动')

@@ -318,7 +318,8 @@ export function mergeLedger(prev, fresh, manifest = null) {
     seen.add(key);
     const p = prevByKey.get(key);
     if (p) {
-      // 人为改过 query（regen 留了 history）→ 人改的赢；否则以最新推导为准。
+      // 旧数据兼容：REQ-ARTPROMPT（2026-08-16）前的 regen 把编辑文字写进 query（history 留 newQuery）→ 那些行
+      // 人改的 query 仍赢；新编辑一律落 row.prompt（下行展开保留），query 恒随最新推导刷新（身份/查询词语义）。
       const edited = Array.isArray(p.history) && p.history.some((h) => h.action === 'regen' && h.newQuery && h.newQuery !== h.prevQuery);
       rows.push({
         ...f, no: p.no, query: edited ? p.query : f.query,
@@ -373,10 +374,16 @@ export function dialectPrompt(row, pack, gameStyle = '') {
   const kindWord = zh
     ? ({ sprite: '精灵图', texture: '贴图', bg: '背景图', splash: '启动画', model3d: '3D 模型' }[row.kind] || '图')
     : ({ sprite: 'game sprite', texture: 'texture', bg: 'background', splash: 'splash screen', model3d: '3d model' }[row.kind] || 'image');
-  // 主体优先级：row.prompt（人工精调·整体替代）> query+desc（机器推导详细描述）> query。
+  // ═══ 职责拆分铁律（REQ-ARTPROMPT 2026-08-16·根修 PST P1「UI 改词存 query·生成读 prompt=改了没反应」）═══
+  //   row.query  = 素材身份键 + 机器推导查询词（rowIdentity 末级回退/artResolve 免费库解析靠它·**界面编辑永不写它**）；
+  //   row.prompt = 生效提示词主体（人在任何界面改的字一律写这里·整体替代·mergeLedger 跨重跑保留）。
+  // 主体优先级：row.prompt > row.query > row.desc（owner 提示词精简：无 prompt 主体收敛为 query、不再拼
+  // query+desc——精简当日实测 631 活行：主体改变 156 行全部未生成、带 gen.cacheKey 的仅 2 行且均有
+  // row.prompt → 零 cacheKey 漂移·零重生成扣费，故全量生效不留双轨）。desc 只兜「query 为空」的行
+  // （game-i/z/102 共 122 行 desc-only·旧规则主体本就=desc·兜底后逐字节不变；不兜=空主体白扣费）。
   const subject = (typeof row.prompt === 'string' && row.prompt.trim())
     ? row.prompt.trim()
-    : [row.query || '', row.desc || ''].filter(Boolean).join(', ');
+    : ((row.query || '').trim() || (row.desc || '').trim());
   // gameStyle = 每游戏整体风格锚（台账头 artStyle.stylePrompt·owner 07-09 review ②），拼在风格包之后。
   const styleTail = (typeof gameStyle === 'string' && gameStyle.trim()) ? `, ${gameStyle.trim()}` : '';
   return `${subject}, ${kindWord}, ${base}${styleTail}`.trim();
@@ -775,12 +782,18 @@ export function applyReplacements(manifest, ledger, { allowMock = false } = {}) 
 
 function pushHistory(row, entry) { if (!Array.isArray(row.history)) row.history = []; row.history.push(entry); }
 
-/** 单行打回待生成（点名「重新生成」·可改 query/prompt）。批处理会据 status 只重跑它、其余命中缓存不动。 */
-export function resetRow(ledger, no, { query, targetSize, at = new Date().toISOString() } = {}) {
+/** 单行打回待生成（点名「重新生成」·可改生效提示词）。批处理会据 status 只重跑它、其余命中缓存不动。
+ *  REQ-ARTPROMPT（2026-08-16）：编辑文字写 row.prompt（生效主体·dialectPrompt 最高优先），**绝不写 row.query**——
+ *  query 是 rowIdentity 的末级身份键 + artResolve/去重分组的查询词，写它=改身份≠改提示词（旧实现把编辑文字
+ *  塞 query 而生成主体优先读 row.prompt → 人改的字被无声忽略=PST P1「改了没反应」）。
+ *  prompt === null 显式清除 → 删 row.prompt·主体落回 query（与 targetSize:null 同口径）。 */
+export function resetRow(ledger, no, { prompt, targetSize, at = new Date().toISOString() } = {}) {
   const row = ledger.rows.find((r) => r.no === no);
   if (!row) return { ok: false, error: `无此编号: ${no}` };
-  pushHistory(row, { action: 'regen', at, prevQuery: row.query, newQuery: (typeof query === 'string' && query.trim()) ? query.trim() : row.query });
-  if (typeof query === 'string' && query.trim()) row.query = query.trim();
+  const editing = typeof prompt === 'string' && prompt.trim();
+  pushHistory(row, { action: 'regen', at, prevPrompt: row.prompt ?? null, newPrompt: editing ? prompt.trim() : (prompt === null ? null : (row.prompt ?? null)) });
+  if (editing) row.prompt = prompt.trim();
+  else if (prompt === null) delete row.prompt;
   // 手动尺寸覆盖（owner 2026-07-22）：{w,h}=存该行 targetSize（生成放大到 GEN_MIN·回缩到此）；null=清除回 spec。
   if (targetSize && targetSize.w > 0 && targetSize.h > 0) row.targetSize = { w: targetSize.w | 0, h: targetSize.h | 0 };
   else if (targetSize === null) delete row.targetSize;
@@ -836,6 +849,13 @@ export function deriveForGame(manifest, game = '', { allowFallback = true } = {}
   return allowFallback ? deriveRequirements(manifest, { game }) : led;
 }
 
+// 改词入口统一读法（REQ-ARTPROMPT）：--prompt 为正名；--query 为旧名同义保留（服务端 t2_replace.py 仍传它·
+// UI 一路的 body 字段名也叫 query）。两者语义相同=「编辑生效提示词」→ resetRow 写 row.prompt，绝不写身份键 row.query。
+const editPromptArg = (argv) => {
+  const pi = argv.indexOf('--prompt'); if (pi >= 0) return argv[pi + 1];
+  const qi = argv.indexOf('--query'); return qi >= 0 ? argv[qi + 1] : undefined;
+};
+
 async function run(argv) {
   const cmd = argv[0], slug = argv[1];
   // 全命令共享的开关（提前声明·避免 fill 分支在 const 声明前引用 → TDZ ReferenceError）。
@@ -876,15 +896,15 @@ async function run(argv) {
     console.log(JSON.stringify({ ok: true, slug, rows: ledger.rows.length, ledger }));
     return;
   }
-  // 编译期游戏线·单槽点名生成（无 manifest·写回=skinKey 别名登记）：fill <game> <no> <packId> [--query q] [--mock]
+  // 编译期游戏线·单槽点名生成（无 manifest·写回=skinKey 别名登记）：fill <game> <no> <packId> [--prompt p] [--mock]
   if (cmd === 'fill') {
     const no = argv[2], packId = argv[3];
-    const qi = argv.indexOf('--query'); const query = qi >= 0 ? argv[qi + 1] : undefined;
+    const prompt = editPromptArg(argv); // 编辑生效提示词（--prompt 正名·--query 旧名同义）→ 写 row.prompt
     const szi = argv.indexOf('--size'); const targetSize = szi >= 0 ? parseSize(argv[szi + 1]) : undefined; // 手动尺寸覆盖 WxH
     const mock = argv.includes('--mock');
     const ledger = readJson(ledgerFile(ROOT, slug), null);
     if (!ledger) { console.error(`无台账: ${ledgerFile(ROOT, slug)}`); process.exit(1); }
-    const rr = resetRow(ledger, no, { query, targetSize });
+    const rr = resetRow(ledger, no, { prompt, targetSize });
     if (!rr.ok) { console.log(JSON.stringify(rr)); process.exit(1); }
     const b = await batchGenerate(ledger, packId, { game: slug, mock, only: no, provider: providerArg, debug, concurrency,
       persist: () => writeJson(ledgerFile(ROOT, slug), ledger) });
@@ -914,15 +934,15 @@ async function run(argv) {
     console.log(JSON.stringify({ ok: true, slug, replaced: res.replaced, skippedMock: res.skippedMock, manifest: res.manifest }));
     return;
   }
-  // T2 点名「重新生成」单槽（可改 query）：reset 该行 → 批处理只重跑它 → 重钉引用。
+  // T2 点名「重新生成」单槽（可改生效提示词）：reset 该行 → 批处理只重跑它 → 重钉引用。
   if (cmd === 'regen') {
     const no = argv[2], packId = argv[3];
-    const qi = argv.indexOf('--query'); const query = qi >= 0 ? argv[qi + 1] : undefined;
+    const prompt = editPromptArg(argv); // 编辑生效提示词（--prompt 正名·--query 旧名同义）→ 写 row.prompt
     const szi = argv.indexOf('--size'); const targetSize = szi >= 0 ? parseSize(argv[szi + 1]) : undefined; // 手动尺寸覆盖 WxH
     const mock = argv.includes('--mock');
     const mf = readJson(manifestFile(ROOT, slug), null); const ledger = readJson(ledgerFile(ROOT, slug), null);
     if (!mf || !ledger) { console.error('缺 manifest 或台账'); process.exit(1); }
-    const rr = resetRow(ledger, no, { query, targetSize });
+    const rr = resetRow(ledger, no, { prompt, targetSize });
     if (!rr.ok) { console.log(JSON.stringify(rr)); process.exit(1); }
     const b = await batchGenerate(ledger, packId, { game: slug, mock, only: no, provider: providerArg, debug, concurrency,
       persist: () => writeJson(ledgerFile(ROOT, slug), ledger) });
@@ -957,7 +977,7 @@ async function run(argv) {
     console.log(JSON.stringify({ ok: true, slug, packId, summary: b.summary, manifest: rep.manifest }));
     return;
   }
-  console.error('用法: art-replace.mjs <derive|batch|replace|regen|fill|swap|reskin|packs> <slug> [no|packId] [assetId] [--query q] [--mock|--upload]');
+  console.error('用法: art-replace.mjs <derive|batch|replace|regen|fill|swap|reskin|packs> <slug> [no|packId] [assetId] [--prompt p(改生效提示词·--query 旧名同义)] [--mock|--upload]');
   process.exit(1);
 }
 
