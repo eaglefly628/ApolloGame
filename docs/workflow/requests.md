@@ -97,14 +97,8 @@
 
 <!-- REQ-CARTART-卡带美术存储归位（P1·PST 提·owner 选方案 b-full）→ **2026-08-06 Lead 追认越界·结案出池**：两处跨域改动（`scripts/art-replace.mjs` 写盘落点 + `scripts/art-ledger-guard.mjs` 发现口径/台账根）**均予追认**——改法正确（都收敛到单一真相 `artRoot`，没有另起一套口径）、面最小、与 Python 侧 `paths.py::art_root` 同源。**追认时实证撞出并已修一处真 bug**：`art-replace.mjs` `fill` 的「无台账」错误分支把 `ROOT` 写成了 `root`（`run()` 内无该绑定）→ 撞上无台账的游戏不是干净报错退出而是 **ReferenceError 崩栈**；已修 + 补 2 例子进程 CLI 守卫（原 47 例单测全走导出函数，够不着 CLI 分支）·撤修复实测转红 1 例。复验：cartridge-art-smoke 18/18 · art-ledger-guard WARN(exit 2·gate allowExit 内·两条死账为既有存量) · scoped-gate scope=full 全绿。**留尾不占槽**：①`pipeline.json` 仍落 `public/games/<slug>/`（不在 art/ 下·消费方是生产板另一条线）②JS `artRoot` 用 `existsSync` 而 Py `art_root` 用 `.is_dir()`——`library/<slug>` 若是文件则两边分叉；判定不可达（需手工在 library 下造同名文件），记债不修。图纸全文 `docs/design/cartridge-art-storage-2026-08.md`。 -->
 
-### REQ-ARTGUARD-黑户判据认索引记账 · 62/65「黑户」是假阳·把判词钉死在 WARN · [2026-08-06] · PST 提（owner 认可）· status: **open（待 Lead 裁 + 派工·守卫属 Lead 独占域）** · 优先级: P2 · 类型: 守卫判据修正
-> **实证（非推测·2026-08-06 实跑）**：全仓 65 个黑户里，**62 个在各游戏 `art/index.json` 有完整来源登记**——game-a 的 55 张是 CC0 vendored 扑克（`license:"Public Domain"`·`source:"notpeter/Vector-Playing-Cards"`·`provenance.pulledFrom` 精确到源 URL·`status:filled`，游戏正靠 `cardAssetId()→索引` 消费），game-103 的 4 个 fx 同样三件齐，game-c 的 1 个有 provenance。**真正无账的只有 3 个**（game101 superpowers faceset·索引里也没有·已落 `docs/design/game101/requests.md`）。
-> **根因**：`blackHouseholdFiles()` 只拿 `art-ledger.json` 的 servedPath 做 covered 集，**完全不读 `art/index.json`**。于是"记账在资产索引、不在需求台账"的合法 vendored 资产被永久判成黑户 → 判词长期钉死 WARN、**真信号被 62 条噪声淹没**；且这 65 条已全部写进棘轮基线 `scripts/art-ledger-baseline.json`（game-a:57/game-103:4/game101:3/game-c:1），等于把噪声固化了。
-> **建议判据（Lead 裁）**：文件不算黑户当满足其一——① 被台账行 servedPath 覆盖（现规则不变）；② 在该游戏 `art/index.json` 有 `path` 命中的条目**且有来源登记**（`provenance` 对象存在 **或** `license`+`source` 齐）。落地后同步**瘦身基线**只留真黑户（棘轮只紧不松）。
-> **明确不做**：给 55 张扑克逐张编台账号——违背 owner「一行=一种素材」去重原则，它们不是 55 个独立美术需求而是一副成套 vendored 牌面。
-> **⚠ 追加实证（2026-08-06 owner 实战踩坑带出·同一守卫的第二处构造性假阳）**：`SKIP_DIR_PREFIXES = ['orig','ai/pending']` **不含 `gen/mock`**。而 mock 产物按设计**永远不上台账**（「mock 永不写回·不登别名·不可 approve」是手册红线）且已被 `.gitignore` 挡在仓外——**它必然、永久地被判成黑户**，判据与设计直接打架。owner 在 game108 点单槽重生成、无 key 回退 mock 后，资产浏览器把 `/games/game108/art/gen/mock/art-15.png` 标成「⚠ 黑户」并提示「拖入登记补建 provenance」——**照做就等于把 mock 钉进游戏**（手册明令的事故形态）。故本单加一项：`SKIP_DIR_PREFIXES` 补 `gen/mock`；浏览器对 mock 命名空间应显「⚙ MOCK 预览物·不可登记」而非黑户+登记指引。
-> **需 Lead 权衡的取舍**：认索引记账 = 把"记账可信度"下放给 index.json（与台账同信任级）。好处是判词恢复可用；代价是伪造索引条目也能过——但那与伪造台账行同级，且需留下 license/source 痕迹。另：`SKIP_DIR_PREFIXES` 已含 `orig`/`ai/pending`，备份目录不是新假阳源（已核）。
-> **验收**：改后全仓黑户从 65 → 3（且这 3 个正是 game101 那单要清的）；判词随之可回 PASS。
+<!-- REQ-ARTGUARD-黑户判据认索引记账（P2·PST 提）已完结：判据②落地——art/index.json path 命中且有来源登记（provenance 对象 或 license+source 双齐）即免黑户·原判据①/死账/SKIP 前缀不动。黑户 65→5（非预期 3：施工方逐条实查证明「62 有登记」是算术不是核实，真有登记 60；差的 2 张 game-a 程序化桌面 SVG 真无账——施工方拒绝代写游戏账本凑数=正确，Lead 认可基线留 2 并开 A-028 归 game-a PE 清账）。Lead 终审 PASS：20 测独立复跑绿·施工方双验红（撤并集行→55 张扑克回黑+FAIL 退 1·撤登记检查→3 例红）·Lead 第三轮破坏（双齐弱化为只查 license→恰边界测红）。尾巴：gen/mock 入 SKIP 前缀未裁——唯一现行例证 game-a art-03 死账已在 A-026,随那单处理,守卫不预扩。全文查 git 历史。 -->
+
 
 ### REQ-S3CLICK-骨架关加「点击打穿」机器门 · [2026-08-07] · owner 判 **A** · status: **in-progress** · **施工主体 = 策划 session（本行即占锁）** · 复查 = 楚晨 · 优先级: P1 · 类型: 流程门
 
