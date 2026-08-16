@@ -129,66 +129,7 @@
      2026-08-08 已按该写法接线完成（game108 罚血真扣血·验收剧本 12/12 绿）。全文查 git 历史与
      `docs/design/game108/requests.md` 的回驳单。**教训：开单编号前扫全套 docs/design/<game>/*.md，不只扫 requests。** -->
 
-### REQ-UIFX-2D 表现件补齐：**UI 层粒子对位 3D** + **液面件** · [2026-08-08] · owner 令（game108 设计定稿 v3 带出） → **指派：PUI**（`src/ui/**` 是 PUI 域） · status: **open** · 优先级: P1 · 类型: UI 基座扩件（render-only）
-
-**起因**：Claude Design 给 game108 的 v3 定稿里有两样表现，**闭集里现在做不了**。
-owner 2026-08-08 判词：「这是个偏美术的东西…粒子拖尾以前我们在 3D 里面实现过，所以应该是能做的…
-**我也不希望你用它的这个每一帧换新皮的锁死的方法**。」——即：**不许游戏层每帧生成新贴图绕过去**，
-该由渲染器承担的动画就交给渲染器，游戏只给静态数据。
-
-#### ① 先查（实查·留原文）
-
-| 查了什么 | 结论 | 出处 |
-|---|---|---|
-| UI 闭集 `Particles` | **只有 4 个预设 kind**（confetti/coins/stars/sparkle）+ `count` + `loop` + `follow:'cursor'`。**没有颜色、没有方向/目标、没有尺寸、没有拖尾** | `src/ui/components/types.ts:377-386` |
-| 同件的自述 | 「UI 层发射器（**世界层对等件=Vfx3D**）」 | 同上 :375 |
-| 世界层 `Vfx3D` | **已经是 Niagara-lite 闭集发射器**：`rate/lifetime/shape(point\|cone\|sphere)/coneAngle/speed/gravity/drag/attractor/size/sizeCurve/color/colorGradient/blend` | `protocol/components/render.ts:494-521` |
-| 3D 拖尾 | **已有 `Trail3D`**：`segments/width/color/minDist/fade/blend` | 同上 :526-534 |
-| UI 闭集里有没有液面/波纹/按父圆角裁剪 | **一个都没有**（`liquid`/`wave`/`clipChildren`/`overflow` 全库零命中） | `types.ts` 全文 grep |
-| `ProgressBar` | 已有 `value/max/tone/shape('bar'\|'ring')/size/bind` —— **形态轴已经开着**，加一档是同族扩写不是新件 | `types.ts:362-372` |
-
-**⇒ 不是「能不能」的问题，是「3D 有、UI 层没有」。** owner 说的「3D 里实现过」经查属实，
-UI 层那个同名件只是个四预设的门面。
-
-#### ② 要补的两件（都是 render-only·不进 sim/hash）
-
-**A · `Particles` 扩写到与 `Vfx3D` 对位**（**主项**）
-定稿要的原文：「14 颗射出，直径 12–30 六档，芯白 → 牌色 → 牌色 75% 径向渐变，外挂 26px 同色光晕 + 5px 白描边；
-先向上窜 90px 再俯冲，飞行 600ms、每颗错开 36ms；落点一记 200×130 的同色落地光晕」+「**加拖尾**」。
-缺的轴（照 `Vfx3D` 的既有命名，别另起一套）：
-- `color` / `colorGradient`（现在粒子色写死在预设里）
-- `size` + 尺寸分档（定稿要六档 12–30）
-- **方向与目标**：`shape:'cone'` + `coneAngle`，以及**飞向某个 LayoutNode**（可复用已有的锚引用
-  `AnchorRef{kind:'node',id}`——`layout.flyTo` 已经在用同一套寻址，别新造第三套）
-- **拖尾**：对位 `Trail3D` 的 `segments/width/fade/blend`
-- `gravity` / `drag`（定稿的「先窜上去再俯冲」= 初速 + 重力，不是手写关键帧）
-
-**B · 液面件 = `ProgressBar` 加 `shape:'liquid'`**（**同族扩写·不新增控件**）
-定稿要的原文：「水面是**两条错频的椭圆脊**叠加：主脊 20px scaleY 1↔.5 且左右荡 ±3%（900ms），
-副脊 16px 白 55% 反向荡（1250ms）——两条不同步才有晃动感，单条只会像呼吸。
-整杯水挂 `rt3-slosh`：以杯底为轴 ±1.6° 摇（1300ms）。另有 **3 颗气泡**（16/11/20px，白 60–75%）
-从底往上窜 210px，周期 1.5/1.8/2.1s 错开发。」
-建议字段（沿用该件既有口径）：`shape:'liquid'` + `radius`（按盒圆角裁）+ `fillColor` + `wave?:boolean` + `bubbles?:number`。
-**游戏只给一个标量 `value`**（水位）——四段过冲的曲线 game108 已经算好了（`POUR_KEYS`），
-不需要引擎管；引擎只管「把这个水位画成会晃的水面 + 气泡」。
-
-#### ③ 为什么不能在游戏层解决（= owner 那句「不许每帧换新皮」的技术面）
-
-现在的注水是把水面**烤进卡皮的 SVG**（闭集控件没有"按父圆角裁剪"，只能这么做）。
-要让水面逐帧形变，就得**每帧生成一张新 data-URI** ⇒ `mountUI` 判定 props 变了 ⇒
-**整屏面板 outerHTML 全量重建 + `<img>` PNG 重新请求**——2026-08-07 实测踩过，
-表现是**网络永远闲不下来、`networkidle` 直接超时**，真渲染探针跑不完。
-所以这不是"偷懒不做"，是那条路本身有害。
-
-#### ④ 边界（复查门核对用）
-
-`src/ui/components/types.ts`（两处 props）+ `server.ts` 的渲染胶水 + 其单测 + game-i 展示台一格。
-**不碰**任何游戏；game108 接上后把 `self-check/S5-design-v3-alignment.md` 的偏差 #1/#2 划掉。
-
-#### ⑤ 同族小项（PUI 一并判·不做也不阻塞）
-
-- `Label.tween` 期间**字号同步缩放**（定稿：伤害跳数时字号 .82 → 1）——现在 tween 只管数值。
-- 一个 **steps 节拍**的 `anim`（定稿：罚血「−1」印章每秒跳一下 `steps(1,end)`）。
+<!-- REQ-UIFX-2D 表现件补齐（P1·owner 2026-08-08 令·game108 设计定稿 v3 带出）已完结：A `Particles` 对位 Vfx3D 全轴扩写（color/colorGradient/size 分档/shape:'cone'+coneAngle/flyTo 复用 AnchorRef/trail{segments,width,fade,blend}/gravity/drag/stagger·particleSimSpec/particleSize 纯函数·rAF 胶水 render-only）+ B `ProgressBar shape:'liquid'`（radius 按盒裁·fillColor·错频双脊+slosh·气泡）+ ⑤ Label.tween 字号缩放与 anim:'tick' 节拍一并做。顺手真修四处审计基建假绿（gallery 六入口 buildGallery 参数漂移崩且 exit 0／ui-audit 对 display:none 祖先量幻影对比度／Badge tone undefined／sectionTitle dim→sub）。Lead 终审 PASS：16 例独立复跑绿·施工方三轮验红（R1 stagger/R2 slosh/R3 scale 胶水）·Lead 第四轮 sabotage（particleSize 缺省档拍平→恰中 `expected 8 to be 12`）。存量债（tab3dui 35 处硬对比·tab-new 未入审计）归 PUI 主 session 立单；game108 侧接入（粒子替换/烤水面换液面件·S5 偏差 #1/#2 届时划掉）归 game108 自治。全文查 git 历史。 -->
 
 <!-- REQ-WAITUNTIL-验收剧本条件等待（P1·owner 2026-08-09 判 A·game108 复盘第五缺口）已完结：剧本步骤加 `{"waitUntil":[断言…],cap:N}`——断言复用 expect 闭集零新词表·先查后拍·封顶 FAIL 带已等拍数·waitedTicks 入 trace（同 seed 同轨连它一起比）·裸 tick 仍合法。主程施工（🔴 共享 harness）：schema+runner+13 例守卫·深车道点名跑绿（37 过·2 红=game-103 缺 adapter+game102 剧本漂移，经 HEAD 隔离 worktree 复跑坐实为存量且各有在案工单）·双撤修验红锚点命中（AND 语义反转→「多断言 AND 语义」红·撤 cap 校验→「cap 必填」红）。手册口径入 testing.md 验收剧本节；game108 迁移=REQ-108-GD-03（游戏自治·非强制）。spec 与判词全文查 git 历史。 -->
 
