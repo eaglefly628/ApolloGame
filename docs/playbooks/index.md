@@ -7,7 +7,7 @@
 ## 使用铁律（工作流）
 
 1. **先查后做**：接到任务 → 按下表找到生产线 → 读该线手册 → **手册里查得到的做法必须用基座件**。
-2. **查不到 ≠ 自造**：手册没覆盖的做法 → 去 `docs/workflow/requests.md` 提缺口，走 **⚖ 缺口裁决协议三步**（①先查留原文 → ②摆 A/B 两条路各附代价 → ③owner 判·Lead 不自裁·全文见 CLAUDE.md）→ **等裁决，绝不绕开基座自己发明**。
+2. **查不到先 `git pull` 再查**：档案每天在长，旧树查新知必然空手（2026-08-13 108 session 实证）。**查不到 ≠ 自造**：手册没覆盖的做法 → 去 `docs/workflow/requests.md` 提缺口，走 **⚖ 缺口裁决协议三步**（①先查留原文 → ②摆 A/B 两条路各附代价 → ③owner 判·Lead 不自裁·全文见 CLAUDE.md）→ **等裁决，绝不绕开基座自己发明**。
 3. **手册对产出游戏负全责**：查不到即手册的 bug——提缺口同时就是在修手册；主程裁决后把答案回填对应手册。
 4. 交付前自检：跑 `node scripts/game-skill-audit.mjs <game>`（红旗=裸 Math.random/innerHTML/createElement/零能力接入/零测试）；UI 线另跑 `/check-ui`。
 
@@ -35,7 +35,7 @@
 | 音频 | `playbooks/audio.md` | SynthAudioPort/SfxSpec（声音=数据） | 各游戏 PE；正样例=game-g |
 | 存档与平台 | `playbooks/save-platform.md` | storage/platform-hooks（云存档/成就） | 各游戏 PE；发布=**game-publisher agent** |
 | **DokiWorld 出包** | `playbooks/dokiworld-pack.md` | 产物→DokiWorld App（manifest/SDK/自包含 dist） | 出包前必读 |
-| **外部引擎交付（DokiWorld 卡带）** | `playbooks/dokiworld-export.md` | 导出插件 `tools/export-targets/dokiworld.mjs` · 协议桥 v1 + game.json + 计分注入 + 资源展平 · 卡片桥权威不冲突 | 全员（导 a/b/c 给 DokiWorld 前必读）；工具=主程 |
+| ~~外部引擎交付（DokiWorld 卡带）~~ | `playbooks/dokiworld-export.md` | **已退役 2026-08-13**——旧协议桥形态·对方不再收 | 用上一行的出包线 |
 | 平台角色卡桥（外部数据→席位） | `playbooks/character-card.md` | `services/character-card`（normalizeCharacterCard/toSeatCard/isCardUsable）· 媒体取优 · 成年硬闸 · passthrough 对账 | 各游戏 PE（a/b/c 接卡）；桥=引擎 services |
 | **测试与验收** | `playbooks/testing.md` | vitest·registry-guard·ZeroCraftBench·数值 sim·e2e·smoke·game-skill-audit | **全员（交付前必过）**；验收纪律=Lead |
 | **视觉验收/出货门** | `playbooks/visual-scorecard.md` | 8 维 0-3 分·premium=全维≥2·证据台账·反捷径工艺律 | 判官=Lead/P3D；PS 出货内门（TGS 吸收·owner 2026-07-06 批） |
