@@ -24,6 +24,8 @@
 | 卡牌/牌面 | `PlayingCard.faceArt`(整面插画) + `flipped`/`flipOnHover`(翻面) | 🧊 3D UI · `t-tapflip` |
 | 选关地图 | `LevelPath`(蛇形路径 + 状态节点 + 星标) | `t-levelpath` |
 | 通关/领奖/连击 | `Particles`(confetti/coins/stars/sparkle) + `Float`(飘分) + `anim:floatUp/popOut` | 🎉 Juice |
+| 金币/伤害粒子**飞向目标**·拖尾 | `Particles` 物理弹道(REQ-UIFX·`shape:'cone'+gravity+flyTo:AnchorRef+trail`·色/径分档·对位 Vfx3D) | `t-3dui-pfly` |
+| 注水/蓄力液面杯 | `ProgressBar.shape:'liquid'`(radius/fillColor/wave/bubbles·游戏只给标量 value) | `t-3dui-liquid` |
 | 主行动键/大 CTA | `Button.kind:'hero'`(金糖) + `fx:[{kind:'sheen-hover'}]`(悬停流光) + `Panel.skin`(复合贴图键) | `t-skin` |
 | 得分/货币/时间数字 | `Label.format`(compact 12.3K / time mm:ss / percent) + `tween`(滚动) | `t-format` |
 | 异形按钮/菜单/容器 | `Button.shape`/`Panel.shape`(六边/盾/菱…8 形·闭集) | `t-shape` |

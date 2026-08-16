@@ -4,7 +4,7 @@
 // server 在根节点监听冒泡，按 action key 路由到 handlers。
 // 游戏层只提供 LayoutNode（数据）+ HandlerMap（回调），无需写 DOM 代码。
 
-import { renderNode, renderVListWindow, formatNumber } from './render.js';
+import { renderNode, renderVListWindow, formatNumber, particleSimSpec } from './render.js';
 import { ART_FONT_CSS } from './art-fonts.js';
 import { ART_FONT_CJK_CSS } from './art-fonts-cjk.js';
 import { SHELL } from '../shell-theme.js';
@@ -199,6 +199,11 @@ const APOLLO_KEYFRAMES = `
 @keyframes apollo-p-fall{0%{transform:translate(0,0) rotate(0);opacity:0}8%{opacity:1}100%{transform:translate(var(--dx,0),260px) rotate(var(--rot,540deg));opacity:.15}}
 @keyframes apollo-p-burst{0%{transform:translate(-50%,-50%) scale(.2);opacity:0}20%{opacity:1}100%{transform:translate(calc(-50% + var(--dx,0)),calc(-50% + var(--dy,0))) scale(1);opacity:0}}
 @keyframes apollo-p-twinkle{0%,100%{transform:scale(.3);opacity:.2}50%{transform:scale(1);opacity:1}}
+@keyframes apollo-liq-wave{0%,100%{transform:translate(-3%,-50%) scaleY(1)}50%{transform:translate(3%,-50%) scaleY(.5)}}
+@keyframes apollo-liq-wave2{0%,100%{transform:translate(3%,-50%) scaleY(.62)}50%{transform:translate(-3%,-50%) scaleY(1)}}
+@keyframes apollo-liq-slosh{0%,100%{transform:rotate(-1.6deg)}50%{transform:rotate(1.6deg)}}
+@keyframes apollo-liq-bub{0%{transform:translateY(0);opacity:0}12%{opacity:.8}85%{opacity:.55}100%{transform:translateY(-210px);opacity:0}}
+@keyframes apollo-tick{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
 [data-flipcard]{perspective:1000px;transition:transform .35s ease}
 [data-flipcard]:hover{transform:scale(1.06)}
 [data-flipcard] [data-flip-front],[data-flipcard] [data-flip-back]{transition:transform .55s cubic-bezier(.2,.75,.25,1);backface-visibility:hidden;-webkit-backface-visibility:hidden;transform-origin:50% 50%;will-change:transform}
@@ -345,6 +350,9 @@ export function mountUI(
       const fmt = el.dataset['tweenFmt']; // 数字格式化（compact/time/percent/int·formatNumber）
       // format 在场时 textContent 已是格式化串（不可解析）→ 从 data-tween-from 取原始初值。
       const from = fmt !== undefined ? (Number(el.dataset['tweenFrom']) || 0) : (Number(el.textContent) || 0);
+      // tween 期间字号缩放（REQ-UIFX ⑤·data-tween-scale=起始倍率·随进度回到 1·render 已置 inline-block+初始 scale）。
+      const s0raw = el.dataset['tweenScale'] !== undefined ? Number(el.dataset['tweenScale']) : undefined;
+      const s0 = s0raw !== undefined && Number.isFinite(s0raw) ? s0raw : undefined;
       const steps = Math.max(1, Math.round(ms / 16));
       let i = 0;
       const iv = setInterval(() => {
@@ -352,6 +360,7 @@ export function mountUI(
         const k = i >= steps ? 1 : 1 - Math.pow(1 - i / steps, 3); // easeOutCubic
         const v = from + (to - from) * k;
         el.textContent = fmt !== undefined ? formatNumber(v, fmt, dec) : v.toFixed(dec);
+        if (s0 !== undefined) el.style.transform = `scale(${(s0 + (1 - s0) * k).toFixed(3)})`;
         if (i >= steps) clearInterval(iv);
       }, 16);
       typers.push(iv);
@@ -486,6 +495,129 @@ export function mountUI(
     host.addEventListener('pointerleave', onFollowLeave);
   }
   ensureParticleFollowLoop();
+
+  // ── 物理弹道粒子（REQ-UIFX·render-only·不进 sim/hash·对位 Vfx3D 的 UI 层胶水）─────────────────
+  //   Particles 带 shape/gravity/drag/flyTo/trail → 渲成 data-particle-sim 容器；此处 rAF 积分
+  //   「初速(锥/四散·index 确定式 particleSimSpec) + 重力 + 阻尼 + (flyTo)渐强弹簧引向目标锚」——
+  //   对位 Vfx3D 的 shape/coneAngle/speed/gravity/drag/attractor 与 Trail3D 的位置历史拖尾。
+  //   目标寻址复用 AnchorRef 的 node/entity 两路（同 anchor 循环）；到达即回收（loop 重生 / 一次性标 data-ps-done）。
+  //   每帧重查容器（稳健于 update 重渲）·无件不起循环（省帧）·teardown 停 rAF。happy-dom 无布局也安全（原点 0,0）。
+  interface PsPart { el: HTMLElement; trail: HTMLElement[]; x: number; y: number; vx: number; vy: number;
+    born: number; spawned: boolean; dead: boolean; hist: number[] }
+  let psRaf = 0;
+  let psLast = 0;
+  const psState = new WeakMap<HTMLElement, { parts: PsPart[]; t0: number }>();
+  const psTick = (el: HTMLElement, now: number, dt: number): void => {
+    let st = psState.get(el);
+    if (!st) {
+      const parts = Array.from(el.querySelectorAll<HTMLElement>('[data-pp]')).map((m): PsPart => ({
+        el: m,
+        trail: Array.from(el.querySelectorAll<HTMLElement>(`[data-pt="${m.dataset['pp']}"]`)),
+        x: 0, y: 0, vx: 0, vy: 0, born: 0, spawned: false, dead: false, hist: [],
+      }));
+      st = { parts, t0: now };
+      psState.set(el, st);
+    }
+    const ds = el.dataset;
+    if (ds['psDone']) return; // 一次性播毕
+    const shape = ds['psShape'] === 'cone' ? 'cone' as const : 'point' as const;
+    const cone = Number(ds['psCone']) || 0.4;
+    const speed = Number(ds['psSpeed']) || 320;
+    const stagger = Number(ds['psStagger']) || 0;
+    const grav = Number(ds['psGrav']) || 0;
+    const drag = Number(ds['psDrag']) || 0;
+    const life = Number(ds['psLife']) || 1.6;
+    const loop = ds['psLoop'] !== '0';
+    const segs = Number(ds['psTrailSeg']) || 0;
+    const fade = Number(ds['psTrailFade']) || 0;
+    // 发射原点=容器中心；目标锚点换算到容器局部坐标（含信箱缩放校正·同 follow 循环）。
+    const r = el.getBoundingClientRect();
+    const k = el.offsetWidth ? r.width / el.offsetWidth : 1;
+    const ox = (el.offsetWidth || 0) / 2, oy = (el.offsetHeight || 0) / 2;
+    let tx: number | undefined, ty: number | undefined;
+    const flyId = ds['psFlyId'];
+    if (flyId) {
+      const esc1 = (s: string) => (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(s) : s.replace(/[^\w-]/g, '\\$&');
+      const target = ds['psFlyKind'] === 'entity'
+        ? document.querySelector(`[data-entity-anchor="${esc1(flyId)}"]`)
+        : (host.querySelector(`#${esc1(flyId)}`) ?? document.getElementById(flyId));
+      if (target) {
+        const tr = target.getBoundingClientRect();
+        if (tr.width || tr.height) {
+          const at = ds['psFlyAt'];
+          let cx = tr.left + tr.width / 2, cy = tr.top + tr.height / 2;
+          if (at === 'top') cy = tr.top; else if (at === 'bottom') cy = tr.bottom;
+          else if (at === 'left') cx = tr.left; else if (at === 'right') cx = tr.right;
+          tx = (cx - r.left) / (k || 1) + (Number(ds['psFlyOx']) || 0);
+          ty = (cy - r.top) / (k || 1) + (Number(ds['psFlyOy']) || 0);
+        }
+      }
+    }
+    const tsec = (now - st.t0) / 1000;
+    let anyAlive = false;
+    st.parts.forEach((pt, i) => {
+      if (pt.dead) return;
+      const spec = particleSimSpec(i, { shape, coneAngle: cone, speed, stagger });
+      if (!pt.spawned) {
+        if (tsec < spec.delay / 1000) { anyAlive = true; return; } // 未到错峰点
+        pt.spawned = true; pt.born = tsec; pt.hist = [];
+        pt.x = ox; pt.y = oy;
+        pt.vx = Math.cos(spec.angle) * spec.speed; pt.vy = Math.sin(spec.angle) * spec.speed;
+      }
+      const age = tsec - pt.born;
+      pt.vy += grav * dt;
+      if (tx !== undefined && ty !== undefined) {
+        const kk = 26 * Math.min(1, age / 0.3); // 弹簧渐强（先窜后引·配 drag=阻尼弹簧缓入缓出）
+        pt.vx += (tx - pt.x) * kk * dt; pt.vy += (ty - pt.y) * kk * dt;
+      }
+      if (drag) { const f = Math.max(0, 1 - drag * dt); pt.vx *= f; pt.vy *= f; }
+      pt.x += pt.vx * dt; pt.y += pt.vy * dt;
+      const spd = Math.hypot(pt.vx, pt.vy);
+      const arrived = tx !== undefined && ty !== undefined && age > 0.12
+        && Math.hypot(tx - pt.x, ty - pt.y) < Math.max(18, spd * dt * 1.5);
+      if (arrived || age > life) {
+        pt.el.style.opacity = '0';
+        pt.trail.forEach((tl) => { tl.style.opacity = '0'; });
+        if (loop) { pt.spawned = false; anyAlive = true; } else pt.dead = true;
+        return;
+      }
+      anyAlive = true;
+      pt.el.style.transform = `translate(${pt.x.toFixed(1)}px,${pt.y.toFixed(1)}px) translate(-50%,-50%)`;
+      pt.el.style.opacity = '1';
+      if (segs > 0) {
+        // 位置历史采样（位移 ≥3px 才落点·对位 Trail3D minDist·静止不堆点）；hist=[x,y,…] 旧→新。
+        const n = pt.hist.length;
+        if (!n || Math.hypot(pt.x - pt.hist[n - 2]!, pt.y - pt.hist[n - 1]!) >= 3) {
+          pt.hist.push(pt.x, pt.y);
+          while (pt.hist.length > (segs + 1) * 2) pt.hist.splice(0, 2);
+        }
+        pt.trail.forEach((tl, j) => {
+          const idx = pt.hist.length - 4 - j * 2; // 头点之后·从新到旧
+          if (idx < 0) { tl.style.opacity = '0'; return; }
+          const q = (j + 1) / (segs + 1); // 0→头·1→尾
+          tl.style.transform = `translate(${pt.hist[idx]!.toFixed(1)}px,${pt.hist[idx + 1]!.toFixed(1)}px) translate(-50%,-50%) scale(${(1 - 0.65 * q).toFixed(2)})`;
+          tl.style.opacity = (0.75 * ((1 - q) + q * fade)).toFixed(2); // 头 .75 → 尾 .75*fade（对位 Trail3D fade）
+        });
+      }
+    });
+    if (!anyAlive && !loop) el.dataset['psDone'] = '1'; // 一次性播毕（此后本容器零开销）
+  };
+  const ensureParticleSimLoop = (): void => {
+    if (psRaf) return; // 已在跑（幂等·mount + 每次 update 可调）
+    if (typeof document === 'undefined' || typeof requestAnimationFrame !== 'function') return;
+    if (!host.querySelector('[data-particle-sim]')) return; // 无物理粒子件·不起循环（省帧）
+    psLast = 0;
+    const step = (now: number): void => {
+      const boxes = host.querySelectorAll<HTMLElement>('[data-particle-sim]');
+      if (!boxes.length) { psRaf = 0; return; } // 件全撤 → 停（再挂由 ensure 重启）
+      const dt = psLast ? Math.min((now - psLast) / 1000, 0.05) : 0.016;
+      psLast = now;
+      boxes.forEach((el) => psTick(el, now, dt));
+      psRaf = requestAnimationFrame(step);
+    };
+    psRaf = requestAnimationFrame(step);
+  };
+  ensureParticleSimLoop();
   // 背景 UV 滚动已并入 initDynamics（上·data-bgscroll·teardown 移除注入的 scrollStyles）。
 
   const dispatch = (e: Event): void => {
@@ -753,6 +885,7 @@ export function mountUI(
     bindVlists(); // 子树可能被替换 → 复绑 vlist 滚动监听
     ensureAnchorLoop(); // update 引入锚定件（Float/Connector）→ 启动跟随 rAF（幂等·game-i 从 hub .update 进模块的路径）
     ensureParticleFollowLoop(); // update 引入 Particles follow:'cursor' → 启动光标微尘 rAF（幂等）
+    ensureParticleSimLoop(); // update 引入物理弹道 Particles（REQ-UIFX）→ 启动积分 rAF（幂等）
     initDynamics(host); // REQ-UICONTRACT③：reconcile 换/插进来的新动效元素（typewriter/tween/flyto/bgscroll）也初始化（幂等·标记去重）
   };
 
@@ -781,6 +914,7 @@ export function mountUI(
     host.removeEventListener('pointermove', onFollowMove); // 停光标微尘监听 + rAF
     host.removeEventListener('pointerleave', onFollowLeave);
     if (followRaf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(followRaf);
+    if (psRaf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(psRaf); // 停物理弹道 rAF（REQ-UIFX）
     host.innerHTML = '';
   }) as MountHandle;
   teardown.update = update;

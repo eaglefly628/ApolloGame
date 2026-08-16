@@ -120,6 +120,10 @@ try {
     if (el.closest('[data-audit-skip-contrast]')) continue; // 定色语义原语（扑克牌红黑花色·牌面本色）→ 免对比检查（A-007b）
     const cs = getComputedStyle(el);
     if (cs.visibility === 'hidden' || cs.display === 'none' || Number(cs.opacity) < 0.5) continue;
+    // 祖先 display:none 不改子元素 computed display（display 不继承）→ 隐藏 tab 页/收起抽屉里的文字会被误计。
+    // 未渲染子树 client rects 为空/零尺寸 → 跳过（只审真正画在屏上的字·REQ-UIFX 复查修·此前 219 「硬失败」多为隐藏页幻影）。
+    const rects = el.getClientRects();
+    if (!rects.length || (rects[0].width === 0 && rects[0].height === 0)) continue;
     const fg = parse(cs.color); if (!fg) continue;
     const r = ratio(fg.slice(0, 3), solidBgUp(el));
     const big = parseFloat(cs.fontSize) >= 18 && Number(cs.fontWeight) >= 600;

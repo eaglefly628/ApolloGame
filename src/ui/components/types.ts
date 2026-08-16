@@ -60,7 +60,8 @@ export interface LayoutConstraints {
    *  ms 时长(缺省 700)·arc 弧顶抬高 px(缺省 60·0=直线)·delay 起步延迟 ms。多个飞行物挂不同 delay=拖尾成串。 */
   flyTo?: { to: string; ms?: number; arc?: number; delay?: number };
   /** 入场/强调动画预设名（引擎内建关键帧·mountUI 注入）：一次性 fadeIn/slideUp/pop/shake/dealIn/flyIn/fadeOut/popOut；
-   *  循环 float/glow/pulse/spin/floatUp/marquee（spin=绕 Z 自旋·linear·转盘；marquee=横向滚动·公告跑马灯）。 */
+   *  循环 float/glow/pulse/spin/floatUp/marquee/tick（spin=绕 Z 自旋·linear·转盘；marquee=横向滚动·公告跑马灯；
+   *  tick=**steps 节拍**·steps(1,end) 硬跳无缓动·「−1」印章每秒跳一下(REQ-UIFX ⑤·周期=animMs 缺省 1000)）。 */
   anim?: string;
   /** 动画时长 ms（缺省 360）。 */
   animMs?: number;
@@ -194,8 +195,9 @@ export interface LabelProps {
   /** 打字机(收编 VN DialogBox 逐字显)：每字毫秒(>0 开)。mountUI 挂载时逐字揭示·teardown 清定时器。 */
   typewriter?: number;
   /** 数字滚动补间(render-only·掷骰滚到命点/筹码倍率分数跳动)：from→to 在 ms(缺省 600) 内由 mountUI 定时器动画到位；
-   *  decimals=小数位(倍率用·缺省 0)。纯表现·不进 sim hash(同 typewriter)。弱模型只填 {from,to,ms} 数字。 */
-  tween?: { from: number; to: number; ms?: number; decimals?: number };
+   *  decimals=小数位(倍率用·缺省 0)。纯表现·不进 sim hash(同 typewriter)。弱模型只填 {from,to,ms} 数字。
+   *  scale=**tween 期间字号同步缩放**(REQ-UIFX ⑤·定稿「伤害跳数字号 .82→1」)：起始缩放倍率·随补间进度回到 1。 */
+  tween?: { from: number; to: number; ms?: number; decimals?: number; scale?: number };
   /** 富文本多段着色(render-only·词条高亮/分色说明)：替代单色 text，逐段自带 color(同 Label 令牌)/bold。
    *  纯数据(段数组)·最弱 LLM 能填；有 spans 时忽略 text。 */
   /** 富文本分段（render-only）。img=段首内联图标（已解析 URL·1em 随字号·批32「图标统一升级」：emoji 记号可换成成套美术图标）。 */
@@ -212,9 +214,11 @@ export interface DropdownProps {
   action?: string;
 }
 
+// tone 闭集补全（REQ-UIFX 复查带出）：gallery 早已在用 accent/gold/danger 三档，但 renderBadge 只映射 ok/warn/dim →
+// 未映射档渲出字面 "undefined;" 样式（静默坏样式·校验器 bad-enum 抓到的真病）。补齐同族语义档（镜像 Toast tone 家族）。
 export interface BadgeProps {
   text: string;
-  tone?: 'ok' | 'warn' | 'dim';
+  tone?: 'ok' | 'warn' | 'dim' | 'accent' | 'gold' | 'danger';
 }
 
 export interface InputProps {
@@ -359,14 +363,27 @@ export interface TabsProps { tabs: { id: string; label: string; anchor?: string;
 
 // ── ProgressBar（纯展示比例条·血/蓝/经验/进度）：区别于可拖的 Slider。value/max → 填充宽度；tone 取主题令牌。──
 // max 缺省 1（value 当 0..1 比例）；showValue=true 右上显示 百分比(max=1) 或 value/max。纯展示·无事件。
+// REQ-UIFX liquid 档（同族扩写·非新控件）：shape:'liquid' = 液面杯（Pixel Pour 注水一类）。**游戏只给标量 value**（水位）——
+//   波动/气泡/晃动全由渲染器承担（双错频椭圆脊 + 整杯 slosh + 上窜气泡·CSS keyframes·server.ts 注入），
+//   不许游戏层每帧烤水面进贴图（owner 判词·见 Particles 头注同案）。render-only·不进 sim/hash。
 export interface ProgressBarProps {
   value: number; max?: number;
   tone?: 'accent' | 'gold' | 'ok' | 'warn' | 'danger';
   label?: string; showValue?: boolean;
-  /** 形态(缺省 bar=线性条·向后兼容)：ring=环形/径向进度(conic 弧·体力/耐力/每日目标/冷却环·休闲常见)。中心显 value/label。 */
-  shape?: 'bar' | 'ring';
+  /** 形态(缺省 bar=线性条·向后兼容)：ring=环形/径向进度(conic 弧·体力/耐力/每日目标/冷却环)；
+   *  liquid=**液面杯**(REQ-UIFX·value=水位·会晃的水面+气泡·杯体=本节点盒 layout.width/height)。中心显 value/label。 */
+  shape?: 'bar' | 'ring' | 'liquid';
   /** 环直径 px(shape:'ring' 用·缺省 64)。 */
   size?: number;
+  /** 液面杯体圆角 px（shape:'liquid'·按盒圆角裁水体·缺省 14）。杯底圆角靠它，异形杯配 layout.radius 同轴覆盖。 */
+  radius?: number;
+  /** 液体色（shape:'liquid'·CSS 色·净化后插样式·如 '#31b7f2'）。缺省按 tone 令牌取色。 */
+  fillColor?: string;
+  /** 液面波动（shape:'liquid'·缺省 true）：主脊 900ms scaleY 1↔.5 荡 ±3% + 副脊 1250ms 反向（两条错频才有晃动感）
+   *  + 整杯以杯底为轴 ±1.6° slosh(1300ms)。false=静水（只留静态水面脊）。 */
+  wave?: boolean;
+  /** 气泡数（shape:'liquid'·缺省 0=无·上限 8）：从杯底往上窜·尺寸/周期/横位 index 确定式分档（定稿 16/11/20px·1.5/1.8/2.1s 错开发）。 */
+  bubbles?: number;
   /** 世界绑定(收编 GameShell bar)：resourceId·resolveBindings 时 value/max 取自 Resource.current/max。 */
   bind?: string;
 }
@@ -374,14 +391,49 @@ export interface ProgressBarProps {
 // ── Particles（UI 层庆祝粒子叠层·render-only·下沉自「休闲 juice 缺口」owner 2026-07-15）───────────
 // 通关撒纸屑 / 领奖金币雨 / 星光爆 / 环境微光——fx 是 per-node 无法喷「一把 N 个粒子」，这是 UI 层发射器（世界层对等件=Vfx3D）。
 // render-only 表现层：不进 sim/hash，粒子位置/延迟由 index 确定式派生（无裸 Math.random·可回归测）。铺满父容器·pointer-events:none。
+// REQ-UIFX（owner 2026-08-08·game108 v3 定稿带出）：扩写到与 Vfx3D **对位**（轴名照 Vfx3D 既有一套·不另起）：
+//   color/colorGradient/size(分档)/shape:'cone'+coneAngle/speed/lifetime/gravity/drag/飞向 LayoutNode(flyTo=AnchorRef)/
+//   拖尾 trail(对位 Trail3D segments/width/fade/blend)。填了 shape/gravity/drag/flyTo/trail 任一 → **物理弹道模式**：
+//   渲染器胶水（server.ts rAF 积分·render-only）驱动「初速+重力+阻尼(+弹簧引向目标)」，**不许游戏层每帧生成新贴图绕过去**
+//   （owner 判词·每帧换 data-URI ⇒ mountUI 整屏重建 ⇒ networkidle 永不闲·2026-08-07 实测）。缺省全不填=四预设 CSS 行为零变化。
 export interface ParticlesProps {
-  kind: 'confetti' | 'coins' | 'stars' | 'sparkle'; // 纸屑雨 / 金币雨 / 星光爆(径向) / 环境微光(原地闪)
+  kind: 'confetti' | 'coins' | 'stars' | 'sparkle'; // 纸屑雨 / 金币雨 / 星光爆(径向) / 环境微光(原地闪)——物理模式下=粒子体形（彩片/金圆/★/光点）
   count?: number;   // 粒子数(缺省 confetti 26·其余 16·上限 60 防过载)
   loop?: boolean;   // true=持续循环(缺省·环境/展示)；false=播一次即停(庆祝一次性·配退场)
   // 跟随光标态（render-only·下沉自 game-b「GameD 粒子追随」owner 2026-07-22）：设 'cursor' → 粒子簇
   // 收成小簇（软径向遮罩 + screen 混色·不挡字）·每帧 JS 缓动逼近指针（同 anchor/相机 pivot·非 CSS 动画）·
   // 指针离场淡出。渲染器侧胶水（server.ts 跟随循环）读 data-particle-follow 驱动；游戏侧纯数据消费。
   follow?: 'cursor';
+  // ── REQ-UIFX 对位 Vfx3D 轴（全部可选·render-only）─────────────────────────────────────
+  /** 粒子单色（CSS 色·净化后插样式·如 '#ff5d7d'）。替代预设色板；四预设 kind 也吃（confetti 换牌色等）。 */
+  color?: string;
+  /** 粒子体径向渐变（芯→缘·对位 Vfx3D colorGradient 的 Gradient stop 形状·color 为 CSS 色串）：
+   *  定稿「芯白 → 牌色 → 牌色 75%」= [{t:0,color:'#fff'},{t:.45,color:'#e94f5a'},{t:1,color:'#e94f5a',alpha:.75}]。
+   *  UI 层为静态径向渐变（非 over-life·CSS 限制·轴名对位语义按 UI 层落地）。alpha 仅对 #rrggbb 形色生效。在场覆盖 color。 */
+  colorGradient?: Array<{ t: number; color: string; alpha?: number }>;
+  /** 粒子直径 px：单数=统一；数组=**尺寸分档**（index 确定式取档·定稿「六档 12–30」= [12,16,20,22,26,30]）。缺省=原 index 派生小片。 */
+  size?: number | number[];
+  /** 发射形状（对位 Vfx3D·填了即入物理弹道模式）：point=四散（黄金角摊开）·cone=绕「上」方向锥（先窜后落配 gravity）。 */
+  shape?: 'point' | 'cone';
+  /** cone 半角（弧度·对位 Vfx3D·缺省 0.4）。 */
+  coneAngle?: number;
+  /** 初速 px/s（对位 Vfx3D speed·缺省 320·index 确定式 ±15% 抖动）。 */
+  speed?: number;
+  /** 粒子寿命（秒·对位 Vfx3D·缺省 1.6）。flyTo 在场时到达目标即回收（先到先收）。 */
+  lifetime?: number;
+  /** 下坠加速度 px/s²（正=向下·对位 Vfx3D gravity）。「先向上窜再俯冲」= cone 初速向上 + gravity，非手写关键帧。 */
+  gravity?: number;
+  /** 阻尼（每秒衰减比例 0..n·对位 Vfx3D drag）。配 flyTo = 阻尼弹簧 = 缓入缓出。 */
+  drag?: number;
+  /** 逐颗错峰 ms（定稿「每颗错开 36ms」·Vfx3D rate 的一次性形态·缺省 36·物理模式用）。 */
+  stagger?: number;
+  /** 飞向 LayoutNode（**复用 AnchorRef{kind:'node',id} 寻址**·同 Float/Connector/layout.flyTo 一套·不另造第三套）：
+   *  对每颗粒子施弹簧力逼近目标元素锚点（= Vfx3D attractor 的 UI 形态·缺省带轻阻尼），到达即回收。
+   *  金币飞进钱包/伤害粒子射向敌牌。目标须在同一 mountUI 树（或同 document 按 id 兜底）。 */
+  flyTo?: AnchorRef;
+  /** 拖尾（对位 Trail3D 轴名）：segments=节点数(缺省 6·上限 16·DOM 预算故缺省小于 Trail3D 的 20)·
+   *  width=头端宽 px(缺省=粒径 60%)·fade=尾端不透明度 0..1(缺省 0=尾端全透明)·blend=add 发光/alpha 实体(缺省 alpha)。 */
+  trail?: { segments?: number; width?: number; fade?: number; blend?: 'add' | 'alpha' };
 }
 
 // ── LevelPath（关卡地图·休闲选关屏经典·render-only·下沉自「关卡地图缺口」owner 2026-07-15）─────────────

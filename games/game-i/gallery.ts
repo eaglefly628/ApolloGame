@@ -62,8 +62,9 @@ function nextSubNo(): string { _secNo += 1; return `${_secPrefix}-${_secNo}`; }
 
 function sectionTitle(id: string, text: string): LayoutNode {
   // 编号做成独立高亮前缀 span（金色·好扫），后接原标题。
+  // color 用 sub 不用 dim：daylight 亮皮下 dim 段题 ratio 2.89 < 3.0 硬地板（REQ-UIFX 修好空审计后首次实测·全 tab 系统性）。
   const no = nextSubNo();
-  return { type: 'Label', id, props: { size: 'xs', color: 'dim', bold: true, spans: [{ text: `#${no}  `, color: 'gold', bold: true }, { text, color: 'dim' }] } };
+  return { type: 'Label', id, props: { size: 'xs', color: 'sub', bold: true, spans: [{ text: `#${no}  `, color: 'gold', bold: true }, { text, color: 'sub' }] } };
 }
 function divider(id: string): LayoutNode {
   return { type: 'Divider', id, props: {} };
@@ -1437,9 +1438,10 @@ function buildPage3dUi(controls: ControlsState): LayoutNode {
       sectionTitle('t-3dui-depth', 'LAYOUT.z · 景深叠层（子面板各挂不同 z·真 translateZ 分层·朝屏幕凸出）'),
       { type: 'Panel', id: '3dui-depth', props: { bare: true }, layout: { width: 220, height: 180, padding: 20, rotateY: 20, perspective: 900 },
         children: [
-          { type: 'Panel', id: '3dui-d1', props: { bg: 'steel' }, layout: { x: 0, y: 0, width: 104, height: 144, radius: 10, z: 0 }, children: [] },
-          { type: 'Panel', id: '3dui-d2', props: { bg: 'ink-deep' }, layout: { x: 18, y: 12, width: 104, height: 144, radius: 10, z: 34 }, children: [] },
-          { type: 'Panel', id: '3dui-d3', props: { bg: 'gold-sheen' }, layout: { x: 36, y: 24, width: 104, height: 144, radius: 10, z: 68, align: 'center', justify: 'center', padding: 0 },
+          // 景深叠层=设计意图叠放 → allowOverlap 标意图（REQ-UIFX 修好空审计后 overlap 检查首次真跑到本 tab·A-007 语义）。
+          { type: 'Panel', id: '3dui-d1', props: { bg: 'steel' }, layout: { x: 0, y: 0, width: 104, height: 144, radius: 10, z: 0, allowOverlap: true }, children: [] },
+          { type: 'Panel', id: '3dui-d2', props: { bg: 'ink-deep' }, layout: { x: 18, y: 12, width: 104, height: 144, radius: 10, z: 34, allowOverlap: true }, children: [] },
+          { type: 'Panel', id: '3dui-d3', props: { bg: 'gold-sheen' }, layout: { x: 36, y: 24, width: 104, height: 144, radius: 10, z: 68, align: 'center', justify: 'center', padding: 0, allowOverlap: true },
             children: [{ type: 'Label', id: '3dui-d3-l', props: { text: 'z:68\n最前', size: 'sm', bold: true, color: 'ink' } }] },
         ] },
 
@@ -1548,6 +1550,25 @@ function buildPage3dUi(controls: ControlsState): LayoutNode {
           { type: 'Label', id: '3dui-particles-follow-l', props: { text: 'Particles{follow:"cursor"} = 粒子收成小簇跟随光标（软遮罩 + screen 混色不挡字·JS 缓动逼近·离场淡出）。渲染器侧跟随循环(server rAF)驱动·游戏侧纯数据一行；render-only 不进 sim。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
         ] },
 
+      // 物理弹道粒子（REQ-UIFX·对位 Vfx3D：cone 初速+重力+阻尼+弹簧引向目标锚·拖尾对位 Trail3D·server rAF 胶水）。
+      sectionTitle('t-3dui-pfly', '★ 物理弹道粒子 PARTICLES 对位 Vfx3D（shape:cone+gravity 先窜后落 · flyTo=AnchorRef 飞向节点 · trail 拖尾 · 色/径分档）'),
+      { type: 'Panel', id: '3dui-pfly-row', props: { bare: true }, layout: { direction: 'row', gap: 28, padding: 22, align: 'center', justify: 'between' },
+        children: [
+          { type: 'Panel', id: 'pfly-stage', props: { bg: 'sunken' }, layout: { width: 210, height: 140, padding: 0, align: 'center', justify: 'center' },
+            children: [
+              { type: 'Label', id: 'pfly-hint', props: { text: '发射台', size: 'xs', color: 'text' } }, // dim 在 daylight sunken 上 2.42 硬失败（审计实测）→ text
+              { type: 'Particles', id: 'pfly-burst', props: {
+                kind: 'coins', count: 14, shape: 'cone', coneAngle: 0.5, speed: 560, gravity: 1050, drag: 0.6,
+                lifetime: 2.2, stagger: 36, size: [12, 16, 20, 22, 26, 30],
+                colorGradient: [{ t: 0, color: '#ffffff' }, { t: 0.45, color: '#ff5d7d' }, { t: 1, color: '#ff5d7d', alpha: 0.75 }],
+                flyTo: { kind: 'node', id: 'pfly-wallet' },
+                trail: { segments: 6, fade: 0, blend: 'add' },
+              }, layout: { width: 210, height: 140 } },
+            ] },
+          { type: 'Label', id: '3dui-pfly-l', props: { text: '定稿写法照搬：14 颗 · 六档 12–30 · 芯白→牌色→牌色75% 径向渐变 · 每颗错开 36ms · cone 初速向上窜再被 gravity 俯冲、弹簧引向右侧钱包（flyTo=AnchorRef{kind:node,id}·同 Float/flyTo 一套寻址）· 拖尾对位 Trail3D(segments/width/fade/blend)。全静态数据·动画归渲染器 rAF——禁「每帧换新贴图」那条路。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+          { type: 'Badge', id: 'pfly-wallet', props: { text: '👛 钱包', tone: 'gold' } },
+        ] },
+
       divider('d-3du10'),
       sectionTitle('t-3dui-exit', '★ 退场 / 飘字动画 anim（fadeOut·popOut 一次性退场 + floatUp 循环升冒·+N 收益飘字）'),
       { type: 'Panel', id: '3dui-exit-row', props: { bare: true }, layout: { direction: 'row', gap: 40, padding: 24, align: 'center' },
@@ -1578,6 +1599,16 @@ function buildPage3dUi(controls: ControlsState): LayoutNode {
           { type: 'ProgressBar', id: 'ring-cd', props: { value: 0.9, shape: 'ring', size: 88, tone: 'accent', showValue: true, label: '冷却' } },
           { type: 'ProgressBar', id: 'ring-hp', props: { value: 0.3, shape: 'ring', size: 72, tone: 'danger', showValue: true } },
           { type: 'Label', id: '3dui-ring-l', props: { text: 'shape:"ring" = conic 弧 + 中心镂空显值。同 value/max/tone 语义，换个 shape 就从线性条变径向环。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+        ] },
+
+      // 液面杯（REQ-UIFX·ProgressBar 同族第三档）：游戏只给标量 value·晃动/气泡全由渲染器 CSS 承担。
+      sectionTitle('t-3dui-liquid', '★ 液面杯 PROGRESSBAR.shape:"liquid"（注水/蓄力·双错频波脊 + 整杯 slosh + 气泡·游戏只给标量 value）'),
+      { type: 'Panel', id: '3dui-liquid-row', props: { bare: true }, layout: { direction: 'row', gap: 30, padding: 24, align: 'center' },
+        children: [
+          { type: 'ProgressBar', id: 'liq-cup', props: { value: 0.68, shape: 'liquid', radius: 18, fillColor: '#31b7f2', bubbles: 3, showValue: true }, layout: { width: 92, height: 140 } },
+          { type: 'ProgressBar', id: 'liq-gold', props: { value: 0.45, shape: 'liquid', tone: 'gold', radius: 26, bubbles: 2, label: '蓄力' }, layout: { width: 78, height: 118 } },
+          { type: 'ProgressBar', id: 'liq-still', props: { value: 0.55, shape: 'liquid', fillColor: '#7ed957', wave: false, radius: 12, label: '静水' }, layout: { width: 70, height: 104 } },
+          { type: 'Label', id: '3dui-liquid-l', props: { text: 'shape:"liquid" = 液面杯：水面是两条错频椭圆脊（主脊 900ms scaleY1↔.5 荡±3% + 副脊白55% 1250ms 反向——两条不同步才有晃动感）+ 整杯以杯底为轴 ±1.6° slosh + 气泡按档上窜（16/11/20px·1.5/1.8/2.1s 错开发）。radius 按盒圆角裁 · fillColor 液色 · wave:false=静水。游戏只给 value（注水曲线在游戏侧算好逐帧喂）——禁每帧烤水面进贴图。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
         ] },
 
       divider('d-3du12'),

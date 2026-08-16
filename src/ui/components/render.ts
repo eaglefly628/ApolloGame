@@ -28,7 +28,10 @@ const escT = (s: string, t: UITheme): string => emojifyHtml(esc(s), t.emoji);
 const num = (v: unknown, d = 0): number => { const n = Number(v); return Number.isFinite(n) ? n : d; };
 // anim 预设白名单（mountUI 注入的关键帧名）：拒绝任意字符串插入 animation。
 const ANIM_PRESETS = new Set(['fadeIn', 'slideUp', 'pop', 'shake', 'dealIn', 'flyIn', 'fadeOut', 'popOut']); // 一次性入场/退场
-const LOOP_PRESETS = new Set(['float', 'glow', 'pulse', 'spin', 'floatUp', 'marquee']);   // 持续循环（浮动/发光/脉冲/自旋/升冒/跑马灯·环境动效·infinite）
+const LOOP_PRESETS = new Set(['float', 'glow', 'pulse', 'spin', 'floatUp', 'marquee', 'tick']);   // 持续循环（浮动/发光/脉冲/自旋/升冒/跑马灯/steps 节拍·环境动效·infinite）
+// CSS 色净化（REQ-UIFX·Particles.color / ProgressBar.fillColor 等自由色串）：只留 hex/函数色/具名色合法字符，
+// 剥掉能逃出 style 声明或属性的 ; : " ' < > 等（同 safeUrl 思路·净化后再插样式）。空/全非法 → ''。
+const safeColor = (c: unknown): string => String(c ?? '').replace(/[^#a-zA-Z0-9(),.%\s-]/g, '');
 
 // 数字格式化（idle/休闲大数与计时·纯函数·render + mountUI tween 共用·单一真相）。
 export function formatNumber(n: number, format?: string, dec = 0): string {
@@ -163,10 +166,11 @@ function layoutStyle(c?: LayoutConstraints, t?: UITheme): string {
   if (c.anim && ANIM_PRESETS.has(c.anim)) {
     p.push(`animation:apollo-${c.anim} ${num(c.animMs, 360)}ms ${c.animDelay ? `${num(c.animDelay)}ms ` : ''}both ease-out`);
   } else if (c.anim && LOOP_PRESETS.has(c.anim)) {
-    // spin/marquee=匀速 linear（自旋/滚动不该忽快忽慢）；其余环境动效 ease-in-out 呼吸。
-    const linear = c.anim === 'spin' || c.anim === 'marquee';
-    const dur = c.anim === 'spin' ? 3600 : c.anim === 'marquee' ? 9000 : 2400;
-    p.push(`animation:apollo-${c.anim} ${num(c.animMs, dur)}ms ${c.animDelay ? `${num(c.animDelay)}ms ` : ''}${linear ? 'linear' : 'ease-in-out'} infinite`);
+    // spin/marquee=匀速 linear（自旋/滚动不该忽快忽慢）；tick=steps(1,end) 硬跳节拍（印章每秒跳一下·REQ-UIFX ⑤）；
+    // 其余环境动效 ease-in-out 呼吸。
+    const timing = (c.anim === 'spin' || c.anim === 'marquee') ? 'linear' : c.anim === 'tick' ? 'steps(1,end)' : 'ease-in-out';
+    const dur = c.anim === 'spin' ? 3600 : c.anim === 'marquee' ? 9000 : c.anim === 'tick' ? 1000 : 2400;
+    p.push(`animation:apollo-${c.anim} ${num(c.animMs, dur)}ms ${c.animDelay ? `${num(c.animDelay)}ms ` : ''}${timing} infinite`);
   }
   if (c.draggable) p.push('cursor:grab');
   // 视觉特效合集（UI 特效库）：闭集 fx → 动画/滤镜/叠层 CSS。需主题取色 → 仅 t 在场时应用。
@@ -344,11 +348,15 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
     return `<span id="${esc(id)}" style="${style}">${inner}</span>`;
   }
   // 数字滚动补间(render-only)：初值=from(按 format/decimals 格式化)，mountUI 读 data-tween-* 用定时器动画到 to。
+  // tween.scale（REQ-UIFX ⑤·伤害跳数字号 .82→1）：起始缩放随补间回到 1——需 inline-block 才吃 transform，初态即摆到起始档。
   if (p.tween) {
     const dec = num(p.tween.decimals, 0);
     const fmtAttr = p.format ? ` data-tween-fmt="${esc(p.format)}" data-tween-from="${num(p.tween.from)}"` : '';
-    const tweenAttr = ` data-tween-to="${num(p.tween.to)}" data-tween-ms="${num(p.tween.ms, 600)}" data-tween-dec="${dec}"${fmtAttr}`;
-    return `<span id="${esc(id)}"${tweenAttr} style="${style}">${esc(formatNumber(num(p.tween.from), p.format, dec))}</span>`;
+    const s0 = p.tween.scale !== undefined ? num(p.tween.scale, 1) : undefined;
+    const scaleAttr = s0 !== undefined ? ` data-tween-scale="${s0}"` : '';
+    const scaleCss = s0 !== undefined ? `;display:inline-block;transform:scale(${s0});transform-origin:50% 60%` : '';
+    const tweenAttr = ` data-tween-to="${num(p.tween.to)}" data-tween-ms="${num(p.tween.ms, 600)}" data-tween-dec="${dec}"${fmtAttr}${scaleAttr}`;
+    return `<span id="${esc(id)}"${tweenAttr} style="${style}${scaleCss}">${esc(formatNumber(num(p.tween.from), p.format, dec))}</span>`;
   }
   const tw = p.typewriter ? ` data-typewriter="${esc(String(p.typewriter))}"` : ''; // 转义防属性逃逸（威胁模型：弱模型可能给字符串）
   // 纯数字 text + format → 渲染时格式化（idle 大数/计时/百分比·静态显示）。
@@ -371,12 +379,16 @@ function renderDropdown(id: string, p: DropdownProps, ls: string, t: UITheme): s
 }
 
 function renderBadge(id: string, p: BadgeProps, ls: string, t: UITheme): string {
+  // accent/gold/danger 三档为 REQ-UIFX 复查补齐（此前未映射档渲出字面 "undefined;"·gallery 早已在用）。wash 口径同 Toast。
   const toneStyle: Record<string, string> = {
-    ok:   `background:${t.okWash};color:${t.ok}`,
-    warn: `background:${t.warnWash};color:${t.warn}`,
-    dim:  `background:rgba(154,170,196,0.10);color:${t.dim}`,
+    ok:     `background:${t.okWash};color:${t.ok}`,
+    warn:   `background:${t.warnWash};color:${t.warn}`,
+    dim:    `background:rgba(154,170,196,0.10);color:${t.dim}`,
+    accent: `background:${t.jadeWash};color:${t.jade}`,
+    gold:   `background:rgba(212,160,60,0.16);color:${t.gold}`,
+    danger: `background:rgba(211,137,122,0.16);color:${t.danger}`,
   };
-  const style = `${toneStyle[p.tone ?? 'dim']};font-size:9px;padding:1px 7px;border-radius:8px;white-space:nowrap;font-family:${t.fontUi};${ls}`;
+  const style = `${toneStyle[p.tone ?? 'dim'] ?? toneStyle['dim']};font-size:9px;padding:1px 7px;border-radius:8px;white-space:nowrap;font-family:${t.fontUi};${ls}`;
   return `<span id="${esc(id)}" style="${style}">${escT(p.text, t)}</span>`;
 }
 
@@ -601,6 +613,39 @@ function renderProgressBar(id: string, p: ProgressBarProps, ls: string, t: UIThe
       `<div style="width:${inner}px;height:${inner}px;border-radius:50%;background:${t.bg1};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px">` +
       `${center ? `<span style="font-size:${Math.round(d / 5.5)}px;font-weight:700;color:${t.text};font-family:${t.fontMono}">${esc(center)}</span>` : ''}` +
       `${p.label && p.showValue ? `<span style="font-size:9px;color:${t.dim};font-family:${t.fontUi}">${esc(p.label)}</span>` : ''}</div></div>`;
+  }
+  // 液面杯（REQ-UIFX·shape:'liquid'·同族扩写非新控件）：**游戏只给标量 value（水位）**——会晃的水面+气泡由引擎承担：
+  // 双错频椭圆脊（主脊 900ms scaleY1↔.5 荡±3% + 副脊白55% 1250ms 反向·两条不同步才有晃动感）+ 整杯以杯底为轴 ±1.6°
+  // slosh(1300ms) + 上窜气泡（尺寸/周期/横位 index 确定式分档）。keyframes 在 server.ts APOLLO_KEYFRAMES。
+  // 禁「每帧烤水面进贴图」那条路（owner 判词·工单 ③ networkidle 实测教训）。render-only 不进 sim/hash。
+  if (p.shape === 'liquid') {
+    const rad = num(p.radius, 14);
+    const liquid = p.fillColor ? safeColor(p.fillColor) : fill;
+    const wave = p.wave !== false;
+    const nBub = Math.max(0, Math.min(8, num(p.bubbles, 0)));
+    const BUB_SZ = [16, 11, 20, 13, 18, 10, 15, 12]; // 定稿：16/11/20px 起的分档
+    let bubs = '';
+    for (let b = 0; b < nBub; b++) {
+      const bs = BUB_SZ[b % 8]!;
+      const per = 1500 + (b % 3) * 300;               // 1.5/1.8/2.1s 错频
+      const delay = b * 350;                          // 错开发
+      const bx = 12 + ((b * 37) % 70);                // 横位 %（确定式）
+      const alpha = (60 + ((b * 13) % 16)) / 100;     // 白 60–75%
+      bubs += `<span data-liq-bub style="position:absolute;left:${bx}%;bottom:-${bs}px;width:${bs}px;height:${bs}px;border-radius:50%;background:rgba(255,255,255,${alpha.toFixed(2)});animation:apollo-liq-bub ${per}ms linear ${delay}ms infinite"></span>`;
+    }
+    const ridge1 = `<span data-liq-ridge style="position:absolute;left:-12%;right:-12%;top:0;height:20px;transform:translateY(-50%);border-radius:50%;background:${liquid};filter:brightness(1.28)${wave ? ';animation:apollo-liq-wave 900ms ease-in-out infinite' : ''}"></span>`;
+    const ridge2 = wave ? `<span data-liq-ridge style="position:absolute;left:-12%;right:-12%;top:0;height:16px;transform:translateY(-50%);border-radius:50%;background:rgba(255,255,255,.55);animation:apollo-liq-wave2 1250ms ease-in-out infinite"></span>` : '';
+    const center = (p.showValue || p.label)
+      ? `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;pointer-events:none">${p.showValue ? `<span style="font-size:15px;font-weight:700;color:${t.text};font-family:${t.fontMono};text-shadow:0 1px 3px rgba(0,0,0,.6)">${esc(valTxt)}</span>` : ''}${p.label ? `<span style="font-size:10px;color:${t.text};opacity:.85;font-family:${t.fontUi};text-shadow:0 1px 2px rgba(0,0,0,.6)">${esc(p.label)}</span>` : ''}</div>`
+      : '';
+    // 结构：杯体(radius 裁·overflow:hidden) > slosh 壳(以杯底为轴) > 水体(溢出侧沿±10% 防倾斜露缝·height=水位%) >
+    //   [双脊(骑水线) + 气泡裁剪层(不越水面)]。缺省盒 90×120（layout.width/height 在 ls 末置可覆盖）。
+    return `<div id="${esc(id)}" data-liquid style="position:relative;overflow:hidden;width:90px;height:120px;border-radius:${rad}px;background:${t.bg3};flex:none;${ls}">` +
+      `<div style="position:absolute;inset:0;transform-origin:50% 100%${wave ? ';animation:apollo-liq-slosh 1300ms ease-in-out infinite' : ''}">` +
+      `<div data-liq-water style="position:absolute;left:-10%;right:-10%;bottom:0;height:${pct}%;background:${liquid};transition:height .3s ease">` +
+      ridge1 + ridge2 +
+      `<div style="position:absolute;inset:0;overflow:hidden">${bubs}</div>` +
+      `</div></div>${center}</div>`;
   }
   const header = (p.label || p.showValue)
     ? `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">${p.label ? `<span style="font-size:11px;color:${t.sub};font-family:${t.fontUi}">${esc(p.label)}</span>` : '<span></span>'}${p.showValue ? `<span style="font-size:11px;color:${t.dim};font-family:${t.fontMono}">${esc(valTxt)}</span>` : ''}</div>`
@@ -934,11 +979,96 @@ function renderVideo(id: string, p: VideoProps, ls: string, t: UITheme): string 
 
 // ── Particles（UI 层庆祝粒子叠层·render-only）：喷一把 N 个小片，位置/延迟由 index 确定式派生（无 Math.random·可回归）。
 // 铺满父容器·pointer-events:none。confetti/coins=下落雨；stars=径向爆；sparkle=原地微光闪。CSS keyframes 见 server.ts。
+// REQ-UIFX 物理弹道模式（shape/gravity/drag/flyTo/trail 任一在场）：渲成 data-particle-sim 容器 + data-pp 粒子体
+// （初始隐），server.ts 胶水 rAF 积分「初速+重力+阻尼(+弹簧引向目标锚)」——**动画归渲染器**，游戏只给静态数据
+// （owner 判词：禁游戏层每帧生成新贴图那条路·2026-08-07 networkidle 永不闲实测）。缺省不填=四预设 CSS 行为零变化。
 const PARTICLE_COLORS = ['#e94f5a', '#f5a623', '#7ed957', '#4a90d9', '#9b59b6', '#ff7ab0'];
+
+/** 确定式弹道参数（REQ-UIFX·物理模式·index 派生纯函数·server 胶水与测试共用单一真相·无裸 Math.random）。 */
+export interface ParticleSimSpec { angle: number; speed: number; delay: number; size: number }
+export function particleSimSpec(
+  i: number,
+  p: { shape?: 'point' | 'cone'; coneAngle?: number; speed?: number; stagger?: number; size?: number | number[] },
+): ParticleSimSpec {
+  const jitter = ((i * 37) % 97) / 96; // 0..1 确定式（互质取模）
+  const angle = p.shape === 'cone'
+    ? -Math.PI / 2 + (jitter * 2 - 1) * num(p.coneAngle, 0.4) // 绕「上」锥（屏幕系 -Y=上·半角=弧度·对位 Vfx3D）
+    : i * 2.399963;                                            // point=黄金角摊满全周（四散）
+  const speed = num(p.speed, 320) * (0.85 + 0.3 * (((i * 29) % 89) / 88)); // ±15% 确定式抖动
+  return { angle, speed, delay: i * num(p.stagger, 36), size: particleSize(i, p.size) };
+}
+/** 粒径分档（REQ-UIFX）：数组=按 index 取档（定稿「六档 12–30」）；单数=统一；缺省=原 index 派生小片。 */
+export function particleSize(i: number, size?: number | number[]): number {
+  if (Array.isArray(size) && size.length) return num(size[i % size.length], 8);
+  if (typeof size === 'number') return num(size, 8);
+  return 6 + (i % 4) * 2;
+}
+/** colorGradient stops → CSS 径向渐变（芯→缘）。alpha 仅对 #rrggbb 生效（追加 hex alpha 字节）。 */
+function particleGradient(stops: NonNullable<ParticlesProps['colorGradient']>): string {
+  const parts = stops.map((s) => {
+    let col = safeColor(s.color);
+    if (s.alpha !== undefined && /^#[0-9a-fA-F]{6}$/.test(col)) {
+      col += Math.round(Math.max(0, Math.min(1, num(s.alpha, 1))) * 255).toString(16).padStart(2, '0');
+    }
+    return `${col} ${Math.round(Math.max(0, Math.min(1, num(s.t, 0))) * 100)}%`;
+  });
+  return `radial-gradient(circle at 32% 30%,${parts.join(',')})`;
+}
+
 function renderParticles(id: string, p: ParticlesProps, ls: string, t: UITheme): string {
   const kind = p.kind;
   const count = Math.max(1, Math.min(60, num(p.count, kind === 'confetti' ? 26 : 16)));
   const loop = p.loop !== false; // 缺省循环（展示/环境）
+  // 自定义色轴（REQ-UIFX·四预设与物理模式通用）：grad=粒子体径向渐变；solid=单色/渐变主色（glyph/拖尾/光晕用）。
+  const grad = (p.colorGradient && p.colorGradient.length) ? particleGradient(p.colorGradient) : undefined;
+  const solid = p.color ? safeColor(p.color)
+    : (p.colorGradient && p.colorGradient.length ? safeColor(p.colorGradient[Math.min(1, p.colorGradient.length - 1)]!.color) : undefined);
+
+  // ── 物理弹道模式（shape/gravity/drag/flyTo/trail 任一在场·follow:'cursor' 优先走既有小簇路）──
+  const sim = p.follow !== 'cursor'
+    && (p.shape !== undefined || p.gravity !== undefined || p.drag !== undefined || p.flyTo !== undefined || p.trail !== undefined);
+  if (sim) {
+    const seg = p.trail ? Math.max(1, Math.min(16, num(p.trail.segments, 6))) : 0;
+    const trailBlend = p.trail?.blend === 'add' ? 'mix-blend-mode:screen;' : '';
+    const pieces: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const spec = particleSimSpec(i, p);
+      const sz = spec.size;
+      const col = solid ?? (kind === 'confetti' ? PARTICLE_COLORS[i % PARTICLE_COLORS.length]! : t.gold);
+      // 拖尾点（渲在主体之前=垫底·server 按位置历史摆·对位 Trail3D：头宽 width·尾端 fade·blend）。
+      if (seg > 0) {
+        const tw = num(p.trail!.width, Math.max(3, Math.round(sz * 0.6)));
+        for (let s = 0; s < seg; s++) {
+          pieces.push(`<span data-pt="${i}" style="position:absolute;left:0;top:0;width:${tw}px;height:${tw}px;border-radius:50%;background:${col};opacity:0;${trailBlend}will-change:transform"></span>`);
+        }
+      }
+      // 粒子体（按 kind 定形·初始隐·server 以 transform 摆位故 left/top 恒 0）。
+      let body: string;
+      if (kind === 'stars') {
+        body = `font-size:${sz}px;line-height:1;color:${col}`;
+      } else if (kind === 'confetti') {
+        body = `width:${sz}px;height:${Math.round(sz * 1.35)}px;border-radius:2px;background:${grad ?? col}`;
+      } else { // coins / sparkle：圆体（自定义色带白描边+同色光晕·定稿「芯白→牌色渐变+同色光晕+白描边」）
+        const bg = grad ?? (solid ? `radial-gradient(circle at 35% 30%,#fff,${solid})` : `radial-gradient(circle at 35% 30%,#ffe9a8,${t.gold})`);
+        const halo = (solid ?? grad) ? `;box-shadow:0 0 ${Math.max(6, Math.round(sz * 0.9))}px ${col}` : (kind === 'sparkle' ? `;box-shadow:0 0 6px ${t.gold}` : '');
+        const rim = grad ? ';border:2px solid rgba(255,255,255,.85)' : '';
+        body = `width:${sz}px;height:${sz}px;border-radius:50%;background:${bg}${halo}${rim}`;
+      }
+      pieces.push(`<span data-pp="${i}" style="position:absolute;left:0;top:0;${body};opacity:0;will-change:transform">${kind === 'stars' ? '★' : ''}</span>`);
+    }
+    const fly = p.flyTo;
+    const flyAttr = fly
+      ? ` data-ps-fly-kind="${fly.kind === 'entity' ? 'entity' : 'node'}" data-ps-fly-id="${esc(fly.id)}" data-ps-fly-at="${esc(fly.at ?? 'center')}" data-ps-fly-ox="${num(fly.offset?.x, 0)}" data-ps-fly-oy="${num(fly.offset?.y, 0)}"`
+      : '';
+    const drag = p.drag !== undefined ? num(p.drag) : (fly ? 1.2 : 0); // flyTo 缺省带轻阻尼（阻尼弹簧=缓入缓出·对位 Vfx3D attractor+drag）
+    const attrs = ` data-particle-sim="${esc(kind)}" data-ps-shape="${p.shape === 'cone' ? 'cone' : 'point'}"` +
+      ` data-ps-cone="${num(p.coneAngle, 0.4)}" data-ps-speed="${num(p.speed, 320)}" data-ps-stagger="${num(p.stagger, 36)}"` +
+      ` data-ps-life="${num(p.lifetime, 1.6)}" data-ps-grav="${num(p.gravity, 0)}" data-ps-drag="${drag}"` +
+      ` data-ps-loop="${loop ? '1' : '0'}" data-ps-trail-seg="${seg}" data-ps-trail-fade="${p.trail ? num(p.trail.fade, 0) : 0}"${flyAttr}`;
+    // overflow:visible——飞向目标的粒子须能飞出本容器盒（区别缺省雨/爆的 hidden）。
+    return `<div id="${esc(id)}"${attrs} style="position:relative;overflow:visible;pointer-events:none;${ls}">${pieces.join('')}</div>`;
+  }
+
   const iter = loop ? 'infinite' : '1';
   const fill = loop ? 'both' : 'forwards';
   const pieces: string[] = [];
@@ -949,22 +1079,25 @@ function renderParticles(id: string, p: ParticlesProps, ls: string, t: UITheme):
     const delay = (i * 53) % 1400;         // 延迟 ms
     const dur = 1600 + ((i * 29) % 1400);  // 时长 ms
     const rot = 360 + ((i * 47) % 540);    // 自转
-    const sz = 6 + (i % 4) * 2;            // 片大小
-    const col = PARTICLE_COLORS[i % PARTICLE_COLORS.length]!;
+    const sz = p.size !== undefined ? particleSize(i, p.size) : 6 + (i % 4) * 2; // 片大小（REQ-UIFX：size 分档·缺省原派生）
+    const col = solid ?? PARTICLE_COLORS[i % PARTICLE_COLORS.length]!;
     if (kind === 'sparkle') {
       const py = (i * 43) % 100;
-      pieces.push(`<span style="position:absolute;left:${px}%;top:${py}%;width:${sz}px;height:${sz}px;border-radius:50%;background:${t.gold};box-shadow:0 0 6px ${t.gold};animation:apollo-p-twinkle ${dur}ms ease-in-out ${delay}ms ${iter} ${fill}"></span>`);
+      const c = solid ?? t.gold;
+      pieces.push(`<span style="position:absolute;left:${px}%;top:${py}%;width:${sz}px;height:${sz}px;border-radius:50%;background:${grad ?? c};box-shadow:0 0 6px ${c};animation:apollo-p-twinkle ${dur}ms ease-in-out ${delay}ms ${iter} ${fill}"></span>`);
     } else if (kind === 'stars') {
       const ang = (i / count) * 6.283;
       const dist = 40 + ((i * 31) % 60);
       const dx = Math.round(Math.cos(ang) * dist), dy = Math.round(Math.sin(ang) * dist);
-      pieces.push(`<span style="position:absolute;left:50%;top:50%;font-size:${sz + 8}px;line-height:1;color:${t.gold};--dx:${dx}px;--dy:${dy}px;animation:apollo-p-burst ${dur}ms cubic-bezier(.2,.7,.3,1) ${delay}ms ${iter} ${fill}">★</span>`);
+      pieces.push(`<span style="position:absolute;left:50%;top:50%;font-size:${p.size !== undefined ? sz : sz + 8}px;line-height:1;color:${solid ?? t.gold};--dx:${dx}px;--dy:${dy}px;animation:apollo-p-burst ${dur}ms cubic-bezier(.2,.7,.3,1) ${delay}ms ${iter} ${fill}">★</span>`);
     } else {
       // confetti(彩片) / coins(金圆)
       const isCoin = kind === 'coins';
+      const coinSz = p.size !== undefined ? sz : sz + 2;
+      const coinBg = grad ?? (solid ? `radial-gradient(circle at 35% 30%,#fff,${solid})` : `radial-gradient(circle at 35% 30%,#ffe9a8,${t.gold})`);
       const shape = isCoin
-        ? `width:${sz + 2}px;height:${sz + 2}px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe9a8,${t.gold})`
-        : `width:${sz}px;height:${sz + 3}px;border-radius:1px;background:${col}`;
+        ? `width:${coinSz}px;height:${coinSz}px;border-radius:50%;background:${coinBg}`
+        : `width:${sz}px;height:${p.size !== undefined ? Math.round(sz * 1.35) : sz + 3}px;border-radius:1px;background:${grad ?? col}`;
       pieces.push(`<span style="position:absolute;left:${px}%;top:-8%;${shape};--dx:${drift}px;--rot:${rot}deg;animation:apollo-p-fall ${dur}ms linear ${delay}ms ${iter} ${fill}"></span>`);
     }
   }

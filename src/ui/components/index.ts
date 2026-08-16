@@ -1,4 +1,5 @@
-export { renderNode, formatNumber } from './render.js';
+export { renderNode, formatNumber, particleSimSpec, particleSize } from './render.js';
+export type { ParticleSimSpec } from './render.js';
 export { mountUI, showToast, ensureUiKeyframes, ensureWebfonts, cursorCss } from './server.js';
 export type { MountHandle } from './server.js';
 export { resolveBindings, isVisible, resolveDialogue } from './bindings.js';
