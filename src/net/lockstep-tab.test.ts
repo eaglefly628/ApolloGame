@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { LockstepClient } from './lockstep-tab.js';
-import type { Channel, NetMsg } from './lockstep-tab.js';
+import type { Channel, NetMsg, DesyncInfo } from './lockstep-tab.js';
+import { buildMpWorld, addPlayer } from './mp-world.js';
 
 // 内存版 BroadcastChannel：post 投递给**除发送者外**的所有订阅者（与浏览器语义一致）。
 class MockBus {
@@ -170,5 +171,106 @@ describe('LockstepClient — 同浏览器双标签页帧同步（mock BroadcastC
     }
     expect(A.view().tick).toBe(B.view().tick);
     expect(A.view().hash).toBe(B.view().hash);
+  });
+});
+
+// ═══ REQ-DESYNC（深审 A2 发现①）：分叉要大声 ═══
+// 病灶（修前实证）：view() 只看 peerHashAt.get(simTick)、缺对端数据默认 true——
+// 领先端本 tick 的对端 hash 永远还没到 → 60/60 拍全分叉、零报警、照跑。
+describe('LockstepClient — REQ-DESYNC 三态同步判定 + 首次分叉一次性大声报告', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  // 构建不一致的世界（多一个 ghost 实体）→ 从 tick 1 起每拍 hash 必分叉。
+  const ghostBuild = (ids: string[]) => {
+    const w = buildMpWorld();
+    ids.forEach((pid, i) => addPlayer(w, i, pid));
+    addPlayer(w, ids.length, 'ghost');
+    return w;
+  };
+
+  it('健康双端 → synced（有真实可比拍才算同步）·全程零 console.error', () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const bus = new MockBus();
+    let clock = 0;
+    const now = () => clock;
+    const A = new LockstepClient({ peerId: 'A', channel: bus.channel('A'), getInput: () => ({ dx: 1, dy: 0 }), now, tickRate: 30, inputDelay: 4 });
+    const B = new LockstepClient({ peerId: 'B', channel: bus.channel('B'), getInput: () => ({ dx: 0, dy: 1 }), now, tickRate: 30, inputDelay: 4 });
+    for (let i = 0; i < 40; i++) { clock += STEP; A.pump(STEP); B.pump(STEP); }
+    expect(A.view().syncState).toBe('synced');
+    expect(B.view().syncState).toBe('synced');
+    expect(A.view().inSync).toBe(true);
+    expect(A.view().desyncTick).toBeNull();
+    expect(err).not.toHaveBeenCalled();
+  });
+
+  it('hash 报文全丢 → pending 而非谎报同步（①缺数据不得默认 true·旧实现此处恒 true）', () => {
+    const bus = new MockBus();
+    let clock = 0;
+    const now = () => clock;
+    // 信道剪掉全部 hash 报文：输入照走（世界照推进），但两端谁也拿不到对端凭据。
+    const deaf = (tag: string): Channel => {
+      const inner = bus.channel(tag);
+      return { ...inner, post: (m) => { if (m.t !== 'hash') inner.post(m); } };
+    };
+    const A = new LockstepClient({ peerId: 'A', channel: deaf('A'), getInput: () => ({ dx: 1, dy: 0 }), now, tickRate: 30, inputDelay: 4 });
+    const B = new LockstepClient({ peerId: 'B', channel: deaf('B'), getInput: () => ({ dx: 0, dy: 1 }), now, tickRate: 30, inputDelay: 4 });
+    for (let i = 0; i < 40; i++) { clock += STEP; A.pump(STEP); B.pump(STEP); }
+    expect(A.view().tick).toBeGreaterThan(10); // 世界确实在推进（不是卡死出来的 pending）
+    expect(A.view().syncState).toBe('pending');
+    expect(A.view().inSync).toBe(false); // ← 修的就是这里：零凭据不许挂绿灯
+    expect(B.view().syncState).toBe('pending');
+  });
+
+  it('构建不一致 → 两端都确诊 desynced；**领先端也能看见**（工单点名·旧实现盲区）；onDesync 载荷可用', () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const bus = new MockBus();
+    let clock = 0;
+    const now = () => clock;
+    const seen: DesyncInfo[] = [];
+    const A = new LockstepClient({ peerId: 'A', channel: bus.channel('A'), getInput: () => ({ dx: 1, dy: 0 }), now, tickRate: 30, inputDelay: 4, onDesync: (d) => seen.push(d) });
+    const B = new LockstepClient({ peerId: 'B', channel: bus.channel('B'), getInput: () => ({ dx: 0, dy: 1 }), now, tickRate: 30, inputDelay: 4, buildWorld: ghostBuild });
+    // A 每轮 pump 两次 → 吃满 inputDelay 提前量、稳居领先端；B 的 hash 只会指向 A 的**过去拍**。
+    // 旧实现在这个形态下 A.inSync 永远 true（peerHashAt.get(simTick) 恒 undefined）。
+    for (let i = 0; i < 40; i++) { clock += STEP; A.pump(STEP); A.pump(STEP); B.pump(STEP); }
+    expect(A.view().tick).toBeGreaterThan(B.view().tick); // 领先端身份坐实（前置条件）
+    expect(A.view().syncState).toBe('desynced');
+    expect(A.view().inSync).toBe(false);
+    expect(B.view().syncState).toBe('desynced');
+    expect(A.view().desyncTick).not.toBeNull();
+    // 事件载荷：epoch/tick/两端 hash 齐备且确实不等（上层停机/重同步的决策料）。
+    expect(seen).toHaveLength(1);
+    expect(seen[0].epoch).toBe('A|B');
+    expect(seen[0].tick).toBe(A.view().desyncTick);
+    expect(seen[0].myHash).not.toBe(seen[0].peerHash);
+    // 大声报告确有其声（A、B 各一次·内容点名 DESYNC）。
+    const desyncErrs = err.mock.calls.filter((c) => String(c[0]).includes('DESYNC'));
+    expect(desyncErrs).toHaveLength(2);
+  });
+
+  it('持续分叉 60+ 拍 → 每端只报告一次（一次性·不刷屏），红牌整个 epoch 不摘', () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const bus = new MockBus();
+    let clock = 0;
+    const now = () => clock;
+    const A = new LockstepClient({ peerId: 'A', channel: bus.channel('A'), getInput: () => ({ dx: 1, dy: 0 }), now, tickRate: 30, inputDelay: 4 });
+    const B = new LockstepClient({ peerId: 'B', channel: bus.channel('B'), getInput: () => ({ dx: 0, dy: 1 }), now, tickRate: 30, inputDelay: 4, buildWorld: ghostBuild });
+    for (let i = 0; i < 90; i++) { clock += STEP; A.pump(STEP); B.pump(STEP); }
+    expect(A.view().tick).toBeGreaterThan(60);
+    expect(A.view().syncState).toBe('desynced');
+    const firstAt = A.view().desyncTick;
+    expect(err.mock.calls.filter((c) => String(c[0]).includes('DESYNC'))).toHaveLength(2); // A+B 各一次
+    for (let i = 0; i < 30; i++) { clock += STEP; A.pump(STEP); B.pump(STEP); }
+    expect(err.mock.calls.filter((c) => String(c[0]).includes('DESYNC'))).toHaveLength(2); // 再跑 30 拍不加声
+    expect(A.view().desyncTick).toBe(firstAt); // 首诊 tick 不漂
+  });
+
+  it('单端 → syncState=solo·inSync=true（单人没有"分叉"概念）', () => {
+    const bus = new MockBus();
+    let clock = 0;
+    const now = () => clock;
+    const solo = new LockstepClient({ peerId: 'S', channel: bus.channel('S'), getInput: () => ({ dx: 1, dy: 0 }), now, tickRate: 30, inputDelay: 4 });
+    for (let i = 0; i < 20; i++) { clock += STEP; solo.pump(STEP); }
+    expect(solo.view().syncState).toBe('solo');
+    expect(solo.view().inSync).toBe(true);
   });
 });

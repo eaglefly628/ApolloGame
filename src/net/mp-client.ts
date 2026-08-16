@@ -88,7 +88,16 @@ function render(v: ClientView): void {
   ctx.fillStyle = hex(v.youColor);
   ctx.fillRect(74, 17, 13, 13);
   ctx.fillStyle = '#94a3b8';
-  const sync = v.peerCount > 1 ? (v.inSync ? '✅ 帧同步' : '… 对齐中') : '单人 — 再开一个本页标签页加入';
+  // 「分叉」≠「对齐中」：desynced 是确诊（红牌不摘），pending 只是 hash 还没回流。
+  const sync =
+    v.syncState === 'solo'
+      ? '单人 — 再开一个本页标签页加入'
+      : v.syncState === 'desynced'
+        ? `💥 分叉 @tick ${v.desyncTick}（状态已不可信）`
+        : v.syncState === 'synced'
+          ? '✅ 帧同步'
+          : '… 对齐中';
+  if (v.syncState === 'desynced') ctx.fillStyle = '#f87171';
   ctx.fillText(`tick ${v.tick}   hash ${v.hash}   玩家 ${v.peerCount}   ${sync}`, 16, 48);
 }
 

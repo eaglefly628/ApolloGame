@@ -34,8 +34,22 @@ export interface ClientView {
   youEntityId: string;
   youColor: number;
   peerCount: number;
+  /** 真三态的布尔投影：仅 syncState==='synced'（或 solo）为 true。缺可比数据不再默认 true。 */
   inSync: boolean;
+  /** solo=单人 · pending=尚无可比拍（对齐中/hash 未回流）· synced=最近可比拍一致 · desynced=已确认分叉（本 epoch 内不摘牌）。 */
+  syncState: 'solo' | 'pending' | 'synced' | 'desynced';
+  /** 首次确认分叉的 tick（未分叉 = null）。 */
+  desyncTick: number | null;
   ents: RenderEnt[];
+}
+
+/** 首次确认分叉的一次性事件载荷（REQ-DESYNC②·供上层停机/重同步决策）。 */
+export interface DesyncInfo {
+  epoch: string;
+  tick: number;
+  peer: string;
+  myHash: string;
+  peerHash: string;
 }
 
 export interface LockstepOptions {
@@ -48,12 +62,17 @@ export interface LockstepOptions {
   // 世界构建器（注入 → 同一套 lockstep 既能跑俯视 mp-world，也能跑平台世界）。
   // 入参为按 slot 排好的 playerId 列表；缺省构建 mp-world。所有对端必须构建顺序一致 → 同哈希。
   buildWorld?: (playerIds: string[]) => World;
+  // 首次确认分叉时回调一次（每 epoch 至多一次·与 console.error 大声报告同刻）。不传则只有 console.error。
+  onDesync?: (info: DesyncInfo) => void;
 }
 
 const HEARTBEAT_MS = 250;
 const PEER_TIMEOUT_MS = 1200;
 // 输入缓存保留的 epoch 桶数上界（当前 epoch + 若干个「将来可能进入」的）。见 pruneInputEpochs。
 const MAX_INPUT_EPOCHS = 4;
+// 分叉判定的 hash 留存窗口（拍）。留本端+对端最近这么多拍的 hash 供「最近可比拍」比对；
+// 领先端与落后端的 tick 差至多 ≈ inputDelay（个位数），128 拍绰绰有余且封住内存上界。
+const HASH_COMPARE_WINDOW = 128;
 
 // ═══════════════════════════════════════════════════════════════
 //  帧同步客户端（lockstep）—— 每个标签页一个。
@@ -85,13 +104,19 @@ export class LockstepClient {
   private lastHeartbeat = -Infinity;
   // inputs: epoch -> tick -> peerId -> Dir
   private inputs = new Map<string, Map<number, Map<string, Dir>>>();
-  private peerHashAt = new Map<number, string>(); // 对端某 tick 的 hash（仅供"是否同步"显示）
+  // ── 分叉判定（REQ-DESYNC）：两边到齐的拍立刻比，谁后到谁触发——领先端也躲不掉 ──
+  private myHashAt = new Map<number, string>(); // 本端每拍 hash（窗口内留存·stepTo 顺手记，不额外算）
+  private peerHashAt = new Map<number, Map<string, string>>(); // tick -> peer -> hash
+  private lastComparedTick: number | null = null; // 本 epoch 是否真比过至少一拍（null = 无凭据，不得报 synced）
+  private desyncInfo: DesyncInfo | null = null; // 首次确认的分叉（本 epoch 内不清、不重复报告）
+  private readonly onDesync?: (info: DesyncInfo) => void;
 
   constructor(opts: LockstepOptions) {
     this.peerId = opts.peerId;
     this.channel = opts.channel;
     this.getInput = opts.getInput;
     this.buildWorld = opts.buildWorld ?? defaultBuildWorld;
+    this.onDesync = opts.onDesync;
     this.now = opts.now ?? (() => (typeof performance !== 'undefined' ? performance.now() : Date.now()));
     this.inputDelay = Math.max(1, opts.inputDelay ?? 4);
     this.clock = new FixedStepClock(opts.tickRate ?? 30, { maxSteps: 8 });
@@ -103,11 +128,14 @@ export class LockstepClient {
   // 渲染 / HUD 读取的当前视图。
   view(): ClientView {
     const hash = hashSnapshot(this.world.snapshot());
-    let inSync = true;
-    if (this.membership.length > 1) {
-      const ph = this.peerHashAt.get(this.simTick);
-      inSync = ph === undefined ? true : ph === hash;
-    }
+    // 三态判定（REQ-DESYNC①）：旧实现只看 peerHashAt.get(simTick)、缺数据默认 true——
+    // 领先端本 tick 永远等不到对端 hash，60/60 拍全分叉也显示同步。现在：
+    // 没有真比过一拍 = pending（不谎报）；确认过分叉 = desynced（本 epoch 内不摘牌）。
+    let syncState: ClientView['syncState'];
+    if (this.membership.length <= 1) syncState = 'solo';
+    else if (this.desyncInfo) syncState = 'desynced';
+    else if (this.lastComparedTick !== null) syncState = 'synced';
+    else syncState = 'pending';
     const slot = this.slotOf.get(this.peerId) ?? 0;
     const youPlayerId = playerIdForSlot(slot);
     return {
@@ -118,7 +146,9 @@ export class LockstepClient {
       youEntityId: playerEntityId(youPlayerId),
       youColor: PLAYER_COLORS[slot % PLAYER_COLORS.length],
       peerCount: this.membership.length,
-      inSync,
+      inSync: syncState === 'solo' || syncState === 'synced',
+      syncState,
+      desyncTick: this.desyncInfo?.tick ?? null,
       ents: renderEnts(this.world),
     };
   }
@@ -174,7 +204,11 @@ export class LockstepClient {
     // 不能像旧实现那样在此重置成空桶，否则等于把缓存又丢一次）。
     if (!this.inputs.has(key)) this.inputs.set(key, new Map());
     this.pruneInputEpochs(key);
+    // 分叉状态随 epoch 清零：成员变化 = 世界从 tick 0 重建，旧分叉凭据全部作废。
+    this.myHashAt.clear();
     this.peerHashAt.clear();
+    this.lastComparedTick = null;
+    this.desyncInfo = null;
   }
 
   // ── 报文处理 ──
@@ -201,7 +235,18 @@ export class LockstepClient {
         this.recordInput(m.epoch, m.tick, m.peer, { dx: m.dx, dy: m.dy, jump: m.jump ?? 0 });
         break;
       case 'hash':
-        if (m.epoch === this.epoch) this.peerHashAt.set(m.tick, m.hash);
+        if (m.epoch === this.epoch) {
+          let bt = this.peerHashAt.get(m.tick);
+          if (!bt) {
+            bt = new Map();
+            this.peerHashAt.set(m.tick, bt);
+          }
+          bt.set(m.peer, m.hash);
+          // 落后端视角：对端（领先）hash 先到，等本端拍到 stepTo 再比；
+          // 领先端视角：本端 hash 早就记下了，对端 hash 一到**这里立刻比**——旧实现的盲区就在此。
+          const mine = this.myHashAt.get(m.tick);
+          if (mine !== undefined) this.noteComparable(m.tick, m.peer, mine, m.hash);
+        }
         break;
     }
   }
@@ -269,13 +314,40 @@ export class LockstepClient {
     applyCommands(this.world, cmds);
     this.world.tick();
     this.simTick = tick;
-    this.channel.post({
-      t: 'hash',
-      peer: this.peerId,
-      epoch: this.epoch,
-      tick,
-      hash: hashSnapshot(this.world.snapshot()),
-    });
+    const hash = hashSnapshot(this.world.snapshot());
+    this.myHashAt.set(tick, hash);
+    // 落后端视角：对端 hash 已先到、本端刚拍到这一拍 → 立刻比（最近可比拍判定的另一半）。
+    const bt = this.peerHashAt.get(tick);
+    if (bt) for (const [peer, ph] of bt) this.noteComparable(tick, peer, hash, ph);
+    this.pruneHashWindow(tick);
+    this.channel.post({ t: 'hash', peer: this.peerId, epoch: this.epoch, tick, hash });
+  }
+
+  /** 一拍两端 hash 到齐时的判定汇点。一致 → 记下「真比过」；不一致 → 首次确认即
+   *  一次性大声报告（console.error + onDesync 事件），本 epoch 内不重复、不摘牌——
+   *  分叉后两个世界只是各玩各的，「后来又相等」大概率是巧合，不能当恢复。 */
+  private noteComparable(tick: number, peer: string, myHash: string, peerHash: string): void {
+    this.lastComparedTick = this.lastComparedTick === null ? tick : Math.max(this.lastComparedTick, tick);
+    if (myHash === peerHash || this.desyncInfo) return;
+    this.desyncInfo = { epoch: this.epoch, tick, peer, myHash, peerHash };
+    console.error(
+      `[lockstep] DESYNC 确认：epoch=${this.epoch} tick=${tick} 本端(${this.peerId})=${myHash} 对端(${peer})=${peerHash}` +
+        ' —— 两份世界已分叉，继续推进只是各玩各的；上层应停机/重同步（onDesync 事件已发）。',
+    );
+    this.onDesync?.(this.desyncInfo);
+  }
+
+  /** hash 留存封窗。本端表按拍严格递增插入 → 删到窗口内即止；
+   *  对端表多人交错时插入序不保证递增 → 全扫（尺寸本身被窗口封着，全扫恒 ≤ 窗口+乱序余量）。 */
+  private pruneHashWindow(tick: number): void {
+    const cutoff = tick - HASH_COMPARE_WINDOW;
+    for (const k of this.myHashAt.keys()) {
+      if (k >= cutoff) break;
+      this.myHashAt.delete(k);
+    }
+    for (const k of [...this.peerHashAt.keys()]) {
+      if (k < cutoff) this.peerHashAt.delete(k);
+    }
   }
 }
 
