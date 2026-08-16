@@ -1,0 +1,13 @@
+{
+  "name": "dokiworld-shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "DokiWorld 出包线的**跨 app 共享接线层**（第一件：apps／「获取卡带」薄适配）",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "@dokiworld/app-sdk": "^2.1.0"
+  }
+}

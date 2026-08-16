@@ -20,13 +20,31 @@
 > 超时/降级/dispose 的薄适配 + 点名测试 + 真 `createAppsHostExtension` 假宿主目击。
 > **边界**：只新增 `dokiworld/shared/**`；**不动** `dokiworld/game108/` 的 manifest 声明与接线
 > （封装 ≠ 声明——谁消费仍按各 app 真用到的声明）。
-> **待 owner 定的一件**：game108 要不要当第一个消费者（在哪一屏、什么时机拉卡带）——不定就先只交能力。
-
-
-<!-- REQ-PIPEHASH-03（P2·game108 S7 实测·自我失效环第三次）已完结：gameHash 证据目录排除收敛为 EVIDENCE_DIRS 常量（mock/probe/golden/self-check/review·带判据注释「指纹只答游戏变没变·门证答门跑没跑过」·规格 gdd/plan/acceptance 继续入指纹）·主程终审 PASS（深车道测试绿·撤修验红 3 条·全文查 git 历史）——类问题终态：再有新证据目录只加一个词。 -->
-
-<!-- REQ-ARTTOOL-01/02（P1/P2·game108 S6 实测带出）已完结：batch 无 key 零回写+非占位行跳过点名·rowIdentity 按素材（skinKey→槽→query 三级回退·护住 styleset 消费方）·Lead 终审 PASS（8551d45f8·58 测独立复跑绿·双撤修验红在案·回退链偏差照准=兼顾双消费方的正解·顺带发现已落 REQ-108-ART-02）。 -->
-
+> **能力已交（2026-08-15）**：`dokiworld/shared/`（新目录·首件）——
+> `src/apps-gateway.mjs` `createAppsGateway(client,{declared,timeoutMs,launchTimeoutMs,onWarn})`
+> + `appsDeclared(manifest)`；`tests/apps-gateway.test.mjs` 9 条 **不 mock SDK**
+> （把 SDK 自己的 `createAppsHostExtension` 接在内存双工通道另一端，走真 `dokiworld-app-apps-*` 报文
+> 与真校验器）；四处撤修各自即红已实跑（去掉未声明拦截 / `list` 改抛 / `cancelled` 并进 `unavailable` /
+> 把 launch 超时磨平成 list 那档）。
+> 手册 `dokiworld-pack.md` 已回填一行 + 共享层约定；`dokiworld/game108/` 一个字节未动（封装 ≠ 声明）。
+> **三条纪律**（全来自 SDK 源码实读）：① 未声明就不发（未声明消息被拒的形态是"静默等到超时"，
+> 最难查的那一类）② 降级不抛，`cancelled` 与 `unavailable` 分开报 ③ `launch` 超时一小时不是 30 秒。
+>
+> **⚠ 仍待 owner 定的一件（唯一卡口）**：game108 要不要当第一个消费者、在哪一屏、什么时机拉卡带。
+> 现状是「能力就位、零消费者」——**这是有意的**：给 game108 加 `apps` 声明必须有真实消费位置，
+> 否则就成了手册红线点名的反例（match3 多声明）。owner 一句话即可接：
+> **A** 结算屏「再来一局 / 换一个游戏」= 拉 `list()` 给同伴的其它卡带（最自然·Game 形态里唯一说得通的位置）
+> **B** 不接，能力留给将来的 Episode World（编排者本来就是它）——那 game108 的 manifest 永不写 `apps`。
+> 推荐 **B**：`apps` 语义是「App 里开 App」，而 game108 是 60-90 秒的一局对决，
+> 在它里面开另一个 App 等于把编排职责下放给被编排者；A 的价值也只在"宿主没有回到 Episode 的出口"时才成立。
+>
+> **后续①（🔴 主程面·随本单一起复查·不另占硬槽——池子 10 槽满）**：**`dokiworld/**` 的测试跑在没人跑的地方。**
+> 实查：`scoped-gate.mjs` 全文无 `dokiworld` 字样；出包 job（`main_entry/packaging.py:_pkg_build_dokiworld_app`）
+> 只 `npm ci` → `npm run build`，**不跑 `npm test`**。于是 `dokiworld/game108/tests/*`（24 条）
+> 与新增的 `dokiworld/shared/tests/*`（9 条）**没有任何门在验**——写了测试而没人跑，
+> 与「从来就没对过」同形（本轮 game108 AI 恒石那条的教训）。
+> 建议：`scoped-gate` 改动面命中 `dokiworld/**` 时，在受影响的 app 目录追加 `npm test`
+> （缺 node_modules 才 `npm ci`·同出包 job 口径）。落地前手册已写死「改这些目录必须手跑」。
 
 ### REQ-S18PANEL-开发面板补 S1–S8 八关 · 控制台把「立项→对齐→生成」压成了「生成」一步 · [2026-08-16] · **owner 令**（原话：「我需要这些都有一个 S1 到 S8 的按钮，在我的开发面板上……因为我这要开发给用户用的，不能采用老路子了」） · status: **open·待派工** · 优先级: **P1** · 类型: 流程软件（面板 + 门）
 
