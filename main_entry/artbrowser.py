@@ -184,7 +184,7 @@ def _game_tree(slug: str) -> dict:
             'id': f'{slug}:{no}', 'source': 'art-ledger', 'slug': slug, 'no': no, 'kind': kind,
             'label': label, 'status': row.get('status'), 'badge': badge,
             'thumbUrl': _row_thumb(row), 'servedPath': (row.get('gen') or {}).get('servedPath'),
-            'query': row.get('query'), 'desc': row.get('desc'),
+            'query': row.get('query'), 'desc': row.get('desc'), 'prompt': row.get('prompt'),  # REQ-ARTPROMPT：预填 prompt 优先（前端已接）
             'provenance': row.get('provenance') if isinstance(row.get('provenance'), dict) else None,
         }
         groups_map.setdefault(kind, []).append(item)

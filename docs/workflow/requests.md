@@ -203,9 +203,8 @@ UI 层那个同名件只是个四预设的门面。
 <!-- REQ-GUARDGATE-引擎面守卫接线批（P1·深审带出）已完结：① engine-random-guard 新守卫（引擎五目录非测试面禁裸 Math.random·白名单 2 条各附实查理由:atoms/random 法定点+mp-client peerId 信道身份非 sim 随机）② loop-stop [time-wait] 修红（假钟接管·断言未削·反序验红实证）+ hygiene 接门 ③ art-replace-smoke 纳门（美术面触发）——全走新 facesOf 面触发机制（改哪面跑哪守卫·不给无关改动加时长）。Lead 终审 PASS：33 测独立复跑绿·施工方三轮验红（种样本恰咬 matrix-duel:257/回退恰红 [time-wait]/清 FACE_GUARDS 恰 3 红）·Lead 第四轮（杀 testHygiene 旗→恰 4 红）。**Lead 顺手叠了 DOKI-APPS 后续①**：dokiworld/** 测试接门（facesOf.dokiApps + doki-app-test runner·真跑 33 条 app 测·撤注入恰锚点红）。全文查 git 历史。 -->
 
 
-### REQ-ARTPROMPT-提示词编辑被忽略 · UI 改词存 query 而生成读 prompt · [2026-08-11] · PST 复查 P1（Lead 复核属实）+ owner 提示词精简旧请求合并 · status: open · 归属: Lead（`art-replace.mjs`·与 rowIdentity 身份耦合须谨慎） · 优先级: P1 · 类型: 美术工具正确性
-> **病**（PST 实证复现）：`dialectPrompt` 主体优先级 `row.prompt` > `query+desc`，而 `resetRow` 只改 `row.query` 不动 `row.prompt`，面板又预填 `r.prompt || r.query`——人改了字、存进 query、生成仍用旧 prompt = **「改了没反应」**（owner 最恨的一类）。
-> **做法（设计时并办）**：① resetRow 语义修正——用户编辑文本应成为生效主体（动 prompt 还是清 prompt 落回 query+desc·须先定 query 的身份职责边界——`rowIdentity` 三级回退里 query 是末级身份键，改身份≠改提示词要拆开）；② 顺办 owner 的「提示词精简」（subject 从 query+desc 收敛）。**边界**：`scripts/art-replace.mjs`（resetRow/dialectPrompt）+ `ArtLedgerPanel.tsx` 预填口径 + 点名测试。
+<!-- REQ-ARTPROMPT-提示词编辑被忽略（P1·PST 复查带出+owner 精简合并）已完结：职责拆分铁律落死——query=身份键（界面编辑永不写·rowIdentity 零改动）·prompt=生效主体（任何界面改词一律写它·null 显式清除）；全部改词入口 trace 换链（studio 面板/工坊详情卡/CLI --prompt 正名·--query 旧名兼容）；owner 精简同办：主体 prompt>query>desc（仅兜 query 空·实测 631 活行零 cacheKey 漂移零重生成扣费·122 行空 query 行为逐字节不变→全量生效不留双轨）。Lead 终审 PASS：67+47 独立复跑绿·施工方三轮验红（塞回 query→6 红含身份污染锚/撤精简→恰 2 色值红/撤预填→恰 2 红）·Lead 第四轮（null 不清除→恰点名红）·顺手补 artbrowser.py prompt 回带一行。施工方自曝一次 stash 误操作已复原并披露（诚实合格）。全文查 git 历史。 -->
+
 
 <!-- REQ-DOKIPACK-DokiWorld 出包线（P1·owner 2026-08-12 令「以后产物都往这里打包」）首件已完结出池：手册 docs/playbooks/dokiworld-pack.md + 规范快照 docs/design/dokiworld/ 在档=常备产线；game108 首包 ✅ Lead 终审 PASS——dokiworld/game108/（manifest 生成器§5 逐条校验·SDK 薄接线零规则·toGameResult 纯函数=血差线性投影与验收剧本同口径·12 测独立复跑绿·施工方 outcome 反转验红+Lead 钳位破坏恰中边界测·无宿主等待屏与 createAppHost 真握手挂载双目击截图在档）。game108 加 setWorldObserver 只读观察口（照 setCard 形态·render-only）。**下一步触发者=owner**：整目录复制/PR 到 dokiworld-apps 仓 + 真宿主跑一遍（§12 末项·本仓无那边推送权）。**记债**：引擎两条站点绝对资产约定（/games/<slug>/art·/ui-fonts）在 iframe 子路径下逃包，现由打包层改写+复制资产兜住——「资产 URL 基准可配置」是引擎缺口候选,下个游戏出包再撞就立单下沉。后续游戏照手册,World 形态等首个剧情向产物。 -->
 
