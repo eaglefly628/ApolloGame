@@ -194,7 +194,7 @@
 
 ## 3. 红线（动之前读三遍）
 
-1. **claude-code 子进程工具面全禁**：`_claude_code_args` 的 `--disallowedTools Bash,Edit,Write,Read,Glob,Grep,WebFetch,WebSearch,Task,NotebookEdit,TodoWrite` + `--max-turns 1` + 空目录 cwd（`.zerocraft/claude-code-cwd`）——**一个都不许放开**（安全红线·spec §四）。transcript 走 stdin（防 ARG_MAX）。
+1. **claude-code 子进程工具面全禁**：`_claude_code_args` 的 `--disallowedTools Bash,Edit,Write,Read,Glob,Grep,WebFetch,WebSearch,Task,NotebookEdit,TodoWrite` + `--max-turns 1` + 空目录 cwd（**`~/.zerocraft/claude-code-cwd`·必须在仓库之外**）——**一个都不许放开**（安全红线·spec §四）。⚠ **别把 cwd 挪回仓库内**（2026-08-16 实撞）：放 `ROOT/.zerocraft/` 下时 `$CLAUDE_PROJECT_DIR` 仍解析到本仓，CLI 会**继承项目 `.claude/settings.json` 的钩子**——Stop 钩子在模型答完后插一句「有未提交改动」逼出第二轮，而 `result` 取最后一轮 ⇒ **控制台拿到的是钩子回复而不是生成物**（owner 实测：`num_turns=2`·`result=`「这些未提交改动…」）；且与 `--max-turns 1` 天然冲突。目录空 ≠ 隔离，**要不属任何 git 项目才算隔离**。transcript 走 stdin（防 ARG_MAX）。
 2. **key/token 纪律**：只存 `.apollo-config.json`（gitignored）或 env；回显一律 `_mask_key` 打码；绝不落日志/入库。
 3. **mock 三道闸不变**：mock 命名空间 `gen/mock/`、applyReplacements 默认跳 mock、approve 拒 mock——壳/板不得绕。
 4. **不代签人门**：signoff 必须真人指令；agent-chat 不代落盘。
