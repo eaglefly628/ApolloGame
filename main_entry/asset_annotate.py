@@ -76,7 +76,7 @@ def handle_asset_autotag(body: dict) -> dict:
     api_key = get_api_key('anthropic')
     if not api_key:
         return {'success': False, 'error': '缺 ANTHROPIC_API_KEY（写进 .env 后重启 apollo）'}
-    model = str(body.get('model') or 'claude-opus-4-8')
+    model = str(body.get('model') or 'claude-opus-5')
 
     idx_path = ROOT / 'assets' / 'index.json'
     index = json.loads(idx_path.read_text(encoding='utf-8'))

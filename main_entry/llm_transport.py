@@ -80,7 +80,7 @@ LLM_PROVIDERS = {
         'name': 'Claude (Anthropic API·BYO key)',
         # 弃用型号修复（claude-sonnet-4-20250514 已 2026-06-15 退役）→ 当前代次
         'env_key': 'ANTHROPIC_API_KEY',
-        'models': ['claude-opus-4-8', 'claude-sonnet-5', 'claude-haiku-4-5'],
+        'models': ['claude-opus-5', 'claude-sonnet-5', 'claude-haiku-4-5'],
     },
     'qwen': {
         'name': 'Qwen (Alibaba DashScope)',
