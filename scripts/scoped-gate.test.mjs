@@ -105,6 +105,17 @@ describe('scoped-gate × game-skill-audit（audit 进推送门·只扫改动游�
 // test-hygiene-check 步（红=拦）；③ 美术面（scripts/art-replace*/main_entry/art_*）→
 // art-replace-smoke.py 步（红=拦）；未触发的面绝不进计划（不给无关改动加时长）。
 describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门）', () => {
+  it('facesOf：dokiworld/<app>/** 非 .md → dokiApps 命中·纯 .md 与游戏目录不触发·去重排序（DOKI-APPS 后续①）', () => {
+    expect(facesOf(['dokiworld/game108/src/main.ts', 'dokiworld/game108/tests/x.test.mjs', 'dokiworld/shared/src/a.mjs']).dokiApps).toEqual(['game108', 'shared']);
+    expect(facesOf(['dokiworld/game108/README.md']).dokiApps).toEqual([]);
+    expect(facesOf(['games/game108/game108.ts', 'docs/design/dokiworld/x.md']).dokiApps).toEqual([]);
+  });
+  it('dokiworld 改动（full）：计划含 doki-test:<app> 步·红=拦（撤 planFor 的 dokiApps 注入 → 本断言红）', () => {
+    const files = ['dokiworld/shared/src/apps-gateway.mjs'];
+    const plan = planFor({ scope: 'full' }, [], facesOf(files));
+    expect(plan.some((s) => s.name === 'doki-test:shared')).toBe(true);
+    expect(planFor({ scope: 'full' }, [], {}).some((s) => s.name.startsWith('doki-test:'))).toBe(false); // 缺省 faces 不炸不加步
+  });
   it('facesOf：引擎面非测试源文件 → engineRandom（五目录都认）', () => {
     expect(facesOf(['src/engine/core/world.ts']).engineRandom).toBe(true);
     expect(facesOf(['src/skills/tier2/matrix-duel.ts']).engineRandom).toBe(true);
@@ -141,7 +152,7 @@ describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门
   it('facesOf：守卫脚本自身被改也触发各自守卫（改守卫先自证跑绿）', () => {
     expect(facesOf(['scripts/engine-random-guard.mjs']).engineRandom).toBe(true);
     expect(facesOf(['scripts/test-hygiene-check.mjs']).testHygiene).toBe(true);
-    expect(facesOf(['games/game-a/rules.ts', 'docs/workflow/requests.md'])).toEqual({ engineRandom: false, testHygiene: false, artSmoke: false });
+    expect(facesOf(['games/game-a/rules.ts', 'docs/workflow/requests.md'])).toEqual({ engineRandom: false, testHygiene: false, artSmoke: false, dokiApps: [] });
   });
 
   it('引擎面改动（full）：计划含 engine-random 步·红=拦（无 allowExit）·放 tsc 前', () => {

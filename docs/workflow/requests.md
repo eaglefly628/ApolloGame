@@ -35,7 +35,7 @@
 > 打完一局结算屏出「换个游戏玩」推荐位（`apps.list` 拉列表·点了 `launch` 跳转）；game108 manifest 随真消费加 `apps` 声明（五步一致）。
 > 共享层已交付 ⇒ 本单余项 = game108 结算屏接线（施工方续做·薄接线零规则·推荐位 render-only 不进 sim/hash）+ 主程复查。
 >
-> **后续①（🔴 主程面·随本单一起复查·不另占硬槽——池子 10 槽满）**：**`dokiworld/**` 的测试跑在没人跑的地方。**
+> ~~后续①~~ **✅ 主程已落（2026-08-16·随 GUARDGATE 合入）**：scoped-gate 加 dokiworld 面触发（改哪个 app 跑哪家 `node --test`·缺依赖 runner 先 npm ci·撤修验红在案）。原文：**`dokiworld/**` 的测试跑在没人跑的地方。**
 > 实查：`scoped-gate.mjs` 全文无 `dokiworld` 字样；出包 job（`main_entry/packaging.py:_pkg_build_dokiworld_app`）
 > 只 `npm ci` → `npm run build`，**不跑 `npm test`**。于是 `dokiworld/game108/tests/*`（24 条）
 > 与新增的 `dokiworld/shared/tests/*`（9 条）**没有任何门在验**——写了测试而没人跑，
@@ -100,7 +100,9 @@
 <!-- REQ-ARTGUARD-黑户判据认索引记账（P2·PST 提）已完结：判据②落地——art/index.json path 命中且有来源登记（provenance 对象 或 license+source 双齐）即免黑户·原判据①/死账/SKIP 前缀不动。黑户 65→5（非预期 3：施工方逐条实查证明「62 有登记」是算术不是核实，真有登记 60；差的 2 张 game-a 程序化桌面 SVG 真无账——施工方拒绝代写游戏账本凑数=正确，Lead 认可基线留 2 并开 A-028 归 game-a PE 清账）。Lead 终审 PASS：20 测独立复跑绿·施工方双验红（撤并集行→55 张扑克回黑+FAIL 退 1·撤登记检查→3 例红）·Lead 第三轮破坏（双齐弱化为只查 license→恰边界测红）。尾巴：gen/mock 入 SKIP 前缀未裁——唯一现行例证 game-a art-03 死账已在 A-026,随那单处理,守卫不预扩。全文查 git 历史。 -->
 
 
-### REQ-S3CLICK-骨架关加「点击打穿」机器门 · [2026-08-07] · owner 判 **A** · status: **in-progress** · **施工主体 = 策划 session（本行即占锁）** · 复查 = 楚晨 · 优先级: P1 · 类型: 流程门
+### REQ-S3CLICK-骨架关加「点击打穿」机器门 · [2026-08-07] · owner 判 **A** · status: **in-progress（复查 FAIL 打回·判据层·2026-08-16）** · **施工主体 = 策划 session（锁不变·按报告修）** · 复查 = 独立复查 agent（Lead 派·原复查人楚晨未接单） · 优先级: **P0（升·game211 的 S3 正被假红卡死且判词误导排查）** · 类型: 流程门
+
+> **⚖ 复查判词（FAIL 打回·全文 `docs/design/s3click-review-2026-08-16.md`）**：方向/豁免纪律/单测/bind 检查/接线全成立，但**承重断言双向失灵**——game211 假红（开场模态盖屏+点击超时被静默吞+预算按文档序烧不到真可点件·判词还误导去查 Engine.step）；game108 对历史病①假绿（后来的「玩法说明屏」改动无声腐蚀了噪声对照：对照趟不点=永远停首屏,运行态时间元素全不在噪声集）。**P0 三修**：①点击失败入 JSON 与「点了没变」分流 ②预算优先真可命中件（elementFromPoint 预筛/从顶层叠层往下） ③噪声对照治时间元素盲区。**P1**：JSON 落总数/未点名单·exit 3 前先跑 bind 检查·接线补 spawn 级锚点。**当下操作口径**：game211 的 S3 红按假红对待,别查引擎链。
 
 - **病**：S3 骨架关全程**一次都不点**（机器门 = manifest + 装载 + 空跑 2 拍 + 渲染探针）。
   于是「按钮画得好看但点了没反应」能一路绿着过 S3——game108 实测踩到两发，都不报错：
@@ -198,9 +200,8 @@ UI 层那个同名件只是个四预设的门面。
 > **病**（实证：order 整段反转→带病加载零报错）：`save-system.ts` `load()` 只验 `hashSnapshot(data.snapshot)`；`data.order` 未入指纹直通 `world.restore`，而 order 决定 restore 后的 query 序——序敏感世界静默变行为，canonical hash 抓不到。
 > **做法**：`meta.hash` 输入并入 order（或另加 order 指纹）·fail-closed；**旧档兼容**：无 order 的旧档仍可读（现行退回键序语义不动），带 order 的必验。**边界**：`src/services/storage/save-system.ts`（必要时 envelope 同步）+ 点名测试（order 篡改必拒 + 旧档仍读）。
 
-### REQ-GUARDGATE-引擎面守卫接线批 · 禁裸随机静态守卫 + hygiene 修红接门 · [2026-08-10] · 深审 A1 探针2/顺手发现（Lead 复跑坐实） · status: open · 指派: 可派工（守卫属 Lead 域·Lead review） · 优先级: P1 · 类型: 门禁基建
-> **病**（实证）：① 往 matrix-duel 结算插 `Math.random()`——game-skill-audit 只扫 `games/`、门禁无引擎层随机扫描步，被咬全靠碰巧存在的精确数值断言；② `test-hygiene-check.mjs` 在 HEAD 即 FAIL（`src/runtime/engine.loop-stop.test.ts:25` [time-wait] 用 `performance.now()`）且未接进 scoped-gate 任何 scope——红着也拦不了推送。
-> **做法**：① 新静态守卫：引擎面（`src/{engine,skills,assembly,net,services}` 非测试文件）禁裸 `Math.random`（白名单 = `atoms/random` 实现文件），接 scoped-gate；② 修掉 loop-stop.test 的墙钟违规 + hygiene 接门。**边界**：新守卫脚本 + `scoped-gate.mjs` 接线 + `engine.loop-stop.test.ts` 一处 + 各点名测试③（2026-08-11 追加·ARTPAR 复查裁定）`art-replace-smoke.py` 纳入门禁——碰美术面（`scripts/art-replace*`/`main_entry/art_*`）时跑（PST 实证：三处假红漏检一整天）。
+<!-- REQ-GUARDGATE-引擎面守卫接线批（P1·深审带出）已完结：① engine-random-guard 新守卫（引擎五目录非测试面禁裸 Math.random·白名单 2 条各附实查理由:atoms/random 法定点+mp-client peerId 信道身份非 sim 随机）② loop-stop [time-wait] 修红（假钟接管·断言未削·反序验红实证）+ hygiene 接门 ③ art-replace-smoke 纳门（美术面触发）——全走新 facesOf 面触发机制（改哪面跑哪守卫·不给无关改动加时长）。Lead 终审 PASS：33 测独立复跑绿·施工方三轮验红（种样本恰咬 matrix-duel:257/回退恰红 [time-wait]/清 FACE_GUARDS 恰 3 红）·Lead 第四轮（杀 testHygiene 旗→恰 4 红）。**Lead 顺手叠了 DOKI-APPS 后续①**：dokiworld/** 测试接门（facesOf.dokiApps + doki-app-test runner·真跑 33 条 app 测·撤注入恰锚点红）。全文查 git 历史。 -->
+
 
 ### REQ-ARTPROMPT-提示词编辑被忽略 · UI 改词存 query 而生成读 prompt · [2026-08-11] · PST 复查 P1（Lead 复核属实）+ owner 提示词精简旧请求合并 · status: open · 归属: Lead（`art-replace.mjs`·与 rowIdentity 身份耦合须谨慎） · 优先级: P1 · 类型: 美术工具正确性
 > **病**（PST 实证复现）：`dialectPrompt` 主体优先级 `row.prompt` > `query+desc`，而 `resetRow` 只改 `row.query` 不动 `row.prompt`，面板又预填 `r.prompt || r.query`——人改了字、存进 query、生成仍用旧 prompt = **「改了没反应」**（owner 最恨的一类）。
