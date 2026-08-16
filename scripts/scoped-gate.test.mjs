@@ -116,6 +116,23 @@ describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门
     expect(plan.some((s) => s.name === 'doki-test:shared')).toBe(true);
     expect(planFor({ scope: 'full' }, [], {}).some((s) => s.name.startsWith('doki-test:'))).toBe(false); // 缺省 faces 不炸不加步
   });
+  // 慢车道点名补跑（REQ-S18PANEL②③ 带出）：快车道 exclude 掉的测试改了也没人跑=「写了测试没人跑」。
+  it('facesOf：改被测脚本或测试自身 → deepTests 命中；无关改动不触发', () => {
+    expect(facesOf(['scripts/game-pipeline.mjs']).deepTests).toEqual(['scripts/game-pipeline.test.mjs']);
+    expect(facesOf(['scripts/game-pipeline.test.mjs']).deepTests).toEqual(['scripts/game-pipeline.test.mjs']); // 测试自己被改也跑
+    expect(facesOf(['scripts/game-skill-audit.mjs']).deepTests).toEqual(['scripts/audit-ratchet.test.mjs']);
+    expect(facesOf(['games/game-g/flow-walk.test.ts']).deepTests).toEqual(['games/game-g/flow-walk.test.ts']);
+    expect(facesOf(['games/game-g/rules.ts']).deepTests).toEqual([]); // 整局通关不随游戏改动重跑（owner 双车道决策不回潮）
+    expect(facesOf(['src/engine/core/world.ts']).deepTests).toEqual([]);
+  });
+  it('deepTests 步带 ZEROCRAFT_DEEP=1（不带这个 env 跑出来是「No test files found」的假绿）', () => {
+    const plan = planFor({ scope: 'full' }, [], facesOf(['scripts/game-pipeline.mjs']));
+    const step = plan.find((s) => s.name === 'deep:game-pipeline.test.mjs');
+    expect(step).toBeTruthy(); // 撤 planFor 的 deepTests 注入 → 本断言红
+    expect(step.cmd).toEqual(['npx', ['vitest', 'run', 'scripts/game-pipeline.test.mjs']]);
+    expect(step.env).toEqual({ ZEROCRAFT_DEEP: '1' }); // 撤 env → 本断言红（这一条才是「真跑到测试」的锚）
+    expect(planFor({ scope: 'full' }, [], {}).some((s) => s.name.startsWith('deep:'))).toBe(false); // 缺省 faces 不炸不加步
+  });
   it('facesOf：引擎面非测试源文件 → engineRandom（五目录都认）', () => {
     expect(facesOf(['src/engine/core/world.ts']).engineRandom).toBe(true);
     expect(facesOf(['src/skills/tier2/matrix-duel.ts']).engineRandom).toBe(true);
@@ -152,7 +169,7 @@ describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门
   it('facesOf：守卫脚本自身被改也触发各自守卫（改守卫先自证跑绿）', () => {
     expect(facesOf(['scripts/engine-random-guard.mjs']).engineRandom).toBe(true);
     expect(facesOf(['scripts/test-hygiene-check.mjs']).testHygiene).toBe(true);
-    expect(facesOf(['games/game-a/rules.ts', 'docs/workflow/requests.md'])).toEqual({ engineRandom: false, testHygiene: false, artSmoke: false, dokiApps: [] });
+    expect(facesOf(['games/game-a/rules.ts', 'docs/workflow/requests.md'])).toEqual({ engineRandom: false, testHygiene: false, artSmoke: false, dokiApps: [], deepTests: [] });
   });
 
   it('引擎面改动（full）：计划含 engine-random 步·红=拦（无 allowExit）·放 tsc 前', () => {

@@ -76,6 +76,24 @@
 >
 > **验收**：新建一个项目 → 面板显示 S1✅ S2⚠(缺口 6) S3🔒 → 点不动 S3 且告知卡在哪几条 →
 > 缺口逐条判完 → S2 门转绿 → S3 才可点。**关掉浏览器再开，策划案与对话都还在。**
+>
+> **②③ 已交（2026-08-16·本 session·待复查）**——`scripts/game-pipeline.mjs`：
+> ① 台账 `docs/design/<slug>/capability-gaps.json`（裸数组·四闭集 priority/route/state/blocks·
+> `state≠open` 强制带 ticket）+ `readCapabilityGaps`/`evalCapabilityGaps`/`blockingGaps` 三只纯函数导出；
+> ② `S2.gate: null → 'gap-check'`（纯 fs 秒回·**与 board 共用同一只嘴** evalCapabilityGaps，
+> 面板按一下与板上看一眼不会两种说法）——有 `open` 缺口 = 门红 / 板 ⚠（owner 验收原话「S2⚠(缺口 6)」）；
+> ③ `orderGate` 前置加缺口锁（P0/P1 未 delivered/wontfix 且 `blocks` 含本关 → 拒跑，**`--out-of-order`
+> 不放行**·理由见手册）；board 各关带 `blockedBy`、顶层带 `gaps`/`gapErrors`（面板零推导·直接渲染 🔒 与跳工单）。
+> **零回归锚**：全库今天没有一个 `capability-gaps.json` ⇒ 存量板/门逐字节同旧版（点名测试在案）。
+> **判据外的两处**（复查请重点看）：(a) 台账**排除出 gameHash**（把缺口标 delivered 不该让全关证据过期·
+> 同 requests.md 台账判据）；(b) S2 进 `GATE_STAGES` 后，`pipeline-orchestrator` 的 S2 重验**自动从
+> 「board 推导」改走「真跑 gate」**（同源表的必然后果·未改编排器一行·语义更严不更松）。
+> **边界外顺手一条（提前声明·非追认）**：`scripts/scoped-gate.mjs` 加 `deepTests` 面——快车道 exclude 掉的
+> 测试（含本次改的 `game-pipeline.test.mjs`）改了也没人跑=「写了测试没人跑」（同 DOKI-APPS 后续①同形）；
+> 现按面点名补跑并带 `ZEROCRAFT_DEEP=1`。顺手修 `armed` 日志把空数组旗当命中报的假话。
+> **自证**：52 测（游戏板·deep 车道真跑）+ 28 测（scoped-gate）全绿；**撤修验红五轮锚点全中**——
+> 撤 gap-check→S2 缺口用例恰红 · 撤缺口锁→2 例恰红 · 撤 gameHash 排除→指纹用例恰红 ·
+> 撤 deepTests 注入 / 撤 `ZEROCRAFT_DEEP` env→各恰红（后者是「真跑到测试」的锚，没它是 No test files found 假绿）。
 
 <!-- REQ-DIALOGUE-剧情基础线（P1·owner 令·转型关键路径）→ **2026-08-16 关闭出池**（不占槽·同 PIPESOFT/SPECTRACE/RENDERCHECK 先例：下一步触发者不在池内）：**M1–M4 四件全 ✅ Lead 对抗性验收毕**（2026-08-10·22 例独立复跑绿 + 双破坏锚点命中：撤 neutral 降级锚→恰 3 红、撤 weight 语义→加权测红；game-i 展台 audit + 棘轮 PASS）。**余项 = M4 Sample 示范游戏**，owner 已定与「亲测约会游戏试点」合流 ⇒ **触发者 = owner 本人**，挂池子里只会占槽空等。图纸唯一真相仍在 `docs/design/dialogue-line-blueprint-2026-08.md`（派工时照它）；四件的落点与判词全文查 git 历史 grep REQ-DIALOGUE。**owner 跑完试点带回反馈即重开本条。** -->
 

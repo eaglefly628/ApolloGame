@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { detectForm, gameHash, boardFor, artSubState, STAGES, GATE_STAGES, pipelineFile, mockDebt, writeConcept, priorGaps, orderGate, reviewPrereqGaps, acceptanceScenarioCount, MIN_ACCEPTANCE_SCENARIOS, REVIEW_CHECKLISTS, selfCheckArtifacts, selfCheckBlock, selfCheckNote, MIN_SELFCHECK_SHOTS } from './game-pipeline.mjs';
+import { detectForm, gameHash, boardFor, artSubState, STAGES, GATE_STAGES, pipelineFile, mockDebt, writeConcept, priorGaps, orderGate, reviewPrereqGaps, acceptanceScenarioCount, MIN_ACCEPTANCE_SCENARIOS, REVIEW_CHECKLISTS, selfCheckArtifacts, selfCheckBlock, selfCheckNote, MIN_SELFCHECK_SHOTS, readCapabilityGaps, evalCapabilityGaps, blockingGaps, GAP_STATES, GAP_ROUTES, GAP_PRIORITIES, capabilityGapsFile } from './game-pipeline.mjs';
 
 const withRoot = async (fn) => { const r = mkdtempSync(join(tmpdir(), 'gpipe-')); try { return await fn(r); } finally { rmSync(r, { recursive: true, force: true }); } };
 const put = (root, rel, content) => { const p = join(root, rel); mkdirSync(join(p, '..'), { recursive: true }); writeFileSync(p, typeof content === 'string' ? content : JSON.stringify(content, null, 2)); };
@@ -14,10 +14,11 @@ const put = (root, rel, content) => { const p = join(root, rel); mkdirSync(join(
 const MANIFEST = { name: 'G', capabilities: [], entities: { hero: { Sprite: { textureKey: 'art:knight' } } } };
 
 describe('阶段表（八阶段·每阶段一本手册）', () => {
-  it('8 阶段·手册列全非空·机器门阶段=S3/S4/S5/S8', () => {
+  it('8 阶段·手册列全非空·机器门阶段=S2/S3/S4/S5/S8（S2=gap-check·REQ-S18PANEL②）', () => {
     expect(STAGES).toHaveLength(8);
     expect(STAGES.every((s) => s.handbook)).toBe(true);
-    expect(GATE_STAGES).toEqual(['S3', 'S4', 'S5', 'S8']);
+    expect(GATE_STAGES).toEqual(['S2', 'S3', 'S4', 'S5', 'S8']);
+    expect(STAGES.find((s) => s.id === 'S2').gate).toBe('gap-check'); // 面板按这个字段画「跑机器门」按钮
   });
 });
 
@@ -287,6 +288,143 @@ describe('acceptanceScenarioCount / S4 存在性门', () => {
   });
 });
 
+// ═══ S2 能力缺口门（REQ-S18PANEL②③·owner 2026-08-16 令·叠叠乐 Demo 实撞）═══
+describe('readCapabilityGaps（闭集校验·纯 fs·不抛）', () => {
+  const gap = (o = {}) => ({ id: 'GAP-01', title: '球体刚体', priority: 'P1', route: 'engine', state: 'open', blocks: ['S3'], ...o });
+  it('无文件=absent 零缺口零错（存量游戏零回归）', () => withRoot(async (root) => {
+    put(root, 'games/g/index.ts', '// compiled');
+    expect(readCapabilityGaps(root, 'g')).toEqual({ absent: true, gaps: [], errors: [] });
+  }));
+  it('合法台账全量读出（含 route/blocks/ticket）', () => withRoot(async (root) => {
+    put(root, 'games/g/index.ts', '// compiled');
+    put(root, 'docs/design/g/capability-gaps.json', [gap(), gap({ id: 'GAP-02', route: '3d', priority: 'P0', state: 'accepted', ticket: 'requests-3d.md#REQ-3D-X', blocks: ['S4', 'S5'] })]);
+    const r = readCapabilityGaps(root, 'g');
+    expect(r.errors).toEqual([]);
+    expect(r.gaps.map((g) => g.id)).toEqual(['GAP-01', 'GAP-02']);
+    expect(r.gaps[1]).toMatchObject({ route: '3d', state: 'accepted', ticket: 'requests-3d.md#REQ-3D-X', blocks: ['S4', 'S5'] });
+  }));
+  it('坏 JSON / 非数组顶层 → 各自一条点名错（不抛不崩）', () => withRoot(async (root) => {
+    put(root, 'games/g/index.ts', '// compiled');
+    put(root, 'docs/design/g/capability-gaps.json', '{ 这不是 JSON');
+    expect(readCapabilityGaps(root, 'g').errors[0]).toContain('不是合法 JSON');
+    put(root, 'docs/design/g/capability-gaps.json', { gaps: [] }); // 包一层的写法不认（单一真相=裸数组）
+    expect(readCapabilityGaps(root, 'g').errors[0]).toContain('顶层须是数组');
+  }));
+  it('闭集违规逐条点名：priority/route/state/未知阶段/id 重复/缺 title', () => withRoot(async (root) => {
+    put(root, 'games/g/index.ts', '// compiled');
+    put(root, 'docs/design/g/capability-gaps.json', [
+      gap({ priority: 'P9' }), gap({ id: 'GAP-02', route: 'game' }), gap({ id: 'GAP-03', state: '待定' }),
+      gap({ id: 'GAP-04', blocks: ['S9'] }), gap({ id: 'GAP-04' }), gap({ id: 'GAP-06', title: '' }),
+    ]);
+    const errs = readCapabilityGaps(root, 'g').errors.join('\n');
+    expect(errs).toContain('priority 非法 "P9"');
+    expect(errs).toContain('route 非法 "game"'); // 池闭集=engine/3d/pui
+    expect(errs).toContain('state 非法 "待定"');
+    expect(errs).toContain('blocks 含未知阶段 "S9"');
+    expect(errs).toContain('id 重复');
+    expect(errs).toContain('缺 title');
+  }));
+  it('已裁决（state≠open）却无 ticket → 红（面板要跳工单·裁词不能没落点）', () => withRoot(async (root) => {
+    put(root, 'games/g/index.ts', '// compiled');
+    put(root, 'docs/design/g/capability-gaps.json', [gap({ state: 'delivered' })]);
+    expect(readCapabilityGaps(root, 'g').errors.join()).toContain('无 ticket');
+    put(root, 'docs/design/g/capability-gaps.json', [gap({ state: 'delivered', ticket: 'requests.md#REQ-X' })]);
+    expect(readCapabilityGaps(root, 'g').errors).toEqual([]);
+    put(root, 'docs/design/g/capability-gaps.json', [gap({ state: 'open' })]); // open 免 ticket（还没裁哪来的单）
+    expect(readCapabilityGaps(root, 'g').errors).toEqual([]);
+  }));
+});
+
+describe('evalCapabilityGaps（S2 机器门判词·board 与 gate 共用一只嘴）', () => {
+  const res = (gaps, errors = []) => ({ absent: false, gaps, errors });
+  const g = (o) => ({ id: 'G1', title: 't', priority: 'P1', route: 'engine', state: 'open', ticket: '', blocks: [], ...o });
+  it('无台账/空台账=ok · 有 open=warn 且点名 · 台账不合法=fail', () => {
+    expect(evalCapabilityGaps({ absent: true, gaps: [], errors: [] }).state).toBe('ok');
+    expect(evalCapabilityGaps(res([])).state).toBe('ok');
+    const w = evalCapabilityGaps(res([g({ id: 'GAP-01' }), g({ id: 'GAP-02', state: 'delivered' })]));
+    expect(w.state).toBe('warn');
+    expect(w.detail).toContain('1/2 未裁决');
+    expect(w.detail).toContain('GAP-01[P1·engine]'); // 点名 + 分池（面板照抄）
+    expect(evalCapabilityGaps(res([], ['坏字段'])).state).toBe('fail');
+  });
+  it('全裁决（含 wontfix）=ok；未交付的仍在判词里报数（绿≠没话说）', () => {
+    const r = evalCapabilityGaps(res([
+      g({ id: 'A', state: 'wontfix', ticket: 't' }), g({ id: 'B', state: 'accepted', ticket: 't', blocks: ['S4'] }),
+    ]));
+    expect(r.state).toBe('ok');
+    expect(r.detail).toContain('未交付 1');
+    expect(r.detail).toContain('B→锁S4');
+  });
+});
+
+describe('blockingGaps / orderGate 缺口锁（REQ-S18PANEL③·整关阻塞第一版）', () => {
+  const g = (o) => ({ id: 'G', title: 't', priority: 'P1', route: 'engine', state: 'accepted', ticket: 'k', blocks: ['S3'], ...o });
+  const boardWith = (gaps) => ({
+    gaps,
+    stages: STAGES.map((s) => ({ id: s.id, title: s.title, status: 'ok', machine: { state: 'ok' }, review: { state: 'ok' }, human: { state: 'ok' } })),
+  });
+  it('P0/P1 未交付且 blocks 含本关 → 锁；P2/P3 不锁；delivered/wontfix 不锁；别的关不锁', () => {
+    expect(blockingGaps(boardWith([g({ priority: 'P0' })]), 'S3').map((x) => x.id)).toEqual(['G']);
+    expect(blockingGaps(boardWith([g({ priority: 'P2' })]), 'S3')).toEqual([]); // owner 边界：只有 P0/P1 锁关
+    expect(blockingGaps(boardWith([g({ priority: 'P3' })]), 'S3')).toEqual([]);
+    expect(blockingGaps(boardWith([g({ state: 'delivered' })]), 'S3')).toEqual([]);
+    expect(blockingGaps(boardWith([g({ state: 'wontfix' })]), 'S3')).toEqual([]); // 回驳=裁决·不再拦路
+    expect(blockingGaps(boardWith([g()]), 'S4')).toEqual([]); // 只锁 blocks 点名的关
+    expect(blockingGaps({ stages: [] }, 'S3')).toEqual([]); // 无 gaps 字段=零回归
+  });
+  it('缺口锁 --out-of-order 也不放行（跳过去只能在游戏层写逃生代码）', () => {
+    const d = orderGate(boardWith([g({ id: 'GAP-3D-01', priority: 'P0', route: '3d' })]), 'S3', '赶 demo 先跑骨架');
+    expect(d.allowed).toBe(false); // 撤缺口锁（orderGate 忽略 blockedBy）→ 本断言红
+    expect(d.blockedBy.map((x) => x.id)).toEqual(['GAP-3D-01']);
+    expect(d.outOfOrder).toBeUndefined(); // 拒跑就不能同时落乱序放行痕
+  });
+  it('缺口全 delivered → 前置全绿时照常放行（锁真会开·不是单向门）', () => {
+    const d = orderGate(boardWith([g({ state: 'delivered' })]), 'S3', undefined);
+    expect(d.allowed).toBe(true);
+    expect(d.blockedBy).toBeUndefined();
+  });
+});
+
+describe('boardFor 接缺口台账（S2 机器态 + 各关 🔒 + 板带 gaps）', () => {
+  const mk = (root, gaps) => {
+    put(root, 'public/games/g/manifest.json', MANIFEST);
+    put(root, 'docs/design/g/capability-plan.md', '# 能力计划');
+    if (gaps) put(root, 'docs/design/g/capability-gaps.json', gaps);
+  };
+  it('plan 在档 + 零台账 = S2 机器门绿（存量游戏零回归）', () => withRoot(async (root) => {
+    mk(root, null);
+    const s2 = boardFor(root, 'g').stages.find((s) => s.id === 'S2');
+    expect(s2.machine.state).toBe('ok');
+    expect(s2.machine.detail).toContain('capability-plan.md 在档');
+  }));
+  it('6 条缺口未裁 → S2 机器门 ⚠ 点名条数；blocks 命中的关带 blockedBy（面板画 🔒）', () => withRoot(async (root) => {
+    mk(root, [0, 1, 2, 3, 4, 5].map((i) => ({ id: `GAP-0${i + 1}`, title: `缺口${i}`, priority: i < 4 ? 'P1' : 'P2', route: i < 4 ? '3d' : 'engine', state: 'open', blocks: ['S3'] })));
+    const b = boardFor(root, 'g');
+    const s2 = b.stages.find((s) => s.id === 'S2');
+    expect(s2.machine.state).toBe('warn'); // owner 验收原话「S1✅ S2⚠(缺口 6) S3🔒」
+    expect(s2.machine.detail).toContain('6/6 未裁决');
+    expect(b.gaps).toHaveLength(6); // 板直接带缺口（面板零推导·只渲染）
+    expect(b.gapErrors).toEqual([]);
+    expect(b.stages.find((s) => s.id === 'S3').blockedBy.map((g) => g.id)).toEqual(['GAP-01', 'GAP-02', 'GAP-03', 'GAP-04']); // P2 那两条不锁
+    expect(b.stages.find((s) => s.id === 'S4').blockedBy).toEqual([]);
+  }));
+  it('台账不合法 → S2 机器门红 + 板带 gapErrors（不静默吞）', () => withRoot(async (root) => {
+    mk(root, [{ id: 'X', title: 't', priority: 'P1', route: 'engine', state: 'delivered', blocks: [] }]); // 已裁无 ticket
+    const b = boardFor(root, 'g');
+    expect(b.stages.find((s) => s.id === 'S2').machine.state).toBe('fail');
+    expect(b.gapErrors.length).toBeGreaterThan(0);
+  }));
+  it('缺口台账不入 gameHash（把缺口标 delivered 不该让全关证据过期）', () => withRoot(async (root) => {
+    mk(root, null);
+    const h0 = gameHash(root, 'g');
+    put(root, 'docs/design/g/capability-gaps.json', [{ id: 'A', title: 't', priority: 'P1', route: 'engine', state: 'open', blocks: [] }]);
+    expect(gameHash(root, 'g')).toBe(h0);
+    put(root, 'docs/design/g/capability-gaps.json', [{ id: 'A', title: 't', priority: 'P1', route: 'engine', state: 'delivered', ticket: 'k', blocks: [] }]);
+    expect(gameHash(root, 'g')).toBe(h0); // 裁决回执≠游戏内容（同 requests.md 判据）
+    expect(capabilityGapsFile(root, 'g')).toContain('capability-gaps.json');
+  }));
+});
+
 // ═══ S4/S5 自证门（REQ-SELFCHECK·图纸①②·「自己玩自己看对照策划」）═══
 describe('selfCheckArtifacts / selfCheckBlock（自证产物存在性·纯 fs）', () => {
   const shots = (root, slug, names) => names.forEach((n) => put(root, `docs/design/${slug}/self-check/shots/${n}`, 'img'));
@@ -408,6 +546,74 @@ describe('gate 顺序闸 CLI（真退出码+落痕+板 ⚠·REQ-GATE-硬化 F �
       const b = runCli(root, ['board', 'g']);
       expect(b.status).toBe(0);
       expect(b.stdout).not.toContain('⚠乱序');
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  // ═══ REQ-S18PANEL②③·S2 gap-check 门 + 缺口锁（真退出码·纯 fs 路径 temp root 全可测）═══
+  const putGaps = (root, gaps) => put(root, 'docs/design/g/capability-gaps.json', gaps);
+  const concept = (root) => runCli(root, ['concept', 'g', '--name', 'G', '--pitch', '叠叠乐']);
+
+  it('S2 gate：无 plan 无 waiver → 红点名模板；有 plan 零缺口 → 绿并落证据', () => {
+    const root = mkFixture();
+    try {
+      concept(root);
+      const bad = runCli(root, ['gate', 'g', 'S2', '--out-of-order', '测 S2 门']);
+      expect(bad.status).not.toBe(0);
+      expect(bad.stdout + bad.stderr).toContain('capability-plan-template.md');
+      put(root, 'docs/design/g/capability-plan.md', '# 能力计划');
+      const ok = runCli(root, ['gate', 'g', 'S2', '--out-of-order', '测 S2 门']);
+      expect(ok.status).toBe(0);
+      const pf = JSON.parse(readFileSync(join(root, 'public', 'games', 'g', 'pipeline.json'), 'utf8'));
+      expect(pf.evidence.S2.exit).toBe(0);
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it('S2 gate：有未裁决缺口 → 真红（不许带 open 缺口往下走）；逐条判完 → 转绿', () => {
+    const root = mkFixture();
+    try {
+      concept(root);
+      put(root, 'docs/design/g/capability-plan.md', '# 能力计划');
+      putGaps(root, [
+        { id: 'GAP-01', title: '球体刚体', priority: 'P1', route: '3d', state: 'open', blocks: ['S3'] },
+        { id: 'GAP-02', title: '液面件', priority: 'P2', route: 'pui', state: 'open', blocks: [] },
+      ]);
+      const red = runCli(root, ['gate', 'g', 'S2', '--out-of-order', '测缺口门']);
+      expect(red.status).not.toBe(0); // 撤 gap-check（S2 门只看 plan）→ 本断言红
+      expect(red.stdout + red.stderr).toContain('GAP-01');
+      // owner 逐条判完（A=补引擎缺口→accepted·B=回驳→wontfix），S2 门即转绿。
+      putGaps(root, [
+        { id: 'GAP-01', title: '球体刚体', priority: 'P1', route: '3d', state: 'accepted', ticket: 'requests-3d.md#REQ-3D-BALL', blocks: ['S3'] },
+        { id: 'GAP-02', title: '液面件', priority: 'P2', route: 'pui', state: 'wontfix', ticket: 'requests.md#REQ-UIFX', blocks: [] },
+      ]);
+      const green = runCli(root, ['gate', 'g', 'S2', '--out-of-order', '测缺口门']);
+      expect(green.status).toBe(0);
+      expect(green.stdout).toContain('全已裁决');
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it('缺口锁：S3 被未交付 P0/P1 缺口锁住 → --out-of-order 也拒跑·点名卡在哪条+工单；delivered 后放行', () => {
+    const root = mkFixture();
+    try {
+      concept(root);
+      put(root, 'docs/design/g/capability-plan.md', '# 能力计划');
+      putGaps(root, [{ id: 'GAP-3D-01', title: '薄牌刚体轴向', priority: 'P0', route: '3d', state: 'accepted', ticket: 'requests-3d.md#REQ-3D-CARD-FACE-AXIS', blocks: ['S3'] }]);
+      const locked = runCli(root, ['gate', 'g', 'S3', '--out-of-order', '赶 demo 先跑骨架']);
+      expect(locked.status).not.toBe(0);
+      const out = locked.stdout + locked.stderr;
+      expect(out).toContain('能力缺口闸');
+      expect(out).toContain('GAP-3D-01');
+      expect(out).toContain('requests-3d.md#REQ-3D-CARD-FACE-AXIS'); // 告知卡在哪+去哪看
+      expect(out).not.toContain('顺序闸'); // 缺口锁先答（别把人指去查前置门）
+      const b = runCli(root, ['board', 'g']);
+      expect(b.stdout).toContain('🔒缺口');
+      expect(b.stdout).toContain('缺口台账 1 条');
+      // 缺口交付后锁自动开（compiled 游戏 S3=免 manifest 校验·沙盒根跳探针 → 走得到绿）。
+      // S2 复查落账是既有硬闸（S2 机器门已绿=已施工·未复查一律拦）——与缺口锁各管各的，两道都过才跑得动。
+      putGaps(root, [{ id: 'GAP-3D-01', title: '薄牌刚体轴向', priority: 'P0', route: '3d', state: 'delivered', ticket: 'requests-3d.md#REQ-3D-CARD-FACE-AXIS', blocks: ['S3'] }]);
+      expect(runCli(root, ['review', 'g', 'S2', '--verdict', 'PASS', '--note', '缺口逐条核过', '--by', '复查人']).status).toBe(0);
+      const opened = runCli(root, ['gate', 'g', 'S3', '--out-of-order', '前置未签·测锁已开']);
+      expect(opened.status).toBe(0);
+      expect(runCli(root, ['board', 'g']).stdout).not.toContain('🔒缺口');
     } finally { rmSync(root, { recursive: true, force: true }); }
   });
 

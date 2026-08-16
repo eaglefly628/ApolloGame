@@ -40,13 +40,27 @@
 | 关 | 做什么 | 机器门 | 人门 | 手册 |
 |---|---|---|---|---|
 | S1 立项卡 | 名字+一句话玩法+参考+风格意向 | concept 字段非空 | owner/Lead 签 | `docs/llm-onboarding.md` |
-| S2 能力计划 | capability-plan 过审（纯数据卡带可记免 plan 裁决） | plan 在档 或 裁决在案 + 阶梯申报在档（L3 无未批条目） | Lead 签 | `docs/design/capability-plan-template.md` |
+| S2 能力计划 | capability-plan 过审（纯数据卡带可记免 plan 裁决）+ **缺口逐条裁决** | `gate <slug> S2`（gap-check·纯 fs 秒回）：plan 在档 或 裁决在案 **∧ `capability-gaps.json` 里零 `state:"open"`** | Lead 签 | `docs/design/capability-plan-template.md` |
 | S3 骨架关 | manifest 立起来、引擎吃得下 | parseManifest 零 error **+ 真引擎装载 load+空跑2tick**（gate·「能存必须能跑」owner 07-11） | 挂载目击签 | `docs/playbooks/index.md`（找对应线） |
 | S4 玩法关 | 胜负/重开/核心循环闭环 | **自证产物在档**（`S4-alignment.md`+shots ≥5·缺=拒跑）→ GD 验收剧本 ≥3 场景 conformance 绿（剧本作者=GD 非 PE）→ 该游戏 walkthrough vitest 绿；卡带=bench 五轴（gate） | 试玩签（附真浏览器截图序列） | `docs/playbooks/testing.md` |
 | S5 UI 关 | HUD/菜单守 LayoutNode 纪律 | **自证产物在档**（`S5-alignment.md`+shots ≥5·缺=拒跑）→ game-skill-audit 红旗零（gate）；卡带天然免 | /check-ui 结论签 | `docs/playbooks/ui.md` |
 | S6 美术关 | 台账→风格锚→生成→写回→复核 | 台账推导（MOCK 不算完成） | **已内嵌**=平台逐行 ☑ 复核 | `docs/playbooks/art-pipeline.md` |
 | S7 品质关 | 视觉评分卡打分 | —（以人门为主） | 得分记 note 签 | `docs/playbooks/visual-scorecard.md` |
 | S8 终检关 | 全库门禁+复盘回填 | **卡带**=MOCK 债 0+manifest-check+bench 五轴（轻量终检·证据绑 gameHash）；**内置/编译游戏**=tsc+vitest+build 三绿（gate·证据绑 git HEAD+净树位） | 手册缺口回填/提单记 note 签 | `docs/playbooks/testing.md` |
+
+## 能力缺口台账 `docs/design/<slug>/capability-gaps.json`（S2 的机器牙齿·REQ-S18PANEL）
+
+立项识别出的引擎缺口**写成机读数据**（裸数组·全闭集），别只写在聊天里——否则「带着未裁决的缺口
+一路生成下去」是合法路径（owner 2026-08-16 叠叠乐实撞）。怎么裁仍走既有协议（先查→摆 A/B→owner 判），
+本文件只是那份裁决的机读投影：`[{id,title,priority,route,state,ticket,blocks}]`。
+
+- `priority` `P0|P1|P2|P3`——**只有 P0/P1 锁关**；`route` `engine|3d|pui`——**按池分流**
+  （engine=10 硬槽 / 3d=独立池 / pui=UI 基座；一股脑进引擎池会当场撑爆槽位）。
+- `state` `open`(未裁)`accepted`(判过 A/B 待做)`in-progress``delivered``wontfix`(回驳·附等价数据写法)；
+  **`≠open` 必带 `ticket`**（面板跳过去看裁词）。有 `open` = S2 门红 / 板 ⚠。
+- `blocks`=卡住哪几关：**被锁的关 `gate` 拒跑且 `--out-of-order` 不放行**——跳过去施工只能在游戏层写
+  逃生代码（手写 system / 自造解释器），正是宪法要治的病；等不了就把它裁成 `wontfix`，那是裁决不是放行。
+- 台账**不入游戏内容指纹**（标 delivered 不该让全关证据过期）；S2 机器态板上现算。
 
 ## 防漂移三律（为什么这样设计）
 

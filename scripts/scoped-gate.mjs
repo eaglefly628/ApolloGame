@@ -102,10 +102,25 @@ export function auditGamesOf(files) {
  * · testHygiene：src/**\/*.test.ts 被改（hygiene 只扫这一面），或 hygiene 脚本自身被改。
  * · artSmoke：scripts/art-replace* 或 main_entry/art_* 被改（含冒烟脚本自身=scripts/art-replace-smoke.py）。
  */
+/** 快车道排除的测试（vite.config.ts DEEP_GLOBS·双车道 owner 2026-07-21）**在推送门里没人跑**——
+ *  `vitest run` 与 `vitest run games/<g>` 都吃那份 exclude。平时无所谓（慢车道兜底），但**改了它们
+ *  或它们点名的被测脚本时**就是「写了测试而没人跑」（同 DOKI-APPS 后续①、game108 恒石同形）。
+ *  故按面点名补跑：改哪个跑哪个（带 ZEROCRAFT_DEEP=1 解除排除），不给无关改动加时长。
+ *  subjects 只列**该测试的被测脚本**（不列整目录）——列宽了就等于把慢车道搬回快车道，
+ *  那是 owner 双车道决策要治的病。flow-walk/game-f 只在自己被改时跑（整局通关 8.4s·单元已覆盖片段）。 */
+export const DEEP_LANE_TESTS = [
+  { test: 'scripts/game-pipeline.test.mjs', subjects: ['scripts/game-pipeline.mjs'] },
+  { test: 'scripts/manifest-check.test.mjs', subjects: ['scripts/manifest-check.mjs'] },
+  { test: 'scripts/acceptance.test.mjs', subjects: ['scripts/acceptance-run.mjs'] },
+  { test: 'scripts/audit-ratchet.test.mjs', subjects: ['scripts/game-skill-audit.mjs'] },
+  { test: 'games/game-g/flow-walk.test.ts', subjects: [] },
+];
+
 export function facesOf(files) {
   const list = files.filter(Boolean);
   const ENGINE_SRC = /^src\/(engine|skills|assembly|net|services)\/.*\.(ts|tsx|js|mjs)$/;
   return {
+    deepTests: DEEP_LANE_TESTS.filter((d) => list.includes(d.test) || d.subjects.some((s) => list.includes(s))).map((d) => d.test),
     engineRandom: list.some((f) => (ENGINE_SRC.test(f) && !/\.test\./.test(f)) || f === 'scripts/engine-random-guard.mjs'),
     testHygiene: list.some((f) => /^src\/.*\.test\.ts$/.test(f) || f === 'scripts/test-hygiene-check.mjs'),
     artSmoke: list.some((f) => f.startsWith('scripts/art-replace') || /^main_entry\/art_/.test(f)),
@@ -160,6 +175,9 @@ export function planFor(c, auditGames = [], faces = {}) {
     ...(faces.artSmoke ? [{ name: 'art-smoke', cmd: ['python3', ['scripts/art-replace-smoke.py']] }] : []),
     // dokiworld app 测试（各包自跑 node --test·缺依赖由 runner 先 npm ci——同出包 job 口径）。
     ...(faces.dokiApps || []).map((app) => ({ name: `doki-test:${app}`, cmd: ['node', ['scripts/doki-app-test.mjs', app]] })),
+    // 慢车道点名补跑（见 DEEP_LANE_TESTS）：ZEROCRAFT_DEEP=1 才解得开 vite.config 的排除，
+    // 不带这个 env 跑等于「No test files found」——绿得毫无意义。
+    ...(faces.deepTests || []).map((t) => ({ name: `deep:${t.split('/').pop()}`, cmd: ['npx', ['vitest', 'run', t]], env: { ZEROCRAFT_DEEP: '1' } })),
   ];
   if (c.scope === 'none') return [];
   if (c.scope === 'docs-only') return GUARDS;
@@ -184,7 +202,9 @@ function main() {
 
   const auditGames = auditGamesOf(files);
   const faces = facesOf(files);
-  const armed = Object.entries(faces).filter(([, v]) => v).map(([k]) => k);
+  // 数组型旗（dokiApps/deepTests）空数组也是真值——不特判就会在没触发任何面时照报「面触发守卫=dokiApps」，
+  // 那是门在自我表扬（读告警纪律：日志说了什么就得真是什么）。
+  const armed = Object.entries(faces).filter(([, v]) => (Array.isArray(v) ? v.length > 0 : v)).map(([k]) => k);
   console.log(`[scoped-gate] 基线=${base} · 改动 ${files.length} 文件 · 判定=${c.scope}（${c.reason}）${auditGames.length ? ` · audit 改动游戏=${auditGames.join(',')}` : ''}${armed.length ? ` · 面触发守卫=${armed.join(',')}` : ''}`);
   const plan = planFor(c, auditGames, faces);
   console.log(`[scoped-gate] 计划：${plan.length ? plan.map((s) => s.name).join(' → ') : '（无·无改动）'}`);
@@ -196,7 +216,7 @@ function main() {
   }
   for (const step of plan) {
     console.log(`\n── ${step.name} ──`);
-    const r = spawnSync(step.cmd[0], step.cmd[1], { stdio: 'inherit' });
+    const r = spawnSync(step.cmd[0], step.cmd[1], { stdio: 'inherit', env: step.env ? { ...process.env, ...step.env } : process.env });
     const ok = step.allowExit ? step.allowExit.includes(r.status) : r.status === 0;
     if (!ok) { console.error(`\n❌ 门禁失败于 ${step.name}（退出码 ${r.status}）`); process.exit(r.status || 1); }
   }

@@ -15,7 +15,8 @@
 //
 //  用法：
 //    node scripts/game-pipeline.mjs board <slug> [--json]      看板（推导态·不跑重活）
-//    node scripts/game-pipeline.mjs gate <slug> <S3|S4|S5|S8>  跑该阶段机器门→记证据
+//    node scripts/game-pipeline.mjs gate <slug> <S2|S3|S4|S5|S8>  跑该阶段机器门→记证据
+//                                                （S2=gap-check·纯 fs 秒回；其余可能真跑重活）
 //    node scripts/game-pipeline.mjs checklist <slug> <SN>      打印该阶段复查清单（复查 session 开工第一命令）
 //    node scripts/game-pipeline.mjs review <slug> <S2|S3|S4|S5|S8> --verdict PASS|CONCERNS|FAIL --note "…" --by 复查人   复查门落账（REQ-QC-三门）
 //    node scripts/game-pipeline.mjs scorecard <slug> --scores "艺术方向:2,…八维" --by 复查人 --note 证据   S7 评分卡落账（全维≥2=premium·任一 0 分=红）
@@ -94,6 +95,11 @@ export function gameHash(root, slug) {
       if (st.isDirectory()) { if (!EVIDENCE_DIRS.has(name)) walk(p); continue; }
       if (name === 'pipeline.json') continue;
       if (name === 'requests.md') continue; // 工单池台账不入指纹（高频回执≠内容变更）
+      // 缺口台账同理（REQ-S18PANEL②·同「工单池台账」判据）：capability-gaps.json 记的是
+      // **缺口被裁到哪一步了**（open→accepted→delivered），不是游戏内容——把某条缺口标
+      // delivered 不该让 S3/S4/S5 的证据全体过期。缺口真被消费时游戏文件会动，指纹那时才该变。
+      // 门的新鲜度另有保障：S2 机器态是**板上现算**的（不读证据·见 boardFor 的 S2 分支）。
+      if (name === 'capability-gaps.json') continue;
       files.push(p);
     }
   };
@@ -106,7 +112,10 @@ export function gameHash(root, slug) {
 // ── 阶段表（id·名·手册·机器门语义）。手册列=该步开工前唯一必读（每本 ≤80 行）。──
 export const STAGES = [
   { id: 'S1', title: '立项卡', handbook: 'docs/llm-onboarding.md', gate: null },
-  { id: 'S2', title: '能力计划', handbook: 'docs/design/capability-plan-template.md', gate: null },
+  // S2 的机器牙齿（REQ-S18PANEL②·owner 2026-08-16 令）=gap-check：能力计划在档 ∧ 缺口台账
+  // 合法且**全部已裁决**（state≠open）。此前 gate=null＝S2 只看「plan 文件在不在」，于是
+  // 「识别出 6 条引擎缺口→无处对齐→带着未裁决的缺口一路生成下去」是合法路径（owner 实撞）。
+  { id: 'S2', title: '能力计划', handbook: 'docs/design/capability-plan-template.md', gate: 'gap-check' },
   { id: 'S3', title: '骨架关', handbook: 'docs/playbooks/index.md', gate: 'manifest-check' },
   { id: 'S4', title: '玩法关', handbook: 'docs/playbooks/testing.md', gate: 'walkthrough' },
   { id: 'S5', title: 'UI 关', handbook: 'docs/playbooks/ui.md', gate: 'audit' },
@@ -126,6 +135,92 @@ export function acceptanceScenarioCount(root, slug) {
   const dir = join(root, 'docs', 'design', slug, 'acceptance');
   if (!existsSync(dir)) return 0;
   return readdirSync(dir).filter((f) => f.endsWith('.scenario.jsonc')).length;
+}
+
+// ── S2 能力缺口台账（REQ-S18PANEL②③·owner 2026-08-16 令）──────────────────────
+// 病（owner 用叠叠乐 Demo 实撞）：控制台的「生成」从 S3 骨架起步，S1 立项 / S2 能力计划在面板上
+// 没有落点——识别出来的引擎缺口无处对齐，于是「带着 6 条未裁决的缺口一路往下生成」是合法路径。
+// 药：给 S2 装机器牙齿，缺口本身做成**机读产物**（面板 = 这份 JSON 的直接渲染）。
+//
+// 台账 = docs/design/<slug>/capability-gaps.json（PST 建项端点落盘·本文件只读不写）：
+//   [{ id, title, priority:P0|P1|P2|P3, route:engine|3d|pui, state:…, ticket, blocks:[SN…] }]
+// · route 不是装饰——缺口按池分流（engine=10 硬槽 / 3d=独立池 / pui=UI 基座）；
+//   一股脑丢引擎池会当场撑爆槽位（叠叠乐那 6 条里 4 条是 3D 线）。
+// · state 闭集：open=未裁决（owner 还没判 A/B）· accepted=已裁待做 · in-progress=施工中 ·
+//   delivered=已交付（能力真在了）· wontfix=回驳（用现有能力重组·不阻塞任何关）。
+// · blocks=这条缺口**卡住哪几关**（第一版粗粒度整关阻塞·owner 明示 YAGNI：不做「只阻塞
+//   依赖它的那部分规则」，那要把「哪条规则依赖哪个缺口」也结构化，等真被卡烦了再说）。
+export const GAP_PRIORITIES = ['P0', 'P1', 'P2', 'P3'];
+export const GAP_ROUTES = ['engine', '3d', 'pui'];
+export const GAP_STATES = ['open', 'accepted', 'in-progress', 'delivered', 'wontfix'];
+/** 只有 P0/P1 锁关（owner 边界：「有未解 P0/P1 → 该关锁」）——P2/P3 板上可见但不拦路。 */
+export const GAP_BLOCKING_PRIORITIES = ['P0', 'P1'];
+/** 已了结=不再阻塞：delivered（能力到位）/ wontfix（判定不做·游戏侧按现有能力重组）。 */
+const GAP_SETTLED = ['delivered', 'wontfix'];
+export const capabilityGapsFile = (root, slug) => join(root, 'docs', 'design', slug, 'capability-gaps.json');
+
+/** 缺口台账读取 + 闭集校验（纯 fs·不抛）。无文件={absent:true·零缺口}——**存量游戏零回归**：
+ *  今天全库没有一个 capability-gaps.json，故所有既有板/门逐字节同旧版。导出供 board/gate/单测共用。 */
+export function readCapabilityGaps(root, slug) {
+  const file = capabilityGapsFile(root, slug);
+  if (!existsSync(file)) return { absent: true, gaps: [], errors: [] };
+  let raw;
+  try { raw = JSON.parse(readFileSync(file, 'utf8')); }
+  catch (e) { return { absent: false, gaps: [], errors: [`capability-gaps.json 不是合法 JSON（${String(e.message).slice(0, 80)}）`] }; }
+  if (!Array.isArray(raw)) return { absent: false, gaps: [], errors: ['capability-gaps.json 顶层须是数组：[{id,title,priority,route,state,ticket,blocks}]'] };
+  const errors = [];
+  const seen = new Set();
+  const gaps = [];
+  raw.forEach((g, i) => {
+    const at = `#${i + 1}${g && typeof g === 'object' && g.id ? `(${g.id})` : ''}`;
+    if (!g || typeof g !== 'object' || Array.isArray(g)) { errors.push(`${at} 不是对象`); return; }
+    if (typeof g.id !== 'string' || !g.id.trim()) errors.push(`${at} 缺 id`);
+    else if (seen.has(g.id)) errors.push(`${at} id 重复（缺口 id 须唯一——面板按它跳工单）`);
+    else seen.add(g.id);
+    if (typeof g.title !== 'string' || !g.title.trim()) errors.push(`${at} 缺 title`);
+    if (!GAP_PRIORITIES.includes(g.priority)) errors.push(`${at} priority 非法 ${JSON.stringify(g.priority)}（闭集 ${GAP_PRIORITIES.join('/')}）`);
+    if (!GAP_ROUTES.includes(g.route)) errors.push(`${at} route 非法 ${JSON.stringify(g.route)}（闭集 ${GAP_ROUTES.join('/')}——缺口要分流到不同的池，别一股脑进引擎池）`);
+    if (!GAP_STATES.includes(g.state)) errors.push(`${at} state 非法 ${JSON.stringify(g.state)}（闭集 ${GAP_STATES.join('/')}）`);
+    if (g.blocks !== undefined && !Array.isArray(g.blocks)) errors.push(`${at} blocks 须是数组（可空=不锁关）`);
+    const blocks = Array.isArray(g.blocks) ? g.blocks : [];
+    for (const s of blocks) if (!STAGES.some((st) => st.id === s)) errors.push(`${at} blocks 含未知阶段 ${JSON.stringify(s)}（闭集 ${STAGES.map((st) => st.id).join('/')}）`);
+    // 已裁决就必须有落点：面板只做「展示 + 跳转到工单」，没有 ticket 的已裁缺口=裁词在哪没人知道。
+    if (GAP_STATES.includes(g.state) && g.state !== 'open' && !(typeof g.ticket === 'string' && g.ticket.trim())) {
+      errors.push(`${at} state=${g.state} 却无 ticket（已裁决的缺口须指向工单——裁决全文在池里·面板要跳过去）`);
+    }
+    gaps.push({
+      id: typeof g.id === 'string' ? g.id : '', title: typeof g.title === 'string' ? g.title : '',
+      priority: g.priority, route: g.route, state: g.state,
+      ticket: typeof g.ticket === 'string' ? g.ticket : '', blocks,
+    });
+  });
+  return { absent: false, gaps, errors };
+}
+
+/** S2 机器门判词（纯函数·board 与 gate 共用同一只嘴）：台账不合法=fail（红）；有 open 缺口=warn
+ *  （⚠·「未裁决」不是错误是待办·owner 验收原话「S2⚠(缺口 6)」）；其余=ok。 */
+export function evalCapabilityGaps(res) {
+  if (res.errors.length) return { state: 'fail', detail: `✗ 缺口台账不合法（${res.errors.length} 处）· ${res.errors.slice(0, 3).join(' · ')}${res.errors.length > 3 ? ' …' : ''}` };
+  if (res.absent) return { state: 'ok', detail: '缺口台账未建（零缺口=直接过）' };
+  const n = res.gaps.length;
+  if (!n) return { state: 'ok', detail: '缺口台账空（零缺口）' };
+  const open = res.gaps.filter((g) => g.state === 'open');
+  if (open.length) {
+    return { state: 'warn', detail: `⚠ 缺口 ${open.length}/${n} 未裁决（走缺口裁决协议：先查 → 摆 A/B → owner 判）· ${open.map((g) => `${g.id}[${g.priority}·${g.route}]`).join(' ')}` };
+  }
+  const undone = res.gaps.filter((g) => !GAP_SETTLED.includes(g.state));
+  return {
+    state: 'ok',
+    detail: `✓ 缺口 ${n} 条全已裁决${undone.length ? ` · 未交付 ${undone.length}：${undone.map((g) => `${g.id}→锁${g.blocks.join('/') || '无'}`).join(' ')}` : ' · 全部了结'}`,
+  };
+}
+
+/** 某关的缺口锁（REQ-S18PANEL③）：blocks 含本关 ∧ P0/P1 ∧ 未 delivered/wontfix 的缺口。
+ *  空数组=本关不被缺口卡。纯函数（吃 board 或 {gaps}）——导出供 orderGate/board/单测共用。 */
+export function blockingGaps(board, stage) {
+  return (board?.gaps || []).filter((g) => GAP_BLOCKING_PRIORITIES.includes(g.priority)
+    && !GAP_SETTLED.includes(g.state)
+    && Array.isArray(g.blocks) && g.blocks.includes(stage));
 }
 
 // ── 自证产物存在性（REQ-SELFCHECK·图纸①②·手册 docs/playbooks/self-check.md）─────────
@@ -269,6 +364,10 @@ export function boardFor(root, slug) {
   const hasTests = form !== 'cart' && existsSync(join(root, 'games', slug))
     && readdirSync(join(root, 'games', slug)).some((f) => f.endsWith('.test.ts'));
   const planFile = join(root, 'docs', 'design', slug, 'capability-plan.md');
+  // 缺口台账（REQ-S18PANEL②③）：**板上现算**（不读证据）——缺口台账已被排除出 gameHash，
+  // 若改走证据就再没有东西替它标过期；现算则「把缺口标 delivered」下一次 board 立刻反映。
+  const gapsRes = readCapabilityGaps(root, slug);
+  const gapEval = evalCapabilityGaps(gapsRes);
 
   const stages = STAGES.map((st) => {
     let machine;
@@ -278,13 +377,16 @@ export function boardFor(root, slug) {
           ? { state: 'ok', detail: `${c.name} —— ${String(c.pitch).slice(0, 40)}` }
           : { state: 'dim', detail: '立项卡未填（concept 子命令：--name --pitch）' };
         break;
-      case 'S2':
-        machine = existsSync(planFile)
-          ? { state: 'ok', detail: 'capability-plan.md 在档' }
-          : c.planWaiver
-            ? { state: 'ok', detail: `纯数据卡带免正式 plan（裁决在案：${String(c.planWaiver).slice(0, 40)}）` }
-            : { state: 'dim', detail: '无能力计划也无免 plan 裁决（模板见手册列）' };
+      case 'S2': {
+        // 机器门 = 能力计划在档 ∧ 缺口全已裁决（gap-check·REQ-S18PANEL②）。plan 都没有=灰（原样）；
+        // plan 在档则由缺口台账定色：全裁=绿 · 有未裁=⚠ · 台账不合法=红。
+        const planDetail = existsSync(planFile) ? 'capability-plan.md 在档'
+          : c.planWaiver ? `纯数据卡带免正式 plan（裁决在案：${String(c.planWaiver).slice(0, 40)}）` : null;
+        machine = planDetail === null
+          ? { state: 'dim', detail: '无能力计划也无免 plan 裁决（模板见手册列）' }
+          : { state: gapEval.state, detail: `${planDetail} · ${gapEval.detail}` };
         break;
+      }
       case 'S3':
         // R1（REQ-RENDERCHECK）：编译期游戏免 manifest 校验，但 gate 现在追加跑渲染探针——
         // 有证据（跑过）就照实证据走（ok/fail/stale）；从未跑过才显示「免」的旧提示（未跑≠免责）。
@@ -342,10 +444,14 @@ export function boardFor(root, slug) {
     // 旧 pipeline.json 无 outOfOrder 字段=零回归（取最近一条）。
     const ooo = (pf.outOfOrder || []).filter((o) => o.stage === st.id);
     const outOfOrder = ooo.length ? ooo[ooo.length - 1] : null;
-    return { id: st.id, title: st.title, handbook: st.handbook, gate: st.gate, machine, review, human, status, outOfOrder };
+    // 缺口锁（REQ-S18PANEL③）：本关被哪几条未交付的 P0/P1 缺口卡住（空=不卡·面板据此画 🔒）。
+    const blockedBy = blockingGaps({ gaps: gapsRes.gaps }, st.id);
+    return { id: st.id, title: st.title, handbook: st.handbook, gate: st.gate, machine, review, human, status, outOfOrder, blockedBy };
   });
   const next = stages.find((s) => s.status !== 'ok');
-  return { ok: true, slug, form, gameHash: hashNow, concept: c, stages, next: next ? next.id : null };
+  // gaps/gapErrors 上板供面板直接渲染（「展示 + 跳转到工单」——面板不做缺口的编辑/裁决 UI，
+  // 裁决仍走既有协议）。旧游戏无台账 → gaps=[]·gapErrors=[]（零回归）。
+  return { ok: true, slug, form, gameHash: hashNow, concept: c, stages, gaps: gapsRes.gaps, gapErrors: gapsRes.errors, next: next ? next.id : null };
 }
 
 // ── 阶段顺序闸（F·REQ-GATE-硬化·owner「跳关可以，但从悄悄跳变记录在案」）─────────────
@@ -382,11 +488,18 @@ export function reviewPrereqGaps(board, stage) {
   return gaps;
 }
 
-/** 顺序闸判定：①前置里有「已施工未复查」→ 一律拒跑（reviewGaps 非空·理由不放行）；
- *  ②其余欠账：无欠→allowed；有欠且给了 --out-of-order 理由→allowed+落痕；有欠无理由→拒跑。 */
+/** 顺序闸判定：①本关被未交付的 P0/P1 能力缺口锁住 → 一律拒跑（REQ-S18PANEL③·理由不放行）；
+ *  ②前置里有「已施工未复查」→ 一律拒跑（reviewGaps 非空·理由不放行）；
+ *  ③其余欠账：无欠→allowed；有欠且给了 --out-of-order 理由→allowed+落痕；有欠无理由→拒跑。
+ *
+ *  缺口锁为什么不给 --out-of-order 自赦：缺口=「引擎现在表达不了这件事」。跳过去施工，唯一的
+ *  产出方式就是在游戏层写逃生代码（手写 system / 手写 DOM / 自造解释器）——正是宪法要治的病。
+ *  等不了就把缺口降级/回驳（state=wontfix，附等价数据写法），那是裁决，不是放行。 */
 export function orderGate(board, stage, reason) {
+  const blockedBy = blockingGaps(board, stage);
   const reviewGaps = reviewPrereqGaps(board, stage);
   const gaps = priorGaps(board, stage);
+  if (blockedBy.length) return { allowed: false, gaps, reviewGaps, blockedBy };
   if (reviewGaps.length) return { allowed: false, gaps, reviewGaps };
   if (!gaps.length) return { allowed: true, gaps: [] };
   const r = (reason || '').trim();
@@ -463,6 +576,18 @@ function withGoldenGate(slug, base) {
 }
 
 function gateRun(slug, stage, form) {
+  if (stage === 'S2') {
+    // gap-check（REQ-S18PANEL②）：纯 fs·秒回·不 spawn 任何重活。与 board 的 S2 分支同一只嘴
+    // （evalCapabilityGaps），故「面板上按一下」与「板上看一眼」永远不会给出两种说法。
+    const pf = readJson(pipelineFile(ROOT, slug), {});
+    const hasPlan = existsSync(join(ROOT, 'docs', 'design', slug, 'capability-plan.md'));
+    if (!hasPlan && !pf.concept?.planWaiver) {
+      return { exit: 1, summary: '✗ 无能力计划也无免 plan 裁决（模板 docs/design/capability-plan-template.md·纯数据卡带走 concept --plan-waiver）' };
+    }
+    const ev = evalCapabilityGaps(readCapabilityGaps(ROOT, slug));
+    // ⚠（有未裁决缺口）在门这一侧就是红——「不许带未裁决的缺口往下走」。板上仍显 ⚠（待办非错误）。
+    return { exit: ev.state === 'ok' ? 0 : 1, summary: `${hasPlan ? 'capability-plan.md 在档' : '免 plan 裁决在案'} · ${ev.detail}` };
+  }
   if (stage === 'S3') {
     const mf = manifestPath(ROOT, slug, form);
     let baseSummary;
@@ -586,11 +711,21 @@ if (isMain) {
     const dot = { ok: '\x1b[32m●\x1b[0m', warn: '\x1b[33m●\x1b[0m', fail: '\x1b[31m●\x1b[0m', dim: '\x1b[90m○\x1b[0m' };
     for (const s of b.stages) {
       const oooTag = s.outOfOrder ? '\x1b[33m⚠乱序\x1b[0m ' : '';
-      console.log(`${dot[s.status]} ${oooTag}${s.id} ${s.title}  〔手册: ${s.handbook}〕`);
+      const lockTag = s.blockedBy?.length ? '\x1b[31m🔒缺口\x1b[0m ' : '';
+      console.log(`${dot[s.status]} ${lockTag}${oooTag}${s.id} ${s.title}  〔手册: ${s.handbook}〕`);
       console.log(`   机器门: ${s.machine.detail}`);
       console.log(`   复查门: ${s.review.detail}`);
       console.log(`   人  门: ${s.human.detail}`);
+      // 缺口锁（REQ-S18PANEL③）：这关点不动·卡在哪几条一次说清（别让人去猜）。
+      for (const g of s.blockedBy || []) console.log(`   🔒 缺口锁：${g.id} ${g.title} [${g.priority}·池=${g.route}·${g.state}]${g.ticket ? ` → ${g.ticket}` : ''}`);
       if (s.outOfOrder) console.log(`   ⚠ 乱序放行：${s.outOfOrder.reason}（${(s.outOfOrder.at || '').slice(0, 10)}）`);
+    }
+    if (b.gapErrors?.length) {
+      console.log(`\n✗ 缺口台账不合法（docs/design/${slug}/capability-gaps.json）：`);
+      for (const e of b.gapErrors) console.log(`   · ${e}`);
+    } else if (b.gaps?.length) {
+      const byState = GAP_STATES.filter((st) => b.gaps.some((g) => g.state === st)).map((st) => `${st} ${b.gaps.filter((g) => g.state === st).length}`);
+      console.log(`\n缺口台账 ${b.gaps.length} 条（${byState.join(' · ')}）· 分池：${GAP_ROUTES.filter((r) => b.gaps.some((g) => g.route === r)).map((r) => `${r} ${b.gaps.filter((g) => g.route === r).length}`).join(' · ') || '—'}`);
     }
     console.log(b.next ? `\n→ 下一步：${b.next}（只做这一步·做完 gate/review/signoff 再看板）` : '\n✔ 全绿——可推进发布/换皮量产');
     process.exit(0);
@@ -659,6 +794,14 @@ if (isMain) {
     const oooReason = opt('--out-of-order');
     const decision = orderGate(boardFor(ROOT, slug), stage, oooReason);
     if (!decision.allowed) {
+      if (decision.blockedBy?.length) {
+        console.error(`✗ 能力缺口闸：${stage} 被 ${decision.blockedBy.length} 条未交付的 P0/P1 引擎缺口锁住——`
+          + `--out-of-order 不放行（跳过去施工只能在游戏层写逃生代码·REQ-S18PANEL③）：`);
+        for (const g of decision.blockedBy) console.error(`  · ${g.id} ${g.title} [${g.priority}·池=${g.route}·${g.state}]${g.ticket ? ` → 工单 ${g.ticket}` : ''}`);
+        console.error(`  → 缺口逐条走裁决协议（先查 → 摆 A/B → owner 判）；交付后把 docs/design/${slug}/capability-gaps.json 里那条改 state=delivered 再跑本关。`);
+        console.error(`     确实不做的：改 state=wontfix 并在工单里写等价数据写法（那是裁决，不是放行）。`);
+        process.exit(1);
+      }
       if (decision.reviewGaps?.length) {
         console.error(`✗ 复查前置硬闸：${stage} 的前置里有「已施工未复查」的关——复查门不可自赦，--out-of-order 也不放行（owner 2026-08-10 令）：`);
         for (const g of decision.reviewGaps) console.error(`  · ${g.id} ${g.title} 复查门=${g.state}${g.detail ? `（${g.detail}）` : ''}`);
