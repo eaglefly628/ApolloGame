@@ -125,6 +125,17 @@ describe('SaveSystem — 存/读/列/删（MemoryStoragePort）', () => {
     await expect(sys.load('s', worldWith(1))).rejects.toThrow(CorruptSaveError);
   });
 
+  it('行为面：load 真把 order 灌进 restore——混排 id 存读回环后 query 序 = 创建序（复查 sabotage③ 补洞）', async () => {
+    const sys = new SaveSystem(new MemoryStoragePort());
+    await sys.save('s', worldMixedIds()); // 创建序 10,2,hero ≠ 键序 2,10,hero
+
+    const target = new World();
+    await sys.load('s', target);
+    // 只验指纹不验这条的话：restore(data.snapshot) 漏传 order 仍全绿（复查人实测存活）——
+    // 序会静默退回键序，正是 snapshotOrder 注释里那个「hash 校验通过、之后逐步偏离」的坑。
+    expect(target.getAllEntities()).toEqual(['10', '2', 'hero']);
+  });
+
   it('旧档兼容：无 order 的旧格式（hash 只盖快照）仍正常读档', async () => {
     const port = new MemoryStoragePort();
     const sys = new SaveSystem(port);

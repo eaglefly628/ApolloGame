@@ -153,13 +153,9 @@
 
 <!-- REQ-DEEPREVIEW-引擎底层深审战役（P1·owner 2026-08-10 令三轨全选）已完结：四路证据全回·Lead 终审毕。**体检报告全文 = `docs/design/engine-deep-review-2026-08.md` 体检结果节**（实证护住 6 面 / 裸奔 6 项已开单：REQ-GUARDGATE/DESYNC/SAVEORDER+根因① spec 扩充+3D 池 G211 单 / 记债 5 笔附理由）。战果：根因② 全集基准合入 e8a0b02c3（A1 探针当验收对照·当日闭环幽灵名裸奔）；RandomSeed.sequence NaN 潜伏 bug 直接修（撤修验红在案）；108 变更 38 笔逐笔过账体系判定=转的。余下施工挂 REQ-ENGINEAUDIT（根因①主程/Q1 已派）。 -->
 
-### REQ-DESYNC-lockstep 分歧要大声报告 · [2026-08-10] · 深审 A2 发现①（Lead 读码坐实） · status: open · 归属: 🔴 主程（lockstep 面） · 优先级: P1 · 类型: 联机可靠性
-> **病**（实证：双端 60/60 拍 hash 全分叉、零报警、照跑）：hash 报文照发照收，但唯一消费点是 `lockstep-tab.ts` `view().inSync` 显示位；且 `peerHashAt.get(simTick)` **缺对端数据默认 true**——领先一拍的那端永远看不见分叉；UI 只画一行「对齐中」。
-> **做法**：① 缺数据不得默认 true（三态或对最近可比拍判定）② 首次确认分叉一次性大声报告（console.error + 事件信号，供上层拦截/停机/重同步决策）③ 显示侧把「分叉」与「对齐中」分开画。**边界**：`src/net/lockstep-tab.ts` + `mp-client.ts` 显示 + 点名测试（含「领先端也能看见分叉」断言）。
+<!-- REQ-DESYNC-lockstep 分歧要大声（P1·深审 A2①）已完结（53bc35ac·主程施工+独立复查 agent PASS·复查人≠施工人）：三态 syncState solo/pending/synced/desynced（缺可比数据不再默认 true·synced 须真实可比拍背书）+ 双判定点（stepTo 补拍侧 + onMessage 收报侧=领先端盲区正解）+ 首诊 console.error 一声 + onDesync 事件（每 epoch 一次·红牌不摘）+ HUD 分叉/对齐分画。施工方三轮验红（撤三态/撤收报比对/撤一次性守卫）+ 复查方自选三轮（撤本端留存恰红 2·撤 epoch 过滤恰红 1·撤 epoch 清零双重锁死）全恰中锚点；复查建议已采纳=点名用例改「健康跑过热身期后中途篡改」确保真走盲区路径（撤收报比对现恰咬它）。确定性面零沾染（复查 diff 全扫实证）。存量备注：epoch key 无代数的在途报文别名窗口=既有机制特性非本单回归。全文查 git 历史。 -->
 
-### REQ-SAVEORDER-存档 order 段入指纹 fail-closed · [2026-08-10] · 深审 A2 发现②（Lead 读码坐实） · status: open · 归属: 🔴 主程（存档面） · 优先级: P2 · 类型: 存档完整性
-> **病**（实证：order 整段反转→带病加载零报错）：`save-system.ts` `load()` 只验 `hashSnapshot(data.snapshot)`；`data.order` 未入指纹直通 `world.restore`，而 order 决定 restore 后的 query 序——序敏感世界静默变行为，canonical hash 抓不到。
-> **做法**：`meta.hash` 输入并入 order（或另加 order 指纹）·fail-closed；**旧档兼容**：无 order 的旧档仍可读（现行退回键序语义不动），带 order 的必验。**边界**：`src/services/storage/save-system.ts`（必要时 envelope 同步）+ 点名测试（order 篡改必拒 + 旧档仍读）。
+<!-- REQ-SAVEORDER-存档 order 入指纹 fail-closed（P2·深审 A2②）已完结（fd062871·主程施工+独立复查 agent PASS·复查人≠施工人）：meta.hash=hashWithOrder(snapshot,order)（determinism.ts 单一真相·order 缺席严格退化 hashSnapshot=旧档语义不变）——反转/增删/整段剥除一律 CorruptSaveError；并入主 hash 而非旁挂指纹=剥除攻击封死（复查实证承重）。旧档兼容真（手工构造旧格式读通·键序退回语义实读确认）；envelope 不动成立（checksum 覆盖整 blob·不经手 snapshotOrder）；meta.hash 全库无活世界对表消费方。施工方两轮验红+复查方三轮（完整双侧复原恰红 2·撤 JSON.stringify 构造出裸拼碰撞样本证其承重·撤 restore 传参存活→行为面缺口已补一条混排 id 回环断言 query 序）。记档：canonical entityId/字段名裸拼的既有碰撞面被继承（威胁模型外·防损坏非认证）。全文查 git 历史。 -->
 
 <!-- REQ-GUARDGATE-引擎面守卫接线批（P1·深审带出）已完结：① engine-random-guard 新守卫（引擎五目录非测试面禁裸 Math.random·白名单 2 条各附实查理由:atoms/random 法定点+mp-client peerId 信道身份非 sim 随机）② loop-stop [time-wait] 修红（假钟接管·断言未削·反序验红实证）+ hygiene 接门 ③ art-replace-smoke 纳门（美术面触发）——全走新 facesOf 面触发机制（改哪面跑哪守卫·不给无关改动加时长）。Lead 终审 PASS：33 测独立复跑绿·施工方三轮验红（种样本恰咬 matrix-duel:257/回退恰红 [time-wait]/清 FACE_GUARDS 恰 3 红）·Lead 第四轮（杀 testHygiene 旗→恰 4 红）。**Lead 顺手叠了 DOKI-APPS 后续①**：dokiworld/** 测试接门（facesOf.dokiApps + doki-app-test runner·真跑 33 条 app 测·撤注入恰锚点红）。全文查 git 历史。 -->
 

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { LockstepClient } from './lockstep-tab.js';
 import type { Channel, NetMsg, DesyncInfo } from './lockstep-tab.js';
 import { buildMpWorld, addPlayer } from './mp-world.js';
+import type { Transform } from '@engine/protocol/components.js';
 
 // 内存版 BroadcastChannel：post 投递给**除发送者外**的所有订阅者（与浏览器语义一致）。
 class MockBus {
@@ -228,15 +229,23 @@ describe('LockstepClient — REQ-DESYNC 三态同步判定 + 首次分叉一次�
     const now = () => clock;
     const seen: DesyncInfo[] = [];
     const A = new LockstepClient({ peerId: 'A', channel: bus.channel('A'), getInput: () => ({ dx: 1, dy: 0 }), now, tickRate: 30, inputDelay: 4, onDesync: (d) => seen.push(d) });
-    const B = new LockstepClient({ peerId: 'B', channel: bus.channel('B'), getInput: () => ({ dx: 0, dy: 1 }), now, tickRate: 30, inputDelay: 4, buildWorld: ghostBuild });
+    const B = new LockstepClient({ peerId: 'B', channel: bus.channel('B'), getInput: () => ({ dx: 0, dy: 1 }), now, tickRate: 30, inputDelay: 4 });
     // A 每轮 pump 两次 → 吃满 inputDelay 提前量、稳居领先端；B 的 hash 只会指向 A 的**过去拍**。
     // 旧实现在这个形态下 A.inSync 永远 true（peerHashAt.get(simTick) 恒 undefined）。
-    for (let i = 0; i < 40; i++) { clock += STEP; A.pump(STEP); A.pump(STEP); B.pump(STEP); }
+    for (let i = 0; i < 10; i++) { clock += STEP; A.pump(STEP); A.pump(STEP); B.pump(STEP); }
+    expect(A.view().syncState).toBe('synced'); // 健康跑过热身期（分叉必须发生在这之后）
+    // 分叉源 = 运行中途篡改 B 的世界（复查建议·2026-08-16：构建期就不一致的世界在 epoch
+    // 成型的 tick 1 即被 stepTo 同拍路径确诊，测不到盲区）——此处世界健康跑到 A 已拉开领先
+    // 才注入分叉，B 的 hash 指向 A 的过去拍 → 确诊只能走领先端 onMessage 收报路径。
+    const t = B.getWorld().getComponent<Transform>('player:p1', 'Transform');
+    t!.x += 50;
+    for (let i = 0; i < 30; i++) { clock += STEP; A.pump(STEP); A.pump(STEP); B.pump(STEP); }
     expect(A.view().tick).toBeGreaterThan(B.view().tick); // 领先端身份坐实（前置条件）
     expect(A.view().syncState).toBe('desynced');
     expect(A.view().inSync).toBe(false);
     expect(B.view().syncState).toBe('desynced');
     expect(A.view().desyncTick).not.toBeNull();
+    expect(A.view().desyncTick!).toBeGreaterThan(4); // 确诊在热身期之后 = 真走了领先端收报路径
     // 事件载荷：epoch/tick/两端 hash 齐备且确实不等（上层停机/重同步的决策料）。
     expect(seen).toHaveLength(1);
     expect(seen[0].epoch).toBe('A|B');
