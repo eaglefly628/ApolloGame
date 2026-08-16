@@ -6,7 +6,7 @@ import {
   PHASE_TICKS, PENALTY_PERIOD, PENALTY_HP, CHARGE_PER_ROUND,
   TPS, ACT, UI_ACT, SIDES, HP_RES, chargeRes, chargeRelName, chargeEntity, chargeBudgetRes, penaltyDebtRes,
   STYLE_MID, STYLE_MAX, MOOD_FSM, READ_RES, READ_MID, READ_LOW, READ_HIGH, FINISH_HP, THROW_LAG,
-  BLUFF_FLAG, SILENT_FLAG, type Memory,
+  BLUFF_FLAG, SILENT_FLAG, OPPONENTS, HELP_SEEN_KEY, loadHelpSeen, saveHelpSeen, type Memory, type Hand,
 } from './theme.js';
 
 describe('game108 · 数值钉死（GDD §5）', () => {
@@ -346,6 +346,56 @@ describe('game108 · 对局屏（LayoutNode 纯数据）', () => {
     walk(buildDuelScreen(helpView));
     expect(texts.length).toBeGreaterThan(6);
     for (const x of texts) expect(x).not.toMatch(/[%×＝=]|\d+\s*\/\s*\d+/);
+  });
+
+  // ── 【R-108-36】首次进入先弹说明·可跳过（owner 2026-08-15 试玩）────────────────
+  // 原话：「我们刚出来的时候是要先跳一下玩法说明。**如果说玩家可以选跳过，这还是要有的**」。
+  it('【R-108-36】首次进入弹的说明屏，那枚键是「跳过 · 开始」且**直接开局**', () => {
+    const first: DuelView = { ...emptyView(), notStarted: true, bootMs: 60_000, helpOpen: true, helpFirstRun: true };
+    const acts = screenActions(first);
+    // 出口只有一个，且是"开始"——不是"关闭"（关闭会把玩家丢回开始屏，多一次无意义的点）。
+    expect(acts).toContain(UI_ACT.start);
+    expect(acts).not.toContain(UI_ACT.help);
+    const btn: string[] = [];
+    const walk = (n: LayoutNode): void => {
+      if (n.id === 'key-help-close-t') btn.push((n.props as { text?: string }).text ?? '');
+      for (const c of n.children ?? []) walk(c);
+    };
+    walk(buildDuelScreen(first));
+    expect(btn).toEqual([t('zh', 'help.skip')]);
+    expect(t('zh', 'help.skip')).not.toBe(t('zh', 'menu.close'));   // 两种进法的文案不许撞脸
+    expect(validateLayoutNode(buildDuelScreen(first))).toEqual([]);
+  });
+
+  it('【R-108-36】说明屏压在**开始屏之上**（被盖住 = 点不到"跳过" = 当场卡死）', () => {
+    // 这条守的是一个"零报错的死局"：两块全屏面板谁在上只是 children 里的先后，
+    // 写反了单测照绿、渲染也照画，只有真人点下去才发现点不动（本仓踩过同形状的两次）。
+    const first: DuelView = { ...emptyView(), notStarted: true, bootMs: 60_000, helpOpen: true, helpFirstRun: true };
+    const ids = (buildDuelScreen(first).children ?? []).map((c) => c.id);
+    const iStart = ids.findIndex((x) => x === 'start');
+    const iHelp = ids.findIndex((x) => x === 'help');
+    expect([iStart >= 0, iHelp >= 0]).toEqual([true, true]);
+    expect([`help(${iHelp}) 必须在 start(${iStart}) 之后`, iHelp > iStart]).toEqual([`help(${iHelp}) 必须在 start(${iStart}) 之后`, true]);
+  });
+
+  it('【R-108-36】看过一次就不再自动弹（`helpSeen` 落 localStorage·与画像同口径）', () => {
+    const store = new Map<string, string>();
+    const g = globalThis as { localStorage?: unknown };
+    const had = 'localStorage' in g;
+    (g as { localStorage: unknown }).localStorage = {
+      getItem: (k: string): string | null => store.get(k) ?? null,
+      setItem: (k: string, v: string): void => { store.set(k, v); },
+    };
+    try {
+      expect(loadHelpSeen()).toBe(false);          // 新玩家 → 弹
+      saveHelpSeen();
+      expect(loadHelpSeen()).toBe(true);           // 看过 → 不弹
+      store.set(HELP_SEEN_KEY, 'yes');             // 玩家手改成别的字符串
+      expect(loadHelpSeen()).toBe(false);          // 只认 '1'，读不懂就当新玩家（多看一遍无害·漏看才是缺陷）
+    } finally {
+      if (had) delete (g as { localStorage?: unknown }).localStorage;
+      else delete (g as { localStorage?: unknown }).localStorage;
+    }
   });
 
   it('【R-108-21】烟雾**看得见**：三样都在（粒子雾 / 罩雾 / 对手「看不见」标）', () => {
@@ -1028,6 +1078,147 @@ describe('game108 · v3 节奏（【R-108-01/02/04/05/10】）', () => {
       expect(chargeBudgetRes(s).startsWith(`${s}.charge`)).toBe(false);
       expect(penaltyDebtRes(s).startsWith(`${s}.charge`)).toBe(false);
       expect(chargeBudgetRes(s)).not.toBe(penaltyDebtRes(s));
+    }
+  });
+});
+
+// ── 【R-108-35】前四档对手：出手必须**跟着玩家走**（owner 2026-08-15 试玩报的病）──
+//
+// 病状原文：「它这个 AI 现在**永远只会出锤子**、榔头、石头」。实测比这更糟——五档里**四档**
+// 六回合全是石头，只有第五档（大师 v5）会变，而默认卡 `mood:stubborn` 打的正是第一档复读机。
+//
+// 根因不是某条规则写错，是**输入选错**：①③④ 读的都是 `p2.lastThrow` = **它自己**的上一手，
+// 而那是个不动点——开局空串→兜底出石→`p2.lastThrow` 恒为石→下回合再读还是石，**从第一回合锁死**。
+// 大师之所以会动，是因为它读的是**玩家**。
+//
+// ⚠ 这一整组是「**从来就没对过**」型缺陷的补网：四道复查门 + 全套验收剧本 + 浏览器通关
+// 全绿地放它过了半个月，因为**没有一条测试钉过"AI 会换手"**。手册守得住「改坏了会红」，
+// 守不住「从来就没对过」——所以下面每条的判据都从**条款/蓝图现推**，不抄实现的答案。
+describe('game108 · 前四档对手【R-108-35】（owner 2026-08-15 试玩：AI 永远只出石头）', () => {
+  const until = (e: Engine, want: string, cap = 3000): void => {
+    for (let i = 0; i < cap && phase(e) !== want; i++) e.world.tick();
+    e.world.tick();   // flow 是**下一拍**才跑新状态的 onEnter
+  };
+
+  /**
+   * 判定表**从蓝图现推**，不在测试里另抄一份（另抄 = 两处真相，改表不改测试会一起错——
+   * 大师那条 `MASTER_PATCHES` 守卫就是为这个立的）。前四档无补丁，吃的是基础表。
+   */
+  const MATRIX = (buildBlueprint('parrot').entities as Record<string, { DuelMatrix?: { beats: Record<string, string[]> } }>)
+    .duel!.DuelMatrix!.beats;
+  /** PREY[t] = t 吃得掉的那只。 */
+  const PREY = Object.fromEntries(HANDS.map((h) => [h, MATRIX[h]![0]!])) as Record<string, string>;
+  /** COUNTER[x] = 想吃掉 x 该出哪只（PREY 的逆映射·不另抄）。 */
+  const COUNTER = Object.fromEntries(HANDS.map((h) => [PREY[h]!, h])) as Record<string, string>;
+
+  /** 一回合：读出 AI 这一回合的手（定手窗之后）、玩家照脚本出、走完结算回到 T1。 */
+  function round(e: Engine, p1: Hand): { ai: string; wild: boolean; slots: Record<string, number> } {
+    until(e, 'throw');
+    const ai = (e.world.getComponent('p2', 'DuelIntent') as { throw: string } | undefined)?.throw ?? '?';
+    const wild = (e.world.getComponent('flag:wild', 'Flag') as { active: boolean } | undefined)?.active === true;
+    const slots = Object.fromEntries(HANDS.map((h) => [h, slot(e, 'p2', h)]));
+    tap(e, ACT.throw(p1));
+    until(e, 'settle'); tap(e, ACT.next); until(e, 'charge');
+    return { ai, wild, slots };
+  }
+  const playScript = (who: string, script: readonly Hand[]): string[] => {
+    const e = new Engine(); e.load(buildBlueprint(who as never));
+    return script.map((p) => round(e, p).ai);
+  };
+  /** 一条**会变**的玩家脚本（恒定脚本证不了这条：复读机对着恒定的你本来就该恒定）。 */
+  const VARIED = ['rock', 'paper', 'scissors', 'rock', 'paper', 'scissors'] as const;
+
+  it('【R-108-35】五档没有一档是"恒出石头"——同一条变化的脚本下每档都换过手', () => {
+    for (const who of OPPONENTS) {
+      const hands = playScript(who, VARIED);
+      // ⚠ 先排掉 `'?'`（局已结束 ⇒ 没有 DuelIntent）：不排的话它自己就是个"不同的值"，
+      // 一局提前死掉反而让这条断言假绿。
+      expect([who, hands.filter((h) => !HANDS.includes(h as never))]).toEqual([who, []]);
+      expect([who, new Set(hands).size > 1, hands]).toEqual([who, true, hands]);
+    }
+  });
+
+  it('【R-108-35】① 复读机出的是**上一回合赢过的那只手**（判据逐回合从上一局实况现推）', () => {
+    // gdd §9.4 条款原文：「复用上一回合**赢过的手**」。旧实现漏的正是"赢过的"三个字，
+    // 才塌成"复用它自己上一手"这个不动点。
+    const script = ['rock', 'rock', 'paper', 'paper', 'scissors', 'rock', 'paper'] as const;
+    const e = new Engine(); e.load(buildBlueprint('parrot'));
+    let prev: { p1: string; p2: string } | null = null;
+    script.forEach((p1, i) => {
+      const { ai } = round(e, p1);
+      const want = prev === null
+        ? 'rock'                                            // 开局：两边都没出过手 ⇒ 兜底出石
+        : prev.p1 === prev.p2 ? prev.p1                     // 平局：没输过的那只手照用
+          : PREY[prev.p1] === prev.p2 ? prev.p1 : prev.p2;  // 谁吃掉了谁，赢家那只手
+      expect([`第${i + 1}回合`, ai]).toEqual([`第${i + 1}回合`, want]);
+      prev = { p1, p2: ai };
+    });
+  });
+
+  it('【R-108-35】② 莽夫石槽满那一回合**必兑现**：骰子中了也照样出石', () => {
+    // 条款「偏爱石头·蓄满必兑现」。石槽满 = 它那个肉眼可见的 tell（攥拳高频），
+    // 玩家读的就是这个：槽满的那一回合出石是**约定**，不是概率。
+    const e = new Engine(); e.load(buildBlueprint('brute'));
+    const hands: string[] = [];
+    let wildRounds = 0;
+    for (let r = 0; r < 10; r++) {
+      until(e, 'charge');
+      const rock = e.world.getComponent<Resource>('slot:p2:rock', 'Resource')!;
+      e.world.addComponent('slot:p2:rock', { ...rock, current: CHARGE_CAP });   // 灌满它的石槽
+      // 玩家恒出布：骰子若中，条款要它扑向"玩家上一手"= 布 ⇒ 槽满这道门没兜住就会当场露馅。
+      const { ai, wild } = round(e, 'paper');
+      hands.push(ai); if (wild) wildRounds++;
+    }
+    expect(hands).toEqual(Array(10).fill('rock'));
+    // ⚠ 防空转：骰子一次没中的话上面那条断言测的只是"默认也出石"，什么都没证。
+    // 中不中由种子定死，是定值不是概率。
+    expect([`骰中回合数`, wildRounds > 0]).toEqual([`骰中回合数`, true]);
+  });
+
+  it('【R-108-35】③ 戏子**蓄的和出的不是同一只**：蓄你上一手的克星、出你上一手', () => {
+    // 条款「蓄一手、出另一手（专职诈唬）」。你若照着它的槽反制，正好被它吃。
+    const script = ['rock', 'paper', 'scissors', 'rock', 'paper'] as const;
+    const e = new Engine(); e.load(buildBlueprint('actor'));
+    let prevP1: string | null = null;
+    let before = Object.fromEntries(HANDS.map((h) => [h, 0])) as Record<string, number>;
+    script.forEach((p1, i) => {
+      const { ai, slots } = round(e, p1);
+      // 这一回合它把力存进了哪只手（看**增量**：槽是跨回合累加的，绝对值读不出本回合的意图）。
+      const grew = HANDS.filter((h) => slots[h]! > before[h]!);
+      if (prevP1 !== null) {
+        expect([`第${i + 1}回合·出`, ai]).toEqual([`第${i + 1}回合·出`, prevP1]);          // 出你上一手
+        expect([`第${i + 1}回合·蓄`, grew]).toEqual([`第${i + 1}回合·蓄`, [COUNTER[prevP1]!]]); // 蓄它的克星
+        expect([`第${i + 1}回合·蓄≠出`, grew[0] === ai]).toEqual([`第${i + 1}回合·蓄≠出`, false]);
+      }
+      before = slots; prevP1 = p1;
+      // 出过的那只手结算时清零（【R-108-14】），下一回合的基线要跟着抹掉。
+      before[ai] = 0;
+    });
+  });
+
+  it('【R-108-35】④ 赌徒每回合掷骰二选一，**两条路都读玩家**（不是二选一地读自己）', () => {
+    const script = ['rock', 'paper', 'scissors', 'rock', 'paper', 'scissors'] as const;
+    const e = new Engine(); e.load(buildBlueprint('gambler'));
+    let prevP1: string | null = null;
+    const seen = new Set<string>();
+    script.forEach((p1) => {
+      const { ai } = round(e, p1);
+      if (prevP1 !== null) {
+        // 不中 → 押你上一手；中 → 押它的克星。除这两只之外的第三只手 = 它没在读玩家。
+        expect([prevP1, ai]).toEqual([prevP1, ai === prevP1 ? prevP1 : COUNTER[prevP1]!]);
+        seen.add(ai === prevP1 ? 'cold' : 'hot');
+      }
+      prevP1 = p1;
+    });
+    // 防空转：六回合里两条路都得走到过，否则"骰子"可能根本没接上。
+    expect([...seen].sort()).toEqual(['cold', 'hot']);
+  });
+
+  it('【R-108-35】前四档的骰子走引擎种子 PRNG：同一档跑两遍逐回合完全一致', () => {
+    // 游戏层禁裸 Math.random（硬红线）；同时也是"随机不许破坏确定性/录放"的看门狗。
+    for (const who of ['brute', 'actor', 'gambler'] as const) {
+      const a = playScript(who, VARIED);
+      expect([who, a]).toEqual([who, playScript(who, VARIED)]);
     }
   });
 });

@@ -218,6 +218,13 @@ export const ODDS_DEN = 10;
 export const BLUFF_ODDS: Record<Mood, number> = { probe: 3, press: 2, bluff: 7, finish: 0 };
 export const SILENT_ODDS: Record<Mood, number> = { probe: 3, press: 0, bluff: 0, finish: 0 };
 /** 本回合大师的骰子结果与计划（每回合 T1 开场清）。 */
+/**
+ * 【R-108-32】v2 前四档的**性格骰**（owner 2026-08-15 试玩：「AI 永远只会出锤子」的修复件之一）。
+ * 莽夫用它决定偶尔扑一下、赌徒用它忽冷忽热；复读机/戏子不看它（它们的变化来自玩家的手）。
+ * 与大师那两枚骰同源同律：走引擎种子 PRNG、只碰「表演选择」不碰「读得准不准」。
+ */
+export const WILD_FLAG = 'p2.wild';
+export const WILD_ODDS = 3;          // 3/10（分母 ODDS_DEN）——莽夫十回合里约三回不按套路
 export const BLUFF_FLAG = 'p2.bluffing';
 export const SILENT_FLAG = 'p2.silent';
 export const MOOD_SET_FLAG = 'p2.moodSet';   // 心态已定（骰子等它，免得拿上回合的心态摇）
@@ -252,6 +259,25 @@ export const loadMemory = (): Memory | undefined => {
 };
 export const saveMemory = (m: Memory): void => {
   try { localStorage.setItem(MEMORY_KEY, JSON.stringify(m)); } catch { /* 无 localStorage（探针/SSR）→ 本次会话内仍生效 */ }
+};
+
+/**
+ * 「玩法说明已经看过了」（owner 2026-08-15 试玩：「刚出来的时候是要先跳一下玩法说明，
+ * 如果说玩家可以选跳过，这还是要有的」）。
+ *
+ * **只存一个布尔**：说明屏的内容全在 `strings.ts`，这里存的是"要不要自动弹"这一位。
+ * 读不到 = 新玩家 = 弹（与 `loadMemory` 同口径：localStorage 是玩家能改的，
+ * 读坏了宁可按"新玩家"走——多看一遍说明是无害的，漏看才是缺陷）。
+ */
+export const HELP_SEEN_KEY = 'game108.helpSeen.v1';
+export const loadHelpSeen = (): boolean => {
+  try {
+    if (typeof localStorage === 'undefined') return false;
+    return localStorage.getItem(HELP_SEEN_KEY) === '1';
+  } catch { return false; }
+};
+export const saveHelpSeen = (): void => {
+  try { localStorage.setItem(HELP_SEEN_KEY, '1'); } catch { /* 同 saveMemory：没得存就本次会话内生效 */ }
 };
 
 // ── UI ────────────────────────────────────────────────────────────────

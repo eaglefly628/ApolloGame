@@ -31,6 +31,19 @@ const check = (name, pass, detail) => {
   say(`  ${pass ? '✓' : '✗'} ${name}${detail ? ` — ${detail}` : ''}`);
 };
 
+/** 想吃掉 x 该出哪只（标准表·大师那张反转表不在这条旅程里）。 */
+const COUNTER = { rock: 'paper', paper: 'scissors', scissors: 'rock' };
+/**
+ * 上一回合**赢的是哪只手** —— 复读机下一手就是它（gdd §9.4·【R-108-35】）。
+ * 判据从血量差现推，不抄实现：对手掉血 = 我这只赢了；我掉血 = 克我的那只赢了；都没掉 = 平局那只。
+ */
+const winnerHand = (mine, before, after) => {
+  if (Number(before.hp.p2) > Number(after.hp.p2)) return mine;
+  if (Number(before.hp.p1) > Number(after.hp.p1)) return COUNTER[mine];
+  return mine;
+};
+let foeNext = 'rock';   // 开局那一手是确定的：两边都还没出过手 ⇒ 兜底出石
+
 const READ = `(() => {
   const txt = (id) => document.getElementById(id)?.textContent?.trim() ?? null;
   const key = (h) => { const el = document.getElementById('key-' + h);
@@ -102,10 +115,34 @@ async function main() {
     check('加载走完：整屏成为那枚 PRESS ANY KEY 键', !!gate0 && (await gate0.getAttribute('data-action')) === 'ui.start',
       gate0 ? `data-action=${await gate0.getAttribute('data-action')}` : '找不到开始键');
     await shot('0-start-screen');
-    // ⚔ 对抗性输入：连点开始——只该开一局（`startGame` 幂等）。
+    // 【首次进入先弹说明】owner 2026-08-15 试玩：「刚出来的时候是要先跳一下玩法说明。
+    // 如果说玩家可以选跳过，这还是要有的」。按任意键之后**先弹说明**，再按一次才开局。
+    await page.evaluate(() => { document.querySelector('[data-action="ui.start"]')?.click(); });
+    await page.waitForTimeout(400);
+    const help0 = await page.$('#help');
+    const startStill = await page.$('#start');
+    // 「不是直接开局」的判据 = 开始屏**还在**（引擎没起、卡片没飞上来）——
+    // 只断言"说明屏出现了"证不了这一半：两块同时在也算对，说明屏没挡住开局才是错。
+    check('首次进入：按任意键先弹玩法说明（不是直接开局）', !!help0 && !!startStill,
+      `说明屏=${!!help0} 开始屏还在=${!!startStill}`);
+    // 说明屏必须**点得到**：它盖在开始屏之上，浏览器实测一下——`elementFromPoint`
+    // 打在跳过键的正中心，落回来的必须是它自己（被盖住的话落回来的是开始屏那块）。
+    const skipHit = await page.evaluate(() => {
+      const el = document.querySelector('#key-help-close');
+      if (!el) return 'no-button';
+      const r = el.getBoundingClientRect();
+      const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+      return el.contains(top) ? 'ok' : (top?.id || top?.tagName || 'unknown');
+    });
+    check('说明屏压在开始屏之上：跳过键真的点得到', skipHit === 'ok', `命中的是 ${skipHit}`);
+    await shot('0b-help-first-run');
+    // ⚔ 对抗性输入：连点跳过——只该开一局（`startGame` 幂等）。
     await page.evaluate(() => { const el = document.querySelector('[data-action="ui.start"]'); for (let i = 0; i < 5; i++) el?.click(); });
     await page.waitForTimeout(400);
-    check('点了开始才开局（启动屏消失）', !(await page.$('#start')), '启动屏还在');
+    check('点了跳过才开局（说明屏 + 启动屏都消失）', !(await page.$('#start')) && !(await page.$('#help')),
+      `启动屏=${!!(await page.$('#start'))} 说明屏=${!!(await page.$('#help'))}`);
+    const seen = await page.evaluate(() => localStorage.getItem('game108.helpSeen.v1'));
+    check('看过一次就落地（helpSeen 写进 localStorage）', seen === '1', `helpSeen=${seen}`);
     const s0 = await state();
     say(`开局：${s0.phase} · 血 ${s0.hp.p1}/${s0.hp.p2}`);
     check('开局双方满血【R-108-15】', s0.hp.p1 === '100' && s0.hp.p2 === '100', `${s0.hp.p1}/${s0.hp.p2}`);
@@ -127,6 +164,10 @@ async function main() {
     check('输的一方掉血且反馈可见【R-108-12/13】', lost.hp.p1 === '80', `实读 ${lost.hp.p1}`);
     check('对手没掉血（我输了）', lost.hp.p2 === '100', `实读 ${lost.hp.p2}`);
     await shot('2b-lost-round');
+    // 【R-108-35】复读机的规律：它下一手 = **上一回合赢过的那只手**（gdd §9.4）。
+    // 这一回合是它的石赢了 ⇒ 下一回合它还出石。下面全程按这条推，**并且每一回合都断言推准了**
+    // ——推不准就说明这一档退回了"恒出石/复用自己上一手"（owner 2026-08-15 试玩报的那个 bug）。
+    foeNext = winnerHand('scissors', s0, lost);
 
     // ── 【R-108-05】T4 玩家闸门：不点就不走 ────────────────────────────────
     const gate = await until('结算');
@@ -166,6 +207,7 @@ async function main() {
     const t2 = await until('出招');
     check('进到出招时区【R-108-01】', String(t2.phase).startsWith('出招') && !t2.timeout, `实读 ${t2.phase}`);
     check('键已切成出招信号【R-108-70】', t2.keys.paper?.action === 'throw.paper', `实读 ${t2.keys.paper?.action}`);
+    check('推准了它这一手（复读机复用赢过的石）【R-108-35】', foeNext === 'rock', `推的是 ${foeNext}`);
     const hpBeforeStall = Number((await state()).hp.p1);
     const stalled = await until('超时', 9000);             // 免费 5 秒走完自动进这一态
     check('免费段走完转入罚血读秒【R-108-04】', String(stalled.phase).startsWith('超时') && !stalled.timeout, `实读 ${stalled.phase}`);
@@ -180,24 +222,33 @@ async function main() {
     check('罚血**不**触发胜负横幅（它不是战果）【R-108-04】',
       String(stallRead.phase).startsWith('超时'), `实读 ${stallRead.phase}`);
     await shot('2d-penalty');
-    await page.click('#key-paper').catch(() => {});          // 出手即停
+    const beforePen = await state();                         // 罚血已经扣完，这里起算才分得清"谁打的"
+    await page.click('#key-paper').catch(() => {});          // 出手即停（布克它那只石）
     await until('对决');
     await page.waitForTimeout(900);
-    say(`  → 罚血前 ${hpBeforeStall} · 这一回合打完 ${(await state()).hp.p1}`);
+    const afterPen = await state();
+    say(`  → 罚血前 ${hpBeforeStall} · 这一回合打完 ${afterPen.hp.p1}`);
+    foeNext = winnerHand('paper', beforePen, afterPen);
     await page.click('#key-nextround').catch(() => {});
 
-    // ── 打完剩下的回合：每回合蓄一层布、出布（布克石 ⇒ 20 伤）──────────────
+    // ── 打完剩下的回合：**读着它的规律打**（每回合蓄一层、出克它下一手的那只）────
     // v3 一回合一层 ⇒ 一击 20，不再是 v2 那种"一个 T1 连点满蓄打 40、三回合结束"。
-    say('\n── 稳定打法：每回合 蓄布 ×1 → 出布（20 伤）──');
+    // ⚠ v6（2026-08-15·【R-108-35】）：这里原先写死"每回合都出布"，那要求复读机**恒出石**
+    //   ——那不是条款，那是 bug 的形状。修好之后它跟着胜负换手，于是这一段也改成跟着算：
+    //   每回合出 `COUNTER[foeNext]`，并断言真的赢了。**这就是第一档要教玩家的事**：
+    //   对手是有规律的，读出来你就能连赢。它若退回恒出石，这里当场红。
+    say('\n── 稳定打法：读出它下一手 → 出克它的那只（20 伤）──');
     for (let round = 1; round <= 6; round++) {
       const c = await until('蓄力', 15000);
       if (c.timeout) { check(`R${round} 进到蓄力时区`, false, `实读 ${c.phase}`); break; }
-      await page.click('#key-paper').catch(() => {});
+      const mine = COUNTER[foeNext];
+      say(`  R${round}：推它出 ${foeNext} ⇒ 我出 ${mine}`);
+      await page.click('#key-' + mine).catch(() => {});
       await page.waitForTimeout(120);
       const t = await until('出招', 8000);
       if (t.timeout) { check(`R${round} 进到出招时区`, false, `实读 ${t.phase}`); break; }
       const beforeThrow = await state();
-      await page.click('#key-paper').catch(() => {});
+      await page.click('#key-' + mine).catch(() => {});
       await page.waitForTimeout(250);
       const justThrown = await state();
       // 【R-108-01】提交那一刻**不该**掉血——扣血在揭晓之后（REQ-108-ENG-06 结算门）
@@ -213,6 +264,10 @@ async function main() {
       const dealt = Number(beforeThrow.hp.p2) - Number(after.hp.p2);
       say(`  → R${round}：对手 ${beforeThrow.hp.p2} → ${after.hp.p2}（打了 ${dealt}）`);
       check(`R${round} 对手掉 20（10 + 1 层 ×10）【R-108-13】v3`, dealt === 20 || after.hp.p2 === '0', `实读 ${dealt}`);
+      // 规律推准了就该**一滴血不掉**地赢——推错了这一条先红，比"伤害不对"更早指出病因。
+      check(`R${round} 读准了它的下一手（复读机的规律成立）【R-108-35】`,
+        after.hp.p1 === beforeThrow.hp.p1 && dealt > 0, `我方 ${beforeThrow.hp.p1} → ${after.hp.p1} · 打出 ${dealt}`);
+      foeNext = winnerHand(mine, beforeThrow, after);
       if (round === 2) await shot('5-round2-done');
       if (after.hp.p2 === '0') break;
       await page.click('#key-nextround').catch(() => {});    // 【R-108-05】玩家闸门

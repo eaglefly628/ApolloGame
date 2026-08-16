@@ -18,7 +18,7 @@ import {
   ACT, HP_RES, chargeRes, chargeRelName, chargeEntity, chargeBudgetRes, penaltyDebtRes, penaltyTickFlag, lastThrowVar,
   histRes, STYLE_RES, STYLE_MAX, STYLE_MID, STYLE_GAMBLER, chargedFlag, threwHandFlag, playerThrewHand, playerCounted,
   MOOD_FSM, MOODS, READ_RES, READ_MAX, READ_MID, READ_LOW, READ_HIGH, FINISH_HP,
-  ODDS_DEN, BLUFF_ODDS, SILENT_ODDS, BLUFF_FLAG, SILENT_FLAG, MOOD_SET_FLAG, DICE_DONE_FLAG, planFlag, readFlag,
+  ODDS_DEN, BLUFF_ODDS, SILENT_ODDS, BLUFF_FLAG, SILENT_FLAG, MOOD_SET_FLAG, DICE_DONE_FLAG, planFlag, readFlag, WILD_FLAG, WILD_ODDS,
   SMOKE_RES, SMOKE_TURNS, SMOKE_FLAG, SMOKE_USES, SMOKE_DURATION,
   type Hand, type Side, type OpponentId, type Mood, type Memory,
 } from './theme.js';
@@ -150,6 +150,7 @@ function duelFlow(): Record<string, unknown> {
     { kind: 'set-flag', targetId: DICE_DONE_FLAG, value: false },
     { kind: 'set-flag', targetId: BLUFF_FLAG, value: false },
     { kind: 'set-flag', targetId: SILENT_FLAG, value: false },
+    { kind: 'set-flag', targetId: WILD_FLAG, value: false },
     ...HANDS.map((h) => ({ kind: 'set-flag', targetId: planFlag(h), value: false })),
     ...HANDS.map((h) => ({ kind: 'set-flag', targetId: readFlag(h), value: false })),
     { kind: 'set-flag', targetId: NEXT_GATE, value: false },
@@ -655,44 +656,153 @@ function masterRules(mem?: Memory): Record<string, EntityBlueprint> {
 const BEATS: Record<Hand, Hand> = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
 
 
+/**
+ * 前四档对手【R-108-32】—— **v2 重写**（owner 2026-08-15 试玩：「AI 现在永远只会出锤子」）。
+ *
+ * ══ 病根：四档里有三档读的是「**它自己**的上一手」，而那是个不动点 ══
+ *
+ * 实测（`zz-diag` 六回合）：stubborn/reckless/playful/moody 四种心情**全部 rock×6**，
+ * 只有 sharp（大师 v5）会变。原因不是某条规则写错，是**输入选错了**：
+ * `{ throw: prev }` 里的 `prev` = `p2.lastThrow`。开局是空串→兜底出石→于是 `p2.lastThrow` 恒为石，
+ * 下一回合再读它还是石。**从第一回合起就锁死**，四档因此塌成同一个恒石对手。
+ *
+ * 大师之所以会动，是因为它读的是**玩家**。所以修法只有一句：**前四档也必须读会变的东西**
+ * ——玩家的手 / 上一回合的胜负 / 种子骰。
+ *
+ * ══ 逐档对条款（gdd §9.4 表·条款原文优先于旧实现）══
+ *
+ * | 档 | 条款原文 | 这一版怎么落 |
+ * |---|---|---|
+ * | ① 复读机 | 复用**上一回合赢过的手** | 正是条款那个「赢过的」——旧实现漏了它，才成了不动点 |
+ * | ② 莽夫 | **偏爱**石头；蓄满必兑现 | 石槽满 → 必出石（兑现）；否则 7/10 出石、3/10 扑向玩家上一手 |
+ * | ③ 戏子 | 蓄一手、出另一手（专职诈唬） | 蓄「克制你上一手」的手当假动作，实出**你上一手** |
+ * | ④ 赌徒 | 忽冷忽热·读不出规律（心情=moody） | 每回合掷骰：一半押你上一手、一半押它的克星 |
+ *
+ * ⚠ **④ 与 gdd 表的「血少时必押满蓄」有偏差，是有意的**：那句要读**它自己**的血，
+ * 而 `ConditionExpr{resource}` 是全局 id 路由、两侧 hp 同 id ⇒ 全局只读得到 p1 那份；
+ * p2 想读自己的血只能用它那格 `SelfRule`，那格已给了死亡判定（一实体一组件挤不下第二条）。
+ * 同 `theme.FINISH_HP` 那条根因。而卡片化之后这一档的语义已是「阴晴不定·忽冷忽热」
+ * （`card-character.ts` moody 注释），骰子正是它——故按心情语义落，并在此留痕。
+ */
 function opponentRules(who: OpponentId): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
-  const lastIs = (h: Hand | ''): Record<string, unknown> => ({ kind: 'string', id: lastThrowVar('p2'), equals: h });
-  const openingIsRock = (h: Hand): Record<string, unknown> =>
-    h === 'rock' ? { kind: 'or', of: [lastIs('rock'), lastIs('')] } : lastIs(h);
+  const flag = (id: string, equals = true): Record<string, unknown> => ({ kind: 'flag', id, equals });
+  const all = (...of: unknown[]): Record<string, unknown> => ({ kind: 'and', of });
+  const any = (...of: unknown[]): Record<string, unknown> => ({ kind: 'or', of });
+  const not = (of: unknown): Record<string, unknown> => ({ kind: 'not', of });
+  const last = (side: Side, h: Hand | ''): Record<string, unknown> => ({ kind: 'string', id: lastThrowVar(side), equals: h });
+  /** 开局：两边都还没出过手（第一回合唯一的确定态）。 */
+  const fresh = all(last('p1', ''), last('p2', ''));
+  /** 「开局算石」——每档都要有，否则第一回合它一手不出，双方凑不齐 intent 永远结算不了。 */
+  const withOpening = (h: Hand, c: unknown): Record<string, unknown> => h === 'rock' ? any(c, fresh) : (c as Record<string, unknown>);
 
-  /** 该档在「上一手 = prev」时，蓄哪只手 / 出哪只手。 */
-  const plan = (prev: Hand): { charge: Hand; throw: Hand } => {
-    switch (who) {
-      case 'brute':   return { charge: 'rock', throw: 'rock' };                       // 偏爱石头·永远石
-      case 'actor':                                                                    // 蓄一手、出另一手
-      case 'master':  return { charge: BEATEN_BY[prev], throw: prev };                // 蓄"克制上一手的手"当假动作，实际出上一手
-      case 'gambler': return { charge: prev, throw: prev };                            // 押上一手（血低时靠满蓄放大·见 §赌徒）
-      default:        return { charge: prev, throw: prev };                            // 复读机
+  /** **玩家**上一手 = h（会变·这是四档的主输入）。 */
+  const pLast = (h: Hand): Record<string, unknown> => withOpening(h, last('p1', h));
+  /**
+   * 「上一回合赢的是 t 这只手」——**条款①原文那个「赢过的手」**。
+   * 标准表 t 吃 `BEATS[t]`：谁出的 t、对面出的正是 t 吃得掉的那只，t 就是赢家那只手；
+   * 双方同手（平局）也算「没输过的手」，让复读机有个确定去处而不是掉进兜底。
+   */
+  const won = (t: Hand): Record<string, unknown> => withOpening(t, any(
+    all(last('p2', t), last('p1', BEATS[t])),
+    all(last('p1', t), last('p2', BEATS[t])),
+    all(last('p1', t), last('p2', t)),
+  ));
+
+  /** 本回合的骰子结果（②③④用·T1 开场清、T1+1 掷·同大师那套握手，见 aiDieRules）。 */
+  const wild = flag(WILD_FLAG);
+  const notWild = flag(WILD_FLAG, false);
+  const rockFull = { kind: 'resource', id: chargeRes('p2', 'rock'), cmp: 'gte', value: CHARGE_CAP };
+
+  /** 一档 = 一张「出这只手的条件」表（三只手互斥）。蓄力表同形。 */
+  let throwWhen: Record<Hand, unknown>;
+  let chargeWhen: Record<Hand, unknown>;
+
+  switch (who) {
+    case 'brute': {
+      // ② 莽夫：石槽满 → **必兑现**（条款「蓄满必兑现」）；否则偏爱石，骰中才扑向玩家上一手。
+      // tell =「攥拳·高频」：它每回合都在蓄石，石槽肉眼可见地涨——满了那一回合就是它必出石的信号。
+      const calm = not(rockFull);
+      throwWhen = Object.fromEntries(HANDS.map((h) => [h,
+        h === 'rock'
+          ? any(rockFull, all(calm, notWild), all(calm, wild, pLast('rock')))
+          : all(calm, wild, pLast(h)),
+      ])) as Record<Hand, unknown>;
+      // 蓄力恒石（这就是那个高频 tell·**不掺骰子**：tell 必须稳定才可读）。
+      chargeWhen = Object.fromEntries(HANDS.map((h) => [h,
+        h === 'rock' ? { kind: 'always' } : not({ kind: 'always' }),
+      ])) as Record<Hand, unknown>;
+      break;
     }
-  };
+    case 'actor': {
+      // ③ 戏子：**蓄一手、出另一手**。蓄「克制你上一手」的手当假动作（你会以为它要出那只），
+      // 实际出**你上一手**——你若照着它的槽反制就正好被吃；你若重复自己上一手就是平局。
+      // 三四回合就能读出「他出我上一手」，符合红线「AI 必须 3-4 回合内可读」。
+      throwWhen = Object.fromEntries(HANDS.map((h) => [h, pLast(h)])) as Record<Hand, unknown>;
+      chargeWhen = Object.fromEntries(HANDS.map((h) => [h, pLast(BEATS[h])])) as Record<Hand, unknown>;
+      break;
+    }
+    case 'gambler': {
+      // ④ 赌徒（心情 moody·阴晴不定）：每回合掷骰——不中就押你上一手，中了就押它的克星。
+      // 读不出下一手，但读得出「他在赌」（槽的去向每回合跳）。
+      throwWhen = Object.fromEntries(HANDS.map((h) => [h,
+        any(all(notWild, pLast(h)), all(wild, pLast(BEATS[h]))),
+      ])) as Record<Hand, unknown>;
+      chargeWhen = throwWhen;                       // 赌徒不演：押哪只就蓄哪只（这本身就是 tell）
+      break;
+    }
+    default: {
+      // ① 复读机：出**上一回合赢过的那只手**（条款原文）。你赢了它就抄你的，它赢了就接着用。
+      // 「明显·必现」：规律一句话能说清，且**跟着你变**——启蒙档要教的正是「对手是有规律的」。
+      throwWhen = Object.fromEntries(HANDS.map((h) => [h, won(h)])) as Record<Hand, unknown>;
+      chargeWhen = throwWhen;                       // 它信那只手，就往那只手上存力
+      break;
+    }
+  }
 
   for (const h of HANDS) {
-    const when = openingIsRock(h);
-    const p = plan(h);
     out[`ai:charge:${h}`] = {
       EventWhen: {
-        signal: aiChargeSignal(p.charge), mode: 'edge', armed: false,
-        when: { kind: 'and', of: [{ kind: 'flag', id: CHARGING_GATE }, when] },
+        signal: aiChargeSignal(h), mode: 'edge', armed: false,
+        when: all(flag(CHARGING_GATE), flag(DICE_DONE_FLAG), chargeWhen[h]),
       },
     } as EntityBlueprint;
     out[`ai:throw:${h}`] = {
       EventWhen: {
-        signal: throwSignal(p.throw), mode: 'edge', armed: false,
+        signal: throwSignal(h), mode: 'edge', armed: false,
         source: 'p2',                                       // ← REQ-108-ENG-05：接缝据此认侧
-        // 【R-108-33】前四档读的只有 `p2.lastThrow`（T2 里不会变），本来不会赖皮；
-        // 但把五档统一挂在定手窗上，日后谁给某一档加一条读玩家的条件也不会静默破线。
-        when: { kind: 'and', of: [{ kind: 'flag', id: DECIDE_GATE }, when] },
+        // 【R-108-33】五档统一挂**只亮一拍的定手窗**：现在前四档也读玩家了，
+        // 这道闸从「防患于未然」变成了真正在挡事的那一道。
+        when: all(flag(DECIDE_GATE), throwWhen[h]),
       },
     } as EntityBlueprint;
   }
   return out;
 }
+
+/**
+ * 前四档的**骰子**（②③④用·①不用但一起挂，省得每档各写一套握手）。
+ * 与大师那套同形：T1 开场清 → `DICE_DONE_FLAG` 那一拍掷 → 蓄力/出招都等它落定。
+ * 走引擎种子 PRNG（`Effect.chance`），游戏层禁裸 `Math.random`。
+ */
+function aiDieRules(): Record<string, EntityBlueprint> {
+  return {
+    'die:tier': {
+      EventWhen: {
+        signal: 'ai.tier.roll', mode: 'edge', armed: false,
+        when: { kind: 'and', of: [{ kind: 'flag', id: CHARGING_GATE }, { kind: 'flag', id: DICE_DONE_FLAG, equals: false }] },
+      },
+    } as EntityBlueprint,
+    'fx:tier:wild': {
+      Effect: { onSignal: 'ai.tier.roll', kind: 'set-flag', targetId: WILD_FLAG, value: true, order: 10, chance: { num: WILD_ODDS, den: ODDS_DEN } },
+    } as EntityBlueprint,
+    // 收尾旗**必须 order 最大**：蓄力/出招等的就是它，早于骰子落地就等于没掷。
+    'fx:tier:done': {
+      Effect: { onSignal: 'ai.tier.roll', kind: 'set-flag', targetId: DICE_DONE_FLAG, value: true, order: 99 },
+    } as EntityBlueprint,
+  };
+}
+
 
 /**
  * 【R-108-02】**v3 作废了 v2 的「超时顺延」**（owner 2026-08-07）。
@@ -767,6 +877,7 @@ export function buildBlueprint(opponent: OpponentId = 'parrot', mem?: Memory): W
     'flag:dicedone': { Flag: { id: DICE_DONE_FLAG, active: false } } as EntityBlueprint,
     'flag:bluffing': { Flag: { id: BLUFF_FLAG, active: false } } as EntityBlueprint,
     'flag:silent': { Flag: { id: SILENT_FLAG, active: false } } as EntityBlueprint,
+    'flag:wild': { Flag: { id: WILD_FLAG, active: false } } as EntityBlueprint,
     ...Object.fromEntries(HANDS.flatMap((h) => [
       [`flag:plan:${h}`, { Flag: { id: planFlag(h), active: false } } as EntityBlueprint],
       [`flag:read:${h}`, { Flag: { id: readFlag(h), active: false } } as EntityBlueprint],
@@ -790,7 +901,7 @@ export function buildBlueprint(opponent: OpponentId = 'parrot', mem?: Memory): W
     'flag:penaltyTick:p1': { Flag: { id: penaltyTickFlag('p1'), active: false } } as EntityBlueprint,
     // 【R-108-30】v4：**只有第五档大师**换成读牌 + 记忆的决策链（owner 2026-08-08 判 A）；
     // ①–④ 一格不动，保留可读破绽（前四档的教学曲线是支柱一的落点）。
-    ...(opponent === 'master' ? masterRules(mem) : opponentRules(opponent)),
+    ...(opponent === 'master' ? masterRules(mem) : { ...opponentRules(opponent), ...aiDieRules() }),
     // 台账**所有档都记**——不然打了半天前四档，换到大师那一关它对你一无所知，
     // 「记忆更长所以更强」就成了空话。只是前四档**不读**它。
     ...habitTracking(mem),

@@ -12,7 +12,7 @@ import type { WorldSnapshot, EntityId } from '@zerocraft/engine/engine/core/type
 import { buildBlueprint } from './blueprint.js';
 import { buildDuelScreen, emptyView, loadPct, type DuelView, type Phase } from './duel-screen.js';
 import { DUEL_THEME, VIEW_W, VIEW_H, HANDS, SIDES, HP_MAX, HP_RES, chargeEntity, lastThrowVar, PHASE_TICKS, TPS, type Hand, type Side } from './theme.js';
-import { READ_MID, loadMemory, saveMemory, type Memory } from './theme.js';
+import { READ_MID, loadMemory, saveMemory, loadHelpSeen, saveHelpSeen, type Memory } from './theme.js';
 import { DEFAULT_CARD, MOOD_AI, type CardCharacter } from './card-character.js';
 import { UI_ACT, ACT } from './theme.js';
 import { loadLang, saveLang, t, type Lang } from './strings.js';
@@ -118,6 +118,15 @@ export function mount(container: HTMLElement): () => void {
   let lang: Lang = loadLang();
   let menuOpen = false;
   let helpOpen = false;
+  /**
+   * 这一次的说明屏是不是「首次进入自动弹的那一次」（owner 2026-08-15 试玩：
+   * 「刚出来的时候是要先跳一下玩法说明。如果说玩家可以选跳过，这还是要有的」）。
+   *
+   * 落在**宿主**而不是世界里：看没看过说明是玩家这台机器的偏好，与对局规则无关——
+   * 进了世界就会进 hash / 录放 / lockstep，两台机器"看过没看过"不同就判不一致（同 lang 那条分界）。
+   * 续局（resume）不弹：玩家早就在打这一局了，中途糊一屏说明是打断不是引导。
+   */
+  let firstRunHelp = !resume && !loadHelpSeen();
   // owner 2026-08-08：「我还没有点开始，它就直接三个牌飞上来了」——**第一次进来必须先有开始键**。
   // 做法是**根本不启动引擎**（不是暂停）：玩家点下去看到的是完完整整的第一拍，
   // 而不是已经播过一半的 T1。顺带它还是整局第一个真实手势，BGM 从这里起（浏览器自动播放策略）。
@@ -276,7 +285,7 @@ export function mount(container: HTMLElement): () => void {
       penalty: { active: inPenalty, debt: num('debt:p1') },
       ...(Object.keys(skins).length ? { skins } : {}),
       ...(started ? {} : { notStarted: true, bootMs }),
-      ...(helpOpen ? { helpOpen: true } : {}),
+      ...(helpOpen ? { helpOpen: true, ...(firstRunHelp ? { helpFirstRun: true } : {}) } : {}),
       ...(phase === 'settle' ? { awaitNext: true } : {}),
       ...(charged ? { charged } : {}),
       ...(before ? { before } : {}),
@@ -427,6 +436,16 @@ export function mount(container: HTMLElement): () => void {
     // 加载没走完就点不动：整屏那枚键在 `startScreen` 里是**加载完才挂 action** 的，
     // 这里再挡一道——handler 是公开面（键位/脚本都发得出），别只靠"没画按钮"。
     if (loadPct(bootMs) < 1) return;
+    // 【首次进入】按任意键**先弹玩法说明**，再按一次（「跳过 · 开始」）才真开局。
+    // 同一枚 `ui.start` 走两段，而不是新造一个动作：说明屏那枚键在玩家眼里就是"开始"，
+    // 词表里多一个只在一种情形下存在的动作名反而更难对账（【R-108-70】）。
+    if (firstRunHelp && !helpOpen) {
+      helpOpen = true;
+      audio.start(); audio.play('ui');   // 这一下已经是真实手势，音频门就在这儿开
+      redraw();
+      return;
+    }
+    if (firstRunHelp) { firstRunHelp = false; helpOpen = false; saveHelpSeen(); }
     started = true;
     stopBoot();
     audio.start(); audio.play('ui');

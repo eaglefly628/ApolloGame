@@ -114,6 +114,9 @@ export const STRINGS = {
   // 所以写成「四拍各干什么 + 三条规则」，不写公式、不列概率。
   'help.title': { en: 'HOW TO PLAY', zh: '玩法说明' },
   'help.open': { en: 'How to play', zh: '玩法说明' },
+  // 首次进入自动弹那一次，底下那枚键的文案（owner 2026-08-15：「玩家可以选跳过，这还是要有的」）。
+  // 一枚键说清两件事：读完了也按它、不想读也按它，按下去就开局。
+  'help.skip': { en: 'SKIP · START', zh: '跳过 · 开始' },
   'help.beats': { en: 'EACH ROUND', zh: '一个回合' },
   'help.t1': { en: 'CHARGE · pick one hand, +1 layer (once per round)', zh: '蓄力 · 挑一只手 +1 层（一回合只能加一层）' },
   'help.t2': { en: 'STRIKE · throw any hand — not necessarily the one you charged', zh: '出招 · 出任意一手，不必是刚蓄的那只' },

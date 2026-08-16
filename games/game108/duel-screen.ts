@@ -121,6 +121,11 @@ export interface DuelView {
   menuOpen?: boolean;
   /** 玩法说明开着没有（owner 2026-08-08：「少了个说明文档，需要在这个菜单里加一下」）。 */
   helpOpen?: boolean;
+  /**
+   * 这一次的说明屏是**首次进入自动弹的那一次**（owner 2026-08-15 试玩要的）。
+   * 只改底下那枚键的身份：「跳过 · 开始」而不是「关闭」——从说明屏直接开局，不再多一次点。
+   */
+  helpFirstRun?: boolean;
   /** 三个音频开关的当前状态（纯显示·真状态在宿主的音频门面里）。 */
   audio?: { bgm: boolean; sfx: boolean; voice: boolean };
   /** 角色这一刻说的那句（配音发不出声时的**字幕兜底**——听不见也要看得见）。 */
@@ -1316,9 +1321,15 @@ function smokeFx(view: DuelView): LayoutNode[] {
 }
 
 /**
- * 玩法说明（owner 2026-08-08 要·从设置菜单里进）。
+ * 玩法说明（owner 2026-08-08 要·从设置菜单里进；2026-08-15 起**首次进入自动弹一次**）。
  * 写法受 §0 验收铁律约束：本作**零记忆零算术**——**说明本身也不许要求玩家记东西或心算**，
  * 所以只写「四拍各干什么 + 三条规则 + 一句为什么」，不列公式、不讲概率。
+ *
+ * 两种进法共用同一块面板，**只有底下那枚键换个身份**：
+ *   · 菜单进（`helpFirstRun` 不置）→「关闭」，回菜单（`UI_ACT.help`）。
+ *   · 首次进入自动弹（`helpFirstRun`）→「跳过 · 开始」，直接开局（`UI_ACT.start`）。
+ * owner 原话：「刚出来的时候是要先跳一下玩法说明。**如果说玩家可以选跳过，这还是要有的**」
+ * ——所以这一枚键既是"读完了"也是"不想读"，玩家一眼看得出按下去会发生什么。
  */
 function helpScreen(view: DuelView): LayoutNode[] {
   const lang = view.lang;
@@ -1358,9 +1369,15 @@ function helpScreen(view: DuelView): LayoutNode[] {
         { type: 'Label', id: 'help-tell', props: { text: t(lang, 'help.tell'), size: enSize(lang, 24), font: F.cjk, color: 'dim' } },
         {
           type: 'Panel', id: 'key-help-close',
-          props: { skin: plate({ w: 260, h: 66, fill: C.cream, border: B.card, radius: R.pill, shadow: SH.card }), action: UI_ACT.help },
+          props: {
+            skin: plate({ w: 260, h: 66, fill: C.cream, border: B.card, radius: R.pill, shadow: SH.card }),
+            action: view.helpFirstRun === true ? UI_ACT.start : UI_ACT.help,
+          },
           layout: { width: 260, height: 66, direction: 'row', align: 'center', justify: 'center', padding: 0 },
-          children: [{ type: 'Label', id: 'key-help-close-t', props: { text: t(lang, 'menu.close'), size: 28, font: F.cjk, color: 'ink' } }],
+          children: [{
+            type: 'Label', id: 'key-help-close-t',
+            props: { text: t(lang, view.helpFirstRun === true ? 'help.skip' : 'menu.close'), size: 28, font: F.cjk, color: 'ink' },
+          }],
         },
       ],
     },
@@ -1550,9 +1567,12 @@ export function buildDuelScreen(view: DuelView): LayoutNode {
       ...(veil ? [veil] : []),
       ...smokeFx(view),
       ...(view.menuOpen ? settingsMenu(view) : []),
-      ...(view.helpOpen ? helpScreen(view) : []),
-      // 开始屏盖在最上面（含菜单）——还没开局时屏上只该有一个出口。
+      // 开始屏盖在菜单之上——还没开局时屏上只该有一个出口。
       ...(view.notStarted ? startScreen(view) : []),
+      // 说明屏压在**最上面**（含开始屏）：首次进入是「加载 → 按任意键 → 说明（可跳过）→ 对局」，
+      // 说明弹出来那一刻它就是唯一的出口，被开始屏盖住 = 玩家点不到"跳过"，当场卡死。
+      // 对局中从菜单进说明时 `notStarted` 是假的，开始屏根本不在树上，这个顺序无影响。
+      ...(view.helpOpen ? helpScreen(view) : []),
     ],
   };
 }
