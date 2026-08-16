@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { World } from '@engine/core/world.js';
 import { topologicalSort } from '@engine/core/topological-sort.js';
 import { SystemPhase } from '@engine/core/types.js';
@@ -98,25 +98,30 @@ describe('matrix-duel — 定序申报（Lead 附加①·R10 范式）', () => {
 
     expect(settle.id).toBe('matrix-duel');
     expect(settle.phase ?? 0).toBe(SystemPhase.Update);
-    // 产 ResourceModify → 必须排 resource-apply 前面（当拍扣血生效）。
-    expect(settle.runsBefore).toEqual(['resource-apply']);
-    expect(settle.reads).toEqual(['DuelMatrix', 'DuelIntent']);
+    // 产 ResourceModify → 必须排 resource-apply 前面（当拍扣血生效）；
+    // self-rule 是 Resource 直写者 → 同样显式排前（压掉它的反向软边·否则三元环，见下一用例）。
+    expect(settle.runsBefore).toEqual(['resource-apply', 'self-rule']);
+    // 读 Resource = 诚实申报（根因①·owner 判 C）：resolveDamage 取缩放源是真读，此前瞒报
+    // （旧断言 not.toContain('Resource') 是替瞒报背书——已撤）。不成环的机理：显式
+    // runsBefore:['resource-apply'] 压掉反向推断边（topological-sort 规则③·下一用例实证）。
+    expect(settle.reads).toEqual(['DuelMatrix', 'DuelIntent', 'Resource']);
     expect(settle.writes).toEqual(['ResourceModify', 'DuelIntent', 'DuelOutcome']);
-    // 既不读也不写 Resource（只发 ResourceModify 交 resource-apply 结算）→ 与全部 Resource 读写者无环。
-    expect(settle.reads).not.toContain('Resource');
-    expect(settle.writes).not.toContain('Resource');
+    expect(settle.writes).not.toContain('Resource'); // 写侧仍只发事件，Resource 唯一写者恒为 resource-apply
 
     expect(announce.id).toBe('matrix-duel-announce');
     expect(announce.phase).toBe(SystemPhase.Commit); // 排在 event-when 的全局 Signal 清扫之后
     expect(announce.runsBefore).toEqual(['effect-apply']);
-    // REQ-108-ENG-03 起 announce 兼「结算副作用」：读 DuelMatrix 取相对名、读 Resource 取槽当前值
-    // （ResourceModify 只有加减没有 set，清零只能发 -当前值），写 ResourceModify/StringSet。
-    expect(announce.reads).toEqual(['DuelOutcome', 'DuelMatrix', 'Resource']);
-    expect(announce.writes).toEqual(['Signal', 'ResourceModify', 'StringSet']);
+    // 清零随根因① C 搬回结算拍（op:'set' 载体）→ announce 不再读 Resource / 写 ResourceModify。
+    expect(announce.reads).toEqual(['DuelOutcome', 'DuelMatrix']);
+    expect(announce.writes).toEqual(['Signal', 'StringSet']);
     expect(announce.consumes).toEqual(['DuelOutcome']);
   });
 
-  it('与 resource-apply / event-when / effect-apply 同世界不成环，且落序正确', () => {
+  it('与 resource-apply / event-when / effect-apply 同世界不成环，且落序正确；**成环告警也必须为零**', () => {
+    // 读告警铁律（2026-08-06 review 血训）：topological-sort 的环只打 console.warn 不改退出码——
+    // 「定序用例全绿」不等于没环。诚实申报 Resource 后这里必须连 warn 一起断言为零：
+    // 显式 runsBefore 压反向推断边（规则③）若哪天被削，本用例就是第一道红。
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const sys = [
       ...resourceCapability.systems,
       ...flagCapability.systems,
@@ -133,7 +138,10 @@ describe('matrix-duel — 定序申报（Lead 附加①·R10 范式）', () => {
       ...matrixDuelCapability.systems,
     ];
     const order = topologicalSort(sys).map((s) => s.id);
+    const cycleWarns = warn.mock.calls.filter((c) => String(c[0]).includes('环') || String(c[0]).toLowerCase().includes('cycle'));
+    warn.mockRestore();
     expect(order.length).toBe(sys.length);
+    expect(cycleWarns).toEqual([]); // ← 申报 Resource 后不许出现任何成环告警（软边被显式边正确压掉）
     const at = (id: string): number => order.indexOf(id);
     expect(at('matrix-duel')).toBeLessThan(at('resource-apply')); // 扣血当拍生效
     expect(at('matrix-duel-announce')).toBeGreaterThan(at('event-when')); // 信号不被全局清扫误删
@@ -824,12 +832,13 @@ describe('matrix-duel — 结算副作用（REQ-108-ENG-03）', () => {
   const slotOf = (w: World, side: string, h: string): number =>
     w.getComponent<Resource>(`slot:${side}:${h}`, 'Resource')!.current;
 
-  it('① 清零按侧：各清各出过的那只手，**另外两只不动**', () => {
+  it('① 清零按侧：各清各出过的那只手，**另外两只不动**——且与结算**同拍**生效（根因① C·op:set 载体）', () => {
     const w = table(SIDE_TABLE({ clearOnSettle: 'charge' }));
     withSlots(w, { 'p1.charge.rock': 3, 'p1.charge.paper': 2, 'p2.charge.scissors': 3, 'p2.charge.rock': 1 });
-    duel(w, 'rock', 'scissors'); // p1 出石胜 / p2 出剪负
-    w.tick();                    // Commit 发的 ResourceModify 由下一拍 resource-apply 落地
-    expect(slotOf(w, 'p1', 'rock')).toBe(0);        // 出过 → 清
+    duel(w, 'rock', 'scissors'); // p1 出石胜 / p2 出剪负（duel 内含唯一一次 tick）
+    // 旧实现清零在 Commit 读当前值发 -current、下一拍才落地；现随结算拍 op:'set' 原子生效——
+    // 「这手已用掉」与扣血同拍，少一拍中间态（那一拍里蓄力显示还是旧值）。
+    expect(slotOf(w, 'p1', 'rock')).toBe(0);        // 出过 → 清（结算同拍）
     expect(slotOf(w, 'p2', 'scissors')).toBe(0);    // 出过 → 清（败方也清）
     expect(slotOf(w, 'p1', 'paper')).toBe(2);       // 没出 → 原样（诈唬机制的支点）
     expect(slotOf(w, 'p2', 'rock')).toBe(1);        // 没出 → 原样
@@ -839,7 +848,6 @@ describe('matrix-duel — 结算副作用（REQ-108-ENG-03）', () => {
     const w = table(SIDE_TABLE({ clearOnSettle: 'charge' }));
     withSlots(w, { 'p1.charge.rock': 3, 'p2.charge.rock': 2, 'p1.charge.paper': 3 });
     duel(w, 'rock', 'rock');
-    w.tick();
     expect(slotOf(w, 'p1', 'rock')).toBe(0);
     expect(slotOf(w, 'p2', 'rock')).toBe(0);
     expect(slotOf(w, 'p1', 'paper')).toBe(3); // 没出的仍不动

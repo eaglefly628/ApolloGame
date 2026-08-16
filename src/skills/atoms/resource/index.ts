@@ -14,18 +14,27 @@ export function queueResourceMod(
   resourceId: string,
   amount: number,
   scope?: 'local' | 'global',
+  op?: 'set' | 'add',
 ): void {
   const existing = world.getComponent<ResourceModify>(entityId, 'ResourceModify');
   if (existing && existing.resourceId === resourceId && existing.scope === scope) {
-    existing.amount += amount; // 累加（同资源同 scope）
+    // op 合并规则（根因①）：事件语义 = 按入队序依次生效折叠成一条。
+    //   pending(add x) + add y → add x+y（原行为）；pending(set t) + add y → set t+y（先置后加）
+    //   —— 两种情况都是 amount += y。pending(任意) + set t → set t（set 是最后写，吸收在前的一切）。
+    if (op === 'set') {
+      existing.amount = amount;
+      existing.op = 'set';
+    } else {
+      existing.amount += amount;
+    }
     return;
   }
   if (!existing) {
-    world.addComponent(entityId, { type: 'ResourceModify', resourceId, amount, scope } as ResourceModify);
+    world.addComponent(entityId, { type: 'ResourceModify', resourceId, amount, scope, ...(op === 'set' ? { op } : {}) } as ResourceModify);
     return;
   }
   // 已知边界：同实体本帧已有不同 (resourceId|scope) 的改值 → 覆盖退化（历史行为，无回归）。
-  world.addComponent(entityId, { type: 'ResourceModify', resourceId, amount, scope } as ResourceModify);
+  world.addComponent(entityId, { type: 'ResourceModify', resourceId, amount, scope, ...(op === 'set' ? { op } : {}) } as ResourceModify);
 }
 
 export const resourceCapability = defineCapability({
@@ -64,7 +73,13 @@ export const resourceCapability = defineCapability({
         describe: '请求修改指定 id 资源的一次性事件，执行后由 World 自动删除。',
         fields: {
           resourceId: { type: 'string', describe: '目标资源的 id，与 Resource.id 匹配' },
-          amount: { type: 'number', describe: '修改量，正数增加，负数减少' },
+          amount: { type: 'number', describe: "修改量（op 缺省 'add'：正数增加负数减少）；op:'set' 时为目标值" },
+          op: {
+            type: 'string',
+            describe:
+              "运算：'add'（缺省）= current+amount；'set' = 置为 amount（仍钳 [min,max]）。" +
+              '清零/置满用 set——写目标值不需要先读当前值，产出方无需加 Resource 读面（根因① C 判）',
+          },
           scope: {
             type: 'string',
             describe:
@@ -153,7 +168,8 @@ export const resourceCapability = defineCapability({
             if (!resource && scope !== 'local') resource = globalFind(modify.resourceId);
           }
           if (!resource) continue;
-          const next = resource.current + modify.amount;
+          // op（根因①·owner 判 C）：'set' 直接置目标值（写方不必先读当前值），缺省 'add' 存量语义。两者同钳 [min,max]。
+          const next = modify.op === 'set' ? modify.amount : resource.current + modify.amount;
           resource.current = next < resource.min ? resource.min : next > resource.max ? resource.max : next;
         }
       },

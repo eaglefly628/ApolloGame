@@ -240,18 +240,8 @@ function checkEffects(effects: DuelEffect[] | undefined, hpResource: string, at:
  *  · 缺省 → 表里那个绝对 id 原样（零回归）。
  * 纯字符串拼接、无 IO、无随机，故确定性与快照 hash 不受影响。
  */
-/**
- * 按 Resource id 找持有者（REQ-108-ENG-03 用）。引擎一实体一组件，故蓄力槽必然各居一实体。
- * 只取**首个**命中：本能力已在 resolveDamage 侧对「同 id 多份」点名硬抛，此处不重复报错，
- * 但也不静默挑错的——清零针对的是 `<侧>.<相对名>.<手>` 这种**天然唯一**的 id。
- */
-function findResourceHolder(world: IWorld, id: string): { eid: EntityId; res: Resource } | undefined {
-  for (const [e] of world.query('Resource')) {
-    const r = world.getComponent<Resource>(e, 'Resource');
-    if (r && r.id === id) return { eid: e, res: r };
-  }
-  return undefined;
-}
+// （findResourceHolder 已随根因① C 判删除：清零改 op:'set' 全局路由——
+//  `<侧>.<相对名>.<手>` 天然唯一，resource-apply 自会按 id 找到槽，不再需要先读当前值。）
 
 export function scaleResourceId(damage: Exclude<DuelDamage, number>, attacker: EntityId): string {
   return damage.perSide === true ? `${attacker}.${damage.scaleByResource}` : damage.scaleByResource;
@@ -613,14 +603,21 @@ export const matrixDuelCapability = defineCapability({
     {
       // ① 结算（Update）：查表 → 写 ResourceModify → 记 DuelOutcome → 清双方 intent。
       // runsBefore resource-apply（Lead 附加①·R10 范式）：本系统产 ResourceModify，必须排它前面，
-      // 扣血当拍生效。**刻意不读 Resource**：读它会让全部 Resource 写者（resource-apply/self-rule/
-      // modifier-stack…）都成为本系统前驱，与「本系统排 resource-apply 之前」合围成环（实测已验证）。
-      // 附带效果因此不自己找目标实体，而是发 scope:'global' 的 ResourceModify 交 resource-apply 按 id 路由。
+      // 扣血当拍生效。
+      // **读 Resource 已诚实申报**（根因①·owner 2026-08-16 判 C）：resolveDamage 取缩放源是真读，
+      // 自 REQ-108-ENG-01 起瞒报了半个月。申报不成环的机理 = topological-sort 规则③
+      // 「显式边覆盖相反方向的组件推断边」：本系统读的是**本拍 pre-apply 值**（蓄力在伤害结算前
+      // 的读数），故对每个会与本系统同世界的 Resource **直写者**显式排前——resource-apply（事件
+      // 消费落账）与 self-rule（决策系统·坐结算链尾直写 Resource）各压掉一条反向软边；漏谁谁的
+      // 软边就闭环（定序测试连 console.warn 一起断言为零，漏一条当场红——2026-08-16 实测
+      // 只写 resource-apply 时恰剩 [resource-apply, self-rule, matrix-duel] 三元环）。
+      // 附带效果仍不自己找目标实体，发 scope:'global' 的 ResourceModify 交 resource-apply 按 id 路由；
+      // 结算清零（clearOnSettle）同理走载体 + op:'set'——写目标值 0 不需要读当前值。
       id: 'matrix-duel',
-      reads: ['DuelMatrix', 'DuelIntent'],
+      reads: ['DuelMatrix', 'DuelIntent', 'Resource'],
       writes: ['ResourceModify', 'DuelIntent', 'DuelOutcome'],
       consumes: [],
-      runsBefore: ['resource-apply'],
+      runsBefore: ['resource-apply', 'self-rule'],
       execute(world: IWorld) {
         const matrixIds = world.query('DuelMatrix').map(([id]) => id).sort();
         if (matrixIds.length === 0) return;
@@ -777,6 +774,26 @@ export const matrixDuelCapability = defineCapability({
             } as ResourceModify);
             outcome.carriers.push(cid);
           });
+          // 结算清零（REQ-108-ENG-03·根因① C 改版）：只清各侧**出过的那只手**。op:'set' 写目标值 0
+          // 不需要读当前值 → 本操作从播报（Commit·靠读 Resource 发 -当前值）搬回结算拍：
+          // 与伤害同拍原子生效（清零本就是「这手已用掉」的一部分），且不再有「持有者 ResourceModify
+          // 槽被占就静默跳过」的旧漏拍面。槽 id 全局唯一（<侧>.<相对名>.<手>）→ global 路由，
+          // 载体走 effects 同一条生命周期；槽不存在时 resource-apply 静默跳过（与旧「找不到持有者」同形）。
+          if (md.clearOnSettle) {
+            [{ eid: sa.eid, thrown: ta }, { eid: sb.eid, thrown: tb }].forEach((s, j) => {
+              const cid = carrierId(mid, pending.length + j);
+              world.destroyEntity(cid);
+              world.createEntity(cid);
+              world.addComponent(cid, {
+                type: 'ResourceModify',
+                resourceId: `${s.eid}.${md.clearOnSettle}.${s.thrown}`,
+                amount: 0,
+                op: 'set',
+                scope: 'global',
+              } as ResourceModify);
+              outcome.carriers.push(cid);
+            });
+          }
           world.addComponent(mid, outcome);
           // 清双方 intent —— 同一回合绝不二次结算（下一回合由出招侧重新挂 DuelIntent）。
           world.removeComponent(sa.eid, 'DuelIntent');
@@ -791,12 +808,11 @@ export const matrixDuelCapability = defineCapability({
       // 信号无需自清：下一拍 event-when 的全局清扫会带走（Update 早于 Commit），本件不留跨拍状态。
       id: 'matrix-duel-announce',
       phase: SystemPhase.Commit,
-      // REQ-108-ENG-03 起还兼「结算副作用」：读 DuelMatrix 取两个相对名 + 读 Resource 取槽当前值
-      // （**必须读**：ResourceModify 只有加减没有 set，清零只能发 -当前值）。
-      // 放这里而非结算系统（Update）：结算系统**刻意不读 Resource**（读了就与「排 resource-apply 之前」
-      // 合围成环，见 ① 的注释）；而本系统在 Commit、排在 resource-apply 之后，读到的正是扣血后的真值。
-      reads: ['DuelOutcome', 'DuelMatrix', 'Resource'],
-      writes: ['Signal', 'ResourceModify', 'StringSet'],
+      // REQ-108-ENG-03 起还兼「结算副作用」之 lastThrowVar（读 DuelMatrix 取相对名·写 StringSet）。
+      // 清零已随根因① C 判搬回结算系统（op:'set' 写目标值不需要读当前值）——本系统不再读
+      // Resource、不再写 ResourceModify，申报随之缩窄（历史上这两项就是为清零而生，见 git 历史）。
+      reads: ['DuelOutcome', 'DuelMatrix'],
+      writes: ['Signal', 'StringSet'],
       consumes: ['DuelOutcome'],
       runsBefore: ['effect-apply'], // 组件拓扑（写 Signal → effect-apply 读）本已排前，显式加固
       execute(world: IWorld) {
@@ -827,21 +843,8 @@ export const matrixDuelCapability = defineCapability({
             const side = o.sides[i];
             const thrown = o.throws[i];
             if (!alive.has(side)) continue; // 该侧已被 mortal/destroy 收走 → 无处可写，跳过
-            // ① 清零：只清**该侧出过的那只手**（没出的原样保留 = 该机制的要害）。
-            //    ResourceModify 只有加减、没有 set → 发「-当前值」，故必须先读到当前值。
-            if (md.clearOnSettle) {
-              const slotId = `${side}.${md.clearOnSettle}.${thrown}`;
-              const holder = findResourceHolder(world, slotId);
-              if (holder && holder.res.current !== 0 && !world.hasComponent(holder.eid, 'ResourceModify')) {
-                world.addComponent(holder.eid, {
-                  type: 'ResourceModify',
-                  resourceId: slotId,
-                  amount: -holder.res.current,
-                  scope: 'local', // 就挂在持有者身上 → local 最稳，不受同名全局资源干扰
-                } as ResourceModify);
-              }
-            }
-            // ② 记本回合的手：走 StringSet 一次性写事件（由 x3-string-variable 的 string-apply 落地）。
+            // （清零已搬回结算系统·op:'set' 载体·见 settle 的「结算清零」块——根因① C 判）
+            // 记本回合的手：走 StringSet 一次性写事件（由 x3-string-variable 的 string-apply 落地）。
             if (md.lastThrowVar && !world.hasComponent(side, 'StringSet')) {
               world.addComponent(side, {
                 type: 'StringSet',

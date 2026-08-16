@@ -17,6 +17,11 @@ export interface ResourceModify extends Component {
   readonly type: 'ResourceModify';
   resourceId: string;
   amount: number;
+  // 运算（REQ-ENGINEAUDIT 根因①·owner 2026-08-16 判 C）：'add'（缺省·存量零变）= current+amount；
+  // 'set' = 直接置为 amount（仍钳 [min,max]）。set 的要害：写「目标值」不需要先读当前值——
+  // 清零/置满这类操作从此不必读 Resource，产出方（如 matrix-duel 结算）不再被迫加读面成环。
+  // 词表对齐 FlowAction.op / Effect modify-resource 的 op 既有口径，不另造。
+  op?: 'set' | 'add';
   // 寻址作用域（防"变量遮蔽"，Gemini Q4）：'local'=仅同实体；'global'=强制按 id 全局路由（不被同名局部资源静默抢走）；
   // 'source'=按本实体的 PrefabOrigin.source 找发起者实体（REQ-SPENDONFIRE：per-shot 扣发射源资源，如子弹耗
   // 发射炮自己的 ammo，N 炮各自计数）——本实体无 PrefabOrigin/无 source/源已销毁/源无该资源 → 静默跳过

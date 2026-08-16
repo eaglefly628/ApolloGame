@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { World } from '@engine/core/world.js';
-import { resourceCapability } from './index.js';
+import { resourceCapability, queueResourceMod } from './index.js';
 import type { Resource, ResourceModify, PrefabOrigin } from '@engine/protocol/components.js';
 import {
   transformCapability, shapeCapability, tagCapability, colorCapability,
@@ -201,6 +201,94 @@ describe('resource-apply system', () => {
     const r2 = world.getComponent<Resource>('e2', 'Resource')!;
     expect(r1.current).toBe(70);
     expect(r2.current).toBe(50);
+  });
+});
+
+// queueResourceMod 的 op 合并规则：事件语义 = 按入队序折叠成一条。
+describe('queueResourceMod — set/add 合并（同实体同资源同 scope）', () => {
+  let world: World;
+  beforeEach(() => {
+    world = new World();
+    world.addSystem(system);
+    world.createEntity('e1');
+    world.addComponent('e1', makeResource('hp', 50, 0, 100));
+  });
+  const pending = (): ResourceModify => world.getComponent<ResourceModify>('e1', 'ResourceModify')!;
+
+  it('add + add → 累加（存量行为零变）', () => {
+    queueResourceMod(world, 'e1', 'hp', -3);
+    queueResourceMod(world, 'e1', 'hp', -4);
+    expect(pending().amount).toBe(-7);
+    expect(pending().op).toBeUndefined();
+  });
+
+  it('set t 后再 add y → set t+y（先置后加折叠）', () => {
+    queueResourceMod(world, 'e1', 'hp', 10, undefined, 'set');
+    queueResourceMod(world, 'e1', 'hp', 5);
+    expect(pending().op).toBe('set');
+    expect(pending().amount).toBe(15);
+    world.tick();
+    expect(world.getComponent<Resource>('e1', 'Resource')!.current).toBe(15); // 不是 50+15
+  });
+
+  it('add 后再 set t → set t（set 是最后写，吸收在前的加减）', () => {
+    queueResourceMod(world, 'e1', 'hp', -30);
+    queueResourceMod(world, 'e1', 'hp', 8, undefined, 'set');
+    expect(pending().op).toBe('set');
+    expect(pending().amount).toBe(8);
+    world.tick();
+    expect(world.getComponent<Resource>('e1', 'Resource')!.current).toBe(8);
+  });
+});
+
+// ── op:'set'（REQ-ENGINEAUDIT 根因①·owner 2026-08-16 判 C）─────────────────
+// set 的要害：写「目标值」不需要先读当前值——清零/置满的产出方不必加 Resource 读面。
+describe("resource-apply — op:'set'（根因① C：写目标值不读当前值）", () => {
+  let world: World;
+  beforeEach(() => {
+    world = new World();
+    world.addSystem(system);
+  });
+  const setModify = (resourceId: string, amount: number, scope?: 'local' | 'global'): ResourceModify =>
+    ({ type: 'ResourceModify', resourceId, amount, op: 'set', scope }) as ResourceModify;
+
+  it('set 直接置为目标值（无视当前值）；缺省 op 仍是 add（存量零变）', () => {
+    world.createEntity('e1');
+    world.addComponent('e1', makeResource('hp', 73, 0, 100));
+    world.addComponent('e1', setModify('hp', 10));
+    world.tick();
+    expect(world.getComponent<Resource>('e1', 'Resource')!.current).toBe(10);
+    world.addComponent('e1', makeModify('hp', 10)); // 无 op = add
+    world.tick();
+    expect(world.getComponent<Resource>('e1', 'Resource')!.current).toBe(20);
+  });
+
+  it('set 清零（amount:0）与置值同受 [min,max] 钳制', () => {
+    world.createEntity('e1');
+    world.addComponent('e1', makeResource('charge', 7, 0, 9));
+    world.addComponent('e1', setModify('charge', 0));
+    world.tick();
+    expect(world.getComponent<Resource>('e1', 'Resource')!.current).toBe(0);
+    world.addComponent('e1', setModify('charge', 999)); // 超上限 → 钳到 max
+    world.tick();
+    expect(world.getComponent<Resource>('e1', 'Resource')!.current).toBe(9);
+    world.createEntity('e2');
+    world.addComponent('e2', makeResource('temp', 20, -50, 100));
+    world.addComponent('e2', setModify('temp', -999)); // 低于下限 → 钳到 min
+    world.tick();
+    expect(world.getComponent<Resource>('e2', 'Resource')!.current).toBe(-50);
+  });
+
+  it('set 走 global 路由：挂在别的实体上按 id 找到槽（清零载体形态·matrix-duel 消费）', () => {
+    world.createEntity('slot');
+    world.addComponent('slot', makeResource('p1.charge.rock', 5, 0, 9));
+    world.createEntity('carrier'); // 载体实体自己没有 Resource
+    world.addComponent('carrier', setModify('p1.charge.rock', 0, 'global'));
+    world.tick();
+    expect(world.getComponent<Resource>('slot', 'Resource')!.current).toBe(0);
+    // 槽不存在 → 静默跳过不崩（与既有 auto/global 未命中同形）
+    world.addComponent('carrier', setModify('no.such.slot', 0, 'global'));
+    expect(() => world.tick()).not.toThrow();
   });
 });
 
