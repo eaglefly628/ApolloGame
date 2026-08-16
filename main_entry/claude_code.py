@@ -3,6 +3,7 @@ import subprocess
 import os
 import time
 import json
+import pathlib
 import shutil
 import re
 import uuid
@@ -23,7 +24,14 @@ _CLAUDE_CODE_TOOLS_OFF = ('Bash,Edit,Write,Read,Glob,Grep,WebFetch,WebSearch,Tas
 # 覆盖代理人格（同一实证的另一半根治）：-p 单发场景下把它钉成纯文本生成器。
 _CLAUDE_CODE_SYSTEM_PIN = ('你在无工具的单发文本模式下工作：只输出最终文本回复本身；'
                            '绝不调用任何工具（本会话工具已全部禁用）；不要做计划、不要反问、不要输出前言后记。')
-_CLAUDE_CODE_CWD = ROOT / '.zerocraft' / 'claude-code-cwd'  # 专用空目录（gitignore 的 .zerocraft 下·
+# 专用空目录——**必须在仓库之外**（owner 2026-08-16 实证）：原先放 ROOT/.zerocraft/ 下，
+# 于是 `$CLAUDE_PROJECT_DIR` 仍解析到本仓，CLI **把项目的 .claude/settings.json 钩子全继承了**。
+# 后果不是慢，是**结果被换掉**：Stop 钩子（收工律自检）在模型答完后插一句「有未提交改动」，
+# 模型被迫再答一轮，而 `result` 字段取的是**最后一轮**——控制台于是拿到「这些未提交改动…」
+# 而不是生成的 manifest。owner 实测原文：num_turns=2 · result= 钩子回复。
+# 且 `--max-turns 1` 与这条钩子天然冲突（钩子逼出的第二轮超限）。
+# 放 home 下 → 不属任何 git 项目 → 无项目 settings → 无钩子、无 CLAUDE.md，才是真的干净房间。
+_CLAUDE_CODE_CWD = pathlib.Path.home() / '.zerocraft' / 'claude-code-cwd'  # （原：gitignore 的 .zerocraft 下·
 # 只是隔离沙盒、无持久数据，不需要旧 .apollo/ fallback）
 
 _CLAUDE_EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max')
