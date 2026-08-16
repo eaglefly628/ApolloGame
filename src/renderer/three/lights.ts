@@ -9,7 +9,15 @@ import type { Light3D, Transform3D, Transform } from '@engine/protocol/component
 //  TA Phase 2：point/spot 局部光·**可移动**（挂移动实体随之走）·预算限 2 盏·v1 不投影（accent 光）。
 // ═══════════════════════════════════════════════════════════════
 
-const MAX_DYNAMIC = 2; // 预算：同时最多 2 盏动态 point/spot（owner「一两个就够」）
+const MAX_DYNAMIC = 4; // 预算：同时最多 4 盏动态 point/spot（原 2·随局部光阴影上线放宽·现代 GPU 无压力）
+const MAX_SHADOW_LOCAL = 2; // 投影局部光预算（point 用**立方**阴影 6× 贵·spot 单张·故单列限量）
+const LOCAL_SHADOW_SIZE = 1024; // 局部光阴影贴图边长（比主平行光 2048 小·省 cube 6 面开销）
+
+// 关掉一盏局部光的阴影（切换/移除时回收 shadow map·防显存泄漏·RENDERHYG 纪律）。
+function killLocalShadow(l: THREE.PointLight | THREE.SpotLight): void {
+  if (l.shadow.map) { l.shadow.map.dispose(); l.shadow.map = null; }
+  l.castShadow = false;
+}
 
 export class LightRig {
   readonly key: THREE.DirectionalLight; // 主方向光（盒庭投柔和阴影 + 每帧随场景定位）
@@ -50,13 +58,14 @@ export class LightRig {
       this.ambient.color.setHex(0xbfd2ff); this.ambient.intensity = 0.4;
       this.shadowDir = undefined; // 用盒庭默认侧光向
       for (const [id, l] of this.extraLights) { scene.remove(l); scene.remove(l.target); this.extraLights.delete(id); }
-      for (const [id, l] of this.localLights) { scene.remove(l); if ((l as THREE.SpotLight).target) scene.remove((l as THREE.SpotLight).target); this.localLights.delete(id); }
+      for (const [id, l] of this.localLights) { killLocalShadow(l); scene.remove(l); if ((l as THREE.SpotLight).target) scene.remove((l as THREE.SpotLight).target); this.localLights.delete(id); }
       return;
     }
     this.ambient.intensity = 0; // 数据驱动：默认无环境光（除非 data 给 ambient）
     this.shadowDir = undefined;
     let shadowAssigned = false;
     let dynCount = 0; // 动态 point/spot 预算计数
+    let shadowLocalCount = 0; // 投影局部光预算计数（point 立方阴影贵·限 MAX_SHADOW_LOCAL）
     const live = new Set<string>(); // 额外平行光
     const liveLocal = new Set<string>(); // 局部光
     const sig: string[] = [];
@@ -74,7 +83,7 @@ export class LightRig {
         const isSpot = lt.kind === 'spot';
         let l = this.localLights.get(id);
         if (!l || (isSpot && !(l instanceof THREE.SpotLight)) || (!isSpot && !(l instanceof THREE.PointLight))) {
-          if (l) { scene.remove(l); if ((l as THREE.SpotLight).target) scene.remove((l as THREE.SpotLight).target); }
+          if (l) { killLocalShadow(l); scene.remove(l); if ((l as THREE.SpotLight).target) scene.remove((l as THREE.SpotLight).target); }
           l = isSpot ? new THREE.SpotLight() : new THREE.PointLight();
           scene.add(l); if (isSpot) scene.add((l as THREE.SpotLight).target);
           this.localLights.set(id, l);
@@ -90,8 +99,21 @@ export class LightRig {
           const go = { x: lt.dirX ?? 0, y: lt.dirY ?? -1, z: lt.dirZ ?? 0 };
           s.target.position.set(p.x + go.x, p.y + go.y, p.z + go.z); s.target.updateMatrixWorld();
         }
+        // 局部光阴影（REQ-3D-LOCAL-SHADOW）：castShadow + 预算内 → 投影（point=立方 6 面·spot=单张透视）。
+        const wantShadow = !!lt.castShadow && shadowLocalCount < MAX_SHADOW_LOCAL;
+        if (wantShadow) {
+          shadowLocalCount++;
+          if (!l.castShadow) l.castShadow = true;
+          l.shadow.mapSize.set(LOCAL_SHADOW_SIZE, LOCAL_SHADOW_SIZE);
+          l.shadow.bias = -0.0006;
+          const sc = l.shadow.camera as THREE.PerspectiveCamera;
+          sc.near = 0.5; sc.far = (lt.range && lt.range > 0) ? lt.range : 60; // 阴影视锥远面=光衰减距离（或缺省 60）
+          sc.updateProjectionMatrix();
+        } else if (l.castShadow) {
+          killLocalShadow(l); // 掉出预算/关了 castShadow → 回收 cube/spot 阴影贴图
+        }
         liveLocal.add(id);
-        sig.push(`${id}:${lt.kind}:${lt.color}:${lt.intensity}:${Math.round(p.x)},${Math.round(p.y)},${Math.round(p.z)}:${lt.range ?? ''}`);
+        sig.push(`${id}:${lt.kind}:${lt.color}:${lt.intensity}:${Math.round(p.x)},${Math.round(p.y)},${Math.round(p.z)}:${lt.range ?? ''}:${wantShadow ? 's' : ''}`);
         continue;
       }
       // directional
@@ -115,7 +137,7 @@ export class LightRig {
       sig.push(`${id}:d:${lt.color}:${lt.intensity}:${lt.dirX ?? ''}:${lt.dirY ?? ''}:${lt.dirZ ?? ''}:${lt.castShadow ?? ''}`);
     }
     for (const [id, l] of this.extraLights) if (!live.has(id)) { scene.remove(l); scene.remove(l.target); this.extraLights.delete(id); }
-    for (const [id, l] of this.localLights) if (!liveLocal.has(id)) { scene.remove(l); if ((l as THREE.SpotLight).target) scene.remove((l as THREE.SpotLight).target); this.localLights.delete(id); }
+    for (const [id, l] of this.localLights) if (!liveLocal.has(id)) { killLocalShadow(l); scene.remove(l); if ((l as THREE.SpotLight).target) scene.remove((l as THREE.SpotLight).target); this.localLights.delete(id); }
     this.lightSig = sig.join('|');
   }
 
@@ -137,7 +159,7 @@ export class LightRig {
   dispose(scene: THREE.Scene): void {
     for (const [, l] of this.extraLights) { scene.remove(l); scene.remove(l.target); }
     this.extraLights.clear();
-    for (const [, l] of this.localLights) { scene.remove(l); if ((l as THREE.SpotLight).target) scene.remove((l as THREE.SpotLight).target); }
+    for (const [, l] of this.localLights) { killLocalShadow(l); scene.remove(l); if ((l as THREE.SpotLight).target) scene.remove((l as THREE.SpotLight).target); }
     this.localLights.clear();
   }
 }

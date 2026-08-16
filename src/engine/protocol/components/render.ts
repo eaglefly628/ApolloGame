@@ -342,7 +342,7 @@ export interface Light3D extends Component {
   dirX?: number; // directional 去向 / spot 朝向（渲染器归一化·缺省盒庭暖侧光向）。ambient/point 忽略。
   dirY?: number;
   dirZ?: number;
-  castShadow?: boolean; // directional·是否当主阴影灯（盒庭通常一盏投影·缺省取首盏平行光）。point/spot v1 不投影。
+  castShadow?: boolean; // 是否投影：directional=当主阴影灯（盒庭一盏·缺省取首盏平行光）；point/spot=局部光投影（REQ-3D-LOCAL-SHADOW·预算内·point 立方阴影 6× 贵/spot 单张·缺省不投）。
   // ── point / spot（局部光·**可移动**：缺省读同实体 Transform3D，否则 2D Transform(x→X,y→Z)+baseY；
   //     把 Light3D 挂在移动实体上 → 光随之走）。预算：渲染器限同时 2 盏动态 point/spot。
   x?: number; y?: number; z?: number; // 显式世界位（优先）

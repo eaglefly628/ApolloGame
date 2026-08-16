@@ -63,11 +63,12 @@ describe('Game Z · 3D 盒庭蓝图（纯数据 · 仅现成 motion-apply 能力
     const e = new Engine();
     e.load(dioramaBlueprint());
     const lights = getLights3D(e.world);
-    expect(lights.map(([, l]) => l.kind).sort()).toEqual(['ambient', 'directional', 'point', 'point']);
+    expect(lights.map(([, l]) => l.kind).sort()).toEqual(['ambient', 'directional', 'point', 'point', 'spot']); // + Platform Two 投影聚光灯（REQ-3D-LOCAL-SHADOW）
     const sun = lights.find(([, l]) => l.kind === 'directional')?.[1];
     expect(sun?.castShadow).toBe(true);
     expect(sun?.intensity).toBeLessThanOrEqual(1.2); // 曝光收敛：太阳不过亮（owner「太亮·过曝」）
-    expect(lights.filter(([, l]) => l.kind === 'point').length).toBeLessThanOrEqual(2); // 预算：≤2 盏动态局部光
+    expect(lights.filter(([, l]) => l.kind === 'point' || l.kind === 'spot').length).toBeLessThanOrEqual(4); // 预算：≤4 盏动态局部光（MAX_DYNAMIC）
+    expect(lights.find(([, l]) => l.kind === 'spot')?.[1]?.castShadow).toBe(true); // 聚光灯投影（局部光阴影自证）
     const post = getPost3D(e.world);
     expect(post?.ao).toBeTruthy(); // AO 环境光遮蔽（TA Phase 4）已开
     expect(post?.grade).toBeTruthy(); // 色彩分级（TA Phase 4）已开

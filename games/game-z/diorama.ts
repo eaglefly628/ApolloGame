@@ -181,6 +181,12 @@ function platformTwo(): Record<string, Ent> {
       Line3D: { points: aimArc(X + 20, 1, 16, -6, 9, 12), width: 0.5, color: 0x40e0ff, dash: 1.6, gap: 1.1, blend: 'add' },
       WorldUI3D: { text: '瞄准线 Line3D（虚线）', offsetY: 6, size: 'sm', color: 'jade' },
     },
+    // 局部光阴影（REQ-3D-LOCAL-SHADOW·Light3D.castShadow 现支持 point/spot）：一盏聚光灯从上方斜照三根彩柱 →
+    //   地面投出**清晰扇形柱影**（spot 单张阴影·比 point 立方省）。灯不动=静态影；柱/灯移动 lightSig 变即重算。
+    'p2-spot': { Transform3D: { x: X - 2, y: 26, z: -31 }, Light3D: { kind: 'spot', color: 0xfff0d0, intensity: 3200, range: 70, angle: 0.5, penumbra: 0.2, castShadow: true, dirX: 0, dirY: -1, dirZ: 0 }, WorldUI3D: { text: '局部光阴影 spot castShadow（柱影）', offsetY: 4, size: 'sm', color: 'gold' } },
+    'p2-pil-a': { ...block(X - 12, 6, -32, 3, 12, 3, 0xef5350, 0xc62828), Material3D: { preset: 'plastic', color: 0xef5350 } },
+    'p2-pil-b': { ...block(X - 2, 7, -30, 3, 14, 3, 0x42a5f5, 0x1565c0), Material3D: { preset: 'plastic', color: 0x42a5f5 } },
+    'p2-pil-c': { ...block(X + 8, 5, -33, 3, 10, 3, 0x66bb6a, 0x2e7d32), Material3D: { preset: 'plastic', color: 0x66bb6a } },
   };
 }
 
