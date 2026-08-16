@@ -1,5 +1,5 @@
 import type { World } from '@engine/core/world.js';
-import { hashSnapshot } from '@net/index.js';
+import { hashWithOrder } from '@net/index.js';
 // 复用信封那套「坏档报错不静默」的异常类型：上层只需 catch 一种错就能覆盖两条存档路径。
 // 直接引模块而非 barrel，避免 services 内部 barrel 相互引用成环（envelope 只依赖 save-port 类型）。
 import { CorruptSaveError } from '../save/envelope.js';
@@ -13,14 +13,17 @@ export class SaveSystem {
 
   async save(slot: string, world: World, label?: string): Promise<SaveMeta> {
     const snapshot = world.snapshot();
+    const order = world.snapshotOrder();
     const meta: SaveMeta = {
       slot,
       tick: world.getVersion(),
-      hash: hashSnapshot(snapshot),
+      // REQ-SAVEORDER：order 并入指纹（order 决定 restore 后的 query 序，是行为的一部分——
+      // 只验 snapshot 时 order 被篡改/剥除会「hash 通过、行为静默改变」，见 snapshotOrder 注释）。
+      hash: hashWithOrder(snapshot, order),
       timestamp: Date.now(),
       label,
     };
-    await this.port.save(slot, { meta, snapshot, order: world.snapshotOrder() });
+    await this.port.save(slot, { meta, snapshot, order });
     return meta;
   }
 
@@ -34,10 +37,12 @@ export class SaveSystem {
   async load(slot: string, world: World): Promise<SaveMeta | null> {
     const data: SaveGame | null = await this.port.load(slot);
     if (!data) return null;
-    const actual = hashSnapshot(data.snapshot);
+    // hashWithOrder 对「档里实际有什么」算指纹：旧档（无 order·hash 只盖快照）自然通过；
+    // 新档（有 order·hash 连 order 一起盖）被改序/剥除 order 都会不符 → fail-closed（REQ-SAVEORDER）。
+    const actual = hashWithOrder(data.snapshot, data.order);
     if (actual !== data.meta.hash) {
       throw new CorruptSaveError(
-        `存档校验失败：槽位 "${slot}" 快照指纹不符（期望 ${data.meta.hash}，实为 ${actual}）——数据已损坏或被篡改`,
+        `存档校验失败：槽位 "${slot}" 指纹不符（期望 ${data.meta.hash}，实为 ${actual}）——快照或实体序已损坏/被篡改`,
       );
     }
     world.restore(data.snapshot, data.order); // order 缺省（旧存档）→ 退回键序，见 SaveGame.order

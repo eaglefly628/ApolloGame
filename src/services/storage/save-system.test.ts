@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
 import type { Resource } from '@engine/protocol/components.js';
+import { hashSnapshot } from '@net/index.js';
 import { MemoryStoragePort } from './memory-storage.js';
 import { SaveSystem } from './save-system.js';
 import { CorruptSaveError } from '../save/envelope.js';
@@ -81,5 +82,63 @@ describe('SaveSystem — 存/读/列/删（MemoryStoragePort）', () => {
     const target = worldWith(1);
     await expect(sys.load('s', target)).resolves.toBeTruthy();
     expect((target.getComponent('player', 'Resource') as Resource).current).toBe(50);
+  });
+
+  // ── REQ-SAVEORDER（深审 A2 发现②）：order 段入指纹 fail-closed ────────────
+  // 病（修前实证）：load 只验 hashSnapshot(snapshot)，order 整段反转 → 零报错直通
+  // world.restore；order 决定 restore 后的 query 序——序敏感世界静默变行为，
+  // 且组件内容全同 → canonical hash 抓不到（snapshotOrder 注释里那个最阴的坑）。
+
+  // 数字样 id + 字符串 id 混排：创建序 10,2,hero ≠ 快照键序 2,10,hero → order 真有语义差。
+  function worldMixedIds(): World {
+    const w = new World();
+    for (const id of ['10', '2', 'hero']) {
+      w.createEntity(id);
+      w.addComponent(id, { type: 'Resource', id: 'hp', current: 5, min: 0, max: 100 } as Resource);
+    }
+    return w;
+  }
+
+  it('order 被篡改（反转）→ 读档必拒，且不得污染 world', async () => {
+    const port = new MemoryStoragePort();
+    const sys = new SaveSystem(port);
+    await sys.save('s', worldMixedIds());
+
+    const stored = await port.load('s');
+    stored!.order = [...stored!.order!].reverse(); // 组件内容一字不动，只动序
+    await port.save('s', stored!);
+
+    const target = worldWith(1);
+    await expect(sys.load('s', target)).rejects.toThrow(CorruptSaveError);
+    expect((target.getComponent('player', 'Resource') as Resource).current).toBe(1); // 未被灌
+  });
+
+  it('order 被整段剥除 → 读档必拒（剥除不得静默退回键序语义）', async () => {
+    const port = new MemoryStoragePort();
+    const sys = new SaveSystem(port);
+    await sys.save('s', worldMixedIds());
+
+    const stored = await port.load('s');
+    delete stored!.order; // 「连 order 一起删」= 旁挂指纹方案挡不住的那条攻击路
+    await port.save('s', stored!);
+
+    await expect(sys.load('s', worldWith(1))).rejects.toThrow(CorruptSaveError);
+  });
+
+  it('旧档兼容：无 order 的旧格式（hash 只盖快照）仍正常读档', async () => {
+    const port = new MemoryStoragePort();
+    const sys = new SaveSystem(port);
+    // 手工构造旧格式存档：无 order 字段，hash = 旧口径 hashSnapshot(snapshot)。
+    const legacy = worldWith(42);
+    const snapshot = legacy.snapshot();
+    await port.save('old', {
+      meta: { slot: 'old', tick: 0, hash: hashSnapshot(snapshot), timestamp: 0 },
+      snapshot,
+    });
+
+    const target = worldWith(1);
+    const meta = await sys.load('old', target);
+    expect(meta?.slot).toBe('old');
+    expect((target.getComponent('player', 'Resource') as Resource).current).toBe(42);
   });
 });

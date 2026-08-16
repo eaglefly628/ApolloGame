@@ -19,7 +19,9 @@ export interface SaveGame {
   snapshot: WorldSnapshot;
   /** 实体创建序（= query 序）。可选：**旧存档没有这个字段仍可正常读**，只是退回「按快照键序」
    *  的旧行为。必须显式存的理由见 `World.snapshotOrder()`——快照是普通对象，数字样 id 会被
-   *  JS 强制数值升序枚举，键序 ≠ 创建序，不存就会读档后 query 序静默改变。 */
+   *  JS 强制数值升序枚举，键序 ≠ 创建序，不存就会读档后 query 序静默改变。
+   *  ⚠ 本字段已入 `meta.hash` 指纹（REQ-SAVEORDER·hashWithOrder）：带 order 的档改序/剥除
+   *  一律 CorruptSaveError（fail-closed）；无 order 的旧档 hash 语义不变。 */
   order?: string[];
 }
 

@@ -2,7 +2,7 @@
 export type { Command, InputSource, RawInputData } from './commands.js';
 export { orderCommands, applyCommands, applyMovement, applyRawActions, INPUT_QUEUE_ENTITY, MultiInputSource } from './commands.js';
 export { QueuedInputSource, PointerInputSource, canvasPointerToScreen } from './queued-input.js';
-export { hashSnapshot } from './determinism.js';
+export { hashSnapshot, hashWithOrder } from './determinism.js';
 export { FixedStepClock } from './fixed-step.js';
 export type { FixedStepOptions } from './fixed-step.js';
 export { LockstepSession } from './lockstep.js';

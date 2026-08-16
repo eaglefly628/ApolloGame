@@ -13,6 +13,18 @@ export function hashSnapshot(snap: WorldSnapshot): string {
   return fnv1a(canonical(snap));
 }
 
+// 存档指纹（REQ-SAVEORDER）：order（实体创建序 = restore 后的 query 序，见 World.snapshotOrder）
+// 并入指纹。order 缺席时**严格退化为 hashSnapshot**——旧档的 hash 语义原样保留（兼容）；
+// order 在场时任何篡改（改序/增删/整段剥除）都使指纹不符 → fail-closed。
+// 为什么并入而不旁挂独立 order 指纹：旁挂的挡不住「连 order 带旁挂指纹一起删」的剥除攻击
+// ——那会静默退回键序语义（正是 snapshotOrder 注释里那个极难定位的 desync 源）；
+// 并入唯一被无条件校验的主 hash，剥除本身就成为可检出的篡改。
+export function hashWithOrder(snap: WorldSnapshot, order: readonly string[] | undefined): string {
+  if (order === undefined) return hashSnapshot(snap);
+  // 分隔段里 order 项走 JSON.stringify：id 内含分隔符也伪造不出结构（同 stableValue 对字符串的口径）。
+  return fnv1a(`${canonical(snap)};;order=${order.map((id) => JSON.stringify(id)).join(',')}`);
+}
+
 // 纯表现/可由表现层重算的组件不进哈希：它们含浮点（zoom/offset），跨端 JIT/FMA 可能 1 ULP 漂移，
 // 若纳入校验会误判 desync（Gemini Q2）。Camera 即此类——逻辑不读它，渲染期每帧由 camera-follow 重算。
 // 名单靠手维护，拼错一个名字即静默失效（多算→误报 desync，少算→假绿）。
