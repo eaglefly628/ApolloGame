@@ -8,6 +8,21 @@
 
 ## 待处理 / 进行中
 
+### REQ-DOKI-APPS · 「获取卡带」下沉共享接线层（`apps` 模块）· [2026-08-15] · owner 令「把 SDK 需要的都集成进去」 · **施工主体 = 本 session（本行即占锁）** · 复查 = 主程 · status: in-progress · P1 · 类型: 跨游戏共享面（🔴 按归属律本属主程·owner 直接派工故抢锁留痕）
+> **实查**（协议第一步·真包 `@dokiworld/app-sdk@2.1.0` d.ts 非文档手抄）：`./apps` 就是「获取卡带」——
+> `list(filter?:{capability?}) → {apps: AvailableApp[]}`（`{id,name,description?,coverUrl?,protocolVersion}`）+
+> `launch({appId,input}) → {status:'completed',output}|{status:'cancelled'}` + `dispose()`。
+> **回驳「九模块全塞进 game108」**：① 手册红线「只声明真用到的」（match3 多声明是反例）
+> ② game108 是 Game 形态，`apps`=「App 里开 App」在 RPS 对局里没有消费位置——编排者是 Episode World
+> ③ 规范 §7 五步一致 + 「未声明的扩展消息会被拒绝」。
+> **正解 = 下沉共享层**：`dokiworld/` 现在只有 `game108/`、**无共享层**，第二个 app 出包会把
+> `foe-card`/`checkpoint-codec`/`host-harness` 抄一遍。故建 `dokiworld/shared/`：`apps` 封成带
+> 超时/降级/dispose 的薄适配 + 点名测试 + 真 `createAppsHostExtension` 假宿主目击。
+> **边界**：只新增 `dokiworld/shared/**`；**不动** `dokiworld/game108/` 的 manifest 声明与接线
+> （封装 ≠ 声明——谁消费仍按各 app 真用到的声明）。
+> **待 owner 定的一件**：game108 要不要当第一个消费者（在哪一屏、什么时机拉卡带）——不定就先只交能力。
+
+
 <!-- REQ-PIPEHASH-03（P2·game108 S7 实测·自我失效环第三次）已完结：gameHash 证据目录排除收敛为 EVIDENCE_DIRS 常量（mock/probe/golden/self-check/review·带判据注释「指纹只答游戏变没变·门证答门跑没跑过」·规格 gdd/plan/acceptance 继续入指纹）·主程终审 PASS（深车道测试绿·撤修验红 3 条·全文查 git 历史）——类问题终态：再有新证据目录只加一个词。 -->
 
 <!-- REQ-ARTTOOL-01/02（P1/P2·game108 S6 实测带出）已完结：batch 无 key 零回写+非占位行跳过点名·rowIdentity 按素材（skinKey→槽→query 三级回退·护住 styleset 消费方）·Lead 终审 PASS（8551d45f8·58 测独立复跑绿·双撤修验红在案·回退链偏差照准=兼顾双消费方的正解·顺带发现已落 REQ-108-ART-02）。 -->
