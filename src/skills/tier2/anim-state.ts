@@ -64,7 +64,7 @@ export const animStateCapability = defineCapability({
     {
       id: 'anim-state',
       phase: SystemPhase.Commit, // 读已结算的最终 Velocity 决定 move/idle
-      reads: ['AnimState', 'Frame', 'Velocity', 'State', 'Sprite'],
+      reads: ['AnimState', 'Frame', 'Velocity', 'State', 'Sprite', 'Relation'], // Relation=宿主链上溯（申报对账·根因①·系统级此前漏）
       writes: ['AnimState', 'Frame', 'Sprite'],
       consumes: [],
       execute(world: IWorld) {

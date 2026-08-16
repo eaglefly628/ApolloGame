@@ -592,8 +592,8 @@ export const matrixDuelCapability = defineCapability({
         },
       },
     },
-    reads: ['DuelMatrix', 'DuelIntent', 'DuelOutcome', 'Signal'],
-    writes: ['ResourceModify', 'DuelIntent', 'DuelOutcome', 'Signal'],
+    reads: ['DuelMatrix', 'DuelIntent', 'DuelOutcome', 'Signal', 'Resource', 'Flag'],
+    writes: ['ResourceModify', 'DuelIntent', 'DuelOutcome', 'Signal', 'StringSet'],
     consumes: ['DuelOutcome'],
   },
 

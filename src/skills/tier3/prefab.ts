@@ -119,7 +119,7 @@ export const prefabCapability = defineCapability({
       },
     },
     reads: ['SpawnRequest', 'PrefabLibrary'],
-    writes: ['PrefabLibrary'],
+    writes: ['PrefabLibrary', 'PrefabOrigin', 'HexPos'], // 展开盖章（申报对账·根因①·模板变量组件仍在守卫局限内）
     consumes: ['SpawnRequest'],
   },
 
@@ -129,8 +129,17 @@ export const prefabCapability = defineCapability({
     {
       id: 'prefab-spawn',
       reads: ['SpawnRequest', 'PrefabLibrary'],
-      writes: ['PrefabLibrary'],
+      writes: ['PrefabLibrary', 'PrefabOrigin', 'HexPos'], // 展开盖章（申报对账·根因①·模板变量组件仍在守卫局限内）
       consumes: ['SpawnRequest'],
+      // 展开殿后（根因①·2026-08-16）：诚实申报 PrefabOrigin/HexPos 写面后，与「SpawnRequest 写者 ∩
+      // PrefabOrigin/HexPos 读者」闭真环、与其余读者单向重排——平局裁决落序曾翻转 game101/102 实测
+      // 行为。显式钉死旧有效语义（= 各环裁决序里 prefab-spawn 本就实际落后的现状）：产请求者先行、
+      // 消费者先读旧世界，展开殿后（同拍消费本拍 SpawnRequest），新实体的组件/事件**下一拍**才进
+      // 各消费者（标准离散反馈）。名单 = 全部 p0 的 PrefabOrigin/HexPos 读者 + SpawnRequest 主要写者
+      // （effect-apply 在 Commit 跨桶无边不钉；缺席系统的显式边被 topological-sort 静默跳过，不悬空——
+      // 全局存在性由 system-graph 悬空边守卫背书）。显式边压掉同名反向软边（规则③·同 matrix-duel 先例），
+      // 修后全库门禁环告警 63→0 的收割由 declaration-audit 的 SCC 棘轮接管看守。
+      runsAfter: ['hitbox', 'caster', 'merge-rule', 'merge-on-place', 'resource-apply', 'order-fulfill', 'group-count', 'tray', 'drag-place', 'grid-move'],
       execute(world: IWorld) {
         const lib = findLibrary(world);
         if (!lib) return;

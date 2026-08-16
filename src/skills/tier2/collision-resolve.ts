@@ -51,7 +51,7 @@ export const collisionResolveCapability = defineCapability({
     {
       id: 'collision-resolve',
       phase: SystemPhase.Resolve,
-      reads: ['Overlap', 'Transform', 'Shape', 'Velocity', 'Mass'],
+      reads: ['Overlap', 'Transform', 'Shape', 'Velocity', 'Mass', 'Sensor'], // Sensor=感知体跳过判定（申报对账·根因①·系统级此前漏）
       writes: ['Transform', 'Velocity'],
       consumes: [],
       execute(world) {

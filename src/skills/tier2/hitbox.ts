@@ -126,7 +126,7 @@ export const hitboxCapability = defineCapability({
         },
       },
     },
-    reads: ['Trigger', 'Hitbox', 'Tag', 'Status', 'Resource'],
+    reads: ['Trigger', 'Hitbox', 'Tag', 'Status', 'Resource', 'PrefabOrigin', 'Transform'], // 后两项=per-caster 溯源 + 命中几何（申报对账·根因①）
     writes: ['ResourceModify', 'Status', 'OverTime', 'DestroyRequest', 'SpawnRequest'],
     consumes: [],
   },
@@ -136,7 +136,7 @@ export const hitboxCapability = defineCapability({
   systems: [
     {
       id: 'hitbox',
-      reads: ['Trigger', 'Hitbox', 'Tag', 'Status', 'Resource'],
+      reads: ['Trigger', 'Hitbox', 'Tag', 'Status', 'Resource', 'PrefabOrigin', 'Transform'], // 后两项=per-caster 溯源 + 命中几何（申报对账·根因①）
       // DestroyRequest：REQ-F-044 consumeOnHit 自毁（写者→cascade/destroy-apply 单向汇入，无回边）。
       // SpawnRequest：onHit 命中特效——唯一读+consume 它的是 prefab（t3-prefab），prefab 不写
       // Trigger/Hitbox/Tag/Status/Resource，只产生本系统→prefab 单向边，不成环（见文件头/回归测试）。

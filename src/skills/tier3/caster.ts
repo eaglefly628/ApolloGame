@@ -83,7 +83,7 @@ export const casterCapability = defineCapability({
     {
       id: 'caster',
       runsAfter: ['event-when', 'clickable'],
-      reads: ['Caster', 'Signal', 'InputQueue', 'Transform', 'Tag', 'HexPos'],
+      reads: ['Caster', 'Signal', 'InputQueue', 'Transform', 'Tag', 'HexPos', 'Relation'], // Relation=发起者链判定（申报对账·根因①·系统级此前漏）
       writes: ['SpawnRequest'],
       consumes: [],
       execute(world: IWorld) {

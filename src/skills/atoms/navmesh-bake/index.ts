@@ -32,7 +32,7 @@ export const navmeshBakeCapability = defineCapability({
   config: {},
 
   // NavGraph 由主程 pathfind 定义/provides；本能力只是另一个 writer（自动烘焙写入），故 provides 留空。
-  components: { provides: {}, reads: ['NavMesh', 'Collider3D', 'Transform'], writes: ['NavGraph'], consumes: [] },
+  components: { provides: {}, reads: ['NavMesh', 'Collider3D', 'Transform', 'NavAgent'], writes: ['NavGraph'], consumes: [] },
 
   systems: [
     {
@@ -41,7 +41,7 @@ export const navmeshBakeCapability = defineCapability({
       // NavGraph 必须在 pathfind 读它之前烘好；显式排在 motion-apply 之前（覆盖「读 Transform vs 它写 Transform」
       // 的反向推断边·同 nav-follow 破环纪律）—— 否则三系统经 Transform 成环。
       runsBefore: ['nav-follow', 'motion-apply'],
-      reads: ['NavMesh', 'Collider3D', 'Transform', 'Velocity'],
+      reads: ['NavMesh', 'Collider3D', 'Transform', 'Velocity', 'NavAgent'], // NavAgent=移动体排除判定（申报对账·根因①）
       writes: ['NavGraph'],
       consumes: [],
       execute(world: IWorld) {
