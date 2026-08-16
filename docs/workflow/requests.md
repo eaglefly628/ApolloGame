@@ -97,19 +97,10 @@
 
 <!-- REQ-DIALOGUE-剧情基础线（P1·owner 令·转型关键路径）→ **2026-08-16 关闭出池**（不占槽·同 PIPESOFT/SPECTRACE/RENDERCHECK 先例：下一步触发者不在池内）：**M1–M4 四件全 ✅ Lead 对抗性验收毕**（2026-08-10·22 例独立复跑绿 + 双破坏锚点命中：撤 neutral 降级锚→恰 3 红、撤 weight 语义→加权测红；game-i 展台 audit + 棘轮 PASS）。**余项 = M4 Sample 示范游戏**，owner 已定与「亲测约会游戏试点」合流 ⇒ **触发者 = owner 本人**，挂池子里只会占槽空等。图纸唯一真相仍在 `docs/design/dialogue-line-blueprint-2026-08.md`（派工时照它）；四件的落点与判词全文查 git 历史 grep REQ-DIALOGUE。**owner 跑完试点带回反馈即重开本条。** -->
 
-### REQ-ENGINEAUDIT-引擎全量评审落地 · 15 子系统深审（110+ 发现）· [2026-08-04] · owner 令 → **报告=唯一真相 `docs/design/engine-review-2026-08-04.md`** · status: **in-progress（P0 + 21 处已修推·门禁全绿；余 3 项见下）** · 优先级: P1（P0 已清·降档） · 类型: 引擎质量总账
-> **已修并推（Lead·全部「先实证复现→修→撤修复验红」）**：批0 确定性护栏/注入面/voxel 崩溃 13 处（`0031b950d`/`3b8e2757c`/`29cf511ba`）→ **P0 lockstep 加入死锁**（`ce3903c1`·输入按 epoch 缓存·实测 A 停 2×inputDelay/B 停 inputDelay）→ 存档装配批（envelope checksum 覆盖持久化形态 · save 读档校验 fail-closed · manifest `__proto__` 拒收）→ sim 正确性批（card-pile 空出牌 · effect-apply NaN/mul 清零 · friction/ground-sense 漏过滤 Sensor=二段跳 · merge-on-place 撞名硬崩 · matrix-duel ≥3 死锁）→ owner 四裁（共用组件推断不猜+守卫 · 快照带创建序 · TS 卡带执行侧闸门）→ Sprite.anchor 真消费。
-> **余下 3 项 → owner 2026-08-10 全分配**：②根因② **✅ done**（`e8a0b02c3`·150 组件运行时全集+NON_DETERMINISTIC⊆全集对账+漂移门双保险·Lead 双轮破坏亲验）。③Q1 **✅ done**（audit 进推送门只扫改动游戏+React屏/DOM逃生红旗进棘轮（存量灌基线可见豁免）+墙钟建议档+capgap CLI 断链修复（写落 `.zerocraft/`·CLAUDE.md 旧路径同步正）+pick-list 决策树·Lead 撤修亲验恰 2 红·三方剔除项确认未代裁）。**只剩①根因①** 🔴 主程亲做·**spec 已按深审证据扩充**（三方对账：申报 reads/writes vs 实际 getComponent/setComponent vs 相位落桶 + 成环告警棘轮——A1 探针4/5 实证：相位错位 acceptance 全绿纯靠注册序巧合、告警每趟 12~58 条无人收割）。
-> **📌 根因① 上线时必然命中的第一条（主程 2026-08-07 自陈·别让它随游戏工单归档丢掉）**：
-> `t2-matrix-duel` 的结算系统自 `e3a568fb`（REQ-108-ENG-01）起**在运行期读 `Resource`**（`resolveDamage` 取缩放源），
-> 而系统 `reads` 里**没有申报**，且 `matrix-duel.test.ts` 还断言 `settle.reads).not.toContain('Resource')` 替这个不诚实背书。
-> **是我那次扩写造成的**（此前它确实不读 Resource）。**实测**：诚实补上申报会当场闭合环
-> `[resource-apply, self-rule, matrix-duel]`（闭环组件 Resource/ResourceModify），而 CYCLEHAZ B 之后**只告警不抛**。
-> ⇒ **⚖ owner 2026-08-16 判 C：根治——`ResourceModify` 加 `op:'set'`**（结算清零改 set 即不必读 Resource·环根本不形成·matrix-duel 撤不诚实断言改诚实申报）。🔴 全库最核心写入面=主程亲做专项（本条内跟踪·不另占槽）：spec=① `ResourceModify` 加可选 `op:'set'|'add'`（缺省 'add'=存量零变）② effect-apply/消费面接 set 语义+点名测试 ③ matrix-duel 结算改 set+申报诚实化+撤背书断言 ④ 全量门禁+验收剧本全绿。原三选项留档：~~A 诚实申报~~（每个含这三系统的世界常驻一条环告警）·
-> **B 维持现状记债**（守卫一上线就报它）· **C 给 `ResourceModify` 加 `op:'set'`**（清零就不必读 Resource，
-> 但那是全库最核心的写入面、影响每一款游戏，须另开单）。判词与实测原文见 `docs/design/game108/review/REQ-108-ENG-04-05-06.md` §五。
-
-> **已转派/已裁**：UI 契约批→PUI（已完结）· 渲染专项→P3D（`REQ-3D-RENDERHYG` 在 3D 池）· **根因④ 受信执行环境→owner 2026-08-05 令搁置**（未理解·待重讲后再定）。
+<!-- REQ-ENGINEAUDIT-引擎全量评审落地（P1·owner 2026-08-04 令·15 子系统 110+ 发现·报告=docs/design/engine-review-2026-08-04.md）**2026-08-16 全项完结出池**：P0+21 处早批已推（批0 确定性/lockstep 加入死锁 ce3903c1/存档装配/sim 正确性/owner 四裁/Sprite.anchor·全文查历史）；根因② 组件全集基准 e8a0b02c3；Q1 audit 进门+棘轮。**根因①（最后一项）两半件均主程施工+独立复查 agent PASS**：
+     (a) op:'set' 专项（98576a9b·owner 判 C）——ResourceModify 加 op:'set'|'add'（缺省 add 存量零变·词表对齐 FlowAction/Effect），resource-apply 接 set+queueResourceMod 合并规则；matrix-duel 清零搬回结算拍（set 载体·同拍原子·旧「槽被占静默漏拍」面消失·复查还实证旧实现连拍结算读陈旧蓄力的潜伏 bug 被顺手治愈），settle 诚实申报读 Resource+撤背书断言，不成环=显式 runsBefore ['resource-apply','self-rule'] 压反向软边（规则③）+定序测试连成环 warn 断言为零。复查全库 4645 例复跑·四轮 sabotage 恰中。
+     (b) 对账守卫收口（08b41d9d）——declaration-audit.test.ts 两道防线：①文件字面组件访问 ⊆ 同文件**系统级**申报并集（聚合级只算文档·首日逮 9 处真瞒报全数诚实化：resource-apply 读 PrefabOrigin=SPENDONFIRE 同病·hitbox 读 PrefabOrigin/Transform·prefab 写 PrefabOrigin/HexPos·navmesh-bake 读 NavAgent·anim-state/caster 读 Relation·collision-resolve 读 Sensor）②全库 SCC 点名棘轮（多环红少环也红·禁静默漂移）。诚实申报闭合的新真环用 prefab-spawn「展开殿后」runsAfter 十连钉死=各环平局裁决现状序（复查方 dump 8 游戏落序前后逐字节相同=零行为变化）；**全库环告警 63（晨）→0**；game102 三剧本/game-103 缺 adapter 存量红经修改前 HEAD 隔离对照坐实零新伤。复查两条非阻断建议（keybind 切片锚定/docblock 数字）已同批清。
+     余档：~~A 诚实申报~~/~~B 记债~~ 三选项与判词全文查 git 历史及 docs/design/game108/review/REQ-108-ENG-04-05-06.md；「运行时探针对账」（变量传入组件名的下一级覆盖）=守卫文件头在案的声明性局限，真撞到再立单。已转派：UI 契约批→PUI 完结·渲染专项→3D 池 REQ-3D-RENDERHYG。**根因④ 受信执行环境→owner 2026-08-05 令搁置（未理解·待重讲后再定·此行保活）**。 -->
 
 <!-- REQ-UICONTRACT-UI 契约批（P1·引擎评审 §6⑨）已完结：PUI 三条（modalClose/comboClick 补 ActionSink 回退 · 键控锚点改 firstContentAnchor · 动效扫描抽 initDynamics 幂等且 mount/update 各扫一次）+ Lead item④（Sprite.anchorX/Y 抽 spriteAnchorOffset 纯函数真消费）全部落地。Lead 对抗性验收 PASS：6 例守卫独立复跑绿·撤 update 侧 initDynamics 实测转红 2 例·撤 item④ 修复转红 2 例。P2/P3 尾巴（bindings 不递归 node props / layout-solver 忽略 cols / typewriter+emoji 掉字 / apollo-kit 像素字体退化 / onboarding 缩放错位…）按报告 §5 原文另清·不占槽。全文查 git 历史。 -->
 

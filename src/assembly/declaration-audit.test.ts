@@ -48,8 +48,10 @@ function listSourceFiles(dir: string): string[] {
  *  依赖 defineCapability 的书写惯例（components/config 在前、systems 在后·全库成立）。 */
 function declaredUnion(src: string): Set<string> {
   const out = new Set<string>();
-  const sysStart = src.indexOf('systems:');
-  const scope = sysStart === -1 ? src : src.slice(sysStart);
+  // 行首锚定（复查建议 2026-08-16）：头注释里出现 `systems:` 字样会让裸 indexOf 提前切片，
+  // 把聚合级混进并集（keybind.ts 实测形态）——只认真正的声明行。
+  const m0 = /^\s{2}systems:\s*\[/m.exec(src);
+  const scope = m0 === null ? src : src.slice(m0.index);
   for (const m of scope.matchAll(/(?:reads|writes|consumes):\s*\[([^\]]*)\]/g)) {
     for (const q of m[1].matchAll(/'([A-Za-z][A-Za-z0-9]*)'/g)) out.add(q[1]);
   }
@@ -144,7 +146,7 @@ describe('系统图软环棘轮 — 全库 SCC 点名基线（根因①·告警�
  * 软环基线（2026-08-16 实测灌入·**六处瞒报补申报之后**的形状）。
  * 每条 = 一处「全局超集里成环、现实 world 只装子集/靠显式边活着」的在案耦合（DAG 子图恒 DAG，
  * 见 system-graph 文件头——真实装载若闭环，topological-sort 会 warn，matrix-duel 定序测试即先例防线）。
- * p0 大环 48 系统属全局超集现象：诚实申报越全它越大，不是病本身；病是**它变了没人看见**。
+ * p0 大环 45 系统属全局超集现象：诚实申报越全它越大，不是病本身；病是**它变了没人看见**。
  * 变更纪律：新增 = 先按根因① matrix-duel 先例尝试显式边/数据路由消解，消不动才带理由改行；
  * 减少 = 同提交更新（记下是谁破的环）。禁静默改基线换绿。
  */
