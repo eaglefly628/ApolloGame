@@ -22,6 +22,14 @@
 // 门禁附带 `node scripts/game-skill-audit.mjs <改动游戏…>`（红旗/棘轮红=拦推送）。只扫改动面涉及的
 // 游戏，绝不把全库扫描塞进每次门禁（全库兜底=S5 流程门 + 主程每日巡检）。此前 audit 只挂 S5 门——
 // 游戏带 audit 实况 FAIL 也能照常推（评审 E6 实证），本步收口。
+//
+// 面触发守卫（REQ-GUARDGATE 守卫接线批·2026-08-16）——按改动面点名跑、红=拦（无放行档）：
+//   ① 引擎面非测试源文件（src/{engine,skills,assembly,net,services}）→ engine-random-guard
+//      （深审 A1 探针2：引擎层插裸 Math.random 此前零守卫，被咬全靠碰巧的精确数值断言）；
+//   ② src/**/*.test.ts → test-hygiene-check（三禁：墙钟/外部 IO/裸随机——HEAD 曾红着也拦不了推送）；
+//   ③ 美术面（scripts/art-replace* / main_entry/art_*）→ art-replace-smoke.py
+//      （ARTPAR 复查裁定：该冒烟不在门禁内曾让三处假红漏检一整天）。
+//   守卫脚本自身被改也触发各自守卫（改守卫先自证仍能跑绿）。
 import { execSync, spawnSync } from 'node:child_process';
 
 // ── 引擎/共享面前缀（碰到=full·与 CLAUDE.md 引擎域界一致）───────────────────────
@@ -87,6 +95,23 @@ export function auditGamesOf(files) {
   return [...set].sort();
 }
 
+/**
+ * 纯提取（可单测·REQ-GUARDGATE）：改动文件列表 → 面触发守卫开关三旗。
+ * · engineRandom：引擎面（五目录）非测试源文件被改，或 engine-random-guard 自身被改。
+ *   测试文件不触发它——*.test.* 的三禁归 test-hygiene-check，不重叠不漏管。
+ * · testHygiene：src/**\/*.test.ts 被改（hygiene 只扫这一面），或 hygiene 脚本自身被改。
+ * · artSmoke：scripts/art-replace* 或 main_entry/art_* 被改（含冒烟脚本自身=scripts/art-replace-smoke.py）。
+ */
+export function facesOf(files) {
+  const list = files.filter(Boolean);
+  const ENGINE_SRC = /^src\/(engine|skills|assembly|net|services)\/.*\.(ts|tsx|js|mjs)$/;
+  return {
+    engineRandom: list.some((f) => (ENGINE_SRC.test(f) && !/\.test\./.test(f)) || f === 'scripts/engine-random-guard.mjs'),
+    testHygiene: list.some((f) => /^src\/.*\.test\.ts$/.test(f) || f === 'scripts/test-hygiene-check.mjs'),
+    artSmoke: list.some((f) => f.startsWith('scripts/art-replace') || /^main_entry\/art_/.test(f)),
+  };
+}
+
 function changedFiles(base) {
   const runs = [
     `git diff --name-only ${base}...HEAD`, // 本分支相对基线的提交
@@ -102,8 +127,8 @@ function changedFiles(base) {
   return [...set];
 }
 
-// 门禁计划（scope + 改动游戏 → 要跑哪些步）。每步 {name, cmd}。导出供行为契约测试。
-export function planFor(c, auditGames = []) {
+// 门禁计划（scope + 改动游戏 + 面触发旗 → 要跑哪些步）。每步 {name, cmd}。导出供行为契约测试。
+export function planFor(c, auditGames = [], faces = {}) {
   // 常驻守卫（任何 scope 都跑·纯 fs 扫描+regex·秒级）：文档引用 + token 预算 + 引擎/内容边界
   // （decouple-check·REQ-SPLIT-引擎内容分离图纸②·跟双守卫并列，防 games/src 边界回潮）。
   const GUARDS = [
@@ -122,13 +147,22 @@ export function planFor(c, auditGames = []) {
   const AUDIT = auditGames.length
     ? [{ name: `audit:${auditGames.join('+')}`, cmd: ['node', ['scripts/game-skill-audit.mjs', ...auditGames]] }]
     : [];
+  // 面触发守卫（REQ-GUARDGATE·见文件头）：按 facesOf 旗点名进计划、红=拦（无 allowExit 放行档）。
+  // 放 AUDIT 后、TSC 前——①②是秒级静态扫描先咬省大头；③冒烟稍重但美术面改动本就该先过它
+  //（漏检一整天的病根就是它不在门前）。docs-only/none 时面文件（scripts//src//main_entry/）
+  // 必已把 scope 推成 full，三旗恒灭，不额外加门。
+  const FACE_GUARDS = [
+    ...(faces.engineRandom ? [{ name: 'engine-random', cmd: ['node', ['scripts/engine-random-guard.mjs']] }] : []),
+    ...(faces.testHygiene ? [{ name: 'test-hygiene', cmd: ['node', ['scripts/test-hygiene-check.mjs']] }] : []),
+    ...(faces.artSmoke ? [{ name: 'art-smoke', cmd: ['python3', ['scripts/art-replace-smoke.py']] }] : []),
+  ];
   if (c.scope === 'none') return [];
   if (c.scope === 'docs-only') return GUARDS;
   if (c.scope === 'game') {
-    return [...AUDIT, TSC, { name: `vitest:${c.game}`, cmd: ['npx', ['vitest', 'run', `games/${c.game}`]] }, BUILD, ...GUARDS];
+    return [...AUDIT, ...FACE_GUARDS, TSC, { name: `vitest:${c.game}`, cmd: ['npx', ['vitest', 'run', `games/${c.game}`]] }, BUILD, ...GUARDS];
   }
   // full
-  return [...AUDIT, TSC, { name: 'vitest:full', cmd: ['npx', ['vitest', 'run']] }, BUILD, ...GUARDS];
+  return [...AUDIT, ...FACE_GUARDS, TSC, { name: 'vitest:full', cmd: ['npx', ['vitest', 'run']] }, BUILD, ...GUARDS];
 }
 
 function main() {
@@ -144,8 +178,10 @@ function main() {
     : c.scope === 'none' ? 'NONE' : 'FULL';
 
   const auditGames = auditGamesOf(files);
-  console.log(`[scoped-gate] 基线=${base} · 改动 ${files.length} 文件 · 判定=${c.scope}（${c.reason}）${auditGames.length ? ` · audit 改动游戏=${auditGames.join(',')}` : ''}`);
-  const plan = planFor(c, auditGames);
+  const faces = facesOf(files);
+  const armed = Object.entries(faces).filter(([, v]) => v).map(([k]) => k);
+  console.log(`[scoped-gate] 基线=${base} · 改动 ${files.length} 文件 · 判定=${c.scope}（${c.reason}）${auditGames.length ? ` · audit 改动游戏=${auditGames.join(',')}` : ''}${armed.length ? ` · 面触发守卫=${armed.join(',')}` : ''}`);
+  const plan = planFor(c, auditGames, faces);
   console.log(`[scoped-gate] 计划：${plan.length ? plan.map((s) => s.name).join(' → ') : '（无·无改动）'}`);
   console.log(`SCOPED-GATE: ${token}`);
 

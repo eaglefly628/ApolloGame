@@ -1,7 +1,7 @@
 // scripts/scoped-gate.test.mjs —— 智能门禁分类器行为契约（owner 2026-07-21）。
 // 铁律=只在可证明安全时缩范围·任何不确定一律 full——本测钉死"缩错"不发生。
 import { describe, it, expect } from 'vitest';
-import { classify, auditGamesOf, planFor } from './scoped-gate.mjs';
+import { classify, auditGamesOf, planFor, facesOf } from './scoped-gate.mjs';
 
 describe('scoped-gate 分类器（缩范围只在可证明安全时）', () => {
   it('无改动 → none', () => {
@@ -97,5 +97,86 @@ describe('scoped-gate × game-skill-audit（audit 进推送门·只扫改动游�
     expect(planFor(classify(engine), auditGamesOf(engine)).some((s) => s.name.startsWith('audit:'))).toBe(false);
     const docs = ['docs/design/game-a/gdd.md'];
     expect(planFor(classify(docs), auditGamesOf(docs)).some((s) => s.name.startsWith('audit:'))).toBe(false);
+  });
+});
+
+// ── 面触发守卫接线（REQ-GUARDGATE 守卫接线批·2026-08-16）──
+// 语义钉死：① 引擎面非测试源文件 → engine-random-guard 步（红=拦）；② src 测试文件 →
+// test-hygiene-check 步（红=拦）；③ 美术面（scripts/art-replace*/main_entry/art_*）→
+// art-replace-smoke.py 步（红=拦）；未触发的面绝不进计划（不给无关改动加时长）。
+describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门）', () => {
+  it('facesOf：引擎面非测试源文件 → engineRandom（五目录都认）', () => {
+    expect(facesOf(['src/engine/core/world.ts']).engineRandom).toBe(true);
+    expect(facesOf(['src/skills/tier2/matrix-duel.ts']).engineRandom).toBe(true);
+    expect(facesOf(['src/assembly/loader.ts']).engineRandom).toBe(true);
+    expect(facesOf(['src/net/mp-client.ts']).engineRandom).toBe(true);
+    expect(facesOf(['src/services/save/save-port.ts']).engineRandom).toBe(true);
+  });
+
+  it('facesOf：引擎面测试文件不触发 engineRandom（归 hygiene）·renderer/ui/runtime 不在守卫面', () => {
+    const f = facesOf(['src/skills/tier2/matrix-duel.test.ts']);
+    expect(f.engineRandom).toBe(false);
+    expect(f.testHygiene).toBe(true);
+    expect(facesOf(['src/renderer/three-scene.ts']).engineRandom).toBe(false);
+    expect(facesOf(['src/ui/components/types.ts']).engineRandom).toBe(false);
+    expect(facesOf(['src/runtime/engine.ts']).engineRandom).toBe(false);
+  });
+
+  it('facesOf：src/**/*.test.ts → testHygiene；games 下测试/非测试都不触发', () => {
+    expect(facesOf(['src/runtime/engine.loop-stop.test.ts']).testHygiene).toBe(true);
+    expect(facesOf(['src/debug/debug.test.ts']).testHygiene).toBe(true);
+    expect(facesOf(['games/game-a/rules.test.ts']).testHygiene).toBe(false);
+    expect(facesOf(['src/engine/core/world.ts']).testHygiene).toBe(false);
+  });
+
+  it('facesOf：美术面 scripts/art-replace* / main_entry/art_* → artSmoke', () => {
+    expect(facesOf(['scripts/art-replace.mjs']).artSmoke).toBe(true);
+    expect(facesOf(['scripts/art-replace-smoke.py']).artSmoke).toBe(true);
+    expect(facesOf(['main_entry/art_replace.py']).artSmoke).toBe(true);
+    expect(facesOf(['main_entry/art_jobs.py']).artSmoke).toBe(true);
+    expect(facesOf(['main_entry/artbrowser.py']).artSmoke).toBe(false); // art_ 前缀之外不触发
+    expect(facesOf(['scripts/art-ledger-guard.mjs']).artSmoke).toBe(false);
+  });
+
+  it('facesOf：守卫脚本自身被改也触发各自守卫（改守卫先自证跑绿）', () => {
+    expect(facesOf(['scripts/engine-random-guard.mjs']).engineRandom).toBe(true);
+    expect(facesOf(['scripts/test-hygiene-check.mjs']).testHygiene).toBe(true);
+    expect(facesOf(['games/game-a/rules.ts', 'docs/workflow/requests.md'])).toEqual({ engineRandom: false, testHygiene: false, artSmoke: false });
+  });
+
+  it('引擎面改动（full）：计划含 engine-random 步·红=拦（无 allowExit）·放 tsc 前', () => {
+    const files = ['src/engine/core/world.ts'];
+    const plan = planFor(classify(files), auditGamesOf(files), facesOf(files));
+    const i = plan.findIndex((s) => s.name === 'engine-random');
+    expect(i).toBeGreaterThanOrEqual(0);
+    expect(plan[i].cmd).toEqual(['node', ['scripts/engine-random-guard.mjs']]);
+    expect(plan[i].allowExit).toBeUndefined();
+    expect(i).toBeLessThan(plan.findIndex((s) => s.name === 'tsc'));
+  });
+
+  it('src 测试文件改动（full）：计划含 test-hygiene 步·红=拦', () => {
+    const files = ['src/runtime/engine.loop-stop.test.ts'];
+    const step = planFor(classify(files), auditGamesOf(files), facesOf(files)).find((s) => s.name === 'test-hygiene');
+    expect(step).toBeDefined();
+    expect(step.cmd).toEqual(['node', ['scripts/test-hygiene-check.mjs']]);
+    expect(step.allowExit).toBeUndefined();
+  });
+
+  it('美术面改动（full）：计划含 art-smoke 步（python3 点名）·红=拦', () => {
+    const files = ['scripts/art-replace.mjs', 'main_entry/art_replace.py'];
+    const step = planFor(classify(files), auditGamesOf(files), facesOf(files)).find((s) => s.name === 'art-smoke');
+    expect(step).toBeDefined();
+    expect(step.cmd).toEqual(['python3', ['scripts/art-replace-smoke.py']]);
+    expect(step.allowExit).toBeUndefined();
+  });
+
+  it('未触发的面不进计划：游戏单改无三步·引擎单改无 art-smoke/test-hygiene', () => {
+    const game = ['games/game-a/rules.ts'];
+    const gamePlan = planFor(classify(game), auditGamesOf(game), facesOf(game));
+    expect(gamePlan.some((s) => ['engine-random', 'test-hygiene', 'art-smoke'].includes(s.name))).toBe(false);
+    const engine = ['src/engine/core/world.ts'];
+    const enginePlan = planFor(classify(engine), auditGamesOf(engine), facesOf(engine));
+    expect(enginePlan.some((s) => s.name === 'art-smoke')).toBe(false);
+    expect(enginePlan.some((s) => s.name === 'test-hygiene')).toBe(false);
   });
 });

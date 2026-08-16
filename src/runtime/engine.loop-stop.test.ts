@@ -8,10 +8,13 @@ import { Engine } from './engine.js';
 
 // 手驱 RAF 替身（node 测试环境无 requestAnimationFrame）：pump() 手动推一帧；
 // pending = 当前"已挂上的下一帧"数量 —— 停机是否真生效就看它。
+// 假墙钟：Engine.start() 内部 last = performance.now 也读同一只受控表——整条时间轴
+// 都由 clock 驱动，测试全程不碰真墙钟（testing.md 三禁 [time-wait]·REQ-GUARDGATE ②）。
 function fakeRaf(): { readonly pending: number; pump(): void } {
   let nextId = 1;
   let clock = 0;
   const queued = new Map<number, FrameRequestCallback>();
+  vi.spyOn(performance, 'now').mockImplementation((): number => clock);
   vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback): number => {
     const id = nextId++;
     queued.set(id, cb);
@@ -21,8 +24,8 @@ function fakeRaf(): { readonly pending: number; pump(): void } {
   return {
     get pending(): number { return queued.size; },
     pump(): void {
-      // 时间只增且至少跨一个 step（既晚于 start() 取的 performance.now()，又不吃真实抖动）。
-      clock = Math.max(clock, performance.now()) + 16.7;
+      // 每帧恰进一格：16.7ms ≥ 60Hz 步长（16.67ms）→ 恰跨一个模拟步（语义同原「至少跨一个 step」）。
+      clock += 16.7;
       const due = [...queued.values()];
       queued.clear();
       for (const cb of due) cb(clock);
@@ -31,7 +34,7 @@ function fakeRaf(): { readonly pending: number; pump(): void } {
 }
 
 describe('Engine · 循环停机（监听者回调里同步 stop 必须停得下来）', () => {
-  afterEach(() => { vi.unstubAllGlobals(); });
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
   it('监听者回调里同步 stop() → 不再有后续帧（旧序下刚挂的帧会残留 → 该测必红）', () => {
     const raf = fakeRaf();
