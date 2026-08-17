@@ -14,7 +14,7 @@ import {
   createEpisodeBridge, pollMediaJob, resolveEpisodeGameResult,
 } from '../../shared/src/sdk-gateways.mjs';
 import { toAppPicks } from './app-picks.mjs';
-import { mount, setCard, setWorldObserver, setWorldRestore, setAppPicks, onAppPick, setSdkRows, onSdkTry } from '../../../games/game108/index.js';
+import { mount, setCard, setWorldObserver, setWorldRestore, setAppPicks, onAppPick, setSdkRows, onSdkTry, setMyPersona, setVoiceClips, setVoiceLines, setStakes } from '../../../games/game108/index.js';
 import { fromPlatformCard, MOODS, type Mood } from '../../../games/game108/card-character.js';
 import type { PlatformCharacterDraft } from '@zerocraft/engine/services/character-card/index.js';
 import { saveLang } from '../../../games/game108/strings.js';
@@ -31,6 +31,12 @@ const CAPABILITY_TIMEOUT_MS = 2_000;
 /** 生成类能力（dialogue/media）要跑 LLM/文生图，2 秒是给不够的——单开一档更宽的。
  *  太短 = 明明在生成却被判降级；太长 = 演示台按下去像卡住。20 秒是"人愿意等"的上限。 */
 const DIALOGUE_TIMEOUT_MS = 20_000;
+/**
+ * **回合内**那条生成链的超时——必须**短于一个回合**（本作一回合约 12 秒）。
+ * 给 20 秒会出现「上上回合的台词现在才到」：台词错位比没有台词更糟（她在为已经过去的事发言）。
+ * 8 秒 = 生成通常够、而且一定在下一回合开始前收口。
+ */
+const ROUND_DIALOGUE_TIMEOUT_MS = 8_000;
 
 /**
  * input contract `doki.game.game108-input/1`（本 App 自定·manifest.runtime.input）：
@@ -40,6 +46,12 @@ const DIALOGUE_TIMEOUT_MS = 20_000;
 interface Game108Input {
   card?: Record<string, unknown>;
   mood?: string;
+  /**
+   * 【episode 反向】这一局的**赌注**——剧情侧说清楚"这一局是为什么打的"（如「输了要请她吃饭」）。
+   * 屏上显示的是剧情，玩家不知道那是 SDK 传的。缺省 = 不画（非剧情宿主逐像素同旧版）。
+   * SDK 那边对应的是 `DialogueGameConfig.stakes`（宿主拉起 Game 时带下来）。
+   */
+  stakes?: string;
 }
 
 // manifest.runtime.extensions = ['apps','character','storage']——**声明与真实调用一致**（规范 §5/§7：
@@ -85,7 +97,7 @@ const gwWarn = (row: string) => ({ op, reason }: { op: string; reason: string })
 };
 const speech = createSpeechGateway(app, { declared: declared('speech'), timeoutMs: CAPABILITY_TIMEOUT_MS, onWarn: gwWarn('speech') });
 const persona = createPersonaGateway(app, { declared: declared('persona'), timeoutMs: CAPABILITY_TIMEOUT_MS, onWarn: gwWarn('persona') });
-const dialogue = createDialogueGateway(app, { declared: declared('dialogue'), timeoutMs: DIALOGUE_TIMEOUT_MS, onWarn: gwWarn('dialogue') });
+const dialogue = createDialogueGateway(app, { declared: declared('dialogue'), timeoutMs: ROUND_DIALOGUE_TIMEOUT_MS, onWarn: gwWarn('dialogue') });
 const media = createMediaGateway(app, { declared: declared('media'), timeoutMs: DIALOGUE_TIMEOUT_MS, onWarn: gwWarn('media') });
 const episode = createEpisodeBridge(app, { declared: declared('episode'), onWarn: gwWarn('episode') });
 
@@ -189,10 +201,78 @@ const DEMO_ROUTES = [
 /** 当前对手角色 id（character 降级链定下来的那个·探针要用同一个 id 才问得对人）。 */
 let currentCharacterId = 'game108-foe';
 /** 探针用的一句台词（用游戏自己的台词表，不另编一句——屏上说的和这里合成的是同一句）。 */
-const voiceProbeLine = (): string => voiceLine('roundStart', 'zh');
+const localLine = (ev: 'roundStart' | 'foeFull' | 'clash' | 'foeWin' | 'youWin' | 'gameWin' | 'gameLose'): string => voiceLine(ev, 'zh');
+const voiceProbeLine = (): string => localLine('roundStart');
 /** 播一段宿主给的音频（合成结果是 URL·播不出来不算错，静默即可——演示台的判据是"拿到 URL"）。 */
 async function playAudio(url: string): Promise<void> {
   try { await new Audio(url).play(); } catch { /* 自动播放被拦/格式不支持 → 不影响本次判定 */ }
+}
+
+// ── 【无感接线】persona / speech / dialogue（owner 2026-08-17 判做前三条）────────────
+//
+// 三条共同的纪律：**绝不站在关键路径上**。这一局只有 60-90 秒，任何一次"玩家点了要等 SDK 回话"
+// 都是有感的。所以：persona 在 init 一次问完；speech 在**加载条那 1.4 秒**里把台词批量合成；
+// dialogue **提前一个回合**生成，用上一回合的战况当输入，延迟被整个 T4+T1 吸收。
+// 三条全都拿不到时，玩家看到的与接 SDK 之前**逐像素相同**。
+
+/** 本作会说的全部台词事件（`voice.ts VoiceEvent` 的闭集·预取按它逐条来）。 */
+const VOICE_EVENTS = ['roundStart', 'foeFull', 'clash', 'foeWin', 'youWin', 'gameWin', 'gameLose'] as const;
+type VoiceEv = (typeof VOICE_EVENTS)[number];
+
+/** 投影⑥（persona）：我方身份 —— 名字 + 头像。取不到就不设，屏上仍是「你」+ 首字。 */
+async function resolveMyPersona(): Promise<void> {
+  const { persona: p } = await persona.getSelected(currentCharacterId);
+  if (!p) return;
+  setMyPersona({
+    ...(typeof p.name === 'string' && p.name ? { name: p.name } : {}),
+    ...(typeof p.avatarUrl === 'string' && p.avatarUrl ? { avatarUrl: p.avatarUrl } : {}),
+  });
+  myPersona = p;      // dialogue 那条要拿它做文章（「你不是最爱吃辣吗」）
+}
+let myPersona: { name?: string; likes?: string; dislikes?: string } | undefined;
+
+/**
+ * 投影⑦（speech）：**把七句台词一次性合成好**，塞给游戏当查表用。
+ * 跑在加载条那一段——玩家看着进度条的时候我们在合成，对局中播放是零等待的查表。
+ * 逐条独立降级：合成不出来的那几条就没有 URL，游戏自己退回本地 TTS。
+ */
+async function prefetchVoiceClips(lines: Partial<Record<VoiceEv, string>>): Promise<void> {
+  const pairs = await Promise.all(VOICE_EVENTS.map(async (ev) => {
+    const text = lines[ev] ?? localLine(ev);
+    const r = await speech.synthesize({ text, characterId: currentCharacterId, locale: 'zh-cn' });
+    return [ev, r?.audioUrl] as const;
+  }));
+  const clips = Object.fromEntries(pairs.filter(([, url]) => typeof url === 'string' && url)) as Partial<Record<VoiceEv, string>>;
+  // 预取结果落一条日志：这条链**静默失败的代价很大**（她整局用浏览器塑料嗓说话，
+  // 而没有任何报错）——出问题时这一行是唯一的线索。
+  console.info(`[game108] 语音预取：${Object.keys(clips).length}/${VOICE_EVENTS.length} 句拿到 URL`);
+  if (Object.keys(clips).length > 0) setVoiceClips(clips);
+}
+
+/**
+ * 投影⑧（dialogue）：**这个角色自己的台词**，替掉本地写死的七句。
+ *
+ * 开场那一批用 `generateOpening`（一句挑衅）——它落在加载条那段，不挡任何事。
+ * 之后每回合结算时用 `generateDialogue` 为**下一回合**生成，输入是刚打完这一回合的战况
+ * （外加 persona 的 likes —— 「你不是最爱吃辣吗，怎么出手这么软」这种话就是这么来的）。
+ *
+ * ⚠ **超时必须短于一个回合**：一个回合约 12 秒，生成超时给 20 秒的话，会出现
+ * 「上上回合的台词现在才到」。故这条链单独用 `ROUND_DIALOGUE_TIMEOUT_MS`（8 秒）。
+ */
+const lines: Partial<Record<VoiceEv, string>> = {};
+async function resolveOpeningLine(): Promise<void> {
+  const r = await dialogue.generateOpening({ characterId: currentCharacterId, originalOpeningLine: localLine('roundStart') });
+  if (r?.openingLine) { lines.roundStart = r.openingLine; setVoiceLines({ ...lines }); }
+}
+/** 一个回合打完 → 为下一回合备一句（拿不到就静悄悄用本地那句，玩家看不出）。 */
+async function refreshTauntLine(situation: string): Promise<void> {
+  const r = await dialogue.generateDialogue({
+    characterId: currentCharacterId,
+    playerInput: situation,
+    ...(myPersona ? { playerPersona: { name: myPersona.name ?? '', gender: 'non-binary' as const, age: 0, ...(myPersona.likes ? { likes: myPersona.likes } : {}) } } : {}),
+  });
+  const text = r?.utterances?.[0]?.segments?.find((sg) => sg.type === 'dialogue')?.text;
+  if (typeof text === 'string' && text) { lines.roundStart = text; setVoiceLines({ ...lines }); }
 }
 
 /** 开局把九行推给游戏（声明了没有 / 通道建起来没有 —— 还没试过一律 idle）。 */
@@ -296,11 +376,28 @@ app.connect({
     const mood: Mood = (MOODS as readonly string[]).includes(data.mood ?? '') ? (data.mood as Mood) : 'stubborn';
     // 投影②（角色）与投影④（恢复）并行查——都挂 CAPABILITY_TIMEOUT_MS，降级宿主里最多等一拍。
     await Promise.all([resolveFoeCard(grantedScopes, data, mood), resolveCheckpoint()]);
+    // 投影⑥（persona）：我方身份 —— 与"对手是谁"对称的那一半，**必须在开场白之前**
+    //（开场白要拿 likes 做文章）。一次 capability 往返，之后全程不再问。
+    await resolveMyPersona();
+    // 【episode 反向】剧情给的赌注上屏（纯表现·不改规则）。
+    if (typeof data.stakes === 'string') setStakes(data.stakes);
     // 投影③：终局机读态 → GameResult。观察口每帧递一次 world（只读·与验收剧本同读法），
     // GameFlow 走到 p1win/p2win 那一帧 complete 一次。
     setWorldObserver((world) => {
       lastWorld = world;
+      const prev = latest;
       latest = toGameResult(world);
+      // 【dialogue·提前一个回合】回合号一跳（= 上一回合刚结算完）就为**下一回合**备一句。
+      // 输入是刚打完那一回合的实况：她赢了还是你赢了、你还剩多少血。
+      // 生成期整个落在 T4 结算 + T1 蓄力（4.5 秒）里，玩家等的是"看结果"，不是等我们。
+      if (prev && latest.metrics.round > prev.metrics.round && !latest.terminal) {
+        const lost = latest.metrics.playerHp < prev.metrics.playerHp;
+        void refreshTauntLine(
+          `第 ${prev.metrics.round} 回合刚打完：${lost ? '我打中了他' : '他躲过去了'}，` +
+          `现在他 ${latest.metrics.playerHp} 血、我 ${latest.metrics.opponentHp} 血。` +
+          '用一句话挑衅他，不超过二十个字。',
+        );
+      }
       if (latest.terminal && !completed) {
         completed = true;
         void app.complete(createGameResult({
@@ -343,6 +440,10 @@ app.connect({
     // 【SDK 演示台】九行状态推给游戏（菜单第六行进得去）。**挂载之后**才推：
     // 面板是给人按的，开局那一秒不该为它多等任何一次 capability 往返。
     initSdkRows();
+    // 【无感三条】开场白 → 预取语音 —— **串行是有意的**：先拿到这一局她要说的那句，
+    // 再拿那句去合成，否则合成的是本地兜底词、真台词到了却没有声音。
+    // 整条挂在挂载之后（不 await），玩家看着加载条/开始屏的那一两秒正好被它用掉。
+    void resolveOpeningLine().then(() => prefetchVoiceClips(lines));
   },
   // 中途退出（规范 §6/§8）：挂起半程=把当前世界快照存进 storage checkpoint，存成了才敢
   // 报 canSuspend:true（报了 true 却没存上=恢复时静默丢局）。output 仍带 exited+当时分

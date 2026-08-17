@@ -81,7 +81,12 @@ window.__setup = (config) => new Promise((ready) => {
     const ext = config.hostExtensions ?? [];
     if (ext.includes("speech")) {
       createSpeechHostExtension(host, {
-        synthesize: (input) => { state.spoke = input; return { audioUrl: "data:audio/wav;base64,UklGRgAAAABXQVZF", cached: true }; },
+        synthesize: (input) => {
+          state.spoke = input;
+          state.spokeCount = (state.spokeCount ?? 0) + 1;      // 预取是**批量**的，得数得出来
+          (state.spokenTexts ??= []).push(input?.text ?? "");  // 合成的是不是"真台词"要看文本
+          return { audioUrl: "data:audio/wav;base64,UklGRgAAAABXQVZF", cached: true };
+        },
       });
     }
     if (ext.includes("persona")) {

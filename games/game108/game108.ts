@@ -78,6 +78,54 @@ let appPickHandler: AppPickHandler | undefined;
 export function onAppPick(fn?: AppPickHandler): void { appPickHandler = fn; }
 
 /**
+ * 【persona】玩家自己是谁（DokiWorld `persona` 模块·owner 2026-08-17 判做）——
+ * 与 `setCard`（对手是谁）对称的那一半。装载后可到货，到货重画一次。
+ * **纯表现零规则**：名字与画像只进 `readView` 的投影，不写世界、不进 hash/录放/lockstep。
+ * 没设 = 屏上仍是写死的「你」+ 首字（本机试玩与渲染探针走这条·逐像素同旧版）。
+ */
+let myPersona: { name?: string; avatarUrl?: string } | undefined;
+
+/**
+ * 【episode】这一局的赌注（剧情侧传下来的一句话·如「输了要请她吃饭」）。
+ * **纯表现**：它不改任何规则，只是让玩家知道这一局是为什么打的。没设 = 不画。
+ */
+let stakesLine: string | undefined;
+export function setStakes(text?: string): void {
+  stakesLine = typeof text === 'string' && text.trim() ? text.trim() : undefined;
+  sdkNotify?.();
+}
+export function setMyPersona(p?: { name?: string; avatarUrl?: string }): void {
+  myPersona = p && (p.name || p.avatarUrl) ? { ...p } : undefined;
+  sdkNotify?.();      // 与演示台共用同一条重画通知（都是"宿主异步到货"那条路）
+}
+
+/**
+ * 【speech + dialogue】角色的**声音**与**台词**（owner 2026-08-17 判做）。
+ *
+ * 这两条走同一个缝，因为屏上它们本来就是同一件事：**她说了一句话**。
+ * 现在这句话是本地写死的七句（`voice.ts LINES`），声音是浏览器 TTS。接上 DokiWorld 之后：
+ *   台词 ← `dialogue`（这个角色会说的话·每局不同）
+ *   声音 ← `speech`（这个角色的音色·不是浏览器那把塑料嗓）
+ *
+ * ⚠ **两条都必须是"到货即用、没到就退"**，绝不让对局等它们：
+ *   · `setVoiceClips` 收的是**已经合成好的 URL 表**（接线层在开局那 1.4 秒加载条里预取），
+ *     播的时候只是查表 —— 合成延迟被加载条吃掉了，对局中零等待。
+ *   · `setVoiceLines` 收的是**台词覆盖表**（接线层提前一个回合生成好），查不到就用本地那句。
+ * 两张表都是**部分覆盖**：有几条算几条，缺的各自退回本地，玩家看不出接缝。
+ *
+ * **纯表现零规则**：声音与台词不写世界、不进 hash/录放/lockstep（同 `lang` 那条分界）。
+ */
+let voiceClips: Partial<Record<VoiceEvent, string>> = {};
+export function setVoiceClips(clips: Partial<Record<VoiceEvent, string>>): void {
+  voiceClips = { ...clips };
+}
+let voiceOverrides: Partial<Record<VoiceEvent, string>> = {};
+export function setVoiceLines(lines: Partial<Record<VoiceEvent, string>>): void {
+  voiceOverrides = { ...lines };
+  sdkNotify?.();     // 字幕文本变了要重画（同"宿主异步到货"那条路）
+}
+
+/**
  * 【SDK 演示台】九行状态的宿主侧通道（owner 2026-08-17「把所有 SDK 功能实践一遍」）。
  * 与 `setAppPicks` 同款：装载后可随时到货，到货就重画一次。
  * **纯表现零规则**——面板只进 `readView` 的投影，不写世界、不进 sim/hash/录放/lockstep。
@@ -190,8 +238,18 @@ export function mount(container: HTMLElement): () => void {
     if (!audio.flags.voice) return;
     if (frames - lastSayAt < SAY_COOLDOWN) return;
     lastSayAt = frames;
-    voice.say(ev, lang);          // 返回 false 也照打字幕：听得见的人两样都有，听不见的至少看得见
-    subtitle = voiceLine(ev, lang);
+    // 【speech】三级降级链，**第一级换成宿主合成**：宿主音色 → 本地 TTS → 字幕。
+    // `voiceClips` 是接线层在加载条那段就预取好的 URL 表，这里只是查表 + 播——零等待。
+    // 播不出来（自动播放被拦/格式不支持）也照走下一级，绝不静默吞掉这一句。
+    const clip = voiceClips[ev];
+    let spoke = false;
+    if (clip) {
+      try { void new Audio(clip).play().catch(() => { /* 拦了就当没播·下面还有两级 */ }); spoke = true; }
+      catch { spoke = false; }
+    }
+    if (!spoke) voice.say(ev, lang);   // 返回 false 也照打字幕：听得见的两样都有，听不见的至少看得见
+    // 【dialogue】字幕文本：宿主生成的那句优先，没有才用本地写死的七句之一。
+    subtitle = voiceOverrides[ev] ?? voiceLine(ev, lang);
     subtitleUntil = shownRound + 1;
   };
 
@@ -314,7 +372,12 @@ export function mount(container: HTMLElement): () => void {
       foeName: card.name,
       // 定稿 §⑥：心情上屏（名字下一枚小签）——它直接解释对手为什么这样打。
       foeMood: t(lang, `mood.${card.mood}` as const),
-      ...(card.portrait ? { portrait: { p2: card.portrait } } : {}),
+      // 画像两侧各一张：p2 来自角色卡，p1 来自 persona（两条都可能缺·缺了各自退回首字）。
+      ...(card.portrait || myPersona?.avatarUrl
+        ? { portrait: { ...(card.portrait ? { p2: card.portrait } : {}), ...(myPersona?.avatarUrl ? { p1: myPersona.avatarUrl } : {}) } }
+        : {}),
+      ...(myPersona?.name ? { myName: myPersona.name } : {}),
+      ...(stakesLine ? { stakes: stakesLine } : {}),
       lang,
       menuOpen,
       audio: audio.flags,

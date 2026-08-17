@@ -31,8 +31,26 @@ export function toGameResult(world) {
   const hpMax = Math.max(p1?.max ?? 0, p2?.max ?? 0, 1);
   const round = /** @type {{ current?: number } | undefined} */ (world.getComponent("round", "Resource"))?.current ?? 1;
 
+  // 【episode 路由的输入】metrics 加厚（owner 2026-08-17 判做第 5 条·剧情要按结果分支，
+  // 就得有东西可分支）。**全部从世界现读，不新造规则、不在这里算第二套**：
+  //   style = 赌性指针（0..20·低=常诈唬「蓄一手出另一手」·高=蓄什么出什么）
+  //   read  = 她对你的读准度（0..10·她赢一次 +1、被你读穿 −1）
+  //   perfect = 一滴血没掉（`EpisodeGameResultCondition.metrics` 支持按这些逐项匹配）
+  // 读不到（旧存档 / 世界还没起）一律给 -1 / false，**不猜**——剧情侧据此知道"这局没有这项数据"。
+  const numOf = (eid) => /** @type {{ current?: number } | undefined} */ (world.getComponent(eid, "Resource"))?.current;
+  const style = numOf("style:p1");
+  const read = numOf("read:p2");
+
   const terminal = current === "p1win" || current === "p2win";
   const outcome = current === "p1win" ? "win" : current === "p2win" ? "loss" : "exited";
   const normalizedScore = Math.min(100, Math.max(0, Math.round(50 + (50 * (playerHp - opponentHp)) / hpMax)));
-  return { terminal, normalizedScore, outcome, metrics: { round, playerHp, opponentHp } };
+  return {
+    terminal, normalizedScore, outcome,
+    metrics: {
+      round, playerHp, opponentHp,
+      style: typeof style === "number" ? style : -1,
+      read: typeof read === "number" ? read : -1,
+      perfect: playerHp > 0 && playerHp === hpMax,
+    },
+  };
 }

@@ -1223,6 +1223,52 @@ describe('game108 · 前四档对手【R-108-35】（owner 2026-08-15 试玩：A
   });
 });
 
+// ── 无感接线【R-108-38】persona / speech / dialogue / episode（owner 2026-08-17 判做）──
+// 「无感」= 玩家不知道有 SDK，只觉得游戏更好了。所以这一组测的都是**投影**：
+// 宿主给了就该自己出现在屏上，没给就逐像素同旧版。
+describe('game108 · 无感接线【R-108-38】（宿主给了就自己出现·没给就同旧版）', () => {
+  it('【R-108-38】persona：给了名字就用玩家的名字，没给才退回写死的「你」', () => {
+    const nameOf = (v: DuelView): string | undefined => {
+      let out: string | undefined;
+      const w = (n: LayoutNode): void => { if (n.id === 'side-p1-nt') out = (n.props as { text?: string }).text; for (const c of n.children ?? []) w(c); };
+      w(buildDuelScreen(v));
+      return out;
+    };
+    expect(nameOf(emptyView())).toBe(t('zh', 'side.you'));                       // 没给 → 「你」
+    expect(nameOf({ ...emptyView(), myName: '阿岚' })).toBe('阿岚');              // 给了 → 玩家的名字
+    // 对手那一侧不受影响（两侧各读各的·串台了就是"我变成了对手"）
+    expect(nameOf({ ...emptyView(), myName: '阿岚', foeName: '雪莉' })).toBe('阿岚');
+  });
+
+  it('【R-108-38】episode：剧情给的赌注上屏；没给整条不画（非剧情宿主逐像素同旧版）', () => {
+    const texts = (v: DuelView): string[] => {
+      const out: string[] = [];
+      const w = (n: LayoutNode): void => { if (n.id === 'start-stakes') out.push((n.props as { text?: string }).text ?? ''); for (const c of n.children ?? []) w(c); };
+      w(buildDuelScreen(v));
+      return out;
+    };
+    const base: DuelView = { ...emptyView(), notStarted: true, bootMs: 60_000 };
+    expect(texts(base)).toEqual([]);                                             // 没给 → 那一行根本不存在
+    expect(texts({ ...base, stakes: '输了要请她吃饭' })).toEqual(['输了要请她吃饭']);
+    expect(validateLayoutNode(buildDuelScreen({ ...base, stakes: '输了要请她吃饭' }))).toEqual([]);
+  });
+
+  it('【R-108-38】四条**都没有**时，屏与接 SDK 之前逐字相同（无感的下限：不打扰）', () => {
+    // 判据不是"看起来一样"，是**动作词表与节点 id 集合逐字相同**——多一个 id 就是多了一块东西。
+    const ids = (v: DuelView): string[] => {
+      const out: string[] = [];
+      const w = (n: LayoutNode): void => { out.push(n.id); for (const c of n.children ?? []) w(c); };
+      w(buildDuelScreen(v));
+      return out.sort();
+    };
+    const bare = emptyView();
+    // 只把"宿主没给"的那几个字段显式置空，其余同 —— 应当与什么都不设完全一致
+    const explicitlyEmpty: DuelView = { ...bare, myName: undefined, stakes: undefined, sdk: undefined };
+    expect(ids(explicitlyEmpty)).toEqual(ids(bare));
+    expect(screenActions(explicitlyEmpty)).toEqual(screenActions(bare));
+  });
+});
+
 // ── SDK 演示台【R-108-37】（owner 2026-08-17「把所有 SDK 功能实践一遍·做个 demonstration」）──
 describe('game108 · SDK 演示台（DokiWorld 九个能力的自检屏）', () => {
   const rows = (n = 3): SdkRow[] => ['character', 'storage', 'apps'].slice(0, n).map((key, i) => ({

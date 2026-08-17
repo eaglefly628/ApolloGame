@@ -245,6 +245,77 @@ try {
     await h.close();
   }
 
+  // ── ⑧ 无感三条：persona / speech / dialogue **不用玩家做任何事就该生效**───────────
+  // owner 2026-08-17：「把这 9 个功能无感地实现到游戏中」。所以这一腿**一个演示台的键都不按**，
+  // 只是正常开局，然后看屏上/宿主侧有没有自己发生变化——那才叫无感。
+  {
+    const h = await boot({
+      grantedScopes: ["character.identity"],
+      hostExtensions: ["storage", "character", "speech", "persona", "dialogue"],
+      character: PROFILE,
+      persona: { id: "me-1", name: "阿岚", age: 24, likes: "吃辣" },
+      input: { card: CARD_INPUT },
+    });
+    await until(h.initialized, { label: "⑧ init 完成", timeoutMs: 15_000 });
+    // ⚠ **在她开口之前**装一个 Audio 探子：预取（main.ts 那一半）与播放（游戏那一半）是两件事，
+    // 只断言"宿主收到了 synthesize"证不了游戏真去播了宿主给的那段——撤掉整条播放路径也照样绿
+    // （2026-08-17 撤修实测：把 `voiceClips[ev]` 改成 undefined，这一腿一条都没红）。
+    await h.frame().evaluate(() => {
+      window.__played = [];
+      const orig = window.Audio;
+      window.Audio = function (src) { window.__played.push(String(src ?? "")); return new orig(src); };
+      window.Audio.prototype = orig.prototype;
+    });
+    await clickStart(h);
+
+    // 【persona】我方那一侧的名字**自己**变成了玩家的名字（此前写死「你」）
+    await until(async () => (await h.text("#side-p1-nt")) === "阿岚", { label: "⑧ 我方名字换成 persona 给的", timeoutMs: 10_000 });
+    check("⑧ persona：我方身份牌显示玩家名字（不再是写死的「你」）", (await h.text("#side-p1-nt")) === "阿岚",
+      `实为 ${await h.text("#side-p1-nt")}`);
+
+    // 【dialogue】开场白：宿主生成的那句**自己**取代了本地写死的七句之一
+    await until(async () => !!(await h.state()).opening, { label: "⑧ 宿主收到 generateOpening", timeoutMs: 15_000 });
+    check("⑧ dialogue：开局自己去要了开场白（玩家没点任何东西）", !!(await h.state()).opening,
+      JSON.stringify((await h.state()).opening ?? null));
+
+    // 【speech】七句台词在加载/开局那段被**批量**预取（对局中播放才是零等待）
+    await until(async () => ((await h.state()).spokeCount ?? 0) >= 7, { label: "⑧ 七句台词都合成过一遍", timeoutMs: 20_000 });
+    const st8 = await h.state();
+    check("⑧ speech：七句台词开局就预取完（对局中零等待的前提）", (st8.spokeCount ?? 0) >= 7, `合成了 ${st8.spokeCount} 句`);
+    // 预取用的是**这一局真要说的那句**：开场白已经到手，合成的就该是它而不是本地兜底词
+    check("⑧ speech×dialogue 串起来了：合成的是宿主生成的开场白，不是本地兜底词",
+      (st8.spokenTexts ?? []).includes("就你也配跟我猜拳？"),
+      JSON.stringify((st8.spokenTexts ?? []).slice(0, 3)));
+
+    // 【消费那一半】——**必须真打一个回合**：她只在「亮拳 / 新回合 / 满蓄 / 分胜负」这几拍开口，
+    // 光进对局屏是听不到任何一句的（第一版就这么写的，探子装了她没开口，等满超时）。
+    await chargeOnce(h, "rock");
+    await h.frame().locator("[data-action='throw.rock']").first().click();
+    await until(async () => ((await h.frame().evaluate(() => window.__played ?? [])).length > 0),
+      { label: "⑧ 亮拳那一拍她开口了（游戏真去播宿主给的音频）", timeoutMs: 25_000, stepMs: 300 });
+    const played = await h.frame().evaluate(() => window.__played ?? []);
+    check("⑧ speech 消费端：游戏播的是**宿主给的那段**（不是浏览器 TTS）",
+      played.some((u) => u.startsWith("data:audio/")), JSON.stringify(played.slice(0, 2)));
+    // 【dialogue 消费那一半】被覆盖的是 `roundStart` 那句（开场白），所以要**走到下一回合**。
+    // ⚠ 同一张嘴有 8 秒冷却（`SAY_COOLDOWN`·owner 2026-08-08「有点太聒噪了」）——
+    // 刚在亮拳那拍说过，立刻推下一轮的话新回合那句会被冷却吞掉。故这里**故意等过冷却**。
+    await h.page.waitForTimeout(9_000);
+    await until(async () => {
+      const next = h.frame().locator("[data-action='duel.next']");
+      if ((await next.count()) > 0) { await next.first().click(); return true; }
+      return false;
+    }, { label: "⑧ 推进到下一回合", timeoutMs: 20_000, stepMs: 300 });
+    await until(async () => String(await h.text("#subtitle-t").catch(() => "")).includes("就你也配"),
+      { label: "⑧ 新回合那句字幕换成宿主生成的开场白", timeoutMs: 20_000, stepMs: 300 });
+    const sub = await h.text("#subtitle-t").catch(() => null);
+    check("⑧ dialogue 消费端：字幕是宿主生成的那句（不是本地兜底词）",
+      typeof sub === "string" && sub.includes("就你也配"), String(sub));
+
+    check("⑧ 无感三条：零致命错", h.fatals.length === 0, h.fatals.join("; "));
+    await h.page.screenshot({ path: resolve(SHOTS, "hosted-seamless.png") });
+    await h.close();
+  }
+
   // ── ⑦ SDK 演示台：**九行逐个按一遍**（owner 2026-08-17「测试它所有的功能」）──────────
   // 整套目击里唯一「把 SDK 的每个模块都真叫一次」的地方：假宿主把八个 host extension 全挂上，
   // 页面里从设置菜单进演示台、逐行点「试一下」，然后**读宿主侧 state 核对真收到了请求**

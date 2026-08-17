@@ -131,6 +131,17 @@ export interface DuelView {
    * 有图就显示、没图就显示名字首字（同 `portrait` 控件的分级降级口径）。
    */
   portrait?: Partial<Record<Side, string>>;
+  /**
+   * 我方显示名（DokiWorld `persona` 给的玩家身份·没有就退回「你」）。
+   * **只进表现层**：它不写世界、不进 hash/录放/lockstep——同 lang 那条分界。
+   */
+  myName?: string;
+  /**
+   * 【episode】这一局的**赌注**（剧情侧经 `init.input.data.stakes` 传下来·如「输了要请她吃饭」）。
+   * 玩家看到的是剧情，不知道那是 SDK 传的——这就是「无感」那一半。
+   * 没有就整条不画（本机试玩与非剧情宿主逐像素同旧版）。
+   */
+  stakes?: string;
   /** 对手的**心情**（定稿 §⑥：名字下一枚 18px 小签·「它直接解释对手为什么这样打」）。 */
   foeMood?: string;
   /**
@@ -282,7 +293,9 @@ function handNode(view: DuelView, side: Side): LayoutNode {
 /** 身份牌（我方青绿 / 对手绯红·各自带一枚肤色小样，和手的色系对上）。 */
 function idPlate(view: DuelView, side: Side): LayoutNode {
   const mine = side === 'p1';
-  const name = mine ? t(view.lang, 'side.you') : view.foeName;
+  // 我方名字：宿主 `persona` 给了就是**玩家自己**（名字 + 画像走 portrait.p1 那条现成通路），
+  // 没给才退回写死的「你」——约会向定位下这一处个人化是最便宜也最直接的（owner 2026-08-17 判做）。
+  const name = mine ? (view.myName ?? t(view.lang, 'side.you')) : view.foeName;
   const w = 32 + name.length * S.plate + 12;
   const h = 52;
   // 画像位（稿子这里画的是一枚 34×34「肤色小样」，作用是让顶栏身份与那只手的色系对上）。
@@ -1284,6 +1297,11 @@ function startScreen(view: DuelView): LayoutNode[] {
       children: [
         { type: 'Label', id: 'start-t', props: { text: t(view.lang, 'start.title'), size: 96, font: F.cjk, color: 'ink' }, layout: { height: 108 } },
         { type: 'Label', id: 'start-s', props: { text: t(view.lang, 'start.sub'), size: 30, font: F.cjk, color: 'dim' } },
+        // 【episode】剧情给的赌注（有才画）——它是这一局"为什么要打"，比任何 UI 文案都重要。
+        ...(view.stakes ? [{
+          type: 'Label' as const, id: 'start-stakes',
+          props: { text: view.stakes, size: enSize(view.lang, 26), font: F.cjk, color: 'ok' as const },
+        }] : []),
         {
           type: 'Image', id: 'load-bar',
           props: { src: loadBar(BAR.w, BAR.h, pct), alt: '', fit: 'fill' },
