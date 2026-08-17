@@ -8,7 +8,7 @@
 
 ## 待处理 / 进行中
 
-### REQ-DOKI-APPS · 「获取卡带」下沉共享接线层（`apps` 模块）· [2026-08-15] · owner 令「把 SDK 需要的都集成进去」 · **施工主体 = 本 session（本行即占锁）** · 复查 = 主程 · status: in-progress · P1 · 类型: 跨游戏共享面（🔴 按归属律本属主程·owner 直接派工故抢锁留痕）
+### REQ-DOKI-APPS · 「获取卡带」下沉共享接线层（`apps` 模块）· [2026-08-15] · owner 令「把 SDK 需要的都集成进去」 · **施工主体 = 抢锁 session（2026-08-16 接手余项·本行即锁）** · 复查 = 主程 · status: **in-progress（共享层 ✅ + game108 消费 ✅ 已交·待复查）** · P1 · 类型: 跨游戏共享面（🔴 按归属律本属主程·owner 直接派工故抢锁留痕）
 > **实查**（协议第一步·真包 `@dokiworld/app-sdk@2.1.0` d.ts 非文档手抄）：`./apps` 就是「获取卡带」——
 > `list(filter?:{capability?}) → {apps: AvailableApp[]}`（`{id,name,description?,coverUrl?,protocolVersion}`）+
 > `launch({appId,input}) → {status:'completed',output}|{status:'cancelled'}` + `dispose()`。
@@ -34,6 +34,19 @@
 > **⚖ owner 2026-08-16 判（Lead 转录·压过施工方「推荐 B」）**：**game108 当第一个消费者——结算屏加入口**。
 > 打完一局结算屏出「换个游戏玩」推荐位（`apps.list` 拉列表·点了 `launch` 跳转）；game108 manifest 随真消费加 `apps` 声明（五步一致）。
 > 共享层已交付 ⇒ 本单余项 = game108 结算屏接线（施工方续做·薄接线零规则·推荐位 render-only 不进 sim/hash）+ 主程复查。
+>
+> **✅ 余项已交（2026-08-16·`3801e35a`·待主程复查）**：终局屏「换个游戏玩」推荐位。
+> 游戏侧 `setAppPicks/onAppPick` 两条宿主缝（照 `setCard` 形态·到货主动重画·卸载摘口）+ 推荐位
+> LayoutNode（`ui.app.pick`+arg=appId·最多三格·空则整条不画 ⇒ 非 DokiWorld 宿主逐像素同旧版）；
+> 出包侧 manifest/生成器/测试三处同步加 `apps`（五步一致·先有真消费才声明）+ 投影⑤ `app-picks.mjs`
+> 纯函数（**只收能真拉起来的**：SDK 实读 `AppLaunchRequest.input` 必填，contract 只能来自被列 App 自己的
+> `runtime.input`；拿不到就不画那格并留痕）+ `apps.dispose()`。
+> **复查请重点看三处**：(a) 打包层给 SDK 加了别名（共享层 import `@dokiworld/app-sdk/apps` 在
+> `dokiworld/shared/` 下解析不到 node_modules·**构建当场红**才暴露；改法=指到本 App 那份·不打进第二份 SDK）；
+> (b) 假宿主目击补 ⑥ 腿（真 `createAppsHostExtension`）；(c) **顺手复活了 leg④**——它自 2026-08-13
+> 「玩法说明屏」上线起就一直卡到超时：clickStart 的判据「`#phase-t` 出现」在说明屏底下恒真，
+> 只点一下就返回、世界根本没开跑（与 REQ-S3CLICK 复查那条「画出来了≠点得动」同形）。
+> 自证：game108 85 测 · app 31 测 · build 绿 · **witness PASS=27 FAIL=0** · scoped-gate 全绿。
 >
 > ~~后续①~~ **✅ 主程已落（2026-08-16·随 GUARDGATE 合入）**：scoped-gate 加 dokiworld 面触发（改哪个 app 跑哪家 `node --test`·缺依赖 runner 先 npm ci·撤修验红在案）。原文：**`dokiworld/**` 的测试跑在没人跑的地方。**
 > 实查：`scoped-gate.mjs` 全文无 `dokiworld` 字样；出包 job（`main_entry/packaging.py:_pkg_build_dokiworld_app`）
@@ -93,7 +106,29 @@
 > 现按面点名补跑并带 `ZEROCRAFT_DEEP=1`。顺手修 `armed` 日志把空数组旗当命中报的假话。
 > **自证**：52 测（游戏板·deep 车道真跑）+ 28 测（scoped-gate）全绿；**撤修验红五轮锚点全中**——
 > 撤 gap-check→S2 缺口用例恰红 · 撤缺口锁→2 例恰红 · 撤 gameHash 排除→指纹用例恰红 ·
-> 撤 deepTests 注入 / 撤 `ZEROCRAFT_DEEP` env→各恰红（后者是「真跑到测试」的锚，没它是 No test files found 假绿）。
+> 撤 deepTests 注入 / 撤 `ZEROCRAFT_DEEP` env→各恰红。
+>
+> **⚖ 独立复查判 FAIL（2026-08-16·复查人≠施工人·报告全文 `docs/design/s18panel-gapgate-review-2026-08-16.md`）**：
+> 判据①②③ 经九轮 sabotage 全部成立（跨侧 route 对账是真对账）；打回的是**三条判据外的实测伤**。
+> **三条已全修（`67893d49`）**：
+> ① **P0 编排器真回归**（before/after 对拍：game-d/game102 由 exit 0 翻红，红因「S1 欠人门」而 S1 人门=owner
+> 亲签+禁代签 ⇒ 编排器派的 S2 会话无合法解法）→ 修：**S2 不过顺序闸**（gap-check 是纯 fs 校验·例外不外溢·
+> 复验三家 exit 0）；连带撤掉两条 S2 用例里的 `--out-of-order` 拐杖（真实调用点不传它）。
+> ② **P0 越界门** → **scoped-gate 整体回退**（见下方交回件①）。
+> ③ **P1 缺口锁 fail-open**（复查 PASS 后手改 accepted→delivered：锁消失、S2 三门仍绿、gameHash 不变）
+> → 修：新增 `gapsHash`，S2 复查记录单独绑它；台账一动 S2 复查转 stale → 「已施工未复查」硬闸接管。
+> **更正自陈一条**：「不带 `ZEROCRAFT_DEEP=1` 是 0 tests 假绿」不成立——实测 `No test files found, exiting with code 1`
+> 是硬红；真实风险是不带过滤的 `vitest:full` 按 exclude **静默跳过**（性质=没人跑，不是假绿）。
+> **状态**：②③ 修复已推·**待再复查**（复查人仍须≠施工人）。
+>
+> **📮 交回主程/owner 裁的两件（我不自裁·均已从本次改动中撤出，现库内零影响）**：
+> ① **「慢车道点名补跑」面**（原 `deepTests`）：快车道 `vite.config` exclude 掉的 6 个测试目标，改了也没人跑
+> ——本单新增的 `game-pipeline.test.mjs` 就在其中。方向经复查确认成立（无关面不触发·不拖时长），
+> **但它把两条存量红**（`acceptance.test.mjs` 2 红 / `audit-ratchet.test.mjs`·均 REQ-ENGINEAUDIT 在案）
+> **接成推送硬闸**，且推送门是全库共享 🔴 面。**A**=先清那两条红再接门（干净但要先修存量）·
+> **B**=接门但给 allowExit/棘轮（像 art-ledger-guard 那样警告态放行·可立即上）·**C**=不接，写进手册靠人手跑（现状）。
+> ② **`scoped-gate` 的 `armed` 日志假话**（一行）：`dokiApps` 是数组，空数组也是真值 ⇒ 没触发任何面时照报
+> 「面触发守卫=dokiApps」。修法一行（`Array.isArray(v) ? v.length : v`），归属 🔴 主程面，未擅动。
 
 <!-- REQ-DIALOGUE-剧情基础线（P1·owner 令·转型关键路径）→ **2026-08-16 关闭出池**（不占槽·同 PIPESOFT/SPECTRACE/RENDERCHECK 先例：下一步触发者不在池内）：**M1–M4 四件全 ✅ Lead 对抗性验收毕**（2026-08-10·22 例独立复跑绿 + 双破坏锚点命中：撤 neutral 降级锚→恰 3 红、撤 weight 语义→加权测红；game-i 展台 audit + 棘轮 PASS）。**余项 = M4 Sample 示范游戏**，owner 已定与「亲测约会游戏试点」合流 ⇒ **触发者 = owner 本人**，挂池子里只会占槽空等。图纸唯一真相仍在 `docs/design/dialogue-line-blueprint-2026-08.md`（派工时照它）；四件的落点与判词全文查 git 历史 grep REQ-DIALOGUE。**owner 跑完试点带回反馈即重开本条。** -->
 
