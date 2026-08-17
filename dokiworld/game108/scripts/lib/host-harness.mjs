@@ -99,6 +99,13 @@ window.__setup = (config) => new Promise((ready) => {
     if (ext.includes("dialogue")) {
       createDialogueHostExtension(host, {
         generateOpening: (input) => { state.opening = input; return { openingLine: "就你也配跟我猜拳？", segments: [] }; },
+        generateDialogue: (input) => {
+          state.taunt = input;      // 目击断言读它：提示词里有没有喜好、playerPersona 是不是真身份
+          return {
+            sessionId: 1, generationMode: "test", sessionStatus: "open",
+            utterances: [{ speaker: "foe", speakerName: "雪莉", segments: [{ type: "dialogue", text: "怎么，辣得说不出话了？" }] }],
+          };
+        },
         generateSuggestions: () => ({ suggestions: ["出石头", "诈他一手"] }),
         generateTagline: () => ({ tagline: "三拳定生死" }),
       });

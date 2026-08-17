@@ -101,6 +101,25 @@ const dialogue = createDialogueGateway(app, { declared: declared('dialogue'), ti
 const media = createMediaGateway(app, { declared: declared('media'), timeoutMs: DIALOGUE_TIMEOUT_MS, onWarn: gwWarn('media') });
 const episode = createEpisodeBridge(app, { declared: declared('episode'), onWarn: gwWarn('episode') });
 
+/**
+ * **演示台专用的一套长超时实例**（owner 2026-08-17 在真 DokiWorld 截图带出）。
+ *
+ * 产品路上那 2 秒（`CAPABILITY_TIMEOUT_MS`）是**故意短的**：init 要 await 它们，
+ * 宿主没实现时不能让玩家白等。但拿这个天花板去判「宿主到底有没有实现」是错的——
+ * **"没实现"和"只是慢"长得一模一样**（都是等到超时），2 秒会把一个 3 秒才回的宿主判成死。
+ * 面板的全部用处就是给出**可信的判定**，所以它自己有一套 15 秒的实例。
+ *
+ * 多一套实例只是多一条 onMessage 订阅（按 requestId 配对，两套互不串台），
+ * 退出时同样逐个释放（§7 第 5 步）。
+ */
+const PROBE_TIMEOUT_MS = 15_000;
+const probeStorage = createStorageClientExtension(app, { timeoutMs: PROBE_TIMEOUT_MS });
+const probeCharacter = createCharacterClientExtension(app, { timeoutMs: PROBE_TIMEOUT_MS });
+const probeSpeech = createSpeechGateway(app, { declared: declared('speech'), timeoutMs: PROBE_TIMEOUT_MS, onWarn: gwWarn('speech') });
+const probePersona = createPersonaGateway(app, { declared: declared('persona'), timeoutMs: PROBE_TIMEOUT_MS, onWarn: gwWarn('persona') });
+const probeDialogue = createDialogueGateway(app, { declared: declared('dialogue'), timeoutMs: PROBE_TIMEOUT_MS, onWarn: gwWarn('dialogue') });
+const probeMedia = createMediaGateway(app, { declared: declared('media'), timeoutMs: PROBE_TIMEOUT_MS, onWarn: gwWarn('media') });
+
 // ── 【SDK 演示台】九行状态机（owner 2026-08-17）────────────────────────────────
 //
 // 面板是**纯数据**（`SdkRow[]` 投影进屏），这里只做两件事：
@@ -125,7 +144,7 @@ function sdkSet(key: string, patch: Partial<Row>): void {
 const PROBES: Record<string, () => Promise<string>> = {
   // ── 产品级消费点（演示台只是再叫一次，看宿主答不答）──────────────────────
   character: async () => {
-    const { character: c } = await character.getCurrent();
+    const { character: c } = await probeCharacter.getCurrent();
     return c ? `当前角色：${c.name}（${c.id}）` : '宿主没给角色（未授权 character.identity？）';
   },
   storage: async () => {
@@ -134,10 +153,10 @@ const PROBES: Record<string, () => Promise<string>> = {
     const probe = { contract: 'doki.game.game108-checkpoint', version: 1, data: { world: 'sdk-probe' } };
     // ⚠ `saveCheckpoint(checkpoint)` 收的是 **checkpoint 本身**，不是 `{checkpoint}`
     //（storage.d.ts 实读；包一层会被入参校验器判 invalid-request——目击腿当场逮到过）。
-    await storage.saveCheckpoint(probe);
-    const back = await storage.loadCheckpoint();
+    await probeStorage.saveCheckpoint(probe);
+    const back = await probeStorage.loadCheckpoint();
     const ok = (back?.checkpoint as { data?: { world?: string } } | null)?.data?.world === 'sdk-probe';
-    await storage.clearCheckpoint();
+    await probeStorage.clearCheckpoint();
     return ok ? '存 → 读 → 清 三步都通了' : '存进去了但读回来对不上（宿主 storage 实现有问题？）';
   },
   apps: async () => {
@@ -155,28 +174,28 @@ const PROBES: Record<string, () => Promise<string>> = {
   // ── 演示台驱动的五个（owner 明许「加各种 sample」）─────────────────────────
   speech: async () => {
     const line = voiceProbeLine();
-    const r = await speech.synthesize({ text: line, characterId: currentCharacterId, locale: 'zh-cn' });
+    const r = await probeSpeech.synthesize({ text: line, characterId: currentCharacterId, locale: 'zh-cn' });
     if (!r) return '宿主没合成（游戏退回本地 TTS → 字幕，照常打）';
     void playAudio(r.audioUrl);
     return `合成好了${r.cached ? '（命中缓存）' : ''}，正在放：「${line}」`;
   },
   persona: async () => {
-    const { persona: p } = await persona.getSelected(currentCharacterId);
+    const { persona: p } = await probePersona.getSelected(currentCharacterId);
     if (p) return `当前身份：${p.name}${p.age ? ` · ${p.age}` : ''}${p.likes ? ` · 喜欢${p.likes}` : ''}`;
-    const { personas } = await persona.list();
+    const { personas } = await probePersona.list();
     return personas.length ? `宿主有 ${personas.length} 个身份可选，但这个角色还没选定` : '宿主没给身份（没授权或没实现）';
   },
   dialogue: async () => {
-    const r = await dialogue.generateOpening({ characterId: currentCharacterId, originalOpeningLine: voiceProbeLine() });
+    const r = await probeDialogue.generateOpening({ characterId: currentCharacterId, originalOpeningLine: voiceProbeLine() });
     return r ? `它说：「${r.openingLine}」` : '宿主没生成（游戏退回本地台词表）';
   },
   media: async () => {
-    const started = await media.generateImage({
+    const started = await probeMedia.generateImage({
       prompt: '一张猜拳对决的纪念图：石头、剪刀、布三张牌浮在半空，卡通明亮风',
       characterId: currentCharacterId,
     });
     if (started.status === 'failed') return '宿主没接文生图';
-    const job = await pollMediaJob(media, started.id, { tries: 12, stepMs: 1_500 });
+    const job = await pollMediaJob(probeMedia, started.id, { tries: 12, stepMs: 1_500 });
     if (job.status === 'done' && job.urls?.length) return `出图了：${job.urls[0]}`;
     return `作业 ${job.id} 还是 ${job.status}${job.error ? `（${job.error}）` : ''}`;
   },
@@ -227,9 +246,10 @@ async function resolveMyPersona(): Promise<void> {
     ...(typeof p.name === 'string' && p.name ? { name: p.name } : {}),
     ...(typeof p.avatarUrl === 'string' && p.avatarUrl ? { avatarUrl: p.avatarUrl } : {}),
   });
-  myPersona = p;      // dialogue 那条要拿它做文章（「你不是最爱吃辣吗」）
+  myPersona = p;      // dialogue 那条要拿它做文章（见 refreshTauntLine）
 }
-let myPersona: { name?: string; likes?: string; dislikes?: string } | undefined;
+/** 宿主给的玩家身份**原样存**（`AppPersona`）——喂给 dialogue 时逐字段转发，不补也不猜。 */
+let myPersona: { name?: string; gender?: string; age?: number; likes?: string; dislikes?: string; description?: string } | undefined;
 
 /**
  * 投影⑦（speech）：**把七句台词一次性合成好**，塞给游戏当查表用。
@@ -264,12 +284,35 @@ async function resolveOpeningLine(): Promise<void> {
   const r = await dialogue.generateOpening({ characterId: currentCharacterId, originalOpeningLine: localLine('roundStart') });
   if (r?.openingLine) { lines.roundStart = r.openingLine; setVoiceLines({ ...lines }); }
 }
+/**
+ * 把宿主给的 persona 转成 SDK 的 `PlayerPersona`（`dialogue.d.ts`）。
+ *
+ * ⚠ **缺字段就整个不传，绝不编**：`PlayerPersona` 的 `gender`/`age` 是必填的，
+ * 第一版为了凑类型填了 `'non-binary'` / `0` —— 那是在给宿主的 LLM 喂**假身份**
+ * （0 岁、无性别），比不传更糟。宿主没给全就只把喜好写进提示词，身份整块不递。
+ */
+function personaForDialogue(): { name: string; gender: 'male' | 'female' | 'non-binary'; age: number; likes?: string; dislikes?: string; description?: string } | null {
+  const p = myPersona;
+  if (!p || typeof p.name !== 'string' || !p.name) return null;
+  if (p.gender !== 'male' && p.gender !== 'female' && p.gender !== 'non-binary') return null;
+  if (typeof p.age !== 'number' || !Number.isFinite(p.age)) return null;
+  return {
+    name: p.name, gender: p.gender, age: p.age,
+    ...(p.likes ? { likes: p.likes } : {}),
+    ...(p.dislikes ? { dislikes: p.dislikes } : {}),
+    ...(p.description ? { description: p.description } : {}),
+  };
+}
+
 /** 一个回合打完 → 为下一回合备一句（拿不到就静悄悄用本地那句，玩家看不出）。 */
 async function refreshTauntLine(situation: string): Promise<void> {
   const r = await dialogue.generateDialogue({
     characterId: currentCharacterId,
-    playerInput: situation,
-    ...(myPersona ? { playerPersona: { name: myPersona.name ?? '', gender: 'non-binary' as const, age: 0, ...(myPersona.likes ? { likes: myPersona.likes } : {}) } } : {}),
+    // 喜好**写进提示词里**，而不是只塞进 playerPersona 指望 LLM 自己想起来用。
+    // （2026-08-17 自查：我先前只递了 persona 就对 owner 说"她会拿你的喜好做文章"——
+    //  那是句没有依据的话。要它用就明说，不明说就别宣称。）
+    playerInput: myPersona?.likes ? `${situation}（他喜欢${myPersona.likes}，可以拿这个揶揄他。）` : situation,
+    ...(personaForDialogue() ? { playerPersona: personaForDialogue()! } : {}),
   });
   const text = r?.utterances?.[0]?.segments?.find((sg) => sg.type === 'dialogue')?.text;
   if (typeof text === 'string' && text) { lines.roundStart = text; setVoiceLines({ ...lines }); }
@@ -295,10 +338,29 @@ function initSdkRows(): void {
     const probe = PROBES[key];
     if (!probe) return;
     sdkSet(key, { state: 'busy', detail: '正在问宿主…' });
+    const t0 = Date.now();
+    // **每一行都报耗时**：真宿主里"没实现"与"慢"长得一模一样（都是等到超时），
+    // 而耗时能把它们分开——恰好卡在我们的超时值上 = 对方根本没回；远小于超时 = 对方主动拒了。
+    const ms = (): number => Date.now() - t0;
     void probe().then(
-      (detail) => { const r = rows.get(key); if (r?.state === 'busy') sdkSet(key, { state: 'ok', detail }); },
-      // 网关不抛，走到这里说明是**探针自己**写错了（不是宿主的问题）——照实说，别栽给宿主。
-      (e: unknown) => sdkSet(key, { state: 'down', detail: `探针自己炸了：${String(e)}` }),
+      (detail) => { const r = rows.get(key); if (r?.state === 'busy') sdkSet(key, { state: 'ok', detail: `${detail}（${ms()}ms）` }); },
+      /**
+       * 走到这里 = **抛出来了**。走网关的那几个不会抛（降级不抛），所以抛的只可能是
+       * 直接用裸 SDK 扩展的那两个（`character` / `storage`）——**那是宿主超时，不是探针写错**。
+       *
+       * ⚠ 2026-08-17 owner 在真 DokiWorld 里截图：这两行写着「探针自己炸了：
+       * AppCapabilityTimeoutError」——**把宿主超时说成我方 bug**，直接把排查方向指反了。
+       * 文案照实说：超时就是超时，写错才叫写错（用错误类型分开，不猜）。
+       */
+      (e: unknown) => {
+        const timeout = e instanceof Error && (e.name === 'AppCapabilityTimeoutError' || /timed out/i.test(e.message));
+        sdkSet(key, {
+          state: 'down',
+          detail: timeout
+            ? `宿主没答，等满 ${ms()}ms 超时——多半是宿主没挂这个 host extension`
+            : `探针自己炸了：${String(e)}`,
+        });
+      },
     );
   });
 }
@@ -492,6 +554,9 @@ app.connect({
     // 规范 §7 第 5 步：**声明了几个就释放几个**。少释放一个 = 那条 onMessage 一直挂着，
     // 下一个实例的报文会被上一实例的监听器也收一遍（跨实例串台）。
     speech.dispose(); persona.dispose(); dialogue.dispose(); media.dispose(); episode.dispose();
+    // 演示台那套长超时实例同样要释放（少释放一条 = 泄一条订阅·跨实例串台）
+    probeStorage.dispose(); probeCharacter.dispose();
+    probeSpeech.dispose(); probePersona.dispose(); probeDialogue.dispose(); probeMedia.dispose();
     apps.dispose();            // 规范 §7 第 5 步：三个 extension 全释放（少释放一个 = 泄一条订阅）
   },
 });

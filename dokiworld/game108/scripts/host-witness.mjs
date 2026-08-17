@@ -253,7 +253,7 @@ try {
       grantedScopes: ["character.identity"],
       hostExtensions: ["storage", "character", "speech", "persona", "dialogue"],
       character: PROFILE,
-      persona: { id: "me-1", name: "阿岚", age: 24, likes: "吃辣" },
+      persona: { id: "me-1", name: "阿岚", age: 24, gender: "female", likes: "吃辣" },
       input: { card: CARD_INPUT },
     });
     await until(h.initialized, { label: "⑧ init 完成", timeoutMs: 15_000 });
@@ -305,11 +305,24 @@ try {
       if ((await next.count()) > 0) { await next.first().click(); return true; }
       return false;
     }, { label: "⑧ 推进到下一回合", timeoutMs: 20_000, stepMs: 300 });
-    await until(async () => String(await h.text("#subtitle-t").catch(() => "")).includes("就你也配"),
-      { label: "⑧ 新回合那句字幕换成宿主生成的开场白", timeoutMs: 20_000, stepMs: 300 });
+    // ⚠ 判据在假宿主补上 `generateDialogue` 之后**变了**（2026-08-17）：此前宿主只实现 generateOpening，
+    // 新回合那句仍是开场白；现在「提前一回合」那条链真的生效了 —— 上一回合打完就为这一回合
+    // 生成了一句挑衅，于是新回合她说的是**那句**。这比断言开场白更强：它证的是整条预生成链。
+    await until(async () => String(await h.text("#subtitle-t").catch(() => "")).includes("辣得说不出话"),
+      { label: "⑧ 新回合那句 = 上一回合结算时预生成的挑衅（提前一回合链）", timeoutMs: 25_000, stepMs: 300 });
     const sub = await h.text("#subtitle-t").catch(() => null);
-    check("⑧ dialogue 消费端：字幕是宿主生成的那句（不是本地兜底词）",
-      typeof sub === "string" && sub.includes("就你也配"), String(sub));
+    check("⑧ dialogue 消费端：新回合字幕 = 上一回合预生成的那句（本地七句里没有这句）",
+      typeof sub === "string" && sub.includes("辣得说不出话"), String(sub));
+
+    // 【dialogue×persona】她凭什么"知道你的喜好"——**必须真的把喜好递过去**。
+    // 只把 persona 塞进 `playerPersona` 指望 LLM 自己想起来用是句没依据的话（2026-08-17 自查），
+    // 故判据有两条：提示词里写了喜好 · playerPersona 是**真身份**（不是编的 0 岁无性别）。
+    await until(async () => !!(await h.state()).taunt, { label: "⑧ 回合切换时为下一回合要了一句", timeoutMs: 25_000, stepMs: 300 });
+    const taunt = (await h.state()).taunt;
+    check("⑧ dialogue×persona：喜好写进了提示词（不是只塞 playerPersona 碰运气）",
+      typeof taunt?.playerInput === "string" && taunt.playerInput.includes("吃辣"), String(taunt?.playerInput ?? null));
+    check("⑧ dialogue×persona：playerPersona 是**宿主给的真身份**（age/gender 不许编）",
+      taunt?.playerPersona?.name === "阿岚" && taunt.playerPersona.age === 24, JSON.stringify(taunt?.playerPersona ?? null));
 
     check("⑧ 无感三条：零致命错", h.fatals.length === 0, h.fatals.join("; "));
     await h.page.screenshot({ path: resolve(SHOTS, "hosted-seamless.png") });
@@ -325,7 +338,7 @@ try {
       grantedScopes: ["character.identity"],
       hostExtensions: ["storage", "character", "apps", "speech", "persona", "dialogue", "media", "episode"],
       character: PROFILE,
-      persona: { id: "me-1", name: "阿岚", age: 24, likes: "吃辣" },
+      persona: { id: "me-1", name: "阿岚", age: 24, gender: "female", likes: "吃辣" },
       personas: [{ id: "me-1", name: "阿岚" }],
       apps: [{ id: "game101", name: "海港绯闻", protocolVersion: 2, runtime: { input: { contract: "doki.app.input", version: 1 } } }],
       input: { card: CARD_INPUT },
