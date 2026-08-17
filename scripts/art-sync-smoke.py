@@ -278,6 +278,37 @@ try:
             art_jobs._ART_JOBS.pop('t-art', None); art_jobs._ART_JOBS.pop('t-art2', None)
         with _genjobs._GEN_JOBS_LOCK:
             _genjobs._GEN_JOBS.pop('t-gen', None)
+    # ⑫ 托盘第四家：流程编排器「▶ 开工」（owner 2026-08-10「开工很久没结果、结束后没产物」）
+    import json as _js
+    zc = ROOT / '.zerocraft'
+    runs_f = zc / 'orchestrator-runs.json'
+    _bak = runs_f.read_text('utf-8') if runs_f.is_file() else None
+    _had = zc.exists()
+    try:
+        zc.mkdir(exist_ok=True)
+        runs_f.write_text(_js.dumps({
+            'x-failed': {'slug': 'x-failed', 'stage': 'S3', 'state': 'failed', 'needsHuman': True,
+                         'reason': '看门狗：连续 2 次无输出（停滞）→ 已杀·需人工接手',
+                         'logFile': '.zerocraft/orchestrator-logs/x.log', 'endedAt': '2026-08-10T09:00:00Z'},
+            'x-done': {'slug': 'x-done', 'stage': 'S6', 'state': 'done', 'endedAt': '2026-08-10T08:00:00Z'},
+        }, ensure_ascii=False), 'utf-8')
+        b = job_board.handle_job_board(30)
+        orch = [j for j in b['jobs'] if j['kind'] == 'orchestrator']
+        check(len(orch) == 2, '⑫ 编排器 runs 台账进托盘（此前「开工」压根不在任何看板里）', str(len(orch)))
+        f = next((j for j in orch if j['slug'] == 'x-failed'), {})
+        check(f.get('state') == 'failed', '⑫ 失败态如实显示', str(f.get('state')))
+        check('看门狗' in (f.get('detail') or ''), '⑫ **编排器判词原样透出**（不在托盘重写成败）', f.get('detail', ''))
+        check(f.get('needsHuman') is True and f.get('logFile'), '⑫ 带「需人工」标与日志路径（人能顺着查下去）', str(f))
+        check(f.get('jumpTo') == {'screen': 'pipeline', 'slug': 'x-failed'}, '⑫ 跳转指向该游戏生产板', str(f.get('jumpTo')))
+        d2 = next((j for j in orch if j['slug'] == 'x-done'), {})
+        check(d2.get('state') == 'done', '⑫ 完成态如实显示', str(d2.get('state')))
+    finally:
+        if _bak is not None:
+            runs_f.write_text(_bak, 'utf-8')
+        elif runs_f.exists():
+            runs_f.unlink()
+        if not _had and zc.exists() and not any(zc.iterdir()):
+            zc.rmdir()
 finally:
     shutil.rmtree(TMP, ignore_errors=True)
 

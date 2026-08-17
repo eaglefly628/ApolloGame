@@ -17,6 +17,7 @@ import time
 
 from . import art_jobs, jobs, packaging
 from .paths import art_root
+from .sysutil import ROOT
 
 # 状态闭集：托盘的计数/配色都按它分档，别在别处再造一套词。
 STATES = ('queued', 'running', 'done', 'failed')
@@ -100,13 +101,67 @@ def _from_package() -> list:
     return out
 
 
+def _from_orchestrator() -> list:
+    """第四家：流程编排器「▶ 开工」（owner 2026-08-10 实撞「开工很久没结果、结束后没产物」）。
+
+    与前三家不同，它的状态是**文件态**不是进程内注册表：
+      · `.zerocraft/orchestrator.lock`        —— 正在跑的那一个（含 pid·编排器自己按 pid 存活性清死锁）
+      · `.zerocraft/orchestrator-runs.json`   —— 每个 slug 的**最近一次终态**（每 slug 只留一条·会被下次覆盖）
+    托盘不解释语义、更不重算判定：锁在=running，否则读台账的 state 原样显示，`reason` 直接当明细
+    （编排器的判词写得比我们能编的准——「绿靠门不靠嘴」，成败由它自己跑门量出来的退出码定）。
+    """
+    import json
+    out = []
+    seen = set()
+    lock_f = ROOT / '.zerocraft' / 'orchestrator.lock'
+    try:
+        if lock_f.is_file():
+            rec = json.loads(lock_f.read_text('utf-8'))
+            slug = str(rec.get('slug') or '')
+            if slug:
+                seen.add(slug)
+                started = rec.get('startedAt')
+                out.append({
+                    'id': f'orch:{slug}', 'kind': 'orchestrator',
+                    'title': f"开工 · {slug}（{rec.get('stage') or '?'}）", 'slug': slug, 'state': 'running',
+                    'startedAt': None, 'elapsedSec': 0,
+                    'detail': f"会话在跑中（第 {rec.get('attempt') or 1} 次）· 最后输出 {rec.get('lastOutputAt') or '—'}",
+                    'progress': None, 'jumpTo': {'screen': 'pipeline', 'slug': slug},
+                    'startedIso': started,
+                })
+    except Exception:
+        pass
+    try:
+        runs = json.loads((ROOT / '.zerocraft' / 'orchestrator-runs.json').read_text('utf-8'))
+    except Exception:
+        runs = {}
+    if isinstance(runs, dict):
+        for slug, e in runs.items():
+            if slug in seen or not isinstance(e, dict):
+                continue
+            st = e.get('state')
+            state = 'done' if st == 'done' else ('failed' if st else 'running')
+            out.append({
+                'id': f'orch:{slug}', 'kind': 'orchestrator',
+                'title': f"开工 · {slug}（{e.get('stage') or '?'}）", 'slug': slug, 'state': state,
+                'startedAt': None, 'elapsedSec': 0,
+                # reason 是编排器自己的判词（含「看门狗停滞」「门未过」等）——**原样透出**，别在托盘重写。
+                'detail': (e.get('reason') or '')[:160] or ('已完成' if state == 'done' else ''),
+                'progress': None, 'jumpTo': {'screen': 'pipeline', 'slug': slug},
+                'startedIso': e.get('endedAt') or e.get('startedAt'),
+                'needsHuman': bool(e.get('needsHuman')),
+                'logFile': e.get('logFile'),
+            })
+    return out
+
+
 def handle_job_board(limit: int = 30) -> dict:
     """GET /api/jobs[?n=]。全部后台任务归一清单 + 计数（托盘用）。
 
     排序：**在跑的永远在最前**（排队/进行），然后按开始时间新→旧——托盘一打开先看见「还没完的」。
     任一来源抛错都不拖垮整体（分别 try）：托盘是观察窗，不该因为某家注册表抽风而整个瞎掉。"""
     rows = []
-    for src in (_from_art, _from_generate, _from_package):
+    for src in (_from_art, _from_generate, _from_package, _from_orchestrator):
         try:
             rows += src()
         except Exception:

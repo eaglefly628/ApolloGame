@@ -1809,10 +1809,29 @@ class Component extends DCLogic {
   // ── 向导模式（REQ-PIPESOFT P1b）：一句话入口 + 步进器 + 库级锁横幅 ─────────────────
   // 全部薄封装既有端点（/api/pipeline/{concept,gate,signoff} 已有·orchestrator/* 新加·同样只是
   // shell 出 scripts/pipeline-orchestrator.mjs，不造第二真相）。
+  // owner 2026-08-10 实撞：「开工很久没结果、结束后没产物」。根因不在编排器——它成败都落了台账，
+  // 是这里**只认 `r.live`**：会话一结束锁就放，orchLock 变 null → 横幅无声消失 → 界面此后再无任何反应
+  // （refreshBoard 只在派发那一刻调过一次，那会儿会话还没开始跑）。故成也好败也好，人什么都看不到。
+  // 修：记住上一轮在跑的是谁，**捕捉 live → 非 live 这个跃迁**，用同一份 rows 里现成的终态
+  // （state/reason 本来就带·此前被丢掉）弹结果 + 重拉板。
   watchOrchLock() {
     clearInterval(this._ol);
     const poll = () => fetch('/api/pipeline/orchestrator/status').then(r => r.json())
-      .then(d => { const rows = (d && d.success && d.rows) || []; this.setState({ orchLock: rows.find(r => r.live) || null }); })
+      .then(d => {
+        const rows = (d && d.success && d.rows) || [];
+        const live = rows.find(r => r.live) || null;
+        const was = this._orchWas || null;   // 上一轮在跑的 {slug,stage}
+        if (was && !live) {
+          const fin = rows.find(r => r.slug === was.slug) || {};
+          const okDone = fin.state === 'done';
+          this.showToast((okDone ? '✓ 开工完成：' : '✕ 开工未过：')
+            + was.slug + ' ' + (fin.stage || was.stage || '')
+            + (fin.reason ? ('　' + String(fin.reason).slice(0, 120)) : (okDone ? '　门已过' : '')));
+          this.refreshBoard(was.slug);      // 会话跑完才重拉板——产物/门证这时候才有
+        }
+        this._orchWas = live ? { slug: live.slug, stage: live.stage } : null;
+        this.setState({ orchLock: live });
+      })
       .catch(() => {});
     poll();
     this._ol = setInterval(poll, 4000);
@@ -2032,6 +2051,8 @@ class Component extends DCLogic {
     const to = job && job.jumpTo;
     if (!to) return;
     if (to.screen === 'assets') { this.setState({ screen: 'assets' }); if (to.slug) this.pickAssetGame(to.slug); return; }
+    // 编排器「开工」→ 跳回该游戏的生产板（失败原因/日志在那儿·owner 2026-08-10「开工没结果」）
+    if (to.screen === 'pipeline' && to.slug) { this.setState({ screen: 'games' }); this.openPipeline && this.openPipeline(to.slug); return; }
     this.setState({ screen: 'games' });
   }
   goBrowser() { this.setState({ screen: 'browser' }); this.abLoadIndex(); }
