@@ -1360,11 +1360,13 @@
               <div style="display:flex;flex-direction:column;gap:14px">
                 <sc-for list="{{ publishRows }}" as="p" hint-placeholder-count="3">
                   <div style="background:#fffdf5;border:3px solid #3a2312;border-radius:16px;padding:14px;box-shadow:0 4px 0 rgba(58,35,18,.2)">
-                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:11px">
+                    <div onClick="{{ p.toggle }}" title="点击展开/收起该游戏的打包平台菜单" style="display:flex;align-items:center;gap:12px;cursor:pointer">
                       <div style="width:46px;height:46px;border-radius:12px;border:3px solid #3a2312;background:linear-gradient(180deg,#ffd0e4,#ff9ec4);display:flex;align-items:center;justify-content:center;font-size:23px;flex:none">{{ p.icon }}</div>
-                      <div style="flex:1;min-width:0"><div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:18px;color:#3a2312">{{ p.cn }}</div><div style="font-family:'Fredoka';font-weight:700;color:#b0723a;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ p.slug }} · {{ p.desc }}</div></div>
+                      <div style="flex:1;min-width:0"><div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:18px;color:#3a2312">{{ p.cn }}</div><div style="font-family:'Fredoka';font-weight:700;color:#b0723a;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ p.slug }} · {{ p.summary }}</div></div>
+                      <span style="font-family:'Fredoka';font-weight:700;font-size:17px;color:#8a5a2c;flex:none">{{ p.caret }}</span>
                     </div>
-                    <div style="display:flex;flex-direction:column;gap:7px">
+                    <sc-if value="{{ p.open }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:7px;margin-top:11px">
                       <sc-for list="{{ p.platforms }}" as="p2" hint-placeholder-count="5">
                         <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.6);border:2px solid rgba(58,35,18,.32);border-radius:11px;padding:7px 11px">
                           <div style="flex:1;min-width:0">
@@ -1376,6 +1378,7 @@
                         </div>
                       </sc-for>
                     </div>
+                    </sc-if>
                   </div>
                 </sc-for>
               </div>
@@ -1509,6 +1512,7 @@ class Component extends DCLogic {
     liveGames: null, carts: null, version: null, settings: null,
     dokiApps: null,           // DokiWorld App 出包线已接入 slug（GET /api/package/dokiworld-apps·null=还没拉到）
     coins: 5000, gems: 340,   // 虚拟金币经济：初始 5000·生成按 token 扣（1万 tok=100 币）·点金币充 +1000
+    pubOpen: {},              // 打包屏展开集 slug→true（owner 2026-08-10：**默认全折叠**·点标题才展开该游戏的平台菜单）
     trayOpen: false, trayData: null,   // 任务托盘（REQ-ARTPAR 第四步）：trayData=GET /api/jobs 归一清单+计数
     pkgJobs: {},              // 打包任务态：{ 'slug:platform': {status:idle|building|ready|error, id, name, error} }
     prompt: '一款太空题材的竖版飞机大战，卡通风，有护盾和火力道具，一个大 Boss。',
@@ -3507,8 +3511,29 @@ class Component extends DCLogic {
     const pkgState = s.pkgJobs || {};
     const dokiApps = Array.isArray(s.dokiApps) ? s.dokiApps : [];
     const dokiQueryFailed = s.dokiApps === 'error';
+    const pubOpenSet = s.pubOpen || {};
     const mkPkgGame = (slug, cn, desc, icon) => ({
       cn, slug, icon: icon || '📦', desc: (desc || '').slice(0, 42) || slug,
+      // 默认折叠（owner 2026-08-10「不要把每个游戏都展开」）：只有点过标题的 slug 才在 pubOpen 里。
+      open: !!pubOpenSet[slug],
+      caret: pubOpenSet[slug] ? '▾' : '▸',
+      toggle: () => this.setState(st => {
+        const nx = Object.assign({}, st.pubOpen);
+        if (nx[slug]) delete nx[slug]; else nx[slug] = true;
+        return { pubOpen: nx };
+      }),
+      // 折叠时的一行摘要——收起来也得看得出「这游戏打过没、有没有就绪的产物」，否则等于把信息藏没了。
+      summary: (() => {
+        const sts = PKG_PLATFORMS.map(pl => (pkgState[slug + ':' + pl.key] || {}).status || 'idle');
+        const ready = sts.filter(x => x === 'ready').length;
+        const building = sts.filter(x => x === 'building').length;
+        const err = sts.filter(x => x === 'error').length;
+        const bits = [PKG_PLATFORMS.length + ' 个平台'];
+        if (building) bits.push('⏳ 打包中 ' + building);
+        if (ready) bits.push('✓ 就绪 ' + ready);
+        if (err) bits.push('✕ 失败 ' + err);
+        return bits.join(' · ');
+      })(),
       platforms: PKG_PLATFORMS.map(pl => {
         const jb = pkgState[slug + ':' + pl.key] || {};
         const st3 = jb.status || 'idle';
