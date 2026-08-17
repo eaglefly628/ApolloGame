@@ -131,6 +131,17 @@ export const STRINGS = {
   'help.tell': { en: 'Both charge racks are public. That is the whole game: read where his power goes, and lie about yours.', zh: '六条槽全公开。这就是整个游戏：读他的力往哪去，再对自己的力说谎。' },
   'help.penalty': { en: 'Stalling past the free time costs 1 HP per second — it stops the moment you strike.', zh: '出招拖过免费时间，每秒扣 1 点血——出手就停。' },
 
+  // ── SDK 演示台（owner 2026-08-17：「把所有 SDK 功能实践一遍·做个 demonstration」）──
+  // 这一屏是**给人按的**：每行一个 DokiWorld 能力，右边一枚「试一下」，按完当场看结果。
+  'sdk.title': { en: 'DOKIWORLD SDK', zh: 'DokiWorld 能力自检' },
+  'sdk.open': { en: 'SDK self-check', zh: 'SDK 能力自检' },
+  'sdk.try': { en: 'TRY', zh: '试一下' },
+  'sdk.busy': { en: '...', zh: '...' },
+  'sdk.hint': { en: 'Green = host answered. Grey = not declared or host has no handler — the game degrades and plays on.', zh: '绿=宿主真答了。灰=没声明或宿主没实现——游戏自己降级，照常打。' },
+  'sdk.idle': { en: 'not tried yet', zh: '还没试过' },
+  'sdk.notDeclared': { en: 'not declared in manifest', zh: 'manifest 未声明' },
+  'sdk.ready': { en: 'declared · ready', zh: '已声明 · 待试' },
+
   // ── 心情（卡片角色的 AI 轴）──────────────────────────────────────────
   'mood.stubborn': { en: 'Stubborn', zh: '执拗' },
   'mood.reckless': { en: 'Reckless', zh: '上头' },

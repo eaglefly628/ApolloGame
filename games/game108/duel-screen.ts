@@ -54,6 +54,18 @@ export type Phase = 'charge' | 'throw' | 'clash' | 'settle' | 'p1win' | 'p2win';
  */
 export interface AppPick { id: string; name: string; cover?: string }
 
+/**
+ * 【SDK 演示台】一行 = 一个 DokiWorld 能力模块的现状。**纯数据**：屏只画它，不判断任何东西。
+ * · `declared` = manifest.runtime.extensions 里有没有它（灰/亮的第一层依据）
+ * · `available` = 通道真建起来了没有（声明了但没通道也算不可用）
+ * · `state`：idle 还没试 · busy 正在问宿主 · ok 宿主真答了 · down 降级了（原因写在 detail）
+ * · `detail` = 人能读的一句结果（「audioUrl 到手·cached」/「宿主没实现」/…）
+ */
+export interface SdkRow {
+  key: string; name: string; declared: boolean; available: boolean;
+  state: 'idle' | 'busy' | 'ok' | 'down'; detail: string;
+}
+
 export interface DuelView {
   phase: Phase;
   /** 相位剩余比例 0..1（倒计时环 + **手的动画时钟**）。 */
@@ -128,6 +140,9 @@ export interface DuelView {
    * 换个平台只需换宿主那边的投影（同 `skins` 只认 key 不认路径那条铁律）。
    */
   appPicks?: readonly AppPick[];
+  /** 【SDK 演示台】面板开着没有 + 九行状态（owner 2026-08-17「把所有 SDK 功能实践一遍」）。 */
+  sdkOpen?: boolean;
+  sdk?: readonly SdkRow[];
   /** 界面语言（owner 2026-08-07：中英双版·默认中文）。 */
   lang: Lang;
   /** 设置菜单开着没有（owner 2026-08-07：右上角一个菜单键·里面放音乐和语言）。 */
@@ -1397,9 +1412,93 @@ function helpScreen(view: DuelView): LayoutNode[] {
   ];
 }
 
+/**
+ * 【SDK 演示台】owner 2026-08-17：「我想实践一下所有 SDK 的功能……做一个 demonstration，
+ * 然后去测试它所有的功能」。
+ *
+ * 一屏九行 = DokiWorld App SDK 的九个能力模块，每行右边一枚「试一下」——**在真宿主网页里
+ * 逐个按下去，当场看它答不答得上**。这块是本作里唯一一处「不为玩法、只为验证」的界面，
+ * 故它挂在设置菜单里而不是对局屏上（不打扰玩家）。
+ *
+ * 三种颜色是**判据不是装饰**：
+ *   金 = 宿主真答了（state:'ok'）· 红 = 试过但降级了（'down'·原因在 detail）
+ *   灰 = 没声明 / 还没试（'idle'）—— 灰**不等于坏**：本作对这九个能力一律是可选增强，
+ *        宿主不给就自己降级照常打，这正是要演示给人看的东西。
+ *
+ * 闭集数据零自由 DOM（UI 铁律）：行 = Panel + 两个 Label + 一枚带 `actionArg` 的 Panel 键，
+ * 与终局屏推荐位同一套写法（一个动作名 + 参数，不给九个模块各造一个动作名【R-108-70】）。
+ */
+function sdkPanel(view: DuelView): LayoutNode[] {
+  const lang = view.lang;
+  const rows = view.sdk ?? [];
+  const w = 900, rowH = 54, headH = 132, hgt = Math.min(CANVAS.h - 80, headH + rows.length * (rowH + 8) + 96);
+  const x = Math.round((CANVAS.w - w) / 2), y = Math.round((CANVAS.h - hgt) / 2);
+  const dot = (r: SdkRow): string =>
+    r.state === 'ok' ? C.gold : r.state === 'down' ? C.danger : r.state === 'busy' ? C.you : C.disabled;
+  const line = (r: SdkRow, i: number): LayoutNode => ({
+    type: 'Panel', id: `sdk-row-${r.key}`,
+    props: { skin: plate({ w: w - 80, h: rowH, fill: i % 2 === 0 ? C.cream : '#f4e2c4', border: 0, radius: R.chip }) },
+    layout: { width: w - 80, height: rowH, direction: 'row', align: 'center', justify: 'between', gap: 10, padding: 10 },
+    children: [
+      // 状态点 + 模块名（模块名是 manifest 里那个词，**不翻译**——要对着 manifest 一眼对上）
+      {
+        type: 'Image', id: `sdk-dot-${r.key}`,
+        props: { src: plate({ w: 18, h: 18, fill: dot(r), radius: 9 }), alt: '', fit: 'fill' },
+        layout: { width: 18, height: 18 },
+      },
+      { type: 'Label', id: `sdk-n-${r.key}`, props: { text: r.name, size: 24, font: F.cjk, bold: true, color: 'ink' }, layout: { width: 150 } },
+      { type: 'Label', id: `sdk-d-${r.key}`, props: { text: r.detail, size: enSize(lang, 20), font: F.cjk, color: r.state === 'down' ? 'warn' : 'dim' }, layout: { flex: 1 } },
+      {
+        type: 'Panel', id: `key-sdk-${r.key}`,
+        props: {
+          skin: plate({ w: 120, h: 40, fill: r.declared ? C.gold : C.disabled, border: B.card, radius: R.pill, shadow: SH.chip }),
+          // 未声明的行**照样可点**——按下去看到的是"没声明所以没发消息"，那正是要演示的降级。
+          action: UI_ACT.sdkTry, actionArg: r.key,
+        },
+        layout: { width: 120, height: 40, direction: 'row', align: 'center', justify: 'center', padding: 0 },
+        children: [{
+          type: 'Label', id: `key-sdk-${r.key}-t`,
+          props: { text: t(lang, r.state === 'busy' ? 'sdk.busy' : 'sdk.try'), size: 22, font: F.cjk, color: 'ink' },
+        }],
+      },
+    ],
+  });
+  return [
+    {
+      type: 'Image', id: 'sdk-veil',
+      props: { src: plate({ w: CANVAS.w, h: CANVAS.h, fill: 'rgba(16,11,8,.72)', radius: 0 }), alt: '', fit: 'fill' },
+      layout: { x: 0, y: 0, width: CANVAS.w, height: CANVAS.h, allowOverlap: true },
+    },
+    {
+      type: 'Panel', id: 'sdk',
+      props: { skin: plate({ w, h: hgt, fill: [C.cream, '#f4e2c4'], border: B.end, radius: R.end, shadow: SH.end, shadowColor: 'rgba(0,0,0,.35)' }) },
+      layout: {
+        x, y, width: w, height: hgt, direction: 'column', align: 'center', justify: 'start', gap: 8, padding: 36,
+        anim: 'pop', animMs: 260, allowOverlap: true,
+      },
+      children: [
+        { type: 'Label', id: 'sdk-t', props: { text: t(lang, 'sdk.title'), size: 40, font: F.cjk, color: 'ink' }, layout: { height: 50 } },
+        {
+          type: 'Image', id: 'sdk-div',
+          props: { src: plate({ w: w - 80, h: 4, fill: 'rgba(63,43,30,.22)', radius: 2 }), alt: '', fit: 'fill' },
+          layout: { width: w - 80, height: 4 },
+        },
+        { type: 'Label', id: 'sdk-hint', props: { text: t(lang, 'sdk.hint'), size: enSize(lang, 19), font: F.cjk, color: 'dim' }, layout: { width: w - 80 } },
+        ...rows.map(line),
+        {
+          type: 'Panel', id: 'key-sdk-close',
+          props: { skin: plate({ w: 220, h: 52, fill: C.cream, border: B.card, radius: R.pill, shadow: SH.card }), action: UI_ACT.sdk },
+          layout: { width: 220, height: 52, direction: 'row', align: 'center', justify: 'center', padding: 0 },
+          children: [{ type: 'Label', id: 'key-sdk-close-t', props: { text: t(lang, 'menu.close'), size: 24, font: F.cjk, color: 'ink' } }],
+        },
+      ],
+    },
+  ];
+}
+
 function settingsMenu(view: DuelView): LayoutNode[] {
   const a = view.audio ?? { bgm: true, sfx: true, voice: true };
-  const w = 620, hgt = 470;
+  const w = 620, hgt = 470 + 62;   // +1 行（SDK 演示台·行高 62 见下面的 row()）
   const x = (CANVAS.w - w) / 2, y = (CANVAS.h - hgt) / 2;
   /** 一行：左边名字，右边一枚可点的值键。 */
   const row = (id: string, label: string, value: string, action: string, on: boolean, i: number): LayoutNode => ({
@@ -1454,6 +1553,8 @@ function settingsMenu(view: DuelView): LayoutNode[] {
         row('lang', t(view.lang, 'menu.lang'), t(view.lang, view.lang === 'zh' ? 'menu.langZh' : 'menu.langEn'), UI_ACT.lang, true, 3),
         // owner 2026-08-08：说明文档从这里进（菜单里第五行·不是第二颗主键，样式同前四行）。
         row('help', t(view.lang, 'help.open'), '?', UI_ACT.help, true, 4),
+        // owner 2026-08-17：SDK 演示台从菜单第六行进（同说明文档那条口径·不占对局屏）。
+        row('sdk', t(view.lang, 'sdk.open'), '9', UI_ACT.sdk, true, 5),
         {
           type: 'Panel', id: 'key-menu-close',
           props: { skin: plate({ w: 220, h: 60, fill: C.cream, border: B.card, radius: R.card, shadow: SH.card }), action: UI_ACT.menu },
@@ -1628,6 +1729,8 @@ export function buildDuelScreen(view: DuelView): LayoutNode {
       // 说明弹出来那一刻它就是唯一的出口，被开始屏盖住 = 玩家点不到"跳过"，当场卡死。
       // 对局中从菜单进说明时 `notStarted` 是假的，开始屏根本不在树上，这个顺序无影响。
       ...(view.helpOpen ? helpScreen(view) : []),
+      // SDK 演示台压在最上层（菜单 → 它 → 关掉回菜单）：开着的时候它就是唯一出口。
+      ...(view.sdkOpen ? sdkPanel(view) : []),
     ],
   };
 }

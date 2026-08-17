@@ -8,11 +8,18 @@ import { createGameResult } from '@dokiworld/app-sdk/game-result';
 import { createStorageClientExtension } from '@dokiworld/app-sdk/storage';
 import { createCharacterClientExtension } from '@dokiworld/app-sdk/character';
 import { createAppsGateway } from '../../shared/src/apps-gateway.mjs';
+// 五个新模块的薄封装 + episode 桥（共享层·闸与降级见 capability-gateway.mjs 文件头三条纪律）。
+import {
+  createSpeechGateway, createPersonaGateway, createDialogueGateway, createMediaGateway,
+  createEpisodeBridge, pollMediaJob, resolveEpisodeGameResult,
+} from '../../shared/src/sdk-gateways.mjs';
 import { toAppPicks } from './app-picks.mjs';
-import { mount, setCard, setWorldObserver, setWorldRestore, setAppPicks, onAppPick } from '../../../games/game108/index.js';
+import { mount, setCard, setWorldObserver, setWorldRestore, setAppPicks, onAppPick, setSdkRows, onSdkTry } from '../../../games/game108/index.js';
 import { fromPlatformCard, MOODS, type Mood } from '../../../games/game108/card-character.js';
 import type { PlatformCharacterDraft } from '@zerocraft/engine/services/character-card/index.js';
 import { saveLang } from '../../../games/game108/strings.js';
+// 演示台的 speech/dialogue 探针要**用游戏自己的那句台词**（屏上说的和这里合成的是同一句）。
+import { voiceLine } from '../../../games/game108/voice.js';
 import { toGameResult } from './to-game-result.mjs';
 import { packWorld, unpackWorld, toCheckpoint, fromCheckpoint } from './checkpoint-codec.mjs';
 import { hasScope, characterToDraft } from './foe-card.mjs';
@@ -21,6 +28,9 @@ const APP_ID = 'game108';
 /** capability 请求超时：宿主没实现对应 host extension 时消息被静默丢弃，只有超时能兜住。
  *  init 前的 loadCheckpoint/getCurrent 都挂在这上面——太长=降级宿主里白等，太短=慢宿主误降级。 */
 const CAPABILITY_TIMEOUT_MS = 2_000;
+/** 生成类能力（dialogue/media）要跑 LLM/文生图，2 秒是给不够的——单开一档更宽的。
+ *  太短 = 明明在生成却被判降级；太长 = 演示台按下去像卡住。20 秒是"人愿意等"的上限。 */
+const DIALOGUE_TIMEOUT_MS = 20_000;
 
 /**
  * input contract `doki.game.game108-input/1`（本 App 自定·manifest.runtime.input）：
@@ -36,16 +46,182 @@ interface Game108Input {
 // 三个模块这里各建一个 Client extension，别的模块一个不建）。§7 第 5 步的释放走 onExitDecision。
 // `apps` 是 2026-08-16 owner 判「game108 当第一个消费者」后才加的：**先有真消费，再有声明**
 //（手册红线「只声明真用到的」——多声明会被宿主拒）。
-const app = createAppClient<Game108Input>({ appId: APP_ID, extensions: ['apps', 'character', 'storage'] });
+/**
+ * **声明的九个模块 = 唯一那张表**（owner 2026-08-17：「把所有 SDK 的功能全部埋点在游戏中」）。
+ *
+ * 规范 §7 要五步一致：manifest.runtime.extensions ⇔ createAppClient({extensions}) ⇔ 真建的
+ * Client extension ⇔ 宿主 host extension ⇔ 退出时 dispose()。**这张常量就是第 2 步**，
+ * 并且下面每个网关的 `declared` 都从它现推（`EXTENSIONS.includes(...)`）——
+ * 写死 `declared:true` 就是给自己留一个"改了 extensions 忘了改这里"的口子，
+ * 而那种错的表症是**静默等到超时**（capability.js：宿主不回时客户端只有 setTimeout 一条出路）。
+ *
+ * ⚠ 九个都声明，**前提是九个都有真实调用点**——不是假声明凑数（手册红线「只声明真用到的」，
+ * match3 多声明是反例）。逐个的落点：
+ *   character/storage/apps/game-result = 产品级消费（对手卡 / 挂起恢复 / 推荐位 / 战果上报）
+ *   speech/persona/dialogue/media/episode = **SDK 演示台**里逐行真调（owner 明许「加各种 sample」），
+ *   外加 episode 在终局真发一条 `episode.gameCompleted`（战果的第二条出口：交给剧情路由下一拍）。
+ */
+const EXTENSIONS = ['apps', 'character', 'storage', 'speech', 'persona', 'dialogue', 'media', 'episode'] as const;
+// ⚠ `game-result` **不在 extensions 里**：它不是 capability 扩展，是 App 的 output 契约
+//（manifest.runtime.outputs + app.complete）。演示台把它单列一行是给人看的，不是给协议看的。
+const app = createAppClient<Game108Input>({ appId: APP_ID, extensions: [...EXTENSIONS] });
+const declared = (name: string): boolean => (EXTENSIONS as readonly string[]).includes(name);
 const storage = createStorageClientExtension(app, { timeoutMs: CAPABILITY_TIMEOUT_MS });
 const character = createCharacterClientExtension(app, { timeoutMs: CAPABILITY_TIMEOUT_MS });
 // 「获取卡带」走共享层（`dokiworld/shared`·超时/降级/dispose 已封）。`declared` 不是随手写的 true：
 // 它必须与上面那行 `extensions` 同真同假——未声明还发消息的表症是**静默等到超时**（纪律①）。
 const apps = createAppsGateway(app, {
-  declared: true,
+  declared: declared('apps'),
   timeoutMs: CAPABILITY_TIMEOUT_MS,
   onWarn: ({ op, reason }) => console.info(`[game108] apps.${op} 降级（${reason}）——推荐位不出现，对局照常`),
 });
+
+/**
+ * 五个"演示台驱动"的模块（+ episode 桥）。`declared` 一律从 `EXTENSIONS` 现推，
+ * 降级原因经 `onWarn` 落进演示台那一行的 detail —— **静默降级要看得见**，这正是这块面板的用处。
+ */
+const gwWarn = (row: string) => ({ op, reason }: { op: string; reason: string }): void => {
+  sdkSet(row, { state: 'down', detail: `${op} → ${reason}` });
+};
+const speech = createSpeechGateway(app, { declared: declared('speech'), timeoutMs: CAPABILITY_TIMEOUT_MS, onWarn: gwWarn('speech') });
+const persona = createPersonaGateway(app, { declared: declared('persona'), timeoutMs: CAPABILITY_TIMEOUT_MS, onWarn: gwWarn('persona') });
+const dialogue = createDialogueGateway(app, { declared: declared('dialogue'), timeoutMs: DIALOGUE_TIMEOUT_MS, onWarn: gwWarn('dialogue') });
+const media = createMediaGateway(app, { declared: declared('media'), timeoutMs: DIALOGUE_TIMEOUT_MS, onWarn: gwWarn('media') });
+const episode = createEpisodeBridge(app, { declared: declared('episode'), onWarn: gwWarn('episode') });
+
+// ── 【SDK 演示台】九行状态机（owner 2026-08-17）────────────────────────────────
+//
+// 面板是**纯数据**（`SdkRow[]` 投影进屏），这里只做两件事：
+//   ① 开局把九行的初始态推给游戏（声明了没有 / 通道建起来没有）
+//   ② 玩家按某一行的「试一下」→ 真调那个 capability → 把结果写回那一行
+//
+// ⚠ 每一次 try 都是**真的往宿主发消息**（未声明的那几行除外——那几行按下去看到的正是
+//   "没声明所以一个字节都没发"，那也是要演示的东西）。不 mock、不假装成功。
+type Row = { key: string; name: string; declared: boolean; available: boolean; state: 'idle' | 'busy' | 'ok' | 'down'; detail: string };
+const rows = new Map<string, Row>();
+function sdkSet(key: string, patch: Partial<Row>): void {
+  const cur = rows.get(key);
+  if (!cur) return;
+  rows.set(key, { ...cur, ...patch });
+  setSdkRows([...rows.values()]);
+}
+
+/**
+ * 九行各自「试一下」按下去干什么 —— **每一条都是真调用**，返回一句人能读的结果。
+ * 抛不出来（网关全都降级不抛），所以这里不需要 try/catch：失败会经 `onWarn` 写成 down。
+ */
+const PROBES: Record<string, () => Promise<string>> = {
+  // ── 产品级消费点（演示台只是再叫一次，看宿主答不答）──────────────────────
+  character: async () => {
+    const { character: c } = await character.getCurrent();
+    return c ? `当前角色：${c.name}（${c.id}）` : '宿主没给角色（未授权 character.identity？）';
+  },
+  storage: async () => {
+    // 存一个探针档 → 立刻读回来 → 再清掉。**不碰真存档**（真档是 game108-checkpoint 契约，
+    // 这里用同契约但内容是探针串——读回来能对上就说明这条链是通的）。
+    const probe = { contract: 'doki.game.game108-checkpoint', version: 1, data: { world: 'sdk-probe' } };
+    // ⚠ `saveCheckpoint(checkpoint)` 收的是 **checkpoint 本身**，不是 `{checkpoint}`
+    //（storage.d.ts 实读；包一层会被入参校验器判 invalid-request——目击腿当场逮到过）。
+    await storage.saveCheckpoint(probe);
+    const back = await storage.loadCheckpoint();
+    const ok = (back?.checkpoint as { data?: { world?: string } } | null)?.data?.world === 'sdk-probe';
+    await storage.clearCheckpoint();
+    return ok ? '存 → 读 → 清 三步都通了' : '存进去了但读回来对不上（宿主 storage 实现有问题？）';
+  },
+  apps: async () => {
+    const list = await apps.list();
+    return list.length ? `宿主能拉起 ${list.length} 个 App：${list.map((a) => a.name).join('、')}` : '宿主没给出可拉起的 App';
+  },
+  'game-result': async () => {
+    // **不真发 complete**（那会结束这一局）。这里报的是「现在这一刻发出去会是什么」——
+    // 演示台的用处是让人看清楚契约长什么样，不是替玩家交卷。
+    const p = latest;
+    return p
+      ? `现在发出去会是：score=${p.normalizedScore} · ${p.outcome} · 第 ${p.metrics.round} 回合（终局才真发）`
+      : '世界还没起来（先开局再看）';
+  },
+  // ── 演示台驱动的五个（owner 明许「加各种 sample」）─────────────────────────
+  speech: async () => {
+    const line = voiceProbeLine();
+    const r = await speech.synthesize({ text: line, characterId: currentCharacterId, locale: 'zh-cn' });
+    if (!r) return '宿主没合成（游戏退回本地 TTS → 字幕，照常打）';
+    void playAudio(r.audioUrl);
+    return `合成好了${r.cached ? '（命中缓存）' : ''}，正在放：「${line}」`;
+  },
+  persona: async () => {
+    const { persona: p } = await persona.getSelected(currentCharacterId);
+    if (p) return `当前身份：${p.name}${p.age ? ` · ${p.age}` : ''}${p.likes ? ` · 喜欢${p.likes}` : ''}`;
+    const { personas } = await persona.list();
+    return personas.length ? `宿主有 ${personas.length} 个身份可选，但这个角色还没选定` : '宿主没给身份（没授权或没实现）';
+  },
+  dialogue: async () => {
+    const r = await dialogue.generateOpening({ characterId: currentCharacterId, originalOpeningLine: voiceProbeLine() });
+    return r ? `它说：「${r.openingLine}」` : '宿主没生成（游戏退回本地台词表）';
+  },
+  media: async () => {
+    const started = await media.generateImage({
+      prompt: '一张猜拳对决的纪念图：石头、剪刀、布三张牌浮在半空，卡通明亮风',
+      characterId: currentCharacterId,
+    });
+    if (started.status === 'failed') return '宿主没接文生图';
+    const job = await pollMediaJob(media, started.id, { tries: 12, stepMs: 1_500 });
+    if (job.status === 'done' && job.urls?.length) return `出图了：${job.urls[0]}`;
+    return `作业 ${job.id} 还是 ${job.status}${job.error ? `（${job.error}）` : ''}`;
+  },
+  episode: async () => {
+    // 单向事件流：发一条**演习用**的 gameCompleted，并当场演示 routes 会把它路由到哪个 beat。
+    const p = latest ?? { normalizedScore: 50, outcome: 'exited' as const, metrics: { round: 1, playerHp: 100, opponentHp: 100 } };
+    const output = { contract: 'doki.game.result', version: 1, data: { normalizedScore: p.normalizedScore, outcome: p.outcome, metrics: p.metrics } };
+    const sent = episode.send({ type: 'episode.gameCompleted', configId: 'sdk-demo', output });
+    const routed = resolveEpisodeGameResult(output, DEMO_ROUTES);
+    const beat = routed?.nextBeatId ?? '（没有一条 route 命中·剧情走 fallback）';
+    return sent ? `已发 episode.gameCompleted → 剧情会走 ${beat}` : '未声明 episode，一个字节都没发';
+  },
+};
+
+/** 演示 `resolveEpisodeGameResult` 用的示例路由（**纯示例**：真剧情的 routes 由 Episode World 给）。 */
+const DEMO_ROUTES = [
+  { id: 'crush', when: { outcomes: ['win' as const], minScore: 90 }, nextBeatId: 'beat-brag' },
+  { id: 'win', when: { outcomes: ['win' as const] }, nextBeatId: 'beat-nod' },
+  { id: 'lose', when: { outcomes: ['loss' as const] }, nextBeatId: 'beat-tease' },
+];
+
+/** 当前对手角色 id（character 降级链定下来的那个·探针要用同一个 id 才问得对人）。 */
+let currentCharacterId = 'game108-foe';
+/** 探针用的一句台词（用游戏自己的台词表，不另编一句——屏上说的和这里合成的是同一句）。 */
+const voiceProbeLine = (): string => voiceLine('roundStart', 'zh');
+/** 播一段宿主给的音频（合成结果是 URL·播不出来不算错，静默即可——演示台的判据是"拿到 URL"）。 */
+async function playAudio(url: string): Promise<void> {
+  try { await new Audio(url).play(); } catch { /* 自动播放被拦/格式不支持 → 不影响本次判定 */ }
+}
+
+/** 开局把九行推给游戏（声明了没有 / 通道建起来没有 —— 还没试过一律 idle）。 */
+function initSdkRows(): void {
+  const meta: ReadonlyArray<[string, boolean]> = [
+    ['character', character !== undefined], ['storage', storage !== undefined], ['apps', apps.available],
+    ['speech', speech.available], ['persona', persona.available], ['dialogue', dialogue.available],
+    ['media', media.available], ['episode', episode.available], ['game-result', true],
+  ];
+  for (const [key, available] of meta) {
+    const dec = key === 'game-result' ? true : declared(key);
+    rows.set(key, {
+      key, name: key, declared: dec, available,
+      state: 'idle',
+      detail: dec ? '已声明 · 待试' : 'manifest 未声明',
+    });
+  }
+  setSdkRows([...rows.values()]);
+  onSdkTry((key) => {
+    const probe = PROBES[key];
+    if (!probe) return;
+    sdkSet(key, { state: 'busy', detail: '正在问宿主…' });
+    void probe().then(
+      (detail) => { const r = rows.get(key); if (r?.state === 'busy') sdkSet(key, { state: 'ok', detail }); },
+      // 网关不抛，走到这里说明是**探针自己**写错了（不是宿主的问题）——照实说，别栽给宿主。
+      (e: unknown) => sdkSet(key, { state: 'down', detail: `探针自己炸了：${String(e)}` }),
+    );
+  });
+}
 
 type Projection = ReturnType<typeof toGameResult>;
 type ObservedWorld = Parameters<NonNullable<Parameters<typeof setWorldObserver>[0]>>[0];
@@ -132,6 +308,15 @@ app.connect({
           outcome: latest.outcome,
           metrics: latest.metrics,
         })).catch(() => { /* ack 超时由 SDK 重试语义兜底；接线层不再造第二套重试 */ });
+        // 【结算数据的第二条出口】`app.complete` 是交给**宿主记分**；这一条是交给**剧情**：
+        // Episode World 拿 `episode.gameCompleted` 里的 GameResult 去 `resolveEpisodeGameResult`
+        // 路由下一拍演什么（赢得漂亮 → 吹牛那一拍，输了 → 被调侃那一拍）。
+        // 未声明 episode / 非剧情宿主 ⇒ 桥是 no-op，一个字节都不发（纪律①）。
+        episode.send({
+          type: 'episode.gameCompleted',
+          configId: APP_ID,
+          output: { contract: 'doki.game.result', version: 1, data: { normalizedScore: latest.normalizedScore, outcome: latest.outcome, metrics: latest.metrics } },
+        });
         // 正常打完 = 这局的挂起档作废（不清的话下次进来会「恢复」到已终局的世界）。
         void storage.clearCheckpoint().catch(() => { /* 尽力而为·失败下次 restore 也只是多看一眼终局屏 */ });
       }
@@ -155,6 +340,9 @@ app.connect({
     // 放在挂载前会把首屏卡在一次 capability 往返上——推荐位是终局屏才用得着的东西，
     // 拿开局那一秒去等它是本末倒置。宿主没实现 apps ⇒ 超时后空数组 ⇒ 整条不画。
     void resolveAppPicks();
+    // 【SDK 演示台】九行状态推给游戏（菜单第六行进得去）。**挂载之后**才推：
+    // 面板是给人按的，开局那一秒不该为它多等任何一次 capability 往返。
+    initSdkRows();
   },
   // 中途退出（规范 §6/§8）：挂起半程=把当前世界快照存进 storage checkpoint，存成了才敢
   // 报 canSuspend:true（报了 true 却没存上=恢复时静默丢局）。output 仍带 exited+当时分
@@ -196,8 +384,13 @@ app.connect({
     setWorldObserver(undefined);
     onAppPick(undefined);      // 摘掉推荐位回调（游戏已卸载·再点没有承接方）
     setAppPicks([]);           // 清空推荐位（下一个实例是新页面，别让旧列表跨实例活着）
+    onSdkTry(undefined);       // 摘掉演示台回调（游戏已卸载·再按没有承接方）
+    setSdkRows([]);
     storage.dispose();
     character.dispose();
+    // 规范 §7 第 5 步：**声明了几个就释放几个**。少释放一个 = 那条 onMessage 一直挂着，
+    // 下一个实例的报文会被上一实例的监听器也收一遍（跨实例串台）。
+    speech.dispose(); persona.dispose(); dialogue.dispose(); media.dispose(); episode.dispose();
     apps.dispose();            // 规范 §7 第 5 步：三个 extension 全释放（少释放一个 = 泄一条订阅）
   },
 });

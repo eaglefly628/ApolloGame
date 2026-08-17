@@ -10,7 +10,7 @@ import { QueuedInputSource } from '@zerocraft/engine/net/index.js';
 import type { Resource, GameFlow, StringVar } from '@zerocraft/engine/engine/protocol/components.js';
 import type { WorldSnapshot, EntityId } from '@zerocraft/engine/engine/core/types.js';
 import { buildBlueprint } from './blueprint.js';
-import { buildDuelScreen, emptyView, loadPct, type AppPick, type DuelView, type Phase } from './duel-screen.js';
+import { buildDuelScreen, emptyView, loadPct, type AppPick, type SdkRow, type DuelView, type Phase } from './duel-screen.js';
 import { DUEL_THEME, VIEW_W, VIEW_H, HANDS, SIDES, HP_MAX, HP_RES, chargeEntity, lastThrowVar, PHASE_TICKS, TPS, type Hand, type Side } from './theme.js';
 import { READ_MID, loadMemory, saveMemory, loadHelpSeen, saveHelpSeen, type Memory } from './theme.js';
 import { DEFAULT_CARD, MOOD_AI, type CardCharacter } from './card-character.js';
@@ -78,6 +78,23 @@ let appPickHandler: AppPickHandler | undefined;
 export function onAppPick(fn?: AppPickHandler): void { appPickHandler = fn; }
 
 /**
+ * 【SDK 演示台】九行状态的宿主侧通道（owner 2026-08-17「把所有 SDK 功能实践一遍」）。
+ * 与 `setAppPicks` 同款：装载后可随时到货，到货就重画一次。
+ * **纯表现零规则**——面板只进 `readView` 的投影，不写世界、不进 sim/hash/录放/lockstep。
+ * 没设 = 菜单里那一行照样在，但面板是空的（本机试玩与渲染探针走这条）。
+ */
+let sdkRows: readonly SdkRow[] = [];
+let sdkNotify: (() => void) | undefined;
+export function setSdkRows(rows: readonly SdkRow[]): void {
+  sdkRows = Array.isArray(rows) ? [...rows] : [];
+  sdkNotify?.();
+}
+/** 玩家按了某一行的「试一下」（arg = 模块 key）。宿主接住去真调那个 capability。 */
+type SdkTryHandler = (key: string) => void;
+let sdkTryHandler: SdkTryHandler | undefined;
+export function onSdkTry(fn?: SdkTryHandler): void { sdkTryHandler = fn; }
+
+/**
  * 世界恢复口（DokiWorld 挂起/恢复·规范 §6 checkpoint）—— `setWorldObserver` 的孪生缝：
  * 装载前 `setWorldRestore({snapshot, order})`，下一次 `mount()` 起局时把快照灌回世界
  * （`world.restore()`——引擎自己的读档原语，system/蓝图不动，只换实体状态），并跳过
@@ -140,6 +157,7 @@ export function mount(container: HTMLElement): () => void {
   let lang: Lang = loadLang();
   let menuOpen = false;
   let helpOpen = false;
+  let sdkOpen = false;          // 【SDK 演示台】从设置菜单第六行进（owner 2026-08-17）
   /**
    * 这一次的说明屏是不是「首次进入自动弹的那一次」（owner 2026-08-15 试玩：
    * 「刚出来的时候是要先跳一下玩法说明。如果说玩家可以选跳过，这还是要有的」）。
@@ -310,6 +328,8 @@ export function mount(container: HTMLElement): () => void {
       ...(appPicks.length ? { appPicks } : {}),
       ...(started ? {} : { notStarted: true, bootMs }),
       ...(helpOpen ? { helpOpen: true, ...(firstRunHelp ? { helpFirstRun: true } : {}) } : {}),
+      ...(sdkOpen ? { sdkOpen: true } : {}),
+      ...(sdkRows.length ? { sdk: sdkRows } : {}),
       ...(phase === 'settle' ? { awaitNext: true } : {}),
       ...(charged ? { charged } : {}),
       ...(before ? { before } : {}),
@@ -484,6 +504,14 @@ export function mount(container: HTMLElement): () => void {
     [UI_ACT.menu]: (): void => { menuOpen = !menuOpen; if (!menuOpen) helpOpen = false; audio.start(); audio.play('ui'); redraw(); },
     // 说明屏从菜单进、点关闭回菜单（菜单不关）——玩家是"来查一眼规则"，不是"要退出设置"。
     [UI_ACT.help]: (): void => { helpOpen = !helpOpen; audio.play('ui'); redraw(); },
+    // 【SDK 演示台】开/合 + 逐行「试一下」。**两颗都必须挂 handler**：
+    // 不挂的话点击会静默入队成信号污染世界（`ui.*` 本来就不该进世界·同 appPick 那条）。
+    [UI_ACT.sdk]: (): void => { sdkOpen = !sdkOpen; audio.play('ui'); redraw(); },
+    [UI_ACT.sdkTry]: (arg?: string): void => {
+      audio.play('ui');
+      if (typeof arg === 'string' && arg) sdkTryHandler?.(arg);
+      redraw();
+    },
     [UI_ACT.lang]: (): void => { lang = lang === 'zh' ? 'en' : 'zh'; saveLang(lang); voice.setLang(lang); audio.play('ui'); redraw(); },
     [UI_ACT.bgm]: (): void => { audio.toggle('bgm'); audio.start(); audio.play('ui'); redraw(); },
     [UI_ACT.sfx]: (): void => { audio.toggle('sfx'); audio.play('ui'); redraw(); },
@@ -500,6 +528,7 @@ export function mount(container: HTMLElement): () => void {
   }, DUEL_THEME, queue);
   // 推荐位到货即重画（`apps.list` 是异步 capability·同美术索引异步到货那条路）。
   picksNotify = redraw;
+  sdkNotify = redraw;      // 【SDK 演示台】行状态到货即重画（同推荐位那条路）
 
   // 运行环走**引擎自己的** `start()`（房屋口径·同 game101）——不许自己搓 rAF 圈直接调
   // `world.tick()`：`Engine.step()` 在 tick 之前那一句 `applyCommands(world, input.commandsForTick(...))`
@@ -527,7 +556,7 @@ export function mount(container: HTMLElement): () => void {
 
   // 卸载要**摘掉推荐位的重画口**：留着的话，卸载后宿主再 setAppPicks 会去画一台已经拆了的 UI
   //（`ui.update` 打在已卸载的 DOM 上——「什么都没发生」类的静默错，最难查的那一形状）。
-  return () => { picksNotify = undefined; stopBoot(); engine.stop(); audio.stop(); voice.dispose(); ui(); teardown(); };
+  return () => { picksNotify = undefined; sdkNotify = undefined; stopBoot(); engine.stop(); audio.stop(); voice.dispose(); ui(); teardown(); };
 }
 
 export { lastThrowVar, HP_RES };

@@ -244,6 +244,79 @@ try {
     check("⑥ 推荐位：零致命错", h.fatals.length === 0, h.fatals.join("; "));
     await h.close();
   }
+
+  // ── ⑦ SDK 演示台：**九行逐个按一遍**（owner 2026-08-17「测试它所有的功能」）──────────
+  // 整套目击里唯一「把 SDK 的每个模块都真叫一次」的地方：假宿主把八个 host extension 全挂上，
+  // 页面里从设置菜单进演示台、逐行点「试一下」，然后**读宿主侧 state 核对真收到了请求**
+  //（不采信页面上那行绿字——那是页面自陈）。
+  {
+    const h = await boot({
+      grantedScopes: ["character.identity"],
+      hostExtensions: ["storage", "character", "apps", "speech", "persona", "dialogue", "media", "episode"],
+      character: PROFILE,
+      persona: { id: "me-1", name: "阿岚", age: 24, likes: "吃辣" },
+      personas: [{ id: "me-1", name: "阿岚" }],
+      apps: [{ id: "game101", name: "海港绯闻", protocolVersion: 2, runtime: { input: { contract: "doki.app.input", version: 1 } } }],
+      input: { card: CARD_INPUT },
+    });
+    await until(h.initialized, { label: "⑦ init 完成", timeoutMs: 15_000 });
+    await clickStart(h);
+
+    // 菜单 → 演示台（**走真按钮**，与玩家同一条路）
+    await h.frame().locator("[data-action='ui.menu']").first().click();
+    await until(async () => (await h.frame().locator("[data-action='ui.sdk']").count()) > 0, { label: "⑦ 菜单里有 SDK 那一行" });
+    await h.frame().locator("[data-action='ui.sdk']").first().click();
+    await until(async () => (await h.frame().locator("#sdk").count()) > 0, { label: "⑦ 演示台开了" });
+
+    const KEYS = ["character", "storage", "apps", "speech", "persona", "dialogue", "media", "episode", "game-result"];
+    const shown = await h.frame().locator("#sdk [id^='sdk-row-']").count();
+    check("⑦ 演示台九行齐（= SDK 的九个能力·一个都不少）", shown === KEYS.length, `实为 ${shown} 行`);
+
+    for (const key of KEYS) {
+      await h.frame().locator(`#key-sdk-${key}`).first().click();
+      // 等这一行不再是「正在问宿主…」（media 那行要走两拍轮询，给宽一点）
+      await until(async () => {
+        const txt = await h.text(`#sdk-d-${key}`);
+        return typeof txt === "string" && !txt.includes("正在问");
+      }, { label: `⑦ ${key} 有结果了`, timeoutMs: 25_000, stepMs: 250 });
+    }
+
+    // **判据读宿主侧 state**：每个模块真收到过请求（页面那行字只是给人看的）
+    const st = await h.state();
+    check("⑦ speech：宿主真收到 synthesize（带台词与角色 id）",
+      typeof st.spoke?.text === "string" && st.spoke.text.length > 0 && !!st.spoke.characterId, `state=${JSON.stringify(st.spoke ?? null)} · 屏上=${await h.text("#sdk-d-speech")}`);
+    check("⑦ persona：宿主真收到 getSelected", !!st.personaAsked?.characterId, JSON.stringify(st.personaAsked ?? null));
+    check("⑦ dialogue：宿主真收到 generateOpening", !!st.opening?.characterId, `state=${JSON.stringify(st.opening ?? null)} · 屏上=${await h.text("#sdk-d-dialogue")}`);
+    check("⑦ media：宿主真收到 generateImage（prompt 非空·且轮询走到 done）",
+      typeof st.imagePrompt === "string" && st.imagePrompt.length > 0, String(st.imagePrompt ?? null));
+    check("⑦ apps：宿主真收到 list", (st.listed ?? 0) > 0, `listed=${st.listed}`);
+    check("⑦ episode：宿主真收到 gameCompleted（战果往剧情那条出口）",
+      (st.episode ?? []).some((e) => e.type === "episode.gameCompleted"),
+      JSON.stringify((st.episode ?? []).map((e) => e.type)));
+    const storageDetail = await h.text("#sdk-d-storage");
+    check("⑦ storage：存 → 读 → 清 三步通了", String(storageDetail).includes("三步都通了"), String(storageDetail));
+    // game-result 那一行**不许真发 complete**（发了这一局就结束了·演示台不该替玩家交卷）
+    check("⑦ game-result：只报「发出去会是什么」，没真 complete", !st.completed, JSON.stringify(st.completed ?? null));
+
+    // 九行**全通**：八个 extension 全挂上时，任何一行报降级都说明那条链没接通
+    const downs = [];
+    for (const key of KEYS) {
+      const d = String(await h.text(`#sdk-d-${key}`) ?? "");
+      if (d.includes("没实现") || d.includes("未声明") || d.includes("没给") || d.includes("没接") || d.includes("没生成") || d.includes("没合成")) downs.push(`${key}: ${d}`);
+    }
+    check("⑦ 九行没有一行降级（八个 extension 全挂上时该全通）", downs.length === 0, downs.join(" | "));
+    // ⚠ **防空转**：上面那条只查"有没有降级词"，而**没点上**的行停在初始 detail「已声明 · 待试」
+    // ——它一个降级词都不含，于是"全绿"可能只是根本没按到（第一版实测正是这么假绿的）。
+    const untouched = [];
+    for (const key of KEYS) {
+      const d = String(await h.text(`#sdk-d-${key}`) ?? "");
+      if (d.includes("待试") || d.includes("正在问")) untouched.push(`${key}: ${d}`);
+    }
+    check("⑦ 九行**每一行都真按下去过**（没有停在「待试」的）", untouched.length === 0, untouched.join(" | "));
+    await h.page.screenshot({ path: resolve(SHOTS, "hosted-sdk-panel.png") });
+    check("⑦ 演示台：零致命错", h.fatals.length === 0, h.fatals.join("; "));
+    await h.close();
+  }
 } finally {
   await browser.close();
   await server.close();

@@ -240,7 +240,7 @@ describe('game108 · S3 条款走查（真引擎驱动·用【R-108-70】动作�
 
 // ── S3 对局屏：闭集校验 + 动作词表对账（ui-playbook 黄金流程 step 5）──────────
 import { validateLayoutNode } from '@zerocraft/engine/ui/components/index.js';
-import { buildDuelScreen, emptyView, screenActions, loadPct, type DuelView } from './duel-screen.js';
+import { buildDuelScreen, emptyView, screenActions, loadPct, type DuelView, type SdkRow } from './duel-screen.js';
 import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { t } from './strings.js';
 
@@ -1220,6 +1220,63 @@ describe('game108 · 前四档对手【R-108-35】（owner 2026-08-15 试玩：A
       const a = playScript(who, VARIED);
       expect([who, a]).toEqual([who, playScript(who, VARIED)]);
     }
+  });
+});
+
+// ── SDK 演示台【R-108-37】（owner 2026-08-17「把所有 SDK 功能实践一遍·做个 demonstration」）──
+describe('game108 · SDK 演示台（DokiWorld 九个能力的自检屏）', () => {
+  const rows = (n = 3): SdkRow[] => ['character', 'storage', 'apps'].slice(0, n).map((key, i) => ({
+    key, name: key, declared: i !== 2, available: i === 0,
+    state: (['ok', 'down', 'idle'] as const)[i]!, detail: `第 ${i} 行`,
+  }));
+
+  it('【R-108-37】面板闭集合法，且每行一枚带 actionArg 的「试一下」（不给九个模块各造一个动作名）', () => {
+    const v: DuelView = { ...emptyView(), menuOpen: true, sdkOpen: true, sdk: rows() };
+    expect(validateLayoutNode(buildDuelScreen(v))).toEqual([]);
+    const acts = screenActions(v).filter((a) => a === UI_ACT.sdkTry);
+    expect(acts).toEqual([UI_ACT.sdkTry, UI_ACT.sdkTry, UI_ACT.sdkTry]);   // 三行 → 三枚，且同一个动作名
+    // 每一枚都必须带上是**哪一行**（漏了 actionArg 的表症是"点哪行都试同一个"·零报错）
+    const args: string[] = [];
+    const walk = (n: LayoutNode): void => {
+      const p = n.props as { action?: string; actionArg?: string } | undefined;
+      if (p?.action === UI_ACT.sdkTry) args.push(p.actionArg ?? '');
+      for (const c of n.children ?? []) walk(c);
+    };
+    walk(buildDuelScreen(v));
+    expect(args).toEqual(['character', 'storage', 'apps']);
+  });
+
+  it('【R-108-37】面板压在设置菜单**之上**（从菜单进它·盖反了就点不到）', () => {
+    const v: DuelView = { ...emptyView(), menuOpen: true, sdkOpen: true, sdk: rows() };
+    const ids = (buildDuelScreen(v).children ?? []).map((c) => c.id);
+    const iMenu = ids.indexOf('menu'), iSdk = ids.indexOf('sdk');
+    expect([iMenu >= 0, iSdk >= 0]).toEqual([true, true]);
+    expect([`sdk(${iSdk}) 必须在 menu(${iMenu}) 之后`, iSdk > iMenu]).toEqual([`sdk(${iSdk}) 必须在 menu(${iMenu}) 之后`, true]);
+  });
+
+  it('【R-108-37】菜单里有入口；**没开面板时屏上一个 sdk 键都没有**（不打扰对局）', () => {
+    expect(screenActions({ ...emptyView(), menuOpen: true })).toContain(UI_ACT.sdk);
+    const closed = screenActions(emptyView());
+    expect(closed).not.toContain(UI_ACT.sdk);
+    expect(closed).not.toContain(UI_ACT.sdkTry);
+  });
+
+  it('【R-108-37】未声明的行**照样可点**——按下去看到的正是"没声明所以没发消息"，那也是要演示的降级', () => {
+    const v: DuelView = { ...emptyView(), menuOpen: true, sdkOpen: true, sdk: rows() };
+    const walk = (n: LayoutNode, out: string[]): string[] => {
+      const p = n.props as { action?: string; actionArg?: string } | undefined;
+      if (p?.action === UI_ACT.sdkTry) out.push(p.actionArg ?? '');
+      for (const c of n.children ?? []) walk(c, out);
+      return out;
+    };
+    // 第三行 declared:false —— 它仍要出现在可点集合里
+    expect(walk(buildDuelScreen(v), [])).toContain('apps');
+  });
+
+  it('【R-108-37】空表 = 面板不炸（宿主还没把行推过来的那一瞬）', () => {
+    const v: DuelView = { ...emptyView(), menuOpen: true, sdkOpen: true };
+    expect(validateLayoutNode(buildDuelScreen(v))).toEqual([]);
+    expect(screenActions(v)).toContain(UI_ACT.sdk);      // 只剩关闭键，不该崩
   });
 });
 

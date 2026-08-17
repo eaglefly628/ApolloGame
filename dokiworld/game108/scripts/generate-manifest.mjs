@@ -19,7 +19,13 @@ function fail(message) {
 }
 
 /** 纯校验（生成与测试共用·不写盘）。 */
-export function validateManifest(manifest, packageJson) {
+/**
+ * 纯校验（生成与测试共用·不写盘）。
+ * @param opts.extensions 由调用方从 main.ts 现推的 `EXTENSIONS`（§7 第 2 步的唯一真相）。
+ *        **生成器一定会传**（它是真闸）；点名测试造坏输入时可以不传，那一条跳过——
+ *        `runtime.extensions` 与接线的一致性另有一条专测（tests/manifest.test.mjs 现推同一张表）。
+ */
+export function validateManifest(manifest, packageJson, opts = {}) {
   if (manifest.schemaVersion !== 2) fail("Game manifest 必须 schemaVersion 2");
   if (manifest.id !== APP_ID || !idPattern.test(manifest.id)) fail(`id 必须是 ${APP_ID}（小写/数字/连字符）`);
   if (basename(root) !== APP_ID) fail(`目录名 ${basename(root)} 必须与 id ${APP_ID} 一致`);
@@ -58,17 +64,26 @@ export function validateManifest(manifest, packageJson) {
   // （`apps`=「换个游戏玩」推荐位·REQ-DOKI-APPS·owner 2026-08-16 判 game108 当第一个消费者：
   //  **先有真消费才加声明**——手册红线「只声明真用到的」，多声明会被宿主拒。）
   // 与 createAppClient({extensions}) 的一致性由 tests/manifest.test.mjs 对源码锚点核。
-  if (JSON.stringify([...rt.extensions].sort()) !== JSON.stringify(["apps", "character", "storage"])) {
-    fail(`runtime.extensions 必须恰为 ["apps","character","storage"]（与 main.ts 真实创建的一致），实为 ${JSON.stringify(rt.extensions)}`);
+  // **名单从 main.ts 现推**（那张 `EXTENSIONS` 常量是 §7 第 2 步的唯一真相）——
+  // 在这里再抄一份字面量，就是"改了接线忘了改生成器"的第二处真相（2026-08-17 加到八个时实测踩到）。
+  const wired = Array.isArray(opts.extensions) ? [...opts.extensions].sort() : null;
+  if (wired && JSON.stringify([...rt.extensions].sort()) !== JSON.stringify(wired)) {
+    fail(`runtime.extensions 必须与 main.ts 的 EXTENSIONS 一致（应为 ${JSON.stringify(wired)}），实为 ${JSON.stringify(rt.extensions)}`);
   }
 }
 
 export async function generateManifest(output = manifestPath) {
-  const [manifest, packageJson] = await Promise.all([
+  const [manifest, packageJson, mainSrc] = await Promise.all([
     readFile(manifestPath, "utf8").then(JSON.parse),
     readFile(packagePath, "utf8").then(JSON.parse),
+    readFile(resolve(root, "src", "main.ts"), "utf8"),
   ]);
-  validateManifest(manifest, packageJson);
+  // §7 第 2 步的唯一真相在 main.ts 那张 `EXTENSIONS` 常量里——**现推，不在这里抄第二份**
+  //（抄了就是"改了接线忘了改生成器"的第二处真相·2026-08-17 加到八个模块时实测踩到）。
+  const extensions = [...(/const EXTENSIONS = \[([^\]]*)\] as const;/.exec(mainSrc)?.[1] ?? "")
+    .split(",").map((x) => x.trim().replace(/^'|'$/g, "")).filter(Boolean)];
+  if (extensions.length === 0) fail("main.ts 里找不到 `const EXTENSIONS = [...] as const`（§7 第 2 步的唯一真相）");
+  validateManifest(manifest, packageJson, { extensions });
   // entry/cover 必须真的在包内（规范 §5：entry、cover 和所有运行资源位于 App 包内）。
   await access(resolve(root, "src", "index.html")).catch(() => fail("src/index.html 不存在（entry 无源）"));
   await access(resolve(root, "src", manifest.cover)).catch(() =>

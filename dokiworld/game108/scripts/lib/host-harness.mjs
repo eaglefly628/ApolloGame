@@ -29,6 +29,11 @@ import { createAppHost } from "./sdk/index.js";
 import { createStorageHostExtension } from "./sdk/storage.js";
 import { createCharacterHostExtension } from "./sdk/character.js";
 import { createAppsHostExtension } from "./sdk/apps.js";
+import { createSpeechHostExtension } from "./sdk/speech.js";
+import { createPersonaHostExtension } from "./sdk/persona.js";
+import { createDialogueHostExtension } from "./sdk/dialogue.js";
+import { createMediaHostExtension } from "./sdk/media.js";
+import { createEpisodeHostExtension } from "./sdk/episode.js";
 
 window.__setup = (config) => new Promise((ready) => {
   const iframe = document.getElementById("app");
@@ -70,6 +75,45 @@ window.__setup = (config) => new Promise((ready) => {
         list: () => { state.listed = (state.listed ?? 0) + 1; return { apps: config.apps ?? [] }; },
         launch: (req) => { state.launched = req; return { status: "cancelled" }; },
       });
+    }
+    // ── SDK 演示台那五个模块的假宿主（owner 2026-08-17「测试它所有的功能」）──────
+    // 每个都**记一笔到 state**：目击断言读 state（真收到请求了没有），不采信页面自陈。
+    const ext = config.hostExtensions ?? [];
+    if (ext.includes("speech")) {
+      createSpeechHostExtension(host, {
+        synthesize: (input) => { state.spoke = input; return { audioUrl: "data:audio/wav;base64,UklGRgAAAABXQVZF", cached: true }; },
+      });
+    }
+    if (ext.includes("persona")) {
+      createPersonaHostExtension(host, {
+        list: () => ({ personas: config.personas ?? [] }),
+        getSelected: (input) => { state.personaAsked = input; return { persona: config.persona ?? null }; },
+        requestSelection: () => ({ persona: config.persona ?? null }),
+      });
+    }
+    if (ext.includes("dialogue")) {
+      createDialogueHostExtension(host, {
+        generateOpening: (input) => { state.opening = input; return { openingLine: "就你也配跟我猜拳？", segments: [] }; },
+        generateSuggestions: () => ({ suggestions: ["出石头", "诈他一手"] }),
+        generateTagline: () => ({ tagline: "三拳定生死" }),
+      });
+    }
+    if (ext.includes("media")) {
+      // 两拍出图：第一次 getJob 还在跑、第二次 done —— 让轮询那条路真的被走到。
+      let polls = 0;
+      createMediaHostExtension(host, {
+        generateImage: (input) => { state.imagePrompt = input?.prompt ?? null; return { id: "job-w", mediaType: "image", status: "pending" }; },
+        getJob: () => {
+          polls += 1;
+          return polls < 2
+            ? { id: "job-w", mediaType: "image", status: "processing" }
+            : { id: "job-w", mediaType: "image", status: "done", urls: ["https://cdn.example/win.png"] };
+        },
+      });
+    }
+    if (ext.includes("episode")) {
+      const epi = createEpisodeHostExtension(host);
+      host.onMessage((m) => { const ev = epi.receive(m); if (ev) (state.episode ??= []).push(ev); });
     }
     host.connect({
       onInitialized: () => { state.initialized = true; },

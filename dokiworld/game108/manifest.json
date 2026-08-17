@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "id": "game108",
   "kind": "game",
   "status": "active",
@@ -68,7 +68,12 @@
     "extensions": [
       "apps",
       "character",
-      "storage"
+      "storage",
+      "speech",
+      "persona",
+      "dialogue",
+      "media",
+      "episode"
     ]
   }
 }

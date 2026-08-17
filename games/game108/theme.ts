@@ -104,7 +104,16 @@ export const UI_ACT = {
   // **是 `ui.` 不是世界动作**：拉起隔壁 App 是宿主的事，世界不该知道（进了世界就进 hash/录放/lockstep）。
   // 哪一格靠 `actionArg` 带 appId（闭集里只多这一个动作名，不给每个 App 造一个动作·【R-108-70】）。
   appPick: 'ui.app.pick',
+  // 【SDK 演示台】owner 2026-08-17：「我想实践一下所有 SDK 的功能……做一个 demonstration」。
+  // 一块能在**真 DokiWorld 网页里逐个按**的自检面板：每行一个模块，右边一枚「试一下」。
+  // 同样是 `ui.` 而非世界动作——它整块与对局规则无关，进世界就会污染 hash/录放/lockstep。
+  sdk: 'ui.sdk',            // 开/合演示台
+  sdkTry: 'ui.sdk.try',     // 试某一个模块（哪一个靠 actionArg 带 key·同 appPick 那条口径）
 } as const;
+
+/** 【SDK 演示台】九个模块的 key —— **与 manifest.runtime.extensions 同名**（面板按这张表逐行画）。 */
+export const SDK_MODULES = ['character', 'storage', 'apps', 'speech', 'persona', 'dialogue', 'media', 'episode', 'game-result'] as const;
+export type SdkModule = (typeof SDK_MODULES)[number];
 
 // ── 世界里的 id 约定 ───────────────────────────────────────────────────
 export const SIDES = ['p1', 'p2'] as const;

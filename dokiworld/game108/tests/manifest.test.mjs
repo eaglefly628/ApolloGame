@@ -55,26 +55,47 @@ test("manifest：entry 有源（src/index.html 存在）", async () => {
   await readFile(resolve(root, "src", "index.html"), "utf8");
 });
 
-test("manifest：extensions 声明与接线代码一致（apps+character+storage 三处齐·规范 §7 五步的前两步）", async () => {
+test("manifest：extensions 声明与接线代码一致（规范 §7 五步·**判据从 main.ts 现推**）", async () => {
   const manifest = await load("manifest.json");
-  assert.deepEqual([...manifest.runtime.extensions].sort(), ["apps", "character", "storage"]);
   const main = await readFile(resolve(root, "src", "main.ts"), "utf8");
-  // 锚点①：createAppClient 声明同一组名字
-  assert.ok(/createAppClient[^;]*extensions:\s*\['apps',\s*'character',\s*'storage'\]/s.test(main),
-    "createAppClient 必须声明 extensions: ['apps', 'character', 'storage']（与 manifest 一致）");
-  // 锚点②：三个模块各真建了一条通道（§7 第 3 步）。`apps` 走共享层的薄适配（createAppsGateway
-  // 内部才 createAppsClientExtension）——**声明了就必须真有消费方**，否则是多声明（会被宿主拒）。
-  assert.ok(main.includes("createStorageClientExtension(app"), "须真建 storage Client extension");
-  assert.ok(main.includes("createCharacterClientExtension(app"), "须真建 character Client extension");
-  assert.ok(/createAppsGateway\(app,/.test(main), "须真建 apps 通道（共享层 createAppsGateway）");
-  assert.ok(/declared:\s*true/.test(main), "apps 网关须 declared:true（与 manifest 声明同真同假·纪律①）");
-  // 锚点③：没建声明之外的模块（dialogue/media/speech/persona/episode 都判了不适用）
-  for (const absent of ["Dialogue", "Media", "Speech", "Persona", "Episode"]) {
-    assert.ok(!main.includes(`create${absent}ClientExtension`), `未声明的 ${absent} 模块不得创建 extension`);
+
+  // ⚠ **不在这里抄一份名单**（旧版抄了 `['apps','character','storage']` 三个字面量，
+  // 2026-08-17 加到八个时它红了——红得对，但它拦的是"名单变了"，不是"两处不一致"）。
+  // 判据改成现推：main.ts 里那张 `EXTENSIONS` 常量是第 2 步的唯一真相，manifest 必须与它逐字相等。
+  const decl = /const EXTENSIONS = \[([^\]]*)\] as const;/.exec(main);
+  assert.ok(decl, "main.ts 须有 `const EXTENSIONS = [...] as const`（§7 第 2 步的唯一真相）");
+  const wired = decl[1].split(",").map((x) => x.trim().replace(/^'|'$/g, "")).filter(Boolean);
+  assert.deepEqual([...manifest.runtime.extensions].sort(), [...wired].sort(),
+    "manifest.runtime.extensions 必须与 main.ts 的 EXTENSIONS 逐字一致（多声明会被宿主拒·少声明消息被拒）");
+
+  // 锚点②：**声明几个就真建几条通道**（§7 第 3 步）。逐个点名——漏建一条的表症是
+  // "宿主答了但我方没人听"，零报错。
+  const BUILDERS = {
+    storage: /createStorageClientExtension\(app/, character: /createCharacterClientExtension\(app/,
+    apps: /createAppsGateway\(app,/, speech: /createSpeechGateway\(app,/, persona: /createPersonaGateway\(app,/,
+    dialogue: /createDialogueGateway\(app,/, media: /createMediaGateway\(app,/, episode: /createEpisodeBridge\(app,/,
+  };
+  for (const name of wired) {
+    assert.ok(BUILDERS[name], `声明了 ${name} 但本测试不认识它——加通道时同步加锚点，别让新模块裸奔`);
+    assert.ok(BUILDERS[name].test(main), `声明了 ${name} 就必须真建那条通道（§7 第 3 步）`);
   }
-  // 锚点④：§7 第 5 步——退出决定里三个全释放（少一个 = 泄一条订阅）
-  assert.ok(/storage\.dispose\(\)/.test(main) && /character\.dispose\(\)/.test(main) && /apps\.dispose\(\)/.test(main),
-    "onExitDecision 须释放 storage/character/apps 三个 extension（§7 第 5 步）");
+  // 锚点③：**没声明的一个都不许建**（多声明/多建都会被宿主拒）。
+  for (const [name, re] of Object.entries(BUILDERS)) {
+    if (!wired.includes(name)) assert.ok(!re.test(main), `未声明的 ${name} 不得建通道`);
+  }
+  // 锚点④：`declared` 一律从 EXTENSIONS 现推，**不许写死 true**
+  //（写死 = 给自己留一个"改了名单忘了改这里"的口子，那种错的表症是静默等到超时）。
+  assert.ok(/const declared = \(name: string\): boolean => \(EXTENSIONS as readonly string\[\]\)\.includes\(name\);/.test(main),
+    "declared() 必须从 EXTENSIONS 现推");
+  // ⚠ 判据只看**代码**：把注释剥掉再匹配。第一版直接搜 `declared: true` 把上面那句
+  // "写死 declared:true 就是给自己留口子"的**注释**也算成了违规——尺子量到自己身上了。
+  const code = main.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  assert.ok(!/declared:\s*true/.test(code), "网关的 declared 不许写死 true——必须 declared('<name>')");
+  // 锚点⑤：§7 第 5 步——退出决定里**逐个释放**（少一个 = 泄一条订阅·跨实例串台）
+  for (const name of wired) {
+    const v = name === "episode" ? "episode" : name;
+    assert.ok(new RegExp(`${v}\\.dispose\\(\\)`).test(main), `onExitDecision 须释放 ${name}（§7 第 5 步）`);
+  }
 });
 
 test("manifest：cover 必填、包内相对路径、真图在源里（§3/§5·禁灰块占位）", async () => {
@@ -100,11 +121,17 @@ test("manifest：缺 cover / cover 逃包被校验器拒绝（§5 点名校验·
 test("manifest：extensions 声明漂移被校验器拒绝（声明≠真实创建是规范红线）", async () => {
   const manifest = await load("manifest.json");
   const pkg = await load("package.json");
+  // 校验器的这一条要**调用方把真名单递进来**（§7 第 2 步的真相在 main.ts，不在校验器里）。
+  // 这里把 manifest 现有的那份当"真名单"，再造两种漂移。
+  const truth = { extensions: [...manifest.runtime.extensions] };
   const drifted = structuredClone(manifest);
-  drifted.runtime.extensions = ["character", "storage", "progress"];   // 多声明（match3 踩过的坑）
-  assert.throws(() => validateManifest(drifted, pkg), /extensions/);
+  drifted.runtime.extensions = [...truth.extensions, "progress"];      // 多声明（match3 踩过的坑）
+  assert.throws(() => validateManifest(drifted, pkg, truth), /extensions/);
   drifted.runtime.extensions = ["storage"];                            // 少声明
-  assert.throws(() => validateManifest(drifted, pkg), /extensions/);
+  assert.throws(() => validateManifest(drifted, pkg, truth), /extensions/);
+  // ⚠ 防空转：名单**对得上**时必须放行（否则上面两条可能只是因为"永远抛"而绿）
+  drifted.runtime.extensions = [...truth.extensions].reverse();        // 顺序不同也算一致
+  validateManifest(drifted, pkg, truth);
 });
 
 test("manifest：坏输入被校验器拒绝（id 错 / 缺 promptHint 各红一次）", async () => {
