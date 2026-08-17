@@ -70,18 +70,27 @@ test("manifest：extensions 声明与接线代码一致（规范 §7 五步·**�
 
   // 锚点②：**声明几个就真建几条通道**（§7 第 3 步）。逐个点名——漏建一条的表症是
   // "宿主答了但我方没人听"，零报错。
+  // ⚠ **不是每个 extension 都是 capability 模块**：`resize` 这类是**普通会话消息**
+  // （`app.send('dokiworld-app-resize')`·照 `game-match3` 的做法），没有 client extension、
+  // 也没有 dispose。故每条各自说清楚"怎么算真接了"和"要不要释放"。
   const BUILDERS = {
-    storage: /createStorageClientExtension\(app/, character: /createCharacterClientExtension\(app/,
-    apps: /createAppsGateway\(app,/, speech: /createSpeechGateway\(app,/, persona: /createPersonaGateway\(app,/,
-    dialogue: /createDialogueGateway\(app,/, media: /createMediaGateway\(app,/, episode: /createEpisodeBridge\(app,/,
+    storage: { built: /createStorageClientExtension\(app/, disposes: 'storage' },
+    character: { built: /createCharacterClientExtension\(app/, disposes: 'character' },
+    apps: { built: /createAppsGateway\(app,/, disposes: 'apps' },
+    speech: { built: /createSpeechGateway\(app,/, disposes: 'speech' },
+    persona: { built: /createPersonaGateway\(app,/, disposes: 'persona' },
+    dialogue: { built: /createDialogueGateway\(app,/, disposes: 'dialogue' },
+    media: { built: /createMediaGateway\(app,/, disposes: 'media' },
+    episode: { built: /createEpisodeBridge\(app,/, disposes: 'episode' },
+    resize: { built: /app\.send\('dokiworld-app-resize'/, disposes: null },
   };
   for (const name of wired) {
     assert.ok(BUILDERS[name], `声明了 ${name} 但本测试不认识它——加通道时同步加锚点，别让新模块裸奔`);
-    assert.ok(BUILDERS[name].test(main), `声明了 ${name} 就必须真建那条通道（§7 第 3 步）`);
+    assert.ok(BUILDERS[name].built.test(main), `声明了 ${name} 就必须真接上（§7 第 3 步）`);
   }
   // 锚点③：**没声明的一个都不许建**（多声明/多建都会被宿主拒）。
-  for (const [name, re] of Object.entries(BUILDERS)) {
-    if (!wired.includes(name)) assert.ok(!re.test(main), `未声明的 ${name} 不得建通道`);
+  for (const [name, spec] of Object.entries(BUILDERS)) {
+    if (!wired.includes(name)) assert.ok(!spec.built.test(main), `未声明的 ${name} 不得建通道`);
   }
   // 锚点④：`declared` 一律从 EXTENSIONS 现推，**不许写死 true**
   //（写死 = 给自己留一个"改了名单忘了改这里"的口子，那种错的表症是静默等到超时）。
@@ -93,7 +102,8 @@ test("manifest：extensions 声明与接线代码一致（规范 §7 五步·**�
   assert.ok(!/declared:\s*true/.test(code), "网关的 declared 不许写死 true——必须 declared('<name>')");
   // 锚点⑤：§7 第 5 步——退出决定里**逐个释放**（少一个 = 泄一条订阅·跨实例串台）
   for (const name of wired) {
-    const v = name === "episode" ? "episode" : name;
+    const v = BUILDERS[name].disposes;
+    if (!v) continue;      // 普通会话消息（resize）没有订阅可退
     assert.ok(new RegExp(`${v}\\.dispose\\(\\)`).test(main), `onExitDecision 须释放 ${name}（§7 第 5 步）`);
   }
 });

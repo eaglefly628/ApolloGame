@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "version": "0.5.1",
+  "version": "0.6.0",
   "id": "game108",
   "kind": "game",
   "status": "active",
@@ -74,7 +74,8 @@
       "persona",
       "dialogue",
       "media",
-      "episode"
+      "episode",
+      "resize"
     ]
   },
   "result": {

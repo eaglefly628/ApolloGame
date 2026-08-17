@@ -73,7 +73,7 @@ interface Game108Input {
  *   speech/persona/dialogue/media/episode = **SDK 演示台**里逐行真调（owner 明许「加各种 sample」），
  *   外加 episode 在终局真发一条 `episode.gameCompleted`（战果的第二条出口：交给剧情路由下一拍）。
  */
-const EXTENSIONS = ['apps', 'character', 'storage', 'speech', 'persona', 'dialogue', 'media', 'episode'] as const;
+const EXTENSIONS = ['apps', 'character', 'storage', 'speech', 'persona', 'dialogue', 'media', 'episode', 'resize'] as const;
 // ⚠ `game-result` **不在 extensions 里**：它不是 capability 扩展，是 App 的 output 契约
 //（manifest.runtime.outputs + app.complete）。演示台把它单列一行是给人看的，不是给协议看的。
 const app = createAppClient<Game108Input>({ appId: APP_ID, extensions: [...EXTENSIONS] });
@@ -92,14 +92,66 @@ const apps = createAppsGateway(app, {
  * 五个"演示台驱动"的模块（+ episode 桥）。`declared` 一律从 `EXTENSIONS` 现推，
  * 降级原因经 `onWarn` 落进演示台那一行的 detail —— **静默降级要看得见**，这正是这块面板的用处。
  */
+/**
+ * 【运行日志】owner 2026-08-17：「多点日志打出来，我们运行了什么，得到了什么」。
+ *
+ * 每一次 SDK 调用都落一条 `→`（发了什么）+ `←`（拿回什么 / 失败原因 + 耗时）。
+ * 这不是装饰：真宿主里「没实现」和「慢」长得一模一样，**耗时是唯一能把它们分开的东西**；
+ * 而"发了什么"能立刻分清是我方参数不对还是对方没接。
+ *
+ * ⚠ **只打摘要不打全文**：`args` 里可能有整段台词/整张快照（checkpoint 压缩包 4KB 起），
+ * 原样 `JSON.stringify` 会把控制台刷爆、也会把玩家的话打进日志。故一律走 `brief()`。
+ */
+const SDK_LOG = '[game108][sdk]';
+const brief = (v: unknown, max = 120): string => {
+  if (v === undefined) return '';
+  if (typeof v === 'string') return v.length > max ? `${v.slice(0, max)}…(${v.length}字)` : v;
+  try {
+    const t = JSON.stringify(v, (_k, x) => (typeof x === 'string' && x.length > max ? `${x.slice(0, 40)}…(${x.length}字)` : x));
+    return t && t.length > max * 3 ? `${t.slice(0, max * 3)}…` : String(t);
+  } catch { return String(v); }
+};
+/** 一条调用记录（面板也读它——不止控制台看得见）。 */
+interface SdkCall { capability: string; op: string; ok: boolean; ms: number; detail: string }
+const sdkCalls: SdkCall[] = [];
+const logCall = (info: { capability: string; op: string; args?: unknown[]; ok: boolean; ms: number; result?: unknown; reason?: string }): void => {
+  const sent = brief(info.args?.[0]);
+  const got = info.ok ? brief(info.result) : `✗ ${info.reason}`;
+  console.info(`${SDK_LOG} ${info.capability}.${info.op} → ${sent || '(无参数)'}`);
+  console.info(`${SDK_LOG} ${info.capability}.${info.op} ← ${got}（${info.ms}ms）`);
+  sdkCalls.push({ capability: info.capability, op: info.op, ok: info.ok, ms: info.ms, detail: got });
+  if (sdkCalls.length > 200) sdkCalls.shift();     // 一局最多两百条，别把内存当日志盘
+};
+/**
+ * 裸 SDK 扩展（`character` / `storage`）**没有网关**，所以它们的调用要手工包一层同款日志。
+ * 顺带把「抛出来」变成「记一笔再抛」——调用方原有的 try/catch 语义一个字不改。
+ */
+async function traced<T>(capability: string, op: string, args: unknown, run: () => Promise<T>): Promise<T> {
+  const t0 = Date.now();
+  console.info(`${SDK_LOG} ${capability}.${op} → ${brief(args) || '(无参数)'}`);
+  try {
+    const out = await run();
+    const ms = Date.now() - t0;
+    console.info(`${SDK_LOG} ${capability}.${op} ← ${brief(out)}（${ms}ms）`);
+    sdkCalls.push({ capability, op, ok: true, ms, detail: brief(out) });
+    return out;
+  } catch (error) {
+    const ms = Date.now() - t0;
+    const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    console.warn(`${SDK_LOG} ${capability}.${op} ← ✗ ${reason}（${ms}ms）`);
+    sdkCalls.push({ capability, op, ok: false, ms, detail: `✗ ${reason}` });
+    throw error;
+  }
+}
+
 const gwWarn = (row: string) => ({ op, reason }: { op: string; reason: string }): void => {
   sdkSet(row, { state: 'down', detail: `${op} → ${reason}` });
 };
-const speech = createSpeechGateway(app, { declared: declared('speech'), timeoutMs: CAPABILITY_TIMEOUT_MS, onWarn: gwWarn('speech') });
-const persona = createPersonaGateway(app, { declared: declared('persona'), timeoutMs: CAPABILITY_TIMEOUT_MS, onWarn: gwWarn('persona') });
-const dialogue = createDialogueGateway(app, { declared: declared('dialogue'), timeoutMs: ROUND_DIALOGUE_TIMEOUT_MS, onWarn: gwWarn('dialogue') });
-const media = createMediaGateway(app, { declared: declared('media'), timeoutMs: DIALOGUE_TIMEOUT_MS, onWarn: gwWarn('media') });
-const episode = createEpisodeBridge(app, { declared: declared('episode'), onWarn: gwWarn('episode') });
+const speech = createSpeechGateway(app, { declared: declared('speech'), timeoutMs: CAPABILITY_TIMEOUT_MS, onWarn: gwWarn('speech') , onCall: logCall });
+const persona = createPersonaGateway(app, { declared: declared('persona'), timeoutMs: CAPABILITY_TIMEOUT_MS, onWarn: gwWarn('persona') , onCall: logCall });
+const dialogue = createDialogueGateway(app, { declared: declared('dialogue'), timeoutMs: ROUND_DIALOGUE_TIMEOUT_MS, onWarn: gwWarn('dialogue') , onCall: logCall });
+const media = createMediaGateway(app, { declared: declared('media'), timeoutMs: DIALOGUE_TIMEOUT_MS, onWarn: gwWarn('media') , onCall: logCall });
+const episode = createEpisodeBridge(app, { declared: declared('episode'), onWarn: gwWarn('episode'), onCall: logCall });
 
 /**
  * **演示台专用的一套长超时实例**（owner 2026-08-17 在真 DokiWorld 截图带出）。
@@ -115,10 +167,10 @@ const episode = createEpisodeBridge(app, { declared: declared('episode'), onWarn
 const PROBE_TIMEOUT_MS = 15_000;
 const probeStorage = createStorageClientExtension(app, { timeoutMs: PROBE_TIMEOUT_MS });
 const probeCharacter = createCharacterClientExtension(app, { timeoutMs: PROBE_TIMEOUT_MS });
-const probeSpeech = createSpeechGateway(app, { declared: declared('speech'), timeoutMs: PROBE_TIMEOUT_MS, onWarn: gwWarn('speech') });
-const probePersona = createPersonaGateway(app, { declared: declared('persona'), timeoutMs: PROBE_TIMEOUT_MS, onWarn: gwWarn('persona') });
-const probeDialogue = createDialogueGateway(app, { declared: declared('dialogue'), timeoutMs: PROBE_TIMEOUT_MS, onWarn: gwWarn('dialogue') });
-const probeMedia = createMediaGateway(app, { declared: declared('media'), timeoutMs: PROBE_TIMEOUT_MS, onWarn: gwWarn('media') });
+const probeSpeech = createSpeechGateway(app, { declared: declared('speech'), timeoutMs: PROBE_TIMEOUT_MS, onWarn: gwWarn('speech') , onCall: logCall });
+const probePersona = createPersonaGateway(app, { declared: declared('persona'), timeoutMs: PROBE_TIMEOUT_MS, onWarn: gwWarn('persona') , onCall: logCall });
+const probeDialogue = createDialogueGateway(app, { declared: declared('dialogue'), timeoutMs: PROBE_TIMEOUT_MS, onWarn: gwWarn('dialogue') , onCall: logCall });
+const probeMedia = createMediaGateway(app, { declared: declared('media'), timeoutMs: PROBE_TIMEOUT_MS, onWarn: gwWarn('media') , onCall: logCall });
 
 // ── 【SDK 演示台】九行状态机（owner 2026-08-17）────────────────────────────────
 //
@@ -144,7 +196,7 @@ function sdkSet(key: string, patch: Partial<Row>): void {
 const PROBES: Record<string, () => Promise<string>> = {
   // ── 产品级消费点（演示台只是再叫一次，看宿主答不答）──────────────────────
   character: async () => {
-    const { character: c } = await probeCharacter.getCurrent();
+    const { character: c } = await traced('character', 'getCurrent', undefined, () => probeCharacter.getCurrent());
     return c ? `当前角色：${c.name}（${c.id}）` : '宿主没给角色（未授权 character.identity？）';
   },
   storage: async () => {
@@ -153,10 +205,10 @@ const PROBES: Record<string, () => Promise<string>> = {
     const probe = { contract: 'doki.game.game108-checkpoint', version: 1, data: { world: 'sdk-probe' } };
     // ⚠ `saveCheckpoint(checkpoint)` 收的是 **checkpoint 本身**，不是 `{checkpoint}`
     //（storage.d.ts 实读；包一层会被入参校验器判 invalid-request——目击腿当场逮到过）。
-    await probeStorage.saveCheckpoint(probe);
-    const back = await probeStorage.loadCheckpoint();
+    await traced('storage', 'saveCheckpoint', probe, () => probeStorage.saveCheckpoint(probe));
+    const back = await traced('storage', 'loadCheckpoint', undefined, () => probeStorage.loadCheckpoint());
     const ok = (back?.checkpoint as { data?: { world?: string } } | null)?.data?.world === 'sdk-probe';
-    await probeStorage.clearCheckpoint();
+    await traced('storage', 'clearCheckpoint', undefined, () => probeStorage.clearCheckpoint());
     return ok ? '存 → 读 → 清 三步都通了' : '存进去了但读回来对不上（宿主 storage 实现有问题？）';
   },
   apps: async () => {
@@ -376,7 +428,7 @@ let unmount: (() => void) | undefined;
 async function resolveFoeCard(grantedScopes: string[] | undefined, data: Game108Input, mood: Mood): Promise<void> {
   if (hasScope(grantedScopes, 'character.identity')) {
     try {
-      const { character: profile } = await character.getCurrent();
+      const { character: profile } = await traced('character', 'getCurrent', undefined, () => character.getCurrent());
       const draft = characterToDraft(profile);
       if (draft) {
         const { card, usable } = fromPlatformCard(draft as PlatformCharacterDraft, mood);
@@ -400,7 +452,7 @@ async function resolveFoeCard(grantedScopes: string[] | undefined, data: Game108
 /** 投影④之恢复半程：有本 App 的 checkpoint 就把世界快照塞给游戏（坏档/无档一律 null → 全新开局）。 */
 async function resolveCheckpoint(): Promise<void> {
   try {
-    const { checkpoint } = await storage.loadCheckpoint();
+    const { checkpoint } = await traced('storage', 'loadCheckpoint', undefined, () => storage.loadCheckpoint());
     const packed = fromCheckpoint(checkpoint);
     if (!packed) return;                             // 无档 / 别家档 / 别版档 → 全新开局
     const world = await unpackWorld(packed);
@@ -432,6 +484,9 @@ async function resolveAppPicks(): Promise<void> {
 
 app.connect({
   onInit: async ({ locale, grantedScopes, input }) => {
+    const initAt = Date.now();
+    console.info(`${SDK_LOG} onInit → locale=${locale} · scopes=[${(grantedScopes ?? []).join(',')}] · 声明的扩展=[${EXTENSIONS.join(',')}]`);
+    console.info(`${SDK_LOG} onInit → input=${brief(input?.data)}`);
     // 投影①：locale → 游戏语言（游戏自己从 localStorage 读，同真 UI 的语言开关一条路）。
     saveLang(String(locale ?? '').toLowerCase().startsWith('en') ? 'en' : 'zh');
     const data = input?.data ?? {};
@@ -440,7 +495,17 @@ app.connect({
     // ⚠ **三条并行，不许串行**（2026-08-17 真宿主实测的教训）：这三个都是"宿主没实现就等到超时"
     // 的 capability，串一条就多黑屏一个超时。我先前把 persona 串在后面，把开局白等从 2 秒变成 4 秒。
     // 开场白要用 persona 的 likes，但它是**挂载之后**才发的（不 await），所以并行不影响它。
-    await Promise.all([resolveFoeCard(grantedScopes, data, mood), resolveCheckpoint(), resolveMyPersona()]);
+    // **`allSettled` 不是 `all`**（照 storyteller 的 onInit 那一批）：这三条各自独立，
+    // 用 `all` 的话任何一条抛出来都会让整个 onInit 挂掉 —— 而它们恰恰是最容易抛的
+    // （宿主没实现就超时）。一条坏不许拖垮开局。
+    const settled = await Promise.allSettled([
+      resolveFoeCard(grantedScopes, data, mood), resolveCheckpoint(), resolveMyPersona(),
+    ]);
+    settled.forEach((r, i) => {
+      const who = ['对手卡(character)', '续局(storage)', '我方身份(persona)'][i];
+      if (r.status === 'rejected') console.warn(`${SDK_LOG} onInit 投影「${who}」失败：${String(r.reason)}——已降级，开局照常`);
+    });
+    console.info(`${SDK_LOG} onInit ← 三条投影收口，用时 ${Date.now() - initAt}ms`);
     // 【episode 反向】剧情给的赌注上屏（纯表现·不改规则）。
     if (typeof data.stakes === 'string') setStakes(data.stakes);
     // 投影③：终局机读态 → GameResult。观察口每帧递一次 world（只读·与验收剧本同读法），
@@ -462,11 +527,22 @@ app.connect({
       }
       if (latest.terminal && !completed) {
         completed = true;
-        void app.complete(createGameResult({
+        const finalResult = createGameResult({
           normalizedScore: latest.normalizedScore,
           outcome: latest.outcome,
           metrics: latest.metrics,
-        })).catch(() => { /* ack 超时由 SDK 重试语义兜底；接线层不再造第二套重试 */ });
+        });
+        console.info(`${SDK_LOG} app.complete → ${brief(finalResult.data)}`);
+        void app.complete(finalResult).then(
+          // **回执的 status 要看**（README §6 点名「completion acknowledgement」要覆盖）：
+          // 宿主可以 `rejected`（契约不认 / 运行已结束）。此前我们只 catch 不看 status，
+          // 于是"交卷被打回"和"交卷成功"在日志里长得一样。
+          (ack) => {
+            console.info(`${SDK_LOG} app.complete ← ${ack.status}（resultId=${ack.resultId}）`);
+            if (ack.status === 'rejected') console.warn(`${SDK_LOG} 宿主拒收了本局战果：${brief(ack.error)}`);
+          },
+          (e: unknown) => console.warn(`${SDK_LOG} app.complete ← ✗ ${String(e)}（ack 超时由 SDK 重试语义兜底）`),
+        );
         // 【结算数据的第二条出口】`app.complete` 是交给**宿主记分**；这一条是交给**剧情**：
         // Episode World 拿 `episode.gameCompleted` 里的 GameResult 去 `resolveEpisodeGameResult`
         // 路由下一拍演什么（赢得漂亮 → 吹牛那一拍，输了 → 被调侃那一拍）。
@@ -495,6 +571,14 @@ app.connect({
     document.querySelector('#standby')?.remove();
     const stage = document.querySelector('#stage');
     if (stage instanceof HTMLElement) unmount = mount(stage);
+    // 【resize】照 `game-match3` 的做法：布局落定后给宿主一个**高度建议**，让 iframe 收到合适的高。
+    // 这是 Game 参考实现里唯一真正用起来的那个扩展（它 `dokiworld-app-resize` 一次性发）。
+    // 我们是定尺画布（1920×1080 等比缩放），故按舞台实际渲染高报，并夹在合理区间。
+    if (stage instanceof HTMLElement) {
+      const height = Math.min(1080, Math.max(520, Math.round(stage.getBoundingClientRect().height || stage.scrollHeight)));
+      console.info(`${SDK_LOG} app.send(dokiworld-app-resize) → height=${height}`);
+      app.send('dokiworld-app-resize', { height });
+    }
     // 列表**挂载之后**再拉（异步 capability·到货时游戏侧自己重画一次）：
     // 放在挂载前会把首屏卡在一次 capability 往返上——推荐位是终局屏才用得着的东西，
     // 拿开局那一秒去等它是本末倒置。宿主没实现 apps ⇒ 超时后空数组 ⇒ 整条不画。
@@ -519,7 +603,7 @@ app.connect({
     if (lastWorld) {
       try {
         const packed = await packWorld(lastWorld.snapshot(), lastWorld.snapshotOrder());
-        await storage.saveCheckpoint(toCheckpoint(packed));
+        await traced('storage', 'saveCheckpoint', { bytes: packed.length }, () => storage.saveCheckpoint(toCheckpoint(packed)));
         canSuspend = true;
       } catch {
         // 存不上（宿主无 storage / 超时）→ canSuspend:false，宿主只剩 stay/discard——不许假承诺
@@ -541,6 +625,8 @@ app.connect({
   // 规范 §7 第 5 步：结束时释放 extension 与嵌套宿主。suspend/discard 都意味着本实例到头了
   //（挂起恢复时是**新 instanceId 新页面**，不是本实例复活）——卸游戏、断观察口、释放两个 capability。
   onExitDecision: (decision) => {
+    console.info(`${SDK_LOG} onExitDecision ← ${decision} · 本局共发起 ${sdkCalls.length} 次 SDK 调用`
+      + `（成功 ${sdkCalls.filter((c) => c.ok).length}·降级 ${sdkCalls.filter((c) => !c.ok).length}）`);
     if (decision === 'stay') return;
     unmount?.();
     unmount = undefined;

@@ -41,11 +41,14 @@ export const declares = (manifest, name) => {
  * }} spec
  * @returns {{available: boolean, lastReason: () => string｜null, dispose: () => void} & Record<string, Function>}
  */
-export function createGuardedCapability({ name, declared = false, client, create, fallbacks, onWarn }) {
+export function createGuardedCapability({ name, declared = false, client, create, fallbacks, onWarn, onCall }) {
   if (typeof name !== 'string' || !name) throw new Error('capability name 必填');
   if (!fallbacks || typeof fallbacks !== 'object') throw new Error(`${name}: fallbacks 必填（它同时是方法名单）`);
 
   let lastReason = null;
+  /** 每次调用都递一条「调了什么 / 得到了什么 / 花了多久」——**观察口，不是日志**：
+   *  打不打、打到哪里由调用方决定（本层不 console，同 onWarn 的口径）。 */
+  const call = (info) => { try { onCall?.({ capability: name, ...info }); } catch { /* 观察口自炸不影响主路 */ } };
   const warn = (op, reason) => {
     lastReason = reason;
     try { onWarn?.({ capability: name, op, reason }); } catch { /* 观察口自己炸不许影响主路 */ }
@@ -57,7 +60,11 @@ export function createGuardedCapability({ name, declared = false, client, create
     const reason = declared ? 'no-channel' : 'not-declared';
     const shell = { available: false, lastReason: () => lastReason, dispose: () => {} };
     for (const [op, fb] of Object.entries(fallbacks)) {
-      shell[op] = async (...args) => { warn(op, reason); return fb(...args); };
+      shell[op] = async (...args) => {
+        warn(op, reason);
+        call({ op, args, ok: false, ms: 0, reason });
+        return fb(...args);
+      };
     }
     return Object.freeze(shell);
   }
@@ -75,14 +82,18 @@ export function createGuardedCapability({ name, declared = false, client, create
   };
   for (const [op, fb] of Object.entries(fallbacks)) {
     gw[op] = async (...args) => {
-      if (disposed) { warn(op, 'disposed'); return fb(...args); }
-      if (typeof ext[op] !== 'function') { warn(op, 'no-such-operation'); return fb(...args); }
+      const t0 = Date.now();
+      if (disposed) { warn(op, 'disposed'); call({ op, args, ok: false, ms: 0, reason: 'disposed' }); return fb(...args); }
+      if (typeof ext[op] !== 'function') { warn(op, 'no-such-operation'); call({ op, args, ok: false, ms: 0, reason: 'no-such-operation' }); return fb(...args); }
       try {
         const out = await ext[op](...args);
         lastReason = null;                      // 成功一次就把上一次的失败原因抹掉（面板读它）
+        call({ op, args, ok: true, ms: Date.now() - t0, result: out });
         return out;
       } catch (error) {
-        warn(op, reasonOf(error));
+        const reason = reasonOf(error);
+        warn(op, reason);
+        call({ op, args, ok: false, ms: Date.now() - t0, reason });
         return fb(...args);
       }
     };

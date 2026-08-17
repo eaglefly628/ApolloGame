@@ -116,6 +116,8 @@ export function setMyPersona(p?: { name?: string; avatarUrl?: string }): void {
  * **纯表现零规则**：声音与台词不写世界、不进 hash/录放/lockstep（同 `lang` 那条分界）。
  */
 let voiceClips: Partial<Record<VoiceEvent, string>> = {};
+/** 正在播的那一段（同一时刻只许有一段·放新的前先停它）。 */
+let voiceAudio: HTMLAudioElement | undefined;
 export function setVoiceClips(clips: Partial<Record<VoiceEvent, string>>): void {
   voiceClips = { ...clips };
 }
@@ -244,8 +246,14 @@ export function mount(container: HTMLElement): () => void {
     const clip = voiceClips[ev];
     let spoke = false;
     if (clip) {
-      try { void new Audio(clip).play().catch(() => { /* 拦了就当没播·下面还有两级 */ }); spoke = true; }
-      catch { spoke = false; }
+      // ⚠ **单一句柄 + 放新的前先停旧的**（照 storyteller 的 `speak()`）：
+      // 每次 `new Audio()` 各放各的，两句叠在一起 —— 本作有满蓄/亮拳/胜负连着触发的时候。
+      try {
+        voiceAudio?.pause();
+        voiceAudio = new Audio(clip);
+        void voiceAudio.play().catch(() => { /* 自动播放被拦 → 当没播·下面还有两级 */ });
+        spoke = true;
+      } catch { spoke = false; }
     }
     if (!spoke) voice.say(ev, lang);   // 返回 false 也照打字幕：听得见的两样都有，听不见的至少看得见
     // 【dialogue】字幕文本：宿主生成的那句优先，没有才用本地写死的七句之一。
@@ -619,7 +627,7 @@ export function mount(container: HTMLElement): () => void {
 
   // 卸载要**摘掉推荐位的重画口**：留着的话，卸载后宿主再 setAppPicks 会去画一台已经拆了的 UI
   //（`ui.update` 打在已卸载的 DOM 上——「什么都没发生」类的静默错，最难查的那一形状）。
-  return () => { picksNotify = undefined; sdkNotify = undefined; stopBoot(); engine.stop(); audio.stop(); voice.dispose(); ui(); teardown(); };
+  return () => { picksNotify = undefined; sdkNotify = undefined; voiceAudio?.pause(); voiceAudio = undefined; stopBoot(); engine.stop(); audio.stop(); voice.dispose(); ui(); teardown(); };
 }
 
 export { lastThrowVar, HP_RES };

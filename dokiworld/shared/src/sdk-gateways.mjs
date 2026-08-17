@@ -26,9 +26,9 @@ const opts = (timeoutMs) => (timeoutMs === undefined ? undefined : { timeoutMs }
  * 【speech】角色配音：把一句台词交给宿主合成，拿回可播的 audioUrl。
  * 降级 → `null`：调用方退回本地 TTS，再退字幕（game108 本来就有这条三级降级链）。
  */
-export const createSpeechGateway = (client, { declared, timeoutMs, onWarn } = {}) =>
+export const createSpeechGateway = (client, { declared, timeoutMs, onWarn, onCall } = {}) =>
   createGuardedCapability({
-    name: 'speech', declared, client, onWarn,
+    name: 'speech', declared, client, onWarn, onCall,
     create: (c) => createSpeechClientExtension(c, opts(timeoutMs)),
     fallbacks: { synthesize: () => null },
   });
@@ -38,9 +38,9 @@ export const createSpeechGateway = (client, { declared, timeoutMs, onWarn } = {}
  * `requestSelection` 会**弹宿主的选择器**（有 UI 副作用·别在开局静默调，那是替玩家做主）。
  * 降级 → 列表空 / 单值 null：调用方退回「你」+ 首字。
  */
-export const createPersonaGateway = (client, { declared, timeoutMs, onWarn } = {}) =>
+export const createPersonaGateway = (client, { declared, timeoutMs, onWarn, onCall } = {}) =>
   createGuardedCapability({
-    name: 'persona', declared, client, onWarn,
+    name: 'persona', declared, client, onWarn, onCall,
     create: (c) => createPersonaClientExtension(c, opts(timeoutMs)),
     fallbacks: {
       list: () => ({ personas: [] }),
@@ -53,9 +53,9 @@ export const createPersonaGateway = (client, { declared, timeoutMs, onWarn } = {
  * 【dialogue】角色台词生成：开场白 / 对话 / 建议回复 / 一句 tagline。
  * 降级 → null / 空：调用方退回本地写死的台词表（`voice.ts voiceLine`）。
  */
-export const createDialogueGateway = (client, { declared, timeoutMs, onWarn } = {}) =>
+export const createDialogueGateway = (client, { declared, timeoutMs, onWarn, onCall } = {}) =>
   createGuardedCapability({
-    name: 'dialogue', declared, client, onWarn,
+    name: 'dialogue', declared, client, onWarn, onCall,
     create: (c) => createDialogueClientExtension(c, opts(timeoutMs)),
     fallbacks: {
       generateDialogue: () => null,
@@ -70,10 +70,10 @@ export const createDialogueGateway = (client, { declared, timeoutMs, onWarn } = 
  * 【media】文生图/视频：**异步 job**（pending → processing → done/failed），要轮询 `getJob`。
  * 降级 → 一个 `status:'failed'` 的**同形假 job**：调用方的 `job.status` 分支照走，不必先判 null。
  */
-export const createMediaGateway = (client, { declared, timeoutMs, onWarn } = {}) => {
+export const createMediaGateway = (client, { declared, timeoutMs, onWarn, onCall } = {}) => {
   const dead = (mediaType) => ({ id: '', mediaType, status: 'failed', error: 'unavailable' });
   return createGuardedCapability({
-    name: 'media', declared, client, onWarn,
+    name: 'media', declared, client, onWarn, onCall,
     create: (c) => createMediaClientExtension(c, opts(timeoutMs)),
     fallbacks: {
       generateImage: () => dead('image'),
@@ -108,7 +108,7 @@ export async function pollMediaJob(media, jobId, { tries = 20, stepMs = 1_500, s
  * 这正是「结算数据往外放」的**第二条出口**——`app.complete` 是交给宿主记分，
  * 这一条是交给**剧情**决定接下来演什么。
  */
-export function createEpisodeBridge(client, { declared, onWarn } = {}) {
+export function createEpisodeBridge(client, { declared, onWarn, onCall } = {}) {
   if (!declared || !client || typeof client.send !== 'function') {
     const reason = declared ? 'no-channel' : 'not-declared';
     return Object.freeze({
@@ -121,7 +121,7 @@ export function createEpisodeBridge(client, { declared, onWarn } = {}) {
   const ext = createEpisodeClientExtension(client);
   return Object.freeze({
     available: true,
-    send: (event) => ext.send(event),
+    send: (event) => { try { onCall?.({ capability: 'episode', op: event?.type ?? 'send', args: [event], ok: true, ms: 0 }); } catch { /* 观察口自炸不影响主路 */ } return ext.send(event); },
     receive: (message) => ext.receive(message),
     dispose: () => {},        // episode 无订阅可退（send/receive 是纯函数对），留个同形的空实现
   });
