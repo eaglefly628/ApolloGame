@@ -54,10 +54,12 @@ export function validateManifest(manifest, packageJson) {
   }
   if (!Array.isArray(rt?.extensions)) fail("runtime.extensions 必须是数组（只声明真用到的）");
   // 规范 §5/§7：声明的 extension 必须与业务代码真实创建的 SDK extension 一致。
-  // 本 App 真实创建的是 character + storage 两个 Client extension（main.ts），一个不多一个不少；
+  // 本 App 真实创建的是 apps + character + storage 三个 Client extension（main.ts），一个不多一个不少；
+  // （`apps`=「换个游戏玩」推荐位·REQ-DOKI-APPS·owner 2026-08-16 判 game108 当第一个消费者：
+  //  **先有真消费才加声明**——手册红线「只声明真用到的」，多声明会被宿主拒。）
   // 与 createAppClient({extensions}) 的一致性由 tests/manifest.test.mjs 对源码锚点核。
-  if (JSON.stringify([...rt.extensions].sort()) !== JSON.stringify(["character", "storage"])) {
-    fail(`runtime.extensions 必须恰为 ["character","storage"]（与 main.ts 真实创建的一致），实为 ${JSON.stringify(rt.extensions)}`);
+  if (JSON.stringify([...rt.extensions].sort()) !== JSON.stringify(["apps", "character", "storage"])) {
+    fail(`runtime.extensions 必须恰为 ["apps","character","storage"]（与 main.ts 真实创建的一致），实为 ${JSON.stringify(rt.extensions)}`);
   }
 }
 

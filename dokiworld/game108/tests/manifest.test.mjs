@@ -55,23 +55,26 @@ test("manifest：entry 有源（src/index.html 存在）", async () => {
   await readFile(resolve(root, "src", "index.html"), "utf8");
 });
 
-test("manifest：extensions 声明与接线代码一致（character+storage 三处齐·规范 §7 五步的前两步）", async () => {
+test("manifest：extensions 声明与接线代码一致（apps+character+storage 三处齐·规范 §7 五步的前两步）", async () => {
   const manifest = await load("manifest.json");
-  assert.deepEqual([...manifest.runtime.extensions].sort(), ["character", "storage"]);
+  assert.deepEqual([...manifest.runtime.extensions].sort(), ["apps", "character", "storage"]);
   const main = await readFile(resolve(root, "src", "main.ts"), "utf8");
   // 锚点①：createAppClient 声明同一组名字
-  assert.ok(/createAppClient[^;]*extensions:\s*\['character',\s*'storage'\]/s.test(main),
-    "createAppClient 必须声明 extensions: ['character', 'storage']（与 manifest 一致）");
-  // 锚点②：两个模块各真建了一个 Client extension（§7 第 3 步）
+  assert.ok(/createAppClient[^;]*extensions:\s*\['apps',\s*'character',\s*'storage'\]/s.test(main),
+    "createAppClient 必须声明 extensions: ['apps', 'character', 'storage']（与 manifest 一致）");
+  // 锚点②：三个模块各真建了一条通道（§7 第 3 步）。`apps` 走共享层的薄适配（createAppsGateway
+  // 内部才 createAppsClientExtension）——**声明了就必须真有消费方**，否则是多声明（会被宿主拒）。
   assert.ok(main.includes("createStorageClientExtension(app"), "须真建 storage Client extension");
   assert.ok(main.includes("createCharacterClientExtension(app"), "须真建 character Client extension");
-  // 锚点③：没建声明之外的模块（dialogue/media/speech/persona/apps/episode 都判了不适用）
-  for (const absent of ["Dialogue", "Media", "Speech", "Persona", "Apps", "Episode"]) {
+  assert.ok(/createAppsGateway\(app,/.test(main), "须真建 apps 通道（共享层 createAppsGateway）");
+  assert.ok(/declared:\s*true/.test(main), "apps 网关须 declared:true（与 manifest 声明同真同假·纪律①）");
+  // 锚点③：没建声明之外的模块（dialogue/media/speech/persona/episode 都判了不适用）
+  for (const absent of ["Dialogue", "Media", "Speech", "Persona", "Episode"]) {
     assert.ok(!main.includes(`create${absent}ClientExtension`), `未声明的 ${absent} 模块不得创建 extension`);
   }
-  // 锚点④：§7 第 5 步——退出决定里释放两个 extension
-  assert.ok(/storage\.dispose\(\)/.test(main) && /character\.dispose\(\)/.test(main),
-    "onExitDecision 须释放 storage/character extension（§7 第 5 步）");
+  // 锚点④：§7 第 5 步——退出决定里三个全释放（少一个 = 泄一条订阅）
+  assert.ok(/storage\.dispose\(\)/.test(main) && /character\.dispose\(\)/.test(main) && /apps\.dispose\(\)/.test(main),
+    "onExitDecision 须释放 storage/character/apps 三个 extension（§7 第 5 步）");
 });
 
 test("manifest：cover 必填、包内相对路径、真图在源里（§3/§5·禁灰块占位）", async () => {

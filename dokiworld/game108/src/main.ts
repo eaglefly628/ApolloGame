@@ -7,7 +7,9 @@ import { createAppClient } from '@dokiworld/app-sdk';
 import { createGameResult } from '@dokiworld/app-sdk/game-result';
 import { createStorageClientExtension } from '@dokiworld/app-sdk/storage';
 import { createCharacterClientExtension } from '@dokiworld/app-sdk/character';
-import { mount, setCard, setWorldObserver, setWorldRestore } from '../../../games/game108/index.js';
+import { createAppsGateway } from '../../shared/src/apps-gateway.mjs';
+import { toAppPicks } from './app-picks.mjs';
+import { mount, setCard, setWorldObserver, setWorldRestore, setAppPicks, onAppPick } from '../../../games/game108/index.js';
 import { fromPlatformCard, MOODS, type Mood } from '../../../games/game108/card-character.js';
 import type { PlatformCharacterDraft } from '@zerocraft/engine/services/character-card/index.js';
 import { saveLang } from '../../../games/game108/strings.js';
@@ -30,11 +32,20 @@ interface Game108Input {
   mood?: string;
 }
 
-// manifest.runtime.extensions = ['character','storage']——**声明与真实调用一致**（规范 §5/§7：
-// 两个模块这里各建一个 Client extension，别的模块一个不建）。§7 第 5 步的释放走 onExitDecision。
-const app = createAppClient<Game108Input>({ appId: APP_ID, extensions: ['character', 'storage'] });
+// manifest.runtime.extensions = ['apps','character','storage']——**声明与真实调用一致**（规范 §5/§7：
+// 三个模块这里各建一个 Client extension，别的模块一个不建）。§7 第 5 步的释放走 onExitDecision。
+// `apps` 是 2026-08-16 owner 判「game108 当第一个消费者」后才加的：**先有真消费，再有声明**
+//（手册红线「只声明真用到的」——多声明会被宿主拒）。
+const app = createAppClient<Game108Input>({ appId: APP_ID, extensions: ['apps', 'character', 'storage'] });
 const storage = createStorageClientExtension(app, { timeoutMs: CAPABILITY_TIMEOUT_MS });
 const character = createCharacterClientExtension(app, { timeoutMs: CAPABILITY_TIMEOUT_MS });
+// 「获取卡带」走共享层（`dokiworld/shared`·超时/降级/dispose 已封）。`declared` 不是随手写的 true：
+// 它必须与上面那行 `extensions` 同真同假——未声明还发消息的表症是**静默等到超时**（纪律①）。
+const apps = createAppsGateway(app, {
+  declared: true,
+  timeoutMs: CAPABILITY_TIMEOUT_MS,
+  onWarn: ({ op, reason }) => console.info(`[game108] apps.${op} 降级（${reason}）——推荐位不出现，对局照常`),
+});
 
 type Projection = ReturnType<typeof toGameResult>;
 type ObservedWorld = Parameters<NonNullable<Parameters<typeof setWorldObserver>[0]>>[0];
@@ -87,6 +98,20 @@ async function resolveCheckpoint(): Promise<void> {
   }
 }
 
+/**
+ * 投影⑤：宿主可拉起的 App → 终局屏「换个游戏玩」推荐位（REQ-DOKI-APPS·owner 2026-08-16 判）。
+ * 过滤规则与理由全在 `app-picks.mjs`（纯函数·带点名测试）；这里只做「拉一次 → 交给屏」。
+ */
+const launchable = new Map<string, { contract: string; version: number }>();
+
+async function resolveAppPicks(): Promise<void> {
+  const { picks, launchable: targets, skipped } = toAppPicks(await apps.list(), { selfId: APP_ID });
+  launchable.clear();
+  for (const [id, t] of targets) launchable.set(id, t);
+  if (skipped) console.info(`[game108] apps.list 里 ${skipped} 个条目拿不到 runtime.input.contract，不进推荐位（拉不起来的键不画）`);
+  setAppPicks(picks);                      // 空数组 = 终局屏整条不画（游戏侧语义）
+}
+
 app.connect({
   onInit: async ({ locale, grantedScopes, input }) => {
     // 投影①：locale → 游戏语言（游戏自己从 localStorage 读，同真 UI 的语言开关一条路）。
@@ -111,9 +136,25 @@ app.connect({
         void storage.clearCheckpoint().catch(() => { /* 尽力而为·失败下次 restore 也只是多看一眼终局屏 */ });
       }
     });
+    // 投影⑤（推荐位）：点了哪一格 → 拉起那个 App。**先接住点击再挂载**——玩家在第一局
+    // 打完之前不会点到它，但「挂载后才接」等于给自己留一个「早点了就掉进静默分支」的窗口。
+    onAppPick((appId) => {
+      const target = launchable.get(appId);
+      if (!target) { console.info(`[game108] 推荐位 ${appId} 已不可拉起（列表已刷新？）——不发消息`); return; }
+      void apps.launch({ appId, contract: target.contract, version: target.version, data: {} })
+        .then((r) => {
+          // 三态都是正常世界：completed=玩家在那边打完回来了·cancelled=玩家中途退了·
+          // unavailable=通道没成事。**都不打扰对局**（推荐位是可选增强·纪律②）。
+          if (r.status !== 'completed') console.info(`[game108] apps.launch ${appId} → ${r.status}`);
+        });
+    });
     document.querySelector('#standby')?.remove();
     const stage = document.querySelector('#stage');
     if (stage instanceof HTMLElement) unmount = mount(stage);
+    // 列表**挂载之后**再拉（异步 capability·到货时游戏侧自己重画一次）：
+    // 放在挂载前会把首屏卡在一次 capability 往返上——推荐位是终局屏才用得着的东西，
+    // 拿开局那一秒去等它是本末倒置。宿主没实现 apps ⇒ 超时后空数组 ⇒ 整条不画。
+    void resolveAppPicks();
   },
   // 中途退出（规范 §6/§8）：挂起半程=把当前世界快照存进 storage checkpoint，存成了才敢
   // 报 canSuspend:true（报了 true 却没存上=恢复时静默丢局）。output 仍带 exited+当时分
@@ -153,7 +194,10 @@ app.connect({
     unmount?.();
     unmount = undefined;
     setWorldObserver(undefined);
+    onAppPick(undefined);      // 摘掉推荐位回调（游戏已卸载·再点没有承接方）
+    setAppPicks([]);           // 清空推荐位（下一个实例是新页面，别让旧列表跨实例活着）
     storage.dispose();
     character.dispose();
+    apps.dispose();            // 规范 §7 第 5 步：三个 extension 全释放（少释放一个 = 泄一条订阅）
   },
 });

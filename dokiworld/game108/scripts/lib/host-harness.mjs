@@ -28,10 +28,11 @@ const HARNESS_HTML = `<!doctype html>
 import { createAppHost } from "./sdk/index.js";
 import { createStorageHostExtension } from "./sdk/storage.js";
 import { createCharacterHostExtension } from "./sdk/character.js";
+import { createAppsHostExtension } from "./sdk/apps.js";
 
 window.__setup = (config) => new Promise((ready) => {
   const iframe = document.getElementById("app");
-  const state = { initialized: false, completed: null, saved: config.checkpoint ?? null, exitState: null };
+  const state = { initialized: false, completed: null, saved: config.checkpoint ?? null, exitState: null, launched: null, listed: 0 };
   window.__state = state;
   iframe.addEventListener("load", () => {
     const host = createAppHost({
@@ -60,6 +61,14 @@ window.__setup = (config) => new Promise((ready) => {
     if ((config.hostExtensions ?? []).includes("character")) {
       createCharacterHostExtension(host, {
         getCurrent: () => ({ character: config.character ?? null }),
+      });
+    }
+    // 「获取卡带」腿（REQ-DOKI-APPS）：宿主端把可拉起的 App 列表交出去，并记下真被拉起的那次
+    //（launch 的落点记在 state.launched——目击断言读它，不采信页面自陈）。
+    if ((config.hostExtensions ?? []).includes("apps")) {
+      createAppsHostExtension(host, {
+        list: () => { state.listed = (state.listed ?? 0) + 1; return { apps: config.apps ?? [] }; },
+        launch: (req) => { state.launched = req; return { status: "cancelled" }; },
       });
     }
     host.connect({

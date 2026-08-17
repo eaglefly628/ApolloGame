@@ -1256,3 +1256,72 @@ describe('game108 · DokiWorld 挂起/恢复接缝（setWorldRestore）', () => 
     expect(consumeWorldRestore()).toBeUndefined();
   });
 });
+
+// ═══ 【REQ-DOKI-APPS】终局屏「换个游戏玩」推荐位（owner 2026-08-16 判：game108 当第一个消费者）═══
+// 语义钉死：① 空/缺省 = 整条不画（非 DokiWorld 宿主逐像素同旧版）② 每格可点且 arg=appId
+// ③ 动作是 `ui.` 本地动作、**世界词表里没有**（拉起隔壁 App 不该进 hash/录放/lockstep）
+// ④ 缺封面画名字首字（不留空白格）⑤ 面板随推荐位加高（不加高会顶出圆角边框外）。
+describe('game108 · 终局屏推荐位（REQ-DOKI-APPS·render-only）', () => {
+  const endView = (picks?: { id: string; name: string; cover?: string }[]): DuelView =>
+    ({ ...emptyView(), phase: 'p1win' as const, ...(picks ? { appPicks: picks } : {}) });
+  const idsOf = (v: DuelView): string[] => {
+    const out: string[] = [];
+    const walk = (n: LayoutNode): void => { out.push(n.id); for (const c of n.children ?? []) walk(c); };
+    walk(buildDuelScreen(v));
+    return out;
+  };
+
+  it('缺省/空列表 → 终局屏一个推荐位节点都没有（存量零变化）', () => {
+    for (const v of [endView(), endView([])]) {
+      expect(idsOf(v).filter((i) => i.startsWith('end-more'))).toEqual([]);
+      expect(screenActions(v)).not.toContain(UI_ACT.appPick);
+    }
+  });
+
+  it('宿主给了两个 → 两格可点·action=ui.app.pick·arg=appId·标题双语', () => {
+    const v = endView([{ id: 'game-match3', name: '三消', cover: 'data:image/png;base64,x' }, { id: 'storyteller', name: 'Storyteller' }]);
+    const node = buildDuelScreen(v);
+    const cells: Array<{ action?: string; actionArg?: string }> = [];
+    const walk = (n: LayoutNode): void => {
+      if (n.id.startsWith('end-more-') && (n.props as { action?: string })?.action) cells.push(n.props as never);
+      for (const c of n.children ?? []) walk(c);
+    };
+    walk(node);
+    expect(cells.map((c) => c.actionArg)).toEqual(['game-match3', 'storyteller']);
+    for (const c of cells) expect(c.action).toBe(UI_ACT.appPick);
+    expect(idsOf(v)).toContain('end-more-t');
+    expect(JSON.stringify(node)).toContain(t('zh', 'end.more'));
+    expect(JSON.stringify(buildDuelScreen({ ...v, lang: 'en' }))).toContain(t('en', 'end.more'));
+  });
+
+  it('推荐位动作是 `ui.` 本地动作，世界词表里没有（不进 hash/录放/lockstep）', () => {
+    expect(UI_ACT.appPick.startsWith('ui.')).toBe(true);
+    const world = new Set<string>([...HANDS.map(ACT.charge), ...HANDS.map(ACT.throw), ACT.smoke, ACT.shardPick, ACT.next]);
+    expect(world.has(UI_ACT.appPick)).toBe(false);
+    expect(new Set(Object.values(UI_ACT)).size).toBe(Object.values(UI_ACT).length); // 本地动作名互不重复
+  });
+
+  it('缺封面 → 画名字首字（不留空白格）；有封面 → 用宿主给的 URL', () => {
+    const json = JSON.stringify(buildDuelScreen(endView([{ id: 'a', name: '三消' }, { id: 'b', name: 'Zed', cover: 'https://host/c.webp' }])));
+    expect(json).toContain('"end-more-a-ini"');     // 首字兜底节点
+    expect(json).toContain('"end-more-b-img"');     // 真封面
+    expect(json).toContain('https://host/c.webp');
+  });
+
+  it('最多三格（面板装得下的上限）·面板随推荐位加高·闭集仍零 issue', () => {
+    const many = [1, 2, 3, 4, 5].map((n) => ({ id: `app${n}`, name: `App ${n}` }));
+    const v = endView(many);
+    const shown = idsOf(v).filter((i) => /^end-more-app\d$/.test(i));
+    expect(shown).toEqual(['end-more-app1', 'end-more-app2', 'end-more-app3']);
+    expect(validateLayoutNode(buildDuelScreen(v))).toEqual([]);
+    expect(validateLayoutNode(buildDuelScreen(endView()))).toEqual([]);
+    // 加高锚点：有推荐位的终局面板比没有的高（撤掉加高 → 本断言红）
+    const hOf = (view: DuelView): number => {
+      let h = 0;
+      const walk = (n: LayoutNode): void => { if (n.id === 'end') h = (n.layout as { height?: number })?.height ?? 0; for (const c of n.children ?? []) walk(c); };
+      walk(buildDuelScreen(view));
+      return h;
+    };
+    expect(hOf(v)).toBeGreaterThan(hOf(endView()));
+  });
+});

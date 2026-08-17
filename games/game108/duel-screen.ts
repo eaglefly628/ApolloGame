@@ -48,6 +48,12 @@ const BEATS: Record<Hand, Hand> = { rock: 'paper', paper: 'scissors', scissors: 
 
 export type Phase = 'charge' | 'throw' | 'clash' | 'settle' | 'p1win' | 'p2win';
 
+/**
+ * 【REQ-DOKI-APPS】可拉起的别家 App（宿主投影后的最小形状·屏只认这三样）。
+ * `cover` 缺省 = 画名字首字（同 portrait 的分级降级口径，不留空白格）。
+ */
+export interface AppPick { id: string; name: string; cover?: string }
+
 export interface DuelView {
   phase: Phase;
   /** 相位剩余比例 0..1（倒计时环 + **手的动画时钟**）。 */
@@ -115,6 +121,13 @@ export interface DuelView {
   portrait?: Partial<Record<Side, string>>;
   /** 对手的**心情**（定稿 §⑥：名字下一枚 18px 小签·「它直接解释对手为什么这样打」）。 */
   foeMood?: string;
+  /**
+   * 【REQ-DOKI-APPS】终局屏「换个游戏玩」推荐位——宿主（DokiWorld）现在能拉起的别的 App。
+   * **空/缺省 = 整条不画**（本机试玩、渲染探针、非 DokiWorld 宿主全走这条·屏上逐像素同旧版）。
+   * 屏这一层只认 `{id,name,cover?}` 三样，**不认 SDK 类型**——游戏层不依赖出包层，
+   * 换个平台只需换宿主那边的投影（同 `skins` 只认 key 不认路径那条铁律）。
+   */
+  appPicks?: readonly AppPick[];
   /** 界面语言（owner 2026-08-07：中英双版·默认中文）。 */
   lang: Lang;
   /** 设置菜单开着没有（owner 2026-08-07：右上角一个菜单键·里面放音乐和语言）。 */
@@ -1472,9 +1485,48 @@ function subtitle(view: DuelView): LayoutNode | null {
 }
 
 /** 终局覆盖层。**对局键整条收起**（稿子：`showHud=false`·"此屏无死路操作"）。 */
+/**
+ * 【REQ-DOKI-APPS】终局屏推荐位：宿主给了几个 App 就画几格（最多三格·面板宽度装得下的上限）。
+ * 每格 = 一枚可点 Panel（`action: ui.app.pick` + `actionArg: appId`）——**闭集数据，零自由 DOM**。
+ * 有封面画封面、没封面画名字首字（缺图不留空白格·同 portrait 降级口径）。
+ * 空列表时**本函数根本不被调用**（见 endPanel 的 picks.length 判断）⇒ 非 DokiWorld 宿主逐像素同旧版。
+ */
+const APP_PICK_MAX = 3;
+function appPickStrip(view: DuelView, picks: readonly AppPick[]): LayoutNode {
+  const cell = 168, coverH = 96;
+  return {
+    type: 'Panel', id: 'end-more', props: { bare: true },
+    layout: { direction: 'column', align: 'center', gap: 10 },
+    children: [
+      { type: 'Label', id: 'end-more-t', props: { text: t(view.lang, 'end.more'), size: S.endLabel, font: F.cjk, color: 'sub' } },
+      {
+        type: 'Panel', id: 'end-more-row', props: { bare: true },
+        layout: { direction: 'row', align: 'center', justify: 'center', gap: 14 },
+        children: picks.slice(0, APP_PICK_MAX).map((p) => ({
+          type: 'Panel' as const, id: `end-more-${p.id}`,
+          props: {
+            skin: plate({ w: cell, h: coverH + 34, fill: C.cream, border: B.plate, radius: R.card, shadow: SH.plate, shadowColor: 'rgba(0,0,0,.28)' }),
+            action: UI_ACT.appPick, actionArg: p.id,
+          },
+          layout: { width: cell, height: coverH + 34, direction: 'column', align: 'center', justify: 'center', gap: 4, padding: 6 },
+          children: [
+            p.cover
+              ? { type: 'Image' as const, id: `end-more-${p.id}-img`, props: { src: p.cover, alt: p.name, fit: 'cover' as const }, layout: { width: cell - 24, height: coverH } }
+              // 没封面：画名字首字（宿主给的 name 可能是任意语言，取第一个字符即可）
+              : { type: 'Label' as const, id: `end-more-${p.id}-ini`, props: { text: [...p.name][0] ?? '?', size: S.endStat, font: F.cjk, bold: true, color: 'ink' as const }, layout: { width: cell - 24, height: coverH } },
+            { type: 'Label' as const, id: `end-more-${p.id}-n`, props: { text: p.name, size: S.endLabel, font: F.cjk, color: 'ink' as const } },
+          ],
+        })),
+      },
+    ],
+  };
+}
+
 function endPanel(view: DuelView): LayoutNode[] {
   const won = view.phase === 'p1win';
-  const w = L.end.w, hgt = 470;
+  // 推荐位有几格就把面板加高多少（面板是定高盒——不加高的话推荐位会顶出圆角边框外·真渲染踩过同形）。
+  const picks = (view.appPicks ?? []).slice(0, APP_PICK_MAX);
+  const w = L.end.w, hgt = 470 + (picks.length ? 190 : 0);
   const stat = (id: string, n: string, label: string): LayoutNode => ({
     type: 'Panel', id, props: { bare: true },
     layout: { direction: 'column', align: 'center', gap: 2 },
@@ -1522,6 +1574,9 @@ function endPanel(view: DuelView): LayoutNode[] {
           layout: { width: 320, height: 90, direction: 'row', align: 'center', justify: 'center', padding: 0 },
           children: [{ type: 'Label', id: 'key-next-t', props: { text: t(view.lang, 'end.again'), size: S.cta, font: F.cjk, color: 'ink' } }],
         },
+        // 【REQ-DOKI-APPS】推荐位排在「再来一局」**之后**：先给这局的出口，再给下一站的入口
+        //（顺序反了 = 玩家最想点的那颗被挤到下面·定稿的主 CTA 是「再来一局」）。
+        ...(picks.length ? [appPickStrip(view, picks)] : []),
       ],
     },
   ];

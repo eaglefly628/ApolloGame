@@ -22,7 +22,20 @@ await build({
   root: resolve(appRoot, "src"),
   base: "./",                       // 规范 §9：资源相对路径，包自包含
   logLevel: "warn",
-  resolve: { alias: engineAliases(repoRoot) },
+  resolve: {
+    alias: [
+      // 引擎子路径（仓内 src·单一真相 engine-aliases.mjs）
+      ...Object.entries(engineAliases(repoRoot)).map(([find, replacement]) => ({ find, replacement })),
+      // ── 共享层（`dokiworld/shared/**`）的 SDK 解析 ─────────────────────────────
+      // 它 `import ... from "@dokiworld/app-sdk/apps"`，而 node 从**引用文件所在目录**往上找
+      // node_modules：`dokiworld/shared/` 下没有（也不该有——那会把第二份 SDK 打进同一个 bundle，
+      // 两个实例各带一套协议常量）。故在打包层把 SDK 指到**本 App 自己那份**：
+      // 「App owns the SDK」与手册「SDK 打进 bundle·版本四维不联动」同口径，假宿主 harness
+      // serve 的 /sdk/* 也是这一份，两边永远同一个实例。
+      { find: /^@dokiworld\/app-sdk$/, replacement: resolve(appRoot, "node_modules/@dokiworld/app-sdk/src/index.js") },
+      { find: /^@dokiworld\/app-sdk\/(.+)$/, replacement: resolve(appRoot, "node_modules/@dokiworld/app-sdk/src") + "/$1.js" },
+    ],
+  },
   esbuild: { jsx: "automatic" },    // 引擎 UI 的 .tsx 走 React 17+ 自动运行时（同仓根 tsconfig "react-jsx"）
   build: {
     outDir: dist,

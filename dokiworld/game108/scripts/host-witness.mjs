@@ -63,16 +63,43 @@ async function boot(config, { viewport = { width: 1280, height: 720 } } = {}) {
   };
 }
 
-/** 点开始（等 1.4s 假加载走完挂上 action）→ 等对局屏。 */
+/**
+ * 蓄一层（**不假设点的时候正好在 T1**）：T1 里蓄力键才在；错过窗口就要等下一回合，
+ * 而 T4 是**玩家闸门**（没人点「下一轮」就永远停在那儿）——直接 `locator.click()` 撞上这两种
+ * 情形会一直等到超时（2026-08-16 实测：leg④ 卡满 30 秒）。故按当前屏上**有什么键点什么**：
+ * 有蓄力键就蓄、停在结算闸门就先推下一轮，直到真蓄上。
+ */
+async function chargeOnce(h, hand = "rock") {
+  await until(async () => {
+    const charge = h.frame().locator(`[data-action='charge.${hand}']`);
+    if ((await charge.count()) > 0) { await charge.first().click(); return true; }
+    const next = h.frame().locator("[data-action='duel.next']");
+    if ((await next.count()) > 0) await next.first().click();   // T4 闸门：推进到下一回合再试
+    return false;
+  }, { label: `蓄力窗口出现并点上（${hand}）`, timeoutMs: 30_000, stepMs: 200 });
+}
+
+/**
+ * 点开始 → **真进得去对局**。
+ *
+ * ⚠ 收工判据是「蓄力键真的可点」，**不是 `#phase-t` 在不在**（2026-08-16 实测踩到）：
+ * 2026-08-13 加的「首次进入先弹玩法说明」屏是**盖在对局屏之上的一层**，`#phase-t` 在它底下
+ * 照样存在 ⇒ 旧判据「`#phase-t` 出现即算进对局」在那次改动之后**恒真**，clickStart 只点一下
+ * （说明屏那一下）就返回，世界根本没开跑；于是任何需要真交互的腿（leg④ 蓄力）永远等不到键，
+ * 一路等到超时。**同一形状的病 REQ-S3CLICK 复查里刚记过一笔**（「画出来了」≠「点得动」）。
+ * 故这里改成：反复点 `ui.start`（说明屏那下 + 开始那下），直到**世界动作**真出现在屏上。
+ */
 async function clickStart(h) {
   await until(async () => (await h.frame().locator("#start[data-action='ui.start'], #start button, #start").count()) > 0, { label: "启动屏出现" });
   await until(async () => {
-    const el = h.frame().locator("[data-action='ui.start']");
-    if ((await el.count()) === 0) return false;
-    await el.first().click();
-    return true;
-  }, { label: "加载走完·开始键可点", timeoutMs: 8_000, stepMs: 250 });
-  await until(async () => (await h.frame().locator("#phase-t").count()) > 0, { label: "对局屏挂载" });
+    // **说明屏是盖在上面的一层**：底下那颗同名 `ui.start` 会被它拦住（Playwright 实测报
+    // 「#help intercepts pointer events」）。故优先点**说明屏里那颗**，没有说明屏才点底下的。
+    // 每次 click 单独设短超时并吞掉失败：被盖住时立刻回到轮询，而不是一路等到 30 秒默认超时。
+    const inHelp = h.frame().locator("#help [data-action='ui.start']");
+    const el = (await inHelp.count()) > 0 ? inHelp : h.frame().locator("[data-action='ui.start']");
+    if ((await el.count()) > 0) await el.first().click({ timeout: 1_500 }).catch(() => { /* 被盖住/正在动画 → 下一轮再点 */ });
+    return (await h.frame().locator("[data-action^='charge.'], [data-action='duel.next']").count()) > 0;
+  }, { label: "真进对局（世界动作可点·非仅画出对局屏）", timeoutMs: 20_000, stepMs: 250 });
 }
 
 try {
@@ -148,7 +175,7 @@ try {
     await until(h.initialized, { label: "④ init 完成", timeoutMs: 15_000 });
     await clickStart(h);
     // 真打一手：蓄石头一层（世界真变了才有「恢复回来还在」可断言）。读数格式=「层/上限」。
-    await h.frame().locator("[data-action='charge.rock']").first().click();
+    await chargeOnce(h, "rock");
     await until(async () => (await h.text("#cb-p1-rock-v")) === "1/3", { label: "④ 蓄力落地（rock=1/3）" });
     const before = { rock: await h.text("#cb-p1-rock-v"), hp: await h.text("#side-p1-hpv"), foe: await h.text("#side-p2-nt") };
     const exitState = await h.prepareExit("navigation");
@@ -182,6 +209,33 @@ try {
     await r.page.screenshot({ path: resolve(SHOTS, "hosted-resumed.png") });
     check("④ 恢复：零致命错", r.fatals.length === 0, r.fatals.join("; "));
     await r.close();
+  }
+  // ── ⑥ 「获取卡带」推荐位（REQ-DOKI-APPS·owner 2026-08-16 判 game108 当第一个消费者）──────
+  // 走**真 SDK 的 host extension**（假宿主那头是 createAppsHostExtension·不是打桩）：
+  // 证 ① 声明→client→host 真握了手（宿主那侧真收到 list 请求）
+  //     ② 拿不到 runtime.input.contract 的条目被挡在推荐位外（拉不起来的键不画·留痕）
+  //     ③ 整条链路不打扰对局（零致命错·对局屏照常）。
+  // 「点一格 → 真发 launch」由共享层 apps-gateway 的 9 条真宿主用例覆盖（同一条 wire）。
+  {
+    const APPS = [
+      { id: "match3", name: "三消", protocolVersion: 2, coverUrl: DOT, runtime: { input: { contract: "doki.game.match3-input", version: 1 } } },
+      { id: "storyteller", name: "说书人", protocolVersion: 2, runtime: { input: { contract: "doki.world.story-input", version: 1 } } },
+      { id: "no-contract", name: "拉不起来的", protocolVersion: 2 },          // 无 runtime.input → 该被挡
+      { id: "game108", name: "自己", protocolVersion: 2, runtime: { input: { contract: "doki.game.game108-input", version: 1 } } },
+    ];
+    const h = await boot({ grantedScopes: [], hostExtensions: ["apps"], apps: APPS, input: {} });
+    const logs = [];
+    h.page.on("console", (m) => logs.push(m.text()));
+    await until(h.initialized, { label: "⑥ init 完成", timeoutMs: 15_000 });
+    await clickStart(h);
+    await until(async () => ((await h.state()).listed ?? 0) > 0, { label: "⑥ 宿主真收到 apps.list 请求", timeoutMs: 10_000 });
+    check("⑥ 推荐位：声明→client→host 真握手（宿主侧收到 list 请求）", ((await h.state()).listed ?? 0) > 0);
+    check("⑥ 推荐位：无 runtime.input.contract 的条目被挡（拉不起来的键不画）",
+      logs.some((l) => l.includes("拿不到 runtime.input.contract") && l.includes("1 个")),
+      logs.filter((l) => l.includes("[game108]")).join(" | ") || "（无 [game108] 日志）");
+    check("⑥ 推荐位：对局屏照常（推荐位是可选增强·不打扰对局）", await h.has("#phase-t"));
+    check("⑥ 推荐位：零致命错", h.fatals.length === 0, h.fatals.join("; "));
+    await h.close();
   }
 } finally {
   await browser.close();

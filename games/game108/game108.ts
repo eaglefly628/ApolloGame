@@ -10,7 +10,7 @@ import { QueuedInputSource } from '@zerocraft/engine/net/index.js';
 import type { Resource, GameFlow, StringVar } from '@zerocraft/engine/engine/protocol/components.js';
 import type { WorldSnapshot, EntityId } from '@zerocraft/engine/engine/core/types.js';
 import { buildBlueprint } from './blueprint.js';
-import { buildDuelScreen, emptyView, loadPct, type DuelView, type Phase } from './duel-screen.js';
+import { buildDuelScreen, emptyView, loadPct, type AppPick, type DuelView, type Phase } from './duel-screen.js';
 import { DUEL_THEME, VIEW_W, VIEW_H, HANDS, SIDES, HP_MAX, HP_RES, chargeEntity, lastThrowVar, PHASE_TICKS, TPS, type Hand, type Side } from './theme.js';
 import { READ_MID, loadMemory, saveMemory, loadHelpSeen, saveHelpSeen, type Memory } from './theme.js';
 import { DEFAULT_CARD, MOOD_AI, type CardCharacter } from './card-character.js';
@@ -54,6 +54,28 @@ export function setCard(card: CardCharacter): void { currentCard = card; }
 type WorldObserver = (world: Engine['world']) => void;
 let worldObserver: WorldObserver | undefined;
 export function setWorldObserver(fn?: WorldObserver): void { worldObserver = fn; }
+
+/**
+ * 「换个游戏玩」推荐位（DokiWorld「获取卡带」·REQ-DOKI-APPS·owner 2026-08-16 判）——
+ * 与 `setCard` 同款的宿主侧通道，但**可以在装载之后到货**（`apps.list` 是宿主 capability，
+ * 异步且可能降级）。故它比 `setCard` 多一件事：到货时**主动重画一次**（`picksNotify`
+ * 在 mount 期间挂上、卸载时摘掉）——不重挂、不重启引擎，同美术索引异步到货那条路。
+ *
+ * **纯表现零规则**：推荐位只进 `readView` 的投影（`ui.*` 本地动作），
+ * **不写世界、不进 sim/hash/录放/lockstep**——拉起隔壁 App 是宿主的事，世界不该知道。
+ * 没设 / 空列表 = 终局屏整条不画（本机试玩与渲染探针走这条·屏上逐像素同旧版）。
+ */
+let appPicks: readonly AppPick[] = [];
+let picksNotify: (() => void) | undefined;
+export function setAppPicks(picks: readonly AppPick[]): void {
+  appPicks = Array.isArray(picks) ? [...picks] : [];
+  picksNotify?.();
+}
+/** 玩家点了推荐位某一格（arg=appId）。宿主接住去 `apps.launch`；**没接住就当没这颗键**——
+ *  不挂 handler 时点了会静默入队成信号污染世界，故这一颗永远由本文件的 handler 兜底消费。 */
+type AppPickHandler = (appId: string) => void;
+let appPickHandler: AppPickHandler | undefined;
+export function onAppPick(fn?: AppPickHandler): void { appPickHandler = fn; }
 
 /**
  * 世界恢复口（DokiWorld 挂起/恢复·规范 §6 checkpoint）—— `setWorldObserver` 的孪生缝：
@@ -284,6 +306,8 @@ export function mount(container: HTMLElement): () => void {
       charge,
       penalty: { active: inPenalty, debt: num('debt:p1') },
       ...(Object.keys(skins).length ? { skins } : {}),
+      // 【REQ-DOKI-APPS】宿主给了才带（空=终局屏整条不画·非 DokiWorld 宿主逐像素同旧版）。
+      ...(appPicks.length ? { appPicks } : {}),
       ...(started ? {} : { notStarted: true, bootMs }),
       ...(helpOpen ? { helpOpen: true, ...(firstRunHelp ? { helpFirstRun: true } : {}) } : {}),
       ...(phase === 'settle' ? { awaitNext: true } : {}),
@@ -464,7 +488,18 @@ export function mount(container: HTMLElement): () => void {
     [UI_ACT.bgm]: (): void => { audio.toggle('bgm'); audio.start(); audio.play('ui'); redraw(); },
     [UI_ACT.sfx]: (): void => { audio.toggle('sfx'); audio.play('ui'); redraw(); },
     [UI_ACT.voice]: (): void => { const f = audio.toggle('voice'); if (!f.voice) voice.stop(); audio.play('ui'); redraw(); },
+    // 【REQ-DOKI-APPS】推荐位：**必须挂 handler**（哪怕宿主没接）——不挂的话本地 handler 缺席，
+    // mountUI 会把它当世界动作 `enqueueAction` 进 InputQueue，一个纯表现的点击就污染了世界。
+    // 宿主接了就转交（去 apps.launch），没接就只出一声（`reject` 类分支：什么都没发生也要留痕）。
+    [UI_ACT.appPick]: (arg?: string): void => {
+      audio.start(); audio.play('ui');
+      if (!arg) return;
+      if (!appPickHandler) { console.info('[game108] 推荐位点了但宿主没接 onAppPick（非 DokiWorld 宿主属正常）'); return; }
+      appPickHandler(arg);
+    },
   }, DUEL_THEME, queue);
+  // 推荐位到货即重画（`apps.list` 是异步 capability·同美术索引异步到货那条路）。
+  picksNotify = redraw;
 
   // 运行环走**引擎自己的** `start()`（房屋口径·同 game101）——不许自己搓 rAF 圈直接调
   // `world.tick()`：`Engine.step()` 在 tick 之前那一句 `applyCommands(world, input.commandsForTick(...))`
@@ -490,7 +525,9 @@ export function mount(container: HTMLElement): () => void {
     bootRaf = requestAnimationFrame(tickBoot);
   }
 
-  return () => { stopBoot(); engine.stop(); audio.stop(); voice.dispose(); ui(); teardown(); };
+  // 卸载要**摘掉推荐位的重画口**：留着的话，卸载后宿主再 setAppPicks 会去画一台已经拆了的 UI
+  //（`ui.update` 打在已卸载的 DOM 上——「什么都没发生」类的静默错，最难查的那一形状）。
+  return () => { picksNotify = undefined; stopBoot(); engine.stop(); audio.stop(); voice.dispose(); ui(); teardown(); };
 }
 
 export { lastThrowVar, HP_RES };
