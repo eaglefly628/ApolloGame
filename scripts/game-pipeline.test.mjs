@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { detectForm, gameHash, boardFor, artSubState, STAGES, GATE_STAGES, pipelineFile, mockDebt, writeConcept, priorGaps, orderGate, reviewPrereqGaps, acceptanceScenarioCount, MIN_ACCEPTANCE_SCENARIOS, REVIEW_CHECKLISTS, selfCheckArtifacts, selfCheckBlock, selfCheckNote, MIN_SELFCHECK_SHOTS, readCapabilityGaps, evalCapabilityGaps, blockingGaps, GAP_STATES, GAP_ROUTES, GAP_PRIORITIES, capabilityGapsFile } from './game-pipeline.mjs';
+import { detectForm, gameHash, gapsHash, boardFor, artSubState, STAGES, GATE_STAGES, pipelineFile, mockDebt, writeConcept, priorGaps, orderGate, reviewPrereqGaps, acceptanceScenarioCount, MIN_ACCEPTANCE_SCENARIOS, REVIEW_CHECKLISTS, selfCheckArtifacts, selfCheckBlock, selfCheckNote, MIN_SELFCHECK_SHOTS, readCapabilityGaps, evalCapabilityGaps, blockingGaps, GAP_STATES, GAP_ROUTES, GAP_PRIORITIES, capabilityGapsFile } from './game-pipeline.mjs';
 
 const withRoot = async (fn) => { const r = mkdtempSync(join(tmpdir(), 'gpipe-')); try { return await fn(r); } finally { rmSync(r, { recursive: true, force: true }); } };
 const put = (root, rel, content) => { const p = join(root, rel); mkdirSync(join(p, '..'), { recursive: true }); writeFileSync(p, typeof content === 'string' ? content : JSON.stringify(content, null, 2)); };
@@ -575,11 +575,11 @@ describe('gate 顺序闸 CLI（真退出码+落痕+板 ⚠·REQ-GATE-硬化 F �
     const root = mkFixture();
     try {
       concept(root);
-      const bad = runCli(root, ['gate', 'g', 'S2', '--out-of-order', '测 S2 门']);
+      const bad = runCli(root, ['gate', 'g', 'S2']);
       expect(bad.status).not.toBe(0);
       expect(bad.stdout + bad.stderr).toContain('capability-plan-template.md');
       put(root, 'docs/design/g/capability-plan.md', '# 能力计划');
-      const ok = runCli(root, ['gate', 'g', 'S2', '--out-of-order', '测 S2 门']);
+      const ok = runCli(root, ['gate', 'g', 'S2']);
       expect(ok.status).toBe(0);
       const pf = JSON.parse(readFileSync(join(root, 'public', 'games', 'g', 'pipeline.json'), 'utf8'));
       expect(pf.evidence.S2.exit).toBe(0);
@@ -595,7 +595,7 @@ describe('gate 顺序闸 CLI（真退出码+落痕+板 ⚠·REQ-GATE-硬化 F �
         { id: 'GAP-01', title: '球体刚体', priority: 'P1', route: 'requests-3d', state: 'open', blocks: ['S3'] },
         { id: 'GAP-02', title: '液面件', priority: 'P2', route: 'pui', state: 'open', blocks: [] },
       ]);
-      const red = runCli(root, ['gate', 'g', 'S2', '--out-of-order', '测缺口门']);
+      const red = runCli(root, ['gate', 'g', 'S2']);
       expect(red.status).not.toBe(0); // 撤 gap-check（S2 门只看 plan）→ 本断言红
       expect(red.stdout + red.stderr).toContain('GAP-01');
       // owner 逐条判完（A=补引擎缺口→accepted·B=回驳→wontfix），S2 门即转绿。
@@ -603,7 +603,7 @@ describe('gate 顺序闸 CLI（真退出码+落痕+板 ⚠·REQ-GATE-硬化 F �
         { id: 'GAP-01', title: '球体刚体', priority: 'P1', route: 'requests-3d', state: 'accepted', ticket: 'requests-3d.md#REQ-3D-BALL', blocks: ['S3'] },
         { id: 'GAP-02', title: '液面件', priority: 'P2', route: 'pui', state: 'wontfix', ticket: 'requests.md#REQ-UIFX', blocks: [] },
       ]);
-      const green = runCli(root, ['gate', 'g', 'S2', '--out-of-order', '测缺口门']);
+      const green = runCli(root, ['gate', 'g', 'S2']);
       expect(green.status).toBe(0);
       expect(green.stdout).toContain('全已裁决');
     } finally { rmSync(root, { recursive: true, force: true }); }
@@ -703,4 +703,67 @@ describe('gate 顺序闸 CLI（真退出码+落痕+板 ⚠·REQ-GATE-硬化 F �
       expect(out).toContain('缺 adapter'); // runner 的真实判词穿透到 gate 摘要（根对齐生效）
     } finally { rmSync(root, { recursive: true, force: true }); }
   }, 120_000);
+});
+
+// ═══ 独立复查 2026-08-16 打回的两条（P0 编排器回归 / P1 缺口锁 fail-open）═══
+describe('S2 门与顺序闸/复查新鲜度（复查 FAIL 打回后的修复锚点）', () => {
+  const mkFixture = () => { const r = mkdtempSync(join(tmpdir(), 'gap-fix-')); mkdirSync(join(r, 'games', 'g'), { recursive: true }); return r; };
+  const putGaps = (root, gaps) => put(root, 'docs/design/g/capability-gaps.json', gaps);
+
+  it('P0：S2 gate 不过顺序闸——S1 人门未签（owner 亲签·禁代签）也跑得动，且不落 ⚠乱序痕', () => {
+    const root = mkFixture();
+    try {
+      runCli(root, ['concept', 'g', '--name', 'G', '--pitch', 'p']);
+      put(root, 'docs/design/g/capability-plan.md', '# 能力计划');
+      const r = runCli(root, ['gate', 'g', 'S2']);          // 撤「S2 不过顺序闸」→ 本断言红（stderr 顺序闸·S1 欠人门）
+      expect(r.status).toBe(0);
+      expect(r.stderr).not.toContain('顺序闸');
+      const pf = JSON.parse(readFileSync(join(root, 'public', 'games', 'g', 'pipeline.json'), 'utf8'));
+      expect(pf.evidence.S2.exit).toBe(0);
+      expect(pf.outOfOrder).toBeUndefined();                // 没乱序就不许盖 ⚠乱序 章
+      // 其余 gate 关照旧过闸（S2 的例外不许外溢）：S2 刚跑绿=已施工未复查 → S3 被复查前置硬闸拦下
+      const s3 = runCli(root, ['gate', 'g', 'S3']);
+      expect(s3.status).not.toBe(0);
+      expect(s3.stderr).toMatch(/顺序闸|复查前置硬闸/);
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it('P1：台账一动 → S2 复查转 stale（改一条 state 就能无痕解锁的洞被堵上）', () => {
+    const root = mkFixture();
+    try {
+      runCli(root, ['concept', 'g', '--name', 'G', '--pitch', 'p']);
+      put(root, 'docs/design/g/capability-plan.md', '# 能力计划');
+      const gap = (state, extra = {}) => [{ id: 'GAP-01', title: '球体刚体', priority: 'P0', route: 'requests-3d', state, blocks: ['S3'], ...extra }];
+      putGaps(root, gap('accepted', { ticket: 'requests-3d.md#R' }));
+      const h0 = gapsHash(root, 'g');
+      expect(runCli(root, ['review', 'g', 'S2', '--verdict', 'PASS', '--note', '缺口逐条核过', '--by', '复查人']).status).toBe(0);
+      let b = boardFor(root, 'g');
+      expect(b.stages.find((s) => s.id === 'S2').review.state).toBe('ok');
+      expect(b.stages.find((s) => s.id === 'S3').blockedBy.map((g) => g.id)).toEqual(['GAP-01']);
+      // 手改 accepted → delivered：锁开了，但复查也必须当场过期（否则等于自己给自己解锁）
+      putGaps(root, gap('delivered', { ticket: 'requests-3d.md#R' }));
+      expect(gapsHash(root, 'g')).not.toBe(h0);
+      b = boardFor(root, 'g');
+      expect(b.stages.find((s) => s.id === 'S3').blockedBy).toEqual([]);
+      const s2 = b.stages.find((s) => s.id === 'S2');
+      expect(s2.review.state).toBe('stale');                 // 撤 gapsHash 绑定 → 本断言红
+      expect(s2.review.detail).toContain('缺口台账已变动');
+      // 复查过期 = 「已施工未复查」硬闸接管：S3 仍拒跑（--out-of-order 也不放行）
+      const r = runCli(root, ['gate', 'g', 'S3', '--out-of-order', '锁开了就想跑']);
+      expect(r.status).not.toBe(0);
+      expect(r.stderr).toContain('复查前置硬闸');
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it('旧复查记录（无 gapsHash 字段）不被判过期（零回归）', () => withRoot(async (root) => {
+    put(root, 'public/games/g/manifest.json', MANIFEST);
+    put(root, 'docs/design/g/capability-plan.md', '# 计划');
+    put(root, 'docs/design/g/capability-gaps.json', [{ id: 'A', title: 't', priority: 'P2', route: 'engine', state: 'wontfix', ticket: 'k', blocks: [] }]);
+    const h = gameHash(root, 'g');
+    put(root, pipelineFile(root, 'g').slice(root.length + 1), {
+      version: 1, slug: 'g', concept: {}, signoffs: {},
+      reviews: { S2: { verdict: 'PASS', note: '旧记录', by: 'r', at: '2026-08-01T00:00:00Z', gameHash: h } },
+    });
+    expect(boardFor(root, 'g').stages.find((s) => s.id === 'S2').review.state).toBe('ok');
+  }));
 });

@@ -217,6 +217,16 @@ export function evalCapabilityGaps(res) {
   };
 }
 
+/** 缺口台账指纹（复查新鲜度锚·独立复查 2026-08-16 P1 发现）：台账不入 gameHash（裁决回执≠游戏内容），
+ *  于是「把一条 P0 从 accepted 手改成 delivered」可以**无痕解开缺口锁**——复查门当时审的正是这份台账，
+ *  却没有任何东西记住它当时长什么样。故给 S2 复查记录单独绑这一枚指纹：台账一动，S2 复查门转 stale，
+ *  而「已施工未复查」是不可自赦的硬闸 ⇒ 锁重新扣上。无台账 = 空串（存量零回归）。 */
+export function gapsHash(root, slug) {
+  const f = capabilityGapsFile(root, slug);
+  if (!existsSync(f)) return '';
+  return createHash('sha256').update(readFileSync(f)).digest('hex').slice(0, 16);
+}
+
 /** 某关的缺口锁（REQ-S18PANEL③）：blocks 含本关 ∧ P0/P1 ∧ 未 delivered/wontfix 的缺口。
  *  空数组=本关不被缺口卡。纯函数（吃 board 或 {gaps}）——导出供 orderGate/board/单测共用。 */
 export function blockingGaps(board, stage) {
@@ -321,10 +331,14 @@ export const REVIEW_CHECKLISTS = {
 export const SCORECARD_DIMS = ['艺术方向', '主角面', '世界密度', '材质', '渲染管线', 'VFX', 'UI美术', '性能证据'];
 
 /** 复查记录评估：无=dim；FAIL=fail；指纹过期=stale；CONCERNS=有条件过（ok·⚠标注）；PASS=ok。导出供单测。 */
-export function evalReview(rv, freshHash) {
+export function evalReview(rv, freshHash, freshGapsHash) {
   if (!rv) return { state: 'dim', detail: '未复查（checklist 打单 → 另开 session 复核 → review 落账）' };
   const when = (rv.at || '').slice(0, 16).replace('T', ' ');
   if (rv.gameHash && rv.gameHash !== freshHash) return { state: 'stale', detail: `⚠ 复查过期（游戏文件已变动·须重查）· 上次 ${rv.verdict} @ ${when}` };
+  // 缺口台账变动 → S2 复查过期（台账不入 gameHash·见 gapsHash 注释）。旧复查记录无该字段=不判过期（零回归）。
+  if (freshGapsHash !== undefined && rv.gapsHash !== undefined && rv.gapsHash !== freshGapsHash) {
+    return { state: 'stale', detail: `⚠ 复查过期（**缺口台账已变动**·须重查——改一条 state 就能解开缺口锁，故复查必须重来）· 上次 ${rv.verdict} @ ${when}` };
+  }
   if (rv.verdict === 'FAIL') return { state: 'fail', detail: `✗ FAIL by ${rv.by} @ ${when} · ${String(rv.note).slice(0, 80)}` };
   const tag = rv.verdict === 'CONCERNS' ? '⚠ CONCERNS（有条件过）' : '✓ PASS';
   return { state: 'ok', detail: `${tag} by ${rv.by} @ ${when} · ${String(rv.note).slice(0, 80)}` };
@@ -370,6 +384,7 @@ export function boardFor(root, slug) {
   // 若改走证据就再没有东西替它标过期；现算则「把缺口标 delivered」下一次 board 立刻反映。
   const gapsRes = readCapabilityGaps(root, slug);
   const gapEval = evalCapabilityGaps(gapsRes);
+  const gapsNow = gapsHash(root, slug);   // S2 复查记录的新鲜度锚（台账不入 gameHash·见 gapsHash）
 
   const stages = STAGES.map((st) => {
     let machine;
@@ -430,7 +445,7 @@ export function boardFor(root, slug) {
     const review = st.id === 'S1' ? { state: 'ok', detail: '免（立项=owner 亲提·无需复查）' }
       : st.id === 'S6' ? { state: 'ok', detail: '免（复核已内嵌美术平台逐行 ☑）' }
         : st.id === 'S7' ? { state: machine.state === 'ok' || machine.state === 'warn' ? 'ok' : 'dim', detail: '复查形态=评分卡本身（复查人打分·机器门即其判词）' }
-          : evalReview(pf.reviews?.[st.id], hashNow);
+          : evalReview(pf.reviews?.[st.id], hashNow, st.id === 'S2' ? gapsNow : undefined);
     const so = pf.signoffs?.[st.id];
     // S6 人门已内嵌美术平台逐行 approve（不设重复签核）；其余阶段一律要 signoff。
     const human = st.id === 'S6'
@@ -758,7 +773,9 @@ if (isMain) {
     if (!note || !note.trim()) { console.error('复查必须带 --note（逐条结论落账·不许空查）'); process.exit(1); }
     if (!by || !by.trim()) { console.error('复查必须带 --by（复查人身份·复查人≠施工人）'); process.exit(1); }
     const pf = readJson(pipelineFile(ROOT, slug), { version: 1, slug, concept: {}, signoffs: {}, evidence: {} });
-    const rv = { verdict, note: note.trim().slice(0, 500), by: by.trim(), at: new Date().toISOString(), gameHash: gameHash(ROOT, slug) };
+    const rv = { verdict, note: note.trim().slice(0, 500), by: by.trim(), at: new Date().toISOString(), gameHash: gameHash(ROOT, slug),
+      // S2 的复查对象里有缺口台账（不入 gameHash）——单独记一枚，台账一动这条复查即过期。
+      ...(stage === 'S2' ? { gapsHash: gapsHash(ROOT, slug) } : {}) };
     pf.reviews = { ...(pf.reviews || {}), [stage]: rv };
     (pf.history ||= []).push({ action: 'review', stage, verdict, at: rv.at });
     writeJson(pipelineFile(ROOT, slug), pf);
@@ -794,7 +811,13 @@ if (isMain) {
     if (!GATE_STAGES.includes(stage)) { console.error(`gate 只认 ${GATE_STAGES.join('/')}（其余阶段是纯推导或纯人门）`); process.exit(1); }
     // F·阶段顺序闸：前置阶段（S1..S(N-1)）非全绿则拒跑，除非带 --out-of-order "<理由>" 记账放行。
     const oooReason = opt('--out-of-order');
-    const decision = orderGate(boardFor(ROOT, slug), stage, oooReason);
+    // **S2 不过顺序闸**（独立复查 2026-08-16 P0：接上顺序闸后 game-d/game102 的 `verifyStage('S2')`
+    // 由 board 推导的 exit 0 翻成 gate 的 exit 1，红因是「S1 立项卡 欠：人门(dim)」——而 S1 人门是
+    // **owner 亲签**且尾注写死「禁代签」⇒ 编排器派出的 S2 会话没有任何合法手段让它转绿，
+    // 只剩 `--out-of-order` 一条歪路（还要给一个根本没乱序的关永久盖上 ⚠乱序 章）。
+    // 判据：gap-check 是**纯 fs 校验**（不施工、不写游戏、秒回），它回答的是「缺口裁完没有」，
+    // 拿「立项卡签了没有」挡它没有任何安全收益。其余 gate 关（真施工/真跑重活）一律照旧过闸。
+    const decision = stage === 'S2' ? { allowed: true, gaps: [] } : orderGate(boardFor(ROOT, slug), stage, oooReason);
     if (!decision.allowed) {
       if (decision.blockedBy?.length) {
         console.error(`✗ 能力缺口闸：${stage} 被 ${decision.blockedBy.length} 条未交付的 P0/P1 引擎缺口锁住——`
