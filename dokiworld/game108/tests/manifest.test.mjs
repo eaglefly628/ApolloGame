@@ -98,6 +98,28 @@ test("manifest：extensions 声明与接线代码一致（规范 §7 五步·**�
   }
 });
 
+test("manifest：result.metrics 与 toGameResult 真发出去的那些**逐字一致**", async () => {
+  // 为什么要有这一条：`result.metrics` 是给 **Episode 编辑器**列 `{{app.metrics.*}}` 变量用的
+  //（README §5）。声明多了 → 编辑器列出我们从不发的变量，剧情按它分支永远不命中；
+  // 声明少了 → 我们发了但剧情选不到。**两处真相**的老形状。
+  // 判据**从 `toGameResult` 现推**，不在这里抄第二份名单。
+  const manifest = await load("manifest.json");
+  const { toGameResult } = await import("../src/to-game-result.mjs");
+  const world = {
+    getComponent: (id, type) => ({
+      "flow:GameFlow": { current: "p1win" },
+      "p1:Resource": { id: "hp", current: 40, min: 0, max: 100 },
+      "p2:Resource": { id: "hp", current: 0, min: 0, max: 100 },
+      "round:Resource": { id: "round", current: 3 },
+      "style:p1:Resource": { id: "p1.style", current: 9, min: 0, max: 20 },
+      "read:p2:Resource": { id: "p2.read", current: 5, min: 0, max: 10 },
+    })[`${id}:${type}`],
+  };
+  const sent = Object.keys(toGameResult(world).metrics).sort();
+  assert.deepEqual([...(manifest.result?.metrics ?? [])].sort(), sent,
+    `manifest.result.metrics 必须与 toGameResult 真发的字段一致（实发 ${JSON.stringify(sent)}）`);
+});
+
 test("manifest：cover 必填、包内相对路径、真图在源里（§3/§5·禁灰块占位）", async () => {
   const manifest = await load("manifest.json");
   assert.equal(manifest.cover, "assets/cover.webp");

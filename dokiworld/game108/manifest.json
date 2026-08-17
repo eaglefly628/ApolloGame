@@ -14,7 +14,8 @@
     "requiredScopes": [],
     "optionalScopes": [
       "character.identity",
-      "character.avatar"
+      "character.avatar",
+      "player_persona"
     ]
   },
   "locales": {
@@ -74,6 +75,16 @@
       "dialogue",
       "media",
       "episode"
+    ]
+  },
+  "result": {
+    "metrics": [
+      "round",
+      "playerHp",
+      "opponentHp",
+      "style",
+      "read",
+      "perfect"
     ]
   }
 }

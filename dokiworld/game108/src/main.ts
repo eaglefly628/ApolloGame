@@ -437,10 +437,10 @@ app.connect({
     const data = input?.data ?? {};
     const mood: Mood = (MOODS as readonly string[]).includes(data.mood ?? '') ? (data.mood as Mood) : 'stubborn';
     // 投影②（角色）与投影④（恢复）并行查——都挂 CAPABILITY_TIMEOUT_MS，降级宿主里最多等一拍。
-    await Promise.all([resolveFoeCard(grantedScopes, data, mood), resolveCheckpoint()]);
-    // 投影⑥（persona）：我方身份 —— 与"对手是谁"对称的那一半，**必须在开场白之前**
-    //（开场白要拿 likes 做文章）。一次 capability 往返，之后全程不再问。
-    await resolveMyPersona();
+    // ⚠ **三条并行，不许串行**（2026-08-17 真宿主实测的教训）：这三个都是"宿主没实现就等到超时"
+    // 的 capability，串一条就多黑屏一个超时。我先前把 persona 串在后面，把开局白等从 2 秒变成 4 秒。
+    // 开场白要用 persona 的 likes，但它是**挂载之后**才发的（不 await），所以并行不影响它。
+    await Promise.all([resolveFoeCard(grantedScopes, data, mood), resolveCheckpoint(), resolveMyPersona()]);
     // 【episode 反向】剧情给的赌注上屏（纯表现·不改规则）。
     if (typeof data.stakes === 'string') setStakes(data.stakes);
     // 投影③：终局机读态 → GameResult。观察口每帧递一次 world（只读·与验收剧本同读法），
