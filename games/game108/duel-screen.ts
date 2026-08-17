@@ -19,7 +19,7 @@ import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 
 import {
   HANDS, HAND_CN, CHARGE_CAP, HP_MAX, DMG_BASE, DMG_STEP, ACT, SIDES,
-  HP_RES, SMOKE_USES, UI_ACT, PHASE_TICKS, TPS, PENALTY_HP, type Hand, type Side,
+  HP_RES, SMOKE_USES, UI_ACT, PHASE_TICKS, TPS, PENALTY_HP, SDK_MODULES, type Hand, type Side,
 } from './theme.js';
 import { C, S, F, L, R, B, SH, CANVAS, dmgFontSize } from './design-tokens.js';
 import { plate, ring, hpBar, scene, loadBar } from './plate-art.js';
@@ -1428,9 +1428,26 @@ function helpScreen(view: DuelView): LayoutNode[] {
  * 闭集数据零自由 DOM（UI 铁律）：行 = Panel + 两个 Label + 一枚带 `actionArg` 的 Panel 键，
  * 与终局屏推荐位同一套写法（一个动作名 + 参数，不给九个模块各造一个动作名【R-108-70】）。
  */
+/**
+ * 【SDK 演示台】**没有宿主时的九行骨架**（owner 2026-08-17 试玩逮到的洞）。
+ *
+ * 行是由 DokiWorld 接线层（`dokiworld/game108/src/main.ts`）推进来的，而本机直跑
+ * （vite / launcher）根本没有那一层 ⇒ 面板开出来是**空的**，菜单上那个数字还写着 9。
+ * 「说有九个、打开一个没有」比没有这块面板更糟。
+ *
+ * 所以游戏层自带一份骨架：**九行照画**，状态写实——"本机直跑，没有 DokiWorld 宿主"。
+ * 名单从 `SDK_MODULES` 现推，不在这里抄第二份。
+ */
+export function defaultSdkRows(lang: Lang): SdkRow[] {
+  return SDK_MODULES.map((key) => ({
+    key, name: key, declared: false, available: false,
+    state: 'idle' as const, detail: t(lang, 'sdk.noHost'),
+  }));
+}
+
 function sdkPanel(view: DuelView): LayoutNode[] {
   const lang = view.lang;
-  const rows = view.sdk ?? [];
+  const rows = view.sdk?.length ? view.sdk : defaultSdkRows(lang);
   const w = 900, rowH = 54, headH = 132, hgt = Math.min(CANVAS.h - 80, headH + rows.length * (rowH + 8) + 96);
   const x = Math.round((CANVAS.w - w) / 2), y = Math.round((CANVAS.h - hgt) / 2);
   const dot = (r: SdkRow): string =>
@@ -1554,7 +1571,8 @@ function settingsMenu(view: DuelView): LayoutNode[] {
         // owner 2026-08-08：说明文档从这里进（菜单里第五行·不是第二颗主键，样式同前四行）。
         row('help', t(view.lang, 'help.open'), '?', UI_ACT.help, true, 4),
         // owner 2026-08-17：SDK 演示台从菜单第六行进（同说明文档那条口径·不占对局屏）。
-        row('sdk', t(view.lang, 'sdk.open'), '9', UI_ACT.sdk, true, 5),
+        // ⚠ 数字**从行数现推**：写死 '9' 的那一版在本机直跑时是句谎话（面板里一行都没有）。
+        row('sdk', t(view.lang, 'sdk.open'), String((view.sdk ?? defaultSdkRows(view.lang)).length), UI_ACT.sdk, true, 5),
         {
           type: 'Panel', id: 'key-menu-close',
           props: { skin: plate({ w: 220, h: 60, fill: C.cream, border: B.card, radius: R.card, shadow: SH.card }), action: UI_ACT.menu },

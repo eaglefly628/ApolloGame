@@ -141,6 +141,10 @@ export const STRINGS = {
   'sdk.idle': { en: 'not tried yet', zh: '还没试过' },
   'sdk.notDeclared': { en: 'not declared in manifest', zh: 'manifest 未声明' },
   'sdk.ready': { en: 'declared · ready', zh: '已声明 · 待试' },
+  // 本机直跑（vite / launcher）时**没有 DokiWorld 宿主**——九行照样画出来，但状态是"没人可问"。
+  // 这一条是 owner 2026-08-17 试玩逮到的：面板在本地是空的，而菜单那个数字还写着 9。
+  'sdk.noHost': { en: 'no DokiWorld host (running standalone)', zh: '本机直跑 · 没有 DokiWorld 宿主' },
+  'sdk.noHostTried': { en: 'nobody to ask — this only works inside DokiWorld', zh: '按了也没人接：本机没有宿主，装进 DokiWorld 才问得到' },
 
   // ── 心情（卡片角色的 AI 轴）──────────────────────────────────────────
   'mood.stubborn': { en: 'Stubborn', zh: '执拗' },

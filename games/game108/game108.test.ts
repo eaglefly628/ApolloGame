@@ -6,7 +6,7 @@ import {
   PHASE_TICKS, PENALTY_PERIOD, PENALTY_HP, CHARGE_PER_ROUND,
   TPS, ACT, UI_ACT, SIDES, HP_RES, chargeRes, chargeRelName, chargeEntity, chargeBudgetRes, penaltyDebtRes,
   STYLE_MID, STYLE_MAX, MOOD_FSM, READ_RES, READ_MID, READ_LOW, READ_HIGH, FINISH_HP, THROW_LAG,
-  BLUFF_FLAG, SILENT_FLAG, OPPONENTS, HELP_SEEN_KEY, loadHelpSeen, saveHelpSeen, type Memory, type Hand,
+  BLUFF_FLAG, SILENT_FLAG, OPPONENTS, HELP_SEEN_KEY, loadHelpSeen, saveHelpSeen, SDK_MODULES, type Memory, type Hand,
 } from './theme.js';
 
 describe('game108 · 数值钉死（GDD §5）', () => {
@@ -1273,10 +1273,39 @@ describe('game108 · SDK 演示台（DokiWorld 九个能力的自检屏）', () 
     expect(walk(buildDuelScreen(v), [])).toContain('apps');
   });
 
-  it('【R-108-37】空表 = 面板不炸（宿主还没把行推过来的那一瞬）', () => {
-    const v: DuelView = { ...emptyView(), menuOpen: true, sdkOpen: true };
+  it('【R-108-37】**没有宿主时照画九行**，且菜单那个数字与行数同源（owner 2026-08-17 试玩逮到）', () => {
+    // 病状：本机直跑（vite/launcher）没有 DokiWorld 接线层 ⇒ 没人调 `setSdkRows` ⇒ 面板开出来
+    // 一行都没有，而菜单上那个数字是写死的 '9'。**「说有九个、打开一个没有」比没这块面板更糟。**
+    const v: DuelView = { ...emptyView(), menuOpen: true, sdkOpen: true };   // 故意不给 sdk
     expect(validateLayoutNode(buildDuelScreen(v))).toEqual([]);
-    expect(screenActions(v)).toContain(UI_ACT.sdk);      // 只剩关闭键，不该崩
+    const ids: string[] = [];
+    const walk = (n: LayoutNode): void => { if (n.id.startsWith('sdk-row-')) ids.push(n.id); for (const c of n.children ?? []) walk(c); };
+    walk(buildDuelScreen(v));
+    expect(ids.length).toBe(SDK_MODULES.length);
+    // 骨架名单必须**从 SDK_MODULES 现推**（在屏里再抄一份九个名字 = 第二处真相）
+    expect(ids).toEqual(SDK_MODULES.map((k) => `sdk-row-${k}`));
+    // 菜单那个数字 = 行数，不是写死的字面量（写死的那一版在本地是句谎话）。
+    // ⚠ **判据不能只验"等于 9"**：`SDK_MODULES.length` 恰好就是 9，写死 '9' 也照样等于 9
+    // ——第一版就是这么写的，把「写死回 '9'」的撤修放过去了（尺子照着被测物做，今天第三次）。
+    // 真判据 = **数字跟着行数变**：给一个只有 3 行的视图，菜单必须显示 3。
+    const digit = (view: DuelView): string[] => {
+      const out: string[] = [];
+      const w = (n: LayoutNode): void => { if (n.id === 'key-sdk-t') out.push((n.props as { text?: string }).text ?? ''); for (const c of n.children ?? []) w(c); };
+      w(buildDuelScreen(view));
+      return out;
+    };
+    expect(digit(v)).toEqual([String(SDK_MODULES.length)]);                       // 无宿主 → 骨架九行
+    expect(digit({ ...v, sdk: rows() })).toEqual(['3']);                          // 宿主给三行 → 显示 3
+    // 九行照样可点——按下去看到的是"本机没有宿主"，那也是真话
+    expect(screenActions(v).filter((a) => a === UI_ACT.sdkTry).length).toBe(SDK_MODULES.length);
+  });
+
+  it('【R-108-37】宿主把行推过来之后，骨架让位（不是两份并存）', () => {
+    const v: DuelView = { ...emptyView(), menuOpen: true, sdkOpen: true, sdk: rows() };
+    const ids: string[] = [];
+    const walk = (n: LayoutNode): void => { if (n.id.startsWith('sdk-row-')) ids.push(n.id); for (const c of n.children ?? []) walk(c); };
+    walk(buildDuelScreen(v));
+    expect(ids).toEqual(['sdk-row-character', 'sdk-row-storage', 'sdk-row-apps']);
   });
 });
 
