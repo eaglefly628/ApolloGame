@@ -37,8 +37,18 @@ try {
     await el.first().click();
     return true;
   }, { label: "开始键可点", timeoutMs: 8_000, stepMs: 250 });
+  // 首次进入会先弹**玩法说明**（owner 2026-08-15）——不跳过它，封面拍到的就是那张说明纸。
+  // ⚠ 这一步没有会**静默出错**：`#phase-t` 在说明屏底下照样在、封面照样是张合法 WebP、
+  // manifest 的 cover 校验（真图在包内 + 魔数 + >4KB）也照样绿——错的封面一路进商店。
+  await until(async () => (await frame().locator("#help").count()) > 0, { label: "首次进入·玩法说明弹出" });
+  await frame().locator("#key-help-close[data-action='ui.start']").first().click();
+  await until(async () => (await frame().locator("#start").count()) === 0 && (await frame().locator("#help").count()) === 0,
+    { label: "跳过说明 → 真开局" });
   await until(async () => (await frame().locator("#phase-t").count()) > 0, { label: "对局屏挂载" });
   await page.waitForTimeout(1_200);            // T1 中段：倒计时环在走、手牌浮起
+  // 按门前最后一道硬闸：**拍的这一刻屏上不许有任何盖屏**（将来再加开屏流程，这里会硬抛而不是拍错）。
+  const veils = await frame().locator("#help, #start, #standby").count();
+  if (veils > 0) throw new Error(`封面拍摄时屏上还有 ${veils} 层盖屏（说明屏/启动屏/等待屏）——拍出来的不是对局屏`);
   const png = await page.screenshot({ type: "png" });
   // 页内 canvas 转 WebP（质量 0.9）——Chromium 自己就是最顺手的编码器，零新依赖
   const dataUrl = await page.evaluate(async ([b64, w, h]) => {

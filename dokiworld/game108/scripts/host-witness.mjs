@@ -126,6 +126,10 @@ try {
     await clickStart(h);
     check("① 零授权：对手=内置兜底卡「复读机」（降级链末位）", (await h.text("#side-p2-nt")) === "复读机",
       `实为 ${await h.text("#side-p2-nt")}`);
+    // 首次进入那一屏说明是**发布形态的一部分**（owner 2026-08-15 要的），不是"顺手点掉的东西"：
+    // clickStart 的收工判据是"世界动作可点"，它保证了说明屏**被跳过**，但没说它**不残留**
+    // ——两层都在、只是按钮恰好可点，也满足那条判据。这里把"跳完就该消失"单独钉一次。
+    check("① 零授权：首次进入的玩法说明已跳过、屏上不残留", !(await h.has("#help")) && !(await h.has("#start")));
     check("① 零授权：零致命错", h.fatals.length === 0, h.fatals.join("; "));
     await h.close();
   }
@@ -197,6 +201,9 @@ try {
     await until(r.initialized, { label: "④ 恢复 init 完成", timeoutMs: 15_000 });
     await until(async () => (await r.has("#phase-t")), { label: "④ 恢复后对局屏挂载" });
     check("④ 恢复：跳过开始闸门（无 #start 启动屏·直接续局）", !(await r.has("#start")));
+    // 续局同样不该弹说明——玩家早就在打这一局了，中途糊一屏说明是打断不是引导
+    // （宿主侧 `firstRunHelp = !resume && !loadHelpSeen()` 的那个 `!resume`）。
+    check("④ 恢复：不弹玩法说明（续局不是首次进入）", !(await r.has("#help")));
     check("④ 恢复：蓄力原样（rock=1）", (await r.text("#cb-p1-rock-v")) === before.rock,
       `前=${before.rock} 后=${await r.text("#cb-p1-rock-v")}`);
     check("④ 恢复：血量原样", (await r.text("#side-p1-hpv")) === before.hp,
