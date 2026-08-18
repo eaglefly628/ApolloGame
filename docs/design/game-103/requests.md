@@ -1,7 +1,13 @@
 # game-103《幸存者》· 游戏级工单池（bug / 迭代）
 
-### [2026-08-01] · Lead 终审发现 · **acceptance-adapter 从未落地**——5 份 GD 剧本无适配可跑·S4 门红 · status: 🔴 **in-progress（施工主体 = Lead 派工 agent·2026-08-18 本行即锁·连带 VBUG-02 撤回退真接 orbit）** · 优先级: P1
+### [2026-08-01] · Lead 终审发现 · **acceptance-adapter 从未落地**——5 份 GD 剧本无适配可跑·S4 门红 · status: ✅ **done（Lead 派工 agent·2026-08-18·adapter 已落·5 剧本 3 绿 2 真红→真红开下方 SBUG-01 单）** · 优先级: P1
 > 实证：`games/game-103/acceptance-adapter.ts` 无 git 历史（从未存在）；GD 已落 5 份剧本（e5c4bf536）。照 `docs/playbooks/testing.md` 验收剧本节落薄适配（createWorld/applySignal/readWorld=passthrough·纯接线零规则），落完 `npx vite-node scripts/acceptance-run.mjs --game game-103` 全绿再推。此红藏于慢车道多日=双车道「定期跑」未接线的实证（已修=巡检改跑完整网）。
+> **✅ 自证（2026-08-18·施工 agent）**：adapter 落地（词表=蓝图 KeyBinding 闭集 `pick_/evo_` + `restart`=重建世界；投影六键 hp/xp/level/clock/kills/status 全走合成实体——`hp` 与敌 body 的 Resource id 撞名、`kills` 世界里叫 `score`、`GameFlow.current` 非标量，直扫必错；`config.matchSeconds` 透传=改 clock.max + flow 胜判阈值两处数据，同 game108 改 RandomSeed 先例；seed 收下无消费方=蓝图零随机）。跑 `npx vite-node scripts/acceptance-run.mjs -- --game game-103`（退出码直取）=**02/03/05 PASS·01/04 FAIL（都只红 kills/xp·真红=游戏 bug·见 SBUG-01）**。**撤修验红**：撤 `@status` 投影→预告全 5 本 `sv status` 转「不存在」红→实测恰红（02/03/05 由绿转红=锚点命中）→复原→复测回 3 绿 2 红基线。S4 门（≥3 剧本 conformance 绿）已过。
+
+### SBUG-01 · [2026-08-18] · adapter 落地即抓出 · **kills（score）静止玩家恒 0——宝石计分子区被 body 的 consumeOnHit 抢先级联销毁** · [P1·PE/GD triage] · status: open · 验收剧本 01/04 因此真红
+> **现象**：剧本 01/04 断言 `kills≥1` 红。静止玩家 900 拍实测：xp 三次入账（t293/t332/t359·level 升到 2=击杀→掉宝→磁吸拾取全链路通），**score 全程 0**。移动情形（37 测「闭环」）score>0=几何巧合才计上（见根因），即 HUD 击杀数**系统性少计**。
+> **根因（探针实证·非读码猜想）**：宝石=body（Hitbox xp→collector·consumeOnHit）+ kill 子区（Hierarchy child·Hitbox score→killbox·consumeOnHit），collector/killbox 同心同半径（62）。磁吸 body 以 6px/拍逼近：t292 body 与 kill 子区同在 68.37（阈 67 外）→ **t293 body 触发 collector（62.37 已入圈）而 kill 子区整拍无 Overlap/Trigger**——overlap-detect 在 hierarchy 子位形解算前跑，见到的是子区**上一拍位形**（68.37·圈外）；同拍 hitbox 结算 body → DestroyRequest → destroy 级联删 kill 子区 → 子区**永远等不到自己的入圈拍**。静止玩家闭速恒 6px/拍 → body 入圈落点必在 (61,67]，子区滞后 6px 必在圈外=**确定性 0 计**；玩家移动时闭速更高、body 偶尔深入 <61 才让子区同拍入圈=偶然计上。
+> **修向（候选·GD/PE 裁·本单不擅修）**：① 游戏数据：killbox 环半径加余量（如 +18·并同步 pickup StatBind 基数）让 kill 子区**先于** body 结算——但治不了「敌死在拾取圈内·子区出生拍在 (0,0) 未解算」的近身击杀漏计；② 换根：击杀计数不走宝石代理，死亡侧直计——`Mortal` 现无 onDeath 计数钩（已查 mortal.ts 字段闭集：resource/atOrBelow/dropTemplate），真要走这条=引擎缺口，须按缺口裁决协议摆 A/B 报 owner；③ GD 改剧本口径（剧本作者域·本单不代裁）。另：剧本 01 的 `xp≥1` 红=同拍口径问题（xp 被 levelup `set 0` 归零后至 t600 恰无新拾取·level=2 证明经验环本身是通的），GD 可自裁断言口径。
 
 > owner 试玩反馈驱动 · GD-103 triage（读源码定位根因·非施工）。游戏级工单随游戏走·不占引擎池槽（CLAUDE.md）。
 > 状态：`open` / `in-progress` / `done`（附 commit）。归属：**PE**=游戏层（`games/game-103/`）；**引擎**=Lead 域（升级到 `docs/workflow/requests.md`）。
@@ -43,7 +49,8 @@
 - 现象：打完一批敌人、Lv8 就结束；理论上无限流、敌人越来越多、越来越硬（一发打不死）。
 - 修（PE·纯数据）：① 有限生怪表→**跟随玩家的环形 spawner**（Timer loop 永不停=无限·`ringSpawnerEntities`）；② **同屏 cap**（`GroupCount` 计活敌 → spawner `whenGlobal` 门 `enemies_alive<48`·无限但有界·防实体爆炸/卡顿）；③ **难度分层**（疾行者 25s / 胖子 55s 后经 `SelfRule.whenGlobal` clock 门加入·胖子 hp90=飞镖 7-8 发才死）。
 
-### VBUG-02 · 护盾不绕我转 · [P1·引擎] · 🔴 **回退（PE 接线撞调度环·回报 Lead 补 orbit-motion 定序）**
+### VBUG-02 · 护盾不绕我转 · [P1·引擎] · ✅ **done（2026-08-18·Lead 派工 agent·orbit 真接已在 HEAD 蓝图·补举证测试 + 撤修验红收单）**
+- **✅ 收单自证（2026-08-18）**：HEAD 蓝图 `weaponMount('orbit')` 已挂 `Orbit: orbitAt(radius, 相位差, 角步, 'player')`（blueprint.ts「VBUG-02 真接」段·撤回退已发生但本单一直没收）。本次补齐证据链：① **真绕转实测**——pick_orbit 后 3 球全挂 Orbit，30 拍相对玩家位移 92.5px（静态环=0）、半径逐拍守恒 74.00（配置 radius=74）；② **定序面**——满蓝图（orbit-motion 与 motion-apply/hierarchy-resolve/hierarchy-cascade/camera-follow/bounds-clamp 同装）Engine.load + 空跑 **stderr 零行、零 `[topological-sort]`/`Circular` 告警**（acceptance 5×createWorld 同证）；③ 两条落进 `game-103.test.ts` 常驻回归（「VBUG-02 修：…真绕转」+「VBUG-02 定序面：…零成环告警」·后者把 console.warn 收进断言=治「绿灯不等于没话说」）；④ **撤修验红**——把 Orbit 换回静态 Hierarchy child（当年回退形态）→预告绕转测红→实测恰红（39 测 1 红=锚点命中）→复原（git diff 空）→复测绿。
 - **⚠ PE 接线撞墙（2026-07-24·回报 Lead）**：`t2-orbit-motion` 只声明 `runsAfter:['motion-apply']`。本游戏把它与 `hierarchy-cascade`+`camera-follow`（都读改写 Transform）一起装载 → 调度器**硬成环**（"Circular dependency detected among systems: …motion-apply, hierarchy-cascade, …, orbit-motion, …"）→ 蓝图无法 load。**首个真消费者暴露 orbit-motion 定序不全**。裁向（Lead）：给 orbit-motion 补定序（如 `runsBefore:['camera-follow','hierarchy-cascade']` 或明确 phase）使其能与标准 motion/hierarchy/camera 栈共存。PE 暂回退静态环（Hierarchy child·仍造伤·绕转待补定序）。20 测绿。
 - 现象：护盾环光球是静态的、不绕玩家旋转。
 - 根因（**引擎缺口**）：`hierarchy-resolve.ts:23` 明写「子本地偏移**不随父旋转旋转**（避免 sin/cos）」；`rotation-apply` 只转朝向不移位。真·圆周运动 = `pos=center+r·(cos,sin)`·需 sin/cos·sim 禁（确定性）。→ PE 表达不了。

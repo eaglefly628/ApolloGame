@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { applyCommands } from '@zerocraft/engine/net/index.js';
 import type { Command } from '@zerocraft/engine/net/index.js';
@@ -216,6 +216,44 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     fireAction(e, 'pick_orbit');
     step(e); step(e);
     expect(hasSprite(e, skinOf('orbit'))).toBe(true); // 护盾环光球已展开
+  });
+
+  it('VBUG-02 修：护盾环光球挂 Orbit 真绕玩家转（相对位移 > 0·半径守恒·t2-orbit-motion）', () => {
+    const e = fresh();
+    tickN(e, 3);
+    fireAction(e, 'pick_orbit');
+    step(e); step(e);
+    // 光球 = 带 orbit 武器 Tag 位且挂 Orbit 组件的实体（静态环回退时 Orbit 缺失 → 本断言红）。
+    const balls: string[] = [];
+    for (const [id] of e.world.query('Tag')) {
+      const t = e.world.getComponent<Tag>(id, 'Tag');
+      if (t && (t.flags & WEAPON_BIT.orbit) !== 0 && e.world.getComponent(id, 'Orbit' as never)) balls.push(id);
+    }
+    expect(balls.length).toBe(WEAPON_BY_KEY.orbit.amount); // 3 球全挂 Orbit
+    const rel = (id: string) => { const b = xf(e, id)!, p = xf(e, 'player')!; return { dx: b.x - p.x, dy: b.y - p.y }; };
+    const r0 = rel(balls[0]);
+    stepN(e, 30);
+    const r1 = rel(balls[0]);
+    // 真绕转：30 拍相对玩家位移明显（角步 0.045 rad/tick × 30 拍 ≈ 77°·弧长 ≈ 92px）；静态环 = 0。
+    expect(Math.hypot(r1.dx - r0.dx, r1.dy - r0.dy)).toBeGreaterThan(40);
+    // 半径守恒（rotor + sqrt 归一防漂移）：始终 ≈ 配置 radius。
+    expect(Math.hypot(r0.dx, r0.dy)).toBeCloseTo(WEAPON_BY_KEY.orbit.radius, 1);
+    expect(Math.hypot(r1.dx, r1.dy)).toBeCloseTo(WEAPON_BY_KEY.orbit.radius, 1);
+  });
+
+  it('VBUG-02 定序面：满蓝图（orbit-motion 与 motion/hierarchy/camera-follow 同装）装载零成环告警', () => {
+    // topological-sort 的推断环平局裁决只打 console.warn 不改退出码（CLAUDE.md「读告警」铁律）——
+    // 这里把 warn 收进证物断言：装载 + 空跑不得出现 [topological-sort]/Circular 字样。
+    const warns: string[] = [];
+    const spy = vi.spyOn(console, 'warn').mockImplementation((...a: unknown[]) => { warns.push(a.map(String).join(' ')); });
+    try {
+      const e = new Engine();
+      e.load(buildBlueprint());
+      tickN(e, 2);
+    } finally {
+      spy.mockRestore();
+    }
+    expect(warns.filter((w) => w.includes('[topological-sort]') || w.includes('Circular'))).toEqual([]);
   });
 
   it('进化系统（E2·重组）：evo 信号 destroy-tagged 删基础武器挂点 + Caster spawn 进化体', () => {
