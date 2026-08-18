@@ -16,54 +16,10 @@
 > （命中 `main_entry/{art_sync,artifacts}.py` + 两冒烟自身）+ 计划里两步，并同步补 `scoped-gate.test.mjs`
 > 行为契约两例。**只加面旗、不动既有三旗与 scope 分类**；不认可请直接回滚这两文件，功能本体不依赖它。
 
-### REQ-DOKI-APPS · 「获取卡带」下沉共享接线层（`apps` 模块）· [2026-08-15] · owner 令「把 SDK 需要的都集成进去」 · **施工主体 = 抢锁 session（2026-08-16 接手余项·本行即锁）** · 复查 = 主程 · status: **in-progress（共享层 ✅ + game108 消费 ✅ 已交·待复查）** · P1 · 类型: 跨游戏共享面（🔴 按归属律本属主程·owner 直接派工故抢锁留痕）
-> **实查**（协议第一步·真包 `@dokiworld/app-sdk@2.1.0` d.ts 非文档手抄）：`./apps` 就是「获取卡带」——
-> `list(filter?:{capability?}) → {apps: AvailableApp[]}`（`{id,name,description?,coverUrl?,protocolVersion}`）+
-> `launch({appId,input}) → {status:'completed',output}|{status:'cancelled'}` + `dispose()`。
-> **回驳「九模块全塞进 game108」**：① 手册红线「只声明真用到的」（match3 多声明是反例）
-> ② game108 是 Game 形态，`apps`=「App 里开 App」在 RPS 对局里没有消费位置——编排者是 Episode World
-> ③ 规范 §7 五步一致 + 「未声明的扩展消息会被拒绝」。
-> **正解 = 下沉共享层**：`dokiworld/` 现在只有 `game108/`、**无共享层**，第二个 app 出包会把
-> `foe-card`/`checkpoint-codec`/`host-harness` 抄一遍。故建 `dokiworld/shared/`：`apps` 封成带
-> 超时/降级/dispose 的薄适配 + 点名测试 + 真 `createAppsHostExtension` 假宿主目击。
-> **边界**：只新增 `dokiworld/shared/**`；**不动** `dokiworld/game108/` 的 manifest 声明与接线
-> （封装 ≠ 声明——谁消费仍按各 app 真用到的声明）。
-> **能力已交（2026-08-15）**：`dokiworld/shared/`（新目录·首件）——
-> `src/apps-gateway.mjs` `createAppsGateway(client,{declared,timeoutMs,launchTimeoutMs,onWarn})`
-> + `appsDeclared(manifest)`；`tests/apps-gateway.test.mjs` 9 条 **不 mock SDK**
-> （把 SDK 自己的 `createAppsHostExtension` 接在内存双工通道另一端，走真 `dokiworld-app-apps-*` 报文
-> 与真校验器）；四处撤修各自即红已实跑（去掉未声明拦截 / `list` 改抛 / `cancelled` 并进 `unavailable` /
-> 把 launch 超时磨平成 list 那档）。
-> 手册 `dokiworld-pack.md` 已回填一行 + 共享层约定；`dokiworld/game108/` 一个字节未动（封装 ≠ 声明）。
-> **三条纪律**（全来自 SDK 源码实读）：① 未声明就不发（未声明消息被拒的形态是"静默等到超时"，
-> 最难查的那一类）② 降级不抛，`cancelled` 与 `unavailable` 分开报 ③ `launch` 超时一小时不是 30 秒。
->
->
-> **⚖ owner 2026-08-16 判（Lead 转录·压过施工方「推荐 B」）**：**game108 当第一个消费者——结算屏加入口**。
-> 打完一局结算屏出「换个游戏玩」推荐位（`apps.list` 拉列表·点了 `launch` 跳转）；game108 manifest 随真消费加 `apps` 声明（五步一致）。
-> 共享层已交付 ⇒ 本单余项 = game108 结算屏接线（施工方续做·薄接线零规则·推荐位 render-only 不进 sim/hash）+ 主程复查。
->
-> **✅ 余项已交（2026-08-16·`3801e35a`·待主程复查）**：终局屏「换个游戏玩」推荐位。
-> 游戏侧 `setAppPicks/onAppPick` 两条宿主缝（照 `setCard` 形态·到货主动重画·卸载摘口）+ 推荐位
-> LayoutNode（`ui.app.pick`+arg=appId·最多三格·空则整条不画 ⇒ 非 DokiWorld 宿主逐像素同旧版）；
-> 出包侧 manifest/生成器/测试三处同步加 `apps`（五步一致·先有真消费才声明）+ 投影⑤ `app-picks.mjs`
-> 纯函数（**只收能真拉起来的**：SDK 实读 `AppLaunchRequest.input` 必填，contract 只能来自被列 App 自己的
-> `runtime.input`；拿不到就不画那格并留痕）+ `apps.dispose()`。
-> **复查请重点看三处**：(a) 打包层给 SDK 加了别名（共享层 import `@dokiworld/app-sdk/apps` 在
-> `dokiworld/shared/` 下解析不到 node_modules·**构建当场红**才暴露；改法=指到本 App 那份·不打进第二份 SDK）；
-> (b) 假宿主目击补 ⑥ 腿（真 `createAppsHostExtension`）；(c) **顺手复活了 leg④**——它自 2026-08-13
-> 「玩法说明屏」上线起就一直卡到超时：clickStart 的判据「`#phase-t` 出现」在说明屏底下恒真，
-> 只点一下就返回、世界根本没开跑（与 REQ-S3CLICK 复查那条「画出来了≠点得动」同形）。
-> 自证：game108 85 测 · app 31 测 · build 绿 · **witness PASS=27 FAIL=0** · scoped-gate 全绿。
->
-> ~~后续①~~ **✅ 主程已落（2026-08-16·随 GUARDGATE 合入）**：scoped-gate 加 dokiworld 面触发（改哪个 app 跑哪家 `node --test`·缺依赖 runner 先 npm ci·撤修验红在案）。原文：**`dokiworld/**` 的测试跑在没人跑的地方。**
-> 实查：`scoped-gate.mjs` 全文无 `dokiworld` 字样；出包 job（`main_entry/packaging.py:_pkg_build_dokiworld_app`）
-> 只 `npm ci` → `npm run build`，**不跑 `npm test`**。于是 `dokiworld/game108/tests/*`（24 条）
-> 与新增的 `dokiworld/shared/tests/*`（9 条）**没有任何门在验**——写了测试而没人跑，
-> 与「从来就没对过」同形（本轮 game108 AI 恒石那条的教训）。
-> 建议：`scoped-gate` 改动面命中 `dokiworld/**` 时，在受影响的 app 目录追加 `npm test`
-> （缺 node_modules 才 `npm ci`·同出包 job 口径）。落地前手册已写死「改这些目录必须手跑」。
-
+<!-- REQ-DOKI-APPS-「获取卡带」下沉共享接线层（P1·owner 2026-08-15 令）**2026-08-18 全件完结出池·主程双路独立复查 PASS**：
+     ① 共享层 dokiworld/shared/ apps-gateway（8433c8e3·抢锁 session）：createAppsGateway 带超时/降级/dispose 薄适配 + appsDeclared；9 测不 mock SDK（真 createAppsHostExtension 对端）。复查实证：launch 缺省超时真 1 小时（apps.js:14）·「未声明就不发」快速拒绝非等超时（1.5ms 即红）·reasonOf 只读 error.code 顺带消解双份 SDK dual-package 隐患·通用性成立（src 零 game108 字样）。
+     ② game108 结算屏消费（3801e35a·owner 判「结算屏加入口”）：setAppPicks/onAppPick 宿主缝 + 推荐位 LayoutNode（空则整条不画——复查以提交两侧 buildDuelScreen 全量倾印逐字节相同机器证明「非 DokiWorld 宿主逐像素同旧版」）+ manifest 五步一致（EXTENSIONS 单一真相）+ 投影⑤只收能真拉起的（input contract 缺则不画留痕）；render-only 亲测=picks 翻转三跑 hash 流逐拍相同；SDK 别名只打进一份（唯一字面量各恰 1 次）；顺手复活 witness leg④（клickStart「#phase-t 出现」在说明屏下恒真的假绿→改「世界动作真出现」·复查探针 6/6 坐实根因）。witness 终态 PASS=50 FAIL=0。
+     ③ 后续①（dokiworld 测试接门）主程随 GUARDGATE 落·两处手册过期口径已更正。三轮+三轮撤修验红各恰中。全文查 git 历史。 -->
 
 <!-- REQ-S18PANEL-开发面板补 S1–S8 八关（P1·owner 2026-08-16 令「都要有按钮·不能采用老路子」）**2026-08-18 全件完结出池**：
      ① 存为项目（Lead 施工·50804eb1·终审 PASS）：POST /api/projects + gaps 七键归一 + 对话认领关浏览器不丢 + 工坊「💾 存为项目」钮。

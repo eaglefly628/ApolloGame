@@ -5,7 +5,7 @@
       "target": "acceptance",
       "approvedBy": "LEAD",
       "date": "2026-08-18",
-      "reason": "game102 剧本 conformance 红=REQ-G102-ADAPTER 在案（8 份剧本为 README DSL 非 harness schema·剧本作者=GD 铁律不代改·等 GD 转换）；game-103 adapter 施工中（Lead 派工 agent·落地后若 acceptance 仅剩 game102 因子仍留本条）",
+      "reason": "game102 剧本 conformance 红=REQ-G102-ADAPTER 在案（8 份剧本为 README DSL 非 harness schema·剧本作者=GD 铁律不代改·等 GD 转换）；game-103 adapter 已落（4a722d19）·其剧本 01/04 真红=游戏 bug SBUG-01 在案（击杀同拍级联漏计·GD/PE 裁）",
       "ticket": "docs/design/game102/requests.md REQ-G102-ADAPTER · docs/design/game-103/requests.md adapter 单"
     }
   ]
