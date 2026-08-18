@@ -190,6 +190,28 @@
             </div>
           </sc-if>
 
+          <!-- 产物落点卡（owner 2026-08-10 实撞「跑完了我也不知道在哪里、也没上传，等于白跑」）：
+               开工一结束自动弹出，逐处列「在哪 / 归哪个仓 / 存住没」，未提交的一键提交推送。
+               自动存档（features.autoPush）已在后台把引擎仓那部分先提交再门禁再推——本卡是**看得见的回执**。 -->
+          <sc-if value="{{ artiOn }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-bottom:16px;background:#fffdf5;border:4px solid #3a2312;border-radius:16px;padding:14px 16px;box-shadow:0 5px 0 rgba(58,35,18,.25)">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+                <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312">📦 产物落点 · {{ artiTitle }}</span>
+                <button onClick="{{ artiRefresh }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">↻ 重查</button>
+                <button onClick="{{ artiSync }}" title="把该游戏落在引擎仓的产物（游戏目录 + docs/design）提交并推送" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">{{ artiSyncLabel }}</button>
+                <button onClick="{{ artiClose }}" style="{{ delBtnStyle }}" style-active="{{ miniBtnActive }}">收起</button>
+              </div>
+              <sc-for list="{{ artiRows }}" as="ar" hint-placeholder-count="3">
+                <div style="display:flex;align-items:baseline;gap:8px;padding:4px 0;border-top:1px dashed rgba(58,35,18,.18);flex-wrap:wrap">
+                  <span style="font-family:'Noto Sans SC';font-weight:700;font-size:12.5px;color:#3a2312">{{ ar.path }}</span>
+                  <span style="{{ ar.badgeStyle }}">{{ ar.badge }}</span>
+                  <span style="font-family:'Noto Sans SC';font-size:11.5px;color:#7a5a3a;flex:1;min-width:200px">{{ ar.note }}</span>
+                </div>
+              </sc-for>
+              <div style="font-family:'Noto Sans SC';font-size:11.5px;color:#5a2412;margin-top:8px">{{ artiHint }}</div>
+            </div>
+          </sc-if>
+
           <!-- ---------- MY GAMES (home) ---------- -->
           <sc-if value="{{ isGames }}" hint-placeholder-val="{{ true }}">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap">
@@ -1529,6 +1551,8 @@ class Component extends DCLogic {
     // 现有「生产八关」灯行 + 旧工作台入口不动。orchLock 是库级（不分 editSlug）·轮询独立于当前屏幕。
     wizardOpen: false, wizardPitch: '', wizardBusy: false, orchLock: null, orchDispatchStage: null,
     wizardGateBusy: null, wizardSignBusy: null, orchAbortBusy: false,
+    // 产物落点卡（owner 2026-08-10「跑完了我也不知道在哪里」）：开工一结束自动拉一次 /api/pipeline/artifacts。
+    arti: null, artiBusy: false,
     signNote: '', signBy: 'owner',  // 人门签核字段——向导绝不代填 note（铁律：签核人真人手打）
     chatRole: 'gd', chats: { gd: [], pe: [], art: [] }, chatInput: '', chatBusy: false, chatLive: null,
     editModel: 'opus', editEffort: 'high',
@@ -1828,6 +1852,10 @@ class Component extends DCLogic {
             + was.slug + ' ' + (fin.stage || was.stage || '')
             + (fin.reason ? ('　' + String(fin.reason).slice(0, 120)) : (okDone ? '　门已过' : '')));
           this.refreshBoard(was.slug);      // 会话跑完才重拉板——产物/门证这时候才有
+          // 「跑完的东西在哪·存住没」立刻可见（owner 实撞的白跑感由此终结）。自动存档在后台同时跑
+          // （先提交→门禁→绿了才推·分钟级），故 20 秒后再补拉一次，让卡上的未提交数落到最终态。
+          this.artiLoad(was.slug);
+          setTimeout(() => { if (this.state.arti && this.state.arti.slug === was.slug) this.artiLoad(was.slug); }, 20000);
         }
         this._orchWas = live ? { slug: live.slug, stage: live.stage } : null;
         this.setState({ orchLock: live });
@@ -1835,6 +1863,31 @@ class Component extends DCLogic {
       .catch(() => {});
     poll();
     this._ol = setInterval(poll, 4000);
+  }
+  // ── 产物落点卡 ──────────────────────────────────────────────────────────────
+  artiLoad(slug) {
+    if (!slug) return;
+    fetch('/api/pipeline/artifacts?slug=' + encodeURIComponent(slug)).then(r => r.json())
+      .then(d => { if (d && d.success) this.setState({ arti: d }); }).catch(() => {});
+  }
+  artiRefresh() { const a = this.state.arti; if (a) this.artiLoad(a.slug); }
+  artiClose() { this.setState({ arti: null }); }
+  artiSync() {
+    const a = this.state.arti;
+    if (!a || this.state.artiBusy) return;
+    this.setState({ artiBusy: true });
+    fetch('/api/pipeline/artifacts/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: a.slug }) }).then(r => r.json()).then(d => {
+        this.setState({ artiBusy: false });
+        // 三态说清（别只说「成功/失败」）：已推送 / 只落了本地提交 / 压根没提上
+        const msg = !d ? '同步失败'
+          : d.clean ? '本次没有未提交产物（已存住）'
+          : d.pushed ? ('✓ 已提交并推送 ' + ((d.files || []).length) + ' 个文件（' + (d.committed || '') + '）')
+          : d.committed ? ('⚠ 已本地提交 ' + (d.committed) + '（丢不了），但未推送：' + (d.error || '').slice(0, 120))
+          : ('✕ ' + (d.error || '同步失败').slice(0, 140));
+        this.showToast(msg);
+        this.artiLoad(a.slug);
+      }).catch(e => { this.setState({ artiBusy: false }); this.showToast('✕ ' + ((e && e.message) || '同步失败').slice(0, 100)); });
   }
   wizardToggle() { this.setState(st => ({ wizardOpen: !st.wizardOpen, signNote: '', signBy: 'owner' })); }
   wizardPitchType(e) { this.setState({ wizardPitch: e.target.value }); }
@@ -2052,7 +2105,9 @@ class Component extends DCLogic {
     if (!to) return;
     if (to.screen === 'assets') { this.setState({ screen: 'assets' }); if (to.slug) this.pickAssetGame(to.slug); return; }
     // 编排器「开工」→ 跳回该游戏的生产板（失败原因/日志在那儿·owner 2026-08-10「开工没结果」）
-    if (to.screen === 'pipeline' && to.slug) { this.setState({ screen: 'games' }); this.openPipeline && this.openPipeline(to.slug); return; }
+    // 编排器「开工」→ 跳回该游戏的生产板，**并把产物落点卡一起拉出来**——owner 这次的痛点不止
+    // 「没结果」，更是「跑完了不知道东西在哪、有没有存住」。点一下就同时回答这两个问题。
+    if (to.screen === 'pipeline' && to.slug) { this.setState({ screen: 'games' }); this.artiLoad(to.slug); this.openPipeline && this.openPipeline(to.slug); return; }
     this.setState({ screen: 'games' });
   }
   goBrowser() { this.setState({ screen: 'browser' }); this.abLoadIndex(); }
@@ -3838,6 +3893,29 @@ class Component extends DCLogic {
       wizardToggleLabel: s.wizardOpen ? '🧭 收起向导' : '🧭 向导模式', wizardToggle: () => this.wizardToggle(),
       wizardOpenOn: !!s.wizardOpen,
       wizardLoadingOn: !!s.wizardOpen && !s.board,
+      // 产物落点卡（owner 2026-08-10）：逐处「在哪 / 归哪个仓 / 存住没」+ 一键提交推送。
+      // 徽章只三档，别造第四种说法：卡带屋自带仓 = 已存 · 引擎仓有未提交 = ⚠ 未提交 N · 其余 = ✓ 已存
+      artiOn: !!s.arti,
+      artiTitle: s.arti ? (s.arti.slug + ' · ' + ({ cart: '卡带', builtin: '内置游戏', compiled: '编译期游戏' }[s.arti.form] || '未知形态')) : '',
+      artiRows: ((s.arti && s.arti.locations) || []).map((L) => {
+        const bad = (L.dirtyCount || 0) > 0;
+        return {
+          path: L.path,
+          badge: L.repo === 'cartridge' ? (L.versioned === 'git' ? '✓ 卡带自有仓' : '⚠ 未版本化')
+            : bad ? ('⚠ 未提交 ' + L.dirtyCount) : '✓ 已存',
+          badgeStyle: { fontFamily: "'Noto Sans SC'", fontWeight: 700, fontSize: '11px', padding: '1px 8px',
+            borderRadius: '8px', border: '2px solid #3a2312', flex: 'none',
+            background: (bad || (L.repo === 'cartridge' && L.versioned !== 'git')) ? '#ffd7c2' : '#c9f0c0', color: '#3a2312' },
+          note: (L.lastCommit ? ('最近提交：' + L.lastCommit + '　') : '') + (L.note || ''),
+        };
+      }),
+      artiHint: s.arti ? ((s.arti.hint || '') + (s.arti.autoPush === false ? '　（自动上传已关·features.autoPush）' : '')
+        + (((s.arti.lastAutoSync || {}).committed) ? ('　自动存档：' + s.arti.lastAutoSync.committed
+            + (s.arti.lastAutoSync.pushed ? '·已推送' : ('·未推送' + (s.arti.lastAutoSync.gate === 'red' ? '（门禁红）' : '')))) : '')) : '',
+      artiSyncLabel: s.artiBusy ? '⏳ 同步中…' : (s.arti && s.arti.dirtyTotal ? ('⬆ 提交推送（' + s.arti.dirtyTotal + '）') : '⬆ 提交推送'),
+      artiRefresh: () => this.artiRefresh(),
+      artiSync: () => this.artiSync(),
+      artiClose: () => this.artiClose(),
       wizardErrorOn: !!(s.wizardOpen && s.board && s.board.success === false),
       wizardErrorText: (s.board && s.board.error) || '',
       wizardEmptyOn,

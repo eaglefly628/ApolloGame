@@ -74,6 +74,11 @@ def _run(jid: str, slug: str, args: list) -> None:
         _update(jid, state='failed', error=f'批量异常: {e}', finishedAt=time.time())
     finally:
         lock.release()
+    # 收工即自动存档（owner 2026-08-10 令「希望它主动去上传」）：先本地提交 → 门禁 → 绿了才推。
+    # **放在 lock.release() 之后**——门禁要跑几分钟，占着单游戏串行锁会把排队中的下一个批量白白堵死。
+    # 用后台线程：本线程该退出了，别让 job 的 finishedAt 与实际收工时间脱节。永不抛（失败只打日志）。
+    from . import artifacts
+    artifacts.auto_sync_bg(slug, reason='美术批量')
 
 
 def start_batch(slug: str, args: list, pack_id: str = '') -> dict:

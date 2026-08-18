@@ -8,6 +8,14 @@
 
 ## 待处理 / 进行中
 
+### REQ-AUTOSAVE · 任务收工自动存档（先提交→门禁→绿了才推）· [2026-08-10] · **owner 令**（原话：「跑完的结果就没了，丢失了……我希望它能主动地去上传，跟我在这边窗口做这个事情感受是一致的」）· **施工主体 = PST（本行即锁·已交）** · 复查 = 主程 · status: **done（待复查）** · P1 · 类型: 创作台（PST 域）+ **一处越界待追认**
+> 图纸/自证：`docs/design/auto-artifact-sync-2026-08.md` · 冒烟 `scripts/auto-sync-smoke.py`（25 腿·含撤修验红两轮：
+> 第三步退回 `sync_paths` → ②⑥ 转红；顺序改成「先门禁后提交」→ ③ 转红）。
+> **越界一处·请主程追认或打回**：为把两个 git 同步冒烟放进门前（病根同 2026-08-09「art-replace-smoke 不在门里
+> 导致我的回归漏检一整天」），改了 Lead 域的 `scripts/scoped-gate.mjs`——新增 `syncSmoke` 面旗
+> （命中 `main_entry/{art_sync,artifacts}.py` + 两冒烟自身）+ 计划里两步，并同步补 `scoped-gate.test.mjs`
+> 行为契约两例。**只加面旗、不动既有三旗与 scope 分类**；不认可请直接回滚这两文件，功能本体不依赖它。
+
 ### REQ-DOKI-APPS · 「获取卡带」下沉共享接线层（`apps` 模块）· [2026-08-15] · owner 令「把 SDK 需要的都集成进去」 · **施工主体 = 抢锁 session（2026-08-16 接手余项·本行即锁）** · 复查 = 主程 · status: **in-progress（共享层 ✅ + game108 消费 ✅ 已交·待复查）** · P1 · 类型: 跨游戏共享面（🔴 按归属律本属主程·owner 直接派工故抢锁留痕）
 > **实查**（协议第一步·真包 `@dokiworld/app-sdk@2.1.0` d.ts 非文档手抄）：`./apps` 就是「获取卡带」——
 > `list(filter?:{capability?}) → {apps: AvailableApp[]}`（`{id,name,description?,coverUrl?,protocolVersion}`）+

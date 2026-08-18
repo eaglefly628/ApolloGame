@@ -44,7 +44,10 @@ def _config_model(pid: str):
 # tsCarts：TS 例外卡带（打勾允许 logic.ts）。owner 07-13 转正：默认开=开关常驻卡带选项
 #   （打开时壳弹 warning 提示记债）；仍可全局关停：配置 {"features":{"tsCarts":false}}
 #   或环境 ZEROCRAFT_FEATURE_TSCARTS=0（旧名 APOLLO_FEATURE_TSCARTS 过渡期仍读·配置可关原则不变）。
-_FEATURE_DEFAULTS = {'capgap': True, 'tsCarts': True}
+# autoPush（owner 2026-08-10 令「希望它主动去上传·跟我在窗口里做事的感受一致」）：任务收工后
+# 自动把该游戏落在引擎仓的产物**先本地提交 → 跑门禁 → 绿了才推**（顺序见 artifacts.auto_sync 头注）。
+# 默认开；关掉（config.json `features.autoPush=false` 或 ZEROCRAFT_FEATURE_AUTOPUSH=0）则退回手动按钮。
+_FEATURE_DEFAULTS = {'capgap': True, 'tsCarts': True, 'autoPush': True}
 
 def _features() -> dict:
     cfg = _load_config().get('features')

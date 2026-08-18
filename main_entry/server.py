@@ -26,6 +26,7 @@ from .design_ingest import design_preview_path, handle_design_finalize, handle_d
 from .games_list import handle_catalog, handle_game_cover_generate, handle_games_list
 from .generate_api import handle_generate
 from .groups import handle_matlib_groups_get, handle_matlib_groups_put
+from .artifacts import handle_artifacts_status, handle_artifacts_sync
 from .job_board import handle_job_board
 from .jobs import handle_generate_job_get, handle_generate_job_start, handle_generate_jobs_list
 from .library_api import handle_library_stats, library_bench, library_create, library_delete, library_design_put, library_get, library_install_sample, library_put_manifest, library_rollback
@@ -520,6 +521,12 @@ class APIHandler(BaseHTTPRequestHandler):
         elif path == '/api/pipeline':
             qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
             data = handle_pipeline_board((qs.get('slug') or [''])[0])
+        elif path == '/api/pipeline/artifacts':  # 「跑完的东西在哪·存住没」（owner 2026-08-10 实撞白跑）
+            qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
+            try:
+                data = handle_artifacts_status((qs.get('slug') or [''])[0])
+            except Exception as e:
+                data = {'success': False, 'error': f'artifacts 异常: {e}'}
         elif path == '/api/pipeline/orchestrator/status':  # 向导锁横幅 + 步进器「开工」轮询共用（REQ-PIPESOFT P1b）
             qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
             try:
@@ -745,6 +752,11 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_art_sync(body)
             except Exception as e:
                 data = {'success': False, 'error': f'sync 异常: {e}'}
+        elif path == '/api/pipeline/artifacts/sync':  # 该游戏落在引擎仓的产物一键提交+推送（含 docs/design）
+            try:
+                data = handle_artifacts_sync(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'artifacts sync 异常: {e}'}
         elif path == '/api/design/ingest':  # 收稿箱落盘（REQ-DESIGNLINE 过渡轨②）
             try:
                 data = handle_design_ingest(body)

@@ -105,6 +105,24 @@ def _orch_cli_sync(args: list, timeout: int = 20) -> dict:
     data['_exit'] = proc.returncode
     return data
 
+def _orch_reap(proc, slug: str, stage: str) -> None:
+    """收尸线程（不杀·只等它自然退出），**并在它退出后自动存档**。
+
+    owner 2026-08-10 实撞：「开工跑完以后结果就没了、也没上传，那就等于白跑了」。根因不是产物没生成，
+    而是编排会话写出的 `docs/design/<slug>/` 与游戏目录**全躺在工作区没提交**——换台机器/重新 clone 即丢。
+    这里是「一次开工真正结束」的唯一时刻（编排器此时已落台账、放锁），故自动存档挂在这儿：
+    先本地提交 → 跑门禁 → 绿了才推（顺序见 artifacts.auto_sync）。永不抛。"""
+    try:
+        proc.communicate()
+    except Exception:
+        pass
+    try:
+        from . import artifacts
+        artifacts.auto_sync(slug, reason=f'开工 {stage}')   # 本线程已是后台线程 → 直接跑，不必再套一层
+    except Exception as e:
+        print(c("  [AUTO]", 'y'), f"{slug} 开工收尾自动存档异常: {e}")
+
+
 def _orch_dispatch_kickoff(slug: str, stage: str, quick_wait: float = 2.5) -> dict:
     """起 `orchestrator dispatch` 子进程，只等 quick_wait 秒——够吃「起会话前」就会退出的快路径
     （NO_RUNTIME=3 · LOCKED=4 · USAGE 类=2，均在占锁/起会话之前判定，秒退）。没秒退=真起了一个
@@ -118,7 +136,7 @@ def _orch_dispatch_kickoff(slug: str, stage: str, quick_wait: float = 2.5) -> di
     try:
         out, err = proc.communicate(timeout=quick_wait)
     except subprocess.TimeoutExpired:
-        threading.Thread(target=proc.communicate, daemon=True).start()  # 后台收尸（不杀·只等它自然退出）
+        threading.Thread(target=_orch_reap, args=(proc, slug, stage), daemon=True).start()
         return {'quick': False}
     text = (out or b'').decode('utf-8', 'replace').strip()
     line = text.splitlines()[-1] if text else ''

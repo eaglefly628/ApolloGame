@@ -152,7 +152,7 @@ describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门
   it('facesOf：守卫脚本自身被改也触发各自守卫（改守卫先自证跑绿）', () => {
     expect(facesOf(['scripts/engine-random-guard.mjs']).engineRandom).toBe(true);
     expect(facesOf(['scripts/test-hygiene-check.mjs']).testHygiene).toBe(true);
-    expect(facesOf(['games/game-a/rules.ts', 'docs/workflow/requests.md'])).toEqual({ engineRandom: false, testHygiene: false, artSmoke: false, dokiApps: [] });
+    expect(facesOf(['games/game-a/rules.ts', 'docs/workflow/requests.md'])).toEqual({ engineRandom: false, testHygiene: false, artSmoke: false, syncSmoke: false, dokiApps: [] });
   });
 
   it('引擎面改动（full）：计划含 engine-random 步·红=拦（无 allowExit）·放 tsc 前', () => {
@@ -181,6 +181,29 @@ describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门
     expect(step.allowExit).toBeUndefined();
   });
 
+  it('facesOf：git 同步面 main_entry/{art_sync,artifacts}.py + 两冒烟自身 → syncSmoke（不并进 artSmoke）', () => {
+    expect(facesOf(['main_entry/art_sync.py']).syncSmoke).toBe(true);
+    expect(facesOf(['main_entry/artifacts.py']).syncSmoke).toBe(true);
+    expect(facesOf(['scripts/art-sync-smoke.py']).syncSmoke).toBe(true);
+    expect(facesOf(['scripts/auto-sync-smoke.py']).syncSmoke).toBe(true);
+    // artifacts.py 不带 art_ 前缀 → 只触发 syncSmoke；art_sync.py 两面都沾（art_ 前缀 + 同步面）
+    expect(facesOf(['main_entry/artifacts.py']).artSmoke).toBe(false);
+    expect(facesOf(['main_entry/art_sync.py']).artSmoke).toBe(true);
+    expect(facesOf(['main_entry/art_jobs.py']).syncSmoke).toBe(false);
+    expect(facesOf(['scripts/art-replace-smoke.py']).syncSmoke).toBe(false);
+  });
+
+  it('同步面改动（full）：计划含 art-sync-smoke + auto-sync-smoke 两步·红=拦·放 tsc 前', () => {
+    const files = ['main_entry/artifacts.py'];
+    const plan = planFor(classify(files), auditGamesOf(files), facesOf(files));
+    const names = plan.map((s) => s.name);
+    expect(names).toContain('art-sync-smoke');
+    expect(names).toContain('auto-sync-smoke');
+    expect(plan.find((s) => s.name === 'auto-sync-smoke').cmd).toEqual(['python3', ['scripts/auto-sync-smoke.py']]);
+    expect(plan.find((s) => s.name === 'auto-sync-smoke').allowExit).toBeUndefined();
+    expect(names.indexOf('auto-sync-smoke')).toBeLessThan(names.indexOf('tsc'));
+  });
+
   it('未触发的面不进计划：游戏单改无三步·引擎单改无 art-smoke/test-hygiene', () => {
     const game = ['games/game-a/rules.ts'];
     const gamePlan = planFor(classify(game), auditGamesOf(game), facesOf(game));
@@ -189,5 +212,6 @@ describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门
     const enginePlan = planFor(classify(engine), auditGamesOf(engine), facesOf(engine));
     expect(enginePlan.some((s) => s.name === 'art-smoke')).toBe(false);
     expect(enginePlan.some((s) => s.name === 'test-hygiene')).toBe(false);
+    expect(enginePlan.some((s) => s.name.endsWith('sync-smoke'))).toBe(false);
   });
 });

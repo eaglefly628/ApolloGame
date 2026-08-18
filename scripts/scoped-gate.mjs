@@ -109,6 +109,11 @@ export function facesOf(files) {
     engineRandom: list.some((f) => (ENGINE_SRC.test(f) && !/\.test\./.test(f)) || f === 'scripts/engine-random-guard.mjs'),
     testHygiene: list.some((f) => /^src\/.*\.test\.ts$/.test(f) || f === 'scripts/test-hygiene-check.mjs'),
     artSmoke: list.some((f) => f.startsWith('scripts/art-replace') || /^main_entry\/art_/.test(f)),
+    // syncSmoke：git 同步面（art_sync=一键提交推送 · artifacts=任务收工自动存档）。单列不并进 artSmoke——
+    // art-replace-smoke 一条也没覆盖 git 侧；这两个模块动的是**提交/推送顺序**，错了就是「产物丢了」
+    // 或「没过门禁的东西被推上去」，两头都不该靠人眼守。含冒烟脚本自身（改守卫先自证跑绿·同上三旗口径）。
+    syncSmoke: list.some((f) => /^main_entry\/(art_sync|artifacts)\.py$/.test(f)
+      || /^scripts\/(art-sync|auto-sync)-smoke\.py$/.test(f)),
     // dokiworld/** 的 node --test 没有别的门在验（DOKI-APPS 后续①·「写了测试没人跑」与 game108 恒石同形）：
     // 改动命中哪个 app 目录就跑哪个（.md 不算——纯文档改不了测试结果）。
     dokiApps: [...new Set(list.map((f) => { const m = f.match(/^dokiworld\/([a-z0-9-]+)\//); return m && !f.endsWith('.md') ? m[1] : null; }).filter(Boolean))].sort(),
@@ -158,6 +163,10 @@ export function planFor(c, auditGames = [], faces = {}) {
     ...(faces.engineRandom ? [{ name: 'engine-random', cmd: ['node', ['scripts/engine-random-guard.mjs']] }] : []),
     ...(faces.testHygiene ? [{ name: 'test-hygiene', cmd: ['node', ['scripts/test-hygiene-check.mjs']] }] : []),
     ...(faces.artSmoke ? [{ name: 'art-smoke', cmd: ['python3', ['scripts/art-replace-smoke.py']] }] : []),
+    ...(faces.syncSmoke ? [
+      { name: 'art-sync-smoke', cmd: ['python3', ['scripts/art-sync-smoke.py']] },
+      { name: 'auto-sync-smoke', cmd: ['python3', ['scripts/auto-sync-smoke.py']] },
+    ] : []),
     // dokiworld app 测试（各包自跑 node --test·缺依赖由 runner 先 npm ci——同出包 job 口径）。
     ...(faces.dokiApps || []).map((app) => ({ name: `doki-test:${app}`, cmd: ['node', ['scripts/doki-app-test.mjs', app]] })),
   ];

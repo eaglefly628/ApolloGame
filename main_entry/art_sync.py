@@ -91,6 +91,23 @@ def sync_paths(repo: Path, pathspecs: list, message: str, remote: str = 'origin'
         return {'ok': False, 'error': f'git commit 失败: {_err_text(r)}'}
     commit = _git(repo, ['rev-parse', '--short', 'HEAD'], timeout=15).stdout.strip()
     base = {'committed': commit, 'files': st['files'], 'branch': branch}
+    return push_branch(repo, remote=remote, max_attempts=max_attempts, branch=branch, base=base)
+
+
+def push_branch(repo: Path, remote: str = 'origin', max_attempts: int = 3, branch: str = '', base: dict = None) -> dict:
+    """把当前分支推出去：fetch → rebase --autostash → push，被拒自动重试；凭证类失败秒退不重试。
+
+    从 `sync_paths` 里原样抽出来（**同一段代码·不是复制**）——auto_sync 走「先提交 → 跑门禁 →
+    绿了才推」，到第三步时工作区已干净、没有可提交的东西，再调 sync_paths 会被 clean 短路而**不推**。
+    抽出来给它单独调，避免那里退化成裸 `git push`（无 fetch/rebase → 别人一推就 non-fast-forward）。
+    `base` = 调用方要带回结果里的上下文（committed/files）；单独推时留空。"""
+    base = dict(base or {})
+    if not branch:
+        br = _git(repo, ['rev-parse', '--abbrev-ref', 'HEAD'], timeout=15)
+        branch = br.stdout.strip() if br.returncode == 0 else ''
+        if not branch or branch == 'HEAD':
+            return {'ok': False, 'pushed': False, 'error': 'HEAD 游离（detached）——先切回分支再推送', **base}
+        base.setdefault('branch', branch)
     if _git(repo, ['remote', 'get-url', remote], timeout=15).returncode != 0:
         return {'ok': True, 'pushed': False, 'note': f'无远端 {remote}——已保存为本地提交', **base}
     last_err = ''
