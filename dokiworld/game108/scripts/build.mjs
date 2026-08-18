@@ -14,6 +14,7 @@ const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = resolve(appRoot, "..", "..");
 const dist = resolve(appRoot, "dist");
 
+const pkgVersion = JSON.parse(await readFile(resolve(appRoot, "package.json"), "utf8")).version;
 await generateManifest();
 await rm(dist, { recursive: true, force: true });
 
@@ -37,6 +38,15 @@ await build({
     ],
   },
   esbuild: { jsx: "automatic" },    // 引擎 UI 的 .tsx 走 React 17+ 自动运行时（同仓根 tsconfig "react-jsx"）
+  /**
+   * 【版本号上屏】把 `package.json.version` 注进 bundle（owner 2026-08-17：
+   * 「我能知道这个游戏的版本号，在游戏中能看到是不是我最新的」）。
+   *
+   * **必须走注入，不许在源码里手抄一份**——版本的唯一真相是 package.json（manifest 也是它抄的），
+   * 源码里再抄一遍就是第三处真相，改版本忘了改它 ⇒ 屏上显示的是旧号，
+   * 而"屏上那个号"恰恰是 owner 用来判断"传上去的是不是最新版"的唯一依据，错了比没有更糟。
+   */
+  define: { __APP_VERSION__: JSON.stringify(pkgVersion) },
   build: {
     outDir: dist,
     emptyOutDir: true,

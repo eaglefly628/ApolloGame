@@ -14,7 +14,7 @@
 //
 // 用法：npm run witness（先 npm run build）。退出码 0=全过 1=有红 3=本机无浏览器。
 // 截图落 ../../docs/design/dokiworld/game108-fullspec/。
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
@@ -22,6 +22,9 @@ import { startHarnessServer, chromiumPath, until } from "./lib/host-harness.mjs"
 
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SHOTS = resolve(appRoot, "..", "..", "docs", "design", "dokiworld", "game108-fullspec");
+// 版本号判据的**唯一真相**：package.json。屏上那两处（启动屏角标 / 演示台标题旁）都对它核，
+// 而不是互相核——`__APP_VERSION__` 是构建期注入的，漏注入时两处会一起变成同一个错值。
+const PKG_VERSION = JSON.parse(readFileSync(resolve(appRoot, "package.json"), "utf8")).version;
 mkdirSync(SHOTS, { recursive: true });
 
 const execPath = chromiumPath();
@@ -54,6 +57,11 @@ async function boot(config, { viewport = { width: 1280, height: 720 } } = {}) {
     page, fatals,
     frame,
     text: async (sel) => frame().locator(sel).first().textContent({ timeout: 5_000 }),
+    // 「可能压根没画出来」的元素专用：**不抛**，缺件即空串。
+    // 判据本身要的就是"在不在"，用会抛的读法会让一条红把后面几十条一起掀掉（版本号腿实测）。
+    softText: async (sel) => ((await frame().locator(sel).count()) > 0
+      ? (await frame().locator(sel).first().textContent({ timeout: 5_000 })) ?? ""
+      : ""),
     has: async (sel) => (await frame().locator(sel).count()) > 0,
     initialized: () => page.evaluate(() => window.__state.initialized),
     state: () => page.evaluate(() => window.__state),
@@ -123,6 +131,11 @@ try {
     await until(h.initialized, { label: "① init 完成（capability 全超时后仍须初始化成功）", timeoutMs: 15_000 });
     check("① 零授权：initialized（capability 缺席不阻塞开局）", true);
     check("① 零授权：等待屏已撤、启动闸门屏在", !(await h.has("#standby")) && (await h.has("#start")));
+    // owner 2026-08-18「我能知道这个游戏的版本号，在游戏中能看到是不是我最新的」：
+    // 启动屏一进来就得看见版本号，**且等于 package.json**（构建漏注入 __APP_VERSION__ 时这里红）。
+    const startVer = await h.softText("#start-ver");
+    check("① 启动屏角标显示版本号 = package.json 的版本", startVer.includes(PKG_VERSION),
+      `屏上=${startVer} · 包=${PKG_VERSION}`);
     await clickStart(h);
     check("① 零授权：对手=内置兜底卡「复读机」（降级链末位）", (await h.text("#side-p2-nt")) === "复读机",
       `实为 ${await h.text("#side-p2-nt")}`);
@@ -397,6 +410,38 @@ try {
       if (d.includes("待试") || d.includes("正在问")) untouched.push(`${key}: ${d}`);
     }
     check("⑦ 九行**每一行都真按下去过**（没有停在「待试」的）", untouched.length === 0, untouched.join(" | "));
+
+    // ── 运行日志：iframe 里没有 console，owner「我在这个应用中无法看到日志」──────────
+    // 判据不是"日志区画出来了"（那是 vitest 的活），是**真按了九行之后屏上有对应的调用记录**：
+    // 接线断了（onCall 没接 / 只在 warn 时才推）时日志区会是空的或只有开场那一行，这里就该红。
+    const logLines = [];
+    for (let i = 0; i < 8; i++) {
+      const t = await h.softText(`#sdk-log-${i}`);
+      if (typeof t === "string" && t.length > 0) logLines.push(t);
+    }
+    check("⑦ 屏上运行日志有货（不是空面板）", logLines.length > 0, `${logLines.length} 行`);
+    // 时间戳前缀 = 每条都是**一次真调用**留下的，不是写死的说明文案
+    check("⑦ 日志每行带时间戳（是调用记录不是说明文案）",
+      logLines.length > 0 && logLines.every((l) => /^\d\d:\d\d:\d\d /.test(l)), logLines[0] ?? "(空)");
+    // 最上面是最新一条：九行按完，最新的必然是某个 capability 的调用，而不是 init 那句开场
+    check("⑦ 日志是**新的在上**（按完九行后最新一条不是开场那句）",
+      logLines.length > 0 && !logLines[0].includes("声明扩展"), logLines[0] ?? "(空)");
+    // 点名核对：按下去的那几个 capability 名字要在日志里出现（否则日志与按钮是两条不相干的线）
+    // ⚠ **日志有两条进料口，要分别钉**（2026-08-18 撤修验红实测）：
+    //   · 五个 capability 网关走 `onCall` 钩子（speech/persona/dialogue/media/episode）
+    //   · character/storage/apps 走 `traced()` 包装
+    // 拆掉其中一条，另一条照样把面板填满 ⇒ 只查"有没有货"是**假绿**（实测：砍掉 onCall 那条，
+    // 面板还有 7 行 traced 的记录，「有货 / 带时间戳 / 新的在上」三条全绿）。故两条各点名一次。
+    const logBlob = logLines.join(" | ");
+    const missGw = ["speech", "persona", "dialogue"].filter((k) => !logBlob.includes(k));
+    check("⑦ 日志覆盖**网关口**（speech/persona/dialogue 都记上了）", missGw.length === 0, `缺 ${missGw.join(",")} · 日志=${logBlob}`);
+    const missTraced = ["storage"].filter((k) => !logBlob.includes(k));
+    check("⑦ 日志覆盖**traced 口**（storage 记上了）", missTraced.length === 0, `缺 ${missTraced.join(",")} · 日志=${logBlob}`);
+
+    // ── 版本号：owner「我能知道这个游戏的版本号，在游戏中能看到是不是我最新的」──────
+    // 判据对 package.json **实读**，不是对页面自陈——构建没把 __APP_VERSION__ 打进去时会红。
+    const sdkVer = await h.softText("#sdk-ver");
+    check("⑦ 演示台标题旁的版本号 = package.json 的版本", sdkVer.includes(PKG_VERSION), `屏上=${sdkVer} · 包=${PKG_VERSION}`);
     await h.page.screenshot({ path: resolve(SHOTS, "hosted-sdk-panel.png") });
     check("⑦ 演示台：零致命错", h.fatals.length === 0, h.fatals.join("; "));
     await h.close();

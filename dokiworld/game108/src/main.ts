@@ -14,7 +14,7 @@ import {
   createEpisodeBridge, pollMediaJob, resolveEpisodeGameResult,
 } from '../../shared/src/sdk-gateways.mjs';
 import { toAppPicks } from './app-picks.mjs';
-import { mount, setCard, setWorldObserver, setWorldRestore, setAppPicks, onAppPick, setSdkRows, onSdkTry, setMyPersona, setVoiceClips, setVoiceLines, setStakes } from '../../../games/game108/index.js';
+import { mount, setCard, setWorldObserver, setWorldRestore, setAppPicks, onAppPick, setSdkRows, onSdkTry, setMyPersona, setVoiceClips, setVoiceLines, setStakes, setSdkLog, setAppVersion } from '../../../games/game108/index.js';
 import { fromPlatformCard, MOODS, type Mood } from '../../../games/game108/card-character.js';
 import type { PlatformCharacterDraft } from '@zerocraft/engine/services/character-card/index.js';
 import { saveLang } from '../../../games/game108/strings.js';
@@ -25,6 +25,14 @@ import { packWorld, unpackWorld, toCheckpoint, fromCheckpoint } from './checkpoi
 import { hasScope, characterToDraft } from './foe-card.mjs';
 
 const APP_ID = 'game108';
+/**
+ * 【版本号】构建时由 `scripts/build.mjs` 的 `define` 注入（值 = `package.json.version`）。
+ * **不许在这里写字面量**——版本的唯一真相是 package.json（manifest 也是抄它的），
+ * 手抄一份就是第三处真相；而屏上那个号恰恰是 owner 用来判断"传上去的是不是最新版"的依据，
+ * 显示错了比不显示更糟。开发态（vite dev 没走这个 define）时它是 undefined ⇒ 屏上不画。
+ */
+declare const __APP_VERSION__: string | undefined;
+const APP_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : undefined;
 /** capability 请求超时：宿主没实现对应 host extension 时消息被静默丢弃，只有超时能兜住。
  *  init 前的 loadCheckpoint/getCurrent 都挂在这上面——太长=降级宿主里白等，太短=慢宿主误降级。 */
 const CAPABILITY_TIMEOUT_MS = 2_000;
@@ -114,6 +122,19 @@ const brief = (v: unknown, max = 120): string => {
 /** 一条调用记录（面板也读它——不止控制台看得见）。 */
 interface SdkCall { capability: string; op: string; ok: boolean; ms: number; detail: string }
 const sdkCalls: SdkCall[] = [];
+/**
+ * 屏上那块日志区（**最新在最前**·最多留 40 条）。
+ * iframe 里没有控制台，所以这一份才是 owner 真正读得到的那份；console 那份照打不误。
+ * 每行带一个**本地时分秒**——判"这一条是刚才那次点击产生的、还是上一局的残留"全靠它。
+ */
+const screenLog: string[] = [];
+const pushScreenLog = (line: string): void => {
+  const d = new Date();
+  const hh = `${d.getHours()}`.padStart(2, '0'), mm = `${d.getMinutes()}`.padStart(2, '0'), ss = `${d.getSeconds()}`.padStart(2, '0');
+  screenLog.unshift(`${hh}:${mm}:${ss} ${line}`);
+  if (screenLog.length > 40) screenLog.pop();
+  setSdkLog([...screenLog]);
+};
 const logCall = (info: { capability: string; op: string; args?: unknown[]; ok: boolean; ms: number; result?: unknown; reason?: string }): void => {
   const sent = brief(info.args?.[0]);
   const got = info.ok ? brief(info.result) : `✗ ${info.reason}`;
@@ -121,6 +142,7 @@ const logCall = (info: { capability: string; op: string; args?: unknown[]; ok: b
   console.info(`${SDK_LOG} ${info.capability}.${info.op} ← ${got}（${info.ms}ms）`);
   sdkCalls.push({ capability: info.capability, op: info.op, ok: info.ok, ms: info.ms, detail: got });
   if (sdkCalls.length > 200) sdkCalls.shift();     // 一局最多两百条，别把内存当日志盘
+  pushScreenLog(`${info.capability}.${info.op} ${info.ok ? '✓' : '✗'} ${info.ok ? '' : `${info.reason} `}${info.ms}ms`);
 };
 /**
  * 裸 SDK 扩展（`character` / `storage`）**没有网关**，所以它们的调用要手工包一层同款日志。
@@ -134,12 +156,14 @@ async function traced<T>(capability: string, op: string, args: unknown, run: () 
     const ms = Date.now() - t0;
     console.info(`${SDK_LOG} ${capability}.${op} ← ${brief(out)}（${ms}ms）`);
     sdkCalls.push({ capability, op, ok: true, ms, detail: brief(out) });
+    pushScreenLog(`${capability}.${op} ✓ ${ms}ms`);
     return out;
   } catch (error) {
     const ms = Date.now() - t0;
     const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
     console.warn(`${SDK_LOG} ${capability}.${op} ← ✗ ${reason}（${ms}ms）`);
     sdkCalls.push({ capability, op, ok: false, ms, detail: `✗ ${reason}` });
+    pushScreenLog(`${capability}.${op} ✗ ${reason.slice(0, 40)} ${ms}ms`);
     throw error;
   }
 }
@@ -585,6 +609,8 @@ app.connect({
     void resolveAppPicks();
     // 【SDK 演示台】九行状态推给游戏（菜单第六行进得去）。**挂载之后**才推：
     // 面板是给人按的，开局那一秒不该为它多等任何一次 capability 往返。
+    setAppVersion(APP_VERSION);
+    pushScreenLog(`本包 v${APP_VERSION ?? '?'} · 声明扩展 ${EXTENSIONS.length} 个 · 已授权 scope ${(grantedScopes ?? []).length} 个`);
     initSdkRows();
     // 【无感三条】开场白 → 预取语音 —— **串行是有意的**：先拿到这一局她要说的那句，
     // 再拿那句去合成，否则合成的是本地兜底词、真台词到了却没有声音。

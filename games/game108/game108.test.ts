@@ -1269,6 +1269,39 @@ describe('game108 · 无感接线【R-108-38】（宿主给了就自己出现·�
   });
 });
 
+// ── 【R-108-39】屏上日志 + 版本号（owner 2026-08-17：iframe 里没有控制台）──────────
+describe('game108 · 屏上可读的日志与版本号【R-108-39】', () => {
+  it('【R-108-39】日志区：给了就画（最新在最前）·没给整块不画', () => {
+    const base: DuelView = { ...emptyView(), menuOpen: true, sdkOpen: true, sdk: [] };
+    const lines = (v: DuelView): string[] => {
+      const out: string[] = [];
+      const w = (n: LayoutNode): void => { if (n.id.startsWith('sdk-log-')) out.push((n.props as { text?: string }).text ?? ''); for (const c of n.children ?? []) w(c); };
+      w(buildDuelScreen(v));
+      return out;
+    };
+    expect(lines(base)).toEqual([]);                                  // 没日志 → 整块不画
+    const log = ['12:00:03 speech.synthesize ✗ timeout 15003ms', '12:00:01 apps.list ✓ 42ms'];
+    expect(lines({ ...base, sdkLog: log })).toEqual(log);             // 顺序原样（推的时候就是最新在前）
+    expect(validateLayoutNode(buildDuelScreen({ ...base, sdkLog: log }))).toEqual([]);
+  });
+
+  it('【R-108-39】版本号：开始屏与演示台**两处都显示**，且都带 v 前缀', () => {
+    const text = (v: DuelView, id: string): string | undefined => {
+      let out: string | undefined;
+      const w = (n: LayoutNode): void => { if (n.id === id) out = (n.props as { text?: string }).text; for (const c of n.children ?? []) w(c); };
+      w(buildDuelScreen(v));
+      return out;
+    };
+    const start: DuelView = { ...emptyView(), notStarted: true, bootMs: 60_000, appVersion: '0.7.0' };
+    expect(text(start, 'start-ver')).toBe('v0.7.0');
+    const panel: DuelView = { ...emptyView(), menuOpen: true, sdkOpen: true, sdk: [], appVersion: '0.7.0' };
+    expect(text(panel, 'sdk-ver')).toBe('v0.7.0');
+    // 没注入（开发态）→ 两处都不画，**不许显示 "vundefined"**
+    expect(text({ ...start, appVersion: undefined }, 'start-ver')).toBeUndefined();
+    expect(text({ ...panel, appVersion: undefined }, 'sdk-ver')).toBeUndefined();
+  });
+});
+
 // ── SDK 演示台【R-108-37】（owner 2026-08-17「把所有 SDK 功能实践一遍·做个 demonstration」）──
 describe('game108 · SDK 演示台（DokiWorld 九个能力的自检屏）', () => {
   const rows = (n = 3): SdkRow[] => ['character', 'storage', 'apps'].slice(0, n).map((key, i) => ({

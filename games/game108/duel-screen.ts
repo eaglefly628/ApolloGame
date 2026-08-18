@@ -154,6 +154,18 @@ export interface DuelView {
   /** 【SDK 演示台】面板开着没有 + 九行状态（owner 2026-08-17「把所有 SDK 功能实践一遍」）。 */
   sdkOpen?: boolean;
   sdk?: readonly SdkRow[];
+  /**
+   * 【SDK 演示台·日志】最近若干条调用记录（**最新在最上面**）。
+   * owner 2026-08-17：「我在应用中无法看到日志」——iframe 里没有控制台，
+   * 所以「调了什么 / 得到了什么」必须能在**屏上**读到，不能只打 console。
+   */
+  sdkLog?: readonly string[];
+  /**
+   * 【版本号】上屏用（开始屏角落 + 演示台标题旁）。
+   * owner 要它是为了一眼确认「传上去的是不是最新版」，所以它的来源必须是
+   * `package.json` 经构建注入的那一个，**不许在任何地方手抄**。没有就不画。
+   */
+  appVersion?: string;
   /** 界面语言（owner 2026-08-07：中英双版·默认中文）。 */
   lang: Lang;
   /** 设置菜单开着没有（owner 2026-08-07：右上角一个菜单键·里面放音乐和语言）。 */
@@ -1297,6 +1309,12 @@ function startScreen(view: DuelView): LayoutNode[] {
       children: [
         { type: 'Label', id: 'start-t', props: { text: t(view.lang, 'start.title'), size: 96, font: F.cjk, color: 'ink' }, layout: { height: 108 } },
         { type: 'Label', id: 'start-s', props: { text: t(view.lang, 'start.sub'), size: 30, font: F.cjk, color: 'dim' } },
+        // 版本号（owner 2026-08-17：「在游戏中能看到是不是我最新的」）。
+        // 放开始屏是因为**它是每次进来必经的第一屏**——不用翻菜单就能对上号。
+        ...(view.appVersion ? [{
+          type: 'Label' as const, id: 'start-ver',
+          props: { text: `v${view.appVersion}`, size: 20, font: F.cjk, color: 'sub' as const },
+        }] : []),
         // 【episode】剧情给的赌注（有才画）——它是这一局"为什么要打"，比任何 UI 文案都重要。
         ...(view.stakes ? [{
           type: 'Label' as const, id: 'start-stakes',
@@ -1463,10 +1481,13 @@ export function defaultSdkRows(lang: Lang): SdkRow[] {
   }));
 }
 
+/** 日志区显示多少行（最近的在最上面·再多就该去看 console 了）。 */
+const SDK_LOG_ROWS = 8;
 function sdkPanel(view: DuelView): LayoutNode[] {
   const lang = view.lang;
   const rows = view.sdk?.length ? view.sdk : defaultSdkRows(lang);
-  const w = 900, rowH = 54, headH = 132, hgt = Math.min(CANVAS.h - 80, headH + rows.length * (rowH + 8) + 96);
+  const logH = view.sdkLog?.length ? SDK_LOG_ROWS * 22 + 34 + 8 : 0;
+  const w = 900, rowH = 54, headH = 132, hgt = Math.min(CANVAS.h - 40, headH + rows.length * (rowH + 8) + logH + 96);
   const x = Math.round((CANVAS.w - w) / 2), y = Math.round((CANVAS.h - hgt) / 2);
   const dot = (r: SdkRow): string =>
     r.state === 'ok' ? C.gold : r.state === 'down' ? C.danger : r.state === 'busy' ? C.you : C.disabled;
@@ -1512,7 +1533,18 @@ function sdkPanel(view: DuelView): LayoutNode[] {
         anim: 'pop', animMs: 260, allowOverlap: true,
       },
       children: [
-        { type: 'Label', id: 'sdk-t', props: { text: t(lang, 'sdk.title'), size: 40, font: F.cjk, color: 'ink' }, layout: { height: 50 } },
+        {
+          type: 'Panel', id: 'sdk-head', props: { bare: true },
+          layout: { width: w - 80, height: 50, direction: 'row', align: 'center', justify: 'between', gap: 10 },
+          children: [
+            { type: 'Label', id: 'sdk-t', props: { text: t(lang, 'sdk.title'), size: 40, font: F.cjk, color: 'ink' } },
+            // 版本号就挂在标题旁——打开自检面板第一眼就能对上"是不是我刚传的那版"。
+            ...(view.appVersion ? [{
+              type: 'Label' as const, id: 'sdk-ver',
+              props: { text: `v${view.appVersion}`, size: 24, font: F.cjk, color: 'dim' as const },
+            }] : []),
+          ],
+        },
         {
           type: 'Image', id: 'sdk-div',
           props: { src: plate({ w: w - 80, h: 4, fill: 'rgba(63,43,30,.22)', radius: 2 }), alt: '', fit: 'fill' },
@@ -1520,6 +1552,20 @@ function sdkPanel(view: DuelView): LayoutNode[] {
         },
         { type: 'Label', id: 'sdk-hint', props: { text: t(lang, 'sdk.hint'), size: enSize(lang, 19), font: F.cjk, color: 'dim' }, layout: { width: w - 80 } },
         ...rows.map(line),
+        // 【日志区】最近若干条调用（最新在最上面）。**不做滚动**：闭集里没有滚动容器，
+        // 而"最近 N 条"本来就是排查时唯一要看的东西——要全量去看 console。
+        ...(view.sdkLog?.length ? [{
+          type: 'Panel' as const, id: 'sdk-log',
+          props: { skin: plate({ w: w - 80, h: SDK_LOG_ROWS * 22 + 34, fill: '#2b211a', border: 0, radius: R.chip }) },
+          layout: {
+            width: w - 80, height: SDK_LOG_ROWS * 22 + 34,
+            direction: 'column' as const, align: 'start' as const, justify: 'start' as const, gap: 2, padding: 12,
+          },
+          children: view.sdkLog.slice(0, SDK_LOG_ROWS).map((line, i) => ({
+            type: 'Label' as const, id: `sdk-log-${i}`,
+            props: { text: line, size: 17, font: F.cjk, color: (line.includes('✗') ? 'warn' : 'sub') as 'warn' | 'sub' },
+          })),
+        }] : []),
         {
           type: 'Panel', id: 'key-sdk-close',
           props: { skin: plate({ w: 220, h: 52, fill: C.cream, border: B.card, radius: R.pill, shadow: SH.card }), action: UI_ACT.sdk },

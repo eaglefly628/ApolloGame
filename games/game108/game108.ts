@@ -134,6 +134,22 @@ export function setVoiceLines(lines: Partial<Record<VoiceEvent, string>>): void 
  * 没设 = 菜单里那一行照样在，但面板是空的（本机试玩与渲染探针走这条）。
  */
 let sdkRows: readonly SdkRow[] = [];
+/**
+ * 【SDK 日志】屏上那块日志区的内容（**最新在最前**）。
+ * owner 2026-08-17：「我在应用中无法看到日志」——DokiWorld 的 iframe 里没有控制台，
+ * 所以「调了什么 / 得到了什么」必须能在屏上读到。console 那份照打，这份是给人看的。
+ */
+let sdkLog: readonly string[] = [];
+export function setSdkLog(lines: readonly string[]): void {
+  sdkLog = Array.isArray(lines) ? [...lines] : [];
+  sdkNotify?.();
+}
+/** 【版本号】构建注入（`__APP_VERSION__`）→ 屏上（开始屏角落 + 演示台标题旁）。 */
+let appVersion: string | undefined;
+export function setAppVersion(v?: string): void {
+  appVersion = typeof v === 'string' && v ? v : undefined;
+  sdkNotify?.();
+}
 let sdkNotify: (() => void) | undefined;
 export function setSdkRows(rows: readonly SdkRow[]): void {
   sdkRows = Array.isArray(rows) ? [...rows] : [];
@@ -401,6 +417,8 @@ export function mount(container: HTMLElement): () => void {
       ...(helpOpen ? { helpOpen: true, ...(firstRunHelp ? { helpFirstRun: true } : {}) } : {}),
       ...(sdkOpen ? { sdkOpen: true } : {}),
       ...(sdkRows.length ? { sdk: sdkRows } : {}),
+      ...(sdkLog.length ? { sdkLog } : {}),
+      ...(appVersion ? { appVersion } : {}),
       ...(phase === 'settle' ? { awaitNext: true } : {}),
       ...(charged ? { charged } : {}),
       ...(before ? { before } : {}),
