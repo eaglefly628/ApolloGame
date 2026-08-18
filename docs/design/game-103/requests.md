@@ -1,6 +1,6 @@
 # game-103《幸存者》· 游戏级工单池（bug / 迭代）
 
-### [2026-08-01] · Lead 终审发现 · **acceptance-adapter 从未落地**——5 份 GD 剧本无适配可跑·S4 门红 · status: 🔴 open·指派 PE-103 · 优先级: P1
+### [2026-08-01] · Lead 终审发现 · **acceptance-adapter 从未落地**——5 份 GD 剧本无适配可跑·S4 门红 · status: 🔴 **in-progress（施工主体 = Lead 派工 agent·2026-08-18 本行即锁·连带 VBUG-02 撤回退真接 orbit）** · 优先级: P1
 > 实证：`games/game-103/acceptance-adapter.ts` 无 git 历史（从未存在）；GD 已落 5 份剧本（e5c4bf536）。照 `docs/playbooks/testing.md` 验收剧本节落薄适配（createWorld/applySignal/readWorld=passthrough·纯接线零规则），落完 `npx vite-node scripts/acceptance-run.mjs --game game-103` 全绿再推。此红藏于慢车道多日=双车道「定期跑」未接线的实证（已修=巡检改跑完整网）。
 
 > owner 试玩反馈驱动 · GD-103 triage（读源码定位根因·非施工）。游戏级工单随游戏走·不占引擎池槽（CLAUDE.md）。
