@@ -8,11 +8,12 @@
 
 ## 待处理 / 进行中
 
-### REQ-AUTOSAVE · 任务收工自动存档（先提交→门禁→绿了才推）· [2026-08-10] · **owner 令**（原话：「跑完的结果就没了，丢失了……我希望它能主动地去上传，跟我在这边窗口做这个事情感受是一致的」）· **施工主体 = PST（本行即锁·已交）** · 复查 = 主程 · status: **done（待复查）** · P1 · 类型: 创作台（PST 域）+ **一处越界待追认**
+### REQ-AUTOSAVE · 任务收工自动存档（先提交→门禁→绿了才推）· [2026-08-10] · **owner 令**（原话：「跑完的结果就没了，丢失了……我希望它能主动地去上传，跟我在这边窗口做这个事情感受是一致的」）· **施工主体 = PST（本行即锁·已交）** · 复查 = 主程 · status: **done·主程复查 PASS（2026-08-18·独立复查 agent 四轮 sabotage 三咬一漏）·余 F1 自证补测归 PST** · P1 · 类型: 创作台（PST 域）
 > 图纸/自证：`docs/design/auto-artifact-sync-2026-08.md` · 冒烟 `scripts/auto-sync-smoke.py`（25 腿·含撤修验红两轮：
 > 第三步退回 `sync_paths` → ②⑥ 转红；顺序改成「先门禁后提交」→ ③ 转红）。
 > **✅ 越界已追认（主程 2026-08-18·总回顾批）**：syncSmoke 面旗与 GUARDGATE 面机制同形·改动最小·
 > 行为契约两例在案（与主程同批新增的 slowLane 面在 rebase 合并中共存无冲突·33/33 绿）。追认成立。
+> **⚖ 主程复查判词（2026-08-18·PASS）**：25 腿独立复跑绿；四轮自选 sabotage——先推后门禁③⑤咬·吞红判定 6 腿咬·撤 pathspec 白名单⑦咬（双层纵深）·**砍掉 docs/design 整类落点 25 腿照绿=F1 漏**。行为红线逐条过：推当前分支同手动口径·门禁退出码直取不经管道·红不推大声报·autostash 原生非手动 stash·机器署名循 library.py 先例无模型标识·敏感物白名单闭集 .env 不可达。**F1（必办·PST）**：落点腿（handle_artifacts_status/_engine_pathspecs/detect_form）全库零覆盖且冒烟注释自称「另测」不实——补落点腿或删注释开补测单；F2 _dirty 静默跳过留痕即可。
 
 <!-- REQ-DOKI-APPS-「获取卡带」下沉共享接线层（P1·owner 2026-08-15 令）**2026-08-18 全件完结出池·主程双路独立复查 PASS**：
      ① 共享层 dokiworld/shared/ apps-gateway（8433c8e3·抢锁 session）：createAppsGateway 带超时/降级/dispose 薄适配 + appsDeclared；9 测不 mock SDK（真 createAppsHostExtension 对端）。复查实证：launch 缺省超时真 1 小时（apps.js:14）·「未声明就不发」快速拒绝非等超时（1.5ms 即红）·reasonOf 只读 error.code 顺带消解双份 SDK dual-package 隐患·通用性成立（src 零 game108 字样）。

@@ -65,7 +65,7 @@
 
 ---
 
-### REVIEW-108-S2S5（**owner 2026-08-08 指派：主程要查**·非引擎面·不占引擎槽） · game108 四道复查门（S2/S3/S4/S5）一并复查 · [2026-08-08] · status: **待主程接单** · 优先级: P1 · 类型: 复查门（三门制的第二门）
+### REVIEW-108-S2S5（**owner 2026-08-08 指派：主程要查**·非引擎面·不占引擎槽） · game108 四道复查门（S2/S3/S4/S5）一并复查 · [2026-08-08] · status: **✅ done（2026-08-18·主程派独立复查 agent 执行·判词全文 `review/REVIEW-S2-S5-verdict.md`）**：S2/S3 **PASS** · S4/S5 **CONCERNS**——S4 事由=spec-recursion 尺子被范围外提交 `eeaeda8a` 改坏锚点串（修尺子归 game108 session·修完 S4 方可升 PASS）；S5 事由=/check-ui 两屏 exit 1（15+17 处 ratio=1.5 硬对比·probe 截图亲阅全可读=plate() 贴图底审计盲区假阳·**在案假阳台账过期→归 PUI 重立基线**）。导航单 A–H 八锚+自选两锚 10/10 撤修命中；三处自判 CONCERNS 两消一立；剧本 diff 实核出一行实质改动与自陈不符（与初审「诚实性偏差」同案不另立）。四门新鲜绿证据已落 pipeline.json · 优先级: P1 · 类型: 复查门（三门制的第二门）
 > **背景**：S3/S4 的机器门与人门都绿了（owner 2026-08-08 口头签），**复查门四道全空**。
 > 复查人 ≠ 施工人是红线，施工 session（写 GDD/blueprint/UI 的这个）不能自查。
 > **接单第一命令**：`node scripts/game-pipeline.mjs checklist game108 S2`（S3/S4/S5 同）。
