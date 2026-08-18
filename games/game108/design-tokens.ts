@@ -67,16 +67,17 @@ export const C = {
 // 字体：稿子用 ZCOOL KuaiLe（站酷快乐体·卡通粗中文）+ Fredoka（圆润数字）。
 //   · 中文 → **`cnround`**：PUI 2026-08-07 按 REQ-108-UI-04 补的第 5 款 CJK 艺术字槽，
 //     就是 ZCOOL KuaiLe 本尊（SIL OFL·子集化 woff2·url 惰性载）。**与稿子同款，此项偏差已清。**
-//   · 数字 → `bubbly`(Baloo 2)：与 Fredoka 同族圆润无衬线，是闭集里最近的替身（D2·记债不单开单）。
+//   · 数字 → **`round`**：PUI 2026-08-07 按 REQ-108-UI-06 补的第 19 款拉丁艺术字槽，
+//     就是 Fredoka 本尊（SIL OFL·可变字重 300–700·url 惰性载）。**与稿子同款，替身债（bubbly）已清。**
 export const F = {
   cjk: 'cnround' as const,
-  num: 'bubbly' as const,
+  num: 'round' as const,
 } as const;
 
 // ⚠ **中文一律不加 `bold`**：站酷快乐体只有 400 一个字重，`bold:true` 触发的是浏览器**合成粗体**
 //   （把字形横向铺开），在这种圆粗展示体上只会糊成一团，稿子也是按 400 用的。
 //   「字要饱满」这件事由字形本身解决——换字之前我用 bold 顶字重，是当时没有这款字的权宜。
-//   数字那半仍走 `bold`：Baloo 2 有真 500/600/700，稿子指定 Fredoka 700。
+//   数字那半仍走 `bold`：Fredoka 可变字重 300–700，`bold:true` 天然取到稿子指定的 700。
 
 /** 字号（画布 px·dc.html 逐处抄来）。 */
 export const S = {

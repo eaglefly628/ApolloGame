@@ -109,7 +109,8 @@
 - **判据（为什么值得下沉）**：那把尺子——`shadow:{y:4}` 最弱的模型也填得出，
   「去写个 SVG 生成器」填不出。且 game-i 糖果钮、apollo-toon 厚唇皮都在手搓同一件事。
 
-### REQ-108-UI-06 · 补一款**圆润数字艺术字**槽（Fredoka）· [2026-08-07] · **owner 自发给 PUI** · status: **✅ 已加槽（PUI·`round`）·待游戏侧接**
+### REQ-108-UI-06 · 补一款**圆润数字艺术字**槽（Fredoka）· [2026-08-07] · **owner 自发给 PUI** · status: **✅ 已加槽（PUI·`round`）· ✅ 游戏侧已接（2026-08-18）**
+> **游戏侧自证（2026-08-18）**：`design-tokens.ts` `F.num` `'bubbly'`→`'round'`；vitest game108 94/94 + tsc 0 全绿；真渲染目击 `self-check/font-swap-2026-08-18.png`——屏上血量/倒计时/`n/3` 读数 computed font-family 实测 `Fredoka`（`document.fonts.check` 真载 True），骨架肉眼可辨与 bubbly 不同。
 
 - **病**：设计定稿的数字（血量 / 倒计时 / `n/3` 读数 / **伤害大数**）全部指定 **Fredoka**（500/600/700），
   它是与中文那款 ZCOOL KuaiLe 配套的圆润无衬线，两者一起构成稿子的"卡通"底色。
@@ -158,7 +159,8 @@
 >    正好落到 owner 说的"吃贴图"那一头）。
 > ④ 谁都不许因为「字段有了」就顺手删 `games/game108/plate-art.ts`。
 
-### REQ-108-UI-04 · 缺一款**卡通粗中文**字体槽 · [2026-08-07] · owner 当场指出 · status: **✅ 已加槽（PUI）·待游戏侧接**
+### REQ-108-UI-04 · 缺一款**卡通粗中文**字体槽 · [2026-08-07] · owner 当场指出 · status: **✅ 已加槽（PUI）· ✅ 游戏侧已接（实查确认·2026-08-18）**
+> **游戏侧自证（2026-08-18）**：实查发现 `design-tokens.ts` `F.cjk` **早已是 `'cnround'`**（cnround 交付当日游戏侧即切，文件注释自记「此项偏差已清」，UI-05 的「game108 切到 cnround 时顺手量的」旁证同一事实——本状态行先前过期）。本轮补真渲染目击 `self-check/font-swap-2026-08-18.png`：屏上「你/复读机/蓄力/石头/剪刀」computed font-family 实测 `ZCOOL KuaiLe`（`document.fonts.check` 真载 True），卡通圆粗字形肉眼可辨非系统黑体。
 
 - **病**：owner——「字体不够饱满，要一定的艺术粗体」。设计定稿指定 **ZCOOL KuaiLe（站酷快乐体）**
   作为全屏中文显示字，Fredoka 作为数字字。
