@@ -648,6 +648,12 @@
       "stage": "S5",
       "exit": 0,
       "at": "2026-08-09T14:00:39.959Z"
+    },
+    {
+      "action": "scorecard",
+      "total": 15,
+      "premium": false,
+      "at": "2026-08-18T02:27:17.162Z"
     }
   ],
   "outOfOrder": [
@@ -918,5 +924,23 @@
       "at": "2026-08-08T14:14:38.619Z",
       "gameHash": "28581f584256ea5c"
     }
+  },
+  "scorecard": {
+    "scores": {
+      "艺术方向": 2,
+      "主角面": 1,
+      "世界密度": 1,
+      "材质": 2,
+      "渲染管线": 2,
+      "VFX": 2,
+      "UI美术": 2,
+      "性能证据": 3
+    },
+    "total": 15,
+    "premium": false,
+    "by": "S7复查人（独立复查session·非施工方）",
+    "note": "独立复跑：真浏览器旅程41/41绿（S4-play重拍全系列）·复查人自写探针实测415帧median16.7/p99 16.8/max16.8ms·DOM172（出招相位采样）。4/5两维从手册维度原文重新裁定口径后维持2（材质=描边+平移投影+渐变+内高光四项同源plate()全局一致·管线=暗框取景+终局/说明压暗+受击红纱三档有意图）。主角面1：揭晓大手仍程序矢量、与同屏真图手型图标画质落差可见；blocker实核（DASHSCOPE_API_KEY确未配）。世界密度1：天空/两侧大片裸色。golden/boot.png仍candidate待owner/人签·复查人不代bless。逐维证据见 docs/design/game108/review/REVIEW-S7-scorecard.md",
+    "at": "2026-08-18T02:27:17.162Z",
+    "gameHash": "cad74767ecca25b9"
   }
 }

@@ -1,0 +1,62 @@
+#!/usr/bin/env node
+// S7 复查用独立性能探针（复查人自跑·不采信施工方 §二 的数字）。
+// 真起 vite → 真 Chromium → 跳说明进对局 → 对局中采样 rAF 帧间隔 420 帧（弃前 5 帧暖机）
+// → median/p95/p99/max + DOM 节点数。输出 JSON 到 stdout。
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = process.argv[2];
+if (!ROOT) { console.error('用法: node s7-perf-probe.mjs <repo-root>'); process.exit(1); }
+const { detectBrowserRuntime, startDevServer, stopDevServer } = await import(join(ROOT, 'scripts/lib/render-harness.mjs'));
+
+const rt = detectBrowserRuntime();
+if (!rt.ok) { console.error('无浏览器'); process.exit(3); }
+const { chromium } = await import(join(ROOT, 'node_modules', 'playwright', 'index.mjs'));
+const dev = await startDevServer(ROOT);
+const browser = await chromium.launch({ executablePath: rt.execPath });
+const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+await page.route('**/api/generate/providers', (r) => r.fulfill({ status: 200, body: '[]' }));
+await page.route('**/api/library', (r) => r.fulfill({ status: 200, body: '[]' }));
+
+try {
+  await page.goto(`http://localhost:${dev.port}/?game=game108`, { waitUntil: 'networkidle' });
+  await page.waitForSelector('[data-action="ui.start"]', { timeout: 10000 });
+  // 按任意键 → 说明屏 → 跳过 → 开局
+  await page.evaluate(() => { document.querySelector('[data-action="ui.start"]')?.click(); });
+  await page.waitForTimeout(400);
+  await page.evaluate(() => { document.querySelector('[data-action="ui.start"]')?.click(); });
+  await page.waitForTimeout(600);
+  // 蓄一层让注水动画/倒计时环都在动（对局活跃态采样，不是静止屏）
+  await page.click('#key-rock').catch(() => {});
+  const stats = await page.evaluate(() => new Promise((resolve) => {
+    const deltas = [];
+    let last = performance.now();
+    let n = 0;
+    const N = 420;
+    function tick(now) {
+      deltas.push(now - last);
+      last = now;
+      n += 1;
+      if (n >= N) {
+        const s = deltas.slice(5).sort((a, b) => a - b);
+        const pick = (q) => s[Math.min(s.length - 1, Math.floor(q * s.length))];
+        resolve({
+          frames: s.length,
+          median_ms: +pick(0.5).toFixed(1),
+          p95_ms: +pick(0.95).toFixed(1),
+          p99_ms: +pick(0.99).toFixed(1),
+          max_ms: +s[s.length - 1].toFixed(1),
+          domNodes: document.querySelectorAll('*').length,
+        });
+        return;
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }));
+  const phase = await page.evaluate(() => document.getElementById('phase-t')?.textContent?.trim() ?? null);
+  console.log(JSON.stringify({ ...stats, sampledDuringPhase: phase }));
+} finally {
+  await browser.close();
+  stopDevServer(dev.proc);
+}

@@ -54,16 +54,14 @@
 > **为什么是你家的单**：十二本剧本 `"tick"` 共 103 处写死拍数（如 `{"tick": 275}` 等结算）——节奏一调全要人肉重算，正是本次复盘认定的痛点源头。剧本作者=GD 铁律，主程不代改（污染 blame·S4 复查门有「剧本作者非 PE」检查项）。
 > **做法**：「等状态成立」类的等待（等 REVEAL/等结算/等 AI 出手）改 `waitUntil`（等的目标写状态断言·cap 给宽裕上限）；纯节拍推进（如「过 3 拍再充能」的规则性拍数）**保留裸 tick**——那是规则本身，不是等待。改完 `ZEROCRAFT_ACCEPTANCE_CLI=1 npx vite-node scripts/acceptance-run.mjs --game game108` 全绿再推。
 
-### REVIEW-108-S7 · S7 品质关评分卡待复查人打分 · [2026-08-08] · status: **待复查人接单** · 优先级: P1 · 类型: 复查门（S7 的机器门 = 评分卡本身）
-> **谁打**：S7 的机器门就是评分卡，而评分卡**由复查人执行**（`game-pipeline.mjs:234`）。
-> 施工 session 不能给自己打分——同 S2–S5 那条红线。
-> **回执**：`docs/design/game108/self-check/S7-scorecard-selfassess.md`
-> —— 逐维证据 + 我的**自评 15/24 · PREMIUM: NO**（短板 = 主角面 / 世界密度）。
-> **口径**：owner 2026-08-08 判 A，手册 §二 现在每维两条底线，本作按 **2D 线** 那一列打。
-> **最该被对抗的一处**：4/5 两维（材质 / 渲染管线）的 2D 底线**是我写的**，我又给自己打了 2 分。
-> 若你认为那是「把底线写得刚好够自己够到」，直接推翻——判据与被测物同源是本轮最大的自我怀疑点。
-> **另一件人门事**：`golden/boot.png` 是 candidate 未 blessed（bless = 人门语义·note 必填）。
-> **落账**：`node scripts/game-pipeline.mjs scorecard game108 --scores "艺术方向:N,主角面:N,世界密度:N,材质:N,渲染管线:N,VFX:N,UI美术:N,性能证据:N" --by 复查人 --note "逐维证据摘要"`
+### ~~REVIEW-108-S7~~ · S7 品质关评分卡 · [2026-08-08] · status: **✅ done（2026-08-18·复查人已打分落账）** · 类型: 复查门（S7 的机器门 = 评分卡本身）
+> **判词（独立复查 session·非施工方）**：**VISUAL: 15/24 · PREMIUM: NO**（短板=主角面 1 / 世界密度 1·全维无 0）。
+> 总分与自评同为 15/24，但**未继承自评口径**：每维自己重跑/开图/量过（旅程 41/41 重跑·
+> 复查人自写探针独立复现帧时分布·blocker 实核）；4/5 两维从维度定义原文重裁后**维持 2**
+> （判据未被裁定为放水尺，证据在截图上直接读得出）；维 1/2 判由与自评不同（详见判词单）。
+> 逐维证据 + 分歧点 + 截图在档：`docs/design/game108/review/REVIEW-S7-scorecard.md` + `review/shots-S7/`。
+> **仍待人门**：① S7 signoff（owner）② `golden/boot.png` 仍 candidate——**复查人未代 bless**（人门语义·note 必填）。
+> **记账瑕疵提 PE-108（不改分）**：art-ledger 12 行 placeholder 行内无 blocker 字段，blocker 只在 capability-plan §4.5 一处（手册 §三要求逐行记）。
 
 ---
 
