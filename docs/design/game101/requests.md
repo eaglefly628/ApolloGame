@@ -39,7 +39,7 @@
 > **注（报 Lead·非阻断）**：weighted-spawn 自带的 `cost` 读的是**实体自身 Resource**（每实体预算模型）·不匹配 game101 全局体力池 → 故体力仍走 craft-recipe（全局 id 扣），weighted-spawn 只设 table 不设 cost。若 Lead 想让 cost 支持全局 id 口径（同 craft-recipe），可后续加 scope；当前组合已正确工作。
 > **验收**：23 测试绿（含加权分布测试·多点跨掉落表≥2 档=真加权非恒首项 + 确定性 hash）；浏览器目击（点米仓→稻谷落开放工作格→合出米饭🍚→顾客槽变绿可交付·体力逐点扣）。**同提交连带修**初始关卡开放工作格（原 6 开放格全占满→生成器产物无处落=没法玩·今开出 8 空工作格 10-13/17-20·核心循环闭环）。
 
-### REQ-101-08 · 挖掘式区域解锁（阻碍层·二消清邻·核心乐趣）· 2026-07-25 · 提出人 owner→GD-101 → 指派 **主程/Lead（引擎能力 G6）+ PE（游戏数据/接线）** · status: **✅ 实现已交·待 Lead 复核**（引擎能力 `t2-merge-proximity-clear` + 游戏数据接线·PE-101 按 owner「game101 核心循环端到端建」标准建·同 merge-on-place/order-fulfill 口径） · 优先级: P1 · 类型: 机制（引擎下沉 + 游戏数据）
+### REQ-101-08 · 挖掘式区域解锁（阻碍层·二消清邻·核心乐趣）· 2026-07-25 · 提出人 owner→GD-101 → 指派 **主程/Lead（引擎能力 G6）+ PE（游戏数据/接线）** · status: **✅ done（Lead 2026-08-18 复核 PASS 签核·全库 todo 总回顾）**——独立复查 agent 四步全走（35+28 独立复跑绿·三轮撤修验红恰中·spec 数据驱动红线全过·audit 零红旗）；两条必办整改 Lead 已同批落：F1 载体 id 补拍号（mpc:<tick>:<n>·「装了本件没装 prefab」第二拍撞名硬抛的同型潜伏雷·回归测在案）+ F2 prefab「展开殿后」钉边名单补 merge-proximity-clear；F3 排除圈边界补盲测 + 容差注释校正同落。API/边界判定：**不调**（现契约通用·换游戏可复用同数据形状） · 优先级: P1 · 类型: 机制（引擎下沉 + 游戏数据）
 > **✅ 实现（2026-07-25·PE-101·标记 Lead 复核）**：
 > - **引擎能力** `src/skills/tier2/merge-proximity-clear.ts`（`t2-merge-proximity-clear`·登记 registry）：读 `MergeEvent`（merge-on-place 合成时发·新增）+ 单例 `MergeProximity{cellSize,radius,dec}` → 对半径内 `Blocker` 各 −dec·归零发 DestroyRequest + reveal（spawn=SpawnRequest / resource=资源+amount 钳限）。**减层全在引擎 sim·零游戏层/宿主扫格**（红线守）。7 单测 + merge-on-place 加发 MergeEvent（5 测仍绿）。
 > - **组件**：`Blocker{layers,reveal}`·`MergeEvent{x,y}`·`MergeProximity{cellSize,radius,dec}`（component-map + baseline 已更）。

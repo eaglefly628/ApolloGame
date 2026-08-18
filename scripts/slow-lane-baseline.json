@@ -1,0 +1,12 @@
+{
+  "_doc": "慢车道在案红基线（slow-lane-guard.mjs 消费·S18PANEL 交回件①·Lead 2026-08-18 裁 B 案）。条目四字段缺一不可（approvedBy:'LEAD'+date+reason+ticket）；目标转绿必须同提交删条目（降基线仪式·守卫会硬红提醒）；新红不得自写条目——走 requests.md 请 Lead 亲批。",
+  "knownRed": [
+    {
+      "target": "acceptance",
+      "approvedBy": "LEAD",
+      "date": "2026-08-18",
+      "reason": "game102 剧本 conformance 红=REQ-G102-ADAPTER 在案（8 份剧本为 README DSL 非 harness schema·剧本作者=GD 铁律不代改·等 GD 转换）；game-103 adapter 施工中（Lead 派工 agent·落地后若 acceptance 仅剩 game102 因子仍留本条）",
+      "ticket": "docs/design/game102/requests.md REQ-G102-ADAPTER · docs/design/game-103/requests.md adapter 单"
+    }
+  ]
+}

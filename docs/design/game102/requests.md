@@ -7,7 +7,7 @@
 
 ## 待处理 / 进行中
 
-### REQ-G102-HARDLINE · voxel-proto.ts 硬红线违规无工单跟踪（innerHTML×2 + createElement×4）· [2026-08-03] · REQ-RETRO 引擎大扫除盘点发现（低档代理测试健康度盘点·非本次修复范围） → **待 owner/Lead 裁决** · status: open · 优先级: P1 · 类型: 治理缺口（红旗棘轮/硬红线）
+### REQ-G102-HARDLINE · voxel-proto.ts 硬红线违规无工单跟踪（innerHTML×2 + createElement×4）· [2026-08-03] · REQ-RETRO 盘点发现 → **⚖ Lead 2026-08-18 裁决结案（全库 todo 总回顾）**：基线豁免入册（`scripts/audit-baseline.json` game102 条目·Lead 亲批附理由）——voxel-proto 属原型件且 REQ-G102-CORE-V2（P0 环轨重做）在册将整体重写该面，重构临终件不划算；**⚠ 消亡条款：CORE-V2 删 voxel-proto 时必须同提交清零该基线条目**（棘轮只紧不松·新增逃生仍被拦）。audit-ratchet 随之转绿。 · status: **done（裁决完毕）** · 类型: 治理缺口（红旗棘轮/硬红线）
 > **实证**（`node scripts/game-skill-audit.mjs game102` 实测）：
 > - 🔴 innerHTML（应走 LayoutNode/mountUI）：`games/game102/voxel-proto.ts:107`、`voxel-proto.ts:399`
 > - 🔴 document.createElement（手写 DOM，应走 LayoutNode）：`games/game102/game102.ts:26`、`voxel-proto.ts:107`、`voxel-proto.ts:318`、`voxel-proto.ts:319`

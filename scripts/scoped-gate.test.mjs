@@ -152,7 +152,7 @@ describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门
   it('facesOf：守卫脚本自身被改也触发各自守卫（改守卫先自证跑绿）', () => {
     expect(facesOf(['scripts/engine-random-guard.mjs']).engineRandom).toBe(true);
     expect(facesOf(['scripts/test-hygiene-check.mjs']).testHygiene).toBe(true);
-    expect(facesOf(['games/game-a/rules.ts', 'docs/workflow/requests.md'])).toEqual({ engineRandom: false, testHygiene: false, artSmoke: false, syncSmoke: false, dokiApps: [] });
+    expect(facesOf(['games/game-a/rules.ts', 'docs/workflow/requests.md'])).toEqual({ engineRandom: false, testHygiene: false, artSmoke: false, syncSmoke: false, dokiApps: [], slowLane: [] });
   });
 
   it('引擎面改动（full）：计划含 engine-random 步·红=拦（无 allowExit）·放 tsc 前', () => {

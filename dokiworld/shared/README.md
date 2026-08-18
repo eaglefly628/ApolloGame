@@ -42,5 +42,5 @@ cd dokiworld/shared && npm install && npm test     # node --test · 9 条
 mock 掉宿主的话只能证明"我调了我以为存在的方法"，而本层要防的恰恰是
 「我以为的形状和它真正的形状不一样」。
 
-⚠ **本目录的测试不在仓库门禁里**（`scoped-gate` 不跑 `dokiworld/**`，出包 job 也只 build 不 test）——
+✅ **本目录的测试已入仓库门禁**（scoped-gate doki-test 面触发·改动命中即跑 `npm test`；2026-08-16 主程落）——
 同 `dokiworld/game108/`。已作为 `REQ-DOKI-APPS` 的「后续①」在案（主程面·池子 10 槽满故不另占槽）。在它落地之前，**改本目录必须手跑上面那行**。

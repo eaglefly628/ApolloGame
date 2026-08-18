@@ -83,6 +83,28 @@ describe('merge-proximity-clear · 二消清邻格阻碍（挖掘式解锁）', 
     expect(layers(w, 'b')).toBe(2); // 没配置=不减
   });
 
+  it('排除圈第一格（距离 = radius+1）不受影响——容差是 1/4 格不是整格（REQ-101-08 复核 F3 补盲）', () => {
+    const w = mkWorld(1, 1);
+    mkBlocker(w, 'edge', 4, 2, 3, { kind: 'spawn', templateId: 'x' }); // 距中心 (2,2) 恰 2 格
+    mergeAt(w, 2, 2);
+    expect(layers(w, 'edge')).toBe(3); // 放宽容差到整格（等效 radius+1）此测必红
+  });
+
+  it('无 SpawnRequest 消费者的世界连拍两次归零露出 → 载体 id 带拍号不撞名（REQ-101-08 复核 F1 回归）', () => {
+    // 修前形态：revealN 每拍归零 → 第二拍 createEntity('mpc:0') 撞名硬抛 already exists。
+    const w = mkWorld(1, 1);
+    mkBlocker(w, 'b1', 1, 2, 1, { kind: 'spawn', templateId: 'x' });
+    mkBlocker(w, 'b2', 3, 2, 1, { kind: 'spawn', templateId: 'x' });
+    mergeAt(w, 2, 2); // 两格同拍归零（同拍 revealN 递增·本就不撞）
+    const w2 = mkWorld(1, 1);
+    mkBlocker(w2, 'c1', 1, 2, 1, { kind: 'spawn', templateId: 'x' });
+    mkBlocker(w2, 'c2', 5, 5, 1, { kind: 'spawn', templateId: 'x' });
+    mergeAt(w2, 2, 2); // 第一拍：c1 归零 → 载体一枚
+    expect(() => mergeAt(w2, 5, 5)).not.toThrow(); // 第二拍：c2 归零 → 修前此处 already exists 硬抛
+    const carriers = w2.getAllEntities().filter((e) => e.startsWith('mpc:'));
+    expect(carriers.length).toBe(2); // 两拍各一枚·id 含拍号互不相同
+  });
+
   it('MergeEvent 消费即清（一拍后不残留）', () => {
     const w = mkWorld();
     mkBlocker(w, 'b', 2, 2, 5, { kind: 'spawn', templateId: 'x' });

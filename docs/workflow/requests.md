@@ -65,78 +65,11 @@
 > （缺 node_modules 才 `npm ci`·同出包 job 口径）。落地前手册已写死「改这些目录必须手跑」。
 
 
-### REQ-S18PANEL-开发面板补 S1–S8 八关 · 控制台把「立项→对齐→生成」压成了「生成」一步 · [2026-08-16] · **owner 令**（原话：「我需要这些都有一个 S1 到 S8 的按钮，在我的开发面板上……因为我这要开发给用户用的，不能采用老路子了」） · status: **in-progress（②③ 施工中·① ✅ Lead 终审 PASS 已合 `50804eb1`）** · **②③ 施工主体 = 抢锁 session（2026-08-16·本行即锁·Lead 让行转复查）** · 复查 = 另派（复查人≠施工人） · 优先级: **P1** · 类型: 流程软件（面板 + 门）
-
-> **① ✅ 存为项目（Lead 派工·2026-08-16 终审合入 `50804eb1`）**：`POST /api/projects`（slug 校验+越界拒+gaps 七键形状归一 route 闭集+幂等不覆盖已有 gdd+对话认领关浏览器不丢）+ 工坊「💾 存为项目」钮 + 38 冒烟。Lead 双轮破坏：撤 slug 早退闸→存活（实查系 `_design_dir` 同谓词权威闸兜底=礼貌性重复非漏洞）；撤 id 查重→恰中 2 例含先验后落盘级联。**②③ 消费的 gaps 机读契约=裸数组七键（projects.py 归一后形状）,以此为准。**
->
-> **病（owner 实撞·2026-08-16）**：用叠叠乐 Demo 走了一遍，撞出同一根因的三个症状——
-> ① 生成的玩法文档/提纲**没有存盘按钮**，关掉界面就没了；
-> ② 识别出 6 条引擎缺口，但**主按钮只有「生成游戏 Demo」**，缺口无处对齐；
-> ③ 中间态的策划案**没有上传/建目录的入口**，够不到 `docs/design/<slug>/`。
-> **一个根因**：流程板从 S1 起步，而控制台的「生成」是从 **S3 骨架**起步的——
-> **S1 立项卡 / S2 能力计划在面板上根本没有落点**。
->
-> **好消息：状态机不用造。** `node scripts/game-pipeline.mjs board <slug> --json` 已经把八关算全了：
-> 每关 `{id,title,handbook,gate,machine,review,human,status,outOfOrder}` + 顶层 `next`。
-> **面板 = 这份 JSON 的直接渲染**（八个按钮 + 每关两盏灯：机器门 / 复查门）。
->
-> **缺件三条（按归属分好）**：
->
-> | # | 要什么 | 归属 |
-> |---|---|---|
-> | ① | **S1/S2 落点端点**：`POST /api/projects {slug, brief, gdd?, gaps?}` → 建 `docs/design/<slug>/` + 落 `brief.md`/`gdd.md`/`capability-gaps.json`，并 `_ws_sessions_save(slug,…)` **把当前对话认领过去（从此不丢）**。按钮名「存为项目」 | 🟡 PST（`main_entry` 面板 + 服务） |
-> | ② | **S2 机读缺口产物 + 门**：`capability-gaps.json` = `[{id,title,priority,route,state,ticket,blocks[]}]`；`S2.gate` 由 `null` 改 `gap-check`——**所有缺口 `state ≠ open`（= 已被 owner 判过 A/B）才算 S2 过**，不许带未裁决的缺口往下走 | 🔴 Lead（`scripts/game-pipeline.mjs`） |
-> | ③ | **`canEnter` 认缺口**：凡 `blocks` 含本关且未 `delivered` 的缺口存在 → 拦住并列出卡在哪几条。复用现成 `priorGaps`/`reviewGaps` 机制，不新造 | 🔴 Lead（同上） |
->
-> **`route` 字段是必须的**（不是装饰）：缺口要分流到不同的池——`engine`（10 硬槽）/ `requests-3d`（P3D 独立池）/ `pui`。
-> 叠叠乐那 6 条里 **4 条是 3D 线**，一股脑丢引擎池会当场撑爆槽位。
->
-> **边界（防加宽）**：第一版**整关阻塞**即可（有未解 P0/P1 → 该关锁）。
-> 「只阻塞依赖它的那部分」要 plan 把「哪条规则依赖哪个缺口」也结构化——**YAGNI，等真被粗粒度卡烦了再说**。
-> 面板也**不做**缺口的编辑/裁决 UI，缺口裁决仍走既有协议（先查 → 摆 A/B → owner 判），面板只做**展示 + 跳转到工单**。
->
-> **验收**：新建一个项目 → 面板显示 S1✅ S2⚠(缺口 6) S3🔒 → 点不动 S3 且告知卡在哪几条 →
-> 缺口逐条判完 → S2 门转绿 → S3 才可点。**关掉浏览器再开，策划案与对话都还在。**
->
-> **②③ 已交（2026-08-16·本 session·待复查）**——`scripts/game-pipeline.mjs`：
-> ① 台账 `docs/design/<slug>/capability-gaps.json`（裸数组·四闭集 priority/route/state/blocks·
-> `state≠open` 强制带 ticket）+ `readCapabilityGaps`/`evalCapabilityGaps`/`blockingGaps` 三只纯函数导出；
-> ② `S2.gate: null → 'gap-check'`（纯 fs 秒回·**与 board 共用同一只嘴** evalCapabilityGaps，
-> 面板按一下与板上看一眼不会两种说法）——有 `open` 缺口 = 门红 / 板 ⚠（owner 验收原话「S2⚠(缺口 6)」）；
-> ③ `orderGate` 前置加缺口锁（P0/P1 未 delivered/wontfix 且 `blocks` 含本关 → 拒跑，**`--out-of-order`
-> 不放行**·理由见手册）；board 各关带 `blockedBy`、顶层带 `gaps`/`gapErrors`（面板零推导·直接渲染 🔒 与跳工单）。
-> **零回归锚**：全库今天没有一个 `capability-gaps.json` ⇒ 存量板/门逐字节同旧版（点名测试在案）。
-> **判据外的两处**（复查请重点看）：(a) 台账**排除出 gameHash**（把缺口标 delivered 不该让全关证据过期·
-> 同 requests.md 台账判据）；(b) S2 进 `GATE_STAGES` 后，`pipeline-orchestrator` 的 S2 重验**自动从
-> 「board 推导」改走「真跑 gate」**（同源表的必然后果·未改编排器一行·语义更严不更松）。
-> **边界外顺手一条（提前声明·非追认）**：`scripts/scoped-gate.mjs` 加 `deepTests` 面——快车道 exclude 掉的
-> 测试（含本次改的 `game-pipeline.test.mjs`）改了也没人跑=「写了测试没人跑」（同 DOKI-APPS 后续①同形）；
-> 现按面点名补跑并带 `ZEROCRAFT_DEEP=1`。顺手修 `armed` 日志把空数组旗当命中报的假话。
-> **自证**：52 测（游戏板·deep 车道真跑）+ 28 测（scoped-gate）全绿；**撤修验红五轮锚点全中**——
-> 撤 gap-check→S2 缺口用例恰红 · 撤缺口锁→2 例恰红 · 撤 gameHash 排除→指纹用例恰红 ·
-> 撤 deepTests 注入 / 撤 `ZEROCRAFT_DEEP` env→各恰红。
->
-> **⚖ 独立复查判 FAIL（2026-08-16·复查人≠施工人·报告全文 `docs/design/s18panel-gapgate-review-2026-08-16.md`）**：
-> 判据①②③ 经九轮 sabotage 全部成立（跨侧 route 对账是真对账）；打回的是**三条判据外的实测伤**。
-> **三条已全修（`67893d49`）**：
-> ① **P0 编排器真回归**（before/after 对拍：game-d/game102 由 exit 0 翻红，红因「S1 欠人门」而 S1 人门=owner
-> 亲签+禁代签 ⇒ 编排器派的 S2 会话无合法解法）→ 修：**S2 不过顺序闸**（gap-check 是纯 fs 校验·例外不外溢·
-> 复验三家 exit 0）；连带撤掉两条 S2 用例里的 `--out-of-order` 拐杖（真实调用点不传它）。
-> ② **P0 越界门** → **scoped-gate 整体回退**（见下方交回件①）。
-> ③ **P1 缺口锁 fail-open**（复查 PASS 后手改 accepted→delivered：锁消失、S2 三门仍绿、gameHash 不变）
-> → 修：新增 `gapsHash`，S2 复查记录单独绑它；台账一动 S2 复查转 stale → 「已施工未复查」硬闸接管。
-> **更正自陈一条**：「不带 `ZEROCRAFT_DEEP=1` 是 0 tests 假绿」不成立——实测 `No test files found, exiting with code 1`
-> 是硬红；真实风险是不带过滤的 `vitest:full` 按 exclude **静默跳过**（性质=没人跑，不是假绿）。
-> **状态**：②③ 修复已推·**待再复查**（复查人仍须≠施工人）。
->
-> **📮 交回主程/owner 裁的两件（我不自裁·均已从本次改动中撤出，现库内零影响）**：
-> ① **「慢车道点名补跑」面**（原 `deepTests`）：快车道 `vite.config` exclude 掉的 6 个测试目标，改了也没人跑
-> ——本单新增的 `game-pipeline.test.mjs` 就在其中。方向经复查确认成立（无关面不触发·不拖时长），
-> **但它把两条存量红**（`acceptance.test.mjs` 2 红 / `audit-ratchet.test.mjs`·均 REQ-ENGINEAUDIT 在案）
-> **接成推送硬闸**，且推送门是全库共享 🔴 面。**A**=先清那两条红再接门（干净但要先修存量）·
-> **B**=接门但给 allowExit/棘轮（像 art-ledger-guard 那样警告态放行·可立即上）·**C**=不接，写进手册靠人手跑（现状）。
-> ② **`scoped-gate` 的 `armed` 日志假话**（一行）：`dokiApps` 是数组，空数组也是真值 ⇒ 没触发任何面时照报
-> 「面触发守卫=dokiApps」。修法一行（`Array.isArray(v) ? v.length : v`），归属 🔴 主程面，未擅动。
+<!-- REQ-S18PANEL-开发面板补 S1–S8 八关（P1·owner 2026-08-16 令「都要有按钮·不能采用老路子」）**2026-08-18 全件完结出池**：
+     ① 存为项目（Lead 施工·50804eb1·终审 PASS）：POST /api/projects + gaps 七键归一 + 对话认领关浏览器不丢 + 工坊「💾 存为项目」钮。
+     ② S2 机器缺口门 + ③ canEnter 认缺口（抢锁 session 施工·48817307 + 修复 67893d49 + route 对齐 828ce031）：capability-gaps.json 台账（四闭集·三纯函数）·S2.gate=gap-check 与 board 同一只嘴·orderGate 缺口锁·board 带 blockedBy/gaps/gapErrors。首轮独立复查 FAIL（三条判据外实测伤：编排器真回归/越界门/缺口锁 fail-open→gapsHash）全修后**再复查 PASS**（复查人≠施工人·五轮 sabotage 恰中·验收原话端到端复现·跨侧 route 活体对账·零回归=状态/退出码/指纹全等）。
+     交回主程两件已落：armed 日志空数组假话一行修；「慢车道点名补跑」面 Lead 裁 **B 案**落地=scripts/slow-lane-guard.mjs 警告态基线棘轮（新红硬拦·在案红响亮放行·转绿逼降基线）+ scoped-gate slowLane 面触发 + 与 vite.config DEEP_GLOBS 对账锚测试——同批 Lead 裁掉 audit-ratchet 两条存量红（game102/game211 HARDLINE 基线亲批入册·两单结案），慢车道基线仅剩 acceptance 一条（REQ-G102-ADAPTER 等 GD 改剧本 schema 在案）。
+     再复查四条非阻断（S2 文本行后缀≠逐字节/编排器陈旧注释/提交语措辞/gaps 展示层小疵）记档不阻。全文查 git 历史。 -->
 
 <!-- REQ-DIALOGUE-剧情基础线（P1·owner 令·转型关键路径）→ **2026-08-16 关闭出池**（不占槽·同 PIPESOFT/SPECTRACE/RENDERCHECK 先例：下一步触发者不在池内）：**M1–M4 四件全 ✅ Lead 对抗性验收毕**（2026-08-10·22 例独立复跑绿 + 双破坏锚点命中：撤 neutral 降级锚→恰 3 红、撤 weight 语义→加权测红；game-i 展台 audit + 棘轮 PASS）。**余项 = M4 Sample 示范游戏**，owner 已定与「亲测约会游戏试点」合流 ⇒ **触发者 = owner 本人**，挂池子里只会占槽空等。图纸唯一真相仍在 `docs/design/dialogue-line-blueprint-2026-08.md`（派工时照它）；四件的落点与判词全文查 git 历史 grep REQ-DIALOGUE。**owner 跑完试点带回反馈即重开本条。** -->
 

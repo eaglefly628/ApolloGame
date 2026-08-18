@@ -100,7 +100,7 @@
 > **✅ 裁定=①（手内即时生效·PE-C 2026-07-18）**：理由——「典当续命」本意即点衣换筹当下续玩（面注→点当→跟注），②会让人当了钱却本手用不上、反直觉；且查证发现**这不止是语义歧义、是真蒸发 bug**：旧 `pawn` 只 `session.seats.stack += 值`，手内 `stackOf` 读 `hand.players`（换的钱看不见）、且 **settle 的 `syncStacks` 用 `=` 覆盖 `session.seats.stack = hand.players.stack` → 手内典当的筹码结算时被抹掉蒸发**（UI 允许手内开衣柜点换筹码=可达）。
 > **修**（`game-session.ts` pawn）：同步 `hand.players[seat].stack += 值`——①本手下注即可用；②经 syncStacks 保全不蒸发。**边界裁定**：已 all-in 者不就地解 all-in（避免重开已闭合行动圈的引擎边角）·换来的筹码随 syncStacks 落局级栈下手即用；未 all-in 者（正常续命流）当下可用。测：`game-session.test.ts`「REQ-C-106 手内典当即时生效」——stackOf 立增 + 注入入账 + 打到摊牌后守恒（旧码此处漏 1000）。验收剧本 02 手内 `hero_chips` 断言由 GD-C 决定是否补（剧本=GD 域）。
 
-### REQ-C-108 · [验收剧本写作暴露] adapter 撑不起 owner ②③ 完整版 + 剧本作者抽查盲点 · [2026-07-18] · 提出人 GD-C → 指派 PE-C（adapter 扩）+ Lead（抽查机制）· status: **⏸ 挂起待真需求（PE-C 2026-07-18·①②③ 均无现役剧本消费·按修红循环不预设·GD 写到红再最小加）· ④归 Lead** · 优先级: P2 · 类型: 验收 adapter 扩展（PE 域）+ 制度补漏
+### REQ-C-108 · [验收剧本写作暴露] adapter 撑不起 owner ②③ 完整版 + 剧本作者抽查盲点 · [2026-07-18] · 提出人 GD-C → 指派 PE-C（adapter 扩）+ Lead（抽查机制）· status: **⏸ ①③挂起待真需求（修红循环不预设）· ② ✅ 已落引擎硬化 · ④ ✅ Lead 2026-08-18 裁定完毕——剧本首注释行 `// author: <角色>` 为归属唯一凭据（行规入 docs/playbooks/testing.md·S4 复查清单同步·新写/改动缺行=打回·存量随下次改动补齐）** · 优先级: P2 · 类型: 验收 adapter 扩展（PE 域）+ 制度补漏
 > GD-C 写 game-c 验收剧本时·现 adapter（session 层门面·只控主角 + 统一 startStack + 3 信号）撑不起 owner 三条完整版·本包各覆盖确定可绿子集·完整版待扩：
 > ① **精确守恒断言**：Lead schema 断言只支持 `res-vs-常量`·表达不了 `won-total == showdown-pot`（res-vs-res）→ adapter 加 `pot-conserved` 布尔投影（`won-total===showdown-pot`）·剧本 02/04 即断精确守恒（现退守「有赢家且分池非空」）。
 > ② **非法「下注不足」态不变**：主角轮的非法加注（不足 min-raise）现走 `betting-engine.act` 抛错→runner 红·断不了「态不变」→ adapter 对主角非法行动 catch 成 no-op。（现剧本 03 只覆盖「乱序」=非主角轮 no-op·确定可断）

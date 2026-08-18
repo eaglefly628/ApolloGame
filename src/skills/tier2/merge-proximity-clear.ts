@@ -72,7 +72,7 @@ export const mergeProximityClearCapability = defineCapability({
         for (const [id] of world.query('MergeProximity')) { cfg = world.getComponent<MergeProximity>(id, 'MergeProximity') ?? undefined; break; }
 
         if (cfg) {
-          const reach = cfg.radius * cfg.cellSize + cfg.cellSize * 0.25; // Chebyshev 容差（半格·避浮点边界漏判）
+          const reach = cfg.radius * cfg.cellSize + cfg.cellSize * 0.25; // Chebyshev 容差（1/4 格·避浮点边界漏判·勿放宽到整格=等效 radius+1）
           let revealN = 0;
           for (const { id: eid } of events) {
             const ev = world.getComponent<MergeEvent>(eid, 'MergeEvent');
@@ -88,7 +88,9 @@ export const mergeProximityClearCapability = defineCapability({
                 if (!world.hasComponent(bid, 'DestroyRequest')) world.addComponent(bid, { type: 'DestroyRequest', entityId: bid } as DestroyRequest);
                 const rv = bk.reveal;
                 if (rv && rv.kind === 'spawn' && rv.templateId) {
-                  const carrier = `mpc:${revealN++}`;
+                  // 拍号入 id（REQ-101-08 复核 F1）：revealN 每拍归零——不带拍号则「装了本件没装 prefab
+                  // （无人消费载体）」的装配第二拍 createEntity 撞名硬抛（merge-on-place mop:/mev: 同型已修先例）。
+                  const carrier = `mpc:${world.getVersion()}:${revealN++}`;
                   world.createEntity(carrier);
                   world.addComponent(carrier, { type: 'SpawnRequest', templateId: rv.templateId, x: bt.x, y: bt.y } as SpawnRequest);
                 } else if (rv && rv.kind === 'resource' && rv.resourceId) {

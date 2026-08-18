@@ -8,7 +8,7 @@
 
 ## 待处理 / 进行中
 
-### REQ-G211-HARDLINE · 硬红线红旗无基线条目（裸Math.random×8 · innerHTML×29 · createElement×34 · React屏×1）· [2026-08-10] · 承 `REQ-3D-G211-HARDLINE` 工单①建池 → **待 owner/Lead 裁决** · status: open · 优先级: P1 · 类型: 治理缺口（红旗棘轮/硬红线）
+### REQ-G211-HARDLINE · 硬红线红旗无基线条目（裸Math.random×8 · innerHTML×29 · createElement×34 · React屏×1）· [2026-08-10] · 承 `REQ-3D-G211-HARDLINE` 工单①建池 → **⚖ Lead 2026-08-18 裁 A 结案（全库 todo 总回顾）**：基线豁免入册（`scripts/audit-baseline.json` game211 条目·Lead 亲批·reason 按工单要求两段分写：31+29+8+1 继承 game-g fork 存量既往不咎口径一致；3 处 createElement 新写=duel-spike.ts:224/226/229 物理试验台脚手架与已批 game-z×4 同形同域）。createElement 写 **34** 如工单点名。game211=P3D 试验线非出口游戏；audit-ratchet 随之转绿。 · status: **done（裁 A 完毕）** · 类型: 治理缺口（红旗棘轮/硬红线）
 
 > **本工单只登记事实，不代拍**（同 `REQ-G102-HARDLINE` 体例）。
 

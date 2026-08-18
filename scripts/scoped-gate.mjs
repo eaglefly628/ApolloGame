@@ -31,6 +31,7 @@
 //      （ARTPAR 复查裁定：该冒烟不在门禁内曾让三处假红漏检一整天）。
 //   守卫脚本自身被改也触发各自守卫（改守卫先自证仍能跑绿）。
 import { execSync, spawnSync } from 'node:child_process';
+import { SLOW_TARGETS } from './slow-lane-guard.mjs';
 
 // ── 引擎/共享面前缀（碰到=full·与 CLAUDE.md 引擎域界一致）───────────────────────
 const ENGINE_PREFIXES = [
@@ -117,6 +118,11 @@ export function facesOf(files) {
     // dokiworld/** 的 node --test 没有别的门在验（DOKI-APPS 后续①·「写了测试没人跑」与 game108 恒石同形）：
     // 改动命中哪个 app 目录就跑哪个（.md 不算——纯文档改不了测试结果）。
     dokiApps: [...new Set(list.map((f) => { const m = f.match(/^dokiworld\/([a-z0-9-]+)\//); return m && !f.endsWith('.md') ? m[1] : null; }).filter(Boolean))].sort(),
+    // 慢车道点名补跑（S18PANEL 交回件①·Lead 裁 B 案）：改动命中被快车道 exclude 的目标之被测物/测试本身
+    // → 点名跑该目标（slow-lane-guard 警告态基线棘轮·存量红响亮放行不挡门·新红硬拦）。目标表住 guard 文件。
+    slowLane: SLOW_TARGETS
+      .filter((t) => list.some((f) => f === t.test || t.subjects.some((s) => f.startsWith(s)) || f === 'scripts/slow-lane-guard.mjs' || f === 'scripts/slow-lane-baseline.json'))
+      .map((t) => t.id),
   };
 }
 
@@ -169,6 +175,8 @@ export function planFor(c, auditGames = [], faces = {}) {
     ] : []),
     // dokiworld app 测试（各包自跑 node --test·缺依赖由 runner 先 npm ci——同出包 job 口径）。
     ...(faces.dokiApps || []).map((app) => ({ name: `doki-test:${app}`, cmd: ['node', ['scripts/doki-app-test.mjs', app]] })),
+    // 慢车道点名补跑（交回件①·B 案）：命中目标一次点名跑一批（guard 内部对基线棘轮判红/警）。
+    ...((faces.slowLane || []).length ? [{ name: `slow-lane:${(faces.slowLane || []).join('+')}`, cmd: ['node', ['scripts/slow-lane-guard.mjs', ...faces.slowLane]] }] : []),
   ];
   if (c.scope === 'none') return [];
   if (c.scope === 'docs-only') return GUARDS;
@@ -193,7 +201,8 @@ function main() {
 
   const auditGames = auditGamesOf(files);
   const faces = facesOf(files);
-  const armed = Object.entries(faces).filter(([, v]) => v).map(([k]) => k);
+  // 数组面（如 dokiApps）空数组也是真值——按长度判，否则零触发也报「面触发守卫」（S18PANEL 复查带出）。
+  const armed = Object.entries(faces).filter(([, v]) => (Array.isArray(v) ? v.length > 0 : Boolean(v))).map(([k]) => k);
   console.log(`[scoped-gate] 基线=${base} · 改动 ${files.length} 文件 · 判定=${c.scope}（${c.reason}）${auditGames.length ? ` · audit 改动游戏=${auditGames.join(',')}` : ''}${armed.length ? ` · 面触发守卫=${armed.join(',')}` : ''}`);
   const plan = planFor(c, auditGames, faces);
   console.log(`[scoped-gate] 计划：${plan.length ? plan.map((s) => s.name).join(' → ') : '（无·无改动）'}`);

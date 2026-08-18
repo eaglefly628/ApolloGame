@@ -139,7 +139,7 @@ export const prefabCapability = defineCapability({
       // （effect-apply 在 Commit 跨桶无边不钉；缺席系统的显式边被 topological-sort 静默跳过，不悬空——
       // 全局存在性由 system-graph 悬空边守卫背书）。显式边压掉同名反向软边（规则③·同 matrix-duel 先例），
       // 修后全库门禁环告警 63→0 的收割由 declaration-audit 的 SCC 棘轮接管看守。
-      runsAfter: ['hitbox', 'caster', 'merge-rule', 'merge-on-place', 'resource-apply', 'order-fulfill', 'group-count', 'tray', 'drag-place', 'grid-move'],
+      runsAfter: ['hitbox', 'caster', 'merge-rule', 'merge-on-place', 'merge-proximity-clear', 'resource-apply', 'order-fulfill', 'group-count', 'tray', 'drag-place', 'grid-move'],
       execute(world: IWorld) {
         const lib = findLibrary(world);
         if (!lib) return;

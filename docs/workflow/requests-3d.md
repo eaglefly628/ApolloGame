@@ -349,7 +349,7 @@
 ## REQ-3D-震屏首见基线 · CameraShake 装载首帧白震一次 · [2026-07-15] · Lead 验收超休闲六连批时发现 → **指派：P3D** · status: **✅ done（P3D 2026-07-15）·连带修 flash/impulse 同类·Lead 复核 ✅（a2e161fe 修法/测试对版）** · 优先级: P2 · 类型: 小修（camera-rig.ts + 一条测试）
 > 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
-## REQ-3D-G211-HARDLINE · game211 三项硬红线违规无跟踪 + 无工单池文件 · [2026-08-10] · 引擎深审轨 C 发现（Lead 坐实） → **指派：P3D triage** · status: open · 优先级: P1 · 类型: 治理缺口（红旗棘轮/硬红线）
+## REQ-3D-G211-HARDLINE · game211 三项硬红线违规无跟踪 + 无工单池文件 · [2026-08-10] · 引擎深审轨 C 发现（Lead 坐实） → **status: ✅ done（①建池已落·② Lead 2026-08-18 裁 A 结案——基线豁免入册 audit-baseline.json·详见 docs/design/game211/requests.md REQ-G211-HARDLINE 裁决全文）** · 优先级: P1 · 类型: 治理缺口（红旗棘轮/硬红线）
 > **实证**（`node scripts/game-skill-audit.mjs` 全扫·深车道 `audit-ratchet.test.mjs` 因此常红）：game211 裸 Math.random×8 + innerHTML×29 + createElement×34，**无基线条目**；且 `docs/design/game211/` 目录不存在——该游戏连工单池文件都没有（3D 池里仅 REQ-3D-CARD-FACE-AXIS 一条物理面单，与本条无关）。
 > **请 P3D**：① 建 `docs/design/game211/requests.md`（工单随游戏走）；② 按 REQ-G102-HARDLINE 同款路径裁「补基线豁免（带理由·可见名单）」或「重构走引擎种子 PRNG / LayoutNode」——裁前这 3 项在深车道红着，别静默。
 > **① ✅ done（2026-08-10·复查 session 抢锁做的·只取①·② 仍 open 待裁）**：池已建 = `docs/design/game211/requests.md`，条目 `REQ-G211-HARDLINE`（含逐条归属核算 + 先查留痕 + A/B/C 三条路 + Lead 推荐）。

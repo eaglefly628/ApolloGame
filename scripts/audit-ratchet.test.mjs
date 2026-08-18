@@ -54,9 +54,9 @@ describe('红旗棘轮（audit-baseline.json）', () => {
     expect(stderr).not.toContain('超基线');
   }, 60000);
 
-  it('基线覆盖 d/e/f/g/i/z 全部在册（h/j/k/m/block-blast-mini 已删·owner 2026-07-16；q/x/t 已删·owner 2026-08-03 REQ-RETRO；d/f 同日改判还原）', () => {
+  it('基线覆盖 d/e/f/g/i/z + 102/211 全部在册（h/j/k/m 等已删·见历史；102/211 = Lead 2026-08-18 亲批 HARDLINE 裁决入册·REQ-G102/G211-HARDLINE 两单结案）', () => {
     expect([...BASELINE_GAMES].sort()).toEqual(
-      ['game-d', 'game-e', 'game-f', 'game-g', 'game-i', 'game-z'],
+      ['game-d', 'game-e', 'game-f', 'game-g', 'game-i', 'game-z', 'game102', 'game211'],
     );
   });
 

@@ -42,9 +42,9 @@ App = **独立构建的自包含浏览器静态包**（`dist/` 里 manifest+html
 - **版本四维不联动**：App version（package.json）/manifest schema/runtime protocol/业务 contract 各自独立升。
 - **跨 app 共享件住 `dokiworld/shared/`**（判据：「第二个 app 出包会不会把它抄一遍」）——首件=`apps-gateway`。
   单个 app 专属的接线（结果映射 / 卡片降级 / checkpoint 编解码）仍留在 `dokiworld/<app-id>/` 自己目录。
-- 打包脚本/manifest 生成器带点名测试（`node --test`）。⚠ **`dokiworld/**` 的测试目前不在仓库门禁里**
-  （`scoped-gate` 不跑它，出包 job 也只 `npm run build` 不 `npm test`）——改这些目录**必须手跑该目录的 `npm test`**；
-  已作为 `REQ-DOKI-APPS`「后续①」在案（主程面·不另占槽）。
+- 打包脚本/manifest 生成器带点名测试（`node --test`）。✅ **门禁已接**（2026-08-16 主程落 doki-test 面触发：
+  改哪个 app 目录 `scoped-gate` 就跑哪家 `npm test`·缺依赖 runner 先 `npm ci`）；出包 job 仍只 build——
+  测试由推送门管，手跑仅在离线排查时需要。
 
 ## 红线
 
