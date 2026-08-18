@@ -124,6 +124,37 @@ describe('申报对账 — 能力文件的实际组件访问 ⊆ 同文件系统
   });
 });
 
+// ── 相位落桶点名棘轮（根因① spec 第三腿·深审 A1 探针4）───────────────
+// 病：把宣告系统挪错相位（Update↔Commit）没有任何机器咬——单测靠手写申报断言、
+// acceptance 全绿纯靠注册序巧合。相位是语义（谁在事件清扫前/后跑），机器判不了「对不对」，
+// 但能判「变没变」：非缺省相位的成员点名写死——进桶/出桶/挪桶都红，改相位必须带一次
+// 有意识的基线更新（p0 缺省桶不点名：新系统默认落 p0 属日常，不设摩擦）。
+describe('相位落桶棘轮 — 非缺省相位成员点名（根因①·A1 探针4 的机器化）', () => {
+  it('非缺省相位的系统集合与基线逐一相等（挪相位必须同提交改基线）', () => {
+    const byPhase = new Map<number, string[]>();
+    for (const c of ALL_CAPABILITIES) {
+      for (const s of c.systems ?? []) {
+        const p = s.phase ?? 0;
+        if (p === 0) continue;
+        if (!byPhase.has(p)) byPhase.set(p, []);
+        byPhase.get(p)!.push(s.id);
+      }
+    }
+    const actual = [...byPhase.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([p, ids]) => `p${p}:${ids.sort().join(',')}`);
+    expect(actual).toEqual(PHASE_BASELINE);
+  });
+});
+
+/** 相位基线（2026-08-16 实测灌入）。改动纪律同 SCC 基线：挪相位 = 同提交带理由更新本表。 */
+const PHASE_BASELINE: string[] = [
+  'p4:rotation-apply',
+  'p10:collision-resolve,collision-resolve-3d,tile-collision',
+  'p14:friction,gauge,hierarchy-resolve,orbit-motion,text-binding',
+  'p20:anim-state,block-view-sync,bounds-clamp,craft-recipe,effect-apply,face-rotate,facing,jump,match-view-sync,matrix-duel-announce,matrix-duel-intent,stat-bind,weighted-spawn',
+];
+
 // ── 全库软环棘轮 ─────────────────────────────────────────────────
 // analyzeSystemGraph 是「全局超集」分析（现实 world 只装子集·DAG 子图恒 DAG），
 // 故 SCC 在这里作**棘轮**不作硬错：环的**点名集合**写死——
