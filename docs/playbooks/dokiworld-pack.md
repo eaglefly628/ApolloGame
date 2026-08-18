@@ -50,7 +50,15 @@ App = **独立构建的自包含浏览器静态包**（`dist/` 里 manifest+html
 
 - **dist 绝不装**：源码引用、token/.env/API key、测试凭据、绝对本机路径、私有 DokiWorld 模块（规范 §9 原文）。
 - App **不碰宿主 token/Cookie/内部 HTTP**——只用 init 给的 `grantedScopes` 与 SDK capability。
-- manifest 里声明的 `extensions` 必须与代码实际创建的一致（多声明会被拒·少声明消息被拒）。
+- manifest 里声明的 `extensions` 与代码实际创建的**保持一致**——但要知道这条是**我们的自律，不是协议的强制**
+  （2026-08-18 读 SDK 源码 + 样例实测订正，旧版这里写「多声明会被拒」是错的）：
+  · `createAppClient({extensions})` 是**纯本地收信过滤器**（`isDeclaredExtensionMessage`），
+    握手 `createReadyMessage` 只发 `{type, protocol, protocolVersion, appId, instanceId}`——
+    **extensions 一个字节都不上线**。宿主对「这个 App 能用什么」的认知**只来自目录里的 manifest**。
+  · 样例自己就不一致：`game-match3` manifest 声明 `["resize","progress","checkpoint"]`，
+    代码里却是 `extensions: ["resize"]`，照样跑。
+  · 所以两处不一致的**表症不是被拒，是各错各的**：manifest 多声明 → 宿主可能挂也可能不挂（挂不上就静默超时）；
+    代码少声明 → 宿主发回来的消息被本地过滤掉，看起来像"宿主没回"。都比"被拒"难查，故仍按五步一致做。
 - Game 的 `launchRequirements.minPlayers` = 总参与方数（人+AI 座位口径读规范 §3——拿不准写 1 并在 PR 里注明）。
 - 别把 mock/占位美术打进对外 dist（M2.5 人审门口径同美术线）。
 
