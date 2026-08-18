@@ -1,7 +1,7 @@
 {
   "slug": "game108",
-  "at": "2026-08-09T14:00:39.698Z",
-  "gameHash": "5349c330dd943d78",
+  "at": "2026-08-18T02:28:38.136Z",
+  "gameHash": "cad74767ecca25b9",
   "ok": true,
   "form": "compiled",
   "uiDrivableRate": 0,
@@ -552,7 +552,7 @@
         {
           "step": 13,
           "kind": "signal",
-          "signal": "throw.scissors",
+          "signal": "throw.paper",
           "driven": false,
           "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
         },
@@ -1083,7 +1083,7 @@
       }
     },
     {
-      "name": "整局闭环·五回合各蓄一层布打死复读机",
+      "name": "整局闭环·五回合读着复读机的规律连赢打死它",
       "file": "07-full-match-victory.scenario.jsonc",
       "steps": [
         {
@@ -1188,7 +1188,7 @@
         {
           "step": 16,
           "kind": "signal",
-          "signal": "charge.paper",
+          "signal": "charge.scissors",
           "driven": false,
           "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
         },
@@ -1207,7 +1207,7 @@
         {
           "step": 19,
           "kind": "signal",
-          "signal": "throw.paper",
+          "signal": "throw.scissors",
           "driven": false,
           "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
         },
@@ -1251,7 +1251,7 @@
         {
           "step": 26,
           "kind": "signal",
-          "signal": "charge.paper",
+          "signal": "charge.rock",
           "driven": false,
           "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
         },
@@ -1270,7 +1270,7 @@
         {
           "step": 29,
           "kind": "signal",
-          "signal": "throw.paper",
+          "signal": "throw.rock",
           "driven": false,
           "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
         },
@@ -1377,7 +1377,7 @@
         {
           "step": 46,
           "kind": "signal",
-          "signal": "charge.paper",
+          "signal": "charge.scissors",
           "driven": false,
           "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
         },
@@ -1396,7 +1396,7 @@
         {
           "step": 49,
           "kind": "signal",
-          "signal": "throw.paper",
+          "signal": "throw.scissors",
           "driven": false,
           "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
         },
