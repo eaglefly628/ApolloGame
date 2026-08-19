@@ -1,5 +1,5 @@
 {
-  "_doc": "REQ-ARTPIPE2 A1 棘轮基线——已知黑户挂账快照（实测 node scripts/art-ledger-guard.mjs --json 产出，非估算）。只许减不许增：黑户补账后删掉对应条目=基线收紧；新出现、不在此列的黑户=守卫判棘轮违规拦推送。REQ-ARTGUARD（2026-08-16·Lead 裁判据②）落地后瘦身 65→5：62 条假阳中 60 条（game-a 55 张 CC0 扑克·game-103 4 个 fx·game-c 1 个 betline）经 art/index.json 带来源登记免罪出列；只留真黑户——game101 3 张 superpowers faceset（索引也无条目·清账单在 docs/design/game101/requests.md）+ game-a 2 张程序化占位 SVG（bg/table.svg·felt/table.svg：台账行仅 placeholder.current 自由文本提及·无任何 servedPath 字段·索引无 path 条目——REQ 实证「62 有登记」实为 60，此 2 张按裁定判据仍黑·清账归 game-a PE：入索引带 procedural 来源 或 行内补 placeholder servedPath）。",
+  "_doc": "REQ-ARTPIPE2 A1 棘轮基线——已知黑户挂账快照（实测 node scripts/art-ledger-guard.mjs --json 产出，非估算）。只许减不许增：黑户补账后删掉对应条目=基线收紧；新出现、不在此列的黑户=守卫判棘轮违规拦推送。REQ-ARTGUARD（2026-08-16·Lead 裁判据②）落地后瘦身 65→5：62 条假阳中 60 条（game-a 55 张 CC0 扑克·game-103 4 个 fx·game-c 1 个 betline）经 art/index.json 带来源登记免罪出列；只留真黑户——game101 3 张 superpowers faceset（索引也无条目·清账单在 docs/design/game101/requests.md）+ game-a 2 张程序化占位 SVG（bg/table.svg·felt/table.svg：台账行仅 placeholder.current 自由文本提及·无任何 servedPath 字段·索引无 path 条目——REQ 实证「62 有登记」实为 60，此 2 张按裁定判据仍黑·清账归 game-a PE：入索引带 procedural 来源 或 行内补 placeholder servedPath）。 ｜2026-08-19 Lead 亲批增 game-103 gen/art-01.png 一条：owner 直传批（Art accumulate. 19a8ddd2）绕门禁入主干·台账 art-01 行指 player.svg 与此文件无关·零登记零引用；不代写账本（ARTGUARD 先例），清账单在 docs/design/game-103/requests.md（登记入索引带来源 或 删孤儿文件·清完删本条）。",
   "blackHouseholds": {
     "game-a": [
       "/games/game-a/art/bg/table.svg",
@@ -9,6 +9,9 @@
       "/games/game101/art/superpowers/ninja-adventure/characters/faceset/1.png",
       "/games/game101/art/superpowers/ninja-adventure/characters/faceset/12.png",
       "/games/game101/art/superpowers/ninja-adventure/characters/faceset/5.png"
+    ],
+    "game-103": [
+      "/games/game-103/art/gen/art-01.png"
     ]
   }
 }

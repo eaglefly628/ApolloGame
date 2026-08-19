@@ -1,5 +1,8 @@
 # game-103《幸存者》· 游戏级工单池（bug / 迭代）
 
+### [2026-08-19] · Lead 巡检（owner「Art accumulate.」直传批复查带出）· ART-孤儿清账 · status: open·指派 PE/PA-103 · 优先级: P3
+> `art/gen/art-01.png`（314KB）+ `art/orig/art-01.svg` 随 19a8ddd2 直传入库，**零登记零引用**——台账 art-01 行的 servedPath 是 `player.svg` 与此无关，index.json 亦无条目 → 真黑户（已 Lead 亲批入 art-ledger-baseline 解全库门禁阻·基线 5→6）。清账二选一：①这批图若是要用的：入 `art/index.json` 带来源（workshop 生成·注明脚本/提示词）+ 台账行接线；②不用：删两文件。**清完同提交删基线条目**（棘轮收紧）。
+
 ### [2026-08-01] · Lead 终审发现 · **acceptance-adapter 从未落地**——5 份 GD 剧本无适配可跑·S4 门红 · status: ✅ **done（Lead 派工 agent·2026-08-18·adapter 已落·5 剧本 3 绿 2 真红→真红开下方 SBUG-01 单）** · 优先级: P1
 > 实证：`games/game-103/acceptance-adapter.ts` 无 git 历史（从未存在）；GD 已落 5 份剧本（e5c4bf536）。照 `docs/playbooks/testing.md` 验收剧本节落薄适配（createWorld/applySignal/readWorld=passthrough·纯接线零规则），落完 `npx vite-node scripts/acceptance-run.mjs --game game-103` 全绿再推。此红藏于慢车道多日=双车道「定期跑」未接线的实证（已修=巡检改跑完整网）。
 > **✅ 自证（2026-08-18·施工 agent）**：adapter 落地（词表=蓝图 KeyBinding 闭集 `pick_/evo_` + `restart`=重建世界；投影六键 hp/xp/level/clock/kills/status 全走合成实体——`hp` 与敌 body 的 Resource id 撞名、`kills` 世界里叫 `score`、`GameFlow.current` 非标量，直扫必错；`config.matchSeconds` 透传=改 clock.max + flow 胜判阈值两处数据，同 game108 改 RandomSeed 先例；seed 收下无消费方=蓝图零随机）。跑 `npx vite-node scripts/acceptance-run.mjs -- --game game-103`（退出码直取）=**02/03/05 PASS·01/04 FAIL（都只红 kills/xp·真红=游戏 bug·见 SBUG-01）**。**撤修验红**：撤 `@status` 投影→预告全 5 本 `sv status` 转「不存在」红→实测恰红（02/03/05 由绿转红=锚点命中）→复原→复测回 3 绿 2 红基线。S4 门（≥3 剧本 conformance 绿）已过。
