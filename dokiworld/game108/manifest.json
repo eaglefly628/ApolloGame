@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "version": "0.8.0",
+  "version": "0.8.1",
   "id": "game108",
   "kind": "game",
   "status": "active",
@@ -27,7 +27,8 @@
         "Rock Paper Scissors",
         "RPS",
         "charge-up RPS",
-        "RPS duel"
+        "RPS duel",
+        "Rule of Three v0.8.1"
       ]
     },
     "zh-cn": {
@@ -38,7 +39,8 @@
         "石头剪刀布",
         "猜拳",
         "蓄力猜拳",
-        "剪刀石头布"
+        "剪刀石头布",
+        "拳律v0.8.1"
       ]
     }
   },

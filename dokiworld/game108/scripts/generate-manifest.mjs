@@ -84,6 +84,33 @@ export function validateManifest(manifest, packageJson, opts = {}) {
   }
 }
 
+
+/**
+ * 给每个语言的 `aliases` 挂一个**带版本号的拉起词**（owner 2026-08-19 要的）。
+ *
+ * ══ 为什么这条值得有（它不是"再显示一次版本号"）══
+ * 屏上那两个角标读的是 `__APP_VERSION__`——**构建期打进 bundle 的**，说的是"我加载的这坨 JS 是哪版"。
+ * 而 catalog 里那份 manifest 是**另一个文件**，由平台单独抓取和缓存。两者会脱节：
+ * 传了新包但 catalog 还缓存着旧 manifest（或反过来）时，光看屏上角标看不出来。
+ * 拉起词写在 manifest 里 ⇒ **能用 "拳律v0.8.1" 把它叫起来，就证明 catalog 拿到的是这一版**。
+ * 两个数字对上 = 端到端都新；对不上 = 正好指出是哪一头旧了。
+ *
+ * 实现上两条纪律：
+ * ① **只由本函数生成**，版本取自 package.json（同 manifest.version 一个来源·不许手写进 manifest）。
+ * ② **幂等**：先按模式摘掉上一次生成的那条，再挂新的——否则每次生成都多一条，
+ *    几个版本之后 aliases 里躺着一串历史版本，全是能把游戏叫起来的旧词。
+ */
+const VERSION_ALIAS = { en: (v) => `Rule of Three v${v}`, "zh-cn": (v) => `拳律v${v}` };
+const VERSION_ALIAS_RE = /^(?:Rule of Three v|拳律v)\d+\.\d+\.\d+$/;
+export function applyVersionAlias(manifest, version) {
+  for (const locale of LOCALES) {
+    const entry = manifest.locales?.[locale];
+    if (!entry || !Array.isArray(entry.aliases)) continue;
+    const kept = entry.aliases.filter((a) => !VERSION_ALIAS_RE.test(a));
+    entry.aliases = [...kept, VERSION_ALIAS[locale](version)];
+  }
+}
+
 export async function generateManifest(output = manifestPath) {
   const [manifest, packageJson, mainSrc] = await Promise.all([
     readFile(manifestPath, "utf8").then(JSON.parse),
@@ -101,6 +128,7 @@ export async function generateManifest(output = manifestPath) {
   await access(resolve(root, "src", manifest.cover)).catch(() =>
     fail(`src/${manifest.cover} 不存在（cover 无真图——灰块占位是美术线红线，用 scripts/capture-cover.mjs 截真对局屏生成）`));
   manifest.version = packageJson.version;   // package.json 是版本唯一事实来源
+  applyVersionAlias(manifest, packageJson.version);
   await writeFile(output, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
   return output;
 }

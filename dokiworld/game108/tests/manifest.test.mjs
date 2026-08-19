@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFile, unlink } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { generateManifest, validateManifest } from "../scripts/generate-manifest.mjs";
+import { generateManifest, validateManifest, applyVersionAlias } from "../scripts/generate-manifest.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const load = async (rel) => JSON.parse(await readFile(resolve(root, rel), "utf8"));
@@ -192,4 +192,40 @@ test("manifest：坏输入被校验器拒绝（id 错 / 缺 promptHint 各红一
   const noHint = structuredClone(manifest);
   delete noHint.selection.promptHint["zh-cn"];
   assert.throws(() => validateManifest(noHint, pkg), /promptHint/);
+});
+
+test("manifest：拉起词里有**带版本号的那一条**，且 = package.json 的版本", async () => {
+  const manifest = await load("manifest.json");
+  const pkg = await load("package.json");
+  // owner 2026-08-19：屏上角标读的是 bundle 里的 __APP_VERSION__，这一条读的是**随包发布的
+  // manifest**——两个来源分属两个文件，对得上才说明端到端都新（catalog 缓存了旧 manifest 时正是它露馅）。
+  //
+  // ⚠ 这条判据的**边界说清楚**（2026-08-19 撤修验红量出来的，不是推测）：
+  //   它量的是"发出去的 manifest 里那条别名对不对"，**不是**"生成器有没有调 applyVersionAlias"。
+  //   单把生成器里那句删掉，本条仍绿——因为别名是上一次生成留下的、此刻也确实没错。
+  //   它在**真会出事的那一刻**才红：删了调用**又升了版本**（发布流程里必然同时发生）⇒
+  //   别名停在旧版本、与 package.json 对不上 ⇒ 当场红（实测 0.8.1→0.9.0 复现过）。
+  //   函数本身的行为（幂等·摘旧·不误伤手写别名）由下一条点名测。
+  const want = { en: `Rule of Three v${pkg.version}`, "zh-cn": `拳律v${pkg.version}` };
+  for (const [locale, alias] of Object.entries(want)) {
+    assert.ok(manifest.locales[locale].aliases.includes(alias),
+      `locales.${locale}.aliases 必须含 "${alias}"，实为 ${JSON.stringify(manifest.locales[locale].aliases)}`);
+  }
+});
+
+test("manifest：版本别名**幂等**——反复生成不累加、旧版本词被摘干净", () => {
+  // ⚠ 这条测的是**最容易悄悄坏掉的那一半**：只"追加"不"摘旧"时，功能看起来完全正常
+  //（新版本词有了、能拉起来），但 aliases 会一版一版堆下去——几个版本后一串历史版本词
+  //   全都能把游戏叫起来，而且没有任何报错。所以必须点名"旧的没了"。
+  const m = { locales: { en: { aliases: ["Rule of Three"] }, "zh-cn": { aliases: ["拳律"] } } };
+  applyVersionAlias(m, "0.1.0");
+  applyVersionAlias(m, "0.2.0");
+  applyVersionAlias(m, "1.10.3");
+  assert.deepEqual(m.locales.en.aliases, ["Rule of Three", "Rule of Three v1.10.3"]);
+  assert.deepEqual(m.locales["zh-cn"].aliases, ["拳律", "拳律v1.10.3"]);
+  // 手写的普通别名不许被误伤（摘旧那条正则只认"名字+v+三段数字"这一个形状）
+  const keep = { locales: { en: { aliases: ["RPS", "Rule of Three"] }, "zh-cn": { aliases: ["猜拳", "拳律"] } } };
+  applyVersionAlias(keep, "2.0.0");
+  assert.ok(keep.locales.en.aliases.includes("RPS") && keep.locales.en.aliases.includes("Rule of Three"));
+  assert.ok(keep.locales["zh-cn"].aliases.includes("猜拳") && keep.locales["zh-cn"].aliases.includes("拳律"));
 });
