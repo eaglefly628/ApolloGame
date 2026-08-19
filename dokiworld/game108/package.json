@@ -1,6 +1,6 @@
 {
   "name": "dokiworld-game108",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "type": "module",
   "description": "DokiWorld Game App packaging for ZeroCraft game108 (Rule of Three / 拳律)",
@@ -12,6 +12,6 @@
     "cover": "node scripts/capture-cover.mjs"
   },
   "dependencies": {
-    "@dokiworld/app-sdk": "^2.1.0"
+    "@dokiworld/app-sdk": "^3.0.0"
   }
 }

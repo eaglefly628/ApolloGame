@@ -39,6 +39,22 @@ window.__setup = (config) => new Promise((ready) => {
   const iframe = document.getElementById("app");
   const state = { initialized: false, completed: null, saved: config.checkpoint ?? null, exitState: null, launched: null, listed: 0 };
   window.__state = state;
+  // ══ Host capability profile（SDK 3.0 样例仓 README 表·2026-08-18 快照）══════════
+  //
+  // ⚠ **这张表是这套目击的地基**：2026-08-17 我们把 SDK 支持的八个 host extension 全挂上，
+  //   本地 48/48 全绿，真宿主里五个红——**尺子比被测环境宽，量出来的绿是假的**。
+  //   现在假宿主只挂"这台 Host profile 真有的那些"，profile 不写就按 chat-game（Game 的默认落点）。
+  //   要测"能力全开"的世界形态，显式传 profile:"world-page"；要测最窄的嵌套形态传 "world-nested"。
+  //   hostExtensions 仍可显式传，用于**故意造窄**（如零 capability 的降级腿）。
+  //   ⚠ 本段在承载浏览器侧源码的**模板字符串**里——注释里也不许出现反引号或美元大括号，会当场截断整段。
+  const HOST_PROFILES = {
+    "chat-game": ["character", "checkpoint", "dialogue", "footprint", "media", "memory", "persona", "progress", "resize", "resume", "speech", "storage"],
+    "world-page": ["apps", "character", "chat", "checkpoint", "dialogue", "episode", "footprint", "media", "memory", "persona", "speech", "storage", "world"],
+    "world-nested": ["checkpoint", "progress", "resize"],
+  };
+  const hostExtensions = config.hostExtensions ?? HOST_PROFILES[config.profile ?? "chat-game"] ?? [];
+  window.__hostExtensions = hostExtensions;
+
   iframe.addEventListener("load", () => {
     const host = createAppHost({
       appId: "game108",
@@ -53,24 +69,31 @@ window.__setup = (config) => new Promise((ready) => {
         input: { contract: "doki.game.game108-input", version: 1, data: config.input ?? {} },
       },
       outputs: [{ contract: "doki.game.result", version: 1 }],
-      extensions: config.hostExtensions ?? [],
+      extensions: hostExtensions,
     });
     window.__host = host;
-    if ((config.hostExtensions ?? []).includes("storage")) {
+    // 【单向消息的宿主侧账本】resize / progress 这类没有回执的消息，判据只能落在**宿主真收到了**
+    // ——读页面自己那行"已发…"是自陈：2026-08-18 实测把 app.send 整句删掉，那行字一模一样，
+    // 于是"全绿"根本没证明消息出过门。故这里按 type 记账，目击腿读这本账。
+    host.onMessage((m) => {
+      if (m && m.type === "dokiworld-app-progress") (state.progress ??= []).push(m.payload);
+      if (m && m.type === "dokiworld-app-resize") state.resize = m.payload;
+    });
+    if (hostExtensions.includes("storage")) {
       createStorageHostExtension(host, {
         loadCheckpoint: () => ({ checkpoint: state.saved }),
         saveCheckpoint: ({ checkpoint }) => { state.saved = checkpoint; return { saved: true }; },
         clearCheckpoint: () => { state.saved = null; return { cleared: true }; },
       });
     }
-    if ((config.hostExtensions ?? []).includes("character")) {
+    if (hostExtensions.includes("character")) {
       createCharacterHostExtension(host, {
         getCurrent: () => ({ character: config.character ?? null }),
       });
     }
     // 「获取卡带」腿（REQ-DOKI-APPS）：宿主端把可拉起的 App 列表交出去，并记下真被拉起的那次
     //（launch 的落点记在 state.launched——目击断言读它，不采信页面自陈）。
-    if ((config.hostExtensions ?? []).includes("apps")) {
+    if (hostExtensions.includes("apps")) {
       createAppsHostExtension(host, {
         list: () => { state.listed = (state.listed ?? 0) + 1; return { apps: config.apps ?? [] }; },
         launch: (req) => { state.launched = req; return { status: "cancelled" }; },
@@ -78,7 +101,7 @@ window.__setup = (config) => new Promise((ready) => {
     }
     // ── SDK 演示台那五个模块的假宿主（owner 2026-08-17「测试它所有的功能」）──────
     // 每个都**记一笔到 state**：目击断言读 state（真收到请求了没有），不采信页面自陈。
-    const ext = config.hostExtensions ?? [];
+    const ext = hostExtensions;
     if (ext.includes("speech")) {
       createSpeechHostExtension(host, {
         synthesize: (input) => {

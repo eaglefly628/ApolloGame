@@ -2,7 +2,8 @@
 
 > **owner 2026-08-12 立线：以后 ZeroCraft 做出来的东西都要能往 DokiWorld 打包**。
 > 事实来源=官方规范快照 `docs/design/dokiworld/app-sdk-app-development.zh-CN.md`（对方接口一切以它为准·本册只讲我们怎么接）；
-> 可跑样例 https://github.com/raptoravis/dokiworld-apps（`game-match3`=Game·`storyteller`=World·读法：`add_repo` 匿名克隆）。
+> 可跑样例 https://github.com/raptoravis/dokiworld-apps（读法：`add_repo` 匿名克隆）。**2026-08-18 那仓升到 SDK 3.0**，四个样例：
+> `game-match3`=Game·零 capability；**`tower-confessions`=Game·真用 capability（我们的对照组，照它抄）**；`storyteller`/`banquet-contract`=World。
 
 ## 一句话
 
@@ -23,11 +24,11 @@ App = **独立构建的自包含浏览器静态包**（`dist/` 里 manifest+html
 | cover 真图 | 假宿主装 dist 截**真对局屏** → 页内 canvas 转 WebP → 存进 app 源资产目录（先例 `dokiworld/game108/scripts/capture-cover.mjs`·产物 `dokiworld/game108/src/assets/cover.webp`） | manifest `cover` §5 点名校验（生成器查真图在包内·**禁灰块占位**）；build 显式复制进 dist（vite 不带未引用资产） |
 | 挂起/恢复（§6 checkpoint） | `@dokiworld/app-sdk/storage` + 引擎 `world.snapshot()/snapshotOrder()/restore()`；游戏侧开一条 `setWorldRestore` 纯接线缝（`setWorldObserver` 孪生·先例 game108） | ⚠ capability payload 三上限 64KB/2000 节点/深 12——整快照裸传必被拒，走 deflate-raw+base64 传输编码（先例 `checkpoint-codec.mjs`·game108 快照 125KB→7KB）；`canSuspend:true` 只在**存成之后**报；正常 complete 后清档 |
 | 对手=平台角色 | `@dokiworld/app-sdk/character` 读授权资料 → 引擎卡桥；降级链 授权资料→init.input 卡→内置兜底（先例 `foe-card.mjs`） | 查 `grantedScopes` 才发请求；capability 请求带短超时（宿主没实现=消息静默丢弃，只有超时兜得住）；缺哪级都不空白 |
-| **一个 App 能拿到哪些 capability，取决于 `kind`** | Game 抄 `game-match3`（声明 `["resize","progress","checkpoint"]`·**一个 capability 模块都没有**）；World 才抄 `storyteller`（media/speech/storage/character/persona/apps 全套） | ⚠ **2026-08-17 血的教训**：样例仓 README 那张「SDK 2.1 capabilities」表的标题是「**Storyteller** 中的用途」，Storyteller 是 `kind:world`。把它当通用表 ⇒ game108 声明八个、真宿主上**五个全超时**（宿主根本没为 Game 挂那些 host extension）。四条接线的第 4 条「Host 为该运行创建对应的 host extension」**不是我方能满足的**——声明 ≠ 拿得到 |
-| **假宿主必须模拟真宿主的能力边界** | `host-witness` 挂 host extension 时**按 kind 挂**，不许"SDK 支持什么就挂什么" | 同一天实证：本地把八个全挂上 ⇒ 48/48 全绿，真宿主里五个全红。**尺子比被测环境宽 = 尺子没用** |
+| **一个 App 能拿到哪些 capability，取决于「被哪台 Host 拉起」** | 对 profile 表挑，别对 SDK 支持什么挑。Game 照 `tower-confessions` 起手（character/dialogue/media/persona/progress/resize/speech/storage） | ⚠ **2026-08-18 订正**（此前本行写的是「取决于 `kind`」，那是我们从"两个 World 样例用 capability、Game 样例不用"倒推的猜测，猜错了方向）。SDK 3.0 样例仓 README 给了权威表——`kind` **不决定** extension 是否合法，catalog 只拒**未知**名字；能不能拿到由**当前 Host capability profile** 定：<br>· **Chat Game Host**（Game 的主落点）= character checkpoint dialogue footprint media memory persona progress resize resume speech storage<br>· **World Page Host** = apps character chat checkpoint dialogue episode footprint media memory persona speech storage world<br>· **World Nested App Host**（World 里嵌 Game）= checkpoint progress resize<br>**`apps`/`episode`/`chat`/`world` 是 World Page Host 专属**——Game 声明了也拿不到，表症=静默超时。一个 Game 可能被 Chat Game Host 或 World Nested App Host 拉起，**两者交集只有 checkpoint/progress/resize**，故其余一切必须能降级。 |
+| **假宿主必须模拟真宿主的能力边界** | `host-harness` 里有 `HOST_PROFILES` 三张表，`boot({profile:"chat-game"})` 按 profile 挂 host extension；**不许"SDK 支持什么就挂什么"** | 2026-08-17 实证：八个全挂上 ⇒ 本地 48/48 全绿，真宿主里五个红。**尺子比被测环境宽 = 尺子没用**。改用 profile 之后，把 `apps` 加回声明会当场红在 `2001ms` 超时上——production 的病现在本地能复现。 |
 | `result.metrics`（Game·输出 `doki.game.result/1` 时） | manifest 里逐条声明运行时会返回的指标名 | 给 **Episode 编辑器**列 `{{app.metrics.*}}` 变量用（README §5）。**不声明 = 剧情选不到你的指标**，加再多 metrics 也白加；与 `toGameResult` 真发的字段要有守卫对齐（两处真相） |
 | capability 要的 scope | 用到 persona 就声明 `player_persona`；用到角色卡就 `character.card`（照 storyteller 的 `contextScopes.optional`） | 「角色与角色卡等数据仍受 `grantedScopes` 控制」——扩展挂了但 scope 没授权，一样拿不到 |
-| extension 五步一致（§7） | manifest `runtime.extensions` ⇔ `createAppClient({extensions})` ⇔ 真建的 Client extension ⇔ 宿主 host extension ⇔ 退出时 `dispose()` | 声明名=wire 前缀；**只声明真用到的**。⚠ 旧版这里写着「storage 模块→`storage`，不是示例里的 `checkpoint`；match3 多声明是反例」——**那句话把唯一的 Game 参考实现定性成反例，于是我们不照 Game 抄、自己发明了一套**，这是 2026-08-17 真宿主全红的直接源头。正解见上面「一个 App 能拿到哪些 capability，取决于 `kind`」那行；生成器+测试双锚 |
+| extension 五步一致（§7） | manifest `runtime.extensions` ⇔ `createAppClient({extensions})` ⇔ 真建的 Client extension ⇔ 宿主 host extension ⇔ 退出时 `dispose()` | 声明名=wire 前缀；**只声明真用到的**。⚠ 旧版这里写着「storage 模块→`storage`，不是示例里的 `checkpoint`；match3 多声明是反例」——**那句话把唯一的 Game 参考实现定性成反例，于是我们不照 Game 抄、自己发明了一套**，这是 2026-08-17 真宿主全红的直接源头。正解见上面「一个 App 能拿到哪些 capability，取决于**被哪台 Host 拉起**」那行（2026-08-18 又订正过一次：连"取决于 kind"也是错的）；生成器+测试双锚 |
 | 三形态降级目击（§12） | SDK 真 `createAppHost` 假宿主起三形态（零授权/只 input 卡/带 character 资料）+ 挂起/恢复 + resize 实测（先例 `dokiworld/game108/scripts/host-witness.mjs`·同源静态服务直接 serve SDK 源） | 断言落 DOM 机读量（对手名/蓄力读数/血量）·不采信自陈；挂起腿断 checkpoint 真落宿主 |
 | 「获取卡带」（列出/拉起别的 App） | `dokiworld/shared/src/apps-gateway.mjs`（`createAppsGateway`·SDK `./apps` 的薄适配） | **未声明就不发**（未声明的消息被拒的形态是"静默等到超时"）·`list` 恒返回数组 / `launch` 三态 `completed\|cancelled\|unavailable`·`launch` 超时是**一小时**不是 30 秒（玩家正在玩那个 App）·封装 ≠ 声明：消费方仍要自己在 manifest 写 `apps` |
 | 完整性清单 | build 收尾产 `SHA256SUMS.txt` 进 dist（match3 同款：大写 SHA256 + 两空格 + 包内相对路径·覆盖除自身全部文件） | 冒烟核到哈希与实物一致（清单不是装饰） |

@@ -73,24 +73,43 @@ test("manifest：extensions 声明与接线代码一致（规范 §7 五步·**�
   // ⚠ **不是每个 extension 都是 capability 模块**：`resize` 这类是**普通会话消息**
   // （`app.send('dokiworld-app-resize')`·照 `game-match3` 的做法），没有 client extension、
   // 也没有 dispose。故每条各自说清楚"怎么算真接了"和"要不要释放"。
+  //
+  // `raw` = **直接建 SDK 扩展 / 直接 app.send** ——这类没有自带闸，声明与否必须逐字对上：
+  //         未声明还建/还发 = 规范 §7 违规，表症是静默等到超时（最难查那一类）。
+  // `raw:false` = 走共享层**网关**（`capability-gateway` 的纪律①）——它自己带闸：
+  //         `declared:false` 时**不建 SDK 扩展、不挂 onMessage、一个字节都不发**，只留一台恒降级空壳。
+  //         故未声明时它**允许仍被构造**（演示台要拿它显示"本宿主不提供"），
+  //         但必须用 `declared('<name>')` 传闸——写死 true 就退化成 raw 了（锚点④单独拦）。
   const BUILDERS = {
-    storage: { built: /createStorageClientExtension\(app/, disposes: 'storage' },
-    character: { built: /createCharacterClientExtension\(app/, disposes: 'character' },
-    apps: { built: /createAppsGateway\(app,/, disposes: 'apps' },
-    speech: { built: /createSpeechGateway\(app,/, disposes: 'speech' },
-    persona: { built: /createPersonaGateway\(app,/, disposes: 'persona' },
-    dialogue: { built: /createDialogueGateway\(app,/, disposes: 'dialogue' },
-    media: { built: /createMediaGateway\(app,/, disposes: 'media' },
-    episode: { built: /createEpisodeBridge\(app,/, disposes: 'episode' },
-    resize: { built: /app\.send\('dokiworld-app-resize'/, disposes: null },
+    storage: { built: /createStorageClientExtension\(app/, disposes: 'storage', raw: true },
+    character: { built: /createCharacterClientExtension\(app/, disposes: 'character', raw: true },
+    apps: { built: /createAppsGateway\(app,/, disposes: 'apps', raw: false },
+    speech: { built: /createSpeechGateway\(app,/, disposes: 'speech', raw: false },
+    persona: { built: /createPersonaGateway\(app,/, disposes: 'persona', raw: false },
+    dialogue: { built: /createDialogueGateway\(app,/, disposes: 'dialogue', raw: false },
+    media: { built: /createMediaGateway\(app,/, disposes: 'media', raw: false },
+    episode: { built: /createEpisodeBridge\(app,/, disposes: 'episode', raw: false },
+    resize: { built: /app\.send\('dokiworld-app-resize'/, disposes: null, raw: true },
+    progress: { built: /app\.send\('dokiworld-app-progress'/, disposes: null, raw: true },
   };
   for (const name of wired) {
     assert.ok(BUILDERS[name], `声明了 ${name} 但本测试不认识它——加通道时同步加锚点，别让新模块裸奔`);
     assert.ok(BUILDERS[name].built.test(main), `声明了 ${name} 就必须真接上（§7 第 3 步）`);
   }
-  // 锚点③：**没声明的一个都不许建**（多声明/多建都会被宿主拒）。
+  // 锚点③：**没声明的不许裸建**。
+  // ⚠ 2026-08-18 改判据：上一版是"没声明的一个都不许出现"，那条在 `apps`/`episode` 因
+  //   Host profile 摘掉声明、但网关仍留着（演示台要显示"本宿主不提供"）之后会误报。
+  //   真正该拦的是**没有闸的那一类**：裸建 SDK 扩展、裸 app.send。带闸的网关未声明时
+  //   由 `capability-gateway` 保证一个字节都不发（那条纪律有共享层用例覆盖）。
   for (const [name, spec] of Object.entries(BUILDERS)) {
-    if (!wired.includes(name)) assert.ok(!spec.built.test(main), `未声明的 ${name} 不得建通道`);
+    if (wired.includes(name)) continue;
+    if (spec.raw) {
+      assert.ok(!spec.built.test(main), `未声明的 ${name} 不得裸建通道/裸发消息（§7 违规·表症是静默超时）`);
+    } else if (spec.built.test(main)) {
+      // 网关可以留着，但**必须真把闸接上**——点名到具体这一个，不是笼统查有没有 declared(
+      const gated = new RegExp(`declared\\('${name}'\\)`).test(main);
+      assert.ok(gated, `未声明的 ${name} 网关仍在，就必须用 declared('${name}') 传闸（否则它会真发消息）`);
+    }
   }
   // 锚点④：`declared` 一律从 EXTENSIONS 现推，**不许写死 true**
   //（写死 = 给自己留一个"改了名单忘了改这里"的口子，那种错的表症是静默等到超时）。

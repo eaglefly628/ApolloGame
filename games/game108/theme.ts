@@ -112,8 +112,30 @@ export const UI_ACT = {
 } as const;
 
 /** 【SDK 演示台】九个模块的 key —— **与 manifest.runtime.extensions 同名**（面板按这张表逐行画）。 */
-export const SDK_MODULES = ['character', 'storage', 'apps', 'speech', 'persona', 'dialogue', 'media', 'episode', 'game-result'] as const;
+/**
+ * SDK 演示台的行 = 我们**关心**的能力（不等于我们**声明**的能力）。
+ *
+ * 2026-08-18 按 SDK 3.0 样例仓重排：能不能拿到某个扩展由**拉起这个 App 的 Host profile**
+ * 决定（不是 App 的 kind）。Game 会被两台 Host 拉起，各给一套：
+ *   · Chat Game Host        → character/storage/speech/persona/dialogue/media/progress ✔
+ *   · World Nested App Host → 只有 checkpoint/progress/resize
+ *   · apps / episode        → **只有 World Page Host 有**，Game 无论怎么声明都拿不到
+ * 后两个仍留在台上，正是为了让「拿不到」这件事**看得见**——从台上删掉它们，
+ * 下一个人只会重新发明一次「声明了为什么不通」（2026-08-17 那五个超时就是这么来的）。
+ */
+export const SDK_MODULES = [
+  'character', 'storage', 'speech', 'persona', 'dialogue', 'media', 'progress',
+  'apps', 'episode', 'game-result',
+] as const;
 export type SdkModule = (typeof SDK_MODULES)[number];
+
+/** 每个能力由**哪台 Host** 提供（样例仓 README「Host capability profile」表·2026-08-18 快照）。 */
+export const SDK_HOST_PROFILE: Record<SdkModule, string> = {
+  character: 'Chat Game', storage: 'Chat Game', speech: 'Chat Game', persona: 'Chat Game',
+  dialogue: 'Chat Game', media: 'Chat Game', progress: 'Chat Game / Nested',
+  apps: 'World Page 专属', episode: 'World Page 专属',
+  'game-result': '输出契约·非扩展',
+};
 
 // ── 世界里的 id 约定 ───────────────────────────────────────────────────
 export const SIDES = ['p1', 'p2'] as const;

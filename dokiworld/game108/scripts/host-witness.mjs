@@ -230,12 +230,17 @@ try {
     check("④ 恢复：零致命错", r.fatals.length === 0, r.fatals.join("; "));
     await r.close();
   }
-  // ── ⑥ 「获取卡带」推荐位（REQ-DOKI-APPS·owner 2026-08-16 判 game108 当第一个消费者）──────
-  // 走**真 SDK 的 host extension**（假宿主那头是 createAppsHostExtension·不是打桩）：
-  // 证 ① 声明→client→host 真握了手（宿主那侧真收到 list 请求）
-  //     ② 拿不到 runtime.input.contract 的条目被挡在推荐位外（拉不起来的键不画·留痕）
-  //     ③ 整条链路不打扰对局（零致命错·对局屏照常）。
-  // 「点一格 → 真发 launch」由共享层 apps-gateway 的 9 条真宿主用例覆盖（同一条 wire）。
+  // ── ⑥ `apps` 未声明：**一个字节都不发**（2026-08-18 按 SDK 3.0 Host profile 表改写）─────
+  //
+  // 原本这一腿证的是「获取卡带」推荐位真握手。SDK 3.0 样例仓 README 给出 Host capability
+  // profile 表后，`apps` 被定死为 **World Page Host 专属**——Game 被 Chat Game Host 或
+  // World Nested App Host 拉起，两台都没有它。声明了也拿不到，故本包已从 EXTENSIONS 摘掉。
+  //
+  // 那这一腿现在证什么？证**纪律①（未声明就一个字节都别发）真的生效**：
+  // 假宿主这头把 apps host extension 挂上并**记账**，我方却不该产生任何一次 list 请求。
+  // 这不是"删掉一条腿"，是把它翻面——原来量"发出去了"，现在量"确实没发"。
+  // 为什么值得量：未声明还发消息的表症是**静默等到超时**（最难查的那一类），
+  // 而它在代码里只是一个 `declared('apps')` 布尔——最容易被人"顺手改回 true"。
   {
     const APPS = [
       { id: "match3", name: "三消", protocolVersion: 2, coverUrl: DOT, runtime: { input: { contract: "doki.game.match3-input", version: 1 } } },
@@ -243,18 +248,28 @@ try {
       { id: "no-contract", name: "拉不起来的", protocolVersion: 2 },          // 无 runtime.input → 该被挡
       { id: "game108", name: "自己", protocolVersion: 2, runtime: { input: { contract: "doki.game.game108-input", version: 1 } } },
     ];
+    // 假宿主**故意比真 Chat Game Host 宽**：把 apps 挂上并记账。宽在这里是对的——
+    // 我们要量的是"我方发没发"，宿主那头开着门反而让"偷偷发了"无处可藏。
     const h = await boot({ grantedScopes: [], hostExtensions: ["apps"], apps: APPS, input: {} });
     const logs = [];
     h.page.on("console", (m) => logs.push(m.text()));
     await until(h.initialized, { label: "⑥ init 完成", timeoutMs: 15_000 });
     await clickStart(h);
-    await until(async () => ((await h.state()).listed ?? 0) > 0, { label: "⑥ 宿主真收到 apps.list 请求", timeoutMs: 10_000 });
-    check("⑥ 推荐位：声明→client→host 真握手（宿主侧收到 list 请求）", ((await h.state()).listed ?? 0) > 0);
-    check("⑥ 推荐位：无 runtime.input.contract 的条目被挡（拉不起来的键不画）",
-      logs.some((l) => l.includes("拿不到 runtime.input.contract") && l.includes("1 个")),
-      logs.filter((l) => l.includes("[game108]")).join(" | ") || "（无 [game108] 日志）");
-    check("⑥ 推荐位：对局屏照常（推荐位是可选增强·不打扰对局）", await h.has("#phase-t"));
-    check("⑥ 推荐位：零致命错", h.fatals.length === 0, h.fatals.join("; "));
+    // 打满一个回合再看账：`resolveAppPicks` 挂在挂载之后异步跑，立刻读会读到"还没来得及发"，
+    // 那样这条判据对"真发了"也是绿的（假绿）。等到对局真跑起来再读。
+    await chargeOnce(h);
+    await h.page.waitForTimeout(2_500);
+    const st6 = await h.state();
+    check("⑥ apps 未声明 ⇒ 宿主一次 list 请求都没收到（纪律①：未声明就别发）",
+      (st6.listed ?? 0) === 0, `listed=${st6.listed ?? 0}`);
+    check("⑥ 降级留痕（不是静默消失·日志能说清为什么没有推荐位）",
+      logs.some((l) => l.includes("[game108]") && l.includes("apps.") && l.includes("not-declared")),
+      logs.filter((l) => l.includes("apps.")).join(" | ") || "（无 apps 日志）");
+    // ⚠ 不在这里断言"推荐位没画出来"：那条推荐位只在**终局屏**出现（`endPanel` 里 picks.length
+    //   才画），对局中本来就不在 ⇒ 那条判据对"真拿到了列表"也是绿的，是一条空转判据。
+    //   真正的判据是上面那两条（宿主零请求 + 降级留痕），它们不依赖走到终局。
+    check("⑥ 对局屏照常（可选增强缺席不打扰对局）", await h.has("#phase-t"));
+    check("⑥ 零致命错", h.fatals.length === 0, h.fatals.join("; "));
     await h.close();
   }
 
@@ -342,14 +357,18 @@ try {
     await h.close();
   }
 
-  // ── ⑦ SDK 演示台：**九行逐个按一遍**（owner 2026-08-17「测试它所有的功能」）──────────
-  // 整套目击里唯一「把 SDK 的每个模块都真叫一次」的地方：假宿主把八个 host extension 全挂上，
-  // 页面里从设置菜单进演示台、逐行点「试一下」，然后**读宿主侧 state 核对真收到了请求**
-  //（不采信页面上那行绿字——那是页面自陈）。
+  // ── ⑦ SDK 演示台：**逐行按一遍**（owner 2026-08-17「测试它所有的功能」）─────────────
+  // 整套目击里唯一「把 SDK 的每个模块都真叫一次」的地方：页面里从设置菜单进演示台、
+  // 逐行点「试一下」，然后**读宿主侧 state 核对真收到了请求**（不采信页面那行绿字——那是自陈）。
+  //
+  // ⚠ 2026-08-18 关键改动：假宿主从「把八个全挂上」改成 **`profile: "chat-game"`**。
+  //   上一版那种挂法让本地 48/48 全绿而真宿主里五个红——**尺子比被测环境宽，量出来的绿是假的**。
+  //   Chat Game Host 是 Game 的真实落点，它**没有 apps / episode**；于是这一腿现在
+  //   同时量两件事：profile 里**有**的那些真通，profile 里**没**的那两行**说得清为什么**。
   {
     const h = await boot({
       grantedScopes: ["character.identity"],
-      hostExtensions: ["storage", "character", "apps", "speech", "persona", "dialogue", "media", "episode"],
+      profile: "chat-game",
       character: PROFILE,
       persona: { id: "me-1", name: "阿岚", age: 24, gender: "female", likes: "吃辣" },
       personas: [{ id: "me-1", name: "阿岚" }],
@@ -365,9 +384,12 @@ try {
     await h.frame().locator("[data-action='ui.sdk']").first().click();
     await until(async () => (await h.frame().locator("#sdk").count()) > 0, { label: "⑦ 演示台开了" });
 
-    const KEYS = ["character", "storage", "apps", "speech", "persona", "dialogue", "media", "episode", "game-result"];
+    // 台上的行 = `SDK_MODULES`（含两条 World 专属的·留着正是为了让"拿不到"看得见）
+    const KEYS = ["character", "storage", "speech", "persona", "dialogue", "media", "progress", "apps", "episode", "game-result"];
+    // 这台 profile **不提供**的：按下去该给出"本宿主不提供"的说法，而不是假装在等宿主
+    const OFF_PROFILE = ["apps", "episode"];
     const shown = await h.frame().locator("#sdk [id^='sdk-row-']").count();
-    check("⑦ 演示台九行齐（= SDK 的九个能力·一个都不少）", shown === KEYS.length, `实为 ${shown} 行`);
+    check("⑦ 演示台的行齐（= SDK_MODULES·一个都不少）", shown === KEYS.length, `实为 ${shown} 行`);
 
     for (const key of KEYS) {
       await h.frame().locator(`#key-sdk-${key}`).first().click();
@@ -386,10 +408,25 @@ try {
     check("⑦ dialogue：宿主真收到 generateOpening", !!st.opening?.characterId, `state=${JSON.stringify(st.opening ?? null)} · 屏上=${await h.text("#sdk-d-dialogue")}`);
     check("⑦ media：宿主真收到 generateImage（prompt 非空·且轮询走到 done）",
       typeof st.imagePrompt === "string" && st.imagePrompt.length > 0, String(st.imagePrompt ?? null));
-    check("⑦ apps：宿主真收到 list", (st.listed ?? 0) > 0, `listed=${st.listed}`);
-    check("⑦ episode：宿主真收到 gameCompleted（战果往剧情那条出口）",
-      (st.episode ?? []).some((e) => e.type === "episode.gameCompleted"),
+    // apps / episode 这台 profile 没有 ⇒ 判据**换向**：不是"宿主收到了"，是"宿主一条都没收到"，
+    // 且屏上那行**说得出为什么**（"本宿主不提供"而不是干巴巴一句"未声明"——后者会把人引去
+    // 加声明，而加了也没用，2026-08-17 正是这么错的）。
+    check("⑦ apps：这台 profile 没有 ⇒ 宿主零请求", (st.listed ?? 0) === 0, `listed=${st.listed ?? 0}`);
+    check("⑦ episode：这台 profile 没有 ⇒ 宿主零事件", (st.episode ?? []).length === 0,
       JSON.stringify((st.episode ?? []).map((e) => e.type)));
+    for (const key of OFF_PROFILE) {
+      const d = String(await h.softText(`#sdk-d-${key}`) ?? "");
+      check(`⑦ ${key} 那行说得出"为什么拿不到"（且是**按下之后**那句·初始文案不含"拿不到"）`,
+        d.includes("拿不到") && d.includes("World Page Host"), d || "(空)");
+    }
+    // 【progress】单向消息没有回执，但**宿主那头收得到**——判据必须读宿主侧账本，不读页面自陈。
+    // （第一版就读了页面那行"已发…"：撤掉 app.send 整句后那行字一模一样，60/60 照样全绿。）
+    const dProgress = String(await h.softText("#sdk-d-progress") ?? "");
+    check("⑦ progress：**宿主真收到** dokiworld-app-progress（不是页面自陈）",
+      (st.progress ?? []).some((p) => Number.isFinite(p?.score) && p?.maxScore === 100),
+      `state.progress=${JSON.stringify(st.progress ?? null)} · 屏上=${dProgress}`);
+    // resize 同理：leg ⑤ 只量了"页面不横向溢出"（那是 CSS 的功劳），没量"高度建议真发出去了"。
+    check("⑦ resize：**宿主真收到**高度建议", Number.isFinite(st.resize?.height), JSON.stringify(st.resize ?? null));
     const storageDetail = await h.text("#sdk-d-storage");
     check("⑦ storage：存 → 读 → 清 三步通了", String(storageDetail).includes("三步都通了"), String(storageDetail));
     // game-result 那一行**不许真发 complete**（发了这一局就结束了·演示台不该替玩家交卷）
@@ -397,11 +434,11 @@ try {
 
     // 九行**全通**：八个 extension 全挂上时，任何一行报降级都说明那条链没接通
     const downs = [];
-    for (const key of KEYS) {
+    for (const key of KEYS.filter((k) => !OFF_PROFILE.includes(k))) {
       const d = String(await h.text(`#sdk-d-${key}`) ?? "");
       if (d.includes("没实现") || d.includes("未声明") || d.includes("没给") || d.includes("没接") || d.includes("没生成") || d.includes("没合成")) downs.push(`${key}: ${d}`);
     }
-    check("⑦ 九行没有一行降级（八个 extension 全挂上时该全通）", downs.length === 0, downs.join(" | "));
+    check("⑦ 本 profile 提供的那些行没有一行降级（该给的都给了时应全通）", downs.length === 0, downs.join(" | "));
     // ⚠ **防空转**：上面那条只查"有没有降级词"，而**没点上**的行停在初始 detail「已声明 · 待试」
     // ——它一个降级词都不含，于是"全绿"可能只是根本没按到（第一版实测正是这么假绿的）。
     const untouched = [];
@@ -409,11 +446,24 @@ try {
       const d = String(await h.text(`#sdk-d-${key}`) ?? "");
       if (d.includes("待试") || d.includes("正在问")) untouched.push(`${key}: ${d}`);
     }
-    check("⑦ 九行**每一行都真按下去过**（没有停在「待试」的）", untouched.length === 0, untouched.join(" | "));
+    check("⑦ **每一行都真按下去过**（没有停在「待试」的）", untouched.length === 0, untouched.join(" | "));
 
     // ── 运行日志：iframe 里没有 console，owner「我在这个应用中无法看到日志」──────────
     // 判据不是"日志区画出来了"（那是 vitest 的活），是**真按了九行之后屏上有对应的调用记录**：
     // 接线断了（onCall 没接 / 只在 warn 时才推）时日志区会是空的或只有开场那一行，这里就该红。
+    // ⚠ 日志区只画最近 8 条，而上面按了 10 行（media 一行就产 3 条）⇒ **先按的会被挤出可视区**。
+    //   直接读那 8 行来判"两条进料口都记上了"是**顺序依赖**的（实测：加了两条"未发送"之后
+    //   storage 就被挤没了，判据当场红——红得没道理，它量的是窗口大小不是接线）。
+    //   故：读之前把**两条进料口各一个代表**再按一次（speech=网关口·storage=traced 口），
+    //   让它们必然落在窗口内。这不是放水——被测的仍是"按一次会不会在屏上留下记录"，
+    //   只是不再受窗口位置左右；判据也相应只声称"各有一个代表记上了"，不吹成"全都记上了"。
+    for (const rep of ["speech", "storage"]) {
+      await h.frame().locator(`#key-sdk-${rep}`).first().click();
+      await until(async () => {
+        const t = await h.softText(`#sdk-d-${rep}`);
+        return typeof t === "string" && t.length > 0 && !t.includes("正在问");
+      }, { label: `⑦ ${rep} 复按有结果了`, timeoutMs: 15_000, stepMs: 200 });
+    }
     const logLines = [];
     for (let i = 0; i < 8; i++) {
       const t = await h.softText(`#sdk-log-${i}`);
@@ -433,10 +483,8 @@ try {
     // 拆掉其中一条，另一条照样把面板填满 ⇒ 只查"有没有货"是**假绿**（实测：砍掉 onCall 那条，
     // 面板还有 7 行 traced 的记录，「有货 / 带时间戳 / 新的在上」三条全绿）。故两条各点名一次。
     const logBlob = logLines.join(" | ");
-    const missGw = ["speech", "persona", "dialogue"].filter((k) => !logBlob.includes(k));
-    check("⑦ 日志覆盖**网关口**（speech/persona/dialogue 都记上了）", missGw.length === 0, `缺 ${missGw.join(",")} · 日志=${logBlob}`);
-    const missTraced = ["storage"].filter((k) => !logBlob.includes(k));
-    check("⑦ 日志覆盖**traced 口**（storage 记上了）", missTraced.length === 0, `缺 ${missTraced.join(",")} · 日志=${logBlob}`);
+    check("⑦ 日志覆盖**网关口**（代表：speech）", logBlob.includes("speech."), `日志=${logBlob}`);
+    check("⑦ 日志覆盖**traced 口**（代表：storage）", logBlob.includes("storage."), `日志=${logBlob}`);
 
     // ── 版本号：owner「我能知道这个游戏的版本号，在游戏中能看到是不是我最新的」──────
     // 判据对 package.json **实读**，不是对页面自陈——构建没把 __APP_VERSION__ 打进去时会红。

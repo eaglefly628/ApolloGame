@@ -5,6 +5,9 @@
 import { readFile, writeFile, access } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+// SDK 3.0 起 **机读** 的已知扩展注册表——以前手册抄一份字面量，抄的那份会过期（SDK 2.x→3.0
+// 就新增了 footprint/memory/progress/resume 等）。对它核，不对我们自己的记忆核。
+import { RUNTIME_EXTENSIONS } from "@dokiworld/app-sdk/runtime-extensions";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const manifestPath = resolve(root, "manifest.json");
@@ -59,13 +62,22 @@ export function validateManifest(manifest, packageJson, opts = {}) {
     fail("runtime.outputs 必须声明 doki.game.result/1");
   }
   if (!Array.isArray(rt?.extensions)) fail("runtime.extensions 必须是数组（只声明真用到的）");
-  // 规范 §5/§7：声明的 extension 必须与业务代码真实创建的 SDK extension 一致。
-  // 本 App 真实创建的是 apps + character + storage 三个 Client extension（main.ts），一个不多一个不少；
-  // （`apps`=「换个游戏玩」推荐位·REQ-DOKI-APPS·owner 2026-08-16 判 game108 当第一个消费者：
-  //  **先有真消费才加声明**——手册红线「只声明真用到的」，多声明会被宿主拒。）
-  // 与 createAppClient({extensions}) 的一致性由 tests/manifest.test.mjs 对源码锚点核。
+  // ── 闸①：名字必须是 SDK **认得**的扩展 ──────────────────────────────────────
+  // SDK 3.0 起把已知扩展注册表导出成 `@dokiworld/app-sdk/runtime-extensions`（16 个名字）。
+  // 样例仓 README：「Catalog 只拒绝**未知**扩展」——即拼错一个名字的表症**不是启动时超时，
+  // 而是整个 App 进不了 catalog**。这条以前是靠人眼比对手册文字，现在对机读常量核。
+  for (const name of rt.extensions) {
+    if (!RUNTIME_EXTENSIONS.includes(name)) {
+      fail(`runtime.extensions 里的 "${name}" 不在 SDK 已知扩展注册表内（catalog 会拒收整个 App）·合法值：${RUNTIME_EXTENSIONS.join(", ")}`);
+    }
+  }
+  // ── 闸②：与 main.ts 的 EXTENSIONS 逐字一致（规范 §7 第 1↔2 步）────────────────
   // **名单从 main.ts 现推**（那张 `EXTENSIONS` 常量是 §7 第 2 步的唯一真相）——
   // 在这里再抄一份字面量，就是"改了接线忘了改生成器"的第二处真相（2026-08-17 加到八个时实测踩到）。
+  //
+  // ⚠ 这两道闸都**管不到**「宿主到底给不给」：能不能拿到某扩展由 Host capability profile 决定
+  //（Chat Game Host / World Page Host / World Nested App Host 各给一套·表见 main.ts 文件头），
+  //   声明合法 ≠ 拿得到。那一层没有静态判据，只有目击（host-witness 按 profile 挂扩展）。
   const wired = Array.isArray(opts.extensions) ? [...opts.extensions].sort() : null;
   if (wired && JSON.stringify([...rt.extensions].sort()) !== JSON.stringify(wired)) {
     fail(`runtime.extensions 必须与 main.ts 的 EXTENSIONS 一致（应为 ${JSON.stringify(wired)}），实为 ${JSON.stringify(rt.extensions)}`);

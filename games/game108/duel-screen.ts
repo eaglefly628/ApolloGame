@@ -19,7 +19,7 @@ import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 
 import {
   HANDS, HAND_CN, CHARGE_CAP, HP_MAX, DMG_BASE, DMG_STEP, ACT, SIDES,
-  HP_RES, SMOKE_USES, UI_ACT, PHASE_TICKS, TPS, PENALTY_HP, SDK_MODULES, type Hand, type Side,
+  HP_RES, SMOKE_USES, UI_ACT, PHASE_TICKS, TPS, PENALTY_HP, SDK_MODULES, SDK_HOST_PROFILE, type Hand, type Side,
 } from './theme.js';
 import { C, S, F, L, R, B, SH, CANVAS, dmgFontSize } from './design-tokens.js';
 import { plate, ring, hpBar, scene, loadBar } from './plate-art.js';
@@ -63,7 +63,12 @@ export interface AppPick { id: string; name: string; cover?: string }
  */
 export interface SdkRow {
   key: string; name: string; declared: boolean; available: boolean;
-  state: 'idle' | 'busy' | 'ok' | 'down'; detail: string;
+  /**
+   * `off` = **这台宿主 profile 里没有这项**（如 Game 里的 apps/episode）。
+   * 单列一档是有必要的：它既不是 `ok`（金点=宿主答了），也不是 `down`（红点=该有却坏了）——
+   * 混进任一档都会把人引错方向（金点配"拿不到"自相矛盾；红点会让人去查宿主故障）。灰点=不适用。
+   */
+  state: 'idle' | 'busy' | 'ok' | 'down' | 'off'; detail: string;
 }
 
 export interface DuelView {
@@ -1502,7 +1507,15 @@ function sdkPanel(view: DuelView): LayoutNode[] {
         props: { src: plate({ w: 18, h: 18, fill: dot(r), radius: 9 }), alt: '', fit: 'fill' },
         layout: { width: 18, height: 18 },
       },
-      { type: 'Label', id: `sdk-n-${r.key}`, props: { text: r.name, size: 24, font: F.cjk, bold: true, color: 'ink' }, layout: { width: 150 } },
+      { type: 'Label', id: `sdk-n-${r.key}`, props: { text: r.name, size: 24, font: F.cjk, bold: true, color: 'ink' }, layout: { width: 140 } },
+      // **哪台 Host 给这个能力** —— 演示台上最容易误读的一格：一行发暗，到底是"我们没接线"
+      // 还是"这台宿主根本不提供"？这一格把后者点名（apps/episode 是 World Page Host 专属，
+      // Game 无论怎么声明都拿不到）。没这一格，2026-08-17 那五个超时会被反复重新发明一遍。
+      {
+        type: 'Label', id: `sdk-h-${r.key}`,
+        props: { text: SDK_HOST_PROFILE[r.key as keyof typeof SDK_HOST_PROFILE] ?? '?', size: enSize(lang, 17), font: F.cjk, color: 'dim' },
+        layout: { width: 160 },
+      },
       { type: 'Label', id: `sdk-d-${r.key}`, props: { text: r.detail, size: enSize(lang, 20), font: F.cjk, color: r.state === 'down' ? 'warn' : 'dim' }, layout: { flex: 1 } },
       {
         type: 'Panel', id: `key-sdk-${r.key}`,

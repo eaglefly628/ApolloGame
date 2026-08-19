@@ -62,26 +62,34 @@ interface Game108Input {
   stakes?: string;
 }
 
-// manifest.runtime.extensions = ['apps','character','storage']——**声明与真实调用一致**（规范 §5/§7：
-// 三个模块这里各建一个 Client extension，别的模块一个不建）。§7 第 5 步的释放走 onExitDecision。
-// `apps` 是 2026-08-16 owner 判「game108 当第一个消费者」后才加的：**先有真消费，再有声明**
-//（手册红线「只声明真用到的」——多声明会被宿主拒）。
 /**
- * **声明的九个模块 = 唯一那张表**（owner 2026-08-17：「把所有 SDK 的功能全部埋点在游戏中」）。
+ * **声明的扩展 = 唯一那张表**（规范 §7 五步一致的第 2 步：manifest.runtime.extensions ⇔
+ * 这里 ⇔ 真建的 Client extension ⇔ 宿主 host extension ⇔ 退出时 dispose()）。
+ * 下面每个网关的 `declared` 都从它现推（`EXTENSIONS.includes(...)`）——写死 `declared:true`
+ * 就是给自己留一个"改了 extensions 忘了改这里"的口子，而那种错的表症是**静默等到超时**。
  *
- * 规范 §7 要五步一致：manifest.runtime.extensions ⇔ createAppClient({extensions}) ⇔ 真建的
- * Client extension ⇔ 宿主 host extension ⇔ 退出时 dispose()。**这张常量就是第 2 步**，
- * 并且下面每个网关的 `declared` 都从它现推（`EXTENSIONS.includes(...)`）——
- * 写死 `declared:true` 就是给自己留一个"改了 extensions 忘了改这里"的口子，
- * 而那种错的表症是**静默等到超时**（capability.js：宿主不回时客户端只有 setTimeout 一条出路）。
+ * ══ 2026-08-18 按 SDK 3.0 + 样例仓 `tower-confessions` 重排 ══
+ * 上一版声明了九个（含 `apps` / `episode`），真宿主里五个超时。样例仓这次补了两件东西，
+ * 把原因说死了：
  *
- * ⚠ 九个都声明，**前提是九个都有真实调用点**——不是假声明凑数（手册红线「只声明真用到的」，
- * match3 多声明是反例）。逐个的落点：
- *   character/storage/apps/game-result = 产品级消费（对手卡 / 挂起恢复 / 推荐位 / 战果上报）
- *   speech/persona/dialogue/media/episode = **SDK 演示台**里逐行真调（owner 明许「加各种 sample」），
- *   外加 episode 在终局真发一条 `episode.gameCompleted`（战果的第二条出口：交给剧情路由下一拍）。
+ * ① README 给出了 **Host capability profile 表**——能不能拿到某个扩展，
+ *    **不由 App 的 `kind` 决定，而由「这个 App 被哪台 Host 拉起」决定**：
+ *      · Chat Game Host       = character checkpoint dialogue footprint media memory
+ *                               persona progress resize resume speech storage
+ *      · World Page Host      = apps character chat checkpoint dialogue episode footprint
+ *                               media memory persona speech storage world
+ *      · World Nested App Host= checkpoint progress resize
+ *    `apps` 与 `episode` **只在 World Page Host 里有**——Game 无论声明与否都拿不到。
+ *    这正是那五个超时的解释，也解释了为什么当时只有 `apps`（发出去没人回=空表，形同成功）
+ *    和 `episode`（单向 send，本来就没有回信可等）"看起来没事"。
+ * ② 新样例 `tower-confessions` = **第一个 `kind:game` 且真用 capability 的参考实现**，
+ *    它声明的正是 Chat Game Host profile 里它用得上的那 8 个。我们照它排。
+ *
+ * ⚠ 一个 Game 可能被**两台**不同 Host 拉起（Chat Game Host / World Nested App Host），
+ *   两者交集只有 checkpoint/progress/resize。故除这三个之外的一切**必须能降级**——
+ *   这不是防御性编程，是协议的常态。降级由 `capability-gateway` 统一兜。
  */
-const EXTENSIONS = ['apps', 'character', 'storage', 'speech', 'persona', 'dialogue', 'media', 'episode', 'resize'] as const;
+const EXTENSIONS = ['character', 'dialogue', 'media', 'persona', 'progress', 'resize', 'speech', 'storage'] as const;
 // ⚠ `game-result` **不在 extensions 里**：它不是 capability 扩展，是 App 的 output 契约
 //（manifest.runtime.outputs + app.complete）。演示台把它单列一行是给人看的，不是给协议看的。
 const app = createAppClient<Game108Input>({ appId: APP_ID, extensions: [...EXTENSIONS] });
@@ -217,6 +225,16 @@ function sdkSet(key: string, patch: Partial<Row>): void {
  * 九行各自「试一下」按下去干什么 —— **每一条都是真调用**，返回一句人能读的结果。
  * 抛不出来（网关全都降级不抛），所以这里不需要 try/catch：失败会经 `onWarn` 写成 down。
  */
+/**
+ * `apps` / `episode` 这一类**只有 World Page Host 提供**的能力，在 Game 里按不动时该说什么。
+ *
+ * ⚠ 这句话是这块面板存在的理由之一：默认那句「manifest 未声明」会把人往错的方向带
+ *（"哦那加上声明就好了"——2026-08-17 就是这么加成九个、然后五个超时的）。
+ *   真相是**加了也拿不到**：Host profile 里没有就是没有，声明只决定 catalog 收不收。
+ */
+const WORLD_ONLY = (name: string): string =>
+  `${name} 只在 World Page Host 有 · Game 拿不到（声明也没用）`;
+
 const PROBES: Record<string, () => Promise<string>> = {
   // ── 产品级消费点（演示台只是再叫一次，看宿主答不答）──────────────────────
   character: async () => {
@@ -235,7 +253,16 @@ const PROBES: Record<string, () => Promise<string>> = {
     await traced('storage', 'clearCheckpoint', undefined, () => probeStorage.clearCheckpoint());
     return ok ? '存 → 读 → 清 三步都通了' : '存进去了但读回来对不上（宿主 storage 实现有问题？）';
   },
+  progress: async () => {
+    // 与 resize 同类的**普通会话消息**：发出去就完了，没有回信可等。故"成功"的判据只能是
+    // 「`app.send` 没抛」——`send` 对未声明的类型会当场抛（SDK 本地闸），那正是要演示的那条。
+    if (!declared('progress')) return '未声明 progress，app.send 会当场抛（本地闸拦在发之前）';
+    const score = latest ? Math.max(0, Math.min(100, 100 - Math.min(latest.metrics.playerHp, latest.metrics.opponentHp))) : 0;
+    app.send('dokiworld-app-progress', { score, maxScore: 100 });
+    return `已发 progress → ${score}/100（单向·宿主不回信）`;
+  },
   apps: async () => {
+    if (!declared('apps')) return WORLD_ONLY('apps');
     const list = await apps.list();
     return list.length ? `宿主能拉起 ${list.length} 个 App：${list.map((a) => a.name).join('、')}` : '宿主没给出可拉起的 App';
   },
@@ -276,6 +303,7 @@ const PROBES: Record<string, () => Promise<string>> = {
     return `作业 ${job.id} 还是 ${job.status}${job.error ? `（${job.error}）` : ''}`;
   },
   episode: async () => {
+    if (!declared('episode')) return WORLD_ONLY('episode');
     // 单向事件流：发一条**演习用**的 gameCompleted，并当场演示 routes 会把它路由到哪个 beat。
     const p = latest ?? { normalizedScore: 50, outcome: 'exited' as const, metrics: { round: 1, playerHp: 100, opponentHp: 100 } };
     const output = { contract: 'doki.game.result', version: 1, data: { normalizedScore: p.normalizedScore, outcome: p.outcome, metrics: p.metrics } };
@@ -395,24 +423,38 @@ async function refreshTauntLine(situation: string): Promise<void> {
 }
 
 /** 开局把九行推给游戏（声明了没有 / 通道建起来没有 —— 还没试过一律 idle）。 */
+/** 只有 World Page Host 才有的能力（Game 端一律拿不到·文案要与"我们没接"分开）。 */
+const WORLD_ONLY_KEYS = ['apps', 'episode', 'chat', 'world'];
+
 function initSdkRows(): void {
   const meta: ReadonlyArray<[string, boolean]> = [
     ['character', character !== undefined], ['storage', storage !== undefined], ['apps', apps.available],
     ['speech', speech.available], ['persona', persona.available], ['dialogue', dialogue.available],
-    ['media', media.available], ['episode', episode.available], ['game-result', true],
+    ['media', media.available], ['progress', declared('progress')],
+    ['episode', episode.available], ['game-result', true],
   ];
   for (const [key, available] of meta) {
     const dec = key === 'game-result' ? true : declared(key);
     rows.set(key, {
       key, name: key, declared: dec, available,
-      state: 'idle',
-      detail: dec ? '已声明 · 待试' : 'manifest 未声明',
+      state: (WORLD_ONLY_KEYS.includes(key) && !dec) ? 'off' : 'idle',
+      // 未声明分两种，**说法必须不同**：World 专属能力是"加了也没用"，
+      // 其余才是真的"我们没接"。混成一句话会把人引去做无用功（实测教训见 WORLD_ONLY）。
+      detail: dec ? '已声明 · 待试' : (WORLD_ONLY_KEYS.includes(key) ? '本宿主不提供 · World Page Host 专属' : 'manifest 未声明'),
     });
   }
   setSdkRows([...rows.values()]);
   onSdkTry((key) => {
     const probe = PROBES[key];
     if (!probe) return;
+    // World 专属的那两行：**按下去也不发消息、也不假装在等**。
+    // 上一版让它们照常走 probe，于是屏上先"正在问宿主…"再变**金点**——金点=宿主答了，
+    // 而真相是这台宿主根本没有这项。演示台谎报比不报更糟（真渲染目击当场看出来的）。
+    if (WORLD_ONLY_KEYS.includes(key) && !declared(key)) {
+      sdkSet(key, { state: 'off', detail: WORLD_ONLY(key) });
+      pushScreenLog(`${key} · 本宿主 profile 无此能力，未发送`);
+      return;
+    }
     sdkSet(key, { state: 'busy', detail: '正在问宿主…' });
     const t0 = Date.now();
     // **每一行都报耗时**：真宿主里"没实现"与"慢"长得一模一样（都是等到超时），
@@ -442,6 +484,31 @@ function initSdkRows(): void {
 }
 
 type Projection = ReturnType<typeof toGameResult>;
+
+/**
+ * 【progress】把「离终局还有多远」报给宿主（`dokiworld-app-progress`）。
+ *
+ * 与 `resize` 同类：**普通会话消息**，不是 capability——`app.send` 出去就完了，没有回信、
+ * 没有超时、也无从降级。故它不走 `traced`（那层是给"叫得通/叫不通"用的），只落一行屏上日志，
+ * 让演示台看得见"我们确实发了"。
+ *
+ * ⚠ `app.send` 会对**未声明**的类型直接抛（SDK `isDeclaredExtensionMessage` 本地闸），
+ *   所以这里按 `declared('progress')` 短路——否则从 EXTENSIONS 里摘掉 progress 的那天，
+ *   游戏会在每个回合边界抛一次异常，而那是玩家看得见的崩。
+ */
+let lastProgress = -1;
+function reportProgress(p: Projection): void {
+  if (!declared('progress')) return;
+  const score = Math.max(0, Math.min(100, 100 - Math.min(p.metrics.playerHp, p.metrics.opponentHp)));
+  if (score === lastProgress) return;                 // 同值不重发（宿主侧没必要收一串一样的）
+  lastProgress = score;
+  try {
+    app.send('dokiworld-app-progress', { score, maxScore: 100 });
+    pushScreenLog(`progress.send ✓ ${score}/100`);
+  } catch (e) {
+    pushScreenLog(`progress.send ✗ ${String(e).slice(0, 40)}`);
+  }
+}
 type ObservedWorld = Parameters<NonNullable<Parameters<typeof setWorldObserver>[0]>>[0];
 let latest: Projection | undefined;   // 最近一帧的机读投影（onPrepareExit 报「当时分」用）
 let lastWorld: ObservedWorld | undefined; // 最近一帧的世界只读引用（挂起时 snapshot 用·纯投影）
@@ -542,6 +609,11 @@ app.connect({
       // 输入是刚打完那一回合的实况：她赢了还是你赢了、你还剩多少血。
       // 生成期整个落在 T4 结算 + T1 蓄力（4.5 秒）里，玩家等的是"看结果"，不是等我们。
       if (prev && latest.metrics.round > prev.metrics.round && !latest.terminal) {
+        // 【progress】回合一跳就给宿主报一次进度（`tower-confessions` 同款：一条普通会话消息，
+        // 没有 capability 模块、没有回信、也没有超时——所以它**不进 traced**，只落一行屏上日志）。
+        // 语义选「离终局还有多远」而不是「打了几回合」：本局在任一方掉到 0 血时结束，
+        // 故 `100 - min(双方血量)` 一到 100 就是终局，宿主侧的进度条不会出现"永远差一点"。
+        reportProgress(latest);
         const lost = latest.metrics.playerHp < prev.metrics.playerHp;
         void refreshTauntLine(
           `第 ${prev.metrics.round} 回合刚打完：${lost ? '我打中了他' : '他躲过去了'}，` +
