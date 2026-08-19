@@ -4,30 +4,27 @@
   {
    "id": "chip/1-white",
    "type": "texture",
-   "description": "poker chip 1 (white)",
+   "description": "with tiger head casino poker chip denomination 1 · 皮肤槽(chip/1-white)",
    "status": "filled",
-   "path": "/games/game-c/art/chips/1-white.svg",
-   "spec": {
-    "format": "svg",
-    "usage": "sprite"
-   },
-   "category": "chip",
+   "path": "/games/game-c/art/gen/art-006.png",
+   "category": "ai-gen",
    "tags": [
-    "poker-chip",
-    "chip",
-    "casino",
-    "white",
-    "1"
+    "gen",
+    "modern-manor",
+    "texture",
+    "skin"
    ],
-   "style": "flat",
-   "license": "CC0 (自产)",
-   "source": "apollo-procedural",
+   "license": "ByteDance Seedream/火山方舟 (按订阅商用授权)",
+   "source": "gen:seedream",
    "provenance": {
-    "generator": "gen-chips",
-    "denom": 1,
-    "color": "white",
-    "date": "2026-07-17",
-    "vendoredFrom": "chip/1-white"
+    "generator": "seedream",
+    "prompt": "筹码 1·白（现货·可换夜金定制）, 贴图, 现代奢华豪宅夜间室内：暖调灯光，木质牌桌，当代雅致陈设，温馨私密氛围，构图干净，游戏素材，无文字，无水印",
+    "model": "doubao-seedream-5-0-pro-260628",
+    "mock": false,
+    "generatedAt": "2026-07-25T07:48:24.148Z",
+    "pack": "modern-manor",
+    "style": "现代豪宅夜局（game-a 场景锚）",
+    "vendoredFrom": null
    }
   },
   {
@@ -1005,6 +1002,31 @@
     "model": "user-upload",
     "mock": false,
     "generatedAt": ""
+   }
+  },
+  {
+   "id": "gen/art-006",
+   "type": "texture",
+   "description": "with tiger head casino poker chip denomination 1 · 生成(modern-manor)",
+   "status": "filled",
+   "path": "/games/game-c/art/gen/art-006.png",
+   "category": "ai-gen",
+   "tags": [
+    "gen",
+    "modern-manor",
+    "texture"
+   ],
+   "license": "ByteDance Seedream/火山方舟 (按订阅商用授权)",
+   "source": "gen:seedream",
+   "provenance": {
+    "generator": "seedream",
+    "prompt": "筹码 1·白（现货·可换夜金定制）, 贴图, 现代奢华豪宅夜间室内：暖调灯光，木质牌桌，当代雅致陈设，温馨私密氛围，构图干净，游戏素材，无文字，无水印",
+    "model": "doubao-seedream-5-0-pro-260628",
+    "mock": false,
+    "generatedAt": "2026-07-25T07:48:24.148Z",
+    "pack": "modern-manor",
+    "style": "现代豪宅夜局（game-a 场景锚）",
+    "vendoredFrom": null
    }
   }
  ]

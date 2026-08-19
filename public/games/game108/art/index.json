@@ -1,46 +1,6 @@
 {
  "assets": [
   {
-   "key": "game108/hand-icon-rock",
-   "path": "/games/game108/art/icon_rock.png",
-   "kind": "texture",
-   "spec": {
-    "usage": "ui",
-    "colorSpace": "srgb"
-   },
-   "license": "owner-provided",
-   "source": "design_handoff_rule_of_three_battle",
-   "provenance": {
-    "generator": "owner-reference-art",
-    "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_rock.png",
-    "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
-    "date": "2026-08-07"
-   },
-   "tags": [
-    "skin"
-   ]
-  },
-  {
-   "key": "game108/hand-icon-paper",
-   "path": "/games/game108/art/icon_paper.png",
-   "kind": "texture",
-   "spec": {
-    "usage": "ui",
-    "colorSpace": "srgb"
-   },
-   "license": "owner-provided",
-   "source": "design_handoff_rule_of_three_battle",
-   "provenance": {
-    "generator": "owner-reference-art",
-    "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_paper.png",
-    "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
-    "date": "2026-08-07"
-   },
-   "tags": [
-    "skin"
-   ]
-  },
-  {
    "key": "game108/hand-icon-scissors",
    "path": "/games/game108/art/icon_scissors.png",
    "kind": "texture",
@@ -59,6 +19,57 @@
    "tags": [
     "skin"
    ]
+  },
+  {
+   "id": "gen/art-15",
+   "type": "texture",
+   "description": "scene/stage · 生成(neon-synthwave)",
+   "status": "filled",
+   "path": "/games/game108/art/gen/art-15.png",
+   "category": "ai-gen",
+   "tags": [
+    "gen",
+    "neon-synthwave",
+    "background"
+   ],
+   "license": "ByteDance Seedream/火山方舟 (按订阅商用授权)",
+   "source": "gen:seedream",
+   "provenance": {
+    "generator": "seedream",
+    "prompt": "scene/stage, dim underground fist-dueling hall, warm lantern pools, deep shadow, out-of-focus crowd silhouettes, painterly cartoon, no text, 图, 霓虹合成波风格，赛博朋克，深紫黑底＋品红青光晕，扫描线，80 年代复古未来，高对比霓虹描边, rule-of-three cartoon duel style, thick ink outline, flat cel shading, warm cream paper ground, saturated candy palette: gold #f0b429, crimson #d9534f, jade #4f9d69, chunky rounded forms, hand-drawn feel, no gradients on outlines, matches the shipped hand icons in design_handoff_rule_of_three_battle",
+    "model": "doubao-seedream-5-0-pro-260628",
+    "mock": false,
+    "generatedAt": "2026-08-10T08:27:22.186Z",
+    "pack": "neon-synthwave",
+    "style": "霓虹合成波",
+    "vendoredFrom": null
+   }
+  },
+  {
+   "id": "game108/scene/stage",
+   "type": "texture",
+   "description": "scene/stage · 皮肤槽(game108/scene/stage)",
+   "status": "filled",
+   "path": "/games/game108/art/gen/art-15.png",
+   "category": "ai-gen",
+   "tags": [
+    "gen",
+    "neon-synthwave",
+    "background",
+    "skin"
+   ],
+   "license": "ByteDance Seedream/火山方舟 (按订阅商用授权)",
+   "source": "gen:seedream",
+   "provenance": {
+    "generator": "seedream",
+    "prompt": "scene/stage, dim underground fist-dueling hall, warm lantern pools, deep shadow, out-of-focus crowd silhouettes, painterly cartoon, no text, 图, 霓虹合成波风格，赛博朋克，深紫黑底＋品红青光晕，扫描线，80 年代复古未来，高对比霓虹描边, rule-of-three cartoon duel style, thick ink outline, flat cel shading, warm cream paper ground, saturated candy palette: gold #f0b429, crimson #d9534f, jade #4f9d69, chunky rounded forms, hand-drawn feel, no gradients on outlines, matches the shipped hand icons in design_handoff_rule_of_three_battle",
+    "model": "doubao-seedream-5-0-pro-260628",
+    "mock": false,
+    "generatedAt": "2026-08-10T08:27:22.186Z",
+    "pack": "neon-synthwave",
+    "style": "霓虹合成波",
+    "vendoredFrom": null
+   }
   }
  ]
 }

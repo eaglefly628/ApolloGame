@@ -1,0 +1,1042 @@
+{
+  "version": 1,
+  "game": "game001",
+  "rows": [
+    {
+      "no": "art-01",
+      "kind": "sprite",
+      "slot": {
+        "entity": "enemy-1",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "slots": [
+        {
+          "entity": "enemy-1",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "enemy-2",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "enemy-3",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "enemy-4",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "enemy-5",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "enemy-6",
+          "component": "Sprite",
+          "field": "textureKey"
+        }
+      ],
+      "query": "green slime enemy, bouncing, pixel side view",
+      "placeholder": {
+        "ref": "art:green slime enemy, bouncing, pixel side view",
+        "source": "freelib"
+      },
+      "spec": {
+        "w": 20,
+        "h": 20,
+        "displayW": 20,
+        "displayH": 20,
+        "transparent": true
+      },
+      "desc": "green slime enemy, bouncing, pixel side view, rectangular shape, main color #33ff33, small on screen (20x20), top-down 2d game view, isolated subject, transparent background",
+      "context": "用途=sprite·实体「enemy-1」·查询「green slime enemy, bouncing, pixel side view」·2D 平面·画面占比小·需透明底·共 6 处槽位共用",
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-02",
+      "kind": "sprite",
+      "slot": {
+        "entity": "f0",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "slots": [
+        {
+          "entity": "f0",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f10",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f20",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f30",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f40",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f50",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f60",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f70",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f80",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f90",
+          "component": "Sprite",
+          "field": "textureKey"
+        }
+      ],
+      "query": "stone brick platform wide, mossy, pixel top-down",
+      "placeholder": {
+        "ref": "art:stone brick platform wide, mossy, pixel top-down",
+        "source": "freelib"
+      },
+      "spec": {
+        "w": 140,
+        "h": 12,
+        "displayW": 140,
+        "displayH": 12,
+        "transparent": true
+      },
+      "desc": "stone brick platform wide, mossy, pixel top-down, rectangular shape, main color #8b4513, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "context": "用途=sprite·实体「f0」·查询「stone brick platform wide, mossy, pixel top-down」·2D 平面·画面占比小·需透明底·共 10 处槽位共用",
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-03",
+      "kind": "sprite",
+      "slot": {
+        "entity": "f100",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "slots": [
+        {
+          "entity": "f100",
+          "component": "Sprite",
+          "field": "textureKey"
+        }
+      ],
+      "query": "golden victory platform, glowing edges, pixel fantasy",
+      "placeholder": {
+        "ref": "art:golden victory platform, glowing edges, pixel fantasy",
+        "source": "freelib"
+      },
+      "spec": {
+        "w": 200,
+        "h": 16,
+        "displayW": 200,
+        "displayH": 16,
+        "transparent": true
+      },
+      "desc": "golden victory platform, glowing edges, pixel fantasy, rectangular shape, main color #ffd700, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "context": "用途=sprite·实体「f100」·查询「golden victory platform, glowing edges, pixel fantasy」·2D 平面·画面占比小·需透明底",
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-04",
+      "kind": "sprite",
+      "slot": {
+        "entity": "f11a",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "slots": [
+        {
+          "entity": "f11a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f12a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f12b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f13",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f14a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f16a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f16b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f17a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f18",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f19a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f19b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f1a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f1b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f21a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f21b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f22a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f23",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f24a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f24b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f26a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f26b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f27a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f28",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f29a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f29b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f2a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f2b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f31a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f31b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f32a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f33",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f34a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f34b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f36a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f36b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f37a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f38",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f39a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f39b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f3",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f41a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f41b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f42a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f43",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f44a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f44b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f46a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f46b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f47a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f48",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f49a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f49b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f4a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f51a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f51b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f52a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f53",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f54a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f54b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f56a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f56b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f57a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f58",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f59a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f59b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f61a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f61b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f62a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f62b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f63",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f64a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f64b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f66a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f66b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f67a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f68",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f69a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f69b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f6a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f6b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f71a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f71b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f72a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f72b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f73",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f74a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f74b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f76a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f76b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f77a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f78",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f79a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f79b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f7a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f7b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f81a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f81b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f82a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f82b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f83",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f84a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f84b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f86a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f86b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f87a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f88",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f89a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f89b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f8",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f91a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f91b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f92a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f93",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f94a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f94b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f96a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f96b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f97a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f98",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f99a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f99b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f9a",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f9b",
+          "component": "Sprite",
+          "field": "textureKey"
+        }
+      ],
+      "query": "stone brick platform, mossy edge, pixel top-down",
+      "placeholder": {
+        "ref": "art:stone brick platform, mossy edge, pixel top-down",
+        "source": "freelib"
+      },
+      "spec": {
+        "w": 80,
+        "h": 12,
+        "displayW": 80,
+        "displayH": 12,
+        "transparent": true
+      },
+      "desc": "stone brick platform, mossy edge, pixel top-down, rectangular shape, main color #8b4513, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "context": "用途=sprite·实体「f11a」·查询「stone brick platform, mossy edge, pixel top-down」·2D 平面·画面占比小·需透明底·共 123 处槽位共用",
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-05",
+      "kind": "sprite",
+      "slot": {
+        "entity": "f11b",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "slots": [
+        {
+          "entity": "f11b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f14b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f17b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f22b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f27b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f32b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f37b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f42b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f47b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f4b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f52b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f57b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f67b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f77b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f87b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f92b",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f97b",
+          "component": "Sprite",
+          "field": "textureKey"
+        }
+      ],
+      "query": "spike platform, red thorns, pixel dangerous",
+      "placeholder": {
+        "ref": "art:spike platform, red thorns, pixel dangerous",
+        "source": "freelib"
+      },
+      "spec": {
+        "w": 70,
+        "h": 12,
+        "displayW": 70,
+        "displayH": 12,
+        "transparent": true
+      },
+      "desc": "spike platform, red thorns, pixel dangerous, rectangular shape, main color #cc3333, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "context": "用途=sprite·实体「f11b」·查询「spike platform, red thorns, pixel dangerous」·2D 平面·画面占比小·需透明底·共 17 处槽位共用",
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-06",
+      "kind": "sprite",
+      "slot": {
+        "entity": "f15",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "slots": [
+        {
+          "entity": "f15",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f25",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f35",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f45",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f55",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f5",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f65",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f75",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f85",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "f95",
+          "component": "Sprite",
+          "field": "textureKey"
+        }
+      ],
+      "query": "wooden moving platform, blue glow edges, pixel",
+      "placeholder": {
+        "ref": "art:wooden moving platform, blue glow edges, pixel",
+        "source": "freelib"
+      },
+      "spec": {
+        "w": 85,
+        "h": 12,
+        "displayW": 85,
+        "displayH": 12,
+        "transparent": true
+      },
+      "desc": "wooden moving platform, blue glow edges, pixel, rectangular shape, main color #4488ff, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "context": "用途=sprite·实体「f15」·查询「wooden moving platform, blue glow edges, pixel」·2D 平面·画面占比小·需透明底·共 10 处槽位共用",
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-07",
+      "kind": "sprite",
+      "slot": {
+        "entity": "player",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "slots": [
+        {
+          "entity": "player",
+          "component": "Sprite",
+          "field": "textureKey"
+        }
+      ],
+      "query": "pixel hero adventurer, small character, side view, blue armor",
+      "placeholder": {
+        "ref": "art:pixel hero adventurer, small character, side view, blue armor",
+        "source": "freelib"
+      },
+      "spec": {
+        "w": 24,
+        "h": 32,
+        "displayW": 24,
+        "displayH": 32,
+        "transparent": true
+      },
+      "desc": "pixel hero adventurer, small character, side view, blue armor, rectangular shape, main color #ffffff, small on screen (24x32), top-down 2d game view, isolated subject, transparent background",
+      "context": "用途=sprite·实体「player」·查询「pixel hero adventurer, small character, side view, blue armor」·2D 平面·画面占比小·需透明底",
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null
+    }
+  ]
+}

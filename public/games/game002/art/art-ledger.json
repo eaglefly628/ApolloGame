@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "game": "game002",
+  "rows": [
+    {
+      "no": "art-01",
+      "kind": "sprite",
+      "slot": {
+        "entity": "boss",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "slots": [
+        {
+          "entity": "boss",
+          "component": "Sprite",
+          "field": "textureKey"
+        }
+      ],
+      "query": "giant ultraman boss robot red silver glowing eyes, front view",
+      "placeholder": {
+        "ref": "art:giant ultraman boss robot red silver glowing eyes, front view",
+        "source": "freelib"
+      },
+      "spec": {
+        "w": 0,
+        "h": 0,
+        "displayW": 0,
+        "displayH": 0,
+        "transparent": true
+      },
+      "desc": "giant ultraman boss robot red silver glowing eyes, front view, round shape, small on screen (0x0), top-down 2d game view, isolated subject, transparent background",
+      "context": "用途=sprite·实体「boss」·查询「giant ultraman boss robot red silver glowing eyes, front view」·2D 平面·画面占比小·需透明底",
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-02",
+      "kind": "sprite",
+      "slot": {
+        "entity": "enemy-1",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "slots": [
+        {
+          "entity": "enemy-1",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "enemy-2",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "enemy-3",
+          "component": "Sprite",
+          "field": "textureKey"
+        }
+      ],
+      "query": "small ultraman alien warrior silver red helmet, top-down",
+      "placeholder": {
+        "ref": "art:small ultraman alien warrior silver red helmet, top-down",
+        "source": "freelib"
+      },
+      "spec": {
+        "w": 0,
+        "h": 0,
+        "displayW": 0,
+        "displayH": 0,
+        "transparent": true
+      },
+      "desc": "small ultraman alien warrior silver red helmet, top-down, round shape, small on screen (0x0), top-down 2d game view, isolated subject, transparent background",
+      "context": "用途=sprite·实体「enemy-1」·查询「small ultraman alien warrior silver red helmet, top-down」·2D 平面·画面占比小·需透明底·共 3 处槽位共用",
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-03",
+      "kind": "sprite",
+      "slot": {
+        "entity": "player",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "slots": [
+        {
+          "entity": "player",
+          "component": "Sprite",
+          "field": "textureKey"
+        }
+      ],
+      "query": "fighter jet spacecraft silver blue engines, top-down view",
+      "placeholder": {
+        "ref": "art:fighter jet spacecraft silver blue engines, top-down view",
+        "source": "freelib"
+      },
+      "spec": {
+        "w": 0,
+        "h": 0,
+        "displayW": 0,
+        "displayH": 0,
+        "transparent": true
+      },
+      "desc": "fighter jet spacecraft silver blue engines, top-down view, round shape, small on screen (0x0), top-down 2d game view, isolated subject, transparent background",
+      "context": "用途=sprite·实体「player」·查询「fighter jet spacecraft silver blue engines, top-down view」·2D 平面·画面占比小·需透明底",
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null
+    }
+  ]
+}

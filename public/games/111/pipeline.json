@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "slug": "111",
+  "concept": {
+    "name": "游戏111",
+    "pitch": "我想做一个约会的游戏，就是抽叠叠乐的游戏。把一些一个传统的桌面游戏吧，你抽一个我抽一个，当有一方抽到一个时候倒下了，你这个游戏他就输了。然后我会跟我的AI的伴侣去玩这个游戏，AI是需要一定的AI的那个伴侣有思考能力的。"
+  },
+  "signoffs": {
+    "S1": {
+      "by": "owner",
+      "note": "我看到它缺乏了很多隐形的缺口，那这块缺口谁来做呢？",
+      "at": "2026-08-17T14:29:52.870Z"
+    }
+  },
+  "evidence": {
+    "S2": {
+      "exit": 1,
+      "summary": "✗ 无能力计划也无免 plan 裁决（模板 docs/design/capability-plan-template.md·纯数据卡带走 concept --plan-waiver）",
+      "at": "2026-08-17T17:44:48.113Z",
+      "gameHash": "08ce274d7f8a9568"
+    }
+  },
+  "history": [
+    {
+      "action": "concept",
+      "at": "2026-08-16T07:32:23.405Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S1",
+      "at": "2026-08-17T14:29:52.870Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S2",
+      "exit": 1,
+      "at": "2026-08-17T14:47:25.681Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S2",
+      "exit": 1,
+      "at": "2026-08-17T17:44:48.113Z"
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "game": "game",
+  "rows": [
+    {
+      "no": "art-01",
+      "kind": "sprite",
+      "slot": {
+        "entity": "goal",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "slots": [
+        {
+          "entity": "goal",
+          "component": "Sprite",
+          "field": "textureKey"
+        }
+      ],
+      "query": "golden star",
+      "placeholder": {
+        "ref": "art:golden star",
+        "source": "freelib"
+      },
+      "spec": {
+        "w": 64,
+        "h": 64,
+        "displayW": 64,
+        "displayH": 64,
+        "transparent": true
+      },
+      "desc": "golden star, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "context": "用途=sprite·实体「goal」·查询「golden star」·2D 平面·画面占比小·需透明底",
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-02",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hazard_1",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "slots": [
+        {
+          "entity": "hazard_1",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "hazard_2",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "hazard_3",
+          "component": "Sprite",
+          "field": "textureKey"
+        },
+        {
+          "entity": "hazard_4",
+          "component": "Sprite",
+          "field": "textureKey"
+        }
+      ],
+      "query": "red spiky ball",
+      "placeholder": {
+        "ref": "art:red spiky ball",
+        "source": "freelib"
+      },
+      "spec": {
+        "w": 0,
+        "h": 0,
+        "displayW": 0,
+        "displayH": 0,
+        "transparent": true
+      },
+      "desc": "red spiky ball, round shape, small on screen (0x0), top-down 2d game view, isolated subject, transparent background",
+      "context": "用途=sprite·实体「hazard_1」·查询「red spiky ball」·2D 平面·画面占比小·需透明底·共 4 处槽位共用",
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-03",
+      "kind": "sprite",
+      "slot": {
+        "entity": "player",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "slots": [
+        {
+          "entity": "player",
+          "component": "Sprite",
+          "field": "textureKey"
+        }
+      ],
+      "query": "blue square hero",
+      "placeholder": {
+        "ref": "art:blue square hero",
+        "source": "freelib"
+      },
+      "spec": {
+        "w": 28,
+        "h": 28,
+        "displayW": 28,
+        "displayH": 28,
+        "transparent": true
+      },
+      "desc": "blue square hero, rectangular shape, home base structure to defend, small on screen (28x28), top-down 2d game view, isolated subject, transparent background",
+      "context": "用途=sprite·实体「player」·查询「blue square hero」·2D 平面·画面占比小·需透明底",
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null
+    }
+  ]
+}

@@ -4,106 +4,90 @@
     {
       "id": "cust_portrait_1",
       "type": "texture",
-      "description": "周航·卡通立绘占位（apollo-procedural）",
+      "description": "上传替换 art-49（皮肤槽 cust_portrait_1）",
       "status": "filled",
-      "path": "/games/game101/art/portraits/zhou.svg",
-      "spec": {
-        "usage": "sprite",
-        "colorSpace": "srgb",
-        "format": "svg",
-        "width": 256,
-        "height": 320,
-        "transparent": false
-      },
-      "category": "portrait",
+      "path": "/games/game101/art/gen/art-49-up.png",
+      "category": "ai-gen",
       "tags": [
-        "portrait",
-        "cartoon",
-        "cozy",
-        "placeholder",
-        "zhou"
+        "upload",
+        "art-49",
+        "skin"
       ],
-      "style": "cozy-cartoon",
-      "license": "apollo-procedural",
-      "source": "scripts/game101-portrait-gen.mjs"
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
     },
     {
       "id": "cust_portrait_2",
       "type": "texture",
-      "description": "老陈·卡通立绘占位（apollo-procedural）",
+      "description": "上传替换 art-50（皮肤槽 cust_portrait_2）",
       "status": "filled",
-      "path": "/games/game101/art/portraits/chen.svg",
-      "spec": {
-        "usage": "sprite",
-        "colorSpace": "srgb",
-        "format": "svg",
-        "width": 256,
-        "height": 320,
-        "transparent": false
-      },
-      "category": "portrait",
+      "path": "/games/game101/art/gen/art-50-up.png",
+      "category": "ai-gen",
       "tags": [
-        "portrait",
-        "cartoon",
-        "cozy",
-        "placeholder",
-        "chen"
+        "upload",
+        "art-50",
+        "skin"
       ],
-      "style": "cozy-cartoon",
-      "license": "apollo-procedural",
-      "source": "scripts/game101-portrait-gen.mjs"
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
     },
     {
       "id": "cust_portrait_3",
       "type": "texture",
-      "description": "苏晴·卡通立绘占位（apollo-procedural）",
+      "description": "上传替换 art-51（皮肤槽 cust_portrait_3）",
       "status": "filled",
-      "path": "/games/game101/art/portraits/su.svg",
-      "spec": {
-        "usage": "sprite",
-        "colorSpace": "srgb",
-        "format": "svg",
-        "width": 256,
-        "height": 320,
-        "transparent": false
-      },
-      "category": "portrait",
+      "path": "/games/game101/art/gen/art-51-up.png",
+      "category": "ai-gen",
       "tags": [
-        "portrait",
-        "cartoon",
-        "cozy",
-        "placeholder",
-        "su"
+        "upload",
+        "art-51",
+        "skin"
       ],
-      "style": "cozy-cartoon",
-      "license": "apollo-procedural",
-      "source": "scripts/game101-portrait-gen.mjs"
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
     },
     {
       "id": "cust_portrait_4",
       "type": "texture",
-      "description": "林夏·卡通立绘占位（apollo-procedural）",
+      "description": "上传替换 art-52（皮肤槽 cust_portrait_4）",
       "status": "filled",
-      "path": "/games/game101/art/portraits/linxia.svg",
-      "spec": {
-        "usage": "sprite",
-        "colorSpace": "srgb",
-        "format": "svg",
-        "width": 256,
-        "height": 320,
-        "transparent": false
-      },
-      "category": "portrait",
+      "path": "/games/game101/art/gen/art-52-up.png",
+      "category": "ai-gen",
       "tags": [
-        "portrait",
-        "cartoon",
-        "cozy",
-        "placeholder",
-        "linxia"
+        "upload",
+        "art-52",
+        "skin"
       ],
-      "style": "cozy-cartoon",
-      "license": "apollo-procedural",
-      "source": "scripts/game101-portrait-gen.mjs"
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
     },
     {
       "id": "cust_portrait_5",
@@ -156,6 +140,434 @@
       "style": "cozy-cartoon",
       "license": "apollo-procedural",
       "source": "scripts/game101-portrait-gen.mjs"
+    },
+    {
+      "id": "gen/art-28-up",
+      "type": "texture",
+      "description": "上传替换 art-28",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-28-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-28"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
+    },
+    {
+      "id": "gen_coffee",
+      "type": "texture",
+      "description": "上传替换 art-28（皮肤槽 gen_coffee）",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-28-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-28",
+        "skin"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
+    },
+    {
+      "id": "gen/art-29-up",
+      "type": "texture",
+      "description": "上传替换 art-29",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-29-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-29"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
+    },
+    {
+      "id": "gen_fishbox",
+      "type": "texture",
+      "description": "上传替换 art-29（皮肤槽 gen_fishbox）",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-29-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-29",
+        "skin"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
+    },
+    {
+      "id": "gen/art-30-up",
+      "type": "texture",
+      "description": "上传替换 art-30",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-30-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-30"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
+    },
+    {
+      "id": "gen_fridge",
+      "type": "texture",
+      "description": "上传替换 art-30（皮肤槽 gen_fridge）",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-30-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-30",
+        "skin"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
+    },
+    {
+      "id": "gen/art-31-up",
+      "type": "texture",
+      "description": "上传替换 art-31",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-31-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-31"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
+    },
+    {
+      "id": "gen_toolbox",
+      "type": "texture",
+      "description": "上传替换 art-31（皮肤槽 gen_toolbox）",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-31-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-31",
+        "skin"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
+    },
+    {
+      "id": "gen/art-49-up",
+      "type": "texture",
+      "description": "上传替换 art-49",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-49-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-49"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
+    },
+    {
+      "id": "gen/art-50-up",
+      "type": "texture",
+      "description": "上传替换 art-50",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-50-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-50"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
+    },
+    {
+      "id": "gen/art-51-up",
+      "type": "texture",
+      "description": "上传替换 art-51",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-51-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-51"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
+    },
+    {
+      "id": "gen/art-52-up",
+      "type": "texture",
+      "description": "上传替换 art-52",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-52-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-52"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
+    },
+    {
+      "id": "gen/art-58-up",
+      "type": "texture",
+      "description": "上传替换 art-58",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-58-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-58"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
+    },
+    {
+      "id": "hud_cart",
+      "type": "texture",
+      "description": "上传替换 art-58（皮肤槽 hud_cart）",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-58-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-58",
+        "skin"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
+    },
+    {
+      "id": "gen/art-59-up",
+      "type": "texture",
+      "description": "上传替换 art-59",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-59-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-59"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
+    },
+    {
+      "id": "hud_avatar",
+      "type": "texture",
+      "description": "上传替换 art-59（皮肤槽 hud_avatar）",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-59-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-59",
+        "skin"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
+    },
+    {
+      "id": "gen/art-57-up",
+      "type": "texture",
+      "description": "上传替换 art-57",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-57-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-57"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
+    },
+    {
+      "id": "hud_gems",
+      "type": "texture",
+      "description": "上传替换 art-57（皮肤槽 hud_gems）",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-57-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-57",
+        "skin"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
+    },
+    {
+      "id": "gen/art-12-up",
+      "type": "texture",
+      "description": "上传替换 art-12",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-12-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-12"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
+    },
+    {
+      "id": "item_food_1",
+      "type": "texture",
+      "description": "上传替换 art-12（皮肤槽 item_food_1）",
+      "status": "filled",
+      "path": "/games/game101/art/gen/art-12-up.png",
+      "category": "ai-gen",
+      "tags": [
+        "upload",
+        "art-12",
+        "skin"
+      ],
+      "license": "用户上传",
+      "source": "upload",
+      "provenance": {
+        "generator": "upload",
+        "prompt": "",
+        "model": "user-upload",
+        "mock": false,
+        "generatedAt": ""
+      }
     }
   ]
 }

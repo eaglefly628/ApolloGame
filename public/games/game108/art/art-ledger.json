@@ -395,15 +395,55 @@
     "transparent": false
    },
    "context": "对局舞台底（`mountHost({sceneBgSkin})`·无图时回退纯色 #171310）｜现状：程序矢量：天空 + 两道山丘 + 斜纹草地 + 云——**是通用底纹，与「地下拳馆」的定位并不搭**",
-   "status": "placeholder",
+   "status": "generated",
    "no": "art-15",
    "gen": {
-    "source": "procedural-preview",
-    "script": "scripts/game108-art-previews.mjs",
-    "style": "程序矢量：天空 + 两道山丘 + 斜纹草地 + 云——**是通用底纹，与「地下拳馆」的定位并不搭**",
-    "servedPath": "/games/game108/art/preview/scene-stage.svg"
+    "provider": "seedream",
+    "model": "doubao-seedream-5-0-pro-260628",
+    "prompt": "scene/stage, dim underground fist-dueling hall, warm lantern pools, deep shadow, out-of-focus crowd silhouettes, painterly cartoon, no text, 图, 霓虹合成波风格，赛博朋克，深紫黑底＋品红青光晕，扫描线，80 年代复古未来，高对比霓虹描边, rule-of-three cartoon duel style, thick ink outline, flat cel shading, warm cream paper ground, saturated candy palette: gold #f0b429, crimson #d9534f, jade #4f9d69, chunky rounded forms, hand-drawn feel, no gradients on outlines, matches the shipped hand icons in design_handoff_rule_of_three_battle",
+    "cacheKey": "59a210179fac47ac",
+    "pack": "neon-synthwave",
+    "servedPath": "/games/game108/art/gen/art-15.png",
+    "localId": "gen/art-15",
+    "mock": false
    },
-   "provenance": null
+   "provenance": {
+    "model": "doubao-seedream-5-0-pro-260628",
+    "prompt": "scene/stage, dim underground fist-dueling hall, warm lantern pools, deep shadow, out-of-focus crowd silhouettes, painterly cartoon, no text, 图, 霓虹合成波风格，赛博朋克，深紫黑底＋品红青光晕，扫描线，80 年代复古未来，高对比霓虹描边, rule-of-three cartoon duel style, thick ink outline, flat cel shading, warm cream paper ground, saturated candy palette: gold #f0b429, crimson #d9534f, jade #4f9d69, chunky rounded forms, hand-drawn feel, no gradients on outlines, matches the shipped hand icons in design_handoff_rule_of_three_battle",
+    "date": "2026-08-10T08:27:22.186Z",
+    "license": "ByteDance Seedream/火山方舟 (按订阅商用授权)"
+   },
+   "history": [
+    {
+     "action": "regen",
+     "at": "2026-08-10T08:15:26.574Z",
+     "prevQuery": "scene/stage",
+     "newQuery": "scene/stage"
+    },
+    {
+     "action": "regen",
+     "at": "2026-08-10T08:15:52.873Z",
+     "prevQuery": "scene/stage",
+     "newQuery": "scene/stage"
+    },
+    {
+     "action": "regen",
+     "at": "2026-08-10T08:27:22.185Z",
+     "prevQuery": "scene/stage",
+     "newQuery": "scene/stage"
+    }
+   ],
+   "orig": {
+    "status": "placeholder",
+    "gen": {
+     "source": "procedural-preview",
+     "script": "scripts/game108-art-previews.mjs",
+     "style": "程序矢量：天空 + 两道山丘 + 斜纹草地 + 云——**是通用底纹，与「地下拳馆」的定位并不搭**",
+     "servedPath": "/games/game108/art/preview/scene-stage.svg"
+    },
+    "indexEntry": null,
+    "backupPath": "/games/game108/art/orig/art-15.svg"
+   }
   }
  ]
 }
