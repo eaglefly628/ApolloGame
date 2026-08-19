@@ -1,6 +1,6 @@
 # game-103《幸存者》· 游戏级工单池（bug / 迭代）
 
-### [2026-08-19] · Lead 巡检（owner「Art accumulate.」直传批复查带出）· ART-孤儿清账 · status: open·指派 PE/PA-103 · 优先级: P3
+### [2026-08-19] · Lead 巡检（owner「Art accumulate.」直传批复查带出）· ART-孤儿清账 · status: **done（owner 2026-08-19 令：孤儿三件直接删除·基线同提交收回 6→5）** · 优先级: P3
 > `art/gen/art-01.png`（314KB）+ `art/orig/art-01.svg` 随 19a8ddd2 直传入库，**零登记零引用**——台账 art-01 行的 servedPath 是 `player.svg` 与此无关，index.json 亦无条目 → 真黑户（已 Lead 亲批入 art-ledger-baseline 解全库门禁阻·基线 5→6）。清账二选一：①这批图若是要用的：入 `art/index.json` 带来源（workshop 生成·注明脚本/提示词）+ 台账行接线；②不用：删两文件。**清完同提交删基线条目**（棘轮收紧）。
 
 ### [2026-08-01] · Lead 终审发现 · **acceptance-adapter 从未落地**——5 份 GD 剧本无适配可跑·S4 门红 · status: ✅ **done（Lead 派工 agent·2026-08-18·adapter 已落·5 剧本 3 绿 2 真红→真红开下方 SBUG-01 单）** · 优先级: P1

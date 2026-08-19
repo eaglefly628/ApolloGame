@@ -276,7 +276,7 @@
     "resolver": "3D 筹码柱贴图·面额 1",
     "servedPath": "/games/game-c/art/chips/1-white.svg"
    },
-   "query": "with tiger head casino poker chip denomination 1",
+   "query": "casino poker chip denomination 1, white body with a unified gold rim and dark-violet inlay pattern, top and edge, premium, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, transparent background, no watermark",
    "placeholder": {
     "current": "CC0 现货已 vendor",
     "source": "vendored",
@@ -291,65 +291,24 @@
     "transparent": true
    },
    "context": "game-c《STORY-POKER V2》筹码·1（白·顶+侧面）·消费=3D 筹码柱贴图·面额 1（art-bible §3·render-only 不进 sim hash）",
-   "status": "generated",
+   "status": "replaced",
    "gen": {
-    "provider": "seedream",
-    "model": "doubao-seedream-5-0-pro-260628",
-    "prompt": "筹码 1·白（现货·可换夜金定制）, 贴图, 现代奢华豪宅夜间室内：暖调灯光，木质牌桌，当代雅致陈设，温馨私密氛围，构图干净，游戏素材，无文字，无水印",
-    "cacheKey": "41f0b9b6bedbb049",
-    "pack": "modern-manor",
-    "servedPath": "/games/game-c/art/gen/art-006.png",
-    "localId": "gen/art-006",
-    "mock": false
+    "provider": "vendored",
+    "model": "scripts/gen-chips.mjs",
+    "prompt": null,
+    "servedPath": "/games/game-c/art/chips/1-white.svg",
+    "localId": "chip/1-white"
    },
    "provenance": {
-    "model": "doubao-seedream-5-0-pro-260628",
-    "prompt": "筹码 1·白（现货·可换夜金定制）, 贴图, 现代奢华豪宅夜间室内：暖调灯光，木质牌桌，当代雅致陈设，温馨私密氛围，构图干净，游戏素材，无文字，无水印",
-    "date": "2026-07-25T07:48:24.148Z",
-    "license": "ByteDance Seedream/火山方舟 (按订阅商用授权)"
+    "generator": "vendored",
+    "prompt": null,
+    "model": "scripts/gen-chips.mjs",
+    "license": "CC0-1.0",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
+    "mock": false,
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "筹码 1·白（现货·可换夜金定制）",
-   "history": [
-    {
-     "action": "regen",
-     "at": "2026-07-25T07:48:24.147Z",
-     "prevQuery": "with tiger head casino poker chip denomination 1, white body with a unified gold rim and dark-violet inlay pattern, top and edge, premium, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, transparent background, no watermark",
-     "newQuery": "with tiger head casino poker chip denomination 1"
-    }
-   ],
-   "orig": {
-    "status": "placeholder",
-    "gen": null,
-    "indexEntry": {
-     "id": "chip/1-white",
-     "type": "texture",
-     "description": "poker chip 1 (white)",
-     "status": "filled",
-     "path": "/games/game-c/art/chips/1-white.svg",
-     "spec": {
-      "format": "svg",
-      "usage": "sprite"
-     },
-     "category": "chip",
-     "tags": [
-      "poker-chip",
-      "chip",
-      "casino",
-      "white",
-      "1"
-     ],
-     "style": "flat",
-     "license": "CC0 (自产)",
-     "source": "apollo-procedural",
-     "provenance": {
-      "generator": "gen-chips",
-      "denom": 1,
-      "color": "white",
-      "date": "2026-07-17",
-      "vendoredFrom": "chip/1-white"
-     }
-    }
-   }
+   "prompt": "筹码 1·白（现货·可换夜金定制）"
   },
   {
    "no": "art-007",

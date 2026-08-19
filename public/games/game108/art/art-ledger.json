@@ -1,450 +1,409 @@
 {
-  "slug": "game108",
-  "mode": "compiled",
-  "artStyle": {
-    "packId": "cartoon-thick",
-    "stylePrompt": "rule-of-three cartoon duel style, thick ink outline, flat cel shading, warm cream paper ground, saturated candy palette: gold #f0b429, crimson #d9534f, jade #4f9d69, chunky rounded forms, hand-drawn feel, no gradients on outlines, matches the shipped hand icons in design_handoff_rule_of_three_battle",
-    "note": "owner 2026-08-07 设计定稿随件交付；锚咬住定稿以免新生成的图与已有三张手型图标打架"
+ "slug": "game108",
+ "mode": "compiled",
+ "artStyle": {
+  "packId": "cartoon-thick",
+  "stylePrompt": "rule-of-three cartoon duel style, thick ink outline, flat cel shading, warm cream paper ground, saturated candy palette: gold #f0b429, crimson #d9534f, jade #4f9d69, chunky rounded forms, hand-drawn feel, no gradients on outlines, matches the shipped hand icons in design_handoff_rule_of_three_battle",
+  "note": "owner 2026-08-07 设计定稿随件交付；锚咬住定稿以免新生成的图与已有三张手型图标打架"
+ },
+ "rows": [
+  {
+   "skinKey": "game108/hand-icon-rock",
+   "desc": "front-facing closed fist hand icon, cartoon, thick ink outline, cream skin, transparent background",
+   "kind": "ui-icon",
+   "slot": {
+    "entity": "duel-screen:hand-icon-rock",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "hand icon rock",
+   "spec": {
+    "w": 220,
+    "h": 245,
+    "transparent": true
+   },
+   "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「rock」手型图标｜现状：owner 设计定稿切图（已是真图）",
+   "status": "filled",
+   "no": "art-01",
+   "gen": {
+    "source": "design-handoff",
+    "script": "games/game108/design_handoff_rule_of_three_battle/design/hands/",
+    "style": "rule-of-three cartoon (ZCOOL/Fredoka handoff)",
+    "servedPath": "/games/game108/art/icon_rock.png"
+   },
+   "provenance": {
+    "generator": "owner-reference-art",
+    "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_rock.png",
+    "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
+    "date": "2026-08-07"
+   }
   },
-  "rows": [
-    {
-      "skinKey": "game108/hand-icon-rock",
-      "desc": "front-facing closed fist hand icon, cartoon, thick ink outline, cream skin, transparent background",
-      "kind": "ui-icon",
-      "slot": {
-        "entity": "duel-screen:hand-icon-rock",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "hand icon rock",
-      "spec": {
-        "w": 220,
-        "h": 245,
-        "transparent": true
-      },
-      "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「rock」手型图标｜现状：owner 设计定稿切图（已是真图）",
-      "status": "filled",
-      "no": "art-01",
-      "gen": {
-        "source": "design-handoff",
-        "script": "games/game108/design_handoff_rule_of_three_battle/design/hands/",
-        "style": "rule-of-three cartoon (ZCOOL/Fredoka handoff)",
-        "servedPath": "/games/game108/art/icon_rock.png"
-      },
-      "provenance": {
-        "generator": "owner-reference-art",
-        "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_rock.png",
-        "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
-        "date": "2026-08-07"
-      }
-    },
-    {
-      "skinKey": "game108/hand-icon-paper",
-      "desc": "front-facing open palm hand icon, cartoon, thick ink outline, cream skin, transparent background",
-      "kind": "ui-icon",
-      "slot": {
-        "entity": "duel-screen:hand-icon-paper",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "hand icon paper",
-      "spec": {
-        "w": 220,
-        "h": 245,
-        "transparent": true
-      },
-      "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「paper」手型图标｜现状：owner 设计定稿切图（已是真图）",
-      "status": "filled",
-      "no": "art-02",
-      "gen": {
-        "source": "design-handoff",
-        "script": "games/game108/design_handoff_rule_of_three_battle/design/hands/",
-        "style": "rule-of-three cartoon (ZCOOL/Fredoka handoff)",
-        "servedPath": "/games/game108/art/icon_paper.png"
-      },
-      "provenance": {
-        "generator": "owner-reference-art",
-        "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_paper.png",
-        "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
-        "date": "2026-08-07"
-      }
-    },
-    {
-      "skinKey": "game108/hand-icon-scissors",
-      "desc": "front-facing two-finger scissors hand icon, cartoon, thick ink outline, cream skin, transparent background",
-      "kind": "ui-icon",
-      "slot": {
-        "entity": "duel-screen:hand-icon-scissors",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "hand icon scissors",
-      "spec": {
-        "w": 220,
-        "h": 245,
-        "transparent": true
-      },
-      "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「scissors」手型图标｜现状：owner 设计定稿切图（已是真图）",
-      "status": "filled",
-      "no": "art-03",
-      "gen": {
-        "source": "design-handoff",
-        "script": "games/game108/design_handoff_rule_of_three_battle/design/hands/",
-        "style": "rule-of-three cartoon (ZCOOL/Fredoka handoff)",
-        "servedPath": "/games/game108/art/icon_scissors.png"
-      },
-      "provenance": {
-        "generator": "owner-reference-art",
-        "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_scissors.png",
-        "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
-        "date": "2026-08-07"
-      }
-    },
-    {
-      "skinKey": "game108/scene/stage",
-      "desc": "dim underground fist-dueling hall, warm lantern pools, deep shadow, out-of-focus crowd silhouettes, painterly cartoon, no text",
-      "kind": "background",
-      "slot": {
-        "entity": "duel-screen:hand-icon-game108/scene/stage",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "underground duel hall background",
-      "spec": {
-        "w": 1920,
-        "h": 1080,
-        "transparent": false
-      },
-      "context": "对局舞台底（1920×1080·`mountHost` 背景皮肤槽·无图时回退纯色 #171310）",
-      "status": "retired",
-      "no": "art-04"
-    },
-    {
-      "skinKey": "game108/gesture-p1-rock",
-      "desc": "dramatic closed fist thrusting toward viewer, foreshortened, warm tan skin, gold cuff, thick ink outline, cartoon, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "duel-screen:gesture-p1-rock",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "gesture p1 rock",
-      "spec": {
-        "w": 512,
-        "h": 512,
-        "transparent": true
-      },
-      "context": "T3 揭晓的亮拳大手（p1 的「rock」·屏上最大的一件·情绪核）｜现状：程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
-      "status": "placeholder",
-      "no": "art-05",
-      "gen": {
-        "source": "procedural-preview",
-        "script": "scripts/game108-art-previews.mjs",
-        "style": "程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
-        "servedPath": "/games/game108/art/preview/gesture-p1-rock.svg"
-      },
-      "provenance": null
-    },
-    {
-      "skinKey": "game108/gesture-p1-paper",
-      "desc": "dramatic open palm thrusting toward viewer, foreshortened, warm tan skin, gold cuff, thick ink outline, cartoon, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "duel-screen:gesture-p1-paper",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "gesture p1 paper",
-      "spec": {
-        "w": 512,
-        "h": 512,
-        "transparent": true
-      },
-      "context": "T3 揭晓的亮拳大手（p1 的「paper」·屏上最大的一件·情绪核）｜现状：程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
-      "status": "placeholder",
-      "no": "art-06",
-      "gen": {
-        "source": "procedural-preview",
-        "script": "scripts/game108-art-previews.mjs",
-        "style": "程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
-        "servedPath": "/games/game108/art/preview/gesture-p1-paper.svg"
-      },
-      "provenance": null
-    },
-    {
-      "skinKey": "game108/gesture-p1-scissors",
-      "desc": "dramatic two-finger scissors thrusting toward viewer, foreshortened, warm tan skin, gold cuff, thick ink outline, cartoon, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "duel-screen:gesture-p1-scissors",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "gesture p1 scissors",
-      "spec": {
-        "w": 512,
-        "h": 512,
-        "transparent": true
-      },
-      "context": "T3 揭晓的亮拳大手（p1 的「scissors」·屏上最大的一件·情绪核）｜现状：程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
-      "status": "placeholder",
-      "no": "art-07",
-      "gen": {
-        "source": "procedural-preview",
-        "script": "scripts/game108-art-previews.mjs",
-        "style": "程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
-        "servedPath": "/games/game108/art/preview/gesture-p1-scissors.svg"
-      },
-      "provenance": null
-    },
-    {
-      "skinKey": "game108/gesture-p2-rock",
-      "desc": "dramatic closed fist thrusting toward viewer, foreshortened, cool grey-brown skin, crimson cuff, thick ink outline, cartoon, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "duel-screen:gesture-p2-rock",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "gesture p2 rock",
-      "spec": {
-        "w": 512,
-        "h": 512,
-        "transparent": true
-      },
-      "context": "T3 揭晓的亮拳大手（p2 的「rock」·屏上最大的一件·情绪核）｜现状：程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
-      "status": "placeholder",
-      "no": "art-08",
-      "gen": {
-        "source": "procedural-preview",
-        "script": "scripts/game108-art-previews.mjs",
-        "style": "程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
-        "servedPath": "/games/game108/art/preview/gesture-p2-rock.svg"
-      },
-      "provenance": null
-    },
-    {
-      "skinKey": "game108/gesture-p2-paper",
-      "desc": "dramatic open palm thrusting toward viewer, foreshortened, cool grey-brown skin, crimson cuff, thick ink outline, cartoon, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "duel-screen:gesture-p2-paper",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "gesture p2 paper",
-      "spec": {
-        "w": 512,
-        "h": 512,
-        "transparent": true
-      },
-      "context": "T3 揭晓的亮拳大手（p2 的「paper」·屏上最大的一件·情绪核）｜现状：程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
-      "status": "placeholder",
-      "no": "art-09",
-      "gen": {
-        "source": "procedural-preview",
-        "script": "scripts/game108-art-previews.mjs",
-        "style": "程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
-        "servedPath": "/games/game108/art/preview/gesture-p2-paper.svg"
-      },
-      "provenance": null
-    },
-    {
-      "skinKey": "game108/gesture-p2-scissors",
-      "desc": "dramatic two-finger scissors thrusting toward viewer, foreshortened, cool grey-brown skin, crimson cuff, thick ink outline, cartoon, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "duel-screen:gesture-p2-scissors",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "gesture p2 scissors",
-      "spec": {
-        "w": 512,
-        "h": 512,
-        "transparent": true
-      },
-      "context": "T3 揭晓的亮拳大手（p2 的「scissors」·屏上最大的一件·情绪核）｜现状：程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
-      "status": "placeholder",
-      "no": "art-10",
-      "gen": {
-        "source": "procedural-preview",
-        "script": "scripts/game108-art-previews.mjs",
-        "style": "程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
-        "servedPath": "/games/game108/art/preview/gesture-p2-scissors.svg"
-      },
-      "provenance": null
-    },
-    {
-      "skinKey": "game108/arm-p1",
-      "desc": "bare forearm with rolled sleeve, warm tan skin, gold cuff, thick ink outline, cartoon, vertical, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "duel-screen:arm-p1",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "arm p1",
-      "spec": {
-        "w": 256,
-        "h": 512,
-        "transparent": true
-      },
-      "context": "亮拳大手下面的手臂（p1·与大手同侧同色）｜现状：程序矢量：**就是一根渐变色条**（无手腕 / 袖口 / 结构）——12 行里最该先画的一行",
-      "status": "placeholder",
-      "no": "art-11",
-      "gen": {
-        "source": "procedural-preview",
-        "script": "scripts/game108-art-previews.mjs",
-        "style": "程序矢量：**就是一根渐变色条**（无手腕 / 袖口 / 结构）——12 行里最该先画的一行",
-        "servedPath": "/games/game108/art/preview/arm-p1.svg"
-      },
-      "provenance": null
-    },
-    {
-      "skinKey": "game108/arm-p2",
-      "desc": "bare forearm with rolled sleeve, cool grey-brown skin, crimson cuff, thick ink outline, cartoon, vertical, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "duel-screen:arm-p2",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "arm p2",
-      "spec": {
-        "w": 256,
-        "h": 512,
-        "transparent": true
-      },
-      "context": "亮拳大手下面的手臂（p2·与大手同侧同色）｜现状：程序矢量：**就是一根渐变色条**（无手腕 / 袖口 / 结构）——12 行里最该先画的一行",
-      "status": "placeholder",
-      "no": "art-12",
-      "gen": {
-        "source": "procedural-preview",
-        "script": "scripts/game108-art-previews.mjs",
-        "style": "程序矢量：**就是一根渐变色条**（无手腕 / 袖口 / 结构）——12 行里最该先画的一行",
-        "servedPath": "/games/game108/art/preview/arm-p2.svg"
-      },
-      "provenance": null
-    },
-    {
-      "skinKey": "game108/slab",
-      "desc": "carved stone tablet, weathered grey rock, thick ink outline, cartoon, chipped edges, blank face for text overlay",
-      "kind": "ui-icon",
-      "slot": {
-        "entity": "duel-screen:slab",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "slab",
-      "spec": {
-        "w": 512,
-        "h": 384,
-        "transparent": true
-      },
-      "context": "判定表石板底（文字仍走 LayoutNode 叠在皮上·凿改时换这张图）｜现状：程序矢量：纯色圆角板 + 文字叠上去——**看不出是石板**",
-      "status": "placeholder",
-      "no": "art-13",
-      "gen": {
-        "source": "procedural-preview",
-        "script": "scripts/game108-art-previews.mjs",
-        "style": "程序矢量：纯色圆角板 + 文字叠上去——**看不出是石板**",
-        "servedPath": "/games/game108/art/preview/slab.svg"
-      },
-      "provenance": null
-    },
-    {
-      "skinKey": "game108/smoke-icon",
-      "desc": "smoke bomb pellet with curling grey smoke puff, cartoon, thick ink outline, transparent background",
-      "kind": "ui-icon",
-      "slot": {
-        "entity": "duel-screen:smoke-icon",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "smoke icon",
-      "spec": {
-        "w": 192,
-        "h": 192,
-        "transparent": true
-      },
-      "context": "底栏烟雾键上的道具图标｜现状：现状是一个 emoji 💨（根本不是美术资产）",
-      "status": "placeholder",
-      "no": "art-14",
-      "gen": {
-        "source": "procedural-preview",
-        "script": "scripts/game108-art-previews.mjs",
-        "style": "现状是一个 emoji 💨（根本不是美术资产）",
-        "servedPath": "/games/game108/art/preview/smoke-icon.svg"
-      },
-      "provenance": null
-    },
-    {
-      "skinKey": "game108/scene/stage",
-      "desc": "dim underground fist-dueling hall, warm lantern pools, deep shadow, out-of-focus crowd silhouettes, painterly cartoon, no text",
-      "kind": "background",
-      "slot": {
-        "entity": "host-scene",
-        "component": "sceneBgSkin",
-        "field": "imageUrl"
-      },
-      "query": "scene/stage",
-      "spec": {
-        "w": 1920,
-        "h": 1080,
-        "transparent": false
-      },
-      "context": "对局舞台底（`mountHost({sceneBgSkin})`·无图时回退纯色 #171310）｜现状：程序矢量：天空 + 两道山丘 + 斜纹草地 + 云——**是通用底纹，与「地下拳馆」的定位并不搭**",
-      "status": "filled",
-      "no": "art-15",
-      "gen": {
-        "provider": "seedream",
-        "model": "doubao-seedream-5-0-pro-260628",
-        "prompt": "scene/stage, dim underground fist-dueling hall, warm lantern pools, deep shadow, out-of-focus crowd silhouettes, painterly cartoon, no text, 图, 霓虹合成波风格，赛博朋克，深紫黑底＋品红青光晕，扫描线，80 年代复古未来，高对比霓虹描边, rule-of-three cartoon duel style, thick ink outline, flat cel shading, warm cream paper ground, saturated candy palette: gold #f0b429, crimson #d9534f, jade #4f9d69, chunky rounded forms, hand-drawn feel, no gradients on outlines, matches the shipped hand icons in design_handoff_rule_of_three_battle",
-        "cacheKey": "59a210179fac47ac",
-        "pack": "neon-synthwave",
-        "servedPath": "/games/game108/art/gen/art-15.png",
-        "localId": "gen/art-15",
-        "mock": false,
-        "style": "1920×1080 Seedream 场景生成图（暗调地下拳馆·暖灯人群剪影）·真图在盘 4MB 未压缩——⚠ 拳馆方向已随约会向改判过时，接不接进 host-scene 等 GD 裁；接前先压缩（web/出包体积）"
-      },
-      "provenance": {
-        "model": "doubao-seedream-5-0-pro-260628",
-        "prompt": "scene/stage, dim underground fist-dueling hall, warm lantern pools, deep shadow, out-of-focus crowd silhouettes, painterly cartoon, no text, 图, 霓虹合成波风格，赛博朋克，深紫黑底＋品红青光晕，扫描线，80 年代复古未来，高对比霓虹描边, rule-of-three cartoon duel style, thick ink outline, flat cel shading, warm cream paper ground, saturated candy palette: gold #f0b429, crimson #d9534f, jade #4f9d69, chunky rounded forms, hand-drawn feel, no gradients on outlines, matches the shipped hand icons in design_handoff_rule_of_three_battle",
-        "date": "2026-08-10T08:27:22.186Z",
-        "license": "ByteDance Seedream/火山方舟 (按订阅商用授权)"
-      },
-      "history": [
-        {
-          "action": "regen",
-          "at": "2026-08-10T08:15:26.574Z",
-          "prevQuery": "scene/stage",
-          "newQuery": "scene/stage"
-        },
-        {
-          "action": "regen",
-          "at": "2026-08-10T08:15:52.873Z",
-          "prevQuery": "scene/stage",
-          "newQuery": "scene/stage"
-        },
-        {
-          "action": "regen",
-          "at": "2026-08-10T08:27:22.185Z",
-          "prevQuery": "scene/stage",
-          "newQuery": "scene/stage"
-        }
-      ],
-      "orig": {
-        "status": "placeholder",
-        "gen": {
-          "source": "procedural-preview",
-          "script": "scripts/game108-art-previews.mjs",
-          "style": "程序矢量：天空 + 两道山丘 + 斜纹草地 + 云——**是通用底纹，与「地下拳馆」的定位并不搭**",
-          "servedPath": "/games/game108/art/preview/scene-stage.svg"
-        },
-        "indexEntry": null,
-        "backupPath": "/games/game108/art/orig/art-15.svg"
-      }
-    }
-  ]
+  {
+   "skinKey": "game108/hand-icon-paper",
+   "desc": "front-facing open palm hand icon, cartoon, thick ink outline, cream skin, transparent background",
+   "kind": "ui-icon",
+   "slot": {
+    "entity": "duel-screen:hand-icon-paper",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "hand icon paper",
+   "spec": {
+    "w": 220,
+    "h": 245,
+    "transparent": true
+   },
+   "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「paper」手型图标｜现状：owner 设计定稿切图（已是真图）",
+   "status": "filled",
+   "no": "art-02",
+   "gen": {
+    "source": "design-handoff",
+    "script": "games/game108/design_handoff_rule_of_three_battle/design/hands/",
+    "style": "rule-of-three cartoon (ZCOOL/Fredoka handoff)",
+    "servedPath": "/games/game108/art/icon_paper.png"
+   },
+   "provenance": {
+    "generator": "owner-reference-art",
+    "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_paper.png",
+    "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
+    "date": "2026-08-07"
+   }
+  },
+  {
+   "skinKey": "game108/hand-icon-scissors",
+   "desc": "front-facing two-finger scissors hand icon, cartoon, thick ink outline, cream skin, transparent background",
+   "kind": "ui-icon",
+   "slot": {
+    "entity": "duel-screen:hand-icon-scissors",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "hand icon scissors",
+   "spec": {
+    "w": 220,
+    "h": 245,
+    "transparent": true
+   },
+   "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「scissors」手型图标｜现状：owner 设计定稿切图（已是真图）",
+   "status": "filled",
+   "no": "art-03",
+   "gen": {
+    "source": "design-handoff",
+    "script": "games/game108/design_handoff_rule_of_three_battle/design/hands/",
+    "style": "rule-of-three cartoon (ZCOOL/Fredoka handoff)",
+    "servedPath": "/games/game108/art/icon_scissors.png"
+   },
+   "provenance": {
+    "generator": "owner-reference-art",
+    "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_scissors.png",
+    "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
+    "date": "2026-08-07"
+   }
+  },
+  {
+   "skinKey": "game108/scene/stage",
+   "desc": "dim underground fist-dueling hall, warm lantern pools, deep shadow, out-of-focus crowd silhouettes, painterly cartoon, no text",
+   "kind": "background",
+   "slot": {
+    "entity": "duel-screen:hand-icon-game108/scene/stage",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "underground duel hall background",
+   "spec": {
+    "w": 1920,
+    "h": 1080,
+    "transparent": false
+   },
+   "context": "对局舞台底（1920×1080·`mountHost` 背景皮肤槽·无图时回退纯色 #171310）",
+   "status": "retired",
+   "no": "art-04"
+  },
+  {
+   "skinKey": "game108/gesture-p1-rock",
+   "desc": "dramatic closed fist thrusting toward viewer, foreshortened, warm tan skin, gold cuff, thick ink outline, cartoon, transparent background",
+   "kind": "sprite",
+   "slot": {
+    "entity": "duel-screen:gesture-p1-rock",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "gesture p1 rock",
+   "spec": {
+    "w": 512,
+    "h": 512,
+    "transparent": true
+   },
+   "context": "T3 揭晓的亮拳大手（p1 的「rock」·屏上最大的一件·情绪核）｜现状：程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+   "status": "placeholder",
+   "no": "art-05",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+    "servedPath": "/games/game108/art/preview/gesture-p1-rock.svg"
+   },
+   "provenance": null
+  },
+  {
+   "skinKey": "game108/gesture-p1-paper",
+   "desc": "dramatic open palm thrusting toward viewer, foreshortened, warm tan skin, gold cuff, thick ink outline, cartoon, transparent background",
+   "kind": "sprite",
+   "slot": {
+    "entity": "duel-screen:gesture-p1-paper",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "gesture p1 paper",
+   "spec": {
+    "w": 512,
+    "h": 512,
+    "transparent": true
+   },
+   "context": "T3 揭晓的亮拳大手（p1 的「paper」·屏上最大的一件·情绪核）｜现状：程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+   "status": "placeholder",
+   "no": "art-06",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+    "servedPath": "/games/game108/art/preview/gesture-p1-paper.svg"
+   },
+   "provenance": null
+  },
+  {
+   "skinKey": "game108/gesture-p1-scissors",
+   "desc": "dramatic two-finger scissors thrusting toward viewer, foreshortened, warm tan skin, gold cuff, thick ink outline, cartoon, transparent background",
+   "kind": "sprite",
+   "slot": {
+    "entity": "duel-screen:gesture-p1-scissors",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "gesture p1 scissors",
+   "spec": {
+    "w": 512,
+    "h": 512,
+    "transparent": true
+   },
+   "context": "T3 揭晓的亮拳大手（p1 的「scissors」·屏上最大的一件·情绪核）｜现状：程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+   "status": "placeholder",
+   "no": "art-07",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+    "servedPath": "/games/game108/art/preview/gesture-p1-scissors.svg"
+   },
+   "provenance": null
+  },
+  {
+   "skinKey": "game108/gesture-p2-rock",
+   "desc": "dramatic closed fist thrusting toward viewer, foreshortened, cool grey-brown skin, crimson cuff, thick ink outline, cartoon, transparent background",
+   "kind": "sprite",
+   "slot": {
+    "entity": "duel-screen:gesture-p2-rock",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "gesture p2 rock",
+   "spec": {
+    "w": 512,
+    "h": 512,
+    "transparent": true
+   },
+   "context": "T3 揭晓的亮拳大手（p2 的「rock」·屏上最大的一件·情绪核）｜现状：程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+   "status": "placeholder",
+   "no": "art-08",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+    "servedPath": "/games/game108/art/preview/gesture-p2-rock.svg"
+   },
+   "provenance": null
+  },
+  {
+   "skinKey": "game108/gesture-p2-paper",
+   "desc": "dramatic open palm thrusting toward viewer, foreshortened, cool grey-brown skin, crimson cuff, thick ink outline, cartoon, transparent background",
+   "kind": "sprite",
+   "slot": {
+    "entity": "duel-screen:gesture-p2-paper",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "gesture p2 paper",
+   "spec": {
+    "w": 512,
+    "h": 512,
+    "transparent": true
+   },
+   "context": "T3 揭晓的亮拳大手（p2 的「paper」·屏上最大的一件·情绪核）｜现状：程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+   "status": "placeholder",
+   "no": "art-09",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+    "servedPath": "/games/game108/art/preview/gesture-p2-paper.svg"
+   },
+   "provenance": null
+  },
+  {
+   "skinKey": "game108/gesture-p2-scissors",
+   "desc": "dramatic two-finger scissors thrusting toward viewer, foreshortened, cool grey-brown skin, crimson cuff, thick ink outline, cartoon, transparent background",
+   "kind": "sprite",
+   "slot": {
+    "entity": "duel-screen:gesture-p2-scissors",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "gesture p2 scissors",
+   "spec": {
+    "w": 512,
+    "h": 512,
+    "transparent": true
+   },
+   "context": "T3 揭晓的亮拳大手（p2 的「scissors」·屏上最大的一件·情绪核）｜现状：程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+   "status": "placeholder",
+   "no": "art-10",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：卡通手型，有形有轮廓——能用，但没有质感 / 光影 / 袖口",
+    "servedPath": "/games/game108/art/preview/gesture-p2-scissors.svg"
+   },
+   "provenance": null
+  },
+  {
+   "skinKey": "game108/arm-p1",
+   "desc": "bare forearm with rolled sleeve, warm tan skin, gold cuff, thick ink outline, cartoon, vertical, transparent background",
+   "kind": "sprite",
+   "slot": {
+    "entity": "duel-screen:arm-p1",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "arm p1",
+   "spec": {
+    "w": 256,
+    "h": 512,
+    "transparent": true
+   },
+   "context": "亮拳大手下面的手臂（p1·与大手同侧同色）｜现状：程序矢量：**就是一根渐变色条**（无手腕 / 袖口 / 结构）——12 行里最该先画的一行",
+   "status": "placeholder",
+   "no": "art-11",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：**就是一根渐变色条**（无手腕 / 袖口 / 结构）——12 行里最该先画的一行",
+    "servedPath": "/games/game108/art/preview/arm-p1.svg"
+   },
+   "provenance": null
+  },
+  {
+   "skinKey": "game108/arm-p2",
+   "desc": "bare forearm with rolled sleeve, cool grey-brown skin, crimson cuff, thick ink outline, cartoon, vertical, transparent background",
+   "kind": "sprite",
+   "slot": {
+    "entity": "duel-screen:arm-p2",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "arm p2",
+   "spec": {
+    "w": 256,
+    "h": 512,
+    "transparent": true
+   },
+   "context": "亮拳大手下面的手臂（p2·与大手同侧同色）｜现状：程序矢量：**就是一根渐变色条**（无手腕 / 袖口 / 结构）——12 行里最该先画的一行",
+   "status": "placeholder",
+   "no": "art-12",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：**就是一根渐变色条**（无手腕 / 袖口 / 结构）——12 行里最该先画的一行",
+    "servedPath": "/games/game108/art/preview/arm-p2.svg"
+   },
+   "provenance": null
+  },
+  {
+   "skinKey": "game108/slab",
+   "desc": "carved stone tablet, weathered grey rock, thick ink outline, cartoon, chipped edges, blank face for text overlay",
+   "kind": "ui-icon",
+   "slot": {
+    "entity": "duel-screen:slab",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "slab",
+   "spec": {
+    "w": 512,
+    "h": 384,
+    "transparent": true
+   },
+   "context": "判定表石板底（文字仍走 LayoutNode 叠在皮上·凿改时换这张图）｜现状：程序矢量：纯色圆角板 + 文字叠上去——**看不出是石板**",
+   "status": "placeholder",
+   "no": "art-13",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：纯色圆角板 + 文字叠上去——**看不出是石板**",
+    "servedPath": "/games/game108/art/preview/slab.svg"
+   },
+   "provenance": null
+  },
+  {
+   "skinKey": "game108/smoke-icon",
+   "desc": "smoke bomb pellet with curling grey smoke puff, cartoon, thick ink outline, transparent background",
+   "kind": "ui-icon",
+   "slot": {
+    "entity": "duel-screen:smoke-icon",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "smoke icon",
+   "spec": {
+    "w": 192,
+    "h": 192,
+    "transparent": true
+   },
+   "context": "底栏烟雾键上的道具图标｜现状：现状是一个 emoji 💨（根本不是美术资产）",
+   "status": "placeholder",
+   "no": "art-14",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "现状是一个 emoji 💨（根本不是美术资产）",
+    "servedPath": "/games/game108/art/preview/smoke-icon.svg"
+   },
+   "provenance": null
+  },
+  {
+   "skinKey": "game108/scene/stage",
+   "desc": "dim underground fist-dueling hall, warm lantern pools, deep shadow, out-of-focus crowd silhouettes, painterly cartoon, no text",
+   "kind": "background",
+   "slot": {
+    "entity": "host-scene",
+    "component": "sceneBgSkin",
+    "field": "imageUrl"
+   },
+   "query": "scene/stage",
+   "spec": {
+    "w": 1920,
+    "h": 1080,
+    "transparent": false
+   },
+   "context": "对局舞台底（`mountHost({sceneBgSkin})`·无图时回退纯色 #171310）｜现状：程序矢量：天空 + 两道山丘 + 斜纹草地 + 云——**是通用底纹，与「地下拳馆」的定位并不搭**",
+   "status": "placeholder",
+   "no": "art-15",
+   "gen": {
+    "source": "procedural-preview",
+    "script": "scripts/game108-art-previews.mjs",
+    "style": "程序矢量：天空 + 两道山丘 + 斜纹草地 + 云——**是通用底纹，与「地下拳馆」的定位并不搭**",
+    "servedPath": "/games/game108/art/preview/scene-stage.svg"
+   },
+   "provenance": null
+  }
+ ]
 }
