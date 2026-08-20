@@ -99,6 +99,9 @@ const WREST = parseFloat(flag('--restitution', String(WORLD_RESTITUTION)));
 // 而比值由形状定不由质量定）。唯一可能起作用的是**空中对撞**——质量不等则动量交换不对称。
 // 能不能传导到落面，只能测。本开关就是为此。
 const MASS_A = parseFloat(flag('--mass-a', '1.0'));
+// a 方的冲锋速度倍率（沿对撞轴）。质量与速度都进动量 p=mv，但速度**看得见**（冲得更猛），
+// 是「相克 = 撞得动对方」更好的表达载体。owner 2026-08-10「核心是空中撞击」。
+const SPEED_A = parseFloat(flag('--speed-a', '1.0'));
 // ── 落地修正实验（owner 2026-08-10「不能在投掷上作弊，那能不能在落地的时候修改」）──
 // 思路：出手/飞行/对撞**全程真物理不动**，只在**第一次触地那一刻**接管一次——
 // 读当前朝向，若与判定不符，给一个小上抛 + 绕水平轴的翻转角速度，让它**自己翻过去**再落定。
@@ -186,7 +189,7 @@ function throwRound(world, L, n, rnd) {
       const body = new CANNON.Body({ mass: s === 'a' ? MASS_A : 1.0 });
       body.addShape(new CANNON.Cylinder(Math.max(0.1, CARD_W / 2), Math.max(0.1, CARD_W / 2), Math.max(0.1, CARD_T), 12));
       body.position.set(p0.x, p0.y, p0.z);
-      body.velocity.set(p0.vx, p0.vy, p0.vz);
+      body.velocity.set(s === 'a' ? p0.vx * SPEED_A : p0.vx, p0.vy, p0.vz);
       // 抽 3/4（符号+大小）· 抽 5（自旋）· 抽 6/7（avz）——顺序与 duel-spike 一致
       let avx;
       if (AIM === 'front' || AIM === 'back') {
@@ -281,6 +284,7 @@ function runRound(n, seed) {
 
   let front = 0, total = 0, notFlat = 0, met = 0, notFlatNearWall = 0;
   let frontA = 0, totA = 0, frontB = 0, totB = 0;
+  let sxA = 0, sxB = 0;   // 沿对撞轴的最终 x（a 从 −x 冲向 +x，b 反之）
   for (let i = 0; i < n; i++) {
     for (const s of ['a', 'b']) {
       const b = lanes[i][s];
@@ -288,7 +292,7 @@ function runRound(n, seed) {
       const upY = upYOf([q.x, q.y, q.z, q.w]);
       total += 1;
       if (upY > 0) front += 1;
-      if (s === 'a') { totA += 1; if (upY > 0) frontA += 1; } else { totB += 1; if (upY > 0) frontB += 1; }
+      if (s === 'a') { totA += 1; if (upY > 0) frontA += 1; sxA += b.position.x; } else { totB += 1; if (upY > 0) frontB += 1; sxB += b.position.x; }
       if (Math.abs(upY) < FLAT_MIN) {
         notFlat += 1;
         // 靠墙判据：牌中心到某面围栏**内表面**（中心 ∓2）的距离 < 一个牌长（2.15）→ 算「够得着墙」
@@ -300,7 +304,7 @@ function runRound(n, seed) {
     if (crossed[i] || minDx[i] <= 2 * HULL_R) met += 1;
   }
   return {
-    front, total, notFlat, notFlatNearWall, met, lanes: n, frontA, totA, frontB, totB,
+    front, total, notFlat, notFlatNearWall, met, lanes: n, frontA, totA, frontB, totB, sxA, sxB,
     touchAir: touchedAir.filter(Boolean).length,
     touchAny: touchedAny.filter(Boolean).length,
     settleSec: simT, stepMsPerStep: stepMs / Math.max(1, steps),
@@ -325,10 +329,11 @@ function binomP(k, n) {
   return Math.min(1, p);
 }
 
-const agg = { frontA: 0, totA: 0, frontB: 0, totB: 0, front: 0, total: 0, notFlat: 0, notFlatNearWall: 0, met: 0, lanes: 0, touchAir: 0, touchAny: 0, settle: 0, stepMs: 0 };
+const agg = { sxA: 0, sxB: 0, frontA: 0, totA: 0, frontB: 0, totB: 0, front: 0, total: 0, notFlat: 0, notFlatNearWall: 0, met: 0, lanes: 0, touchAir: 0, touchAny: 0, settle: 0, stepMs: 0 };
 for (let r = 0; r < ROUNDS; r++) {
   const s = runRound(GROUPS, (SEED0 + r * 7919) | 0);
   agg.frontA += s.frontA; agg.totA += s.totA; agg.frontB += s.frontB; agg.totB += s.totB;
+  agg.sxA += s.sxA; agg.sxB += s.sxB;
   agg.front += s.front; agg.total += s.total; agg.notFlat += s.notFlat; agg.notFlatNearWall += s.notFlatNearWall;
   agg.met += s.met; agg.lanes += s.lanes; agg.touchAir += s.touchAir; agg.touchAny += s.touchAny;
   agg.settle += s.settleSec; agg.stepMs += s.stepMsPerStep;
@@ -365,6 +370,8 @@ console.log(`     95% CI    [${(lo * 100).toFixed(2)}%, ${(hi * 100).toFixed(2)}
 console.log(`     判词      ${lo <= 0.5 && hi >= 0.5 ? '✅ 与 50/50 不矛盾（CI 覆盖 50%）' : '🔴 显著偏离 50/50（CI 不覆盖 50%）'}`);
 { const [al,ah]=wilson(agg.frontA,agg.totA), [bl,bh]=wilson(agg.frontB,agg.totB);
   console.log(`     逐方      a(质量 ${MASS_A}) ${pct(agg.frontA,agg.totA)}% [${(al*100).toFixed(1)},${(ah*100).toFixed(1)}]  ·  b(质量 1.0) ${pct(agg.frontB,agg.totB)}% [${(bl*100).toFixed(1)},${(bh*100).toFixed(1)}]`); }
+{ const mA = agg.sxA/Math.max(1,agg.totA), mB = agg.sxB/Math.max(1,agg.totB);
+  console.log(`  ⑥ 落点(对撞轴 x)  a 均 ${mA.toFixed(2)}  ·  b 均 ${mB.toFixed(2)}  ·  **战线偏移 ${((mA+mB)/2).toFixed(2)}**（正=推向 b 侧·a 占地盘）`); }
 console.log('');
 console.log(`  ② 未躺平     ${agg.notFlat}/${agg.total} = ${pct(agg.notFlat, agg.total)}%   ${agg.notFlat === 0 ? '✅ 零' : '（目标 0）'}`);
 console.log(`     其中靠墙   ${agg.notFlatNearWall}/${agg.notFlat} = ${pct(agg.notFlatNearWall, Math.max(1, agg.notFlat))}%   ← 场地按 ${ARENA} 组建（围栏内表面距道心 ${(layoutFor(ARENA).halfZ - 1.0).toFixed(1)}）`);
