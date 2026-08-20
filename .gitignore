@@ -71,3 +71,6 @@ public/games/*/art/gen/mock/
 # DokiWorld 出包线（docs/playbooks/dokiworld-pack.md）：dist=构建产物不入库·依赖不入库
 dokiworld/*/dist/
 dokiworld/*/node_modules/
+
+# 本地 agent 工具的技能镜像（桌面端每机自生成·不进共享仓·2026-08-19 owner 确认）
+.agents/
