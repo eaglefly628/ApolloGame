@@ -99,6 +99,15 @@ const WREST = parseFloat(flag('--restitution', String(WORLD_RESTITUTION)));
 // 而比值由形状定不由质量定）。唯一可能起作用的是**空中对撞**——质量不等则动量交换不对称。
 // 能不能传导到落面，只能测。本开关就是为此。
 const MASS_A = parseFloat(flag('--mass-a', '1.0'));
+// ── 落地修正实验（owner 2026-08-10「不能在投掷上作弊，那能不能在落地的时候修改」）──
+// 思路：出手/飞行/对撞**全程真物理不动**，只在**第一次触地那一刻**接管一次——
+// 读当前朝向，若与判定不符，给一个小上抛 + 绕水平轴的翻转角速度，让它**自己翻过去**再落定。
+// 为什么这样看起来不假：真牌落地本来就会弹一下、翻个身，这一步正是它自己的随机源；
+// 我们只是把「往哪边翻」从掷骰改成按判定选，形态与自然落地一致。
+// --land-fix front|back = 目标面；--flip-omega = 翻转角速度；--hop = 上抛速度。
+const LAND_FIX = flag('--land-fix', '');
+const FLIP_OMEGA = parseFloat(flag('--flip-omega', '9'));
+const HOP = parseFloat(flag('--hop', '2.2'));
 
 // ── PRNG：`src/skills/atoms/random/index.ts` nextRandom 逐位复刻（同 seed 可与浏览器对账）──
 function makeRng(seed) {
@@ -228,6 +237,26 @@ function runRound(n, seed) {
     stepMs += Number(process.hrtime.bigint() - t0) / 1e6;
     steps += 1;
     simT += STEP;
+
+    // 落地修正：每张牌只做一次（fixed 标记），且只在「已下落到贴地且仍朝下运动」那一刻。
+    if (LAND_FIX === 'front' || LAND_FIX === 'back') {
+      for (const p of lanes) {
+        for (const key of ['a', 'b']) {
+          const b = p[key];
+          if (b.__fixed) continue;
+          if (b.position.y > 0.35 || b.velocity.y > 0) continue;   // 还没到触地时刻
+          b.__fixed = true;
+          const q = b.quaternion;
+          const up = upYOf([q.x, q.y, q.z, q.w]);
+          const want = LAND_FIX === 'front';
+          if ((up > 0) === want) continue;                          // 已经是想要的面 → 不动它（多数情况）
+          // 小上抛 + 绕水平轴翻转：让它自己翻半圈落成想要的面。
+          b.velocity.y = HOP;
+          b.angularVelocity.set(FLIP_OMEGA, b.angularVelocity.y * 0.3, 0);
+          b.wakeUp();
+        }
+      }
+    }
 
     // 相遇代理量（沿用老口径·便于与浏览器对账）
     for (let i = 0; i < n; i++) {
