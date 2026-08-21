@@ -123,7 +123,9 @@
 > **✅ 回执（PE-C·2026-07-22·选修法 a）**：`vendor.test.ts`「索引合法」测重写为**分解式对账**——按 id 前缀切两类：① vendor 62（`card/`53 + `chip/`9）逐条断言 `status='filled'` + `provenance.vendoredFrom===id`；② 程序生成 28（其余 id）逐条断言 `status='filled'` + `provenance.generator==='scripts/game-c-art-gen.mjs'` + 非 card/chip 前缀；合计断言 90。**未改总数糊过去**（两类计数 + 各自溯源字段独立咬）。**门禁证据**：全量 `npx vitest run` = **377 文件 / 3233 例全绿·exit 0**；`node scripts/scoped-gate.mjs --run` = **exit 0**（tsc 0 + game-c vitest + build + docs-ref + context-budget 全 PASS·scope=game:game-c）。
 > **问责定性（照制度只问流程）**：门本身咬得住（单游戏面即跑该测）——缺口在「推送前跑门」仍靠自觉、无服务端强制；此事记为 CI 服务端门禁议题（owner 决策仍挂起）的新实证。**PE-C 自省**：改 `index.json` 计数属改动本测覆盖面，当同提交同步测试断言并跑门；今后推送前 `scoped-gate --run` 必跑、看退出码（已内化）。
 
-### REQ-C-110 · [报 PUI·工具盲区] ui-audit 对比度量不了「渐变填充」→ 牌面/金键假阳 · [2026-07-18] · 提出人 PE-C（2D 转向 check-ui 暴露）→ PUI（ui-audit/基座控件）· status: open · 优先级: P3（假阳·不阻断真交付·工具准度） · 类型: 审计工具盲区（跨游戏·非单游戏）
+### REQ-C-110 · [报 PUI·工具盲区] ui-audit 对比度量不了「渐变填充」→ 牌面/金键假阳 · [2026-07-18] · 提出人 PE-C（2D 转向 check-ui 暴露）→ PUI（ui-audit/基座控件）· status: **✅ 已修（PUI 2026-08 查缺补漏批）** · 类型: 审计工具盲区（跨游戏·非单游戏）
+> `solidBgUp` 渐变底不再穿透——采纳本单建议①：`gradientBg()` 读渐变**首个色标**当实底（computed rgb()）。实证金渐变键近黑字撤修前 1.03 假阳→修后通过·无渐变屏零影响。同批解 REQ-108-UI-01 / game-a A-022。金键牌面若仍有个别边界假阳，按本单头注既有免责链留证即可。
+
 > **现象**：`tools/ui-audit.mjs` 对比度检查「取 computed color vs 逐层向上第一个**不透明** backgroundColor」——`PlayingCard` 'light' 白牌面 + `gold-sheen` 等 FillPreset 都是**渐变**（无实 backgroundColor），审计穿透到暗桌呢/页底 → 黑/红点数判 1.15、金键 ink 暗字判 1.1（硬失败）。**实际高对比可读**（白牌面黑红点数、金键压暗字·截图 `2d-*.png` 目击）。
 > **同先例**：game-a 亦 PlayingCard 假阳（其 audit exit 1·已报 A-007 系overlap侧）；此为**对比侧**同根盲区·跨 game-a/game-c。
 > **建议（PUI 裁）**：① ui-audit 渐变底取「渐变主色/端点色」近似量对比（而非穿透到底）；或 ② 给渐变填充元素识别标（如 `data-fill-approx="#..."`）供审计读；或 ③ PlayingCard/FillPreset 渲染补一层实 backgroundColor 兜底。**在此之前**：game-c 的 12 处对比硬失败=已知渐变假阳（audit 头注记录）·重叠侧已归零·真交付不阻断。

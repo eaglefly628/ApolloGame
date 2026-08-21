@@ -96,6 +96,10 @@ function fxToCss(fx: readonly VisualEffect[], t: UITheme): { css: string; dataFx
     } else if (e.kind === 'shake') {
       vars.push(`--fx-amp:${num(e.intensity, 1) * 4}px`);
       anim.push(`apollo-fx-shake ${ms || 520}ms ease-in-out ${e.once ? 'both' : 'infinite'}`);
+    } else if (e.kind === 'wobble') {
+      // 摇摆：循环 rotate+scale 晃动（蓄势/摇拳/待机·REQ-108-UI-02）。intensity=摆幅倍率（度）。
+      vars.push(`--fx-wob:${num(e.intensity, 1) * 8}deg`);
+      anim.push(`apollo-fx-wobble ${ms || 1400}ms ease-in-out ${e.once ? 'both' : 'infinite'}`);
     } else if (e.kind === 'glow') {
       const col = fxColor(t, e.color); const r = num(e.intensity, 1);
       filter.push(`drop-shadow(0 0 ${4 * r}px ${col}) drop-shadow(0 0 ${10 * r}px ${col})`);
@@ -162,6 +166,14 @@ function layoutStyle(c?: LayoutConstraints, t?: UITheme): string {
   if (c.radius !== undefined) p.push(`border-radius:${num(c.radius)}px`);
   // 不透明度（0..1·装饰淡入/水印/剪影）。非数字回退 1（不透明·安全）。REQ-UI-骰途逐像素③。
   if (c.opacity !== undefined) p.push(`opacity:${num(c.opacity, 1)}`);
+  // 入场方向/幅度（REQ-UI-入场方向·配 anim:'flyIn'）：animFrom+animDist → CSS 变量喂进 apollo-flyIn 关键帧。
+  // 只在设了任一时才推变量 → 既有 flyIn（无这俩）落关键帧默认 -24px（字节不变·零回归）。
+  if (c.anim === 'flyIn' && (c.animFrom !== undefined || c.animDist !== undefined)) {
+    const dist = num(c.animDist, 24);
+    const dx = c.animFrom === 'right' ? dist : c.animFrom === 'top' || c.animFrom === 'bottom' ? 0 : -dist;
+    const dy = c.animFrom === 'bottom' ? dist : c.animFrom === 'top' ? -dist : 0;
+    p.push(`--anim-dx:${dx}px`, `--anim-dy:${dy}px`);
+  }
   // 动画：一次性入场（both ease-out）或持续循环（infinite·环境动效）。仅白名单预设；时长/延迟强制数字。
   if (c.anim && ANIM_PRESETS.has(c.anim)) {
     p.push(`animation:apollo-${c.anim} ${num(c.animMs, 360)}ms ${c.animDelay ? `${num(c.animDelay)}ms ` : ''}both ease-out`);
@@ -216,6 +228,8 @@ const SHAPE_CSS: Record<string, string> = {
 const shapeCss = (shape?: string): string => (shape && SHAPE_CSS[shape]) ? `;${SHAPE_CSS[shape]}` : '';
 
 const safeUrl = (url: string): string => esc(String(url).replace(/['"()\\\s]/g, ''));
+// 注：自由色净化 `safeColor` 定义在文件上部（REQ-UIFX·Particles/ProgressBar 自由色共用）——Label.color {custom}
+// 逃生（REQ-UI-Label色三态）复用它（其正则已剥 ;:"'<> 等能逃出 style 值的字符·防注入）。
 // 贴图皮：已解析图 URL → 覆盖按钮底 + 白字投影保可读（同 texLayer 剥离 url() 逃逸字符防注入）。空 → ''。
 // slice 未给=cover（整图缩放·可能拉伸/裁切）；slice 给了（源边 px）=**9-slice 无损缩放**（border-image：四角固定·
 // 四边 1D 拉伸·中心 2D 拉伸——商业 UI 皮标配，治好非原生尺寸下贴图变形·owner 2026-07-07）。放样式末尾覆盖 kind 底。
@@ -316,7 +330,10 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
   };
   // size 接受具名档 或 裸 px 数字（复刻像素稿精确字号·owner 2026-06-28「字阶该全档」）：数字直用、令牌查表。
   const sz = typeof p.size === 'number' ? p.size : (sizeMap[p.size ?? 'md'] ?? 13);
-  const cl = colorMap[p.color ?? 'text'] ?? t.text;
+  // 色三态（REQ-UI-Label色三态）：令牌查表·{custom} 显式逃生（净化防注入）。同 Panel.bg 口径。
+  const resolveColor = (c: LabelProps['color'], fb: string): string =>
+    (c && typeof c === 'object') ? safeColor(c.custom) : (colorMap[c ?? 'text'] ?? fb);
+  const cl = resolveColor(p.color, t.text);
   // 具名字体槽（缺省按 mono 布尔回退·保旧调用方不变）：pixel/display 槽缺省回退 fontUi/fontMono。
   const fontSlot: Record<string, string> = {
     ui: t.fontUi, mono: t.fontMono,
@@ -343,7 +360,7 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
   if (p.spans) {
     // 段首内联图标（批32 图标统一升级）：img=已解析 URL·1em 随字号。无 img 段=原输出字节不变。
     const inner = p.spans.map((s) =>
-      `<span style="color:${colorMap[s.color ?? 'text'] ?? cl}${s.bold ? ';font-weight:700' : ''}">${s.img ? `<img src="${esc(s.img)}" alt="" style="height:1em;width:1em;object-fit:contain;vertical-align:-0.15em${s.text ? ';margin-right:4px' : ''}">` : ''}${p.raw ? esc(s.text) : escT(s.text, t)}</span>`,
+      `<span style="color:${resolveColor(s.color, cl)}${s.bold ? ';font-weight:700' : ''}">${s.img ? `<img src="${esc(s.img)}" alt="" style="height:1em;width:1em;object-fit:contain;vertical-align:-0.15em${s.text ? ';margin-right:4px' : ''}">` : ''}${p.raw ? esc(s.text) : escT(s.text, t)}</span>`,
     ).join('');
     return `<span id="${esc(id)}" style="${style}">${inner}</span>`;
   }
@@ -388,8 +405,10 @@ function renderBadge(id: string, p: BadgeProps, ls: string, t: UITheme): string 
     gold:   `background:rgba(212,160,60,0.16);color:${t.gold}`,
     danger: `background:rgba(211,137,122,0.16);color:${t.danger}`,
   };
+  // icon 槽（REQ-UI-Badge图标·同 Tag/Button.icon）：已解析 URL·随字号·居 text 前。缺省无=纯文字零变。
+  const icon = p.icon ? `<img src="${esc(p.icon)}" alt="" style="height:1em;width:1em;object-fit:contain;vertical-align:-0.12em;margin-right:3px">` : '';
   const style = `${toneStyle[p.tone ?? 'dim'] ?? toneStyle['dim']};font-size:9px;padding:1px 7px;border-radius:8px;white-space:nowrap;font-family:${t.fontUi};${ls}`;
-  return `<span id="${esc(id)}" style="${style}">${escT(p.text, t)}</span>`;
+  return `<span id="${esc(id)}" style="${style}">${icon}${escT(p.text, t)}</span>`;
 }
 
 function renderInput(id: string, p: InputProps, ls: string, t: UITheme): string {
@@ -872,6 +891,17 @@ function renderAvatar(id: string, p: AvatarProps, ls: string, t: UITheme): strin
   const inner = p.src
     ? `<img src="${esc(p.src)}" alt="${esc(p.name ?? '')}" style="width:100%;height:100%;object-fit:cover">`
     : `<span style="font-size:${Math.round(size * 0.42)}px;color:${t.sub};font-family:${t.fontUi}">${esc((p.name ?? '?').slice(0, 1))}</span>`;
+  // 环形进度描边（REQ-UI-Avatar环·回合计时/进度环绕头像）：有 ring → 外层 conic 环 + 内层头像盖住中心（只露环带）。
+  // 无 ring = 原样字节不变（不动既有 golden）。
+  if (p.ring) {
+    const ringCol: Record<string, string> = { accent: t.jade, gold: t.gold, ok: t.ok, warn: t.warn, danger: t.danger };
+    const rc = ringCol[p.ring.tone ?? 'accent'] ?? t.jade;
+    const pct = Math.max(0, Math.min(1, num(p.ring.value) / num(p.ring.max, 1))) * 100;
+    const thick = Math.max(3, Math.round(size * 0.09));
+    const rad = radius === 0 ? 0 : Math.round((size + thick * 2) / 2);   // 方形环仍方·圆/圆角环走圆
+    const avatar = `<span style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:${radius}px;overflow:hidden;background:${t.bg3};border:1px solid ${t.line}">${inner}</span>`;
+    return `<span id="${esc(id)}" title="${esc(p.name ?? '')}" style="display:inline-flex;padding:${thick}px;border-radius:${rad}px;background:conic-gradient(${rc} 0 ${pct}%,${t.line} ${pct}% 100%);${ls}">${avatar}</span>`;
+  }
   return `<span id="${esc(id)}" title="${esc(p.name ?? '')}" style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:${radius}px;overflow:hidden;background:${t.bg3};border:1px solid ${t.line};${ls}">${inner}</span>`;
 }
 

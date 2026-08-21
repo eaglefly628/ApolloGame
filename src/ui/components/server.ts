@@ -183,7 +183,7 @@ const APOLLO_KEYFRAMES = `
 @keyframes apollo-pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
 @keyframes apollo-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 @keyframes apollo-dealIn{from{opacity:0;transform:translateY(-20px) rotate(-8deg)}to{opacity:1;transform:translateY(0) rotate(0)}}
-@keyframes apollo-flyIn{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:translateX(0)}}
+@keyframes apollo-flyIn{from{opacity:0;transform:translate(var(--anim-dx,-24px),var(--anim-dy,0px))}to{opacity:1;transform:translate(0,0)}}
 @keyframes apollo-coin-heads{0%{transform:rotateX(60deg)}100%{transform:rotateX(1800deg)}}
 @keyframes apollo-coin-tails{0%{transform:rotateX(60deg)}100%{transform:rotateX(1980deg)}}
 @keyframes apollo-spark{0%{transform:scale(.4);opacity:0}40%{transform:scale(1.25);opacity:1}100%{transform:scale(1);opacity:.9}}
@@ -232,6 +232,7 @@ const APOLLO_KEYFRAMES = `
 @keyframes apollo-marquee{from{transform:translateX(100%)}to{transform:translateX(-100%)}}
 @keyframes apollo-flyto{0%{transform:translate(0,0) scale(1);opacity:1}50%{transform:translate(calc(var(--fly-dx,0px) * .5),calc(var(--fly-dy,0px) * .5 - var(--fly-arc,60px))) scale(.9)}100%{transform:translate(var(--fly-dx,0px),var(--fly-dy,0px)) scale(.4);opacity:.1}}
 @keyframes apollo-fx-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(calc(-1 * var(--fx-amp,4px)))}60%{transform:translateX(var(--fx-amp,4px))}}
+@keyframes apollo-fx-wobble{0%,100%{transform:rotate(calc(-1 * var(--fx-wob,8deg))) scale(1)}50%{transform:rotate(var(--fx-wob,8deg)) scale(1.06)}}
 @keyframes apollo-fx-flash{0%{opacity:0}25%{opacity:.7}100%{opacity:0}}
 @keyframes apollo-fx-fade{from{opacity:1}to{opacity:0}}
 [data-fx~="flash"]::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:var(--fx-flash,#d3897a);mix-blend-mode:screen;animation:apollo-fx-flash var(--fx-flash-ms,420ms) ease-out both}

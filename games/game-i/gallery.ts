@@ -14,6 +14,7 @@ import { buildVideoLab, INITIAL_AISHE, type AisheState } from './video-lab.js';
 import { buildMmoHud } from './mmo-hud.js';
 import { buildCasualHud } from './casual-hud.js';
 import { buildDialogueScene } from './dialogue-demo.js';
+import { buildItemSlot, buildStatTile } from '@zerocraft/engine/ui/starters/index.js';
 import { buildPresenceDemo } from './presence-demo.js';
 import { SOUNDS, BGM } from './sounds.js';
 
@@ -228,6 +229,7 @@ function pageDisplay(): LayoutNode { return {
         { type: 'Badge', id: 'bdg-ok', props: { text: '在线', tone: 'ok' } },
         { type: 'Badge', id: 'bdg-warn', props: { text: '警示', tone: 'warn' } },
         { type: 'Badge', id: 'bdg-dim', props: { text: '离线', tone: 'dim' } },
+        { type: 'Badge', id: 'bdg-icon', props: { text: '冠军', tone: 'ok', icon: DEMO_IMG } }, // icon 槽（补齐 Tag/Button 一致性·2026-08 查缺补漏）
       ],
     },
     divider('d-d2'),
@@ -299,8 +301,37 @@ function pageDisplay(): LayoutNode { return {
         { type: 'Avatar', id: 'av-square', props: { name: '张', size: 48, shape: 'square' } },
         { type: 'Avatar', id: 'av-sm', props: { name: '马', size: 32, shape: 'circle' } },
         { type: 'Avatar', id: 'av-lg', props: { name: '黄', size: 64, shape: 'circle' } },
+        // ring 环形进度描边（回合计时/蓄力·2026-08 查缺补漏）：conic 弧环绕头像到 value/max 比例。
+        { type: 'Avatar', id: 'av-ring1', props: { name: '甲', size: 48, ring: { value: 0.72, tone: 'accent' } } },
+        { type: 'Avatar', id: 'av-ring2', props: { src: DEMO_IMG, name: '计时', size: 48, ring: { value: 0.4, tone: 'warn' } } },
+        { type: 'Avatar', id: 'av-ring3', props: { name: '满', size: 48, ring: { value: 1, tone: 'ok' } } },
       ],
     },
+    divider('d-uifill'),
+    sectionTitle('t-uifill', '★ 2D 查缺补漏（owner 2026-08）· Label 色 {custom} · fx:wobble · flyIn 方向 · ItemSlot / StatTile 组合助手'),
+    { type: 'Label', id: 'uifill-note', props: {
+      text: 'Label.color 三态（令牌 + {custom} 逃生·同 Panel.bg）：花色/精确墨色靠 {custom}·仍是闭集令牌优先。fx:wobble=循环 rotate+scale 摇摆（蓄势/摇拳）。flyIn 加 animFrom/animDist=可配方向大幅伸入。ItemSlot/StatTile=跨游戏反复手搓的簇→@ui/starters builder 去重（不加新控件）。', color: 'sub', size: 'sm' } },
+    { type: 'Panel', id: 'uifill-color', props: { bare: true }, layout: { direction: 'row', gap: 16, align: 'center', padding: 8 },
+      children: [
+        { type: 'Label', id: 'uf-c1', props: { spans: [{ text: '♠13 ', color: { custom: '#8a94a6' } }, { text: '♥13 ', color: { custom: '#d8483f' } }, { text: '♦13 ', color: { custom: '#d3a03a' } }, { text: '♣13', color: { custom: '#3f9a5a' } }], size: 'xl', bold: true } },
+        { type: 'Label', id: 'uf-c2', props: { text: 'Label.color {custom} 花色 4 色（令牌装不下→逃生·仍非裸串）', color: 'sub', size: 'sm' } },
+      ] },
+    { type: 'Panel', id: 'uifill-anim', props: { bare: true }, layout: { direction: 'row', gap: 26, align: 'center', padding: 12 },
+      children: [
+        { type: 'Label', id: 'uf-wob', props: { text: '✊ 摇拳', size: 'xl', bold: true, color: 'gold' }, layout: { fx: [{ kind: 'wobble', intensity: 1.2 }] } },
+        { type: 'Label', id: 'uf-wob2', props: { text: '⚡ 蓄势', size: 'xl', bold: true, color: 'warn' }, layout: { fx: [{ kind: 'wobble' }] } },
+        { type: 'Label', id: 'uf-fly', props: { text: '大幅右伸入 →', size: 'lg', bold: true, color: 'jade' }, layout: { anim: 'flyIn', animFrom: 'right', animDist: 120, animMs: 700 } },
+        { type: 'Label', id: 'uf-flyhint', props: { text: 'fx:wobble（循环摇摆）· flyIn animFrom:right animDist:120（大幅伸入）', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+      ] },
+    { type: 'Panel', id: 'uifill-slots', props: { bare: true }, layout: { direction: 'row', gap: 14, align: 'end', padding: 8 },
+      children: [
+        buildItemSlot({ id: 'uf-slot1', icon: DEMO_IMG, edge: 'gold', count: 3, label: '长剑' }),
+        buildItemSlot({ id: 'uf-slot2', icon: DEMO_IMG, edge: 'jade', selected: true, label: '选中' }),
+        buildItemSlot({ id: 'uf-slot3', icon: DEMO_IMG, cooldown: '3', label: '冷却' }),
+        buildItemSlot({ id: 'uf-slot4', empty: true, label: '空槽' }),
+        buildStatTile({ id: 'uf-stat1', value: '140', label: '伤害', tone: 'gold', shadow: 4 }),
+        buildStatTile({ id: 'uf-stat2', value: '×9', label: '连击', tone: 'danger' }),
+      ] },
     divider('d-d6a'),
     sectionTitle('t-card', 'CARD · 内容卡（media/title/sub/角标·可点 → 信号 pickCard·四态）'),
     {

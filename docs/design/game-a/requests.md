@@ -26,11 +26,14 @@ owner 2026-07-20 要「工作台换任一美术→游戏即时生效」。逐条
 > **⏬ owner 2026-07-22 裁：低优先·PUI 排期做即可**——今明版本 demo **不换牌面**（文字白扑克稳用·合蓝本）。此项非急件，PUI 有余力再补满面贴图槽；game-a 侧无待办（牌面维持现状）。
 > **✅ PUI 已交 ①（2026-07-22）**：`PlayingCard.faceArt`（+`faceArtSlice` 9-slice·backArt 的正面版）——`faceUp` 时整面 cover、角标点数/中央花色全隐（关角标）、`label`/`value` 覆盖层仍在；不填=文字牌面零回归。`types.ts`+`render.ts`+catalog+`ui.md`+测试（playing-card.test.ts）。**PE-A 要换牌面时**：`faceArt=resolveAsset(牌面 key)`（sim 持 key），54 张整卡 SVG 即可上面（`art` 中央槽留给"中央剪影"用途）。②③④仍 open。
 ② **Badge/文字内联图标**：`Badge`（钱包/持有者）无 `icon` 槽（`Tag`/`Button` 有·已用）；`🏆` 暂大者前缀嵌在 `fmtHolder` 文字串里。要让奖杯/部分徽章图标可换→`Badge` 加 `icon`（照 `Tag.icon`），或提供「文字内联图标」原语。
+> **✅ PUI 已交 ②（2026-08 查缺补漏批）**：`Badge.icon`（已解析 URL·随字号·居 text 前·照 Tag/Button.icon）。`types.ts`+`render.ts`+catalog+`ui.md`+测试。**PE-A**：奖杯从 `fmtHolder` 文字串挪到 `Badge{icon:resolveAsset(奖杯 key)}`。①已交·③④仍 open。
 ③ **紧凑按钮贴皮 min-size**：`buttonSkins`（9-slice）源图 220×56·slice 16 → 对顶栏/工具条**小按钮**强制大 min-size，撑高变方 +「菜单」折行（实测回归·已撤）。要小按钮也能换皮→9-slice 支持**更小源图/可配 min** 或按钮尺寸自适应 slice。
 ④ **一次性事件态 fx 钩子**：`fx/play-glow`（出牌流光）/`fx/bomb`（炸弹闪光）需「本手出的是炸弹吗」这类**逐手事件态**触发叠层；现入场动效走 `LayoutNode.anim` 闭集、无自定义 SVG-fx 事件叠加位。要事件驱动 SVG 特效→补事件态 fx 叠层原语（或 timeline 消费）。
 **PE 侧无干净兜底**（都属控件/工具能力）。在 PUI 出件前：牌面维持文字、徽章图标维持 emoji、小按钮维持原生 kind、fx 维持 anim；台账每条标真状态（`wired.reason`）不留幽灵槽。
 
-### A-022 · [2026-07-20] · PE-A · ui-audit 对比度只读 `background-color` → `hero`/渐变底按钮误报「硬性低对比」假阳 · status: 📝 待转报 PUI（视觉真绿·非阻断·工具盲区）· 类型: UI 基座工具缺口（PUI 域·`tools/ui-audit.mjs`）
+### A-022 · [2026-07-20] · PE-A · ui-audit 对比度只读 `background-color` → `hero`/渐变底按钮误报「硬性低对比」假阳 · status: **✅ 已修（PUI 2026-08 查缺补漏批·同解 REQ-108-UI-01/C-110）**· 类型: UI 基座工具缺口（PUI 域·`tools/ui-audit.mjs`）
+> `solidBgUp` 渐变底取首色标当实底（不再穿透近黑页底）。实证 hero 键「开始上桌」撤修前 1.03 假阳→修后通过。`hud.ts:8` 的 A-022 免责注可撤（现真绿）。
+
 > **ID 让号（2026-07-20·rebase）**：本条原报 A-018，与 Lead 评审同轮工单化的 A-018（一四进贡裁决）撞号——Lead 995e6c70 先落，PE 让号改 **A-022**（hud.ts 头注内引用同步改）。
 **背景（owner 2026-07-20 金按钮）**：主 CTA「开始上桌 / 入座开局」按蓝本 `main-menu-guandan.dc.html`（`color:#241009` 深墨字 + `background:linear-gradient(#f0c96a,#d3a247)` 金渐变=深字金底）复刻。闭集里唯一「深字金底」件=`Button kind:'hero'`（`render.ts:270`·金渐变底 + `t.bg0` 深墨字 + 倒角 + 流光）——**真机渲染约 8:1 高对比、清晰可读**（已截图目击 `menu-hero.png`）。贴皮路（`buttonSkins.skin`）反而 `render.ts:218` 强制 `color:#fff` 白字→浅金上失读，故弃皮用 hero kind（视觉更对蓝本）。
 **盲区（`tools/ui-audit.mjs` contrast）**：对比度计算只取 computed `background-color`；`hero` 底是 `linear-gradient`（`background-color` 解析=透明）→ 工具穿透到父/页底 `bg0(#160e0a)` 深色采样 → 深墨字 vs「看不见的金底」≈ 1.05 → 误报**硬性低对比阻断**。同因：`game-b-flow` 4 处 contrast 假阳、各游戏扇形/嵌套 overlap 假阳——raw `ui-audit.mjs exit=1` 是这些复杂屏的**已知假阳常态**（`/check-ui` agent 判官豁免·非自动推门卡口；本项目推门=`scoped-gate` 不含 ui-audit）。对照：旧 `primary`（绿·`jadeWash` 半透实底）工具读得到→绿；换 hero 后**仅此一行**由绿转红（纯工具盲区·非真回归）。
@@ -50,7 +53,9 @@ GDD §2.3 G1 自带问号未裁（裁 ☐）；代码照字面=绝对末游进�
 ### A-021 · [2026-07-20] · Lead 评审 · GD-A：brief 记牌口径认账 + 剧本缺口补写 · status: 📋 open 待领（剧本部分衔接 A-018 裁决） · 类型: 设计对账+验收剧本（GD 域）
 ① brief §5「4 档靠记牌分档」未实现（AI_TIERS.memory=死标签·真差异=三策略开关）——补记牌消费设计（REQ-BT 裁决：记牌保真度=黑板初值）交 PE，或 brief 改口认账。② 剧本缺口：一四进贡正例（待 A-018）；抗贡正例（输方真持双大王）；双下抗贡；抗贡+1倍/天王炸+1倍彩头倍率（现零测试）；停 A 重打闭环。详 review §三/§四。
 
-### A-017 · [2026-07-18] · PE-A · 入场动效闭集缺「从右/可配方向」变体 → 座前出牌无法按入座方向全向飞入 · status: 📝 待转引擎池报 PUI（游戏层已近似·非阻断）· 类型: UI 基座动效缺口（PUI 域）
+### A-017 · [2026-07-18] · PE-A · 入场动效闭集缺「从右/可配方向」变体 → 座前出牌无法按入座方向全向飞入 · status: **✅ 已加（PUI 2026-08 查缺补漏批）**· 类型: UI 基座动效缺口（PUI 域）
+> `anim:'flyIn'` 加 `layout.animFrom:'left/right/top/bottom'` + `animDist`（`apollo-flyIn` 改用 CSS 变量·四向可配）。座前出牌按入座方向填 `animFrom`。裸 flyIn 零回归。同批见 REQ-108-UI-02。
+
 > **ID 让号（2026-07-20·rebase）**：本条原报 A-015，与 GD-A 同轮占用的 A-015（经济翻改）/A-016（衣橱）撞号——origin 先落，PE 让号改 **A-017**（hud.ts/ui-scene-design.md 内引用同步改）。
 **owner 需求（2026-07-18）**：座前出牌动效「根据入桌方向动态调整更漂亮」——各座出的牌从**自己的方向**飞入桌心（partner 顶→下落、hero 底→上飞、west 左→右入、east 右→左入）。
 **根因（引擎 `src/ui/components/server.ts` 关键帧闭集）**：一次性入场 `ANIM_PRESETS` 只有 `fadeIn/slideUp(下→上)/pop/dealIn(上→下)/flyIn(左→右)/shake/popOut`——**无「从右→左」变体、也无 `from` 方向参**。故 east（右座）没有对味的入场式。

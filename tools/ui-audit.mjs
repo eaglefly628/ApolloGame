@@ -98,12 +98,23 @@ try {
   const parse = (c) => { const m = c.match(/[\d.]+/g); return m ? m.map(Number) : null; };
   const lum = (rgb) => { const a = rgb.slice(0, 3).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2]; };
   const ratio = (f, b) => { const L1 = lum(f), L2 = lum(b); return (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05); };
+  // 渐变底取首个色标当实底（REQ-108-UI-01 / REQ-C-110 / A-022·跨 game-a/c/i/108 假阳）：
+  // 渐变元素没有 backgroundColor（transparent）→ 旧逻辑跳过、一路穿透到近黑页底 → 金渐变键近黑字被误判 1.1x。
+  // 真实底是渐变本身·文字压的是它——故读 backgroundImage 的 linear/radial-gradient 首个色标(computed 归一成 rgb())当实底。
+  const gradientBg = (cs) => {
+    const bi = cs.backgroundImage;
+    if (!bi || !/gradient\(/.test(bi)) return null;
+    const m = bi.match(/rgba?\(([\d.,\s]+)\)/); // 首个色标（渐变起色·文字多压在这一端）
+    if (!m) return null;
+    const c = m[1].split(',').map(Number);
+    return (c[3] === undefined || c[3] >= 0.5) ? c.slice(0, 3) : null; // 太透的渐变仍穿透
+  };
   const solidBgUp = (el) => {
     let n = el;
     while (n && n !== document.documentElement) {
       const cs = getComputedStyle(n); const bg = parse(cs.backgroundColor);
       if (bg && (bg[3] === undefined || bg[3] >= 0.95)) return bg.slice(0, 3);
-      // 渐变底无 backgroundColor → 跳过（近似：继续向上找实底）
+      const grad = gradientBg(cs); if (grad) return grad; // 渐变底 → 取首色标当实底（不再跳过穿透）
       n = n.parentElement;
     }
     return [6, 8, 13]; // 兜底页面深底

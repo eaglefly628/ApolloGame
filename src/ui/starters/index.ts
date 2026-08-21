@@ -9,3 +9,6 @@ export { resolveEmotionArt, emotionArtResolver, SAMPLE_EMOTION_ART } from './emo
 export type { EmotionArtTable, ArtFallback, ArtResolver } from './emotion-art.js';
 // 剧情起手屏（REQ-DIALOGUE M4·PUI 半·复制即跑的 VN 剧情屏模板·M1 三件已接线 bind + house 主题）。
 export { buildStoryStarter } from './story-starter.js';
+// 组合瓦片（查缺补漏 #6·跨游戏反复手搓的 ItemSlot/StatTile 去重·不加新控件·纯 LayoutNode）。
+export { buildItemSlot, buildStatTile } from './tiles.js';
+export type { ItemSlotSpec, StatTileSpec } from './tiles.js';

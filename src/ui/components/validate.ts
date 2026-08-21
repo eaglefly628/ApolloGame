@@ -17,7 +17,7 @@ export interface UiIssue {
 }
 
 // 视觉特效合集（layout.fx）闭集：kind/color 枚举·防拼错与注入（与 types.ts EffectKind/EffectColor 同源）。
-const FX_KINDS = new Set(['pulse', 'float', 'shake', 'pop', 'glow', 'sheen', 'sheen-hover', 'flash', 'fade', 'holo', 'ripple']);
+const FX_KINDS = new Set(['pulse', 'float', 'shake', 'pop', 'glow', 'sheen', 'sheen-hover', 'flash', 'fade', 'holo', 'ripple', 'wobble']);
 const FX_COLORS = new Set(['danger', 'gold', 'jade', 'warn', 'ok', 'white']);
 
 /** 验一棵 LayoutNode 树（递归 children + node 型 props），返回全部 issue（空=合法）。 */
@@ -97,7 +97,7 @@ export function isValidLayoutNode(node: LayoutNode): boolean {
 const SURFACE_TOKENS = new Set(['panel', 'raised', 'sunken', 'jade', 'gold', 'ok', 'warn', 'danger', 'ink']);
 const FILL_PRESETS = new Set(['jade-sheen', 'gold-sheen', 'ink-deep', 'steel', 'blood', 'frost', 'ember', 'void']);
 // 只属 layout 的词（绝不是任何控件的合法 prop·误写进 props 静默失效）。**排除 radius**（Image/ProgressBar 真 prop·防误报）。
-const LAYOUT_ONLY = new Set(['fx', 'anim', 'animMs', 'animDelay', 'rotate', 'rotateX', 'rotateY', 'z', 'scale', 'tilt3d', 'perspective', 'chamfer', 'sheen']);
+const LAYOUT_ONLY = new Set(['fx', 'anim', 'animMs', 'animDelay', 'animFrom', 'animDist', 'rotate', 'rotateX', 'rotateY', 'z', 'scale', 'tilt3d', 'perspective', 'chamfer', 'sheen']);
 const has3dLayout = (l: unknown): boolean => {
   const c = l as { z?: unknown; rotateX?: unknown; rotateY?: unknown } | undefined;
   return !!c && (c.z !== undefined || c.rotateX !== undefined || c.rotateY !== undefined);

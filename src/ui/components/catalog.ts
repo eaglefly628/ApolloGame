@@ -76,7 +76,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
     props: [
       { name: 'text', type: 'string', describe: '文本（spans/tween/bind 提供内容时可省）' },
       { name: 'size', type: 'enum-or-number', values: SIZE, default: 'md', describe: '字号档（具名令牌 xs10..xxxl34·保和谐默认）或裸 px 数字（复刻像素稿精确字号·8→任意大）' },
-      { name: 'color', type: 'enum', values: COLOR, default: 'text', describe: '颜色令牌' },
+      { name: 'color', type: 'enum', values: COLOR, default: 'text', describe: '颜色令牌（11 闭集令牌·换皮自适应）。特别指定色用 {custom:"#hex"} 逃生（同 Panel.bg 三态·audit 标记建议迁令牌·绝不收裸串）' },
       { name: 'bold', type: 'boolean', describe: '加粗' },
       { name: 'font', type: 'enum', values: ['ui', 'mono', 'pixel', 'display', 'serif', 'impact', 'heavy', 'epic', 'fantasy', 'elegant', 'script', 'hand', 'scifi', 'terminal', 'comic', 'stencil', 'western', 'retro', 'marker', 'bubbly', 'gothic', 'fashion', 'shadow', 'round', 'cnbrush', 'cnwen', 'cnround', 'jpbrush', 'jppen'], describe: '字体槽：基础 ui/mono/pixel/display/serif + 18 款拉丁艺术字（OFL·base64）+ round(Fredoka 圆润数字/大标题·可变字重 300–700·bold→700·url 惰性载) + 5 款 CJK 艺术字（cnbrush 中文毛笔/cnwen 中文细宋/cnround 中文卡通粗圆黑站酷快乐体·标题大字/jpbrush 日文毛筆/jppen 日文楷書·能渲汉字假名·url 惰性载）' },
       { name: 'glow', type: 'boolean', describe: '磷光发光（按 color 描柔光）' },
@@ -109,6 +109,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'name', type: 'string', describe: '名（取首字作占位）' },
       { name: 'size', type: 'number', describe: '尺寸 px' },
       { name: 'shape', type: 'enum', values: ['circle', 'rounded', 'square'], describe: '形状' },
+      { name: 'ring', type: 'object', describe: '环形进度描边 {value,max?,tone?}——conic 弧环绕头像到 value/max 比例（回合计时/蓄力/进度环）。tone=accent/gold/ok/warn/danger·缺省 accent。缺省无环' },
     ],
     sample: { type: 'Avatar', id: 's-avatar', props: { name: '关羽', size: 44, shape: 'circle' } },
   },
@@ -268,7 +269,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
   // ── 数据展示 ────────────────────────────────────────────────
   {
     type: 'Badge', summary: '小徽章', whenToUse: '状态标记（OK/警告/淡/翠/金/危）。', children: 'none',
-    props: [{ name: 'text', type: 'string', required: true, describe: '文字' }, { name: 'tone', type: 'enum', values: ['ok', 'warn', 'dim', 'accent', 'gold', 'danger'], describe: '着色（accent/gold/danger=REQ-UIFX 复查补齐·镜像 Toast 家族）' }],
+    props: [{ name: 'text', type: 'string', required: true, describe: '文字' }, { name: 'tone', type: 'enum', values: ['ok', 'warn', 'dim', 'accent', 'gold', 'danger'], describe: '着色（accent/gold/danger=REQ-UIFX 复查补齐·镜像 Toast 家族）' }, { name: 'icon', type: 'string', describe: '首部内联图标 URL（已解析·随字号·居 text 前·同 Tag/Button.icon）。缺省无=纯文字零变' }],
     sample: { type: 'Badge', id: 's-badge', props: { text: '稀有', tone: 'ok' } },
   },
   {

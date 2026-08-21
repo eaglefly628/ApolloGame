@@ -67,6 +67,11 @@ export interface LayoutConstraints {
   animMs?: number;
   /** 动画延迟 ms（错峰发牌/逐元素入场用·缺省 0）。 */
   animDelay?: number;
+  /** 入场方向（REQ-UI-入场方向·收编 game-a A-017「flyIn 只能从左·缺可配方向」+ game108「大幅度侧向伸入」）：
+   *  配 `anim:'flyIn'` 用——从 left/right/top/bottom 滑入。缺省 left（既有行为·零回归）。 */
+  animFrom?: 'left' | 'right' | 'top' | 'bottom';
+  /** 入场位移幅度 px（配 anim:'flyIn'·缺省 24）。走道/大幅伸入填大值（如 120）——治「写死 24px 只够轻微入场」。 */
+  animDist?: number;
   /** 可拖拽：渲染加 draggable + data-drag(=节点 id 作载荷)；mountUI 收 dragstart。 */
   draggable?: boolean;
   /** 放置区：信号名·渲染加 data-drop；mountUI 在此 drop 时调 handlers[信号](被拖节点 id)。 */
@@ -109,7 +114,8 @@ export type EffectKind =
   | 'flash'   // 整体闪色（受击冒红/暴击闪白/警告·color=闪色·常配 once）
   | 'fade'    // 半透明淡出消失（消耗/消退/移除·opacity→0·一次性·REQ-UI-fx源泉消退）
   | 'holo'    // 全息箔（彩虹光随角度流动·收集/gacha 稀有卡·比 sheen 白斜扫更炫·render-only 叠层）
-  | 'ripple'; // 点按涟漪（material 触感·:active 时从中心扩散一圈波·休闲触屏反馈·render-only ::after）
+  | 'ripple'  // 点按涟漪（material 触感·:active 时从中心扩散一圈波·休闲触屏反馈·render-only ::after）
+  | 'wobble'; // 摇摆（循环 rotate+scale 晃动·蓄势/紧张/摇拳/待机催促·intensity=摆幅·收编 game108 REQ-108-UI-02「摇拳」+ game-f 待机微动·区别 pulse 只缩放/shake 只平移）
 export type EffectColor = 'danger' | 'gold' | 'jade' | 'warn' | 'ok' | 'white'; // 语义色 → 主题令牌（闭集·防注入）
 // 容器描边语义色（闭集·主题令牌解析·REQ-UI-容器描边形）。Panel.edge 用：语义/阵营框色·绝不收自由 hex。
 // mine/foe = 通用「我方/敌方」阵营色（主题 mine/foe 令牌·缺省回退暖/冷）；其余复用既有语义令牌（jade/gold/ok/warn/danger）。
@@ -159,10 +165,17 @@ export interface ButtonProps {
   skinSlice?: number;
 }
 
+/** 文字色令牌（闭集·主题解析·换皮自适应）。`{custom:'#hex'}` 逃生仅"创作者特别指定"用——
+ *  与 `Panel.bg` 三态同口径（令牌优先·custom 显式逃生·audit 标记建议迁令牌）。REQ-UI-Label色三态：
+ *  收编 game-g 花色/蓝数字令牌挤（×4）+ game108 D6「11 令牌装不下稿子 14 用色」。红线不破：仍是**闭集令牌 + 显式 custom**，
+ *  绝不收裸串（弱 LLM 只选名·特别指定才 {custom}）。 */
+export type ColorToken = 'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger' | 'mine' | 'foe' | 'ink';
+export type LabelColor = ColorToken | { custom: string };
+
 export interface LabelProps {
   text?: string; // 可选：spans / tween / bind 提供内容时可省（缺省空串）
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl' | 'xxxl' | number; // 具名档(xs10..xxxl34) 或裸 px 数字(复刻精确档·8→任意大·REQ-UI-Label字阶裸数字)
-  color?: 'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger' | 'mine' | 'foe' | 'ink';
+  color?: LabelColor;
   bold?: boolean;
   mono?: boolean;
   /** 具名字体槽（闭集·换艺术字体）。基础槽：ui=主字体 / mono=等宽 / pixel=像素点阵 / display=数码管展示字 /
@@ -201,7 +214,7 @@ export interface LabelProps {
   /** 富文本多段着色(render-only·词条高亮/分色说明)：替代单色 text，逐段自带 color(同 Label 令牌)/bold。
    *  纯数据(段数组)·最弱 LLM 能填；有 spans 时忽略 text。 */
   /** 富文本分段（render-only）。img=段首内联图标（已解析 URL·1em 随字号·批32「图标统一升级」：emoji 记号可换成成套美术图标）。 */
-  spans?: Array<{ text: string; color?: 'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger'; bold?: boolean; img?: string }>;
+  spans?: Array<{ text: string; color?: LabelColor; bold?: boolean; img?: string }>;
   /** emoji 图渲逃生（REQ-UI-emoji图渲）：true=保留文本里的 emoji **字形**、不转美术图（代码块/刻意展示字形的场景）。
    *  缺省 false=随主题 `UITheme.emoji` 配置自动图渲（未配则本就零变化）。纯表现。 */
   raw?: boolean;
@@ -219,6 +232,9 @@ export interface DropdownProps {
 export interface BadgeProps {
   text: string;
   tone?: 'ok' | 'warn' | 'dim' | 'accent' | 'gold' | 'danger';
+  /** 首部内联图标（已解析 URL·随字号·居 text 前·同 Tag/Button.icon 约定）。缺省无=纯文字零变。
+   *  收编 game-a A-024②「🏆 被硬塞进 text 串」——徽章也该有图标槽（Tag/Button 都有·补齐一致性）。 */
+  icon?: string;
 }
 
 export interface InputProps {
@@ -556,6 +572,10 @@ export interface SegmentedProps {
 // ── Avatar（头像/立绘位）：src 有则图、无则取 name 首字；size 尺寸 px；shape 圆/圆角/方。 ──
 export interface AvatarProps {
   src?: string; name?: string; size?: number; shape?: 'circle' | 'rounded' | 'square';
+  /** 环形进度描边（REQ-UI-Avatar环·回合计时/蓄力/进度环绕头像）：conic 弧沿头像外圈画到 value/max 比例。
+   *  收编 game-c hud「读秒条闭集近似」+ game-b「头像回合计时描边」两处近似——ProgressBar.ring 有但不裹头像。
+   *  tone=闭集语义色（同 ProgressBar）·缺省 accent。纯表现·不填=无环零变。 */
+  ring?: { value: number; max?: number; tone?: 'accent' | 'gold' | 'ok' | 'warn' | 'danger' };
 }
 
 // ── Accordion（折叠面板）：title 行点击切开合（mountUI 内建）；open 初始展开；children = 折叠体。action 可选通知信号。 ──
