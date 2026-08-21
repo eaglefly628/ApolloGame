@@ -8,6 +8,9 @@
 
 ## 待处理 / 进行中
 
+### REQ-UPBACKUP · 工坊换肤备份抓错时点——backupPath 备份的是换上去的新图（备份无效） · [2026-08-19] · Lead 巡检 owner 直传批带出（实证：game101 art-59 backupPath 文件与 gen/art-59-up.png 逐字节同） · **指派：PST** · status: open · 优先级: P3 · 类型: 创作台 bug（上传/换肤线）
+> 病：上传替换流程的备份位应在**覆盖前**抓旧图供回滚，实际抓的是覆盖后的新图 → 换肤不可回滚、备份纯占空间。修点在 main_entry 上传/换肤处理器的备份时序；补一腿冒烟（备份文件 ≠ 新图·内容=替换前旧图）。实证样本已按 owner 令删除（affbcd96），复现：工坊对任一已 filled 皮肤槽再传一张新图，看 backupPath 内容。
+
 ### REQ-AUTOSAVE · 任务收工自动存档（先提交→门禁→绿了才推）· [2026-08-10] · **owner 令**（原话：「跑完的结果就没了，丢失了……我希望它能主动地去上传，跟我在这边窗口做这个事情感受是一致的」）· **施工主体 = PST（本行即锁·已交）** · 复查 = 主程 · status: **done·主程复查 PASS（2026-08-18·独立复查 agent 四轮 sabotage 三咬一漏）·余 F1 自证补测归 PST** · P1 · 类型: 创作台（PST 域）
 > 图纸/自证：`docs/design/auto-artifact-sync-2026-08.md` · 冒烟 `scripts/auto-sync-smoke.py`（25 腿·含撤修验红两轮：
 > 第三步退回 `sync_paths` → ②⑥ 转红；顺序改成「先门禁后提交」→ ③ 转红）。

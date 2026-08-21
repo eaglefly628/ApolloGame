@@ -23,3 +23,4 @@
 - 新 session 接手：① 读 `CLAUDE.md`（分支铁律/推送门禁/角色启动协议）② `git log --oneline -30` 对时间线 ③ 读 `requests.md` 看当前活跃工单（不看本文件的历史堆栈——本文件不再记录具体线头）。
 - 有真正"跨会话必须交代、别处找不到"的信息（如未提交的现场状态、口头未落笔的裁决）→ 写进 `requests.md` 对应工单或开一条新工单，不要堆在本文件（本文件只做路由表，堆内容=下一次 18 天陈旧的重演）。
 - 历史归档层（旧版全文、更早的 session 交接快照）已删除（owner 2026-08-03 拍板），考古查 git 历史，不追溯更新。
+- 环境常识（不过期·实证 2026-08-16/19 两次）：**容器轮换后 inotify 上限回落 128**——并发多 agent 跑 vitest 会以 `node:internal/fs/watchers` UVException 假红（22s+/例·形似测试坏了）；先 `sysctl -w fs.inotify.max_user_instances=1024 fs.inotify.max_user_watches=1048576` 再判红。
