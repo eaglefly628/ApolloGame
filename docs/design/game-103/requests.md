@@ -31,10 +31,11 @@
 - **②2D 批绘/实例化 → P3D**：`REQ-3D-RENDER-EFFICIENCY`（`requests-3d.md`·P1·owner 优先）。PE 侧同屏 cap（spawn-director）继续缓解 overdraw、待 P3D 批渲根治。
 - **PE 缓解已上（2026-07-24·纯数据·非根治）**：① 敌 `Steering.stopRange` 0→18（贴身即停=**环绕玩家成圈**而非全叠一点·接触伤害照常）；② 降同屏数量（开局圈 22→16·加压流 150→90/慢一倍）减 overdraw。真解（boid separation 敌间互斥 + 2D 批绘）仍等 Lead/P3D，`steering.ts` 现只有 seek/flee、`src/skills`/`src/renderer` 非 PE 域不碰。
 
-### BUG-03 · 回旋镖武器停在原地 · [P1·PE] · ✅ done（PE·撤 Steering 抵消·真飞穿透；干净往返段=capgap 待 Lead）
+### BUG-03 · 回旋镖武器停在原地 · [P1·PE] · ✅ done（PE·撤 Steering 抵消·真飞穿透；干净往返段 capgap=⚖ Lead 回驳 wontfix 2026-08-21·证明测试在案）
 - **现象**：boomerang 不飞出/返回。
 - **根因**（GD 读码）：`blueprint.ts:59-68` 弹体**同时挂** `Launch{toward:'target'敌}` + `Steering{seek 玩家}`——两者每 tick 都写 `Velocity`、**方向相反 → 抵消停原地**；注释设想的"Launch 飞出→self-remove→steering 拉回"**时序未实现**（Launch 不自除、两组件并存打架）。`Perception.sightRadius:0` 也可能取不到玩家目标。
 - **修向（PE）**：真做"往返"时序——Launch 定时飞出（`Timer` 到点）→ 撤 Launch、切 Steering seek 玩家拉回（或用一个带 return 段的弹道）。若现有能力表达不了干净往返，走 capgap（弹道 out-return 段）。
+- **⚖ Lead 回驳（2026-08-21·缺口裁决协议第①步即解·不上报）**：「干净往返段」capgap **wontfix——现有词表重组成立**。可执行证明 = `src/skills/tier2/boomerang-compose.test.ts`（4 例·sabotage 把 BUG-03 反模式种回去恰红「expected 0 to be greater than 0」=停原地症状被咬住·撤 sabotage 复绿）。实查更正两点：① Launch 本就**一次性**（发射拍写一次 Velocity 即自删·launch.ts ①~③）——上面「两者每 tick 都写 Velocity」的根因口径过期，打架实为 Steering 从第 0 拍就挂上被逐拍覆写；② 相位切换词表已在架：ConditionExpr 有 timer 叶（self-rule.ts）+ SelfAction 有 spawn（at self）+ TimerDone 生产者自清多消费者共读。**等价数据写法（二段接力·全数据零新代码）**：出程弹 `Launch{toward:'dir'} + Timer{id:'life',duration:M} + SelfRule{when: timer≥N → spawn 返程模板@self, once}` + lifetime（**一只 Timer 两用**：elapsed≥N 接力·duration 到点自毁·天然无同拍 spawn/destroy 竞态）；返程模板 `Perception+Steering{seek}`（aggro 锁玩家）→ 追**移动中的**玩家（固定 waypoint 的 PathFollow 表达不了这半段·故接力不走轨道）。PE 接线：返程模板补 Hitbox/贴身 lifetime 即成品，数值全数据。
 
 ### BUG-04 · 升级时敌人仍在 tick·未时停 · [P0·PE] · ✅ done（PE·根因=stop() 被 loop 重挂覆盖·延 microtask 修）
 - **现象**：升级三选一弹出时，敌人仍在动，应时停待选完再继续。
