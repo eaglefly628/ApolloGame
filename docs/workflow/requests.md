@@ -8,6 +8,12 @@
 
 ## 待处理 / 进行中
 
+### REQ-MOBILE-SHELL · 手机客户端=WebView 壳（不重写原生·同一份 web 产物装壳）· [2026-08-20] · **owner 定向**（原话：「我们已经用 web 了，就套 webview 做客户端，所见即所得，不重写 APP 客户端了」·实测对比过重写路线：web 调完 APP 全乱=白调·每改一次重启一轮 APP 优化·我们手机为主战场降不了频） · 指派：待派（发布线·PS/game-publisher 域·壳级三件涉 UI 基座处报 PUI） · status: open · 优先级: P1 · 类型: 发布线扩第三壳（web/electron/DokiWorld 之后）
+> **架构定性（Lead）**：重写路线对本仓是结构性亏损——mountUI 闭集解释器要双语言养两台 + 全部机器门禁（点击/渲染/像素探针·check-ui·验收剧本）都对着 DOM，原生 APP 在守卫外裸奔。WebView 壳与 Electron（桌面）/DokiWorld（iframe）同模式：壳只做平台接线，游戏与 UI 零改动、所见即所得。
+> **路线**：Capacitor（iOS WKWebView + Android WebView·插件生态）；Android 可先 TWA 探路。
+> **分步**：① spike=game108 现成 dist 套 Capacitor Android 真机目击（照 DokiWorld 首包先例：截图+机读断言）② 壳级一次性三件=safe-area inset（Screen 级·报 PUI 裁）/ 音频首手势解锁 / 触屏 hover 兜底核对（press3d 已备）③ 门禁延伸=渲染/点击探针加 WebKit+移动视口车道（Playwright 自带 webkit·web 阶段即测 APP 形态）④ 真机验收=owner 人门（照掌机验证先例）。
+> **红线**：壳里绝不写玩法/UI 逻辑（同 acceptance-adapter 纯接线铁律）；平台服务（IAP/推送）全在壳层插件接线，游戏零感知。
+
 ### REQ-UPBACKUP · 工坊换肤备份抓错时点——backupPath 备份的是换上去的新图（备份无效） · [2026-08-19] · Lead 巡检 owner 直传批带出（实证：game101 art-59 backupPath 文件与 gen/art-59-up.png 逐字节同） · **指派：PST** · status: open · 优先级: P3 · 类型: 创作台 bug（上传/换肤线）
 > 病：上传替换流程的备份位应在**覆盖前**抓旧图供回滚，实际抓的是覆盖后的新图 → 换肤不可回滚、备份纯占空间。修点在 main_entry 上传/换肤处理器的备份时序；补一腿冒烟（备份文件 ≠ 新图·内容=替换前旧图）。实证样本已按 owner 令删除（affbcd96），复现：工坊对任一已 filled 皮肤槽再传一张新图，看 backupPath 内容。
 
