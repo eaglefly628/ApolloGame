@@ -13,17 +13,20 @@ docs/playbooks/dokiworld-pack.md·首件 game108 = 912e03c0）。腿：
 
 用法：python3 scripts/dokiworld-pack-smoke.py
 """
+import hashlib
 import json
 import sys
 import tempfile
 import time
 import zipfile
+from types import SimpleNamespace
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from main_entry.packaging import (  # noqa: E402
     _DOKI_GUIDE, _PKG_PLATFORMS, _assert_doki_dist_hygiene, handle_dokiworld_apps,
+    _doki_deps_stale, _proc_tail, _DOKI_STAMP,
     handle_package_job_get, handle_package_job_start, list_dokiworld_apps,
 )
 
@@ -91,6 +94,57 @@ with tempfile.TemporaryDirectory(prefix='doki-hyg-') as td:
     check('卫生断言：文本内疑似密钥 → 硬抛', err is not None and '密钥' in err, f'{err}')
     (dist / 'assets' / 'app.js').write_text('console.log(1)', encoding='utf-8')
     check('卫生断言：撤掉触发物 → 复绿', hygiene_raises(dist) is None)
+
+# ③ᵇ 依赖脱节判定（2026-08-19 事故回归·临时目录自证）
+#
+# 事故形状：旧判据是 `if not node_modules.is_dir()` —— 只问"装过没有"，不问"装的是不是这一版"。
+# 于是 SDK ^2.1.0→^3.0.0 之后，**任何装过一次的机器都不再重装**，拿旧依赖去 build，
+# 报 `ERR_PACKAGE_PATH_NOT_EXPORTED`（新代码 import 的子路径旧包里没有），
+# 而报错里一个字都不提"依赖是旧的"。owner 那台机器实测中招。
+with tempfile.TemporaryDirectory(prefix='doki-dep-') as td:
+    app = Path(td)
+    (app / 'package.json').write_text('{"name":"x","version":"1.0.0"}', encoding='utf-8')
+    check('依赖脱节：没有 node_modules → 判要装', (_doki_deps_stale(app) or '').startswith('缺 node_modules'),
+          f'{_doki_deps_stale(app)}')
+    nm = app / 'node_modules'; nm.mkdir()
+    (app / 'package-lock.json').write_text('{"lockfileVersion":3,"packages":{}}', encoding='utf-8')
+    # 这一格就是事故本身：装过、但**没有戳**（升级之前装的）⇒ 必须判要装
+    err = _doki_deps_stale(app)
+    check('依赖脱节：装过但没安装戳 → 判要装（事故本体）', err is not None and '安装戳' in err, f'{err}')
+    stamp = nm / _DOKI_STAMP
+    stamp.write_text(hashlib.sha256((app / 'package-lock.json').read_bytes()).hexdigest(), encoding='utf-8')
+    check('依赖脱节：戳与 lockfile 对得上 → 不重装（否则每次出包都重装·慢）', _doki_deps_stale(app) is None,
+          f'{_doki_deps_stale(app)}')
+    # 升依赖 = lockfile 变 ⇒ 戳对不上 ⇒ 必须重装
+    (app / 'package-lock.json').write_text('{"lockfileVersion":3,"packages":{"":{"v":2}}}', encoding='utf-8')
+    err = _doki_deps_stale(app)
+    check('依赖脱节：lockfile 变过（升了依赖）→ 判要装', err is not None and 'lockfile' in err.lower() or 'lock' in (err or ''),
+          f'{err}')
+    # 没有 lockfile 的仓不瞎判（"无从判断" ≠ "要重装"）
+    (app / 'package-lock.json').unlink()
+    check('依赖脱节：无 lockfile → 不瞎判（交给 npm）', _doki_deps_stale(app) is None, f'{_doki_deps_stale(app)}')
+
+# ③ᶜ 报错要说得出**原因**，不是甩一串栈帧
+#
+# 同一次事故的第二层：`_proc_tail` 旧版只取最后 6 行，而 Node 的报错是"先一行原因、再十来行栈帧"
+# ⇒ 唯一有用的那句被挤掉，owner 拿到的是 `at ModuleJob._link (...)`。判据用**真实原文**当夹具。
+_REAL_STDERR = """node:internal/modules/esm/resolve:314
+  return new ERR_PACKAGE_PATH_NOT_EXPORTED(
+         ^
+
+Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './runtime-extensions' is not defined by "exports" in /x/node_modules/@dokiworld/app-sdk/package.json imported from /x/scripts/generate-manifest.mjs
+    at exportsNotFound (node:internal/modules/esm/resolve:314:10)
+    at packageExportsResolve (node:internal/modules/esm/resolve:661:9)
+    at packageResolve (node:internal/modules/esm/resolve:774:12)
+    at moduleResolve (node:internal/modules/esm/resolve:855:18)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+  code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+}"""
+_tail = _proc_tail(SimpleNamespace(stderr=_REAL_STDERR, stdout=''))
+check('报错含**原因原文**（不是只有栈帧）', 'is not defined by' in _tail, _tail[:160])
+check('报错把原因放在最前（人一眼看到的就是它）', _tail.startswith('Error [ERR_PACKAGE_PATH_NOT_EXPORTED]'), _tail[:80])
+check('空输出不炸', _proc_tail(SimpleNamespace(stderr='', stdout='')) == '(无输出)')
 
 # ④ 真 build 一遍（game108·npm ci 缺才装 → npm run build → zip）——不采信自陈，验最终产物
 t0 = time.time()

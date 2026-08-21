@@ -1,5 +1,6 @@
 """打包任务（发布屏·每游戏×平台）。"""
 import re
+import hashlib
 import subprocess
 import sys
 import os
@@ -273,11 +274,38 @@ def handle_dokiworld_apps() -> dict:
     """GET /api/package/dokiworld-apps → 发布屏 DokiWorld 列可用性（未接入的格明示指引不隐藏）。"""
     return {'success': True, 'apps': list_dokiworld_apps()}
 
+# 「这一行是**原因**」的形状。分两档挑，**先挑第一档**：
+#   一档 = 真正的报错抬头（`Error [CODE]: 说明` / `TypeError: …` / `npm ERR! …`）
+#   二档 = 说得出问题但没有抬头的（`… is not defined` / `… failed`）
+# 排除档 = 栈帧 `at …`、源码回显 `return new ERR_…(`、光标行 `^`、收尾 `}`。
+# ⚠ 排除档不是想出来的：第一版正则把**源码回显那行**（`return new ERR_PACKAGE_PATH_NOT_EXPORTED(`）
+#   当成了原因——它确实含 `ERR_` 且排在真原因前面。拿真实 stderr 当夹具才量出来。
+_CAUSE_SKIP_RE = re.compile(r'^(?:at\s|return\s|\^|\}|\{|>\s)')
+_CAUSE_1_RE = re.compile(r'^(?:npm ERR!|[A-Za-z]*Error\b[^:]*:)')
+_CAUSE_2_RE = re.compile(r'\b(?:is not (?:defined|found|exported)|failed|Cannot find|cannot find)\b')
+
+def _pick_cause(lines):
+    """从子进程输出里挑出**最像原因**的那一行（挑不到返回 None·不硬凑）。"""
+    usable = [ln for ln in lines if not _CAUSE_SKIP_RE.match(ln)]
+    return (next((ln for ln in usable if _CAUSE_1_RE.match(ln)), None)
+            or next((ln for ln in usable if _CAUSE_2_RE.search(ln)), None))
+
 def _proc_tail(r, n: int = 6) -> str:
-    """子进程输出尾部（stderr 优先拼 stdout·压成一行）——失败原文带回 UI，不吞错。"""
+    """子进程输出压成一行带回 UI —— **原因在前、尾部在后**，不吞错。
+
+    ⚠ 2026-08-19：旧版只取**最后 n 行**。Node 的报错格式是「先一行原因、再十来行栈帧」，
+    于是尾部全是 `at ModuleJob._link (...)` 这种栈帧，而唯一有用的那句
+    `Package subpath './runtime-extensions' is not defined by "exports"` 正好被挤掉。
+    owner 那次拿到的报错里一个字都没说清是什么问题——排查成本全花在这上面。
+    故：先挑出**第一条像"原因"的行**放最前，再接尾部；两者去重。
+    """
     txt = ((r.stderr or '') + '\n' + (r.stdout or '')).strip()
     lines = [ln.strip() for ln in txt.splitlines() if ln.strip()]
-    return ' / '.join(lines[-n:])[:220] if lines else '(无输出)'
+    if not lines:
+        return '(无输出)'
+    cause = _pick_cause(lines)
+    picked = ([cause] if cause else []) + [ln for ln in lines[-n:] if ln != cause]
+    return ' / '.join(picked)[:400]
 
 # zip 层产物卫生（手册红线 §9：dist 绝不装源码引用/token/.env——build 已保证·打包前再断言一次）。
 _DOKI_SECRET_RE = re.compile(r'sk-ant-[0-9A-Za-z_-]{8,}|sk-proj-[0-9A-Za-z_-]{8,}|ghp_[0-9A-Za-z]{20,}|github_pat_[0-9A-Za-z_]{20,}|AKIA[0-9A-Z]{16}|xox[baprs]-[0-9A-Za-z-]{8,}')
@@ -300,18 +328,55 @@ def _assert_doki_dist_hygiene(dist, files) -> None:
             if m:
                 raise RuntimeError(f'产物卫生：{rel.as_posix()} 疑似含密钥（{m.group(0)[:10]}…）——拒绝出包')
 
+_DOKI_STAMP = '.doki-install-stamp'
+
+def _doki_deps_stale(app):
+    """node_modules 与 lockfile 脱节了没有；返回**人能读的原因**，None=不用重装。
+
+    ⚠ 2026-08-19 事故：旧判据是 `if not node_modules.is_dir()` —— 只管"有没有装过"，
+    **不管装的是不是当前 lockfile 那一版**。于是升了依赖之后，任何**装过一次**的机器
+    永远不重装，拿旧依赖去 build。实测表症：SDK ^2.1.0→^3.0.0 之后 owner 那台机器报
+    `ERR_PACKAGE_PATH_NOT_EXPORTED`（新代码 import 的子路径在旧 SDK 里不存在），
+    而报错里一个字都没提"依赖是旧的"——最难查的那类。
+
+    判法：把 lockfile 的哈希戳在 node_modules 里，对不上就重装。
+    没有 lockfile 的仓不判（交给 npm 自己），别把"无从判断"当成"要重装"。
+    """
+    nm = app / 'node_modules'
+    if not nm.is_dir():
+        return '缺 node_modules（没装过）'
+    lock = app / 'package-lock.json'
+    if not lock.is_file():
+        return None
+    stamp = nm / _DOKI_STAMP
+    if not stamp.is_file():
+        return 'node_modules 没有安装戳——无从证明它与当前 lockfile 一致（多半是升级前装的）'
+    try:
+        seen = stamp.read_text(encoding='utf-8').strip()
+    except OSError:
+        return '安装戳读不出来'
+    if seen != hashlib.sha256(lock.read_bytes()).hexdigest():
+        return 'package-lock.json 变过（依赖升过版，装着的还是旧的）'
+    return None
+
 def _pkg_build_dokiworld_app(slug: str):
     """DokiWorld App 包（dokiworld/<slug>/ 出包线·手册 docs/playbooks/dokiworld-pack.md）：
-    app 目录内 npm ci（缺 node_modules 才装·registry 直连）→ npm run build（内部含 manifest
-    生成+校验+自包含改写）→ dist/ 全量打成 release/<slug>/<slug>-dokiworld.zip（zip 根=dist
-    内容·解压即自包含静态包）。任一步失败把子进程输出尾部原样抛给 UI。"""
+    app 目录内 npm ci（**node_modules 与 lockfile 脱节就重装**·registry 直连）→ npm run build
+    （内部含 manifest 生成+校验+自包含改写）→ dist/ 全量打成
+    release/<slug>/<slug>-dokiworld.zip（zip 根=dist 内容·解压即自包含静态包）。
+    任一步失败把子进程输出原样抛给 UI。"""
     app = DOKIWORLD_DIR / slug
     if not (app / 'package.json').is_file():
         raise RuntimeError(f'{slug} {_DOKI_GUIDE}')
-    if not (app / 'node_modules').is_dir():
+    stale = _doki_deps_stale(app)
+    if stale:
         r = subprocess.run(['npm', 'ci', '--no-audit', '--no-fund'], cwd=app, capture_output=True, text=True)
         if r.returncode != 0:
-            raise RuntimeError(f'npm ci 失败（退出码 {r.returncode}）：{_proc_tail(r)}')
+            raise RuntimeError(f'npm ci 失败（{stale}·退出码 {r.returncode}）：{_proc_tail(r)}')
+        lock = app / 'package-lock.json'
+        if lock.is_file():
+            (app / 'node_modules' / _DOKI_STAMP).write_text(
+                hashlib.sha256(lock.read_bytes()).hexdigest(), encoding='utf-8')
     b = subprocess.run(['npm', 'run', 'build'], cwd=app, capture_output=True, text=True)
     if b.returncode != 0:
         raise RuntimeError(f'npm run build 失败（退出码 {b.returncode}）：{_proc_tail(b)}')
