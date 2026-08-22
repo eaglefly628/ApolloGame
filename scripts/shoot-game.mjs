@@ -2,13 +2,9 @@
 // 用法：npm run build && node scripts/shoot-game.mjs game-z /abs/out.png
 // 机制：vite preview 服 dist → 深链 ?game=<id> 自动挂载该游戏 → 等 canvas + 几帧 → page.screenshot。
 // 浏览器走 PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers；SwiftShader 软件 GL 让无头也能渲 WebGL。
-// QA 模式（env PIXELQA=1·REQ-3D-像素断言）：截图后解码像素做三机器断言（非黑/对比度/帧活动）→ 打
-//   `PIXELQA: PASS|FAIL` + 退出码（照 docs-ref-guard 模式）。缺省关闭·不动既有美术管线截图行为。
 import { spawn, execSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import process from 'node:process';
-import { decodePNG } from './lib/render-harness.mjs';
-import { assertPixelQA, DRAFT_THRESHOLDS } from './lib/pixel-qa.mjs';
 
 // playwright 装在全局 node_modules（非本地）；ESM 裸 import 看不到 → 经全局根用 require 绝对加载。
 const groot = execSync('npm root -g').toString().trim();
@@ -48,23 +44,6 @@ try {
   }
   await page.screenshot({ path: out });
   console.log('shot →', out);
-
-  // ── 像素级机器断言（REQ-3D-像素断言·PIXELQA=1 开启）──────────────────────────
-  //   捕两帧（相隔一小段·供帧活动/防冻结断言）→ 解码 → 三断言。有 canvas（真渲染）才判帧活动；
-  //   纯 DOM UI 屏静态无逐帧动画，跳活动断言（只判非黑 + 对比度）。
-  if (process.env.PIXELQA === '1') {
-    const frameA = decodePNG(await page.screenshot());
-    await page.waitForTimeout(250);                       // 隔几帧·让动画/粒子/相机推进
-    const frameB = has3d ? decodePNG(await page.screenshot()) : undefined;
-    const r = assertPixelQA({ frameA, frameB });
-    const fmt = (a) => a ? `${a.pass ? '✓' : '✗'} ${a.value.toFixed(3)}(≥${a.threshold})` : 'skip';
-    console.log(`[pixelqa] nonBlack=${fmt(r.assertions.nonBlack)} contrast=${fmt(r.assertions.contrast)} activity=${fmt(r.assertions.activity)}`);
-    console.log(`PIXELQA: ${r.pass ? 'PASS' : 'FAIL'}${r.pass ? '' : ' —— ' + Object.entries(r.assertions).filter(([, a]) => !a.pass).map(([k]) => k).join('/') + ' 未达标（阈值草案·标定见 REQ-3D-像素断言 回执）'}`);
-    console.log(`[pixelqa] 阈值草案：${JSON.stringify(DRAFT_THRESHOLDS)}`);
-    await browser.close();
-    cleanup();
-    process.exit(r.pass ? 0 : 1);
-  }
   await browser.close();
 } finally {
   cleanup();

@@ -190,7 +190,6 @@
 > - **⬜ 待续**：动态-动态堆叠/质量分摊已支持(同 2D 核)·更复杂刚体走 P3 物理表现轨（纯表现·Rapier·YAGNI）。
 > **架构守则（贯穿·下同）不变。**
 
-
 > **owner 2026-06-28 拍板的架构分界（最关键·两套碰撞泾渭分明）**：
 > - **逻辑碰撞（触发/重叠）= 确定性 sim**：「进区域 / 撞到 / 命中」喂玩法的事实 → 进权威主机/lockstep 状态 → **进 hash、必须确定性**。**本 REQ 只做这个。**
 > - **物理模拟（刚体/弹飞/堆叠/布娃娃）= 纯表现**：**绝不喂逻辑、不进 lockstep/hash**。哪天做可随便用非确定性物理库（Cannon/Rapier 当特效）——**YAGNI·不在本 REQ**。
@@ -238,9 +237,7 @@
 > **设计纲领（owner 2026-06-28 拍板）**：要的是**高效率、低开销**的 3D 引擎——**性能是一等设计约束、写进架构，不靠后期优化补**（owner 明言「后期不会做什么优化」）。所以下面不是「以后再说的优化」，是**现在就该达到的基线**。**instanced draw（实例化绘制）是硬要求。**
 > **数据驱动铁律不变**：W1 全是**渲染器内部**的事，**零数据 / 零组件 / 零接口改动**——游戏照旧摆 N 个 `Mesh3D`/`Model3D` 实体（纯数据），渲染器自己批。**绝不往数据里加 `instanced:true` 之类渲染旗标**（那是把渲染关切泄进数据，违 manifesto）。
 
-
 ## 已归档条目索引（已结条目全文查 git 历史·归档层随 owner 2026-08-03 拍板删除）
-
 
 ### W1-A · 实例化绘制（headline · 必做）
 目标：同一几何的多个实体 → **1 个 draw call**（`THREE.InstancedMesh`），对数据透明。
@@ -330,19 +327,6 @@
 > **Tier3 不做清单（owner 2026-07-03 YAGNI 判决·固化防自作主张）**：⛔ 视锥/遮挡剔除+LOD（场景规模未到·W1-E 域）、point/spot 阴影、真 DoF/vignette/SSR、NPR 描边（本池已有 ⏸ 条目·待法线缓冲版）。需求变化时 owner 重开，任何 session 勿擅启。
 >
 > 通用要求：逐件独立提交全绿（tsc+vitest+build）；新组件入闭集+registry describe；**每件落地同提交回填 `docs/playbooks/3d.md`**（手册铁律）；拾取件加无头测试（ray 求交纯函数部分）+ 真浏览器点选自证。完工逐件标 ✅。
-
-## REQ-3D-像素断言 · shoot-game.mjs 从人审升级为机器断言（TGS 吸收 C 件·owner 2026-07-06 批） · [2026-07-07] · Lead 图纸 → **指派：P3D** · status: **🔴 Lead 验收 FAIL 打回 P3D（2026-08-18·端到端红测）** · 优先级: P2 · 类型: 3D QA 基建
-> **⚖ Lead 验收判词（独立验收 agent 执行·全部退出码直取）**：3× 稳定 ✓（全量 4661 测并发压满下 e2e 三连 PASS·指标簇紧·62-85s 可接受）·冻结断言 ✓ 真咬（5 帧后停 rAF → 恰 activity ✗ 0.000 · exit 1·判词准确）·**黑屏断言 ✗ 没咬 = 打回唯一原因**：真实形态注入（three-renderer sync() 前 `scene.visible=false` + 黑背景·截图核实 3D 全灭）→ `PIXELQA: PASS` exit 0——整页截图把活 HUD 混进直方图（白字/滑杆给 contrast 54·sim 驱动的 worldUI 标签漂移给 activity 0.498），且死画布实测 luma≈27 被后处理抬亮 > darkThreshold 16。对照证明机制本身通：整页全黑形态恰红（nonBlack 0.000·exit 1）——是**咬合力标定问题非代码 bug**。**窄修方向（P3D 回炉后重验）**：有 canvas 的游戏对 canvas 元素单独截图（`page.locator('canvas').screenshot()`）做三断言（DOM-UI 游戏保持全页），darkThreshold 以「死画布实测 luma≈27」重标或改相对基线。复现：worktree 注入上两行 → `npm run build && PIXELQA=1 node scripts/shoot-game.mjs game-z /tmp/blackout.png` → 现状 PASS（应 FAIL）。红测注入须早于截图窗口（SwiftShader 帧率低·45 帧冻结晚于截图时点会漏）。修完重交 Lead 验收·在此之前不进推送门。
-> **★ P3D 回执（2026-08-07·7·29 冲刺已过·拉动施工）**：三断言下沉为**纯函数模块** `scripts/lib/pixel-qa.mjs`（零浏览器·可单测——同 render-harness.decodePNG 哲学）：① `analyzeFrame` 非黑占比 + 亮度直方图 p5..p95 动态范围（对比度·抗离群点）；② `frameActivity` 两帧逐像素亮度差均值（防冻结）；③ `assertPixelQA` 汇总判定（无 frameB→跳活动·单帧静态屏）。`shoot-game.mjs` 加 `PIXELQA=1` 开关（**缺省关·不动既有美术管线截图行为**）：截两帧（隔 250ms·有 canvas 才截第二帧判活动）→ 解码 → 断言 → 打 `PIXELQA: PASS|FAIL` + 退出码（照 docs-ref-guard 模式·FAIL 点名哪条 + 实测 vs 阈值）。**复用** `render-harness.decodePNG`（不另造 PNG 解码）。测试 `pixel-qa.test.mjs` 14 例（luma/通道兼容·黑屏→nonBlack 红·纯色板→contrast 红·冻结→activity 红·健康帧全过）。**⚖ CORE RULE 覆盖检查**：render-probe（REQ-RENDERCHECK·2026-07-24）已在 **S3 门**做 nonBlank——但那是 per-game dev-server 深链冒烟；本件补的是 **美术管线 shoot-game**（build+preview+SwiftShader+**点击穿透任意屏**）的机器门，且加 render-probe 无的**对比度直方图 + 帧活动防冻结**两断言，非重复。**标定表（草案·实测分布定·非拍脑袋·spec 项②）**：game-z（3D·三跑）非黑 0.998–0.999 / 对比度 62–69 / 活动 12.4–13.5；game-i（DOM UI·活动 skip）非黑 0.412 / 对比度 42。取实测最小值下方留裕度 → 草案阈值 `{minNonBlackRatio:0.05, minDynamicRange:24, minActivity:0.15}`。**未进推送门（spec 项④）**：需「全量并发下连过 3 次」才议进门——本轮 game-z 3 跑 + game-i 1 跑均稳过、值离阈值远，但正式入门待更多场景连跑核。红路径已由 14 单测机证（黑/糊/冻各造红）；owner 报的「故意黑屏/冻结场景」端到端红测留 Lead 验收。tsc0/vitest/build0/manifest（无组件变更）。
-
-> **背景**：`docs/design/art-pipeline-vision-2026-07.md §八` 对照裁决——canvas 像素级 QA 是 TGS 四道门里我们缺的一道；现 `scripts/shoot-game.mjs` 截图只能人审，判定不进机器。
-> **spec（Lead 图纸）**：
-> 1. `scripts/shoot-game.mjs` 截图后读像素做三断言：**非黑占比**（渲染真出画·防黑屏假绿）、**对比度**（亮度直方图动态范围·防糊成一团）、**帧活动**（间隔两帧 diff 非零·防冻结假活）。
-> 2. 阈值：先对存量 3D 场景（game-z + game-i three3d 展台各块）跑标定，取实测分布定草案值（标「草案·标定数据见本单回执」），**绝不拍脑袋写死**。
-> 3. 判词 token `PIXELQA: PASS|FAIL` + 退出码（照 docs-ref-guard 模式）；FAIL 点名哪条断言 + 实测值 vs 阈值。
-> 4. **先独立命令跑稳（全量并发下连过 3 次）再议进门禁**——吸取 flow-walk flaky 教训，不许一步塞进推送门禁。
-> 5. 同提交回填 `docs/playbooks/3d.md` 一行 + `docs/playbooks/testing.md` 对拍行更新；证据挂 `docs/playbooks/visual-scorecard.md` 维 8（性能证据）。
-> 6. 门禁全绿直推；完工标 ✅ 待 Lead 验收（我会拿一个故意黑屏/冻结的场景做红测）。
 
 ## REQ-3D-世界空间 UI 表达 · WorldUI3D 超越飘字（owner 2026-07-07「3D UI 表达·两者都要」） · [2026-07-14] · 提出：UI/game-i session → P3D · status: **✅ #1#2 done（P3D 2026-07-14）；#3 diegetic ✅ done（P3D 2026-07-15·消费方=展示台·CSS3D 路线）** · 优先级: P2 · 类型: 3D UI 能力
 > 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。

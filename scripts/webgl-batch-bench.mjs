@@ -1,7 +1,7 @@
 // scripts/webgl-batch-bench.mjs —— WebGL2 批渲吞吐台账（REQ-3D-RENDER-EFFICIENCY 增量②·原型量化证据）
 //
 //  跑 `sprite-batch` 纯规划器（零浏览器·vite-node），对几种合成场景数「N 实体 → K 次 draw」，与 canvas2D
-//  的「每实体一次提交」对照。证的不是「WebGL 一定更快」（那要真机 FPS·见 shoot-game PIXELQA 目击），而是
+//  的「每实体一次提交」对照。证的不是「WebGL 一定更快」（那要真机 FPS·见 webgl-proto-shot 真机目击），而是
 //  **提交次数的数量级差**——canvas2D 的 CPU 提交随实体线性涨，批渲让同纹理成片实体坍缩成个位数 draw。
 //
 //  用法：npx vite-node scripts/webgl-batch-bench.mjs

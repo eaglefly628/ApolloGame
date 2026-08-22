@@ -34,7 +34,7 @@ function frame(): void {
   let i = 0;
   for (const id of ids) {
     const t = world.getComponent<Transform>(id, 'Transform')!;
-    t.rotation = phase + i * 0.11;                          // 转（帧活动·驱动 PIXELQA activity）
+    t.rotation = phase + i * 0.11;                          // 转（帧活动·驱动 webgl-proto-shot 的帧活动自检）
     t.scaleX = t.scaleY = 1 + 0.35 * Math.sin(phase + i * 0.2); // 脉动
     i++;
   }
