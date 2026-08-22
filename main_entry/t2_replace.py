@@ -182,10 +182,36 @@ def _upsert_asset(assets: list, entry: dict) -> None:
             return
     assets.append(entry)
 
+def _existing_backup(slug: str, no: str):
+    """已在案的备份（任意扩展名·同名只该有一份）→ served 路径；无则 None。"""
+    d = art_root(slug) / 'orig'
+    if not d.is_dir():
+        return None
+    for p in sorted(d.glob(f'{no}.*')):
+        if p.is_file():
+            return f'/games/{slug}/art/orig/{p.name}'
+    return None
+
+
 def _backup_orig(slug: str, no: str, orig_entry, gen):
     """首次替换前把原图文件拷到永不被覆盖的备份 art/orig/<no>.<ext>（owner 2026-07-27「回退就没了这张图·要备份」）：
     gen/upload 复用同名 gen/art-NN·gen/NN-up → 新图覆盖原文件·orig.indexEntry 的 path 内容被顶掉·还原找不回。
-    拷独立备份 → 还原从备份精确复原。返回备份 served 路径；原本无图片文件（程序化槽）=None。"""
+    拷独立备份 → 还原从备份精确复原。返回备份 served 路径；原本无图片文件（程序化槽）=None。
+
+    **两道「永不被覆盖」的闸**（REQ-UPBACKUP·2026-08-19 Lead 巡检实证 game101 art-59 备份=替换图）：
+      ① 备份已存在 → **原样返回，绝不重拷**。原图只有一张、只该备份一次；调用方靠 `'orig' not in row`
+         防重入，但那个标记会被 `derive` 重建行、`restore` 弹出、直传批绕台账等路径抹掉——一旦抹掉，
+         「首次替换」在代码看来又成立一次，于是拿**当时线上那张（已经是替换图）**盖掉真原图。
+         实证：TRUE-ORIGINAL 被 REPLACEMENT-1 覆盖后永久找不回；再循环一次备份就与线上新图逐字节同
+         （正是巡检报的形状）。此闸让重入变成幂等，真原图钉死。
+    闸① 顺带治掉「源就是备份自己」那种现场（线上路径已指进 orig/·旧版 restore 造的）：那时
+    `orig/<no>.*` 必然在案 → 闸① 先返回，走不到 copyfile。此前 Python 侧在这里直接
+    `SameFileError` 抛穿 handle_art_upload 成 500，JS 侧 copyFileSync 同路径静默 no-op 更隐蔽。
+    **不另设第二道闸**——撤修验红实测它永远够不着（闸① 全覆盖），留着就是测不出红的死代码。
+    """
+    have = _existing_backup(slug, no)
+    if have:
+        return have                      # 闸①：真原图已在案·任何后续替换都不许再动它
     served = None
     if isinstance(orig_entry, dict) and orig_entry.get('path'):
         served = orig_entry.get('path')
@@ -340,11 +366,32 @@ def handle_art_restore(body: dict) -> dict:
         bak = orig.get('backupPath')
         prefix = f'/games/{slug}/art/'
         bak_abs = (art_root(slug) / bak[len(prefix):]) if isinstance(bak, str) and bak.startswith(prefix) and '..' not in bak else None
-        if bak_abs is not None and bak_abs.is_file() and skin:  # 有原图备份 → 皮肤别名指向备份（文件永不被覆盖·原图精确复原·工作台预览也回来）
+        if bak_abs is not None and bak_abs.is_file() and skin:  # 有原图备份 → 从备份精确复原
+            # REQ-UPBACKUP（2026-08-19）：**把备份内容拷回原服务路径**，而不是把线上别名指进 orig/。
+            # 旧写法让「永不被覆盖的备份」自己变成线上文件——下一次替换的备份步骤就以它为源，
+            # Python 侧 SameFileError 抛成 500、JS 侧静默 no-op，备份区从此不再是纯备份区。
+            # 拷回后 orig/ 只进不出，闸① 才真的守得住。目标路径取替换前那条（indexEntry.path 优先，
+            # 其次 orig.gen.servedPath）；解析不出或它本身就在 orig/ 下（旧版还原留下的现场）→
+            # 退回旧行为指向备份，至少不丢图。
+            target_served = None
+            for cand in ((oe or {}).get('path') if isinstance(oe, dict) else None,
+                         (orig.get('gen') or {}).get('servedPath') if isinstance(orig.get('gen'), dict) else None):
+                if isinstance(cand, str) and cand.startswith(prefix) and '..' not in cand \
+                        and not cand[len(prefix):].startswith('orig/'):
+                    target_served = cand
+                    break
+            if target_served:
+                dst = art_root(slug) / target_served[len(prefix):]
+                try:
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(bak_abs, dst)
+                except Exception:
+                    target_served = None  # 拷不回（只读/占用）→ 退回指向备份，绝不因此丢图
+            served_now = target_served or bak
             e = json.loads(json.dumps(oe)) if isinstance(oe, dict) else {'id': skin, 'type': 'texture', 'category': 'ai-gen', 'tags': ['orig']}
-            e['id'] = skin; e['path'] = bak; e['status'] = 'filled'
+            e['id'] = skin; e['path'] = served_now; e['status'] = 'filled'
             _upsert_asset(idx['assets'], e)
-            row['status'] = 'replaced'; row['gen'] = {'source': 'orig-restore', 'servedPath': bak}
+            row['status'] = 'replaced'; row['gen'] = {'source': 'orig-restore', 'servedPath': served_now}
         elif isinstance(oe, dict):  # 无备份·有原皮肤条目 → 原地复位
             _upsert_asset(idx['assets'], oe)
         elif skin:  # 原本无图片文件（程序化/emoji 槽）→ 删覆盖别名·游戏回退内置绘制

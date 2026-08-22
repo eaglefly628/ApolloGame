@@ -9,7 +9,7 @@
 //   node scripts/art-replace.mjs packs                     → 列风格包
 // 纯函数（deriveLedger/applyReplacements/…）导出供单测直接跑（无需起服务）。
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
@@ -576,6 +576,16 @@ export function sniffImageFmt(b) {
  *  拷一份独立备份 → 还原从备份精确复原。返回备份 served 路径；原本无图片文件（程序化槽）=null。 */
 export function backupOrigFile(root, game, no, servedPath) {
   const prefix = `/games/${game}/art/`;
+  // 闸①「已有备份就绝不重拷」（REQ-UPBACKUP·与 main_entry/t2_replace.py::_backup_orig 刻意孪生·
+  // 病根与两道闸的全文见那边注释）：调用方靠 `'orig' in row` 防重入，但那个标记会被 derive 重建行 /
+  // restore 弹出 / 绕台账的直传批抹掉——一抹掉「首次替换」就又成立，于是拿**当时线上那张已经是
+  // 替换图的**盖掉真原图。原图只有一张、只该备份一次，此闸让重入幂等；它顺带治掉「源就是
+  // 备份自己」那种现场（那时 orig/<no>.* 必在案 → 这里先返回，走不到 copyFileSync 自拷）。
+  const dir = join(artRoot(root, game), 'orig');
+  if (existsSync(dir)) {
+    const hit = readdirSync(dir).filter((f) => f.startsWith(`${no}.`)).sort()[0];
+    if (hit) return `${prefix}orig/${hit}`;
+  }
   if (typeof servedPath !== 'string' || !servedPath.startsWith(prefix)) return null;
   const rel = servedPath.slice(prefix.length);
   if (rel.includes('..') || rel.startsWith('/')) return null;

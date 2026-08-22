@@ -102,6 +102,7 @@ export function auditGamesOf(files) {
  *   测试文件不触发它——*.test.* 的三禁归 test-hygiene-check，不重叠不漏管。
  * · testHygiene：src/**\/*.test.ts 被改（hygiene 只扫这一面），或 hygiene 脚本自身被改。
  * · artSmoke：scripts/art-replace* 或 main_entry/art_* 被改（含冒烟脚本自身=scripts/art-replace-smoke.py）。
+ * · backupSmoke：原图备份面（main_entry/t2_replace.py · scripts/art-replace.mjs）——见下方注释。
  */
 export function facesOf(files) {
   const list = files.filter(Boolean);
@@ -115,6 +116,12 @@ export function facesOf(files) {
     // 或「没过门禁的东西被推上去」，两头都不该靠人眼守。含冒烟脚本自身（改守卫先自证跑绿·同上三旗口径）。
     syncSmoke: list.some((f) => /^main_entry\/(art_sync|artifacts)\.py$/.test(f)
       || /^scripts\/(art-sync|auto-sync)-smoke\.py$/.test(f)),
+    // backupSmoke：原图备份面（REQ-UPBACKUP·2026-08-19）。`t2_replace.py` 是替换/还原的主处理器，
+    // 却不带 art_ 前缀 → 此前**任何面旗都不命中**，改它一行也没门在验；`backupOrigFile` 是同一不变量
+    // 的 JS 孪生（卡带线走它）。坏了的形状是「一键还原的底牌被替换图盖掉」——静默且不可逆，正是
+    // 最该机器守的那类。
+    backupSmoke: list.some((f) => f === 'main_entry/t2_replace.py' || f === 'scripts/art-replace.mjs'
+      || f === 'scripts/art-backup-smoke.py'),
     // dokiworld/** 的 node --test 没有别的门在验（DOKI-APPS 后续①·「写了测试没人跑」与 game108 恒石同形）：
     // 改动命中哪个 app 目录就跑哪个（.md 不算——纯文档改不了测试结果）。
     dokiApps: [...new Set(list.map((f) => { const m = f.match(/^dokiworld\/([a-z0-9-]+)\//); return m && !f.endsWith('.md') ? m[1] : null; }).filter(Boolean))].sort(),
@@ -169,6 +176,7 @@ export function planFor(c, auditGames = [], faces = {}) {
     ...(faces.engineRandom ? [{ name: 'engine-random', cmd: ['node', ['scripts/engine-random-guard.mjs']] }] : []),
     ...(faces.testHygiene ? [{ name: 'test-hygiene', cmd: ['node', ['scripts/test-hygiene-check.mjs']] }] : []),
     ...(faces.artSmoke ? [{ name: 'art-smoke', cmd: ['python3', ['scripts/art-replace-smoke.py']] }] : []),
+    ...(faces.backupSmoke ? [{ name: 'art-backup-smoke', cmd: ['python3', ['scripts/art-backup-smoke.py']] }] : []),
     ...(faces.syncSmoke ? [
       { name: 'art-sync-smoke', cmd: ['python3', ['scripts/art-sync-smoke.py']] },
       { name: 'auto-sync-smoke', cmd: ['python3', ['scripts/auto-sync-smoke.py']] },

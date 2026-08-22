@@ -14,15 +14,31 @@
 > **分步**：① spike=game108 现成 dist 套 Capacitor Android 真机目击（照 DokiWorld 首包先例：截图+机读断言）② 壳级一次性三件=safe-area inset（Screen 级·报 PUI 裁）/ 音频首手势解锁 / 触屏 hover 兜底核对（press3d 已备）③ 门禁延伸=渲染/点击探针加 WebKit+移动视口车道（Playwright 自带 webkit·web 阶段即测 APP 形态）④ 真机验收=owner 人门（照掌机验证先例）。
 > **红线**：壳里绝不写玩法/UI 逻辑（同 acceptance-adapter 纯接线铁律）；平台服务（IAP/推送）全在壳层插件接线，游戏零感知。
 
-### REQ-UPBACKUP · 工坊换肤备份抓错时点——backupPath 备份的是换上去的新图（备份无效） · [2026-08-19] · Lead 巡检 owner 直传批带出（实证：game101 art-59 backupPath 文件与 gen/art-59-up.png 逐字节同） · **指派：PST** · status: open · 优先级: P3 · 类型: 创作台 bug（上传/换肤线）
-> 病：上传替换流程的备份位应在**覆盖前**抓旧图供回滚，实际抓的是覆盖后的新图 → 换肤不可回滚、备份纯占空间。修点在 main_entry 上传/换肤处理器的备份时序；补一腿冒烟（备份文件 ≠ 新图·内容=替换前旧图）。实证样本已按 owner 令删除（affbcd96），复现：工坊对任一已 filled 皮肤槽再传一张新图，看 backupPath 内容。
+### REQ-UPBACKUP · 原图备份被替换图盖掉（「一键还原」的底牌丢了）· [2026-08-19] · Lead 巡检 owner 直传批带出（实证：game101 art-59 backupPath 文件与 gen/art-59-up.png 逐字节同） · **施工主体 = PST（已交·本行即锁）** · 复查 = 另派（复查人≠施工人） · status: **done·待复查** · P3 · 类型: 创作台 bug（上传/替换/还原线）
+> **实证复现**（非按报告推断·样本已随 affbcd96 删除，故在临时目录上重建）：备份步骤**时序是对的**
+> （`handle_art_upload` 确实在 `write_bytes` 之前抓），真病根在**重入**——备份靠 `'orig' not in row`
+> 防重复，而这个标记会被 `derive` 重建台账行 / `handle_art_restore` 弹出 / 绕台账的直传批抹掉。
+> 一抹掉「首次替换」就又成立一次 → 拿**当时线上那张（已经是替换图）**盖掉真原图。跑出来的实况：
+> `TRUE-ORIGINAL` 被 `REPLACEMENT-1` 覆盖后**永久找不回**；再循环一次备份就与线上新图逐字节同（= 巡检报的形状）。
+> **修**：① `_backup_orig` + JS 孪生 `backupOrigFile`——**备份已在案就原样返回、绝不重拷**（重入变幂等·
+> 原图只有一张只该备份一次）；② `handle_art_restore` **把备份内容拷回原服务路径**，不再把线上别名指进
+> `orig/`——旧写法让「永不被覆盖的备份」自己变成线上文件，下一次替换就以它为源（Python 侧
+> `SameFileError` 抛穿成 500·JS 侧 copyFileSync 同路径静默 no-op）。曾另写一道「源在 orig/ 下不拷」的闸，
+> **撤修验红实测永远够不着**（闸① 全覆盖）→ 已删：测不出红的守卫不是守卫。
+> **自证**：`scripts/art-backup-smoke.py` 27 腿（① 备份=真原图≠新图 ② orig 标记丢失后再替换备份纹丝不动
+> ③ 连替 5 次恒等 ④ 还原回原路径·备份区仍在 ⑤/⑤b 还原后再替换不炸 ⑥ 程序化槽不凭空造 ⑦ JS 孪生同闸）；
+> 撤修验红三轮各按锚点转红（撤闸① → ②③ 红；撤还原拷回 → ④ 红；撤 JS 闸 → ⑦ 红）。
+> **顺带补的门**：`t2_replace.py` 不带 `art_` 前缀 → **此前任何面旗都不命中**，改它一行没有任何门在验；
+> 新增 `backupSmoke` 面旗（`t2_replace.py` / `art-replace.mjs` / 冒烟自身）+ 行为契约两例。
 
-### REQ-AUTOSAVE · 任务收工自动存档（先提交→门禁→绿了才推）· [2026-08-10] · **owner 令**（原话：「跑完的结果就没了，丢失了……我希望它能主动地去上传，跟我在这边窗口做这个事情感受是一致的」）· **施工主体 = PST（本行即锁·已交）** · 复查 = 主程 · status: **done·主程复查 PASS（2026-08-18·独立复查 agent 四轮 sabotage 三咬一漏）·余 F1 自证补测归 PST** · P1 · 类型: 创作台（PST 域）
-> 图纸/自证：`docs/design/auto-artifact-sync-2026-08.md` · 冒烟 `scripts/auto-sync-smoke.py`（25 腿·含撤修验红两轮：
-> 第三步退回 `sync_paths` → ②⑥ 转红；顺序改成「先门禁后提交」→ ③ 转红）。
-> **✅ 越界已追认（主程 2026-08-18·总回顾批）**：syncSmoke 面旗与 GUARDGATE 面机制同形·改动最小·
-> 行为契约两例在案（与主程同批新增的 slowLane 面在 rebase 合并中共存无冲突·33/33 绿）。追认成立。
-> **⚖ 主程复查判词（2026-08-18·PASS）**：25 腿独立复跑绿；四轮自选 sabotage——先推后门禁③⑤咬·吞红判定 6 腿咬·撤 pathspec 白名单⑦咬（双层纵深）·**砍掉 docs/design 整类落点 25 腿照绿=F1 漏**。行为红线逐条过：推当前分支同手动口径·门禁退出码直取不经管道·红不推大声报·autostash 原生非手动 stash·机器署名循 library.py 先例无模型标识·敏感物白名单闭集 .env 不可达。**F1（必办·PST）**：落点腿（handle_artifacts_status/_engine_pathspecs/detect_form）全库零覆盖且冒烟注释自称「另测」不实——补落点腿或删注释开补测单；F2 _dirty 静默跳过留痕即可。
+<!-- REQ-AUTOSAVE-任务收工自动存档（P1·owner 2026-08-10 令「跑完的结果就没了·希望它主动去上传」）**2026-08-19 全件完结出池**：
+     本体（bf820b37）先本地提交→跑门禁→绿了才推·挂 art_jobs 收工与编排器子进程退出两处·features.autoPush 开关·
+     「📦 产物落点」卡回答「在哪/存住没」。主程复查 PASS（2026-08-18·四轮 sabotage 三咬一漏）+ syncSmoke 越界追认成立。
+     **余项 F1/F2 已清（PST·2026-08-19）**：F1=补落点腿 ⑩–⑬（detect_form 判序 / 三形态落点全集·docs/design 每档必在列 /
+     状态端点逐处分摊 + 卡带行报自有仓 / 拒绝路径），冒烟 25→52 腿，**复现主程那一刀（砍掉 docs/design 整类）实测 7 腿转红**、
+     形态判序颠倒 ⑩ 转红；顺手删掉那句不实的「另测」注释。F2=`_dirty` 的 git 失败分支改为**留痕再降级**
+     （空列表在上游读作「无产物·跳过」，与「真的干净」同形，不喊一声就是一次静默的白跑）。图纸
+     `docs/design/auto-artifact-sync-2026-08.md`。判词与全文查 git 历史 grep REQ-AUTOSAVE。 -->
 
 <!-- REQ-DOKI-APPS-「获取卡带」下沉共享接线层（P1·owner 2026-08-15 令）**2026-08-18 全件完结出池·主程双路独立复查 PASS**：
      ① 共享层 dokiworld/shared/ apps-gateway（8433c8e3·抢锁 session）：createAppsGateway 带超时/降级/dispose 薄适配 + appsDeclared；9 测不 mock SDK（真 createAppsHostExtension 对端）。复查实证：launch 缺省超时真 1 小时（apps.js:14）·「未声明就不发」快速拒绝非等超时（1.5ms 即红）·reasonOf 只读 error.code 顺带消解双份 SDK dual-package 隐患·通用性成立（src 零 game108 字样）。

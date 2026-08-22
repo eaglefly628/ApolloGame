@@ -54,10 +54,17 @@ def _engine_pathspecs(slug: str, form) -> list:
 
 
 def _dirty(pathspecs: list) -> list:
+    """pathspec 范围内的未提交文件。git 失败 → **空列表 + 留痕**（F2·主程复查 2026-08-18）：
+    空列表在上游读作「无产物·跳过」，与「真的干净」同形——不喊一声就成了一次静默的白跑，
+    正是 owner 实撞那个病的形状（凡「什么都没发生」的分支必须记·日志基准守则）。"""
     if not pathspecs:
         return []
     r = _git(ROOT, ['status', '--porcelain', '--', *pathspecs], timeout=30)
-    return [ln[3:] for ln in (r.stdout or '').splitlines() if len(ln) > 3] if r.returncode == 0 else []
+    if r.returncode != 0:
+        print(c("  [AUTO]", 'y'), f"git status 失败（{(r.stderr or '').strip()[:120] or '无输出'}）"
+                                  f"→ 当作「无未提交产物」跳过：{', '.join(pathspecs)}")
+        return []
+    return [ln[3:] for ln in (r.stdout or '').splitlines() if len(ln) > 3]
 
 
 def _cart_repo_state(slug: str) -> dict:

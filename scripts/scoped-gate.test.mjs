@@ -152,7 +152,7 @@ describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门
   it('facesOf：守卫脚本自身被改也触发各自守卫（改守卫先自证跑绿）', () => {
     expect(facesOf(['scripts/engine-random-guard.mjs']).engineRandom).toBe(true);
     expect(facesOf(['scripts/test-hygiene-check.mjs']).testHygiene).toBe(true);
-    expect(facesOf(['games/game-a/rules.ts', 'docs/workflow/requests.md'])).toEqual({ engineRandom: false, testHygiene: false, artSmoke: false, syncSmoke: false, dokiApps: [], slowLane: [] });
+    expect(facesOf(['games/game-a/rules.ts', 'docs/workflow/requests.md'])).toEqual({ engineRandom: false, testHygiene: false, artSmoke: false, syncSmoke: false, backupSmoke: false, dokiApps: [], slowLane: [] });
   });
 
   it('引擎面改动（full）：计划含 engine-random 步·红=拦（无 allowExit）·放 tsc 前', () => {
@@ -193,6 +193,26 @@ describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门
     expect(facesOf(['scripts/art-replace-smoke.py']).syncSmoke).toBe(false);
   });
 
+  it('facesOf：原图备份面 t2_replace.py / art-replace.mjs / 冒烟自身 → backupSmoke（REQ-UPBACKUP）', () => {
+    expect(facesOf(['main_entry/t2_replace.py']).backupSmoke).toBe(true);
+    expect(facesOf(['scripts/art-replace.mjs']).backupSmoke).toBe(true);
+    expect(facesOf(['scripts/art-backup-smoke.py']).backupSmoke).toBe(true);
+    // t2_replace.py 不带 art_ 前缀 → 此前任何面旗都不命中，本旗即那个洞的补丁
+    expect(facesOf(['main_entry/t2_replace.py']).artSmoke).toBe(false);
+    expect(facesOf(['main_entry/art_jobs.py']).backupSmoke).toBe(false);
+    expect(facesOf(['scripts/art-replace-smoke.py']).backupSmoke).toBe(false);
+  });
+
+  it('备份面改动（full）：计划含 art-backup-smoke 步·红=拦·放 tsc 前', () => {
+    const files = ['main_entry/t2_replace.py'];
+    const plan = planFor(classify(files), auditGamesOf(files), facesOf(files));
+    const names = plan.map((s) => s.name);
+    expect(names).toContain('art-backup-smoke');
+    expect(plan.find((s) => s.name === 'art-backup-smoke').cmd).toEqual(['python3', ['scripts/art-backup-smoke.py']]);
+    expect(plan.find((s) => s.name === 'art-backup-smoke').allowExit).toBeUndefined();
+    expect(names.indexOf('art-backup-smoke')).toBeLessThan(names.indexOf('tsc'));
+  });
+
   it('同步面改动（full）：计划含 art-sync-smoke + auto-sync-smoke 两步·红=拦·放 tsc 前', () => {
     const files = ['main_entry/artifacts.py'];
     const plan = planFor(classify(files), auditGamesOf(files), facesOf(files));
@@ -213,5 +233,6 @@ describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门
     expect(enginePlan.some((s) => s.name === 'art-smoke')).toBe(false);
     expect(enginePlan.some((s) => s.name === 'test-hygiene')).toBe(false);
     expect(enginePlan.some((s) => s.name.endsWith('sync-smoke'))).toBe(false);
+    expect(enginePlan.some((s) => s.name === 'art-backup-smoke')).toBe(false);
   });
 });
