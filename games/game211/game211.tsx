@@ -15,7 +15,8 @@ import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBat
 // 模块 coin-flip.ts 保留（含测试），此屏不再消费。未来「各自掷战力骰」向见 docs/design/game-g-clash-fate-roll-vision.md。
 import { loadLevel } from './level.js';
 import { mountDuelSpike } from './duel-spike.js'; // 物理对决试验台（?spike=duel 深链·owner 2026-08-07 表现验证竖切）
-import { mountMeleeDemo } from './melee-demo.js'; // 大混战 demo（?spike=melee 深链·owner 2026-08-10：240 张打到只剩一色）
+import { mountMeleeDemo } from './melee-demo.js';
+import { mountRtsDemo } from './rts-demo.js'; // 大规模 RTS 原型（?spike=rts·owner 2026-08-10：兵种相克 + 投放点） // 大混战 demo（?spike=melee 深链·owner 2026-08-10：240 张打到只剩一色）
 import { cardPoints } from './clash-resolve.js';
 import { playSfx, isSfxOn, toggleSfx } from './sound.js';
 import { startBgm, stopBgm, toggleBgm as toggleBgmState, selectBgm as selectBgmState, setBgmVolume, isBgmOn, bgmTrackIdx, bgmVolume, BGM_TRACKS } from './bgm.js';
@@ -70,11 +71,12 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
   // 不碰大厅/战斗现有流程（零风险旁路）。截图：SHOOT_QUERY='&spike=duel' node scripts/shoot-game.mjs game211 out.png
   const spikeParam = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('spike') : null;
   // 深链也带模式开关（否则 `?spike=duel` 进来面板上没有任何按钮——按钮全是 opts 条件渲染的）。
-  if (spikeParam === 'duel' || spikeParam === 'melee') {
+  if (spikeParam === 'duel' || spikeParam === 'melee' || spikeParam === 'rts') {
     let cur: { destroy: () => void } | null = null;
-    const toSpike = (): void => { cur?.destroy(); cur = mountDuelSpike(container, { onMelee: toMelee }); };
+    const toSpike = (): void => { cur?.destroy(); cur = mountDuelSpike(container, { onMelee: toMelee, onRts: toRts }); };
     const toMelee = (): void => { cur?.destroy(); cur = mountMeleeDemo(container, { onSpike: toSpike }); };
-    if (spikeParam === 'melee') toMelee(); else toSpike();
+    const toRts = (): void => { cur?.destroy(); cur = mountRtsDemo(container, { onSpike: toSpike }); };
+    if (spikeParam === 'melee') toMelee(); else if (spikeParam === 'rts') toRts(); else toSpike();
     return () => cur?.destroy();
   }
   const save = loadSave();
@@ -277,7 +279,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
   function showDuelSpike(): void {
     clear();
     root.style.cssText = 'position:absolute;inset:0;overflow:hidden;background:#121a2a';
-    const spike = mountDuelSpike(root, { onExit: () => showLobby(), onMelee: () => showMeleeDemo() }); // 返回键 + 模式开关都在试验台自己的面板里
+    const spike = mountDuelSpike(root, { onExit: () => showLobby(), onMelee: () => showMeleeDemo(), onRts: () => showRtsDemo() }); // 返回键 + 模式开关都在试验台自己的面板里
     battle = { update: () => {}, destroy: () => spike.destroy() }; // 交给 clear() 统一回收
   }
 
@@ -288,6 +290,14 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     root.style.cssText = 'position:absolute;inset:0;overflow:hidden;background:#121a2a';
     const demo = mountMeleeDemo(root, { onExit: () => showLobby(), onSpike: () => showDuelSpike() });
     battle = { update: () => {}, destroy: () => demo.destroy() }; // 交给 clear() 统一回收
+  }
+
+  // 大规模 RTS 原型（owner 2026-08-10：唯一操作=兵种相克配比 + 投放点）。
+  function showRtsDemo(): void {
+    clear();
+    root.style.cssText = 'position:absolute;inset:0;overflow:hidden;background:#121a2a';
+    const demo = mountRtsDemo(root, { onExit: () => showLobby(), onSpike: () => showDuelSpike() });
+    battle = { update: () => {}, destroy: () => demo.destroy() };
   }
 
   function startBattle(): void {
