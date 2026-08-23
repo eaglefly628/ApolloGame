@@ -8,13 +8,9 @@
 
 ## 待处理 / 进行中
 
-### REQ-MOBILE-SHELL · 手机客户端=WebView 壳（不重写原生·同一份 web 产物装壳）· [2026-08-20] · **owner 定向**（原话：「我们已经用 web 了，就套 webview 做客户端，所见即所得，不重写 APP 客户端了」·实测对比过重写路线：web 调完 APP 全乱=白调·每改一次重启一轮 APP 优化·我们手机为主战场降不了频） · 指派：待派（发布线·PS/game-publisher 域·壳级三件涉 UI 基座处报 PUI） · status: open · 优先级: P1 · 类型: 发布线扩第三壳（web/electron/DokiWorld 之后）
-> **架构定性（Lead）**：重写路线对本仓是结构性亏损——mountUI 闭集解释器要双语言养两台 + 全部机器门禁（点击/渲染/像素探针·check-ui·验收剧本）都对着 DOM，原生 APP 在守卫外裸奔。WebView 壳与 Electron（桌面）/DokiWorld（iframe）同模式：壳只做平台接线，游戏与 UI 零改动、所见即所得。
-> **路线**：Capacitor（iOS WKWebView + Android WebView·插件生态）；Android 可先 TWA 探路。
-> **分步**：① spike=game108 现成 dist 套 Capacitor Android 真机目击（照 DokiWorld 首包先例：截图+机读断言）② 壳级一次性三件=safe-area inset（Screen 级·报 PUI 裁）/ 音频首手势解锁 / 触屏 hover 兜底核对（press3d 已备）③ 门禁延伸=渲染/点击探针加 WebKit+移动视口车道（Playwright 自带 webkit·web 阶段即测 APP 形态）④ 真机验收=owner 人门（照掌机验证先例）。
-> **红线**：壳里绝不写玩法/UI 逻辑（同 acceptance-adapter 纯接线铁律）；平台服务（IAP/推送）全在壳层插件接线，游戏零感知。
+<!-- REQ-MOBILE-SHELL（手机客户端=WebView 壳·Capacitor 路线）owner 2026-08-22 令**暂停出池**——架构定性/四步分解/红线全文查 git 历史（git log -S REQ-MOBILE-SHELL）·重启时恢复原文 -->
 
-### REQ-UPBACKUP · 原图备份被替换图盖掉（「一键还原」的底牌丢了）· [2026-08-19] · Lead 巡检 owner 直传批带出（实证：game101 art-59 backupPath 文件与 gen/art-59-up.png 逐字节同） · **施工主体 = PST（已交·本行即锁）** · 复查 = 另派（复查人≠施工人） · status: **done·待复查** · P3 · 类型: 创作台 bug（上传/替换/还原线）
+### REQ-UPBACKUP · 原图备份被替换图盖掉（「一键还原」的底牌丢了）· [2026-08-19] · Lead 巡检 owner 直传批带出（实证：game101 art-59 backupPath 文件与 gen/art-59-up.png 逐字节同） · **施工主体 = PST（已交·本行即锁）** · 复查 = Lead（2026-08-22·owner 点名） · status: **done·⚖ Lead 复查 PASS·余 F3 一腿归 PST（清完即出池）** · P3 · 类型: 创作台 bug（上传/替换/还原线）
 > **实证复现**（非按报告推断·样本已随 affbcd96 删除，故在临时目录上重建）：备份步骤**时序是对的**
 > （`handle_art_upload` 确实在 `write_bytes` 之前抓），真病根在**重入**——备份靠 `'orig' not in row`
 > 防重复，而这个标记会被 `derive` 重建台账行 / `handle_art_restore` 弹出 / 绕台账的直传批抹掉。
@@ -30,6 +26,8 @@
 > 撤修验红三轮各按锚点转红（撤闸① → ②③ 红；撤还原拷回 → ④ 红；撤 JS 闸 → ⑦ 红）。
 > **顺带补的门**：`t2_replace.py` 不带 `art_` 前缀 → **此前任何面旗都不命中**，改它一行没有任何门在验；
 > 新增 `backupSmoke` 面旗（`t2_replace.py` / `art-replace.mjs` / 冒烟自身）+ 行为契约两例。
+> **⚖ Lead 复查判词（2026-08-22·PASS）**：27+52 腿独立复跑绿（退出码直取）；撤修验红三轮恰中锚点——撤 Python 闸①→②③红（本单病根被咬住）·撤 JS 闸→⑦红·复现主程刀（砍 docs/design 落点）→7 腿红与自陈逐字同；复原后双绿·工作树净。改判病根（时序对·真病=重入）成立；F2 留痕降级已读码核实（合「留痕即可」判词）。
+> **F3（必办·PST·复查唯一实伤）**：Lead 自选最小突变「只砍 restore 的 `copyfile`·保留新指路」**27 腿全绿存活**——④ 腿内容断言在 upload 夹具下恒真（upload 写 `NO-up.png`·从不覆盖 `gen/NO.png`），「拷回」的内容语义零钉；而 regen 流按 docstring 复用同名覆盖原文件=拷回真吃劲的现场。补一腿覆盖式夹具（先把目标文件盖成替换内容再 restore·断内容=真原图）使该突变会红。自陈锚点「撤拷回→④红」系整块回退刀型（路径断言咬）·非虚但粗，F3 落地即闭。
 
 <!-- REQ-AUTOSAVE-任务收工自动存档（P1·owner 2026-08-10 令「跑完的结果就没了·希望它主动去上传」）**2026-08-19 全件完结出池**：
      本体（bf820b37）先本地提交→跑门禁→绿了才推·挂 art_jobs 收工与编排器子进程退出两处·features.autoPush 开关·
