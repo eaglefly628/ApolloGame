@@ -167,3 +167,98 @@
 > **A* 是"每个单位自己算"，流场是"算一次全场共享"。
 > 我们的场景是上千单位涌向少数目标——成本形状正好对上流场，实测每 tick 差 130~290 倍、
 > 且首拍 500ms 的卡死整个消失。局部避让继续用现成的 steering separation，两者正交叠加。**
+
+---
+
+## §8 最新技术补遗（owner 2026-08-10「我们给一些最新技术的调研」）
+
+§3 那份是算法谱系。这一节补**近年工程实践**，给主程当施工依据。
+
+### 8.1 业界怎么落地流场：三遍管线 + LOS 波
+
+流场在工业界已经是**标准形态**，不是新东西——最早用于 **Supreme Commander 2**，后来 **Planetary Annihilation**
+也是这条路。经典参考是 Elijah Emerson 的《Crowd Pathfinding and Steering Using Flow Field Tiles》（Game AI Pro 第 23 章）。
+
+落地形态高度统一，就是 §6 spec 里那三遍：
+
+1. **cost field** 通行代价 → 2. **integration field** 从目标多源 Dijkstra 铺满 → 3. **flow field** 每格取最优邻格方向
+
+**值得单独拿出来的一条：LOS pass（视线波）。** Emerson 的实现里，波传播分两遍——
+**先做一遍带视线判定的传播**，再做常规传播。作用是：**开阔地里的单位直指目标**，
+而不是沿着网格量化出来的方向走出锯齿。这是「流场看起来假不假」的分水岭，成本很低，
+已写进工单 M2。（参考实现 `yoreei/crowd_pathfinder` 的流程就是
+`UpdateCostFields → PropagateWave(LOS) → PropagateWave → CalculateFlowFields`。）
+
+### 8.2 外部实测：与我们的测量互相印证
+
+`yoreei/crowd_pathfinder`（Unreal + flow-tile）对比 stock 寻路：
+
+| 场景 | 流场 | stock | 倍数 |
+|---|---|---|---|
+| 50 单位 | 982.5 µs | 2.1 ms | 2× |
+| 200 单位·简单图 | 1.6 ms | 6.3 ms | 4× |
+| 200 单位·迷宫图 | 6 ms | 5.1 ms | 1.2×（几乎打平） |
+
+**关键的一句在文字里，不在表里**：该实现明确指出
+**`PropagateWave` 与 `CalculateFlowFields` 不随单位数增长，只有「转成引擎路径」的适配层随单位数增长。**
+
+这正是我们自己测出来的结论（§2③：1000 单位查表 0.0745ms、4000 单位 0.1016ms —— 近乎常数）。
+两边独立得到同一个结论，可信度高。
+
+**同时也要读懂那条 1.2×**：迷宫图上优势缩到几乎没有。原因是迷宫里可走格少、A* 展开也少，
+流场「铺满全图」的固定成本反而显得贵。⇒ **流场的优势与「开阔程度 × 单位数」正相关**。
+我们的战场是开阔平原 + 上千单位，正好在它最擅长的那一端；但如果将来做巷战/隧道图，
+要重新量，别照搬这里的倍数。
+
+### 8.3 GPU 流场：能做，但我们**不该做**
+
+近两年 Unity DOTS 生态出了 GPU compute shader 版流场（如 `kingstone426/NativeFlowField`），
+把整个铺场丢给 GPU，宣称支持数千 agent 的动态环境实时重建。
+
+**但对本仓不适用，理由是架构性的**：本仓的 sim **要进 hash、要 lockstep/录放**，
+而 **GPU 浮点跨设备一致性是真风险**（不同驱动/精度模式结果可能不逐位相同）。
+本仓的分工是明确的——**渲染面才是 render-only 自由区**（物理都被限定成 render-only 不进 hash），
+sim 面必须确定性。流场属于 sim（它决定单位往哪走，进 hash），**留在 CPU**。
+
+而且从我们自己的数字看也没必要：192×192 = 36864 格铺一次 6.11ms，分块增量后更低。
+**GPU 是在解一个我们还没有的问题。** 已写进工单「明确不做」。
+
+### 8.4 MAPF 那一族（CBS / LaCAM / 学习式）：**别引进来**
+
+学术界近两年 MAPF（Multi-Agent Path Finding）很热，2025 年有综述
+《Where Paths Collide: A Comprehensive Survey of Classic and Learning-Based Multi-Agent Pathfinding》（arXiv 2505.19219），
+2026 年有动态环境的 D-MAPF 系统性研究（arXiv 2606.03735），还有 RL / CNN 策略式的
+（如 RAILGUN, arXiv 2503.02992）。
+
+**但那是另一个问题。** MAPF 求的是「为每个 agent 规划**互不冲突**的完整路径」——
+典型场景是仓储机器人：不能撞、要保证到达、路径要可执行。它的代价是**联合规划**（CBS 之类要搜冲突树）。
+
+RTS 要的不是这个：我们要的是**涌流 + 局部避让**——单位互相挤一挤、绕一绕都没关系，
+甚至那正是「大军推进」的观感来源。**把 MAPF 引进 RTS 是过度设计**：
+付出联合规划的代价，去买一个我们不需要的保证。已写进工单「明确不做」。
+
+> 判断依据（记给后来人）：**看这个算法在为什么代价买什么保证**。
+> MAPF 买的是「无冲突 + 完备性」，代价是联合搜索；RTS 不需要那个保证，所以不该付那个代价。
+
+### 8.5 一句话给主程
+
+> **流场不是新技术，是 2010 年代 RTS 就验证过的标准解；照三遍管线做，加 LOS 波提观感，
+> 分块增量应对动态障碍。GPU 版和 MAPF 都别碰——一个破确定性，一个解错问题。**
+
+**参考来源**：
+- [Crowd Pathfinding and Steering Using Flow Field Tiles — Elijah Emerson, Game AI Pro Ch.23](https://www.gameaipro.com/GameAIPro/GameAIPro_Chapter23_Crowd_Pathfinding_and_Steering_Using_Flow_Field_Tiles.pdf)
+- [yoreei/crowd_pathfinder — flow-tile 的 Unreal 实现与实测数据](https://github.com/yoreei/crowd_pathfinder)
+- [How to RTS: Basic Flow Fields](https://howtorts.github.io/2014/01/04/basic-flow-fields.html)
+- [RTS Pathfinding 1 – Flowfields — jdxdev](https://www.jdxdev.com/blog/2020/05/03/flowfields/)
+- [kingstone426/NativeFlowField — Unity DOTS 的 GPU compute 流场](https://github.com/kingstone426/NativeFlowField)
+- [Where Paths Collide: A Comprehensive Survey of Classic and Learning-Based MAPF (2025)](https://arxiv.org/abs/2505.19219)
+- [On dynamic multi-agent pathfinding methods: review, simulations and modifications (2026)](https://arxiv.org/abs/2606.03735)
+- [RAILGUN: A Unified Convolutional Policy for MAPF (2025)](https://arxiv.org/pdf/2503.02992)
+
+---
+
+## §9 归属结论（owner 2026-08-10 已判）
+
+owner 拍板：**下沉引擎能力**，且**提给主程写**（本调研不施工、不抢锁）。
+工单已入池：`docs/workflow/requests.md` → **`REQ-FLOWFIELD`**（P1·施工主体=主程·复查=Lead），
+spec、确定性红线、M1~M4 分期、两条「明确不做」全部写死在单里。

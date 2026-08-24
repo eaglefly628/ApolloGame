@@ -10,6 +10,101 @@
 
 <!-- REQ-MOBILE-SHELL（手机客户端=WebView 壳·Capacitor 路线）owner 2026-08-22 令**暂停出池**——架构定性/四步分解/红线全文查 git 历史（git log -S REQ-MOBILE-SHELL）·重启时恢复原文 -->
 
+### REQ-FLOWFIELD · 群体流场寻路能力 `t2-flow-field`（大规模 RTS 的寻路地基）· [2026-08-10] · **owner 拍板要做**（原话「我建议写流场寻路，我想做大规模 rts」「这个需求提给主程序来写，我们给一些最新技术的调研」）· **施工主体 = 主程（未抢锁·本条为需求单，不代锁）** · 复查 = Lead · status: open · 优先级: **P1（大规模 RTS 的前置地基·现有寻路实测撞墙）** · 类型: 引擎能力下沉（运动/寻路线）
+
+> **调研全文**：`docs/design/game211/crowd-pathfinding-research.md`（含算法谱系三层拆解 + 最新技术 §8 + 引用）。
+> **压测可复跑**：`games/game211/pathfind-scale.bench.test.ts`。
+
+**为什么必须做（实测·非估算）**
+
+现有 `t2-pathfind`（NavGraph + A*）在大规模 RTS 的规模下撞墙：
+
+| 单位 / 图规模 | 首拍（全体同时求路） | 稳态 |
+|---|---|---|
+| 1000 / 576 节点 | 200.8ms | 9.12ms/tick 🟡 |
+| **500 / 2304 节点** | **534.1ms** ❌ | **20.36ms/tick** ❌ |
+
+两条要命处：① **首拍 100~534ms = 6~32 帧画面停住**，且 RTS 里目标一直在动、会反复发生；
+② **对图规模超线性**——单位数不变、图 4×，稳态 4.8×。根因：`src/engine/spatial/astar.ts:30-50`
+的 open 表是**线性扫描取 min + `open.find()` 做 decrease-key**（源码自注「小图用数组」），单次 ~O(V²)。
+**这不是 A* 写错了**，小图上它更快也更确定；是「每单位各算一次」这个**成本形状**与本场景不匹配。
+
+流场参考实现（同机对照）：
+
+| 图规模 | 铺场（**一次·服务全部单位**） |
+|---|---|
+| 2304 节点 | 1.01ms |
+| 9216 节点 | 1.57ms |
+| 36864 节点（192×192） | 6.11ms |
+
+查表：**1000 单位 0.0745ms/tick** · 4000 单位 0.1016ms/tick。
+⇒ **每 tick 差 130~290 倍，且 500ms 首拍卡死整个消失。**
+
+**先查结论（缺口裁决协议第①步·实查留痕）**：本仓无流场（精确 grep `flowField/FlowField/流场/velocityObstacle/ORCA/boid` 零命中）；
+且 `steering` / `pathfind` / `path-follow` **重组不出**流场——三者都是「每个单位自己算」的数据流，
+而流场的本质是「算一次全场共享」，不是同一个形状。**owner 已判 A（下沉引擎）。**
+
+---
+
+**spec（写死·主程按此施工；有异议先回驳再改，别默默偏移）**
+
+**组件（纯摆放数据·最弱 LLM 能填）**
+
+```ts
+FlowField {
+  type: 'FlowField';
+  id: string;                     // 多场共存（每个目标/阵营一个场）
+  cellSize: number;               // 格边长（世界单位）
+  originX: number; originY: number;  // 网格左下角世界坐标
+  cols: number; rows: number;     // 网格尺寸
+  blocked?: readonly number[];    // 行主序 0/1·1=不可走（缺省全可走）
+  cost?: readonly number[];       // 行主序 ≥1 的地形代价（缺省全 1·公路 1/沼泽 3）
+  goals: ReadonlyArray<{ x: number; y: number }>;  // **多源**（多个占领点一次铺完）
+  los?: boolean;                  // 视线直指优化（见 M2·缺省 false = 零回归）
+}
+FlowAgent {
+  type: 'FlowAgent';
+  fieldId: string;
+  speed: number;                  // 单位/tick（与 Steering.speed 同口径·**不是每秒**）
+  arriveRange?: number;           // 到目标此距离内停
+  haltStatusMask?: number;        // CC 定身（同 Steering/NavAgent 口径）
+}
+```
+
+**系统**：`flow-field`，`runsBefore: ['motion-apply']`（与 `steering`/`path-follow` **同一条链**——
+读 Transform / 写 Velocity 与 motion 互为前驱=环，靠这条打破）。读 `FlowField/FlowAgent/Transform/Status`，写 `Velocity`。
+
+**三遍管线（业界标准形态）**：
+1. **cost field** —— 由 `blocked` + `cost` 得每格通行代价
+2. **integration field** —— 从 `goals` 做**多源 Dijkstra**铺满全图（**不是**势场法：Dijkstra 铺满**没有局部极小**，凹形障碍不会卡死单位）
+3. **flow field** —— 每格取「积分值最小的邻格」方向
+
+**🔴 确定性红线（这是本条归主程的原因·新增 system + 进 hash）**
+- 整数网格索引；Dijkstra 的 tie-break 用 **(积分值, 格索引) 全序** —— 不依赖堆的插入序/Map 序
+- 禁 `Math.random`、禁壁钟；同输入必得逐位同输出（lockstep / 录放安全）
+- **重建时机必须确定**：不能「等空闲再重建」。建议 `blocked/cost/goals` 任一变 → 下一 tick 重建；
+  或显式 `rebuildEvery` tick 数。**别引入依赖真实耗时的调度**。
+
+**分期**
+
+| 期 | 内容 | 验收 |
+|---|---|---|
+| **M1** | 单场 · 多源目标 · 静态障碍 · 三遍管线 | 1000 单位铺场 ≤2ms、查表 ≤0.1ms/tick；同种子逐位可复现；凹形障碍不卡死（点名用例） |
+| M2 | **LOS pass**（Emerson/SupCom2）：先做一遍视线波，开阔地直指目标 | 开阔地不再出现网格锯齿走位（截图 + 路径长度对比） |
+| M3 | **flow-tile 分块 + 增量重建** | 动态障碍只重铺受影响块；超大图（≥192×192）重建 ≤2ms |
+| M4 | 地形代价接 `t2-tilemap` | 公路/沼泽真影响路径 |
+
+**⛔ 明确不做：GPU compute 流场。** 业界有（Unity DOTS 的 `NativeFlowField` 等），但本仓 sim **要进 hash / lockstep**，
+而 GPU 浮点跨设备一致性是真风险；渲染面才是 render-only 自由区。**流场属 sim，留在 CPU。**
+
+**⛔ 明确不做：MAPF（CBS/LaCAM 那一族）。** 那是「为每个 agent 规划互不冲突的完整路径」（仓储机器人），
+与 RTS 要的「涌流 + 局部避让」不是同一个问题，引进来是过度设计。见调研 §8。
+
+**分工线（三层正交·互不替代·别混）**
+`t2-flow-field` = 走到战场 · `t2-steering{separation}` = 别互相挤 · `t2-steering{seek}` = 打谁（索敌）。
+
+**消费方**：`games/game211/rts-demo.ts`（现用「集结点 + steering seek」占位，能力落地后替换）。
+
 ### REQ-UPBACKUP · 原图备份被替换图盖掉（「一键还原」的底牌丢了）· [2026-08-19] · Lead 巡检 owner 直传批带出（实证：game101 art-59 backupPath 文件与 gen/art-59-up.png 逐字节同） · **施工主体 = PST（已交·本行即锁）** · 复查 = Lead（2026-08-22·owner 点名） · status: **done·⚖ Lead 复查 PASS·余 F3 一腿归 PST（清完即出池）** · P3 · 类型: 创作台 bug（上传/替换/还原线）
 > **实证复现**（非按报告推断·样本已随 affbcd96 删除，故在临时目录上重建）：备份步骤**时序是对的**
 > （`handle_art_upload` 确实在 `write_bytes` 之前抓），真病根在**重入**——备份靠 `'orig' not in row`
