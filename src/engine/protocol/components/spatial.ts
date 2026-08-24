@@ -249,6 +249,17 @@ export interface FlowAgent extends Component {
   speed: number;            // 移动速度（写入 Velocity 模长·单位/tick·同 Steering.speed 口径）
   arriveRange?: number;     // 到最近 goal 此距离内即停（缺省 0）
   haltStatusMask?: number;  // 自身 Status 含这些位时停（同 Steering/NavAgent.haltStatusMask）
+  /**
+   * **软分离**（owner 2026-08-24 定方向：「用分离力做·soft force·流场力一定是最重要的」）。
+   * 缺省无 = 一个字节不变（零回归）。`weight` = 斥力相对流场的权重，**恒被钳在流场之下**
+   * （见 `t2-flow-field` 的 `SEP_MAX_WEIGHT`），所以队伍永远朝目标走、只是互相让开一点。
+   *
+   * ⚠ 它**不保证不重叠**——那是 `collision-resolve` 在移动之后的活。这里只提供「把堆开的力」，
+   * 允许瞬时重叠（owner 原话：「不是说一定它们每一帧都完全不会重叠，而是有一个力会把它们弹开」）。
+   */
+  separation?: {
+    weight: number;         // 0..1 建议 0.2~0.5（越大越散·超过 SEP_MAX_WEIGHT 会被钳）
+  };
 }
 
 // ── NavPath ── 引擎写的缓存路径（确定性派生·进 hash）。via=待经节点下标序；gx/gy=规划所据目标点；age=自上次重算 tick。

@@ -51,6 +51,55 @@ const NB_DX = Int8Array.from(NEIGHBORS.map((n) => n[0]));
 const NB_DY = Int8Array.from(NEIGHBORS.map((n) => n[1]));
 const NB_STEP = Int8Array.from(NEIGHBORS.map((n) => n[2]));
 
+/**
+ * 软分离的权重上限（owner 红线：「流场力一定是最重要的」）。
+ * 0.6 的含义：两个都是单位向量时，合成方向相对纯流场最多偏 ~31°——**永远不会掉头**，
+ * 只是"让一让"。作者填再大的 weight 也会被钳到这里。
+ */
+export const SEP_MAX_WEIGHT = 0.6;
+
+/**
+ * 软分离的数据底子：把单位按格分桶（计数排序·O(单位)），外加一份平行的坐标表。
+ *
+ * ══ 为什么要分桶，而不是两两遍历 ══
+ * 两两是 O(单位²)（1000 单位 = 50 万对/tick），撑不住。分桶之后每个单位**只看自己这格 + 8 邻格**，
+ * 成本 ∝ 局部密度而不是全场人数——这正是「上千单位怎么解开」的答案：**近处的人才推得动你**。
+ *
+ * ══ 两层力，各管各的（写这版实测出来的分工）══
+ * · **两两斥力（按距离衰减）** —— 解「叠成一堆」。必须带衰减：等力的话六个等距排成一行会
+ *   **整排同速平移**，绝对位置动了、彼此间距一点没变（实测 minPair 恒定 0.0100，堆只是搬了家）。
+ * · **密度梯度** —— 解「整团堵在一个路口」。它是场，方向由分布定，不会两两对冲、不震。
+ * 只有前者是 owner 要的那个"把它们弹开"的力；后者是 Continuum Crowds 一脉的宏观疏散。
+ */
+export interface DensityField {
+  readonly count: Int32Array;   // 每格单位数（密度梯度读它）
+  readonly start: Int32Array;   // 每格在 items 里的起点（前缀和）
+  readonly items: Int32Array;   // 按格分桶后的单位下标（桶内按单位 id 序 = 确定）
+  readonly px: Float64Array;    // 单位坐标（下标 = 单位下标）
+  readonly py: Float64Array;
+}
+
+/**
+ * 一个单位最多被几个邻居推。封顶是为了**最坏情况可算**：一格里挤 500 人时不至于变成 500×500。
+ * 扫描序固定（格序 → 桶内 id 序），所以"取前 N 个"也是确定的，不是随机采样。
+ * 代价：极端堆叠时斥力被低估——但那一拍照样在散，下一拍密度就降下来了。
+ */
+export const SEP_MAX_NEIGHBORS = 12;
+/**
+ * 密度梯度项的权重（两两斥力取的是**均值**·模长天然 ≤1，所以梯度这一项给 0.5 当配角）。
+ * 分工：两两斥力解「叠成一堆」，梯度解「整团堵住」——前者是主力。
+ */
+export const SEP_GRADIENT_W = 0.5;
+/** 力的参考邻居数：挤到这么多近邻就算"满力"。见 separationDir 里为什么不能除以实际邻居数。 */
+export const SEP_REF_NEIGHBORS = 4;
+/**
+ * 到点之后"安顿"的步长系数（相对 speed）。**这是阻尼，不是减速**：
+ * 到了地方只剩分离力，若还按行军速度走，一步就冲过平衡间距、下一步被推回来 ⇒ 队伍在终点上抖
+ * （实测：间距在 0.36 与 0.02 之间来回荡）。乘个小系数让它收敛。
+ * 注意乘的是**常数**，不是归一化——各单位受力大小的差异仍然保留。
+ */
+export const SEP_SETTLE_SCALE = 0.35;
+
 export interface BakedField {
   readonly cols: number;
   readonly rows: number;
@@ -320,6 +369,87 @@ export function getBakedField(field: FlowField): BakedField {
 }
 export function clearFlowFieldCache(): void { cache.clear(); bakes = 0; lookups = 0; }
 
+/**
+ * 软分离力（**纯函数**·同输入同输出）：两项相加后归一化。
+ *   ① **推离本格质心**——解「叠成一个点」。质心不含自己（一个单位不该被自己推）。
+ *   ② **朝密度最低的邻格偏**——解「整团堵死」。这是密度梯度，方向由分布定，不与某个邻居对冲。
+ * 返回单位向量；本格只有自己且四周同样空 → (0,0)（没人挤就不必让）。
+ */
+/**
+ * 软分离力（**纯函数**·同输入同输出）：两项相加，**返回原始向量不归一化**。
+ *
+ * ⚠ 不归一化是**实测逼出来的**：归一化后每个人受力一样大 ⇒ 夹在堆中间的和站在堆边上的
+ * 被推得一样狠 ⇒ 整堆分成两块平移、彼此间距一点没变（实测 minPair 恒 0.0100）。
+ * 保留大小才有正确的物理：**被两边夹住的人合力≈0（不动），站在边上的人合力大（被弹出去）**，
+ * 于是堆从外往里一层层化开。「流场恒主导」不靠归一化保证，靠调用处把模长钳到 SEP_MAX_WEIGHT。
+ *   ① **两两斥力（按距离线性衰减）**——越近推越狠。这一项解「叠成一堆」。
+ *   ② **密度梯度**——朝 8 邻格里最空的那格偏。这一项解「整团堵住」。
+ * 谁都不挤 → (0,0)（没人挤就不必让·不制造无谓抖动）。
+ *
+ * `useGradient=false` 用在**终点格**：那儿流场没方向，再叠梯度会让整团一起漂出终点、
+ * 又被流场拉回来，来回震荡（实测过）。到了地方只要"彼此分开"，不要"整体疏散"。
+ */
+export function separationDir(
+  field: FlowField, dens: DensityField, self: number, col: number, row: number,
+  x: number, y: number, useGradient = true,
+): { sx: number; sy: number } {
+  const c = cellIndex(field, col, row);
+  if (c < 0) return { sx: 0, sy: 0 };
+  const radius = field.cellSize;          // 邻域 = 一格边长（网格本来就是按这个尺度分桶的）
+  let sx = 0; let sy = 0;
+
+  // ① 两两斥力：本格 + 8 邻格（固定格序 → 桶内 id 序 = 确定的扫描序）
+  let seen = 0;
+  for (let k = -1; k < 8 && seen < SEP_MAX_NEIGHBORS; k++) {
+    const nc = k < 0 ? col : col + NB_DX[k];
+    const nr = k < 0 ? row : row + NB_DY[k];
+    const ni = cellIndex(field, nc, nr);
+    if (ni < 0) continue;
+    const from = dens.start[ni];
+    const to = from + dens.count[ni];
+    for (let p = from; p < to && seen < SEP_MAX_NEIGHBORS; p++) {
+      const j = dens.items[p];
+      if (j === self) continue;
+      const dx = x - dens.px[j];
+      const dy = y - dens.py[j];
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d >= radius) continue;
+      seen++;
+      // 完全重合（d=0）不造方向：随便给一个就是伪随机，两端还未必一致。
+      // 这一拍靠②的梯度挪一点，下一拍就不重合了。
+      if (d === 0) continue;
+      const falloff = 1 - d / radius;     // 线性衰减（同 t2-steering.separation 的口径）
+      sx += (dx / d) * falloff;
+      sy += (dy / d) * falloff;
+    }
+  }
+
+  // **除以固定参考数**（不是除以实际邻居数）：
+  // · 求和不除 ⇒ 一堆人里每个人的力都远超上限，钳完**又是一样大**，堆整块平移（栽过一次）；
+  // · 除以实际邻居数（均值）⇒ **多一个远邻居会把近邻的推力稀释掉**，同一个单位的受力忽大忽小，
+  //   队伍在终点上抖（也栽过一次）。
+  // 除以常数两头都占：夹中间的正负相消≈0（不动），边上的接近/超过满力（被弹开），
+  // 而"多一个远邻居"只会让力变大一点点，不会反过来变小。
+  sx /= SEP_REF_NEIGHBORS; sy /= SEP_REF_NEIGHBORS;
+
+  // ② 密度梯度（朝最空的邻格）
+  if (useGradient) {
+    let bestN = dens.count[c];
+    let bx = 0; let by = 0;
+    for (let k = 0; k < 8; k++) {
+      const ni = cellIndex(field, col + NB_DX[k], row + NB_DY[k]);
+      if (ni < 0) continue;
+      if (dens.count[ni] < bestN) { bestN = dens.count[ni]; bx = NB_DX[k]; by = NB_DY[k]; }
+    }
+    if (bx !== 0 || by !== 0) {
+      const m = Math.sqrt(bx * bx + by * by);
+      sx += (bx / m) * SEP_GRADIENT_W; sy += (by / m) * SEP_GRADIENT_W;
+    }
+  }
+
+  return { sx, sy };
+}
+
 /** 到最近 goal 的距离（arriveRange 判据·goals 通常个位数）。 */
 function nearestGoalDist(field: FlowField, x: number, y: number): number {
   let best = Infinity;
@@ -439,8 +569,58 @@ export const flowFieldCapability = defineCapability({
           if (withLos.length > 0) appendTrace(trace, tick, 'flow-field', 'reject', `${withLos.length} 张场的 los 被忽略（视线优化属 M2·M1 未实现）`, `场：${withLos.slice(0, 3).join(',')}`);
         }
 
+        // ── 软分离的分桶（owner 2026-08-24 定方向：分离力·soft force·流场恒主导）──────────
+        // 只在**真有单位开了 separation** 时才建（没开=一个字节不变·零回归）。
+        // 计数排序分桶：两遍 O(单位) + 一遍前缀和 O(格数)。桶内按单位 id 序（agents 已排序）= 确定。
+        const wantSep = agents.some(([, c]) => (c.get('FlowAgent') as FlowAgent).separation !== undefined);
+        const density = new Map<string, DensityField>();
+        const cellOfAgent = new Int32Array(agents.length).fill(-1);
+        const fieldOfAgent: string[] = new Array(agents.length).fill('');
+        if (wantSep) {
+          const counts = new Map<string, Int32Array>();
+          for (const [fid, f] of fields) counts.set(fid, new Int32Array(f.cols * f.rows));
+          // 第一遍：数每格几个人
+          agents.forEach(([, comps], i) => {
+            const a = comps.get('FlowAgent') as FlowAgent;
+            if (a.separation === undefined) return;          // 没开的不占位·也不被推
+            const f = fields.get(a.fieldId);
+            const cnt = counts.get(a.fieldId);
+            if (!f || !cnt) return;
+            const t = comps.get('Transform') as Transform;
+            const { col, row } = cellOf(f, t.x, t.y);
+            const ci = cellIndex(f, col, row);
+            if (ci < 0) return;
+            cellOfAgent[i] = ci; fieldOfAgent[i] = a.fieldId; cnt[ci]++;
+          });
+          // 前缀和 → 每格起点；第二遍：填桶
+          for (const [fid, f] of fields) {
+            const cnt = counts.get(fid)!;
+            const n = f.cols * f.rows;
+            const start = new Int32Array(n);
+            let acc = 0;
+            for (let i = 0; i < n; i++) { start[i] = acc; acc += cnt[i]; }
+            density.set(fid, {
+              count: cnt, start, items: new Int32Array(acc),
+              px: new Float64Array(agents.length), py: new Float64Array(agents.length),
+            });
+          }
+          const fill = new Map<string, Int32Array>();
+          for (const [fid, d] of density) fill.set(fid, Int32Array.from(d.start));
+          agents.forEach(([, comps], i) => {
+            const ci = cellOfAgent[i];
+            if (ci < 0) return;
+            const d = density.get(fieldOfAgent[i]);
+            const cursor = fill.get(fieldOfAgent[i]);
+            if (!d || !cursor) return;
+            const t = comps.get('Transform') as Transform;
+            d.items[cursor[ci]++] = i;
+            d.px[i] = t.x; d.py[i] = t.y;
+          });
+        }
+
         let moved = 0; let stopped = 0; let noField = 0; let offGrid = 0;
-        for (const [id, comps] of agents) {
+        for (let ai = 0; ai < agents.length; ai++) {
+          const [id, comps] = agents[ai];
           const a = comps.get('FlowAgent') as FlowAgent;
           const t = comps.get('Transform') as Transform;
           let v = world.getComponent<Velocity>(id, 'Velocity');
@@ -458,10 +638,20 @@ export const flowFieldCapability = defineCapability({
           const field = fields.get(a.fieldId);
           if (!field) { v.vx = 0; v.vy = 0; noField++; continue; }   // 场不在 → 停（不是原地乱走）
 
-          // 到达（离最近 goal 够近）→ 停。放在查表前：终点那一格的方向是 (0,0)，
-          // 但 arriveRange 通常大于一格，靠格内方向兜不住。
-          if (a.arriveRange !== undefined && a.arriveRange > 0 && nearestGoalDist(field, t.x, t.y) <= a.arriveRange) {
-            v.vx = 0; v.vy = 0; stopped++; continue;
+          // 到达（离最近 goal 够近）→ **停掉流场力，但软分离照旧**。
+          // 硬停是错的（实测）：一群单位同时到点就地钉死 ⇒ 全叠在一个点上，
+          // 那正是 RTS 里最显眼的假。到了地方仍然要互相让开，只是不再往前走。
+          // 没人挤 ⇒ 分离力天然是 0 ⇒ 真的停住（不抖）。
+          // 到达判定 + **减速带**：`arriveRange` 之内=到了（只剩软分离）；之外一个 arriveRange 的范围内
+          // 流场力**线性衰减**到 0。没有这条减速带的话，被分离力挤出线外的单位会以**满速**冲回来，
+          // 撞进队伍中间、把刚散开的堆又压实——实测就是队伍在终点上以 ~40 拍为周期反复聚散
+          // （间距在 0.41 与 0.0007 之间来回荡）。这就是转向行为里的 arrival，RTS 里同样需要。
+          let flowScale = 1;
+          let arrived = false;
+          if (a.arriveRange !== undefined && a.arriveRange > 0) {
+            const gd = nearestGoalDist(field, t.x, t.y);
+            if (gd <= a.arriveRange) arrived = true;
+            else flowScale = Math.min(1, (gd - a.arriveRange) / a.arriveRange);
           }
 
           const bf = baked.get(a.fieldId)!;
@@ -471,11 +661,49 @@ export const flowFieldCapability = defineCapability({
 
           const dx = bf.dir[ci * 2];
           const dy = bf.dir[ci * 2 + 1];
-          if (dx === 0 && dy === 0) { v.vx = 0; v.vy = 0; stopped++; continue; }  // 终点格/墙里/孤岛
-          // 方向归一化：整数方向 → 单位向量 ×speed（浮点只在这一步·同 steering 的 IEEE 用法）。
-          const m = Math.sqrt(dx * dx + dy * dy);
-          v.vx = (dx / m) * a.speed;
-          v.vy = (dy / m) * a.speed;
+
+          // 软分离（可选）：把「让一让」的力叠在流场方向上。
+          // **流场恒主导**（owner 红线）：权重钳在 SEP_MAX_WEIGHT，合成后最多偏 ~31°，永不掉头。
+          let sx = 0; let sy = 0;
+          const sepW = a.separation ? Math.min(Math.max(a.separation.weight, 0), SEP_MAX_WEIGHT) : 0;
+          if (sepW > 0) {
+            const d = density.get(a.fieldId);
+            // 终点格（流场无方向）只用质心项——见 separationDir 的 useGradient 注释。
+            const atGoal = arrived || (bf.dir[ci * 2] === 0 && bf.dir[ci * 2 + 1] === 0);
+            if (d) {
+              const s2 = separationDir(field, d, ai, col, row, t.x, t.y, !atGoal);
+              // **钳模长**（不是归一化）：|sep| ≤ sepW ≤ SEP_MAX_WEIGHT < 1 = |flow| ⇒ 流场恒主导，
+              // 而小于上限的力保持原样 ⇒ 「夹中间的不动、站边上的被弹开」这条物理留住了。
+              const sm = Math.sqrt(s2.sx * s2.sx + s2.sy * s2.sy);
+              if (sm > 0) {
+                const k = sm > sepW ? sepW / sm : 1;
+                sx = s2.sx * k; sy = s2.sy * k;
+              }
+            }
+          }
+
+          if (arrived || (dx === 0 && dy === 0)) {
+            // 已到达 / 终点格 / 墙里 / 孤岛：**不再有前进方向，只剩"互相让开"**。
+            if (sx === 0 && sy === 0) { v.vx = 0; v.vy = 0; stopped++; continue; }
+            // ⚠ 这里**不许再归一化**（第一版就栽在这·和上面同一个病）：归一化会把
+            // 「夹中间的合力≈0」抹成「所有人一样快」，于是终点上的队伍整块平移、彼此还是叠着。
+            // sx/sy 已是钳过模长的力（≤sepW<1），直接当速度比例用：受力小的几乎不动，边上的挪开。
+            v.vx = sx * a.speed * SEP_SETTLE_SCALE;
+            v.vy = sy * a.speed * SEP_SETTLE_SCALE;
+            moved++;
+            continue;
+          }
+
+          // 方向归一化：整数方向 → 单位向量，叠上分离力后再归一 ×speed
+          //（浮点只在这一步·同 steering 的 IEEE 用法）。
+          const fm = Math.sqrt(dx * dx + dy * dy);
+          let vx = (dx / fm) * flowScale + sx;
+          let vy = (dy / fm) * flowScale + sy;
+          const m = Math.sqrt(vx * vx + vy * vy);
+          if (m === 0) { v.vx = 0; v.vy = 0; stopped++; continue; }   // 理论到不了（|sep|≤0.6<1），兜底
+          vx /= m; vy /= m;
+          v.vx = vx * a.speed;
+          v.vy = vy * a.speed;
           moved++;
         }
 

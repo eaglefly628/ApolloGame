@@ -168,6 +168,27 @@ describe('群体寻路选型 · A*-per-agent vs Flow Field（实测·非估算�
     }
     console.info('[pf/flow-real] t2-flow-field 每 tick（场已铺）\n  %s', tickRows.join('\n  '));
 
+    // ── 软分离开销（owner 2026-08-24 定方向后加的一层）─────────────────────────
+    // 关心的是：加了"互相让开"之后，每 tick 还撑不撑得住上千单位。
+    const sepRows: string[] = [];
+    for (const units of [1000, 4000] as const) {
+      const side = 64;
+      const w = new World();
+      for (const sys of flowFieldCapability.systems) w.addSystem(sys);
+      w.createEntity('field');
+      w.addComponent('field', mkField(side));
+      for (let i = 0; i < units; i++) {
+        const id = `s${i}`;
+        w.createEntity(id);
+        w.addComponent(id, { type: 'Transform', x: (i % side) + 0.5, y: (Math.floor(i / side) % side) + 0.5, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
+        w.addComponent(id, { type: 'FlowAgent', fieldId: 'f1', speed: 1, separation: { weight: 0.4 } } as FlowAgent);
+      }
+      for (let i = 0; i < 30; i++) w.tick();
+      const r = bench(() => { w.tick(); }, 30);
+      sepRows.push(`${String(units).padStart(4)} 单位 / ${side}×${side} → ${r.mean.toFixed(3)}ms/tick（含软分离：分桶 + 每单位看 9 格）`);
+    }
+    console.info('[pf/flow-sep] t2-flow-field 每 tick（开软分离）\n  %s', sepRows.join('\n  '));
+
     // 判据只钉**形状**不钉绝对值（绝对值随机器变·钉死了就是给 CI 埋雷）：
     // 单位数 4× 而每 tick 不到 4×+余量 ⇒「铺场那部分没有随单位数重复付」这条卖点还活着。
     const [a, bb] = tickRows.map((row) => Number(row.match(/→ ([\d.]+)ms/)![1]));

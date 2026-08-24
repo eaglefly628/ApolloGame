@@ -5,7 +5,7 @@ import { motionApplyCapability } from '@skills/tier1/index.js';
 import {
   flowFieldCapability, bakeFlowField, buildCostField, buildIntegration, buildFlow,
   cellIndex, cellOf, sameInputs, getBakedField, clearFlowFieldCache, flowFieldBakes, flowFieldLookups,
-  STRAIGHT, DIAGONAL, UNREACHABLE,
+  STRAIGHT, DIAGONAL, UNREACHABLE, SEP_MAX_WEIGHT,
 } from './flow-field.js';
 
 const FROZEN = 1 << 0;
@@ -375,4 +375,180 @@ describe('flow-field — M1 判据（**语义版**·零墙钟）', () => {
     for (let i = 0; i < 10; i++) w.tick();
     expect(flowFieldBakes()).toBe(2);   // 又不动了 → 不再重铺
   }, 60_000);
+});
+// ═══ 软分离原型（owner 2026-08-24：「用分离力·soft force·流场力一定是最重要的」）═══
+describe('flow-field — 软分离（读密度场·不是两两互推）', () => {
+  const sepAgent = (w: World, id: string, x: number, y: number, weight: number, over: Partial<Omit<FlowAgent, 'type'>> = {}): void =>
+    agent(w, id, x, y, { speed: 0.5, separation: { weight }, ...over });
+  const dist = (w: World, a: string, b: string): number =>
+    Math.hypot(pos(w, a).x - pos(w, b).x, pos(w, a).y - pos(w, b).y);
+
+  it('不设 separation = 一个字节不变（零回归·与纯流场逐位相同）', () => {
+    const f = () => field({ cols: 8, rows: 8, goals: [{ x: 7.5, y: 7.5 }] });
+    const run = (sep: boolean): string => {
+      clearFlowFieldCache();
+      const w = world(f(), true);
+      for (let i = 0; i < 6; i++) agent(w, `a${i}`, 1.5 + i * 0.1, 1.5, { speed: 0.3, ...(sep ? { separation: { weight: 0.3 } } : {}) });
+      for (let i = 0; i < 15; i++) w.tick();
+      return JSON.stringify(w.snapshot());
+    };
+    const plain1 = run(false); const plain2 = run(false);
+    expect(plain1).toBe(plain2);                 // 自身确定
+    expect(run(true)).not.toBe(plain1);          // 开了就该有区别（否则这条能力没接上）
+  });
+
+  it('**叠在一起会被弹开**（两个单位同格 → 距离单调拉开）', () => {
+    const w = world(field({ cols: 10, rows: 10, goals: [{ x: 9.5, y: 9.5 }] }), true);
+    sepAgent(w, 'a', 2.5, 2.5, 0.5);
+    sepAgent(w, 'b', 2.5 + 1e-3, 2.5, 0.5);      // 几乎完全重合
+    const d0 = dist(w, 'a', 'b');
+    for (let i = 0; i < 10; i++) w.tick();
+    expect(dist(w, 'a', 'b')).toBeGreaterThan(d0);
+  });
+
+  it('**一团挤住的队伍会散开**（16 个单位塞进一格 → 最挤那格的人数下降）', () => {
+    const f = field({ cols: 12, rows: 12, goals: [{ x: 11.5, y: 11.5 }] });
+    const w = world(f, true);
+    for (let i = 0; i < 16; i++) sepAgent(w, `u${i}`, 3.2 + (i % 4) * 0.02, 3.2 + Math.floor(i / 4) * 0.02, 0.45);
+    const busiest = (): number => {
+      const cells = new Map<number, number>();
+      for (let i = 0; i < 16; i++) {
+        const p = pos(w, `u${i}`);
+        const { col, row } = cellOf(f, p.x, p.y);
+        const k = cellIndex(f, col, row);
+        cells.set(k, (cells.get(k) ?? 0) + 1);
+      }
+      return Math.max(...cells.values());
+    };
+    const before = busiest();
+    expect(before).toBeGreaterThanOrEqual(12);   // 起手确实挤在一两格里
+    for (let i = 0; i < 25; i++) w.tick();
+    expect(busiest()).toBeLessThan(before);      // 撤软分离 → 它们会整团同速平移，这里恒等
+  });
+
+  it('**流场恒主导**：开着分离，队伍照样到得了目标（不会被推得背离）', () => {
+    const w = world(field({ cols: 14, rows: 14, goals: [{ x: 13.5, y: 13.5 }] }), true);
+    for (let i = 0; i < 12; i++) sepAgent(w, `u${i}`, 1.5 + (i % 3) * 0.05, 1.5 + Math.floor(i / 3) * 0.05, 0.5, { arriveRange: 1.5 });
+    for (let i = 0; i < 400; i++) w.tick();
+    for (let i = 0; i < 12; i++) {
+      const p = pos(w, `u${i}`);
+      expect({ id: i, far: Math.hypot(p.x - 13.5, p.y - 13.5) > 3 }).toMatchObject({ far: false });
+    }
+  });
+
+  it('权重被钳在 SEP_MAX_WEIGHT：填 99 与填 0.6 结果逐位相同（作者填多大都不许压过流场）', () => {
+    const run = (weight: number): string => {
+      clearFlowFieldCache();
+      const w = world(field({ cols: 10, rows: 10, goals: [{ x: 9.5, y: 9.5 }] }), true);
+      for (let i = 0; i < 8; i++) sepAgent(w, `u${i}`, 2.5 + i * 0.03, 2.5, weight);
+      for (let i = 0; i < 12; i++) w.tick();
+      // ⚠ 只比**位置**不比整份快照：快照里含 `separation.weight` 这个入参本身（99 与 0.6 当然不等），
+      // 拿它当判据是在比输入不是比行为（第一版就这么写的，被自己咬了一口）。
+      return Array.from({ length: 8 }, (_, i) => `${pos(w, `u${i}`).x.toFixed(12)},${pos(w, `u${i}`).y.toFixed(12)}`).join('|');
+    };
+    expect(run(99)).toBe(run(SEP_MAX_WEIGHT));
+    expect(run(-5)).toBe(run(0));                // 负权重当 0（不许反向吸引成一坨）
+  });
+
+  it('到了终点也不叠成一个点（流场无方向时分离力仍生效·RTS 里最显眼的那种假）', () => {
+    const w = world(field({ cols: 8, rows: 8, goals: [{ x: 4.5, y: 4.5 }] }), true);
+    // 给 arriveRange（真实用法）：到点后流场力停、软分离继续 → 摊开成一小片而不是钉在一个点。
+    for (let i = 0; i < 6; i++) sepAgent(w, `u${i}`, 4.5 + i * 0.01, 4.5, 0.5, { arriveRange: 1.2 });
+    for (let i = 0; i < 30; i++) w.tick();
+    let minPair = Infinity;
+    for (let i = 0; i < 6; i++) for (let j = i + 1; j < 6; j++) minPair = Math.min(minPair, dist(w, `u${i}`, `u${j}`));
+    expect(minPair).toBeGreaterThan(0.05);       // 撤「终点仍让分离力起作用」→ 6 个全叠在 4.5,4.5
+  });
+
+  it('只有开了 separation 的单位参与密度（没开的不占位·也不被推）', () => {
+    const f = field({ cols: 10, rows: 10, goals: [{ x: 9.5, y: 9.5 }] });
+    const w = world(f, true);
+    agent(w, 'plain', 3.5, 3.5, { speed: 0.4 });                       // 没开
+    sepAgent(w, 'soft', 3.5 + 1e-3, 3.5, 0.5, { speed: 0.4 });          // 开了·与 plain 同格
+    const before = { vx: 0, vy: 0 };
+    w.tick();
+    void before;
+    // plain 的速度必须是纯流场方向（x、y 分量相等=正 45°斜走），soft 的会被密度梯度带偏
+    const vp = vel(w, 'plain');
+    expect(vp.vx).toBeCloseTo(vp.vy, 9);
+    const vs = vel(w, 'soft');
+    expect(Math.abs(vs.vx - vs.vy)).toBeGreaterThan(1e-9);
+  });
+
+  it('确定性：开着分离跑两遍逐位相同 · 实体创建顺序颠倒结果不变', () => {
+    const run = (reverse: boolean): string => {
+      clearFlowFieldCache();
+      const w = world(field({ cols: 12, rows: 12, goals: [{ x: 11.5, y: 11.5 }] }), true);
+      const ids = ['u0', 'u1', 'u2', 'u3', 'u4', 'u5'];
+      for (const id of reverse ? [...ids].reverse() : ids) {
+        const i = ids.indexOf(id);
+        sepAgent(w, id, 2.5 + (i % 3) * 0.04, 2.5 + Math.floor(i / 3) * 0.04, 0.4);
+      }
+      for (let i = 0; i < 20; i++) w.tick();
+      return ids.map((id) => `${id}:${pos(w, id).x.toFixed(12)},${pos(w, id).y.toFixed(12)}`).join('|');
+    };
+    expect(run(false)).toBe(run(false));
+    expect(run(true)).toBe(run(false));          // 创建序不同、结果必须同（否则 lockstep 分叉）
+  });
+});
+
+// ═══ 上面两条是「撤修验红没红」逼出来的：我最费劲的两处当时零覆盖 ═══
+describe('flow-field — 软分离的两条承重语义（撤修必须转红）', () => {
+  it('**夹在中间的几乎不动、站在边上的被弹开**（力保留大小·不许归一化）', () => {
+    // 一排 5 个等距单位：中间那个左右受力相消 ≈ 0，两端那个净受力最大。
+    // 归一化会把所有人的力抹成一样大 ⇒ 整排同速平移、彼此间距一点不变（我栽过三次的那个病）。
+    const f = field({ cols: 12, rows: 12, goals: [{ x: 5.5, y: 5.5 }] });
+    const w = world(f, false);
+    for (let i = 0; i < 5; i++) {
+      agent(w, `u${i}`, 5.3 + i * 0.1, 5.5, { speed: 1, arriveRange: 2, separation: { weight: 0.6 } });
+    }
+    w.tick();
+    const spd = (id: string): number => Math.hypot(vel(w, id).vx, vel(w, id).vy);
+    const middle = spd('u2');
+    const edge = Math.max(spd('u0'), spd('u4'));
+    expect(edge).toBeGreaterThan(middle * 3);   // 撤「不归一化」→ 两者相等，此断言红
+    expect(middle).toBeLessThan(0.1);           // 中间那个基本站着不动
+  });
+
+  it('**到点后收敛、不来回聚散**（越过到达线要减速·不许满速冲回）', () => {
+    // 没有减速带时实测：被挤出到达线的单位以满速冲回、把刚散开的堆重新压实，
+    // 队伍以约 40 拍为周期反复聚散（最近间距在 0.41 与 0.0007 之间来回荡）。
+    const w = world(field({ cols: 12, rows: 12, goals: [{ x: 5.5, y: 5.5 }] }), true);
+    for (let i = 0; i < 6; i++) {
+      agent(w, `u${i}`, 5.5 + i * 0.01, 5.5, { speed: 0.5, arriveRange: 1.2, separation: { weight: 0.5 } });
+    }
+    const minPair = (): number => {
+      let m = Infinity;
+      for (let i = 0; i < 6; i++) for (let j = i + 1; j < 6; j++) {
+        m = Math.min(m, Math.hypot(pos(w, `u${i}`).x - pos(w, `u${j}`).x, pos(w, `u${i}`).y - pos(w, `u${j}`).y));
+      }
+      return m;
+    };
+    for (let t = 0; t < 60; t++) w.tick();          // 先让它安顿
+    let worstLate = Infinity;
+    for (let t = 0; t < 140; t++) { w.tick(); worstLate = Math.min(worstLate, minPair()); }
+    // 安顿之后**再也不许**挤回去（撤减速带 → 这里会掉到 0.001 量级）
+    expect(worstLate).toBeGreaterThan(0.2);
+  });
+
+  it('**人越挤推得越狠**（力除以固定参考数·不是除以实际邻居数）', () => {
+    // 除以实际邻居数（均值）的话：「只有一个近邻」与「被四个近邻围住」受力一样大 ——
+    // 那不合直觉，而且会让同一个单位的受力随远处邻居进出而忽大忽小（队伍在终点抖的病根之一）。
+    const speedOf = (n: number): number => {
+      clearFlowFieldCache();
+      const w = world(field({ cols: 12, rows: 12, goals: [{ x: 5.5, y: 5.5 }] }), false);
+      agent(w, 'u0', 5.5, 5.5, { speed: 1, arriveRange: 3, separation: { weight: 0.6 } });
+      // 把 n 个邻居摆在 u0 周围同一半径上（等距·方向均匀 → 合力不对消才有可比性：这里摆成扇形）
+      for (let i = 0; i < n; i++) {
+        const ang = (i / Math.max(n, 1)) * (Math.PI / 2);          // 只占一个象限 ⇒ 合力不抵消
+        agent(w, `n${i}`, 5.5 + Math.cos(ang) * 0.12, 5.5 + Math.sin(ang) * 0.12, { speed: 1, arriveRange: 3, separation: { weight: 0.6 } });
+      }
+      w.tick();
+      return Math.hypot(vel(w, 'u0').vx, vel(w, 'u0').vy);
+    };
+    const one = speedOf(1);
+    const four = speedOf(4);
+    expect(one).toBeGreaterThan(0);
+    expect(four).toBeGreaterThan(one * 1.5);   // 撤成「除以实际邻居数」→ 两者几乎相等，此断言红
+  });
 });
