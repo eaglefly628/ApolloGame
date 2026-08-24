@@ -214,6 +214,38 @@ export interface NavAgent extends Component {
   haltStatusMask?: number;  // 自身 Status 含这些位时停（冻结/眩晕 CC·同 Steering/GridMover.haltStatusMask）
 }
 
+// ── flow-field（REQ-FLOWFIELD·群体流场寻路·确定性 sim·进 hash）──────────────────────
+// 与 pathfind（NavGraph+A*·每单位各算一条路）**成本形状相反**：流场把「怎么走」算成**一张全场共享的表**，
+// 铺一次服务全部单位。实测（games/game211/pathfind-scale.bench.test.ts）：500 单位/48×48 图，
+// A*-per-agent 首拍 534~619ms、稳态 20~23ms/tick；流场铺一次 1.0~1.1ms、千单位查表 0.075ms/tick。
+// ⇒ **单位多、目标少、地图开阔** 用流场；**单位少、各走各的** 用 pathfind。两者并存，不互相替代。
+//
+// 三遍管线在 `t2-flow-field`：cost field → 多源 Dijkstra 积分场（铺满全图·**无局部极小**，
+// 凹形障碍不卡死）→ 每格取积分最小邻格得方向。积分全程**整数**（直走 10/斜走 14）以逐位可复现。
+export interface FlowField extends Component {
+  readonly type: 'FlowField';
+  id: string;                     // 场 id（FlowAgent.fieldId 认领·多阵营/多目标可并存多张）
+  cellSize: number;               // 格边长（世界单位）
+  originX: number;                // 网格左下角世界 x
+  originY: number;                // 网格左下角世界 y
+  cols: number;                   // 列数
+  rows: number;                   // 行数
+  blocked?: readonly number[];    // 行主序 0/1·1=不可走（缺省全可走）
+  cost?: readonly number[];       // 行主序 ≥1 的地形代价（缺省全 1·公路 1/沼泽 3·非整数向上取整）
+  goals: ReadonlyArray<{ x: number; y: number }>;  // **多源**：多个占领点一次铺完，单位各走向最近的那个
+  los?: boolean;                  // 视线直指优化（M2·M1 未实现·摆了会在 trace 里留痕）
+}
+
+// ── FlowAgent ── 按 fieldId 查流场方向 → 写 Velocity（被 motion-apply 积分·受碰撞/分离介入）。
+// 与 Steering{separation} 正交：流场管「走到哪」，分离管「别挤成一坨」，两者同时挂即可。
+export interface FlowAgent extends Component {
+  readonly type: 'FlowAgent';
+  fieldId: string;          // 认领哪张 FlowField
+  speed: number;            // 移动速度（写入 Velocity 模长·单位/tick·同 Steering.speed 口径）
+  arriveRange?: number;     // 到最近 goal 此距离内即停（缺省 0）
+  haltStatusMask?: number;  // 自身 Status 含这些位时停（同 Steering/NavAgent.haltStatusMask）
+}
+
 // ── NavPath ── 引擎写的缓存路径（确定性派生·进 hash）。via=待经节点下标序；gx/gy=规划所据目标点；age=自上次重算 tick。
 export interface NavPath extends Component {
   readonly type: 'NavPath';

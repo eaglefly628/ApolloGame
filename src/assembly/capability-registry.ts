@@ -55,6 +55,7 @@ import {
   behaviorTreeCapability,
   orbitMotionCapability,
   pathFollowCapability,
+  flowFieldCapability,
   statBindCapability,
   bounceRelayCapability,
   pullAnchorCapability,
@@ -144,6 +145,11 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   // t2-path-follow（REQ-PATHFOLLOW）：固定航点轨道匀速跑——沿 waypoints 依次朝下个航点走、到 arriveRadius
   // 算到达进下一航点（loop/停末点）、写 Velocity。与 steering/launch 同链，不索敌不绕障，巡逻/传送带/固定弹道通用。
   pathFollowCapability,
+  // t2-flow-field（REQ-FLOWFIELD）：群体流场寻路——一张 FlowField 铺一次（cost → 多源 Dijkstra 积分场 →
+  // 每格取积分最小邻格），全部 FlowAgent 查表得方向写 Velocity。成本 ∝ 地图格数、**与单位数无关**
+  // （实测千单位查表 0.075ms/tick，而 A*-per-agent 同规模稳态 20ms+、首拍 500ms+）。
+  // 与 pathfind 并存不互斥：单位多目标少用它，单位少各走各的用 pathfind。整数积分 → 逐位可复现。
+  flowFieldCapability,
   // t2-stat-bind（REQ-SURVIVOR被动轴）：属性桥——把 ModifierTotals(单例)/Stats(本实体 effective) 按 key
   // 投影到本实体任意组件字段（moveSpeed→Controllable.speed、range→Shape.radius、attackSpeed→Timer.duration
   // 等），幂等重算不复利。runsAfter modifier-stack/stat-apply/resource-apply/timer-advance 打破传递环。

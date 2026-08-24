@@ -8,7 +8,7 @@
 //  加/改/删组件后同提交重跑生成命令；忘了 → scripts/build-component-map.test.mjs 漂移守卫亮红。
 // ═══════════════════════════════════════════════════════════════
 
-/** 全部运行时组件名（151 个·升序去重·生成物）。 */
+/** 全部运行时组件名（153 个·升序去重·生成物）。 */
 export const COMPONENT_UNIVERSE = [
   'Acceleration',
   'Action',
@@ -53,6 +53,8 @@ export const COMPONENT_UNIVERSE = [
   'FaceRotate',
   'Facing',
   'Flag',
+  'FlowAgent',
+  'FlowField',
   'Fog3D',
   'Frame',
   'GameFlow',

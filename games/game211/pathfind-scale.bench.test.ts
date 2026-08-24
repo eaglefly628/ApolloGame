@@ -14,6 +14,9 @@
 //   （`src/engine/spatial/astar.ts:30-50`，源码自注「小图用数组」）→ 单次查询 ~O(V²)。
 //   这不是黑本仓：小图上它更快也更确定。但它把「图能多大」这条约束摆到了台面上，必须量出来。
 import { describe, it, expect } from 'vitest';
+import { World } from '@zerocraft/engine/engine/core/world.js';
+import { flowFieldCapability, bakeFlowField, clearFlowFieldCache } from '@zerocraft/engine/skills/tier2/flow-field.js';
+import type { FlowField, FlowAgent, Transform } from '@zerocraft/engine/engine/protocol/components.js';
 import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { transformCapability, velocityCapability, relationCapability } from '@zerocraft/engine/atom-skills/index.js';
 import { motionApplyCapability } from '@zerocraft/engine/skills/tier1/index.js';
@@ -121,6 +124,53 @@ describe('群体寻路选型 · A*-per-agent vs Flow Field（实测·非估算�
     console.info('[pf/flow] Flow Field（Dijkstra 铺满 + 每单位 O(1) 查表）\n  %s', rows.join('\n  '));
     expect(rows).toHaveLength(4);
   });
+
+
+  // ── ④ **真能力**（`t2-flow-field`·REQ-FLOWFIELD M1 已落地）────────────────────────────
+  // ①②③ 量的是**参考实现**（本文件内的一次性函数·四邻域·单源·无地形代价），当初只为回答
+  // 「值不值得做」。能力落地后，真正该被长期盯住的是**出厂那一份**——所以这里直接量它。
+  // ⚠ 与 ② 的数字**不可直接对拍**：真能力是**八邻域**（边数 2×，斜走质量换来的）、多源、
+  // 带地形代价与「斜走不切墙角」。同尺寸慢约 2× 属预期，不是实现劣化。
+  it('④ 真能力 t2-flow-field：铺场成本 + 千/四千单位每 tick（M1 判据对照）', () => {
+    const mkField = (side: number): FlowField => ({
+      type: 'FlowField', id: 'f1', cellSize: 1, originX: 0, originY: 0,
+      cols: side, rows: side, goals: [{ x: side - 0.5, y: side - 0.5 }],
+    } as FlowField);
+
+    const bakeRows: string[] = [];
+    for (const side of [24, 48, 96, 192] as const) {
+      const f = mkField(side);
+      for (let i = 0; i < 20; i++) { clearFlowFieldCache(); bakeFlowField(f); }   // 预热（冷跑量到的是 JIT）
+      const r = bench(() => { bakeFlowField(f); }, side >= 192 ? 10 : 30);
+      bakeRows.push(`${side}×${side} = ${String(side * side).padStart(6)} 格 → 铺场 ${r.mean.toFixed(2)}ms（八邻域·多源·带地形代价）`);
+    }
+    console.info('[pf/flow-real] t2-flow-field 铺场（一次服务全部单位）\n  %s', bakeRows.join('\n  '));
+
+    const tickRows: string[] = [];
+    for (const units of [1000, 4000] as const) {
+      const side = 64;
+      const w = new World();
+      for (const sys of flowFieldCapability.systems) w.addSystem(sys);
+      w.createEntity('field');
+      w.addComponent('field', mkField(side));
+      for (let i = 0; i < units; i++) {
+        const id = `u${i}`;
+        w.createEntity(id);
+        w.addComponent(id, { type: 'Transform', x: (i % side) + 0.5, y: (Math.floor(i / side) % side) + 0.5, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
+        w.addComponent(id, { type: 'FlowAgent', fieldId: 'f1', speed: 1 } as FlowAgent);
+      }
+      for (let i = 0; i < 30; i++) w.tick();                                       // 预热 + 首拍铺场
+      const r = bench(() => { w.tick(); }, 30);
+      tickRows.push(`${String(units).padStart(4)} 单位 / ${side}×${side} → ${r.mean.toFixed(3)}ms/tick（含 ECS 查询+排序·场只在输入变时重铺）`);
+    }
+    console.info('[pf/flow-real] t2-flow-field 每 tick（场已铺）\n  %s', tickRows.join('\n  '));
+
+    // 判据只钉**形状**不钉绝对值（绝对值随机器变·钉死了就是给 CI 埋雷）：
+    // 单位数 4× 而每 tick 不到 4×+余量 ⇒「铺场那部分没有随单位数重复付」这条卖点还活着。
+    const [a, bb] = tickRows.map((row) => Number(row.match(/→ ([\d.]+)ms/)![1]));
+    expect(bb).toBeLessThanOrEqual(a * 8);
+    expect(bakeRows).toHaveLength(4);
+  }, 120_000);
 
   it('③ 查表本身的成本：N 个单位各查一次方向', () => {
     const side = 96;

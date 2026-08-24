@@ -20,6 +20,7 @@ export { hitboxCapability } from './hitbox.js';
 export { overTimeCapability } from './over-time.js';
 export { mortalCapability } from './mortal.js';
 export { steeringCapability } from './steering.js';
+export { flowFieldCapability } from './flow-field.js';
 export { keybindCapability } from './keybind.js';
 export { statsCapability, computeEffective } from './stats.js';
 export { launchCapability } from './launch.js';
