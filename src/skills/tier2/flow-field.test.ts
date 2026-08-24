@@ -4,7 +4,7 @@ import type { FlowField, FlowAgent, Transform, Velocity, Status } from '@engine/
 import { motionApplyCapability } from '@skills/tier1/index.js';
 import {
   flowFieldCapability, bakeFlowField, buildCostField, buildIntegration, buildFlow,
-  cellIndex, cellOf, fieldDigest, getBakedField, clearFlowFieldCache, flowFieldBakes,
+  cellIndex, cellOf, sameInputs, getBakedField, clearFlowFieldCache, flowFieldBakes, flowFieldLookups,
   STRAIGHT, DIAGONAL, UNREACHABLE,
 } from './flow-field.js';
 
@@ -48,6 +48,33 @@ describe('flow-field — 元数据 / 定序 / 申报诚实', () => {
     expect(flowFieldCapability.id).toBe('t2-flow-field');
     expect(flowFieldCapability.systems[0].id).toBe('flow-field');
     expect(flowFieldCapability.systems[0].runsBefore).toContain('motion-apply');
+    expect(flowFieldCapability.systems[0].runsAfter).toEqual(['steering', 'path-follow']);
+  });
+
+  // 独立复查逼出来的一条（M1 首版缺）：本系统与 steering/path-follow 都读写 Velocity，
+  // 组件图上互为前驱 ⇒ 伪环。而 `topological-sort` **遇环只告警不抛**，所以缺 runsAfter 时
+  // 全库 4783 测**一条都不会红**——只因为没有任何测试把它们装进同一个世界。
+  // 「告警没出现」≠「没有告警」，可能只是没人组装到那个配置。这条测试就是那个配置。
+  it('与 steering/path-follow 同装：零成环告警 · 执行序 steering → path-follow → flow-field → motion-apply', async () => {
+    const { steeringCapability } = await import('./steering.js');
+    const { pathFollowCapability } = await import('./path-follow.js');
+    const warns: string[] = [];
+    const origWarn = console.warn; const origErr = console.error;
+    console.warn = (...a: unknown[]): void => { warns.push(a.join(' ')); };
+    console.error = (...a: unknown[]): void => { warns.push(a.join(' ')); };
+    try {
+      const w = new World();
+      for (const sys of steeringCapability.systems) w.addSystem(sys);
+      for (const sys of pathFollowCapability.systems) w.addSystem(sys);
+      for (const sys of flowFieldCapability.systems) w.addSystem(sys);
+      for (const sys of motionApplyCapability.systems) w.addSystem(sys);
+      w.tick();
+      const order = (w as unknown as { systems: Array<{ id: string }> }).systems.map((sys) => sys.id);
+      expect(order).toEqual(['steering', 'path-follow', 'flow-field', 'motion-apply']);
+    } finally { console.warn = origWarn; console.error = origErr; }
+    // 撤 runsAfter:['steering','path-follow'] → 这里会抓到
+    // 「[topological-sort] phase 0：检测到定序环 [steering, path-follow, flow-field]（闭环组件：Velocity）」
+    expect(warns.filter((l) => /定序环/.test(l))).toEqual([]);
   });
 
   it('申报 = 真实访问（reads 含 Velocity——本系统缺省时会 addComponent 再改它）', () => {
@@ -152,15 +179,52 @@ describe('flow-field — 🔴 确定性', () => {
     expect([...cold.dir]).toEqual(snapshot.dir);
   });
 
-  it('输入摘要驱动重建：改 goals / blocked / cost / 几何 任一 → 摘要必变（= 下一 tick 重铺）', () => {
+  it('**缓存不许别名**：两张只差 0.0004 的场必须各铺各的（复查实测的那条静默分叉）', () => {
+    // 复查实测：曾用 Math.round(x*1000) 量化坐标做缓存键，而 cellOf 吃的是原始浮点 ⇒
+    // originX 差 0.0004 的两张场共用一份流场，单位停在不同位置（x=3.0000 vs x=4.0000）。
+    clearFlowFieldCache();
+    const A = field({ id: 'same-id', cols: 12, rows: 3, cellSize: 1, originX: 0, goals: [{ x: 11.5, y: 1.5 }] });
+    const B = field({ id: 'same-id', cols: 12, rows: 3, cellSize: 1, originX: 0.0004, goals: [{ x: 11.5, y: 1.5 }] });
+    const bakedA = getBakedField(A);
+    const bakedB = getBakedField(B);
+    expect(flowFieldBakes()).toBe(2);          // 撤「精确比对」改回量化摘要 → 这里是 1（别名成立）
+    expect(bakedA).not.toBe(bakedB);
+  });
+
+  it('精确比对逐字段成立：几何/goals/blocked/cost 任一变即判不同（含 undefined↔有值）', () => {
     const base = field({ cols: 4, rows: 4, blocked: new Array(16).fill(0), cost: new Array(16).fill(1) });
-    const d0 = fieldDigest(base);
-    expect(fieldDigest(field({ cols: 4, rows: 4, blocked: new Array(16).fill(0), cost: new Array(16).fill(1) }))).toBe(d0); // 同输入同摘要
-    expect(fieldDigest({ ...base, goals: [{ x: 1.5, y: 1.5 }] } as FlowField)).not.toBe(d0);
-    expect(fieldDigest({ ...base, blocked: blockedOf(4, 4, [[2, 2]]) } as FlowField)).not.toBe(d0);
-    expect(fieldDigest({ ...base, cost: [...new Array(15).fill(1), 3] } as FlowField)).not.toBe(d0);
-    expect(fieldDigest({ ...base, cellSize: 2 } as FlowField)).not.toBe(d0);
-    expect(fieldDigest({ ...base, originX: 5 } as FlowField)).not.toBe(d0);
+    clearFlowFieldCache();
+    getBakedField(base);
+    const snapOf = (f: FlowField): boolean => { const before = flowFieldBakes(); getBakedField(f); return flowFieldBakes() === before; };
+    expect(snapOf(field({ cols: 4, rows: 4, blocked: new Array(16).fill(0), cost: new Array(16).fill(1) }))).toBe(true); // 同输入=命中
+    for (const changed of [
+      { ...base, goals: [{ x: 1.5, y: 1.5 }] },
+      { ...base, blocked: blockedOf(4, 4, [[2, 2]]) },
+      { ...base, cost: [...new Array(15).fill(1), 3] },
+      { ...base, cellSize: 2 }, { ...base, originX: 5 }, { ...base, originY: 5 },
+      { ...base, blocked: undefined }, { ...base, cost: undefined },
+    ] as FlowField[]) {
+      clearFlowFieldCache(); getBakedField(base);
+      expect({ changed: Object.keys(changed).length, hit: snapOf(changed) }).toMatchObject({ hit: false });
+    }
+    // 纯函数侧也点名：同输入 true、差 0.0004 false
+    const snap = { cellSize: 1, originX: 0, originY: 0, cols: 4, rows: 4, goals: [{ x: 3.5, y: 3.5 }] };
+    expect(sameInputs(snap as never, field({ cols: 4, rows: 4, goals: [{ x: 3.5, y: 3.5 }] }))).toBe(true);
+    expect(sameInputs(snap as never, field({ cols: 4, rows: 4, originX: 0.0004, goals: [{ x: 3.5, y: 3.5 }] }))).toBe(false);
+  });
+
+  it('跨世界不串味：同 id 不同内容的两个世界交替跑，各自的单位走各自的方向', () => {
+    clearFlowFieldCache();
+    const mk = (goalX: number): World => {
+      const f = field({ id: 'shared', cols: 12, rows: 3, cellSize: 1, goals: [{ x: goalX, y: 1.5 }] });
+      const w = world(f, false);
+      agent(w, 'u', 5.5, 1.5, { speed: 1, fieldId: 'shared' });   // 场 id = shared（两个世界同 id 不同内容）
+      return w;
+    };
+    const left = mk(0.5); const right = mk(11.5);
+    for (let i = 0; i < 5; i++) { left.tick(); right.tick(); }   // 交替跑 = 缓存来回换
+    expect(vel(left, 'u').vx).toBeLessThan(0);                   // 撤精确比对 → 两个世界会共用一份场
+    expect(vel(right, 'u').vx).toBeGreaterThan(0);
   });
 
   it('无墙钟无随机（源码级：本文件零 Date.now/performance.now/Math.random）', async () => {
@@ -274,16 +338,19 @@ describe('flow-field — M1 判据（**语义版**·零墙钟）', () => {
   // 真实耗时的量化在 `games/game211/pathfind-scale.bench.test.ts`（那里本来就是量成本的地方，
   // 且与工单援引的对照数字同文件同机可比）。这里只留**不靠计时也能咬住**的两条语义判据。
   it('**成本与单位数无关**（这条卖点直接用铺场次数咬住·不靠计时）：1000 与 4000 单位跑 30 拍，都只铺 1 次', () => {
-    const run = (units: number): number => {
+    const run = (units: number): { bakes: number; lookups: number } => {
       clearFlowFieldCache();
       const f = field({ cols: 64, rows: 64, cellSize: 1, goals: [{ x: 63.5, y: 63.5 }] });
       const w = world(f, false);
       for (let i = 0; i < units; i++) agent(w, `a${i}`, (i % 64) + 0.5, (Math.floor(i / 64) % 64) + 0.5, { speed: 1 });
       for (let i = 0; i < 30; i++) w.tick();
-      return flowFieldBakes();
+      return { bakes: flowFieldBakes(), lookups: flowFieldLookups() };
     };
-    expect(run(1000)).toBe(1);   // 撤「取场提到单位循环外」→ 这里会变成 30000
-    expect(run(4000)).toBe(1);   // 单位翻四倍，铺场次数纹丝不动 = 成本与单位数无关
+    // ⚠ 判据是**取场次数**不是铺场次数（复查实测：记忆化会把重复取场吸收掉，
+    // 真撤掉「取场外提」后 bakes 仍然是 1、25 测全绿，而 4000 单位每 tick 0.909→2.676ms）。
+    // 每 tick 每场恰好取一次 ⇒ 30 拍 = 30 次；掉回单位循环里就会变成 30×单位数。
+    expect(run(1000)).toEqual({ bakes: 1, lookups: 30 });   // 撤「取场提到单位循环外」→ lookups=30000
+    expect(run(4000)).toEqual({ bakes: 1, lookups: 30 });   // 单位翻四倍，两个数都纹丝不动
   }, 120_000);
 
   it('重建时机确定：输入不变永不重铺 · goals/blocked 一变下一 tick 就重铺（无墙钟无空闲调度）', () => {

@@ -237,7 +237,12 @@ export interface FlowField extends Component {
 }
 
 // ── FlowAgent ── 按 fieldId 查流场方向 → 写 Velocity（被 motion-apply 积分·受碰撞/分离介入）。
-// 与 Steering{separation} 正交：流场管「走到哪」，分离管「别挤成一坨」，两者同时挂即可。
+// ⚠ **与 Steering 同挂时不是"正交叠加"**（首版文档这么写，独立复查实测证伪，现按实况改口）：
+// 本系统**绝对写** Velocity（`v.vx = 方向 × speed`），且定序上排在 steering 之后（runsAfter），
+// 于是同一实体同挂 FlowAgent + Steering 时，**steering 那一拍的输出会被整段覆盖**（含它的 separation 斥力）。
+// M1 的正确用法二选一：① 走位交给流场、拥挤交给别的手段（碰撞/collision-resolve 本来就在 motion 之后介入）；
+// ② 要 seek+separation 就别挂 FlowAgent。真正的「流场定基速 + 分离叠加」需要本系统支持"叠加写"语义，
+// 那是后续分期的活（已记在 REQ-FLOWFIELD 单里），**别靠同挂碰运气**。
 export interface FlowAgent extends Component {
   readonly type: 'FlowAgent';
   fieldId: string;          // 认领哪张 FlowField

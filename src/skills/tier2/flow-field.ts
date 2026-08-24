@@ -211,49 +211,92 @@ export function bakeFlowField(field: FlowField): BakedField {
 }
 
 /**
- * 输入摘要 = 重建时机的**确定性**判据（`blocked/cost/goals/网格几何` 任一变 → 下一 tick 重建）。
- * FNV-1a over 输入数字：O(格数) 的一遍扫描（36864 格实测 ~0.05ms，相对 7ms 铺场可忽略），
- * 换来的是「不改就不重铺」。**绝不用墙钟/空闲调度**——那会让两端因机器快慢分叉。
+ * 重建判据 = **逐字段精确比对上一次铺场时的输入**（不是哈希摘要）。
+ *
+ * ⚠ 上一版在这里栽过一次，值得写死教训：曾用 `Math.round(x*1000)` 量化坐标后做 FNV 摘要当缓存键——
+ * 而真正吃这些数的 `cellOf`/`buildCostField` 用的是**原始浮点**。于是「摘要相同」≠「场相同」：
+ * 两张 `originX` 差 0.0004 的场共享同一份铺好的流场，单位停在不同的位置（独立复查实测：
+ * 单独跑停 x=3.0000，同进程先铺过另一张同 id 场后停 x=4.0000）。那不是缓存，是**状态通道**，
+ * 在 lockstep 里就是静默分叉。
+ *
+ * 现在的做法：缓存条目留一份输入快照，命中前**逐字段精确比对**（含数组逐元素）。
+ * 代价与哈希同阶（都要扫一遍数组），换来的是**没有别名可能**——不靠"碰撞概率极低"这种话。
  */
-export function fieldDigest(field: FlowField): string {
-  let h = 0x811c9dc5;
-  const mix = (n: number): void => { h ^= n | 0; h = Math.imul(h, 0x01000193) >>> 0; };
-  mix(field.cols); mix(field.rows); mix(Math.round(field.cellSize * 1000));
-  mix(Math.round(field.originX * 1000)); mix(Math.round(field.originY * 1000));
-  mix(field.goals.length);
-  for (const g of field.goals) { mix(Math.round(g.x * 1000)); mix(Math.round(g.y * 1000)); }
-  if (field.blocked) { mix(field.blocked.length); for (let i = 0; i < field.blocked.length; i++) mix(field.blocked[i] ? 1 : 0); }
-  if (field.cost) { mix(field.cost.length); for (let i = 0; i < field.cost.length; i++) mix(Math.round(field.cost[i] * 1000)); }
-  return `${field.cols}x${field.rows}:${h}`;
+interface InputSnapshot {
+  cellSize: number; originX: number; originY: number; cols: number; rows: number;
+  goals: Array<{ x: number; y: number }>;
+  blocked?: number[];
+  cost?: number[];
+}
+
+function snapshotOf(field: FlowField): InputSnapshot {
+  return {
+    cellSize: field.cellSize, originX: field.originX, originY: field.originY,
+    cols: field.cols, rows: field.rows,
+    goals: field.goals.map((g) => ({ x: g.x, y: g.y })),
+    ...(field.blocked ? { blocked: Array.from(field.blocked) } : {}),
+    ...(field.cost ? { cost: Array.from(field.cost) } : {}),
+  };
+}
+
+/** 精确比对（`Object.is` 而非 `===`：把 NaN/-0 这类也判得一致，别让它们成为第二种别名）。 */
+export function sameInputs(a: InputSnapshot, field: FlowField): boolean {
+  if (!Object.is(a.cellSize, field.cellSize) || !Object.is(a.originX, field.originX) || !Object.is(a.originY, field.originY)) return false;
+  if (a.cols !== field.cols || a.rows !== field.rows) return false;
+  if (a.goals.length !== field.goals.length) return false;
+  for (let i = 0; i < a.goals.length; i++) {
+    if (!Object.is(a.goals[i].x, field.goals[i].x) || !Object.is(a.goals[i].y, field.goals[i].y)) return false;
+  }
+  const ab = a.blocked; const fb = field.blocked;
+  if ((ab === undefined) !== (fb === undefined)) return false;
+  if (ab && fb) {
+    if (ab.length !== fb.length) return false;
+    for (let i = 0; i < ab.length; i++) if (!Object.is(ab[i], fb[i])) return false;
+  }
+  const ac = a.cost; const fc = field.cost;
+  if ((ac === undefined) !== (fc === undefined)) return false;
+  if (ac && fc) {
+    if (ac.length !== fc.length) return false;
+    for (let i = 0; i < ac.length; i++) if (!Object.is(ac[i], fc[i])) return false;
+  }
+  return true;
 }
 
 /**
- * 铺场记忆化。**纯记忆化，不是状态通道**：键覆盖全部输入 ⇒ 清空缓存只影响耗时、不影响任何输出
- * （点名测试钉死）。容量封顶 8 场（多阵营/多目标同时在场也够），超了丢最早的——
- * 丢了只是下次重铺，语义不变。
+ * 铺场记忆化（**纯记忆化，不是状态通道**）：命中要求输入**逐字段精确相同**，所以
+ * 「清空缓存」只改耗时、不改任何输出——这条由点名测试用**两张只差 0.0004 的场**咬住，
+ * 而不是拿同一个对象铺两次（后者按构造就抓不到别名，是上一版测试的漏洞）。
+ * 容量封顶 8 场，超了丢最早的（丢了只是下次重铺，语义不变）。
  */
 const CACHE_MAX = 8;
-const cache = new Map<string, BakedField>();
-/** 真铺了几次（**只为测试与排查·不参与任何判定**）。「与单位数无关」这条卖点靠它被机器咬住：
- *  1000 个单位跑 30 拍，这个数必须是 1；换成 4000 个单位，还是 1。 */
+const cache = new Map<string, { snap: InputSnapshot; baked: BakedField }>();
+/** 真铺了几次（只为测试与排查·不参与判定）。 */
 let bakes = 0;
 export function flowFieldBakes(): number { return bakes; }
+/**
+ * **取场的次数**（同上·只为测试）。与 `bakes` 分开数是有原因的：记忆化会把重复取场吸收掉，
+ * 于是「把取场写回单位循环里」这种真回归**只看 bakes 是看不见的**（独立复查实测：撤掉外提后
+ * 25 测全绿、bakes 仍是 1，而 4000 单位每 tick 从 0.909ms 涨到 2.676ms）。
+ * 取场次数才是那条回归的机器判据：**每 tick 每场恰好一次**。
+ */
+let lookups = 0;
+export function flowFieldLookups(): number { return lookups; }
 
 /** 取（或铺）一张场。导出 `clearFlowFieldCache` 供测试证明「缓存不改变结果」。 */
 export function getBakedField(field: FlowField): BakedField {
-  const key = `${field.id}|${fieldDigest(field)}`;
-  const hit = cache.get(key);
-  if (hit) return hit;
+  lookups++;
+  const hit = cache.get(field.id);
+  if (hit && sameInputs(hit.snap, field)) return hit.baked;
   const baked = bakeFlowField(field);
   bakes++;
-  cache.set(key, baked);
+  cache.set(field.id, { snap: snapshotOf(field), baked });
   if (cache.size > CACHE_MAX) {
     const oldest = cache.keys().next().value as string | undefined;
-    if (oldest !== undefined) cache.delete(oldest);
+    if (oldest !== undefined && oldest !== field.id) cache.delete(oldest);
   }
   return baked;
 }
-export function clearFlowFieldCache(): void { cache.clear(); bakes = 0; }
+export function clearFlowFieldCache(): void { cache.clear(); bakes = 0; lookups = 0; }
 
 /** 到最近 goal 的距离（arriveRange 判据·goals 通常个位数）。 */
 function nearestGoalDist(field: FlowField, x: number, y: number): number {
@@ -325,6 +368,16 @@ export const flowFieldCapability = defineCapability({
       id: 'flow-field',
       // 与 steering/path-follow 同一条链：读 Transform / 写 Velocity 与 motion-apply 互为前驱=环，
       // 显式 runsBefore 打破（先定速度再移动）。
+      //
+      // ⚠ `runsAfter:['steering','path-follow']` 是**独立复查逼出来的**（M1 首版漏了）：本系统与它们
+      // 都「读+写 Velocity」，组件图上互为前驱 ⇒ 判成 RMW 伪环。实证：steering+path-follow+motion-apply
+      // 三件装配无告警，一加 flow-field 就打出
+      //   `[topological-sort] phase 0：检测到定序环 [steering, path-follow, flow-field]（闭环组件：Velocity）… 不保证合语义`
+      // 而 `topological-sort` 遇环**只告警不抛**（照跑），所以它不会把任何测试打红——
+      // 全库 4783 测里这条告警一次没出现过，只因为没人把 steering 与 flow-field 装进同一个世界。
+      // 隔壁 `path-follow.ts:117-121` 为**完全相同的理由**早就钉了 `runsAfter:['steering']`，照办。
+      // 未装的 id 会被忽略（steering/path-follow 不在的世界里安全）。
+      runsAfter: ['steering', 'path-follow'],
       runsBefore: ['motion-apply'],
       reads: ['FlowField', 'FlowAgent', 'Transform', 'Status', 'Velocity'],
       writes: ['Velocity'],
