@@ -198,10 +198,8 @@ describe('假信心自查·短路语义（钉死「恒当命中」为什么是�
   it('若 findMatchingAction 被短路成恒真（不看 action/arg/disabled 直接回填一条假匹配），则「不存在的 signal」' +
      '也会被判成可驱动——这正是三条断言（arg 不对/disabled/压根没这 signal）要拦住的假阳性', () => {
     const live = [{ action: 'menu.start', arg: undefined, uiId: 'x', disabled: false }];
-    // 真实现：老实报「没有」。
+    // 真实现：老实报「没有」。（原有"短路版对照组"两行删于测试加固批 2026-08-24——
+    // 对本地字面量断非空=恒真，不测任何被测物，恰是本 describe 要杜绝的假信心形状。）
     expect(findMatchingAction(live, 'this-signal-does-not-exist-anywhere', undefined)).toEqual([]);
-    // 短路版对照组（模拟「点击后核状态」被恒真化）：任何输入都回一条假匹配——这就是要杜绝的假信心。
-    const shortCircuited = () => [{ action: 'this-signal-does-not-exist-anywhere', arg: undefined, uiId: 'fake', disabled: false }];
-    expect(shortCircuited()).not.toEqual([]); // 对照组确实会「误判可驱动」——证明真实现的判空不是摆设
   });
 });

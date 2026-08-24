@@ -29,11 +29,13 @@ describe('game-art-load（游戏本地美术索引装载·REQ-SHELL ②）', () 
     expect(gameArtIndexUrl('game-103')).toBe('/games/game-103/art/index.json');
   });
 
-  it('形态①：拉到索引 → 注册进 AssetManager 并 loadAll（按 key 可解析）', async () => {
+  it('形态①：拉到索引 → 注册进 AssetManager 并 loadAll（按 key 可解析·src=索引 path 全路径）', async () => {
     stubFetch(() => okJson(INDEX));
     const mgr = new AssetManager(new StubAssetLoader());
     expect(await loadGameArtInto(mgr, 'sample-game')).toBe(true);
-    expect(mgr.get('sample-game/tower-pulse')).toBeDefined();
+    // 加强（测试加固 2026-08-24）：toBeDefined → 断注册进去的 descriptor.src 是索引里的全路径
+    //（照本文件形态②同口径）——只断 defined 抓不到「注了 key 但 src 指错图」。
+    expect(mgr.get('sample-game/tower-pulse')?.descriptor.src).toBe('/games/sample-game/art/textures/tower.png');
     expect(mgr.get('sample-game/pending')).toBeUndefined(); // tbf 无 path → 不注册
   });
 

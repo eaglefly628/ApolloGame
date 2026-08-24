@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { World } from '@engine/core/world.js';
 import type { PathFollow, Transform, Velocity, SpawnRequest, DestroyRequest } from '@engine/protocol/components.js';
 import { pathFollowCapability, pathFollowAt } from './path-follow.js';
@@ -309,23 +309,31 @@ describe('path-follow — onEnd 撞环回归（同 game102 blueprint 能力集�
     // （destroy-apply consume DestroyRequest；hierarchy-cascade read+write DestroyRequest；prefab
     // read+consume SpawnRequest），三家都不写 PathFollow/Transform/Velocity，故只产生单向边、不成环
     // （见 path-follow.ts 文件头 onEnd 段注释）。这里按 game102/blueprint.ts 实际装配的能力集整装验证。
-    const w = new World();
-    for (const cap of [
-      transformCapability, shapeCapability, tagCapability, colorCapability,
-      resourceCapability, flagCapability, randomCapability, velocityCapability,
-      timerCapability, relationCapability, destroyCapability, overlapDetectCapability,
-      motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability,
-      clickableCapability, groupCountCapability, effectApplyCapability, pathFollowCapability,
-      selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability, eventWhenCapability, textBindingCapability,
-      flowCapability, aggroCapability, prefabCapability, casterCapability,
-    ]) {
-      for (const s of cap.systems) w.addSystem(s);
+    // 读告警纪律：推断环只 warn 不抛，收进断言（ENG-03 形状）
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const w = new World();
+      for (const cap of [
+        transformCapability, shapeCapability, tagCapability, colorCapability,
+        resourceCapability, flagCapability, randomCapability, velocityCapability,
+        timerCapability, relationCapability, destroyCapability, overlapDetectCapability,
+        motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability,
+        clickableCapability, groupCountCapability, effectApplyCapability, pathFollowCapability,
+        selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability, eventWhenCapability, textBindingCapability,
+        flowCapability, aggroCapability, prefabCapability, casterCapability,
+      ]) {
+        for (const s of cap.systems) w.addSystem(s);
+      }
+      follower(w, 'cannon', 0, 0, pathFollowAt(
+        [{ x: 10, y: 0 }, { x: 20, y: 0 }], 5, { arriveRadius: 1, onEnd: { dropTemplate: 'tray_red', destroy: true } },
+      ));
+      expect(() => {
+        for (let i = 0; i < 5; i++) w.tick();
+      }).not.toThrow();
+      const bad = warn.mock.calls.map((c) => c.map(String).join(' ')).filter((m) => m.includes('[topological-sort]') || m.includes('Circular'));
+      expect(bad).toEqual([]);
+    } finally {
+      warn.mockRestore();
     }
-    follower(w, 'cannon', 0, 0, pathFollowAt(
-      [{ x: 10, y: 0 }, { x: 20, y: 0 }], 5, { arriveRadius: 1, onEnd: { dropTemplate: 'tray_red', destroy: true } },
-    ));
-    expect(() => {
-      for (let i = 0; i < 5; i++) w.tick();
-    }).not.toThrow();
   });
 });

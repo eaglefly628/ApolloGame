@@ -80,3 +80,6 @@
 
 ### REQ-I-裸路径收编 · game-i.ts emoji base + ui-assets.ts 人工双份维护 index 镜像 · [2026-08-05] · ARTPIPE2 侦察带出 → **指派：PUI** · status: open · 优先级: P3 · 类型: 美术接线卫生
 > `game-i.ts:151 EMOJI_CFG.base` 直写路径；`ui-assets.ts:31,50-53,63-64` 内联镜像 index.json 的 path 字面量（注释自称同源实为两份人工维护=漂移温床）。修法：统一经 @assets/index 取。
+
+### REQ-I-测试大扫除PUI包 · src/ui + game-i 测试面六项（2026-08-22 全库测试评审 F 路转单） · **指派：PUI** · status: open · 优先级: P3 · 类型: 测试护栏
+> ① 删除候选：src/ui/starters/emotion-art.test.ts:24-25 同参两调比自身（恒真·同文件 L9-22 已逐条钉值）。② dnd-transform-anim.test.ts:65-72 keyframes「document 级·一次」幂等主张零覆盖（未二次 mount·未验 teardown 摘除）。③ apollo-toon-theme.test.ts:42-46「确定性」只断 data-URI 前缀——全串相等或双求值比对。④ req-webfont-ink.test.ts:70-72 `SHELL.ink` 纯存在性→断色令牌格式。⑤ **换皮不带 host 工件缺口**：cursor 注入只测 mountUI 初挂，`update(tree,newTheme)` 后 host.style.cursor/apollo-cur-* 是否更新零测试。⑥ 动效重播语义未钉：变更节点带 once 入场 fx 被 reconciler 替换重建时动画重播（=闪烁）与否无测试、期望行为未定义——先裁语义再钉。

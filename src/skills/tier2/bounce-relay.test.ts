@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { World } from '@engine/core/world.js';
 import type { Bounce, Hitbox, Launch, Tag, Transform, Trigger, Velocity } from '@engine/protocol/components.js';
 import { bounceRelayCapability } from './bounce-relay.js';
@@ -160,16 +160,24 @@ describe('bounce-relay — 命中重定向', () => {
 
 describe('bounce-relay — 撞环回归（同 game-103 实装能力集同装）', () => {
   it('与 motion-apply/steering/aggro/launch 同装不成环·可 tick', () => {
-    const w = new World();
-    for (const cap of [motionApplyCapability, steeringCapability, aggroCapability, launchCapability, bounceRelayCapability]) {
-      for (const s of cap.systems) w.addSystem(s);
+    // 读告警纪律：推断环只 warn 不抛，收进断言（ENG-03 形状）
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const w = new World();
+      for (const cap of [motionApplyCapability, steeringCapability, aggroCapability, launchCapability, bounceRelayCapability]) {
+        for (const s of cap.systems) w.addSystem(s);
+      }
+      w.createEntity('p');
+      w.addComponent('p', xf(0, 0));
+      w.addComponent('p', { type: 'Launch', speed: 6, toward: 'dir', dirX: 1, dirY: 0, bounce: { times: 2, targetTag: ENEMY } } as Launch);
+      foe(w, 'e1', 20, 0);
+      expect(() => {
+        for (let i = 0; i < 5; i++) w.tick();
+      }).not.toThrow();
+      const bad = warn.mock.calls.map((c) => c.map(String).join(' ')).filter((m) => m.includes('[topological-sort]') || m.includes('Circular'));
+      expect(bad).toEqual([]);
+    } finally {
+      warn.mockRestore();
     }
-    w.createEntity('p');
-    w.addComponent('p', xf(0, 0));
-    w.addComponent('p', { type: 'Launch', speed: 6, toward: 'dir', dirX: 1, dirY: 0, bounce: { times: 2, targetTag: ENEMY } } as Launch);
-    foe(w, 'e1', 20, 0);
-    expect(() => {
-      for (let i = 0; i < 5; i++) w.tick();
-    }).not.toThrow();
   });
 });

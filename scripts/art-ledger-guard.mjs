@@ -41,7 +41,7 @@
 
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { artRoot } from './art-paths.mjs';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -263,11 +263,15 @@ export function ratchetCheck(baseline, results) {
 
 function run(argv) {
   const asJson = argv.includes('--json');
-  const positional = argv.filter((a) => !a.startsWith('--'));
+  // --root <dir>：审计根注入（hermetic 测试用临时仓·退出码矩阵 CLI 腿 2026-08-24）。
+  // 缺省（不带 --root）= ROOT（脚本位置推导的真仓根），行为与加参前逐字节一致——测试钉住这条。
+  const ri = argv.indexOf('--root');
+  const root = ri >= 0 ? resolve(argv[ri + 1]) : ROOT;
+  const positional = argv.filter((a, i) => !a.startsWith('--') && !(ri >= 0 && i === ri + 1));
   const games = positional.length ? positional : null;
 
-  const results = auditAll(ROOT, games);
-  const baseline = loadBaseline(ROOT);
+  const results = auditAll(root, games);
+  const baseline = loadBaseline(root);
   const ratchet = ratchetCheck(baseline, results);
 
   const totalBH = results.reduce((n, r) => n + r.blackHouseholds.length, 0);

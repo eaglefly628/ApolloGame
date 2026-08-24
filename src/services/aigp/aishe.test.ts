@@ -11,11 +11,17 @@ describe('AIGP NullAishePort（REQ-C-004，表现层旁路）', () => {
     expect(port.log).toHaveLength(1);
   });
 
-  it('句柄 id 自增（确定性，可复现）', async () => {
+  it('句柄 id 自增（确定性，可复现）：连续分配 = 前缀相同·数值恰 +1', async () => {
     const port = new NullAishePort();
     const a = await port.generate('p1');
     const b = await port.generate('p2');
-    expect(a.id).not.toBe(b.id);
+    // 加强（测试加固 2026-08-24）：原只断 a.id !== b.id——随机 id 也能绿，测不出「自增·确定性」。
+    // 断实际序列形状：从 1 起、逐次 +1、跨实例可复现。
+    expect(a.id).toBe('aishe-null-1');
+    expect(b.id).toBe('aishe-null-2');
+    const num = (id: string): number => Number(id.slice('aishe-null-'.length));
+    expect(num(b.id) - num(a.id)).toBe(1); // 连续两次分配数值恰差 1
+    expect((await new NullAishePort().generate('q')).id).toBe('aishe-null-1'); // 新实例从头计（确定性可复现）
   });
 });
 

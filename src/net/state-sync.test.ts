@@ -135,8 +135,9 @@ describe('state-sync · 会话层（关键帧为主 + 增量）', () => {
     const bus = new Bus();
     const A = new StateSyncSession({ peerId: 'A', channel: bus.channel(), keyframeEveryTicks: 10 });
     const B = new StateSyncSession({ peerId: 'B', channel: bus.channel(), keyframeEveryTicks: 10 });
-    A.broadcast(snap(['u', { Tag: { flags: 1 } }]), 7); // tick 7 ≠ 关键帧拍，但首发强制关键帧
-    expect(B.peerState('A')).toBeDefined();
+    const f = snap(['u', { Tag: { flags: 1 } }]);
+    A.broadcast(f, 7); // tick 7 ≠ 关键帧拍，但首发强制关键帧
+    expect(hashSnapshot(B.peerState('A')!)).toBe(hashSnapshot(f)); // 逐位还原（原只 toBeDefined·存在性）
   });
 
   it('丢包自愈：B 错过中间增量 → base 对不上丢弃 → 下个关键帧重新对齐', () => {
@@ -160,5 +161,25 @@ describe('state-sync · 会话层（关键帧为主 + 增量）', () => {
     expect(hashSnapshot(B.peerState('A')!)).toBe(hashSnapshot(frames[0])); // 仍停在 t0
     deliver(sent[3]); // t3 keyframe → 自愈到 t3
     expect(hashSnapshot(B.peerState('A')!)).toBe(hashSnapshot(frames[3]));
+  });
+});
+
+describe('state-sync · 乱序信道（2026-08-22 测试大扫除实证修复的回归钉）', () => {
+  it('迟到的旧 keyframe 不回卷镜像（修复前无条件覆盖 → 状态倒退且旧 delta 可沿旧线续走）', () => {
+    const sent: StateSyncMsg[] = [];
+    const recA: SyncChannel = { post: (m) => sent.push(m), onMessage: () => {}, close: () => {} };
+    const A = new StateSyncSession({ peerId: 'A', channel: recA, keyframeEveryTicks: 1, deltaEveryTicks: 1 });
+    const B = new StateSyncSession({ peerId: 'B', channel: { post: () => {}, onMessage: () => {}, close: () => {} } });
+    const f0 = snap(['u', { Resource: { current: 100 } }]);
+    const f3 = snap(['u', { Resource: { current: 70 } }]);
+    A.broadcast(f0, 0); // keyframe t0
+    A.broadcast(f3, 3); // keyframe t3
+    const deliver = (m: StateSyncMsg): void => { (B as unknown as { onMessage: (m: StateSyncMsg) => void }).onMessage(m); };
+    deliver(sent[1]); // 先到 t3
+    expect(hashSnapshot(B.peerState('A')!)).toBe(hashSnapshot(f3));
+    deliver(sent[0]); // t0 迟到 → 必须被忽略，不回卷
+    expect(hashSnapshot(B.peerState('A')!)).toBe(hashSnapshot(f3));
+    deliver(sent[1]); // 同 tick 重发 → 幂等
+    expect(hashSnapshot(B.peerState('A')!)).toBe(hashSnapshot(f3));
   });
 });

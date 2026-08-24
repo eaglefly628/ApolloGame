@@ -236,3 +236,55 @@ describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门
     expect(enginePlan.some((s) => s.name === 'art-backup-smoke')).toBe(false);
   });
 });
+
+// ── 门禁接线补牙（测试加固批·2026-08-24）──
+// 三类此前只测半边的接线：① slowLane 面只有反向测试（零触发），正向「改被测物 → 面亮 → 计划有步」
+// 没钉过；② docs-only 计划只被当"含 GUARDS"用，常驻守卫的序列与 allowExit 精确值没对过账；
+// ③ facesOf 的旗和 planFor 的步各自有测试，但「每旗必有步」的总对账缺席——加第 8 旗忘接步会静默失效。
+describe('scoped-gate 接线补牙（slowLane 正向 · docs-only 全量对账 · 旗↔步总对账）', () => {
+  it('slowLane 正向：改 SLOW_TARGETS 被测物（scripts/game-pipeline.mjs）→ 面亮 → 计划含 slow-lane:game-pipeline 步·红=拦', () => {
+    // 实证现值（node 直跑 facesOf/planFor·2026-08-24）：slowLane=['game-pipeline']，
+    // 步 cmd=['node',['scripts/slow-lane-guard.mjs','game-pipeline']]、无 allowExit。
+    const files = ['scripts/game-pipeline.mjs'];
+    const f = facesOf(files);
+    expect(f.slowLane).toContain('game-pipeline');
+    const plan = planFor(classify(files), auditGamesOf(files), f);
+    const step = plan.find((s) => s.name === 'slow-lane:game-pipeline');
+    expect(step).toBeDefined();
+    expect(step.cmd).toEqual(['node', ['scripts/slow-lane-guard.mjs', 'game-pipeline']]);
+    expect(step.allowExit).toBeUndefined(); // 红=拦（guard 内部对基线棘轮判红/警·门禁只认退出码）
+  });
+
+  it('docs-only 计划全量对账：常驻守卫序列 docs-ref → context-budget → decouple-check → art-ledger-guard 逐步钉死（含 allowExit 精确值）', () => {
+    const plan = planFor({ scope: 'docs-only' }, [], {});
+    expect(plan.map((s) => ({ name: s.name, cmd: s.cmd, allowExit: s.allowExit }))).toEqual([
+      { name: 'docs-ref', cmd: ['node', ['scripts/docs-ref-guard.mjs']], allowExit: undefined },
+      { name: 'context-budget', cmd: ['node', ['scripts/context-budget-guard.mjs']], allowExit: undefined },
+      { name: 'decouple-check', cmd: ['node', ['scripts/decouple-check.mjs']], allowExit: undefined },
+      // art-ledger-guard 是常驻守卫里唯一带放行档的：0=全净·2=存量挂账警告态放行·1=新黑户硬拦。
+      { name: 'art-ledger-guard', cmd: ['node', ['scripts/art-ledger-guard.mjs']], allowExit: [0, 2] },
+    ]);
+  });
+
+  it('面旗↔步总对账（表驱动·七旗全盖）：每旗置位时 planFor 必产对应步——加旗忘接步即红', () => {
+    // 旗名 → 该旗单独置位时计划里必须出现的步名。数组旗（dokiApps/slowLane）用代表值。
+    const FLAG_TO_STEPS = {
+      engineRandom: { value: true, steps: ['engine-random'] },
+      testHygiene: { value: true, steps: ['test-hygiene'] },
+      artSmoke: { value: true, steps: ['art-smoke'] },
+      syncSmoke: { value: true, steps: ['art-sync-smoke', 'auto-sync-smoke'] },
+      backupSmoke: { value: true, steps: ['art-backup-smoke'] },
+      dokiApps: { value: ['game108'], steps: ['doki-test:game108'] },
+      slowLane: { value: ['acceptance'], steps: ['slow-lane:acceptance'] },
+    };
+    // 总对账下限：facesOf 产出的旗集合 = 本表键集合。往 facesOf 加第 8 旗而不进此表 → 这里先红，
+    // 逼施工者同时补 planFor 接线断言（防「加旗忘接步」静默失效——旗亮了计划却没步）。
+    expect(Object.keys(facesOf([])).sort()).toEqual(Object.keys(FLAG_TO_STEPS).sort());
+    for (const [flag, { value, steps }] of Object.entries(FLAG_TO_STEPS)) {
+      const plan = planFor({ scope: 'full' }, [], { [flag]: value });
+      for (const name of steps) {
+        expect(plan.some((s) => s.name === name), `旗 ${flag} 置位但计划缺步 ${name}`).toBe(true);
+      }
+    }
+  });
+});

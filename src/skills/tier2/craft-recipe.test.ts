@@ -134,3 +134,20 @@ describe('T2 craft-recipe — grantsState / 无信号 / 钳制', () => {
     expect(val(w, 'gold')).toBe(0);
   });
 });
+
+describe('craft-recipe — 同拍双配方争一份余额（2026-08-22 测试大扫除补钉·不双花）', () => {
+  it('两配方同信号各要 8·余额只有 10 → 恰一单成交·绝不透支', () => {
+    const w = worldWithCraft();
+    res(w, 'iron', 10);
+    flag(w, 'a_done', false);
+    flag(w, 'b_done', false);
+    recipe(w, 'r_b', { onSignal: 'craft', costs: [{ id: 'iron', amount: 8 }], grantsFlag: 'b_done' }); // 先创建·eid 靠后
+    recipe(w, 'r_a', { onSignal: 'craft', costs: [{ id: 'iron', amount: 8 }], grantsFlag: 'a_done' }); // 后创建·eid 靠前
+    signal(w, 'craft');
+    w.tick();
+    expect(val(w, 'iron')).toBe(2); // 只扣一次·不为负（双花/透支即红）
+    const winners = [flagOn(w, 'a_done'), flagOn(w, 'b_done')].filter(Boolean);
+    expect(winners).toHaveLength(1); // 恰一单成交
+    expect(flagOn(w, 'a_done')).toBe(true); // 现契约=eid 字典序先到先得（实测：r_b 先创建仍 r_a 成交·与创建序无关）
+  });
+});

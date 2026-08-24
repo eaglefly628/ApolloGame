@@ -34,4 +34,10 @@ describe('handle_design_ingest_zip · 整包收稿安全性（REQ-DESIGNLINE 二
     const r = runCase('ledger-integrity');
     expect(r.code, r.out).toBe(0);
   });
+
+  it('未知 case 名 → exit 2（负向腿·测试加固批 2026-08-24：防 case 改名后这里传旧名=恒 0 假绿）', () => {
+    const r = runCase('zz-no-such-case');
+    expect(r.code, r.out).toBe(2);
+    expect(r.out).toContain('未知 case');
+  });
 });

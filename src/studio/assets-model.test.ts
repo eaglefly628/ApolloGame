@@ -21,10 +21,15 @@ describe('资产透视 · 统一模型', () => {
     expect(assets.find((a) => a.id === 'je.suit.spades')?.status).toBe('tbf');
   });
 
-  it('filterAssets：按 tag 命中 + 空串返回全部', () => {
+  it('filterAssets：按 tag 命中 + 空串返回全部 + 不命中→0 + 选择性命中→恰 N', () => {
     const assets = studioAssets('game-e', demoBlueprint, null);
     expect(filterAssets(assets, '小丑牌').length).toBe(assets.length); // game-e 资产皆带「小丑牌」tag
     expect(filterAssets(assets, '').length).toBe(assets.length);
+    // 加强（测试加固 2026-08-24）：全命中/空串测不出过滤器真在过滤——补零命中与恰 N 命中两极。
+    expect(filterAssets(assets, '绝不存在的词zzz')).toHaveLength(0); // 不命中 → 0
+    expect(filterAssets(assets, 'suit-icon')).toHaveLength(4); // 恰 4 张花色图标（je.suit.* 的 sub tag）
+    expect(filterAssets(assets, 'suit-icon').map((a) => a.id).sort())
+      .toEqual(['je.suit.clubs', 'je.suit.diamonds', 'je.suit.hearts', 'je.suit.spades']);
   });
 
   it('groupByType：按类型分组', () => {

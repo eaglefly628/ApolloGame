@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { World } from '@engine/core/world.js';
 import type { Draggable, InputQueue, Transform, Shape, HexBoard, HexPos, Tag, Flag, Resource } from '@engine/protocol/components.js';
 import { dragPlaceCapability } from './drag-place.js';
@@ -125,11 +125,19 @@ describe('T2 drag-place（拖拽摆放，REQ-F-045）', () => {
     // REQ-F-050 回归锁：motion-apply（主角自由移动）与 drag-place 互为 Transform RMW 对——
     // 首个同场世界（game-f）曾成 22 系统 SCC；six 件套补成七件套后此图必须可排。
     const { motionApplyCapability } = await import('../tier1/index.js');
-    const w = mk();
-    for (const cap of [gridMoveCapability, motionApplyCapability, flowCapability, zoneOccupancyCapability, groupCountCapability, selfRuleCapability, resourceCapability]) {
-      for (const s of cap.systems) w.addSystem(s as never);
+    // 读告警纪律：推断环只 warn 不抛，收进断言（ENG-03 形状）
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const w = mk();
+      for (const cap of [gridMoveCapability, motionApplyCapability, flowCapability, zoneOccupancyCapability, groupCountCapability, selfRuleCapability, resourceCapability]) {
+        for (const s of cap.systems) w.addSystem(s as never);
+      }
+      seat(w, 's1', 200, 200);
+      expect(() => { for (let i = 0; i < 3; i++) w.tick(); }).not.toThrow();
+      const bad = warn.mock.calls.map((c) => c.map(String).join(' ')).filter((m) => m.includes('[topological-sort]') || m.includes('Circular'));
+      expect(bad).toEqual([]);
+    } finally {
+      warn.mockRestore();
     }
-    seat(w, 's1', 200, 200);
-    expect(() => { for (let i = 0; i < 3; i++) w.tick(); }).not.toThrow();
   });
 });

@@ -634,7 +634,6 @@ describe('matrix-duel — 伤害缩放（REQ-108-ENG-01）', () => {
     // 首版在这里必错：两次都会取到同一条槽（表里只能填一个 id）。
     it('两侧对拍：p1 槽=3 / p2 槽=0，同手各取自己的槽', () => {
       // p1 出 rock 取胜 → 按 p1.charge.rock=3 → 伤害 15
-      expect(perSideWorld(3, 0)).toBeDefined();
       expect(duel(perSideWorld(3, 0), 'rock', 'paper').p2).toBe(20 - 15);
       // p2 出 rock 取胜 → 按 p2.charge.rock=0 → 伤害 0（首版此处会打出 15）
       expect(duel(perSideWorld(3, 0), 'paper', 'rock').p1).toBe(20);

@@ -23,7 +23,6 @@ describe('self-rule · 实体本地条件求值（读自身组件，非全局）
     const w = mk();
     w.createEntity('u'); w.addComponent('u', res('hp', 5) as never); w.addComponent('u', flag('berserk', true) as never);
     expect(evaluateSelfCondition(w, 'u', { kind: 'resource', id: 'hp', cmp: 'lte', value: 5 })).toBe(true);
-    expect(evaluateSelfCondition(w, 'u', { kind: 'resource', id: 'hp', cmp: 'lte', value: 5 })).toBe(true);
     expect(evaluateSelfCondition(w, 'u', { kind: 'resource', id: 'mana', cmp: 'lte', value: 5 })).toBe(false); // id 不符
     expect(evaluateSelfCondition(w, 'u', { kind: 'flag', id: 'berserk' })).toBe(true);
     expect(evaluateSelfCondition(w, 'u', { kind: 'and', of: [{ kind: 'resource', id: 'hp', cmp: 'gt', value: 0 }, { kind: 'flag', id: 'berserk' }] })).toBe(true);

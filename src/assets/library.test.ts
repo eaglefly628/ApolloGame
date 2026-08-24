@@ -93,9 +93,15 @@ describe('library — 查询/计数', () => {
     expect(queryLibrary(all, { tags: ['undead'] })).toHaveLength(1);
   });
 
-  it('排序：variants 降序', () => {
+  it('排序：variants 降序（全数组逐对非递增·缺省按实现口径记 1）', () => {
     const rs = queryLibrary(all, { type: 'texture', sort: 'variants' });
-    expect(rs[0].variants ?? 0).toBeGreaterThanOrEqual(rs[1].variants ?? 0);
+    // 加强（测试加固 2026-08-24）：原只比前两个元素——尾部乱序照样绿。改为全数组逐对非递增。
+    // 口径与实现对齐：comparator 为 (b.variants ?? 1) - (a.variants ?? 1)——缺省 variants=单变体记 1。
+    expect(rs.length).toBeGreaterThan(2); // 前置：确有多元素可比（防空转绿）
+    expect(rs[0].variants ?? 1).toBe(8); // 最多变体（d.hero.sheet 8 帧）恒居首
+    for (let i = 1; i < rs.length; i++) {
+      expect(rs[i - 1].variants ?? 1).toBeGreaterThanOrEqual(rs[i].variants ?? 1);
+    }
   });
 
   it('libraryCounts：type 与 type/category 双层计数', () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { World } from '@engine/core/world.js';
 import type { CardPile, PlayedHand, Flag, InputQueue, RawInputData } from '@engine/protocol/components.js';
 import { cardPileCapability } from './card-pile.js';
@@ -166,11 +166,19 @@ describe('card-pile · REQ-F-040 据码分发 + 可负担门', () => {
     const { groupCountCapability } = await import('./group-count.js');
     const { selfRuleCapability } = await import('./self-rule.js');
     const { resourceCapability } = await import('@atom-skills/resource/index.js');
-    const w = wShop([207], 10);
-    for (const cap of [flowCapability, zoneOccupancyCapability, groupCountCapability, selfRuleCapability, resourceCapability]) {
-      for (const s of cap.systems) w.addSystem(s as never);
+    // 读告警纪律：推断环只 warn 不抛，收进断言（ENG-03 形状）
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const w = wShop([207], 10);
+      for (const cap of [flowCapability, zoneOccupancyCapability, groupCountCapability, selfRuleCapability, resourceCapability]) {
+        for (const s of cap.systems) w.addSystem(s as never);
+      }
+      expect(() => { for (let i = 0; i < 3; i++) w.tick(); }).not.toThrow(); // 修复前互 RMW 抛环
+      const bad = warn.mock.calls.map((c) => c.map(String).join(' ')).filter((m) => m.includes('[topological-sort]') || m.includes('Circular'));
+      expect(bad).toEqual([]);
+    } finally {
+      warn.mockRestore();
     }
-    expect(() => { for (let i = 0; i < 3; i++) w.tick(); }).not.toThrow(); // 修复前互 RMW 抛环
   });
 });
 
@@ -217,9 +225,17 @@ describe('card-pile · REQ-F-041 信号刷新', () => {
 
   it('定序守护：card-pile(读 Signal) + event-when(读 Flag 写 Signal) 同场不抛（互锁已钉）', async () => {
     const { eventWhenCapability } = await import('./event-when.js');
-    const w = wRef([2, 5, 7]);
-    for (const s of eventWhenCapability.systems) w.addSystem(s as never);
-    expect(() => { for (let i = 0; i < 3; i++) w.tick(); }).not.toThrow();
+    // 读告警纪律：推断环只 warn 不抛，收进断言（ENG-03 形状）
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const w = wRef([2, 5, 7]);
+      for (const s of eventWhenCapability.systems) w.addSystem(s as never);
+      expect(() => { for (let i = 0; i < 3; i++) w.tick(); }).not.toThrow();
+      const bad = warn.mock.calls.map((c) => c.map(String).join(' ')).filter((m) => m.includes('[topological-sort]') || m.includes('Circular'));
+      expect(bad).toEqual([]);
+    } finally {
+      warn.mockRestore();
+    }
   });
 });
 
@@ -295,10 +311,18 @@ describe('card-pile · 定序守护：与 keybind 共存不成环（2026-06-14�
   it('cardPile + keybind + event-when + clickable 同场拓扑可排序（不抛环）', () => {
     // keybind 是 clickable 的非空间孪生（写 Signal + runsAfter event-when）；card-pile 读其 Signal。
     // 旧 cp.runsBefore 列了 clickable 漏了 keybind → cp↔keybind↔event-when 三元环。补 'keybind' 破环。
-    const w = new World();
-    for (const c of [eventWhenCapability, clickableCapability, keybindCapability, cardPileCapability]) {
-      for (const s of c.systems) w.addSystem(s);
+    // 读告警纪律：推断环只 warn 不抛，收进断言（ENG-03 形状）
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const w = new World();
+      for (const c of [eventWhenCapability, clickableCapability, keybindCapability, cardPileCapability]) {
+        for (const s of c.systems) w.addSystem(s);
+      }
+      expect(() => w.tick()).not.toThrow(); // 成环会在拓扑排序时抛 "Circular dependency"
+      const bad = warn.mock.calls.map((c) => c.map(String).join(' ')).filter((m) => m.includes('[topological-sort]') || m.includes('Circular'));
+      expect(bad).toEqual([]);
+    } finally {
+      warn.mockRestore();
     }
-    expect(() => w.tick()).not.toThrow(); // 成环会在拓扑排序时抛 "Circular dependency"
   });
 });

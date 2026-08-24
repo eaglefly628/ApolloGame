@@ -96,11 +96,8 @@ describe('§1 确定性（同 seed 全复现·异 seed 异·walkthrough 总闸�
     expect(a.hands).not.toEqual(b.hands);
   });
 
-  it('零裸随机：不引 Math.random（源码静态自证=引擎 seededShuffle/randomInt）', async () => {
-    // 逻辑核只经引擎 w1-random 派生；本例以「同 seed 双跑同结果」作行为佐证（裸 random 会破此不变量）。
-    const runs = [11, 11, 11].map((s) => JSON.stringify(dealWall(cfg(s)).hands));
-    expect(new Set(runs).size).toBe(1);
-  });
+  // （原「零裸随机：同 seed×3 比 hands」用例已删——是上方「同 seed → 配牌/活山/王牌/骰点逐张相同」
+  //   的真子集（只比 hands·还少比一路）。测试加固评审 2026-08-24。）
 });
 
 describe('§1 宝牌环回（doraFromIndicator·标准环）', () => {

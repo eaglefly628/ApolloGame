@@ -629,3 +629,56 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     expect(a.hash()).toBe(b.hash());
   });
 });
+
+// 加固追加（2026-08-24）：① 确定性升格——原 :626「确定性」只空跑（零输入），输入管线（move 命令 +
+// pick 信号）整条不在被测路径上；补一条带输入脚本的双跑同 hash。② ⚔ 终局后 pick_*（testing.md
+// ⚔「点已禁用的键」）——实测钉现状。
+describe('game-103 · 输入脚本确定性 + ⚔ 终局后 pick', () => {
+  it('确定性（带输入脚本）：两把同 move+pick_* 序列同 tick → 同 hash（可回放·补 :626 空跑盲区）', () => {
+    const run = (): string => {
+      const e = fresh();
+      tickN(e, 3);
+      fireAction(e, 'pick_boom'); // 拾取回旋镖（Caster spawn 挂点）
+      move(e, 1, 0, 120, 10); // 东行 2s（Controllable→Velocity）
+      fireAction(e, 'pick_might'); // 拾取被动（Effect 改 power）
+      move(e, 0, 1, 120, 200); // 南行 2s
+      return e.hash();
+    };
+    expect(run()).toBe(run());
+  });
+
+  // ⚠ 评审假设「defeat/victory 后 fireAction(pick_*) no-op」与实测不符——sim 层 KeyBinding→Signal→
+  // Effect/Caster 链无 GameFlow 相位闸，终局后 pick 信号仍生效（实跑：defeat 后 pick_might power
+  // 1→1.08·pick_heart hp 0→30·挂点照常 spawn）。终局屏不渲升级卡=闸只在 HUD 层。按「不改游戏
+  // 逻辑·如实按真实行为钉」落断言；日后 sim 若加相位闸，此测转红即按新语义改写。
+  it('⚔ defeat 后 pick_might/pick_heart：信号仍生效（sim 无相位闸·钉现状）·GameFlow 终态不可逆', () => {
+    const e = fresh();
+    tickN(e, 3);
+    e.world.getComponent<Resource>('player', 'Resource')!.current = 0; // 玩家 hp 归零
+    tickN(e, 2);
+    expect(flowState(e)).toBe('defeat');
+    const p0 = resById(e, 'power');
+    fireAction(e, 'pick_might'); // 力量精粹 +8%
+    expect(resById(e, 'power')).toBeCloseTo(p0 + 0.08, 10); // 实测：Effect 未被终局拦截
+    const hp0 = res(e, 'player');
+    fireAction(e, 'pick_heart'); // 生命护心 +30
+    expect(res(e, 'player')).toBe(hp0 + 30); // 实测：回血生效
+    expect(flowState(e)).toBe('defeat'); // 终态无回程转移——回血也不复活回 playing
+  });
+
+  it('⚔ victory 后 pick_boom：武器挂点仍会生成（sim 无相位闸·钉现状）·flow 恒 victory', () => {
+    const e = fresh();
+    tickN(e, 3);
+    for (const [eid] of e.world.query('Resource')) { // 把表拨到赛程终点 → victory
+      const r = e.world.getComponent<Resource>(eid, 'Resource');
+      if (r && r.id === 'clock') r.current = MATCH_SECONDS;
+    }
+    tickN(e, 2);
+    expect(flowState(e)).toBe('victory');
+    const sr0 = [...e.world.query('SelfRule')].length;
+    fireAction(e, 'pick_boom');
+    e.world.tick();
+    expect([...e.world.query('SelfRule')].length).toBeGreaterThan(sr0); // 实测：Caster 照常 spawn 挂点
+    expect(flowState(e)).toBe('victory'); // 终态不动
+  });
+});

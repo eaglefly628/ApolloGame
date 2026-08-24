@@ -102,9 +102,17 @@ describe('contact3d · hull(凸多面体·P2)', () => {
     expect(hit!.depth).toBeCloseTo(2);
   });
 
-  it('hull vs 竖直胶囊（角色站斜台）：相交则有接触·离开则 null', () => {
-    const tilted = hullBox(5, 1, 5, YAW45, 0);
-    expect(contact3d(T(0, 0), tilted, T(1, 1), capsule(2, 7, -1))).not.toBeNull(); // 角色压在台上
+  it('hull vs 竖直胶囊（角色站斜台）：相交则有接触·法线沿台面 +Y、深度可推·离开则 null', () => {
+    const tilted = hullBox(5, 1, 5, YAW45, 0); // 扁平斜台：y∈[-1,1]（顶面 y=1）·XZ 菱形半宽 5
+    const onTop = contact3d(T(0, 0), tilted, T(1, 1), capsule(2, 7, -1)); // 角色压在台上
+    expect(onTop).not.toBeNull();
+    // 分离轴朝向（几何摆位可推）：胶囊(r=2,h=7,baseY=-1) 核心段 y∈[1,4]，代理球取段上离台心
+    // (y=0) 最近的 y=1 → 球心 (1,1,1)。SAT 各轴穿透：台面法线 +Y 轴 = (顶面1) - (球底-1) = 2；
+    // 两水平菱形轴 = 5+2-|投影| ≈ 4/5.6 —— 最小轴是 +Y（角色站台=竖直分离半空间），A(hull)→B(胶囊) 朝上。
+    expect(onTop!.ny).toBeCloseTo(1);
+    expect(onTop!.nx).toBeCloseTo(0);
+    expect(onTop!.nz).toBeCloseTo(0);
+    expect(onTop!.depth).toBeCloseTo(2);
     expect(contact3d(T(0, 0), tilted, T(40, 40), capsule(2, 7, -1))).toBeNull(); // 走远
   });
 

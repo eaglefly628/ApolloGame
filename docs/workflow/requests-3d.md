@@ -6,6 +6,9 @@
 
 ---
 
+## REQ-3D-TESTGAPS · P3D 测试面五项（测试大扫除 F 路评审转单） · [2026-08-22] · Lead 立 → **P3D** · status: open · 优先级: P2 · 类型: 测试护栏/治理
+> ① **dispose 面零覆盖**：移除测试只验场景图摘除，无一 spy geometry/material/texture.dispose()——trail:54、billboard:53、uv-anim:52、reflector:68（还持 render target）；vfx.test 无任何清理用例（vfx.ts 5 处 dispose）；models.test 仅 2 例、ModelPool 全无。长局泄漏面与 RENDERHYG 同族。② **melee 物理写回闸口无 hash 流断言**：game211 melee-demo.ts:279「读牌面→判生死→写回战役状态」是 cannon-es 非确定面进 sim 的唯一闸口，补「三跑逐拍 hash 相同」隔离（先例 game108.test.ts:1405）。③ slg-scale.bench.test.ts 墙钟绝对阈值跑在常规 vitest——CI 负载波动假红，隔离 bench 档或去绝对阈值。④ turn-combat.test.ts:66「swapsUsed 重置」断言套在 if 内可静默跳过——前置断真后无条件 expect。⑤ **game211↔game-g fork 重复面登记**：22/40 测试文件与 game-g 逐字节同（其中 clash-resolve/disha/level/sfx 连源文件也同）——双份漂移风险；game-g 战斗线已废（owner 2026-08-22），P3D 裁哪份是权威、另份清或登记 fork 基线。
+
 ## REQ-3D-RB-MATERIAL · `RigidBody3D.restitution` / `.friction` 声明了但 `spawn()` 从不读 —— 全库游戏的每张「弹性/摩擦」旋钮都是死的 · [2026-08-10] · PE-211 提（game211 大样本物理验证时撞出）→ **P3D** · status: open · 优先级: **P2（不吃表现·但会持续制造错误归因·见下方实测）** · 类型: 3D 线契约缺口（契约声明 ≠ 实现）
 
 > **实证（实查·非印象）**：

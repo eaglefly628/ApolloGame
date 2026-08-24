@@ -4,7 +4,8 @@ import { HAND_RANKINGS, HAND_ORDER, handScoreAtLevel } from './hand-rankings.js'
 import { ANTE_BASE, BLIND_MULT, blindRequirement, BLIND_ORDER } from './blinds.js';
 import { STARTER_JOKERS, JOKER_BY_ID, rollJokerOffer, RARITY_WEIGHT, roundEndPayout } from './jokers.js';
 import { mulberry32 } from './deck.js';
-import { jokerArtKey, JOKER_ART_FILES } from './assets.js';
+import { jokerArtKey, JOKER_ART_FILES, JOKER_ART_MISSING, JOKER_ART_MANIFEST } from './assets.js';
+import { AssetManager, StubAssetLoader } from '@zerocraft/engine/assets/index.js';
 
 // 全为「数据自洽」断言：不进 sim/hash，证明内容表确定、可被引擎能力直接消费。
 
@@ -118,10 +119,23 @@ describe('game-e · 小丑数据', () => {
     expect(xm / N).toBeLessThan(0.12); // 远低于 4/25≈0.16 的均匀概率
   });
 
-  it('有图的小丑 artKey 命中资产清单；缺图的走占位（不报错）', () => {
+  it('有图的小丑 artKey 命中资产清单；缺图的确走占位（清单闭合 + AssetManager 解析不到 → 渲染退化）', () => {
     const artIds = new Set(JOKER_ART_FILES.map((f) => f.id));
+    const missing = new Set(JOKER_ART_MISSING);
     const withArt = STARTER_JOKERS.filter((j) => artIds.has(j.id));
     // 起手集大部分有图（joker/cavendish/the_duo… 命中），少数（banner/bull…）暂缺
     expect(withArt.length).toBeGreaterThanOrEqual(10);
+    // 加固（2026-08-24）：原测名说「缺图走占位」但一条占位断言都没有。补行为断言：
+    // ① 闭合世界：每张可玩小丑要么有图、要么明列缺图清单（不存在两头都不在的漏网 id）·两清单不重叠。
+    for (const j of STARTER_JOKERS) expect(artIds.has(j.id) || missing.has(j.id)).toBe(true);
+    for (const id of JOKER_ART_MISSING) expect(artIds.has(id)).toBe(false);
+    // ② 占位行为本体：清单喂给 AssetManager 后，缺图 id 的 artKey 未注册也解析不到 →
+    //    渲染层按 asset-manager 契约「resolve undefined = 退化占位」（不抛错）。
+    const mgr = new AssetManager(new StubAssetLoader());
+    mgr.registerManifest(JOKER_ART_MANIFEST);
+    const missingStarter = STARTER_JOKERS.find((j) => missing.has(j.id))!; // 实测存在（68−53=15 张缺图）
+    expect(mgr.has(jokerArtKey(missingStarter.id))).toBe(false); // 缺图：不在清单
+    expect(mgr.resolve(jokerArtKey(missingStarter.id))).toBeUndefined(); // 解析不到=走占位·不抛
+    expect(mgr.has(jokerArtKey('joker'))).toBe(true); // 对照：有图的 key 注册在案
   });
 });

@@ -54,22 +54,23 @@ describe('game-e · GameSession 线性流程脚本', () => {
     expect(r!.mult).toBeGreaterThanOrEqual(4);
   });
 
-  it('过线→won-blind→nextBlind 推进盲注/Ante', () => {
-    const s = new GameSession(1);
-    // 直接灌满 round_score 制造过线（测试流程推进，不依赖具体牌）。
-    // 用一手牌触发，然后人为已过线场景：连续出牌直到过线或手数耗尽。
-    let res = s.play([0, 1, 2, 3, 4]);
-    let guard = 0;
-    while (res && res.outcome === 'continue' && guard++ < 4) res = s.play([0, 1, 2, 3, 4]);
-    expect(res).not.toBeNull();
-    expect(['won-blind', 'lost', 'continue']).toContain(res!.outcome);
-    if (res!.outcome === 'won-blind') {
-      const a0 = s.ante, b0 = s.blindIdx;
-      s.nextBlind();
-      expect(s.blindIdx === b0 + 1 || (b0 === 2 && s.ante === a0 + 1)).toBe(true);
-      expect(s.roundScore).toBe(0); // 新盲注重置
-      expect(s.handsLeft).toBe(4);
-    }
+  it('过线→won-blind→nextBlind 推进盲注/Ante（seed 13 实测第 3 手过线·钉单值）', () => {
+    // 加固（2026-08-24）：原 toContain(['won-blind','lost','continue']) 三态全收=什么都没钉，
+    // nextBlind 断言又包在 if 里——seed 1 实测 4 手全 'lost' 不过线，该分支从未执行过（空转绿）。
+    // 换 seed 13（实测：前两手 continue·第 3 手 roundScore 311 ≥ 300 过线 won-blind）→ 全部无条件化。
+    const s = new GameSession(13);
+    expect(s.play([0, 1, 2, 3, 4])!.outcome).toBe('continue');
+    expect(s.play([0, 1, 2, 3, 4])!.outcome).toBe('continue');
+    const res = s.play([0, 1, 2, 3, 4]);
+    expect(res!.outcome).toBe('won-blind'); // 钉死实际 outcome 单值
+    expect(s.roundScore).toBeGreaterThanOrEqual(s.target); // 过线的定义性前置
+    s.nextBlind(); // 无条件推进断言
+    expect(s.ante).toBe(1); // small→big 不换 Ante
+    expect(s.blindIdx).toBe(1); // 0(small) → 1(big)
+    expect(s.blindKind).toBe('big');
+    expect(s.roundScore).toBe(0); // 新盲注重置
+    expect(s.handsLeft).toBe(4);
+    expect(s.discardsLeft).toBe(3);
   });
 
   it('确定性：同 seed 两局开局手牌一致', () => {
@@ -173,7 +174,9 @@ describe('game-e · GameSession 线性流程脚本', () => {
     s.hand = [{ suit: 'spades', rank: 'K' }, { suit: 'hearts', rank: 'Q' }, { suit: 'clubs', rank: 'J' }, { suit: 'diamonds', rank: '9' }, { suit: 'spades', rank: '7' }, { suit: 'clubs', rank: '2' }, { suit: 'diamonds', rank: '3' }, { suit: 'hearts', rank: '5' }] as never;
     const r = s.play([0, 1, 2, 3, 4]);
     expect(r).not.toBeNull();
-    expect(s.money).toBeGreaterThanOrEqual(0); // 不崩；命中则 +$2/张人头
+    // 加固（2026-08-24）：原 toBeGreaterThanOrEqual(0) 恒真（money min=0 夹取）。seed 确定 → 钉终值。
+    // seed 1 实测值：起始 $4 − 购价 $4 = $0，本局概率门未命中（K/Q/J 三张 roll 全空）→ 终值恰 $0。
+    expect(s.money).toBe(0);
   });
 
   it('留手牌(REQ-E-023③)：Baron/Shoot the Moon 接成 held PerCardRule（留手 pass 求值）', () => {
@@ -251,5 +254,56 @@ describe('game-e · GameSession 线性流程脚本', () => {
     const manacle = new GameSession(1); manacle.ante = 4; manacle.blindIdx = 2; manacle.startBlind();
     expect(manacle.boss?.effect).toBe('small_hand');
     expect(manacle.hand.length).toBe(7);
+  });
+});
+
+// ⚔ 对抗性输入（docs/playbooks/testing.md ⚔ 清单·加固 2026-08-24）：
+// 三条拒绝路径——额度尽的弃牌键 / 买不起的购卡键（⚔「点已禁用的键」）/ 越界下标出牌（⚔ 同行「禁用是真
+// 禁用还是只画灰」——sim 层收到 UI 本不该给的输入时的真实行为）。
+describe('game-e · GameSession ⚔ 拒绝路径', () => {
+  it('discardsLeft=0 再弃 → false·手牌/额度零变化（⚔「点已禁用的键」）', () => {
+    const s = new GameSession(1);
+    expect(s.discard([0])).toBe(true);
+    expect(s.discard([0])).toBe(true);
+    expect(s.discard([0])).toBe(true); // 3 次额度用尽
+    expect(s.discardsLeft).toBe(0);
+    const hand = s.hand.map((c) => `${c.suit}${c.rank}`).join(',');
+    const hl = s.handsLeft;
+    expect(s.discard([0])).toBe(false); // 第 4 次：拒绝
+    expect(s.discardsLeft).toBe(0); // 不掉成负
+    expect(s.hand.map((c) => `${c.suit}${c.rank}`).join(',')).toBe(hand); // 不弃不补·手牌原样
+    expect(s.handsLeft).toBe(hl); // 也不误耗出牌数
+  });
+
+  it('钱不够 buyJoker → false·钱/owned/引擎零注入（⚔「点已禁用的键」）', () => {
+    const s = new GameSession(1);
+    expect(s.money).toBe(4); // 起始 $4（实测）
+    const dear = STARTER_JOKERS.find((j) => j.id === 'triboulet')!; // cost 20 > 4
+    expect(dear.cost).toBeGreaterThan(s.money);
+    expect(s.buyJoker(dear)).toBe(false); // 拒绝
+    expect(s.money).toBe(4); // 没扣钱
+    expect(s.owned).toHaveLength(0); // 没入手
+    const r = s.play([0, 1, 2, 3, 4]); // 出一手：未注入的小丑不得参与计分（引擎侧也干净）
+    expect(r).not.toBeNull();
+  });
+
+  it('play 全越界下标 → 实测非 no-op：空手计分 0 分·不动手牌不加分·仍耗一手（钉现状）', () => {
+    // ⚠ 评审假设「越界下标 no-op」与实测不符——如实按真实行为钉（不改游戏逻辑·2026-08-24 实跑）：
+    //   play([99]) selected 非空过闸 → chosen 过滤成空手照走计分 tick → {score:0, outcome:'continue'}，
+    //   handsLeft 4→3（耗一手），手牌/roundScore 不变。UI 只会给手内下标·此为 sim 层现状基线。
+    const s = new GameSession(1);
+    const hand = s.hand.map((c) => `${c.suit}${c.rank}`).join(',');
+    const r = s.play([99]);
+    expect(r).not.toBeNull();
+    expect(r!.score).toBe(0); // 空手 0 分
+    expect(r!.chips).toBe(0);
+    expect(r!.mult).toBe(0);
+    expect(r!.outcome).toBe('continue');
+    expect(s.handsLeft).toBe(3); // 实测：耗一手（非 no-op·钉现状）
+    expect(s.roundScore).toBe(0); // 不加分
+    expect(s.hand.map((c) => `${c.suit}${c.rank}`).join(',')).toBe(hand); // 手牌原样（无移无补）
+    expect(s.hand).toHaveLength(8);
+    expect(s.play([])).toBeNull(); // 空选 = 真拒绝腿（null·不耗手）
+    expect(s.handsLeft).toBe(3);
   });
 });

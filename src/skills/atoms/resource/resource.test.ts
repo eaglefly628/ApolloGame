@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { World } from '@engine/core/world.js';
 import { resourceCapability, queueResourceMod } from './index.js';
 import type { Resource, ResourceModify, PrefabOrigin } from '@engine/protocol/components.js';
@@ -403,29 +403,37 @@ describe('resource-apply — 撞环回归（与 game102 blueprint.ts 能力清�
   // ResourceModify.scope:'source' 的路由改动（读 PrefabOrigin、写任意实体 Resource）没有给这套
   // 已在生产蓝图使用的能力组合引入新的系统依赖环（topological-sort.ts 报 Circular 会在 addSystem/tick 炸出）。
   it('与 game102 全量能力清单同装 · 可 tick', () => {
-    const w = new World();
-    for (const cap of [
-      transformCapability, shapeCapability, tagCapability, colorCapability,
-      resourceCapability, flagCapability, randomCapability, velocityCapability,
-      timerCapability, relationCapability, destroyCapability, overlapDetectCapability,
-      motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability,
-      clickableCapability, groupCountCapability, effectApplyCapability, launchCapability, pathFollowCapability,
-      selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability, eventWhenCapability, textBindingCapability,
-      flowCapability, aggroCapability, prefabCapability, casterCapability,
-    ]) {
-      for (const s of cap.systems) w.addSystem(s);
+    // 读告警纪律：推断环只 warn 不抛，收进断言（ENG-03 形状）
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const w = new World();
+      for (const cap of [
+        transformCapability, shapeCapability, tagCapability, colorCapability,
+        resourceCapability, flagCapability, randomCapability, velocityCapability,
+        timerCapability, relationCapability, destroyCapability, overlapDetectCapability,
+        motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability,
+        clickableCapability, groupCountCapability, effectApplyCapability, launchCapability, pathFollowCapability,
+        selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability, eventWhenCapability, textBindingCapability,
+        flowCapability, aggroCapability, prefabCapability, casterCapability,
+      ]) {
+        for (const s of cap.systems) w.addSystem(s);
+      }
+
+      // 挂一个 REQ-SPENDONFIRE 场景：炮台 + 它打出的一发带 source-scope modify 的子弹。
+      w.createEntity('cannon');
+      w.addComponent('cannon', makeResource('ammo', 5, 0, 5));
+      w.createEntity('bullet');
+      w.addComponent('bullet', makeOrigin('cannon'));
+      w.addComponent('bullet', makeSourceModify('ammo', -1));
+
+      expect(() => {
+        for (let i = 0; i < 5; i++) w.tick();
+      }).not.toThrow();
+      expect(w.getComponent<Resource>('cannon', 'Resource')!.current).toBe(4);
+      const bad = warn.mock.calls.map((c) => c.map(String).join(' ')).filter((m) => m.includes('[topological-sort]') || m.includes('Circular'));
+      expect(bad).toEqual([]);
+    } finally {
+      warn.mockRestore();
     }
-
-    // 挂一个 REQ-SPENDONFIRE 场景：炮台 + 它打出的一发带 source-scope modify 的子弹。
-    w.createEntity('cannon');
-    w.addComponent('cannon', makeResource('ammo', 5, 0, 5));
-    w.createEntity('bullet');
-    w.addComponent('bullet', makeOrigin('cannon'));
-    w.addComponent('bullet', makeSourceModify('ammo', -1));
-
-    expect(() => {
-      for (let i = 0; i < 5; i++) w.tick();
-    }).not.toThrow();
-    expect(w.getComponent<Resource>('cannon', 'Resource')!.current).toBe(4);
   });
 });

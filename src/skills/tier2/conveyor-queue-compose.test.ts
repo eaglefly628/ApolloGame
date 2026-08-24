@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { World } from '@engine/core/world.js';
 import type { CapabilityDefinition } from '@engine/core/define-capability.js';
 import { groupCountCapability } from './group-count.js';
@@ -194,17 +194,25 @@ describe('REQ-CONVEYOR-CAP M4 —— 死锁 = event-when AND(两 full 旗标)（
 // 不成拓扑环——供 PE 未来在 game102 接线 trayCapability（当前未接·M3 回驳建议）时的前置安全网。
 describe('REQ-CONVEYOR-CAP —— 撞环回归（path-follow[M1 改过] + tray + group-count + event-when + effect-apply 同装）', () => {
   it('五件同装 w.tick()×5 not.toThrow', () => {
-    const w = new World();
-    addSystems(w, pathFollowCapability, trayCapability, groupCountCapability, eventWhenCapability, effectApplyCapability);
-    // 各挂一个最小实体，确认各系统真的跑（非空 query 短路掉的假阴性）。
-    w.createEntity('belt-member');
-    w.addComponent('belt-member', { type: 'Tag', flags: BELT_TAG } as Tag);
-    w.addComponent('belt-member', { type: 'Transform', x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
-    w.addComponent('belt-member', { type: 'PathFollow', waypoints: [{ x: 10, y: 0 }], speed: 1, index: 0, queueId: 'belt' } as never);
-    w.createEntity('tray');
-    w.addComponent('tray', { type: 'Tray', originX: 0, originY: 0, gap: 10, capacity: 1, requiredTag: BUFFER_TAG } as Tray);
-    counter(w, 'gc', 'belt.count', BELT_TAG);
-    wireFullFlag(w, 'belt', 'belt.count', 1, 'belt.full');
-    expect(() => { for (let i = 0; i < 5; i++) w.tick(); }).not.toThrow();
+    // 读告警纪律：推断环只 warn 不抛，收进断言（ENG-03 形状）
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const w = new World();
+      addSystems(w, pathFollowCapability, trayCapability, groupCountCapability, eventWhenCapability, effectApplyCapability);
+      // 各挂一个最小实体，确认各系统真的跑（非空 query 短路掉的假阴性）。
+      w.createEntity('belt-member');
+      w.addComponent('belt-member', { type: 'Tag', flags: BELT_TAG } as Tag);
+      w.addComponent('belt-member', { type: 'Transform', x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
+      w.addComponent('belt-member', { type: 'PathFollow', waypoints: [{ x: 10, y: 0 }], speed: 1, index: 0, queueId: 'belt' } as never);
+      w.createEntity('tray');
+      w.addComponent('tray', { type: 'Tray', originX: 0, originY: 0, gap: 10, capacity: 1, requiredTag: BUFFER_TAG } as Tray);
+      counter(w, 'gc', 'belt.count', BELT_TAG);
+      wireFullFlag(w, 'belt', 'belt.count', 1, 'belt.full');
+      expect(() => { for (let i = 0; i < 5; i++) w.tick(); }).not.toThrow();
+      const bad = warn.mock.calls.map((c) => c.map(String).join(' ')).filter((m) => m.includes('[topological-sort]') || m.includes('Circular'));
+      expect(bad).toEqual([]);
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

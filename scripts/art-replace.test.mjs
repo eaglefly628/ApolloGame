@@ -807,30 +807,29 @@ describe('REQ-ARTPROMPT·职责拆分：query=身份键（编辑永不写）·pr
     expect(l.rows[0].history.at(-1)).toMatchObject({ action: 'regen', prevPrompt: '手拼词', newPrompt: null });
   });
 
-  it('CLI 链路：fill --query（旧名·t2_replace.py 现契约）与 --prompt 同义——写 row.prompt·row.query 不动', () => {
+  it('CLI 链路：fill --query（旧名·t2_replace.py 现契约）与 --prompt 同义——写 row.prompt·row.query 不动', () => withRoot(async (root) => {
     // UI 改词的真实链路 = /api/art/regenerate {query} → CLI --query → resetRow。此测钉死 CLI 半段
-    //（服务端半段由 art-replace-smoke.py ⑦ 钉）。临时台账落 public/games/<slug>/art（fill=编译期线·无 manifest）。
+    //（服务端半段由 art-replace-smoke.py ⑦ 钉）。临时台账落 <临时根>/public/games/<slug>/art
+    //（fill=编译期线·无 manifest）——根经 ART_REPLACE_ROOT 注入临时目录（测试加固批 2026-08-24：
+    // 此前直写真仓 public/games/zz-artprompt-cli·唯一不 hermetic 的 CLI 腿）。
     const slug = 'zz-artprompt-cli';
-    const artDir = join(__dirnameCli, '..', 'public', 'games', slug, 'art');
-    const cli = (args) => spawnSync(process.execPath, [join(__dirnameCli, 'art-replace.mjs'), ...args], { encoding: 'utf8' });
-    try {
-      for (const [flag, word] of [['--query', '旧名改词'], ['--prompt', '正名改词']]) {
-        rmSync(join(__dirnameCli, '..', 'public', 'games', slug), { recursive: true, force: true });
-        mkdirSync(artDir, { recursive: true });
-        writeFileSync(join(artDir, 'art-ledger.json'), JSON.stringify({ version: 1, game: slug, mode: 'requirements', rows: [
-          { no: 'art-01', kind: 'sprite', query: '身份词', spec: { w: 32, h: 32, transparent: true }, status: 'needs-art', gen: null, provenance: null },
-        ] }, null, 2) + '\n');
-        const r = cli(['fill', slug, 'art-01', 'pixel-retro', flag, word, '--mock']);
-        expect(r.status).toBe(0);
-        const led = JSON.parse(readFileSync(join(artDir, 'art-ledger.json'), 'utf8'));
-        expect(led.rows[0].prompt).toBe(word);   // 编辑词落 prompt（生效主体）
-        expect(led.rows[0].query).toBe('身份词'); // 身份键不动
-        expect(led.rows[0].gen && led.rows[0].gen.prompt).toContain(word); // 实际发给文生图的全文吃到了新词
-      }
-    } finally {
-      rmSync(join(__dirnameCli, '..', 'public', 'games', slug), { recursive: true, force: true });
+    const artDir = join(root, 'public', 'games', slug, 'art');
+    const cli = (args) => spawnSync(process.execPath, [join(__dirnameCli, 'art-replace.mjs'), ...args],
+      { encoding: 'utf8', env: { ...process.env, ART_REPLACE_ROOT: root } });
+    for (const [flag, word] of [['--query', '旧名改词'], ['--prompt', '正名改词']]) {
+      rmSync(join(root, 'public', 'games', slug), { recursive: true, force: true });
+      mkdirSync(artDir, { recursive: true });
+      writeFileSync(join(artDir, 'art-ledger.json'), JSON.stringify({ version: 1, game: slug, mode: 'requirements', rows: [
+        { no: 'art-01', kind: 'sprite', query: '身份词', spec: { w: 32, h: 32, transparent: true }, status: 'needs-art', gen: null, provenance: null },
+      ] }, null, 2) + '\n');
+      const r = cli(['fill', slug, 'art-01', 'pixel-retro', flag, word, '--mock']);
+      expect(r.status, r.stdout + r.stderr).toBe(0);
+      const led = JSON.parse(readFileSync(join(artDir, 'art-ledger.json'), 'utf8'));
+      expect(led.rows[0].prompt).toBe(word);   // 编辑词落 prompt（生效主体）
+      expect(led.rows[0].query).toBe('身份词'); // 身份键不动
+      expect(led.rows[0].gen && led.rows[0].gen.prompt).toContain(word); // 实际发给文生图的全文吃到了新词
     }
-  });
+  }));
 });
 
 // ═══ REQ-ARTPROMPT·工坊入口接线锚（workshop/index.dc.html 无渲染测试基座 → 文本锚防「入口又改回存 query」）═══

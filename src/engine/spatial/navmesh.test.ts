@@ -10,11 +10,16 @@ describe('navmesh · 栅格化 + 自动织 NavGraph', () => {
     expect(g.originX).toBe(-10);
   });
 
-  it('空网格 → 全格成航点 + 有连边', () => {
+  it('空网格 → 全格成航点 + 边数精确等于八向邻接公式', () => {
     const g = gridFromBounds(-10, -10, 10, 10, 2);
     const baked = bakeNavGraph(g, rasterizeBlocked(g, []));
     expect(baked.nodes.length).toBe(g.cols * g.rows);
-    expect(baked.edges.length).toBeGreaterThan(0);
+    // 邻接模型（bakeNavGraph 源码钉死）：八向连通、免重每格只出 E/S/SE/SW 四方向边。
+    // 空网格精确边数 = E:(cols-1)*rows + S:cols*(rows-1) + 斜向 SE/SW 各 (cols-1)*(rows-1)。
+    // 11×11 = 110 + 110 + 200 = 420。原「>0」存在性断言防不住少织/漏织。
+    const { cols, rows } = g;
+    expect(baked.edges.length).toBe((cols - 1) * rows + cols * (rows - 1) + 2 * (cols - 1) * (rows - 1));
+    expect(baked.edges.length).toBe(420);
   });
 
   it('寻路碰撞：障碍矩形处不生成航点（封格无节点）', () => {

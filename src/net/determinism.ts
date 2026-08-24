@@ -34,6 +34,17 @@ export function hashWithOrder(snap: WorldSnapshot, order: readonly string[] | un
 // 二者曾漏登记，是潜伏雷：任何人按契约在渲染侧改它们，lockstep 立刻误报 desync。
 export const NON_DETERMINISTIC = new Set<string>(['Camera','Camera3D', 'Mesh3D', 'Coachmark', 'Transform3D', 'Sky3D', 'Model3D', 'AnimState3D', 'Anim3D', 'Pivot3D', 'Light3D', 'Post3D', 'Fog3D', 'Material3D', 'Vfx3D', 'Trail3D', 'Line3D', 'Decal3D', 'Path3D', 'Billboard3D', 'WorldUI3D', 'Diegetic3D', 'RigidBody3D', 'Impulse3D', 'Joint3D', 'Glow3D', 'Pickable3D', 'ScoreTrace', 'DebugTrace', 'PhysicsWorld3D', 'Reflector3D']);
 
+// 键位转义（2026-08-22 测试大扫除实证修复）：实体id/组件名/字段名/嵌套键此前裸拼进 canonical——
+// id 含分隔符即可伪造结构 → 两个不同状态同 hash（desync/存档篡改假绿·实证碰撞见 determinism.test.ts
+// 「键位转义」回归钉；SAVEORDER 当年记档的「裸拼碰撞面」即此，数据驱动世界里 id 由数据侧生成，
+// 分隔符入 id 属可达事故而非攻击）。修法=键**含该层结构字符才** JSON.stringify：干净键原样 →
+// 全库既有数据 canonical 逐字节不变（prefab id 的 #/: 不在平层触发集内）·旧档 hash 兼容（golden 锚在测）；
+// 引号起头的歧义由触发集含 " 封死——raw 键永不含引号、escaped 键必以引号起头，两空间不相交。
+const FLAT_KEY_UNSAFE = /["\\|;,=]/; //  平层结构字符：| ; , = （+ " \ 封引号/转义歧义）
+const NESTED_KEY_UNSAFE = /["\\:,{}[\]]/; // 嵌套层结构字符：: , { } [ ]
+const escFlat = (s: string): string => (FLAT_KEY_UNSAFE.test(s) ? JSON.stringify(s) : s);
+const escNested = (s: string): string => (NESTED_KEY_UNSAFE.test(s) ? JSON.stringify(s) : s);
+
 function canonical(snap: WorldSnapshot): string {
   const parts: string[] = [];
   for (const entityId of Object.keys(snap).sort()) {
@@ -44,8 +55,8 @@ function canonical(snap: WorldSnapshot): string {
       const fields = Object.keys(comp)
         .filter((k) => comp[k] !== undefined) // undefined 字段 ≡ 缺席：不进 hash，防「写 field=undefined」的 writer 跨端分裂
         .sort()
-        .map((k) => `${k}=${stableValue(comp[k])}`);
-      parts.push(`${entityId}|${type}|${fields.join(',')}`);
+        .map((k) => `${escFlat(k)}=${stableValue(comp[k])}`);
+      parts.push(`${escFlat(entityId)}|${escFlat(type)}|${fields.join(',')}`);
     }
   }
   return parts.join(';');
@@ -60,7 +71,7 @@ function stableValue(v: unknown): string {
   return `{${Object.keys(o)
     .filter((k) => o[k] !== undefined)
     .sort()
-    .map((k) => `${k}:${stableValue(o[k])}`)
+    .map((k) => `${escNested(k)}:${stableValue(o[k])}`)
     .join(',')}}`;
 }
 

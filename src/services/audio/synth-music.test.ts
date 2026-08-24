@@ -2,15 +2,17 @@ import { describe, it, expect } from 'vitest';
 import { SynthMusicPort, type AudioCtxLike, type MusicTrack } from './synth-music.js';
 
 function fakeCtx() {
-  const log = { osc: 0, gain: 0, started: 0, busVol: [] as number[] };
+  // gainDisconnects/oscStops（测试加固 2026-08-24）：供「换曲先停旧」断言——旧曲全停 = 旧 bus 断链
+  // （实现走 bus.disconnect() 断整条旧链）+ 每振荡器在调度期即带既定 stop(t)（有界·不残留）。
+  const log = { osc: 0, gain: 0, started: 0, busVol: [] as number[], gainDisconnects: 0, oscStops: 0 };
   const param = (sink?: number[]): { value: number; setValueAtTime: (v: number) => void; linearRampToValueAtTime: () => void; exponentialRampToValueAtTime: () => void } => ({
     value: 0, setValueAtTime: (v: number) => { sink?.push(v); }, linearRampToValueAtTime: () => {}, exponentialRampToValueAtTime: () => {},
   });
   const node = (): { connect: () => void; disconnect: () => void } => ({ connect: () => {}, disconnect: () => {} });
   const ctx: AudioCtxLike = {
     currentTime: 0, sampleRate: 48000, state: 'running', destination: node(),
-    createGain: () => { log.gain++; return { ...node(), gain: log.gain === 1 ? param(log.busVol) : param() }; },
-    createOscillator: () => { log.osc++; return { ...node(), type: 'triangle', frequency: param(), start: () => { log.started++; }, stop: () => {}, onended: null }; },
+    createGain: () => { log.gain++; return { connect: () => {}, disconnect: () => { log.gainDisconnects++; }, gain: log.gain === 1 ? param(log.busVol) : param() }; },
+    createOscillator: () => { log.osc++; return { ...node(), type: 'triangle', frequency: param(), start: () => { log.started++; }, stop: () => { log.oscStops++; }, onended: null }; },
     createBufferSource: () => ({ ...node(), buffer: null, start: () => {}, stop: () => {}, onended: null }),
     createBuffer: (_c: number, len: number) => ({ getChannelData: () => new Float32Array(len) }),
   };
@@ -50,14 +52,23 @@ describe('SynthMusicPort — 数据驱动循环音序后端', () => {
     p.stop();
   });
 
-  it('换曲：play 新曲先停旧（不残留）', () => {
-    const { ctx } = fakeCtx();
+  it('换曲：play 新曲先停旧（旧 bus 断链 + 每振荡器带既定 stop 调度 = 旧曲全停·不残留）', () => {
+    const { ctx, log } = fakeCtx();
     const p = new SynthMusicPort({ ctx });
-    p.play(TRACK);
+    p.play(TRACK); // 2 音 × 2 圈 = 4 osc
+    expect(log.osc).toBe(4);
+    expect(log.oscStops).toBe(4); // 实测实现口径：osc.stop(t) 在调度期即定（每音有界·非换曲时才停）
+    expect(log.gainDisconnects).toBe(0); // 旧曲在放·bus 尚在链
     const t2: MusicTrack = { bpm: 90, loopBeats: 2, notes: [{ beat: 0, dur: 1, freq: 330 }] };
     p.play(t2);
     expect(p.current).toBe(t2);
+    // 换曲停旧的真机制（钉现状·测试加固 2026-08-24）：stopVoices() 断掉旧 bus——恰 1 次断链
+    // （断的只能是旧 bus·新 bus 正在链上），旧曲整条增益链离 destination = 全停。
+    expect(log.gainDisconnects).toBe(1);
+    expect(log.osc).toBe(6); // 新曲 1 音 × 2 圈已排（4+2）
+    expect(log.oscStops).toBe(6); // 新音符同样带既定 stop——新旧全部有界·无永响残留
     p.stop();
+    expect(log.gainDisconnects).toBe(2); // stop 再断新 bus·彻底静默
   });
 
   it('无 AudioContext（headless）→ play/stop/setVolume 不抛错', () => {

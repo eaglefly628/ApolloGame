@@ -104,14 +104,19 @@ describe('game-c game-session — 完整一手到摊牌（牌逻辑跑通）', (
     drive(s);
     let guard = 0;
     while (s.phase === 'betting' && guard++ < 50) { const la = s.legalForHero(); if (!la) break; s.heroAct(la.check ? { kind: 'check' } : { kind: 'call' }); drive(s); }
-    if (s.showdown && s.showdown.rows.length > 1) {
-      // 每个摊牌行带底牌 2 张（展示各家手牌）
-      for (const r of s.showdown.rows) if (r.best.length) expect(r.hole).toHaveLength(2);
-      // 有加注则 last aggressor 排在首位
-      if (s.lastAggressor !== null && s.showdown.rows.some((r) => r.seat === s.lastAggressor)) {
-        expect(s.showdown.rows[0].seat).toBe(s.lastAggressor);
-      }
+    // 加固（2026-08-24）：原断言全包在 if 里——前置不成立时整测空转绿。先无条件钉前置
+    //（seed 42 实测：3 家到摊牌·有加注·last aggressor=座1），再进原断言。
+    expect(s.phase).toBe('showdown');
+    expect(s.showdown).not.toBeNull();
+    expect(s.showdown!.rows.length).toBeGreaterThan(1); // 多家真摊牌（非全弃收池）
+    expect(s.lastAggressor).not.toBeNull(); // 本手确有 bet/raise（reveal 起点有意义）
+    expect(s.showdown!.rows.some((r) => r.seat === s.lastAggressor)).toBe(true); // 且他走到了摊牌
+    // 每个摊牌行带底牌 2 张 + 成牌 5 张（seed 42 实测：3 行全亮牌）
+    for (const r of s.showdown!.rows) {
+      expect(r.best).toHaveLength(5);
+      expect(r.hole).toHaveLength(2);
     }
+    expect(s.showdown!.rows[0].seat).toBe(s.lastAggressor); // last aggressor 排首位
   });
 });
 
@@ -230,6 +235,38 @@ describe('game-c game-session — heroAct 防御 no-op（REQ-C-108②·非法输
     s.heroAct({ kind: 'check' }); // 非法·应 no-op
     expect(s.hand!.actor).toBe(snap.actor);
     expect(s.isHeroTurn).toBe(true);
+  });
+});
+
+describe('game-c game-session — ⚔ 相位边界（gameover 后输入·testing.md ⚔「相位边界抢点」·加固 2026-08-24）', () => {
+  it('gameover 后 heroAct 全系 no-op（状态与筹码零变化）·pawn 走拒绝路径', () => {
+    // 跑到局终（seed 20260717 实测：主角衣尽筹尽被淘汰·winnerSide=opponents·全员衣柜典空）。
+    const s = new HoldemSession(20260717);
+    let guard = 0;
+    while (s.phase !== 'gameover' && guard++ < 4000) {
+      drive(s);
+      if (s.isHeroTurn) { const la = s.legalForHero()!; s.heroAct(la.check ? { kind: 'check' } : { kind: 'fold' }); }
+      else if (s.phase === 'showdown') s.nextHand();
+    }
+    expect(s.phase).toBe('gameover');
+    expect(s.hero.eliminated).toBe(true); // 实测前置：主角已淘汰（pawn 拒绝路径的确定性依据）
+    const snap = (): string => JSON.stringify({
+      phase: s.phase, winnerSide: s.winnerSide, handNo: s.handNo,
+      stacks: s.seats.map((x) => x.stack), pawned: s.seats.map((x) => x.pawned.size),
+      eliminated: s.seats.map((x) => x.eliminated), pot: s.pot(),
+    });
+    const before = snap();
+    // 终局屏乱点（fold/check/call/raise 全按一遍）→ 一律 no-op
+    s.heroAct({ kind: 'fold' });
+    s.heroAct({ kind: 'check' });
+    s.heroAct({ kind: 'call' });
+    s.heroAct({ kind: 'raise', to: 99999 });
+    expect(snap()).toBe(before); // 状态与筹码逐字节不变
+    // pawn 拒绝路径：主角已淘汰（且衣柜典空）→ false·零变化。
+    // ⚠ 真实行为钉现状：pawn 的闸是 eliminated/已当，**不是相位**——gameover 后未淘汰且有余衣者
+    //   仍能典当（本 seed 全员衣柜已空·不可达）。此处钉可确定复现的拒绝腿，不改游戏逻辑。
+    for (const c of CLOTHING_ITEMS) expect(s.pawn(0, c.id)).toBe(false);
+    expect(snap()).toBe(before);
   });
 });
 

@@ -55,10 +55,29 @@ describe('AssetManager — 注册与加载', () => {
     await expect(m.load('nope')).rejects.toThrow(/未注册/);
   });
 
-  it('并发 load 去重为同一承诺结果', async () => {
-    const m = makeManager();
-    const [a, b] = await Promise.all([m.load('player'), m.load('player')]);
-    expect(a).toBe(b);
+  it('并发 load 去重：deferred loader + attempts 计数证明底层真只 load 一次', async () => {
+    // 加强（测试加固 2026-08-24）：Stub loader 秒回·原测两次 await 同引用可能只是「第二次命中缓存」，
+    // 证不了 inflight 去重。改 deferred loader：首个 load 未完成时并发第二次，attempts 恒 1 = 真去重
+    // （同文件「失败重试」用例的 attempts 手法）。
+    let attempts = 0;
+    let release!: () => void;
+    const deferred: AssetLoader = {
+      load(d: AssetDescriptor): Promise<{ handle: AssetHandle; width: number; height: number }> {
+        attempts += 1;
+        return new Promise((res) => {
+          release = () => res({ handle: { stub: true, key: d.key, kind: d.kind }, width: 32, height: 48 });
+        });
+      },
+    };
+    const m = new AssetManager(deferred);
+    m.register({ kind: 'texture', key: 'player', src: 'player.png', width: 32, height: 48 });
+    const pa = m.load('player');
+    const pb = m.load('player'); // 首个尚未 resolve 时并发第二次
+    expect(attempts).toBe(1); // 底层只被调一次（inflight 去重·非缓存兜底）
+    release();
+    const [a, b] = await Promise.all([pa, pb]);
+    expect(a).toBe(b); // 同一承诺结果·同一引用
+    expect(attempts).toBe(1); // 完成后也没有偷偷补第二次
   });
 
   it('loadAll 加载全部', async () => {

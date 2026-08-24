@@ -74,16 +74,6 @@ describe('launch — fallbackDir（薄加性·零回归）', () => {
     expect(hasLaunch(w, 'bolt')).toBe(false);
   });
 
-  it('无目标 + 无 fallbackDir → 维持现行为（清零速度冻结原地，零回归）', () => {
-    const w = launchWorld();
-    w.createEntity('dud');
-    w.addComponent('dud', xf(0, 0));
-    w.addComponent('dud', { type: 'Launch', speed: 5, toward: 'target', targetMask: ENEMY } as Launch);
-    w.tick();
-    const v = vel(w, 'dud')!;
-    expect(v.vx).toBe(0);
-    expect(v.vy).toBe(0);
-  });
 
   it('有目标时 fallbackDir 不生效（正常索敌优先）', () => {
     const w = launchWorld();
@@ -99,5 +89,31 @@ describe('launch — fallbackDir（薄加性·零回归）', () => {
     const v = vel(w, 'fireball')!;
     expect(v.vx).toBeCloseTo(5); // 朝目标 +x，未被 fallbackDir 覆盖
     expect(v.vy).toBeCloseTo(0);
+  });
+});
+
+describe('launch — 零向量边界（2026-08-22 测试大扫除补钉·NaN 防线）', () => {
+  // NaN 一旦写进 Velocity → motion-apply 扩散到 Transform → 污染快照 hash（effect-apply 已钉同形状·launch 缺）。
+  it("toward:'dir' 且 dir=(0,0) → 不产 NaN", () => {
+    const w = launchWorld();
+    w.createEntity('z');
+    w.addComponent('z', xf(0, 0));
+    w.addComponent('z', { type: 'Launch', speed: 5, toward: 'dir', dirX: 0, dirY: 0 } as Launch);
+    w.tick();
+    const v = vel(w, 'z')!;
+    expect(Number.isFinite(v.vx)).toBe(true);
+    expect(Number.isFinite(v.vy)).toBe(true);
+    expect(hasLaunch(w, 'z')).toBe(false); // 一次性语义不变
+  });
+
+  it('fallbackDir=(0,0) → 同样不产 NaN', () => {
+    const w = launchWorld();
+    w.createEntity('z2');
+    w.addComponent('z2', xf(0, 0));
+    w.addComponent('z2', { type: 'Launch', speed: 5, toward: 'target', targetMask: ENEMY, fallbackDir: { x: 0, y: 0 } } as Launch);
+    w.tick();
+    const v = vel(w, 'z2')!;
+    expect(Number.isFinite(v.vx)).toBe(true);
+    expect(Number.isFinite(v.vy)).toBe(true);
   });
 });

@@ -85,6 +85,11 @@ describe('共用组件（多 provider）必须各家字段结构一致', () => {
   });
 
   it('AMBIGUOUS_COMPONENTS 如实列出全部共用组件，且不入单一提供者表', () => {
+    // 防空转恒绿：AMBIGUOUS_COMPONENTS 若哪天意外变空 Map，下面的 for-of 一次都不进也照样绿。
+    // 先钉非空 + 点名已知成员（实测基线 2026-08-24：恰 1 员——BoardCell 被 match3-board /
+    // block-grid 刻意共用同一视图格接口，见 capability-registry.ts 注释）。
+    expect(AMBIGUOUS_COMPONENTS.size).toBeGreaterThan(0);
+    expect(AMBIGUOUS_COMPONENTS.get('BoardCell')).toEqual(['t3-match3-board', 't3-block-grid']);
     for (const [ctype, providers] of AMBIGUOUS_COMPONENTS) {
       expect(providers.length).toBeGreaterThan(1);
       // 共用组件刻意不进 COMPONENT_PROVIDERS（推断不猜），否则又会静默判给某一家

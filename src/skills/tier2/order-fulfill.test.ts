@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { World } from '@engine/core/world.js';
 import { orderFulfillCapability } from './order-fulfill.js';
 import type { Order, DeliverDrop, PrefabOrigin, Resource, RandomSeed } from '@engine/protocol/components.js';
@@ -268,11 +268,19 @@ describe('order-fulfill · 订单轮换（REQ-ORDERROT·集齐后从 pool 取下
   it('撞环回归：order-fulfill 与 merge-on-place/merge-proximity-clear 等 game101 代表性能力同装不成环·可 tick', async () => {
     const { mergeOnPlaceCapability } = await import('./merge-on-place.js');
     const { mergeProximityClearCapability } = await import('./merge-proximity-clear.js');
-    const w = new World();
-    for (const sys of orderFulfillCapability.systems) w.addSystem(sys);
-    for (const sys of mergeOnPlaceCapability.systems) w.addSystem(sys);
-    for (const sys of mergeProximityClearCapability.systems) w.addSystem(sys);
-    expect(() => w.tick()).not.toThrow();
+    // 读告警纪律：推断环只 warn 不抛，收进断言（ENG-03 形状）
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const w = new World();
+      for (const sys of orderFulfillCapability.systems) w.addSystem(sys);
+      for (const sys of mergeOnPlaceCapability.systems) w.addSystem(sys);
+      for (const sys of mergeProximityClearCapability.systems) w.addSystem(sys);
+      expect(() => w.tick()).not.toThrow();
+      const bad = warn.mock.calls.map((c) => c.map(String).join(' ')).filter((m) => m.includes('[topological-sort]') || m.includes('Circular'));
+      expect(bad).toEqual([]);
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it('撞环回归：order-fulfill 新增读写世界 RandomSeed 后·与同样吃 RandomSeed 的 effect-apply/weighted-spawn 同装（game101 实际蓝图组合）仍不成环·可 tick', async () => {

@@ -70,6 +70,34 @@ describe('storage · SteamCloudStoragePort（经假云桥·与契约一致）', 
     expect((await port.load('a'))?.meta.tick).toBe(1);    // 槽位文件被回滚 → 存档没丢
   });
 
+  it('save 索引写失败 → 槽位文件回滚：新槽删文件、旧槽还原旧档（对称 delete 侧·加固 2026-08-24）', async () => {
+    // 与上方 delete 侧回滚用例同手法：桥只让索引文件写失败（模拟配额/IO），坐实 save 的两步写回滚——
+    // 防「数据文件已换新、索引还是旧」的正向脱节（读档界面与真档对不上）。
+    const mock = createMockSteamCloudBridge({ persist: false });
+    let failIndexWrite = false;
+    const bridge: SteamCloudBridge = {
+      ...mock,
+      async writeFile(name, content) {
+        if (failIndexWrite && name.endsWith('__index__.json')) return false; // 模拟索引写失败
+        return mock.writeFile(name, content);
+      },
+    };
+    const port = new SteamCloudStoragePort(bridge);
+    // ① 新槽（prev=null）：索引写失败 → 槽位文件被删（不留「有档无索引」的孤档）
+    failIndexWrite = true;
+    await expect(port.save('fresh', game('fresh', 1, 100))).rejects.toThrow(); // 抛（不静默）
+    expect(await port.load('fresh')).toBeNull(); // 回滚=删文件
+    failIndexWrite = false;
+    expect((await port.list()).map((m) => m.slot)).not.toContain('fresh'); // 索引/数据一致地「都没有」
+    // ② 旧槽（prev 有值）：先成功存 tick=1，再覆盖存 tick=2 失败 → 槽位文件还原 tick=1（老档不丢）
+    await port.save('a', game('a', 1, 100));
+    failIndexWrite = true;
+    await expect(port.save('a', game('a', 2, 200))).rejects.toThrow();
+    failIndexWrite = false;
+    expect((await port.load('a'))?.meta.tick).toBe(1); // 槽位文件被回滚 → 老档仍在
+    expect((await port.list()).find((m) => m.slot === 'a')?.tick).toBe(1); // 索引也仍指老档（一致）
+  });
+
   it('持久化：新端口（读同一假云态）能读回上一端口存的档', async () => {
     await new SteamCloudStoragePort(createMockSteamCloudBridge()).save('p', game('p', 9, 900));
     const port2 = new SteamCloudStoragePort(createMockSteamCloudBridge());

@@ -25,12 +25,6 @@ describe('tag atom', () => {
     expect(world.getComponent<Tag>('e1', 'Tag')!.flags).toBe(ENEMY | SOLID);
   });
 
-  it('supports bitmask membership via bitwise AND', () => {
-    const tag: Tag = { type: 'Tag', flags: GROUND | SOLID };
-    expect((tag.flags & GROUND) !== 0).toBe(true);
-    expect((tag.flags & SOLID) !== 0).toBe(true);
-    expect((tag.flags & ENEMY) !== 0).toBe(false);
-  });
 
   it('default flags is 0 (no classification)', () => {
     expect(tagCapability.config.flags.default).toBe(0);

@@ -89,6 +89,27 @@ describe('固定步长: FixedStepClock', () => {
     const c = new FixedStepClock(50, { maxSteps: 5, maxFrameMs: 250 });
     expect(c.advance(100000)).toBe(5); // 钳到 250ms → 12.5 步，但封顶 5
   });
+
+  // ── 2026-08-22 测试大扫除补钉：封顶/负帧/非整除三条边界（此前特意整除回避·丢积压语义零测试）──
+  it('封顶清积压：触顶那帧后积压归零——下一帧不补跑欠账（fixed-step.ts 丢弃语义）', () => {
+    const c = new FixedStepClock(50, { maxSteps: 5, maxFrameMs: 250 });
+    expect(c.advance(100000)).toBe(5);
+    expect(c.advance(0)).toBe(0); // 积压已弃：不继续吐步（删掉 acc=0 那行即红）
+    expect(c.advance(20)).toBe(1); // 恢复正常节奏
+  });
+
+  it('负 frameMs 钳为 0：不产步、不负积累（时钟回拨防线）', () => {
+    const c = new FixedStepClock(50);
+    expect(c.advance(-500)).toBe(0);
+    expect(c.advance(20)).toBe(1); // 负帧没有吃掉后续积累
+  });
+
+  it('非整除步长（60Hz·stepMs=16.6̄）长跑 600 帧：总步数与理论值一致（浮点不漂）', () => {
+    const c = new FixedStepClock(60);
+    let steps = 0;
+    for (let i = 0; i < 600; i++) steps += c.advance(16.67);
+    expect(steps).toBe(Math.floor((16.67 * 600) / (1000 / 60)));
+  });
 });
 
 describe('确定性: 独立双世界 + 同输入 → 逐 tick 同哈希', () => {
@@ -102,12 +123,10 @@ describe('确定性: 独立双世界 + 同输入 → 逐 tick 同哈希', () => 
       [], // 无人操作 → 都应静止
       [moveA(5, 0, -1), moveB(5, 1, 1)],
     ];
-    script.forEach((cmds, idx) => {
+    script.forEach((cmds) => {
       step(w1, cmds);
       step(w2, cmds);
       expect(hashSnapshot(w1.snapshot())).toBe(hashSnapshot(w2.snapshot()));
-      // 命令到达顺序不影响结果：反序喂 w2 仍一致（orderCommands 保证）
-      expect(idx).toBeGreaterThanOrEqual(0);
     });
   });
 
@@ -118,7 +137,13 @@ describe('确定性: 独立双世界 + 同输入 → 逐 tick 同哈希', () => 
     step(w1, cmds);
     step(w2, [...cmds].reverse());
     expect(hashSnapshot(w1.snapshot())).toBe(hashSnapshot(w2.snapshot()));
-    expect(orderCommands(cmds)[0].playerId).toBe('A'); // 稳定按 playerId
+    // 全序钉死（2026-08-22 测试大扫除）：按 playerId 升序；同 playerId 保持到达序
+    // （Array.sort 稳定性=现契约——「顺序只由内容决定」只到 playerId 粒度，同人多令靠到达序，钉住防漂）
+    const mixed = [moveB(1, 0, 1), moveA(1, 1, 0), moveB(1, 1, 0)];
+    const ordered = orderCommands(mixed);
+    expect(ordered.map((c) => c.playerId)).toEqual(['A', 'B', 'B']);
+    expect(ordered[1]).toBe(mixed[0]); // 同 playerId：到达序保持
+    expect(ordered[2]).toBe(mixed[2]);
   });
 });
 

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { World } from '@engine/core/world.js';
 import { statBindCapability, projectStatBind } from './stat-bind.js';
 import { modifierStackCapability } from './modifier-stack.js';
@@ -216,23 +216,31 @@ describe('stat-bind —— 撞环回归（第二坑）', () => {
   // 的"基于本 tick 解算结果的最终写入"），phase 分桶零跨相位边，自动排在全部 Update 相位系统之后，
   // 零 runsAfter、零环，且对未来任何新增 Update 系统天然免疫。
   it('与 modifier-stack/stats/steering/hitbox/caster/timer/resource/controllable 同装 · 可 tick', () => {
-    const w = new World();
-    for (const cap of [
-      modifierStackCapability,
-      statsCapability,
-      steeringCapability,
-      hitboxCapability,
-      casterCapability,
-      timerCapability,
-      resourceCapability,
-      controllableCapability,
-      statBindCapability,
-    ]) {
-      for (const s of cap.systems) w.addSystem(s);
+    // 读告警纪律：推断环只 warn 不抛，收进断言（ENG-03 形状）
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const w = new World();
+      for (const cap of [
+        modifierStackCapability,
+        statsCapability,
+        steeringCapability,
+        hitboxCapability,
+        casterCapability,
+        timerCapability,
+        resourceCapability,
+        controllableCapability,
+        statBindCapability,
+      ]) {
+        for (const s of cap.systems) w.addSystem(s);
+      }
+      expect(() => {
+        for (let i = 0; i < 5; i++) w.tick();
+      }).not.toThrow();
+      const bad = warn.mock.calls.map((c) => c.map(String).join(' ')).filter((m) => m.includes('[topological-sort]') || m.includes('Circular'));
+      expect(bad).toEqual([]);
+    } finally {
+      warn.mockRestore();
     }
-    expect(() => {
-      for (let i = 0; i < 5; i++) w.tick();
-    }).not.toThrow();
   });
 
   it('与 effect-apply（game-103 蓝图实装·Commit 相位 RMW Resource/Timer）同装 + maxHp→Resource/attackSpeed→Timer binding · 不成环', () => {
@@ -242,28 +250,36 @@ describe('stat-bind —— 撞环回归（第二坑）', () => {
     // 不装 modifier-stack：它每 tick 从 ModifierSource 重算 ModifierTotals，会把手设的 totals 清空覆盖
     // （本例无 ModifierSource 实体）。本例只验 stat-bind(写 Resource/Timer) 与 effect-apply(Commit RMW
     // Resource/Timer) 同装不成环 + 投影落地，手设 totals 单例即可。
-    const w = new World();
-    for (const cap of [
-      effectApplyCapability,
-      resourceCapability,
-      timerCapability,
-      statBindCapability,
-    ]) {
-      for (const s of cap.systems) w.addSystem(s);
+    // 读告警纪律：推断环只 warn 不抛，收进断言（ENG-03 形状）
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const w = new World();
+      for (const cap of [
+        effectApplyCapability,
+        resourceCapability,
+        timerCapability,
+        statBindCapability,
+      ]) {
+        for (const s of cap.systems) w.addSystem(s);
+      }
+      totalsSink(w, 'totals', { maxHp: 100, attackSpeed: 2 });
+      w.createEntity('hero');
+      w.addComponent('hero', { type: 'Resource', id: 'hp', current: 50, max: 50 } as Resource);
+      w.addComponent('hero', { type: 'Timer', id: 'atk', elapsed: 0, duration: 60, loop: false } as Timer);
+      bind(w, 'hero', [
+        { source: 'ModifierTotals', key: 'maxHp', component: 'Resource', field: 'max', op: 'set' },
+        { source: 'ModifierTotals', key: 'attackSpeed', component: 'Timer', field: 'duration', op: 'div', base: 60 },
+      ]);
+      expect(() => {
+        for (let i = 0; i < 5; i++) w.tick();
+      }).not.toThrow();
+      // 投影确实落地（Commit 相位写、下一 tick 起可见）：max←100·duration←60/2=30。
+      expect(w.getComponent<Resource>('hero', 'Resource')!.max).toBe(100);
+      expect(w.getComponent<Timer>('hero', 'Timer')!.duration).toBe(30);
+      const bad = warn.mock.calls.map((c) => c.map(String).join(' ')).filter((m) => m.includes('[topological-sort]') || m.includes('Circular'));
+      expect(bad).toEqual([]);
+    } finally {
+      warn.mockRestore();
     }
-    totalsSink(w, 'totals', { maxHp: 100, attackSpeed: 2 });
-    w.createEntity('hero');
-    w.addComponent('hero', { type: 'Resource', id: 'hp', current: 50, max: 50 } as Resource);
-    w.addComponent('hero', { type: 'Timer', id: 'atk', elapsed: 0, duration: 60, loop: false } as Timer);
-    bind(w, 'hero', [
-      { source: 'ModifierTotals', key: 'maxHp', component: 'Resource', field: 'max', op: 'set' },
-      { source: 'ModifierTotals', key: 'attackSpeed', component: 'Timer', field: 'duration', op: 'div', base: 60 },
-    ]);
-    expect(() => {
-      for (let i = 0; i < 5; i++) w.tick();
-    }).not.toThrow();
-    // 投影确实落地（Commit 相位写、下一 tick 起可见）：max←100·duration←60/2=30。
-    expect(w.getComponent<Resource>('hero', 'Resource')!.max).toBe(100);
-    expect(w.getComponent<Timer>('hero', 'Timer')!.duration).toBe(30);
   });
 });

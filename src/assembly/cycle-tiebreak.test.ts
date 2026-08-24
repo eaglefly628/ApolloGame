@@ -65,7 +65,9 @@ describe('REQ-CYCLEHAZ B — Lead 点名最小复现（真能力）', () => {
     for (const id of ['event-when', 'timeline', 'resource-apply']) expect(order).toContain(id);
     // timeline 自带 runsAfter:['event-when'] = 硬约束，平局裁决不许推翻它。
     expect(order.indexOf('event-when')).toBeLessThan(order.indexOf('timeline'));
-    expect(warns.length).toBeGreaterThan(0);
+    // 点名环成员（同 :59 口径·升格自「存在任意 warn」）：实测基线（2026-08-24）该组合恰闭合
+    // 这一个三元推断环——告警若换了环成员/消失，都是定序面变动，必须转红被看见。
+    expect(warns.some((w) => w.includes('[resource-apply, event-when, timeline]'))).toBe(true);
   });
 
   it('④ 平局键与 tier/注册序一致：按注册表序装载 → 低 tier 在前', () => {
@@ -86,19 +88,31 @@ describe('REQ-CYCLEHAZ B — Lead 点名最小复现（真能力）', () => {
 });
 
 // 65 对成环清单里的三对代表组合（剧情线/卡牌线必然同装）——装得进 + 顺序确定。
+// 第 4 列 = 该组合的**成环告警基线签名**（实测 2026-08-24·从 warn 原文抄录·禁凭印象改）：
+// 每次 loadOrder 恰出 1 条推断环裁决告警，loadTwice = 2 条同签名。基线钉死 → 新环/环成员
+// 变动/闭环组件变动/告警消失，任一发生即红（真防线；原实现捕了 warn 从不断言内容=白捕）。
 describe('REQ-CYCLEHAZ B — 代表组合装载冒烟', () => {
-  const combos: Array<[string, string[], string[]]> = [
-    ['dialogue × flow（剧情线 M4 必踩·闭环组件 Flag/Resource/State）', ['t3-dialogue', 't3-flow'], ['dialogue', 'flow']],
-    ['card-play × card-pile（卡牌线·闭环组件 Flag/PlayedHand）', ['t2-card-play', 't2-card-pile'], ['card-play-input', 'card-pile']],
-    ['dialogue × timeline（剧情线 M4 必踩·闭环组件 Flag/Resource）', ['t3-dialogue', 't3-timeline'], ['dialogue', 'timeline']],
+  const combos: Array<[string, string[], string[], string]> = [
+    ['dialogue × flow（剧情线 M4 必踩·闭环组件 Flag/Resource/State）', ['t3-dialogue', 't3-flow'], ['dialogue', 'flow'],
+      '[dialogue, flow]（闭环组件：Flag, Resource, State）'],
+    ['card-play × card-pile（卡牌线·闭环组件 Flag/PlayedHand）', ['t2-card-play', 't2-card-pile'], ['card-play-input', 'card-pile'],
+      '[card-play-input, card-pile]（闭环组件：Flag, PlayedHand）'],
+    ['dialogue × timeline（剧情线 M4 必踩·闭环组件 Flag/Resource）', ['t3-dialogue', 't3-timeline'], ['dialogue', 'timeline'],
+      '[dialogue, timeline]（闭环组件：Flag, Resource）'],
   ];
 
-  for (const [label, capIds, sysIds] of combos) {
-    it(`${label} 装得进且顺序确定`, () => {
-      captureWarn();
+  for (const [label, capIds, sysIds, cycleSig] of combos) {
+    it(`${label} 装得进且顺序确定·成环告警逐条等于基线`, () => {
+      const warns = captureWarn();
       const order = loadTwice(capIds);
       for (const id of sysIds) expect(order).toContain(id);
       expect(new Set(order).size).toBe(order.length); // 无重复
+      // 告警集合 = 基线 ×2（loadTwice 两次装载）·逐条相等。非定序环告警不许混入（归一化落空即红）。
+      const sigs = warns.map((w) => {
+        const m = /定序环 (\[[^\]]+\]（闭环组件：[^）]*）)/.exec(w);
+        return m ? m[1] : `非定序环告警：${w}`;
+      });
+      expect(sigs).toEqual([cycleSig, cycleSig]);
     });
   }
 });

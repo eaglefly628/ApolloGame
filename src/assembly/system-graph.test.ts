@@ -25,9 +25,23 @@ describe('system-graph — 全局硬不变量', () => {
     expect(report.duplicateIds).toEqual([]);
   });
 
-  it('每个能力**单独装**其自身系统可排（不内部成环）', () => {
-    for (const c of ALL_CAPABILITIES) {
-      expect(() => topologicalSort([...(c.systems ?? [])]), `${c.id} 自身系统内部成环`).not.toThrow();
+  it('每个能力**单独装**其自身系统可排（不内部成环·**连成环告警也必须为零**）', () => {
+    // 读告警铁律（2026-08-06 review 血训）：REQ-CYCLEHAZ B 后，纯组件推断环只 console.warn
+    // 不抛——原来的 not.toThrow 对这类环**不设防**（恒绿）。改为捕 warn 断零（样板
+    // matrix-duel.test.ts「成环告警也必须为零」）。实测基线（2026-08-24·101 能力逐个单独装）：
+    // 零告警零抛 → 直接钉零，任何能力内部新出现推断环/申报环即转红。
+    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      for (const c of ALL_CAPABILITIES) {
+        spy.mockClear();
+        expect(() => topologicalSort([...(c.systems ?? [])]), `${c.id} 申报边自成环（抛）`).not.toThrow();
+        const cycleWarns = spy.mock.calls
+          .map((call) => String(call[0]))
+          .filter((w) => w.includes('[topological-sort]') || w.includes('Circular'));
+        expect(cycleWarns, `${c.id} 自身系统内部成环（推断环只 warn 不抛·此处必须为零）`).toEqual([]);
+      }
+    } finally {
+      spy.mockRestore();
     }
   });
 });

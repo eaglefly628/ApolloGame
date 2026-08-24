@@ -267,3 +267,23 @@ describe('T3 dialogue — R3 InputQueue 输入接缝', () => {
     expect(cur(w)).toBe('pick');
   });
 });
+
+describe('dialogue — 拒收路径（2026-08-22 测试大扫除补钉·「什么都没发生」的分支必须测）', () => {
+  it('choice 节点收越界 index → 停原地·请求被消费不残留·后续好请求照常', () => {
+    const w = loadDialogue('pick');
+    w.addComponent('dlg', { type: 'DialogueChoose', index: 99 } as DialogueChoose);
+    w.tick();
+    expect(cur(w)).toBe('pick'); // 不崩·不乱跳
+    expect(w.hasComponent('dlg', 'DialogueChoose')).toBe(false); // 坏请求也消费（不无限重试）
+    w.addComponent('dlg', { type: 'DialogueChoose', index: 0 } as DialogueChoose);
+    w.tick();
+    expect(cur(w)).toBe('end'); // 拒收不留伤
+  });
+
+  it('line 节点收 Choose → no-op 停原地（错类型请求不误推进）', () => {
+    const w = loadDialogue('start');
+    w.addComponent('dlg', { type: 'DialogueChoose', index: 0 } as DialogueChoose);
+    w.tick();
+    expect(cur(w)).toBe('start');
+  });
+});

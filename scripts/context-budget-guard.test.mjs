@@ -1,8 +1,10 @@
 // 上下文预算守卫（REQ-CTX）门禁：真仓库必须在预算内 + 检查核语义自证。
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, copyFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { checkBudget } from './context-budget-guard.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -74,5 +76,28 @@ describe('context-budget-guard — 检查核语义（自证）', () => {
   });
   it('全在预算内 → 空', () => {
     expect(checkBudget({ requestsEntries: 1, requestsChars: 99, t0Chars: { 'a.md': 50 }, playbookLines: { 'docs/playbooks/x.md': 80 } }, B)).toEqual([]);
+  });
+});
+
+describe('context-budget-guard — CLI 红腿（测试加固批·2026-08-24）', () => {
+  it('超顶树 → exit 1 + FAIL 判词（此前只测纯函数·CLI「问题→退出码 1」映射零覆盖）', () => {
+    // 守卫的 ROOT/BASELINE 由脚本自身位置推导（无 cwd/参数注入口）→ hermetic 姿势 = 把守卫
+    // 复制进临时根（它只 import node 内建·零仓内依赖）+ 种一棵超顶的最小树。绝不写真仓。
+    const root = mkdtempSync(join(tmpdir(), 'ctx-budget-cli-'));
+    try {
+      mkdirSync(join(root, 'scripts'), { recursive: true });
+      mkdirSync(join(root, 'docs', 'playbooks'), { recursive: true });
+      mkdirSync(join(root, 'docs', 'workflow'), { recursive: true });
+      copyFileSync(join(ROOT, 'scripts', 'context-budget-guard.mjs'), join(root, 'scripts', 'context-budget-guard.mjs'));
+      writeFileSync(join(root, 'scripts', 'context-budget-baseline.json'),
+        JSON.stringify({ requestsPoolMaxEntries: 10, requestsPoolMaxChars: 10, t0MaxChars: {}, playbookMaxLines: 100 }));
+      writeFileSync(join(root, 'docs', 'workflow', 'requests.md'), 'x'.repeat(50)); // 50 字符 > 封顶 10 → 超顶
+      const r = spawnSync(process.execPath, [join(root, 'scripts', 'context-budget-guard.mjs')], { encoding: 'utf8', timeout: 30000 });
+      expect(r.status, r.stdout + r.stderr).toBe(1); // 撤修验红本体：守卫失能则等不到 1
+      expect(r.stdout).toContain('CONTEXT-BUDGET: FAIL');
+      expect(r.stdout).toContain('requests.md'); // 锚点命中：点名的确是种下的超顶文件
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

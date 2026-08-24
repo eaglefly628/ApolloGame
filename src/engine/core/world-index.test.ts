@@ -234,3 +234,14 @@ describe('World 倒排索引 —— 行为与旧全扫描逐字节等价', () =>
     expect(ids(w, 'Common', 'Rare')).toEqual(rare);
   });
 });
+
+describe('World.restore — version 单调（2026-08-22 测试大扫除补钉）', () => {
+  it('restore 严格推进 getVersion：以 version 为键的派生缓存（spatial-query）随读档作废（撤 world.ts restore 的 version++ 即红）', () => {
+    const w = new World();
+    w.createEntity('a');
+    const snap = w.snapshot();
+    const v0 = w.getVersion();
+    w.restore(snap);
+    expect(w.getVersion()).toBeGreaterThan(v0);
+  });
+});

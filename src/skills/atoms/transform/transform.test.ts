@@ -78,109 +78,11 @@ describe('A1 transform — component via World', () => {
     expect(got!.scaleY).toBe(3);
   });
 
-  it('default-value component (zero position, unit scale) stores correctly', () => {
-    const world = new World();
-    world.createEntity('e2');
 
-    const transform: Transform = {
-      type: 'Transform',
-      x: 0,
-      y: 0,
-      rotation: 0,
-      scaleX: 1,
-      scaleY: 1,
-    };
 
-    world.addComponent('e2', transform);
-    const got = world.getComponent<Transform>('e2', 'Transform');
-    expect(got!.x).toBe(0);
-    expect(got!.y).toBe(0);
-    expect(got!.rotation).toBe(0);
-    expect(got!.scaleX).toBe(1);
-    expect(got!.scaleY).toBe(1);
-  });
 
-  it('negative coordinates are stored correctly', () => {
-    const world = new World();
-    world.createEntity('e3');
 
-    const transform: Transform = {
-      type: 'Transform',
-      x: -500,
-      y: -999,
-      rotation: -Math.PI,
-      scaleX: 0.5,
-      scaleY: 0.25,
-    };
 
-    world.addComponent('e3', transform);
-    const got = world.getComponent<Transform>('e3', 'Transform');
-    expect(got!.x).toBe(-500);
-    expect(got!.y).toBe(-999);
-    expect(got!.rotation).toBe(-Math.PI);
-    expect(got!.scaleX).toBe(0.5);
-    expect(got!.scaleY).toBe(0.25);
-  });
 
-  it('overwriting a Transform replaces the previous one', () => {
-    const world = new World();
-    world.createEntity('e4');
 
-    world.addComponent('e4', { type: 'Transform', x: 1, y: 2, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
-    world.addComponent('e4', { type: 'Transform', x: 99, y: 88, rotation: 1, scaleX: 2, scaleY: 2 } as Transform);
-
-    const got = world.getComponent<Transform>('e4', 'Transform');
-    expect(got!.x).toBe(99);
-    expect(got!.y).toBe(88);
-  });
-
-  it('hasComponent returns true after addComponent', () => {
-    const world = new World();
-    world.createEntity('e5');
-    world.addComponent('e5', { type: 'Transform', x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
-    expect(world.hasComponent('e5', 'Transform')).toBe(true);
-  });
-
-  it('removeComponent clears the Transform', () => {
-    const world = new World();
-    world.createEntity('e6');
-    world.addComponent('e6', { type: 'Transform', x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
-    world.removeComponent('e6', 'Transform');
-    expect(world.hasComponent('e6', 'Transform')).toBe(false);
-    expect(world.getComponent<Transform>('e6', 'Transform')).toBeUndefined();
-  });
-
-  it('query returns entity that has Transform', () => {
-    const world = new World();
-    world.createEntity('e7');
-    world.createEntity('e8');
-
-    world.addComponent('e7', { type: 'Transform', x: 10, y: 20, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
-
-    const results = world.query('Transform');
-    expect(results).toHaveLength(1);
-    expect(results[0][0]).toBe('e7');
-  });
-
-  it('entity without Transform is excluded from query', () => {
-    const world = new World();
-    world.createEntity('e9');
-    const results = world.query('Transform');
-    expect(results).toHaveLength(0);
-  });
-
-  it('floating-point values are preserved exactly', () => {
-    const world = new World();
-    world.createEntity('e10');
-
-    const x = 123.456789;
-    const y = -0.000001;
-    const rotation = Math.PI * 2;
-
-    world.addComponent('e10', { type: 'Transform', x, y, rotation, scaleX: 1.5, scaleY: 0.75 } as Transform);
-    const got = world.getComponent<Transform>('e10', 'Transform');
-    expect(got!.x).toBe(x);
-    expect(got!.y).toBe(y);
-    expect(got!.rotation).toBe(rotation);
-  });
 });

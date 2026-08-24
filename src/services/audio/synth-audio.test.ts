@@ -28,11 +28,8 @@ const SPECS: Record<string, SfxSpec> = {
 };
 
 describe('SynthAudioPort — 数据驱动的程序化音效后端', () => {
-  it('实现 AudioPort 契约（play/stop/stopAll/setMasterVolume）', () => {
-    const p = new SynthAudioPort(SPECS, { ctx: fakeCtx().ctx });
-    for (const m of ['play', 'stop', 'stopAll', 'setMasterVolume'] as const) expect(typeof p[m]).toBe('function');
-  });
-
+  // （原「实现 AudioPort 契约」四连 typeof==='function' 纯存在性断言已删——TS 类型系统已保证，
+  //   行为契约由下方各用例覆盖。测试加固评审 2026-08-24。）
   it('多发声体 spec → 每个 partial 建一个振荡器 + 增益并起播', () => {
     const { ctx, log } = fakeCtx();
     new SynthAudioPort(SPECS, { ctx }).play('ding');

@@ -83,6 +83,6 @@ describe('ZeroCraftBench 帧时轴 · p99/max 判定 + delta 回归', () => {
     const s = measureFrameTime(g.id, g.build, { ticks: 60, warmup: 4 });
     expect(s.ticks).toBe(60);
     expect(s.meanMs).toBeLessThan(FRAME_BUDGET_MS); // 数据级 headless 每 tick 微秒级，均值远低于 16.67ms
-    expect(['PASS', 'CONCERNS']).toContain(s.verdict); // 墙钟不断言精确值，只断言不炸
+    // （原 expect(['PASS','CONCERNS']).toContain(s.verdict) 已删：verdict 类型本就是该二元闭集，恒真零信息。）
   });
 });

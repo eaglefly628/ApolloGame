@@ -10,7 +10,7 @@
 // 纯函数（deriveLedger/applyReplacements/…）导出供单测直接跑（无需起服务）。
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, readdirSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { ADAPTERS, encodePng, curlFor } from './ai-gen.mjs';
@@ -19,7 +19,11 @@ import { decodeJpeg } from './jpeg-decode.mjs';
 import { STYLE_PACKS, listStylePacks, saveLocalStyle, deleteLocalStyle } from './style-packs.mjs';
 import { artRoot } from './art-paths.mjs';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+// 仓库根：缺省=脚本位置推导的真仓根。ART_REPLACE_ROOT 环境变量=临时根注入口（仅 hermetic 测试用·
+// 测试加固批 2026-08-24：CLI 链路腿此前直写真仓 public/games/zz-artprompt-cli）。env 不设时行为与原来逐字节一致。
+const ROOT = process.env.ART_REPLACE_ROOT
+  ? resolve(process.env.ART_REPLACE_ROOT)
+  : join(dirname(fileURLToPath(import.meta.url)), '..');
 const ART_PREFIX = 'art:';
 
 // ── 路径 ──

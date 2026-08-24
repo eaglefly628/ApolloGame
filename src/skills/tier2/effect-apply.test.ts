@@ -531,3 +531,23 @@ describe('effect-apply · REQ-F-041 @signal-source 寻址', () => {
     expect(alive41(w, 'wall')).toBe(false); // 静态寻址照常
   });
 });
+
+describe('effect-apply — order 并列·不可交换算子（2026-08-22 测试大扫除补钉）', () => {
+  const worldWithRes = (id: string, current: number): World => {
+    const w = worldWithEffect();
+    w.createEntity('gs');
+    w.addComponent('gs', { type: 'Resource', id, current, min: 0, max: 1000 } as Resource);
+    return w;
+  };
+  const res = (w: World): number => w.getComponent<Resource>('gs', 'Resource')!.current;
+
+  it('同 order 的 +5 与 ×2（插入序刻意与 eid 序相反）→ 恒按 eid 字典序结算', () => {
+    // 上方那条并列测试用两个 add（可交换）——任何顺序实现都绿；本条用不可交换算子把 tie-break 钉死。
+    const w = worldWithRes('score', 10);
+    effect(w, 'ef_b', { onSignal: 'score', kind: 'modify-resource', targetId: 'score', op: 'mul', value: 2, order: 0 }); // 先插入
+    effect(w, 'ef_a', { onSignal: 'score', kind: 'modify-resource', targetId: 'score', op: 'add', value: 5, order: 0 }); // 后插入·eid 靠前
+    signal(w, 'score');
+    w.tick();
+    expect(res(w)).toBe(30); // (10+5)×2=eid 序；插入序会给 (10×2)+5=25
+  });
+});

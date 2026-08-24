@@ -99,10 +99,20 @@ describe('game-c chip3d — 3D 物理筹码抛掷 + 主角堆（render-only·own
     expect(seatStackPos(0).z).toBeGreaterThan(1.52);
   });
 
-  it('确定性：同 seed 同抛序列 → 同筹码数（render-only 专属种子）', () => {
-    const a = freshEngine(), b = freshEngine();
+  it('确定性：同 seed 同抛序列 → 逐 chip (vx,vy,vz,avy) 逐一相同·异 seed 至少一字段不同', () => {
+    // 重写（测试加固 2026-08-24）：原只比枚数——枚数=min(6,ceil) 是 throwBet 参数的纯函数，
+    // 与 seed 无关，测不到「render-only 专属种子 PRNG」半个字。改为真确定性：比随机初速本身。
+    const kin = (e: Engine): Array<[number, number, number, number]> =>
+      thrown(e).sort().map((id) => {
+        const rb = e.world.getComponent<RigidBody3D>(id, 'RigidBody3D')!;
+        return [rb.vx ?? 0, rb.vy ?? 0, rb.vz ?? 0, rb.avy ?? 0];
+      });
+    const a = freshEngine(), b = freshEngine(), c = freshEngine();
     new Chip3D(a, 42).throwBet(1, 3);
     new Chip3D(b, 42).throwBet(1, 3);
-    expect(thrown(a).length).toBe(thrown(b).length);
+    new Chip3D(c, 43).throwBet(1, 3);
+    expect(kin(a)).toHaveLength(3);
+    expect(kin(a)).toEqual(kin(b)); // 同 seed → 三枚 (vx,vy,vz,avy) 序列逐字节复现
+    expect(kin(a)).not.toEqual(kin(c)); // 异 seed → 至少一枚一字段不同（PRNG 真在驱动初速）
   });
 });

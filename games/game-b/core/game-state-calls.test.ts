@@ -442,12 +442,14 @@ describe('鸣牌 P3a · 门清不回退 + 交互 walkthrough', () => {
           if (m.cur.callWindow) playerPass(m); // 玩家（seat 0）永远「过」——callWindow 只对玩家设
           else aiTurn(m); // 推进当前 seat（含玩家打牌·AI 启发代打）
           expect(totalTiles(m)).toBe(136);
+          expect(m.cur.melds[0]).toEqual([]); // 玩家恒无副露（每步·「永远过」的可见结论·加固 2026-08-24）
         }
+        expect(m.cur.melds[0]).toEqual([]); // 局终复核：玩家永远过 → seat 0 恒无副露
         nextRound(m);
       }
       expect(m.over).toBe(true);
-      // 玩家永远过 → 玩家 seat 0 恒无副露
-      // （注：本 walkthrough seat 0 打牌用 AI 启发·仅验「过」路径全程不卡·守恒）
+      // （注：本 walkthrough seat 0 打牌用 AI 启发；实跑确认 4 seed 全程 seat0 零副露——
+      //   含暗/加杠路径也未在 seat 0 触发，上面断言把这条结论真钉住而非只写在注释里。）
     }
   });
 

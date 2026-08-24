@@ -57,8 +57,8 @@ export function boardStatus(root, slug) {
 }
 
 /** 核心审计（纯函数·供真仓库守卫与合成点名测试共用）：返回违规清单 [{id, reason}]。
- *  frozen 缺省=真仓库冻结名单（当前为空——REQ-RETRO 2026-08-03 撤销 game-f 冻结后暂无冻结项）；
- *  合成点名测试可传自定义 frozen 集合，验证机制本身，不依赖真仓库此刻是否恰好有冻结游戏。 */
+ *  frozen 缺省=真仓库冻结名单（当前含 game-f——owner 2026-08-03 改判还原上架·代码冻结纪律不变·名单不变）；
+ *  合成点名测试可传自定义 frozen 集合，验证机制本身，不依赖真仓库冻结名单的具体内容。 */
 export function auditRegistry(games, whitelist, statusFn, frozen = FROZEN) {
   const violations = [];
   for (const g of games) {
@@ -105,7 +105,7 @@ describe('auditRegistry — 合成点名（红/白/冻结三态）', () => {
     expect(v).toEqual([]);
   });
   it('冻结游戏缺板 → 免检绿', () => {
-    // 合成 frozen 集合验证机制本身（真仓库 FROZEN 此刻为空·2026-08-03 撤销 game-f 冻结）。
+    // 合成 frozen 集合验证机制本身（不依赖真仓库名单内容——真仓库 FROZEN 现含 game-f·owner 2026-08-03 改判还原后名单不变）。
     const v = auditRegistry([{ id: 'zz-sample-frozen', status: 'playable' }], new Set(), stub('缺板'), new Set(['zz-sample-frozen']));
     expect(v).toEqual([]);
   });

@@ -100,7 +100,8 @@ test('【dialogue】五个操作齐活；失败一次后再成功，lastReason �
   boom = false;
   assert.equal((await gw.generateOpening({ characterId: 'c1' })).openingLine, '就你也配跟我猜拳？');
   assert.equal(gw.lastReason(), null, '成功一次就该把上一次的失败抹掉——面板不该一直挂着旧红字');
-  assert.deepEqual((await gw.generateSuggestions({ characterId: 'c1' })).suggestions.length, 2);
+  // 加固 2026-08-24：length===2 → 全内容 deepEqual（只数个数抓不到内容被截/换位/透传丢字）。
+  assert.deepEqual((await gw.generateSuggestions({ characterId: 'c1' })).suggestions, ['出石头', '诈他一手']);
   assert.equal((await gw.generateTagline({ characterId: 'c1' })).tagline, '三拳定生死');
   // 宿主没实现的那两个走降级，且**不影响**已实现的那几个
   assert.equal(await gw.generateDialogue({ characterId: 'c1', playerInput: 'hi' }), null);

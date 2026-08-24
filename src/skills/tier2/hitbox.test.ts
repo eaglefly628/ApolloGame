@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { World } from '@engine/core/world.js';
 import type { Hitbox, Tag, Status, Resource, Trigger, Transform, Shape, Sensor, OverTime, PrefabOrigin, SpawnRequest } from '@engine/protocol/components.js';
 import { hitboxCapability } from './hitbox.js';
@@ -303,26 +303,34 @@ describe('hitbox — onHit 撞环回归（同 path-follow「撞环回归」先�
     // "hitbox→prefab" 单向边，不与 hitbox 既有 runsAfter trigger-zone / runsBefore resource-apply,over-time
     // 成环（组件拓扑自动定序，见 hitbox.ts 文件头注释）。用真实 overlap（非手摆 Trigger）——trigger-zone
     // 每帧先清后重算，手摆的 Trigger 会在第一拍就被清掉、后续拍测不到 onHit 真正跑起来。
-    const w = new World();
-    for (const cap of [overlapDetectCapability, triggerZoneCapability, hitboxCapability, overTimeCapability, resourceCapability, destroyCapability, prefabCapability]) {
-      for (const s of cap.systems) w.addSystem(s as never);
+    // 读告警纪律：推断环只 warn 不抛，收进断言（ENG-03 形状）
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const w = new World();
+      for (const cap of [overlapDetectCapability, triggerZoneCapability, hitboxCapability, overTimeCapability, resourceCapability, destroyCapability, prefabCapability]) {
+        for (const s of cap.systems) w.addSystem(s as never);
+      }
+      w.createEntity('nova');
+      w.addComponent('nova', { type: 'Transform', x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
+      w.addComponent('nova', { type: 'Shape', kind: 'box', width: 100, height: 100 } as Shape);
+      w.addComponent('nova', { type: 'Sensor' } as Sensor);
+      w.addComponent('nova', { type: 'Tag', flags: ZONE_FLAG } as Tag);
+      w.addComponent('nova', { type: 'Hitbox', resource: 'hp', amount: 5, targetMask: ENEMY, onHit: { spawnTemplate: 'hit_spark' }, dotPerTick: 1, dotPeriod: 1, dotDuration: 10 } as Hitbox);
+
+      w.createEntity('enemy');
+      w.addComponent('enemy', { type: 'Transform', x: 10, y: 0, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
+      w.addComponent('enemy', { type: 'Shape', kind: 'box', width: 20, height: 20 } as Shape);
+      w.addComponent('enemy', { type: 'Tag', flags: ENEMY } as Tag);
+      w.addComponent('enemy', { type: 'Resource', id: 'hp', current: 100, min: 0, max: 100 } as Resource);
+
+      expect(() => {
+        for (let i = 0; i < 5; i++) w.tick();
+      }).not.toThrow();
+      const bad = warn.mock.calls.map((c) => c.map(String).join(' ')).filter((m) => m.includes('[topological-sort]') || m.includes('Circular'));
+      expect(bad).toEqual([]);
+    } finally {
+      warn.mockRestore();
     }
-    w.createEntity('nova');
-    w.addComponent('nova', { type: 'Transform', x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
-    w.addComponent('nova', { type: 'Shape', kind: 'box', width: 100, height: 100 } as Shape);
-    w.addComponent('nova', { type: 'Sensor' } as Sensor);
-    w.addComponent('nova', { type: 'Tag', flags: ZONE_FLAG } as Tag);
-    w.addComponent('nova', { type: 'Hitbox', resource: 'hp', amount: 5, targetMask: ENEMY, onHit: { spawnTemplate: 'hit_spark' }, dotPerTick: 1, dotPeriod: 1, dotDuration: 10 } as Hitbox);
-
-    w.createEntity('enemy');
-    w.addComponent('enemy', { type: 'Transform', x: 10, y: 0, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
-    w.addComponent('enemy', { type: 'Shape', kind: 'box', width: 20, height: 20 } as Shape);
-    w.addComponent('enemy', { type: 'Tag', flags: ENEMY } as Tag);
-    w.addComponent('enemy', { type: 'Resource', id: 'hp', current: 100, min: 0, max: 100 } as Resource);
-
-    expect(() => {
-      for (let i = 0; i < 5; i++) w.tick();
-    }).not.toThrow();
   });
 });
 

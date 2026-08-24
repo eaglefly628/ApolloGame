@@ -3,7 +3,9 @@
 import { describe, it, expect } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 import {
   blackHouseholdFiles, deadAccountRows, missingProvenanceRows,
   discoverArtRoots, auditGame, discoverGames, ratchetCheck,
@@ -233,6 +235,55 @@ describe('REQ-ARTPIPE2 A1 · 棘轮基线（新黑户=违规·基线内=放行�
     expect(r.violations['game-x']).toBeUndefined();
   }));
 
+});
+
+// ── CLI 退出码矩阵（测试加固批·2026-08-24）────────────────────────────
+// 门禁只认退出码（scoped-gate 对本守卫 allowExit:[0,2]·1=硬拦），此前纯函数各判都有测试、
+// CLI 收口的「判定→退出码」映射却零覆盖——映射写错（如 FAIL 落 2）门禁静默放行。三腿 spawn 真跑：
+// 新黑户→1（FAIL）·基线覆盖的存量→2（WARN）·干净→0（PASS），各 grep 一处判词文本锚。
+// 根注入走 --root <dir>（本批新加·hermetic），缺省（不带 --root）=真仓根——末腿钉死缺省不受 cwd 影响。
+describe('CLI 退出码矩阵（--root 临时仓真 spawn·判词锚）', () => {
+  const GUARD = join(dirname(fileURLToPath(import.meta.url)), 'art-ledger-guard.mjs');
+  const runCli = (args, opts = {}) => spawnSync(process.execPath, [GUARD, ...args], { encoding: 'utf8', timeout: 30000, ...opts });
+
+  it('新黑户（不在基线）→ exit 1 · 判词 FAIL + 点名棘轮违规', () => withRoot((root) => {
+    putFile(root, 'game-x', 'icons/new.png'); // 无台账无基线 → 该文件=新黑户
+    const r = runCli(['--root', root, 'game-x']);
+    expect(r.status, r.stdout + r.stderr).toBe(1);
+    expect(r.stdout).toContain('棘轮违规');
+    expect(r.stdout).toContain('ART-LEDGER-GUARD: FAIL');
+  }));
+
+  it('基线覆盖的存量黑户 → exit 2 · 判词 WARN（警告态放行·正是 allowExit:[0,2] 的 2）', () => withRoot((root) => {
+    putFile(root, 'game-x', 'icons/known.png');
+    mkdirSync(join(root, 'scripts'), { recursive: true });
+    writeFileSync(join(root, 'scripts', 'art-ledger-baseline.json'),
+      JSON.stringify({ blackHouseholds: { 'game-x': ['/games/game-x/art/icons/known.png'] } }));
+    const r = runCli(['--root', root, 'game-x']);
+    expect(r.status, r.stdout + r.stderr).toBe(2);
+    expect(r.stdout).toContain('ART-LEDGER-GUARD: WARN');
+  }));
+
+  it('干净仓（行覆盖·procedural 来源·文件真在盘）→ exit 0 · 判词 PASS', () => withRoot((root) => {
+    putFile(root, 'game-x', 'gen/ok.png');
+    writeFileSync(join(root, 'public', 'games', 'game-x', 'art', 'art-ledger.json'), JSON.stringify({
+      version: 1, game: 'game-x',
+      rows: [{ no: 'art-01', gen: { source: 'procedural', servedPath: '/games/game-x/art/gen/ok.png' } }],
+      pending: [],
+    }));
+    const r = runCli(['--root', root, 'game-x']);
+    expect(r.status, r.stdout + r.stderr).toBe(0);
+    expect(r.stdout).toContain('ART-LEDGER-GUARD: PASS');
+  }));
+
+  it('缺省（不带 --root）=真仓根·不受 cwd 影响（钉住缺省行为与加参前一致）', () => withRoot((root) => {
+    // cwd 摆一个"会被当黑户"的诱饵树：若缺省根错读了 cwd，zz-cwd-trap 必出现在报告里。
+    putFile(root, 'zz-cwd-trap', 'lure.png');
+    const r = runCli([], { cwd: root });
+    expect(r.stdout).not.toContain('zz-cwd-trap');
+    expect(r.stdout).toMatch(/ART-LEDGER-GUARD: (PASS|WARN)/); // 真仓现状=挂账 WARN（exit 2）或全净
+    expect([0, 2], `真仓缺省跑出 exit ${r.status}（1=真仓新增黑户·先修仓再论守卫）`).toContain(r.status);
+  }));
 });
 
 describe('REQ-ARTPIPE2 A1 · discoverGames / auditGame 基础接线', () => {

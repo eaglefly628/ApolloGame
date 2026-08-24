@@ -172,3 +172,19 @@ describe('T3 block-grid — 视图同步（BoardCell.Color）', () => {
     expect(w.getComponent<Color>('cell:3', 'Color')!.tint).toBe(0x000000); // 空=emptyTint
   });
 });
+
+describe('block-grid — 同拍双意图（2026-08-22 测试大扫除补钉·同拍双消费形状）', () => {
+  it('同拍两条 PlaceBlockIntent 抢同一托盘槽 → id 序先者成交·后者拒收·槽只扣一次·双双消费', () => {
+    const w = loadBG(new Array(9).fill(-1), { tray: [0, 1, 2] }); // slot0 = SINGLE
+    w.createEntity('i1');
+    w.addComponent('i1', { type: 'PlaceBlockIntent', slot: 0, col: 0, row: 0 } as PlaceBlockIntent);
+    w.createEntity('i2');
+    w.addComponent('i2', { type: 'PlaceBlockIntent', slot: 0, col: 2, row: 2 } as PlaceBlockIntent);
+    w.tick();
+    expect(bg(w).cells[0]).toBe(0x111111); // i1 成交（SINGLE 落 0,0）
+    expect(bg(w).cells[8]).toBe(-1); // i2 抢空槽 → 拒收不落子
+    expect(w.hasComponent('i1', 'PlaceBlockIntent')).toBe(false); // 双双消费
+    expect(w.hasComponent('i2', 'PlaceBlockIntent')).toBe(false);
+    expect(bg(w).cells.filter((c) => c !== -1)).toHaveLength(1); // 全盘恰一格·无双花
+  });
+});

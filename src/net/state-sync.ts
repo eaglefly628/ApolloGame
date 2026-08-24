@@ -215,6 +215,10 @@ export class StateSyncSession {
     if (m.peer === this.peerId) return; // 忽略自身回声
     const { packet } = m;
     if (packet.kind === 'keyframe') {
+      // 迟到/重发的旧关键帧不回卷（2026-08-22 测试大扫除实证修复）：此前无条件覆盖镜像——
+      // 乱序信道下旧 keyframe 把镜像拽回旧状态，且后续 delta 若恰与旧基线对上会沿旧线继续走。
+      const held = this.mirrors.get(m.peer);
+      if (held && held.tick >= packet.tick) return;
       this.mirrors.set(m.peer, { snapshot: applyPacket(null, packet), tick: packet.tick });
       return;
     }

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { World } from '@engine/core/world.js';
 import type { GameFlow, Resource, Flag, State, Tag, GroupCount } from '@engine/protocol/components.js';
 import { flowCapability } from './flow.js';
@@ -122,23 +122,31 @@ describe('flow · Matinee/sequence 时序门（after：等 N 拍再转，零代�
 // ── REQ-F-028 回归：flow 与 zone-occupancy(RMW Flag)/group-count(RMW Resource) 同场不成环 ──
 describe('flow · REQ-F-028 与 zone-occupancy/group-count 同场不成环', () => {
   it('三者同跑：拓扑排序不抛 + flow 据 group-count 计数转移（定序：先计数后判阶段）', () => {
-    const w = new World();
-    for (const s of zoneOccupancyCapability.systems) w.addSystem(s); // 制造 RMW Flag 边（无 Zone 数据亦触发排序）
-    for (const s of groupCountCapability.systems) w.addSystem(s);
-    for (const s of flowCapability.systems) w.addSystem(s);
-    const ENEMY = 1 << 2;
-    w.createEntity('gc'); w.addComponent('gc', { type: 'GroupCount', countResource: 'enemies_alive', requiredTag: ENEMY } as GroupCount);
-    w.createEntity('res'); w.addComponent('res', { type: 'Resource', id: 'enemies_alive', current: 0, min: 0, max: 99 } as Resource);
-    w.createEntity('e1'); w.addComponent('e1', { type: 'Tag', flags: ENEMY } as Tag);
-    w.createEntity('flow'); w.addComponent('flow', { type: 'GameFlow', id: 'g', current: 'combat', entered: false, states: [
-      { id: 'combat', transitions: [{ when: { kind: 'resource', id: 'enemies_alive', cmp: 'lte', value: 0 }, to: 'done' }] },
-      { id: 'done' },
-    ] } as GameFlow);
-    const fcur = () => w.getComponent<GameFlow>('flow', 'GameFlow')!.current;
-    expect(() => { for (let i = 0; i < 3; i++) w.tick(); }).not.toThrow(); // 修复前此处抛环
-    expect(fcur()).toBe('combat'); // 有敌(enemies_alive=1) → 停留
-    w.destroyEntity('e1');         // 清场
-    for (let i = 0; i < 2; i++) w.tick();
-    expect(fcur()).toBe('done');   // group-count 先写 0 → flow 据此转移（runsAfter 定序正确）
+    // 读告警纪律：推断环只 warn 不抛，收进断言（ENG-03 形状）
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const w = new World();
+      for (const s of zoneOccupancyCapability.systems) w.addSystem(s); // 制造 RMW Flag 边（无 Zone 数据亦触发排序）
+      for (const s of groupCountCapability.systems) w.addSystem(s);
+      for (const s of flowCapability.systems) w.addSystem(s);
+      const ENEMY = 1 << 2;
+      w.createEntity('gc'); w.addComponent('gc', { type: 'GroupCount', countResource: 'enemies_alive', requiredTag: ENEMY } as GroupCount);
+      w.createEntity('res'); w.addComponent('res', { type: 'Resource', id: 'enemies_alive', current: 0, min: 0, max: 99 } as Resource);
+      w.createEntity('e1'); w.addComponent('e1', { type: 'Tag', flags: ENEMY } as Tag);
+      w.createEntity('flow'); w.addComponent('flow', { type: 'GameFlow', id: 'g', current: 'combat', entered: false, states: [
+        { id: 'combat', transitions: [{ when: { kind: 'resource', id: 'enemies_alive', cmp: 'lte', value: 0 }, to: 'done' }] },
+        { id: 'done' },
+      ] } as GameFlow);
+      const fcur = () => w.getComponent<GameFlow>('flow', 'GameFlow')!.current;
+      expect(() => { for (let i = 0; i < 3; i++) w.tick(); }).not.toThrow(); // 修复前此处抛环
+      expect(fcur()).toBe('combat'); // 有敌(enemies_alive=1) → 停留
+      w.destroyEntity('e1');         // 清场
+      for (let i = 0; i < 2; i++) w.tick();
+      expect(fcur()).toBe('done');   // group-count 先写 0 → flow 据此转移（runsAfter 定序正确）
+      const bad = warn.mock.calls.map((c) => c.map(String).join(' ')).filter((m) => m.includes('[topological-sort]') || m.includes('Circular'));
+      expect(bad).toEqual([]);
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

@@ -78,4 +78,21 @@ describe('engine-random-guard · 端到端（注入违规样本必咬·真仓必
   it('扫描面 = spec 五目录一字不差（防守卫被悄悄缩面）', () => {
     expect(SCAN_ROOTS).toEqual(['src/engine', 'src/skills', 'src/assembly', 'src/net', 'src/services']);
   });
+
+  it('CLI 红腿：硬违规树 → exit 1 + 判词 FAIL（测试加固批 2026-08-24·此前 CLI 只有绿腿·「红真拦」零覆盖）', () => {
+    // SCAN_ROOTS 是 cwd 相对路径 → spawn 时 cwd 指临时树即根注入（hermetic·零改守卫）。
+    const root = mkdtempSync(join(tmpdir(), 'engine-random-cli-'));
+    try {
+      mkdirSync(join(root, 'src', 'engine'), { recursive: true });
+      writeFileSync(join(root, 'src', 'engine', 'evil.ts'), 'export const roll = () => Math.random();\n');
+      const guard = join(process.cwd(), 'scripts', 'engine-random-guard.mjs');
+      const r = spawnSync(process.execPath, [guard], { cwd: root, encoding: 'utf8', timeout: 30000 });
+      expect(r.status, r.stdout + r.stderr).toBe(1); // 撤修验红本体：守卫失能则等不到 1
+      expect(r.stdout).toContain('ENGINE-RANDOM: FAIL');
+      expect(r.stdout).toContain('硬违规');
+      expect(r.stdout).toContain('evil.ts'); // 锚点命中：确实咬的是种下的文件
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

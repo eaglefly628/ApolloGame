@@ -117,3 +117,20 @@ describe('aggro — lureTag（薄加性·REQ-SURVIVOR武器缺口 W8·诱饵盖�
     expect(rel(w, 'm')).toMatchObject({ targetId: 'p' });
   });
 });
+
+describe('aggro — 等距 tie-break（2026-08-22 测试大扫除补钉·确定性承重）', () => {
+  it('两目标等距 → 恒取 id 升序小者·与创建序无关（构建序泄漏进目标选择=lockstep 分叉）', () => {
+    const w1 = world();
+    perceiver(w1, 'm', 0, 0, { targetTag: PLAYER, sightRadius: 100 });
+    target(w1, 'alpha', 10, 0, PLAYER);
+    target(w1, 'beta', -10, 0, PLAYER);
+    w1.tick();
+    expect(rel(w1, 'm')).toMatchObject({ targetId: 'alpha' });
+    const w2 = world(); // 反序创建同布置 → 必须取同一目标
+    perceiver(w2, 'm', 0, 0, { targetTag: PLAYER, sightRadius: 100 });
+    target(w2, 'beta', -10, 0, PLAYER);
+    target(w2, 'alpha', 10, 0, PLAYER);
+    w2.tick();
+    expect(rel(w2, 'm')).toMatchObject({ targetId: 'alpha' });
+  });
+});

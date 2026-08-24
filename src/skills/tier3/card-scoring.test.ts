@@ -267,3 +267,30 @@ describe('card-score-pass + poker-eval 集成（幂等：多 tick 持平）', ()
     expect(res(w, 'chips')).toBe(68); // ★幂等：poker-eval 每 tick 重 set 35，逐张重 add 33 → 持平不漂移
   });
 });
+
+describe('card-score-pass — RNG 消耗契约（2026-08-22 测试大扫除补钉·roll 次数=lockstep 契约）', () => {
+  // 消耗次数漂移（如给 1/1 加短路优化）= 同 seed 下后续所有 roll 错位 → turnHash 漂移，故钉死：
+  // 无 chance 零消耗；chance 在场（含 1/1）每张计分牌恰一 roll。
+  const withSeed = (w: World): World => { w.createEntity('rng'); w.addComponent('rng', { type: 'RandomSeed', seed: 999, sequence: 0 } as RandomSeed); return w; };
+  const seqOf = (w: World): number => w.getComponent<RandomSeed>('rng', 'RandomSeed')!.sequence;
+  const rule = (chance?: { num: number; den: number }) =>
+    [{ id: 'bs', rule: { when: { kind: 'always' as const }, op: 'add' as const, targetResource: 'mult', value: 4, ...(chance ? { chance } : {}) } }];
+
+  it('无 chance → sequence 纹丝不动', () => {
+    const w = withSeed(loadPass([c(0, 5), c(1, 5)], { rules: rule() }));
+    w.tick();
+    expect(seqOf(w)).toBe(0);
+  });
+
+  it('chance 1/1 → 两张计分牌恰两 roll（必中也掷·不许短路）', () => {
+    const w = withSeed(loadPass([c(0, 5), c(1, 5)], { rules: rule({ num: 1, den: 1 }) }));
+    w.tick();
+    expect(seqOf(w)).toBe(2);
+  });
+
+  it('chance 1/2 → 同样恰两 roll（消耗只随牌数·不随中不中）', () => {
+    const w = withSeed(loadPass([c(0, 5), c(1, 5)], { rules: rule({ num: 1, den: 2 }) }));
+    w.tick();
+    expect(seqOf(w)).toBe(2);
+  });
+});

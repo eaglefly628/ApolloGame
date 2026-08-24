@@ -531,3 +531,34 @@ function forceRanking(s: GuandanSession, ranking: SeatId[]): void {
   const anyS = s as unknown as { settleRound: (r: SeatId[]) => void };
   anyS.settleRound(ranking);
 }
+
+// ⚔ 对抗性输入（docs/playbooks/testing.md ⚔「连点同一个键」·加固 2026-08-24）：
+// 一个时区内连点出牌——非当前座抢出 / 同座双出，都只能第一手生效。
+describe('Game A · ⚔ 连点（非当前座 act no-op · 同拍双 act 只第一手生效）', () => {
+  it('非当前座 act → false·turn/墩/手牌零变化', () => {
+    const s = new GuandanSession({ seed: 5 });
+    s.turn = 'hero';
+    s.currentTrick = null;
+    s.hands.hero = [cardCode(0, 3), cardCode(1, 3), cardCode(0, 7)];
+    s.hands.west = [cardCode(0, 5), cardCode(1, 5), cardCode(0, 8)];
+    const snap = (): string => JSON.stringify({ turn: s.turn, trick: s.currentTrick?.cards ?? null, hands: s.hands, phase: s.phase });
+    const before = snap();
+    expect(s.act('west', [cardCode(0, 5), cardCode(1, 5)])).toBe(false); // 抢出：未轮到 → 拒
+    expect(snap()).toBe(before); // 态逐字节不变（牌没离手·墩没立·turn 没动）
+  });
+
+  it('同拍双 act：第一手生效·同座紧接第二手被拒（只第一手算数）', () => {
+    const s = new GuandanSession({ seed: 5 });
+    s.turn = 'hero';
+    s.currentTrick = null;
+    s.hands.hero = [cardCode(0, 3), cardCode(1, 3), cardCode(0, 7)];
+    expect(s.act('hero', [cardCode(0, 3), cardCode(1, 3)])).toBe(true); // 第一手：领出对 3
+    const trick = (): number[] | null => (s.currentTrick as TrickPlay | null)?.cards ?? null; // act() 已改墩·绕过 null 收窄
+    expect(trick()!.map(codeRank).sort()).toEqual([3, 3]);
+    expect(s.turn).not.toBe('hero'); // 已轮转
+    const after = JSON.stringify({ turn: s.turn, trick: trick(), heroHand: s.hands.hero });
+    expect(s.act('hero', [cardCode(0, 7)])).toBe(false); // 连点第二手：未轮到 → 拒
+    expect(JSON.stringify({ turn: s.turn, trick: trick(), heroHand: s.hands.hero })).toBe(after);
+    expect(s.hands.hero).toEqual([cardCode(0, 7)]); // 第二手那张牌仍在手（未被双出）
+  });
+});

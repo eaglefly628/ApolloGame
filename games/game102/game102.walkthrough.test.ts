@@ -108,4 +108,43 @@ describe('Game 102 · Pixel Pour（环形轨道 v2 · 机制不变式自验）',
     const b = driven(RING); b.step(2); b.tapSupply('blue'); b.step(80);
     expect(a.e.hash()).toBe(b.e.hash());
   });
+
+  // ⚔ 对抗性输入（docs/playbooks/testing.md ⚔「连点同一个键」/「点已禁用的键」·加固 2026-08-24）：
+  // 弹库（pool-*）耗尽后仍朝原槽位坐标连点 → 必须是纯拒绝：不再部署、世界与「不点」逐字节同 hash。
+  it('⚔ 弹库耗尽后连点原槽位 → 拒绝（无新炮·与不点的对照跑同 hash）', () => {
+    // 自带 input 的本地驱动（driven() 未暴露 input——库空后要发的是「真实点击」而非 helper 空转）。
+    const play = (ghostTaps: number): string => {
+      const input = new QueuedInputSource('g102');
+      const e = new Engine({ input });
+      e.load(buildBlueprint(RING));
+      let tk = 0;
+      const step = (n = 1): void => { for (let i = 0; i < n; i++) { applyCommands(e.world, input.commandsForTick(++tk)); e.world.tick(); } };
+      const pool = (): Array<{ x: number; y: number }> => {
+        const out: Array<{ x: number; y: number }> = [];
+        for (const [id] of e.world.query('Caster', 'Transform')) {
+          if (!id.startsWith('pool-')) continue;
+          const t = e.world.getComponent<Transform>(id, 'Transform')!;
+          out.push({ x: t.x, y: t.y });
+        }
+        return out;
+      };
+      step(2);
+      const slots = pool(); // 记住全部槽位坐标（RING 实测 4 门：蓝×3 + 红×1）
+      expect(slots.length).toBeGreaterThan(0);
+      let guard = 0;
+      while (pool().length > 0 && guard++ < 30) { // 把整个弹库点光（逐门真实点击）
+        const p = pool()[0]!;
+        input.enqueue({ source: 'g102', x: p.x, y: p.y, phase: 'down' });
+        step(3);
+      }
+      expect(pool()).toHaveLength(0); // 弹库耗尽
+      for (let i = 0; i < ghostTaps; i++) { // 库空后仍朝每个旧槽位坐标连点
+        for (const sl of slots) input.enqueue({ source: 'g102', x: sl.x, y: sl.y, phase: 'down' });
+      }
+      step(30);
+      expect(pool()).toHaveLength(0); // 连点不使弹库复活/为负
+      return e.hash();
+    };
+    expect(play(3)).toBe(play(0)); // 库空连点=纯 no-op：与不点的对照跑世界逐字节等价
+  });
 });

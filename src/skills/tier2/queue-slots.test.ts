@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { World } from '@engine/core/world.js';
 import { tweenCapability, motionApplyCapability } from '@skills/tier1/index.js';
 import type { QueueSlots, QueueMember, Tag, Transform, Clickable } from '@engine/protocol/components.js';
@@ -141,18 +141,29 @@ describe('T2 queue-slots（压实队列，REQ-POOL-ADVANCE 缺口）', () => {
   });
 
   it('撞环回归：与 clickable / tween / motion-apply 同装一个 World，tick 不抛环错误', () => {
-    const w = new World();
-    for (const s of queueSlotsCapability.systems) w.addSystem(s);
-    for (const s of clickableCapability.systems) w.addSystem(s);
-    for (const s of tweenCapability.systems) w.addSystem(s);
-    for (const s of motionApplyCapability.systems) w.addSystem(s);
-    w.createEntity('q');
-    w.addComponent('q', {
-      type: 'QueueSlots', memberTag: TICKET, capacity: 9, headCount: 1,
-      originX: 0, originY: 0, gap: 40, action: 'serve',
-    } as QueueSlots);
-    unit(w, 'a'); unit(w, 'b');
-    expect(() => w.tick()).not.toThrow();
-    expect(() => w.tick()).not.toThrow();
+    // 读告警纪律：推断环只 warn 不抛，收进断言（ENG-03 形状）
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const w = new World();
+      for (const s of queueSlotsCapability.systems) w.addSystem(s);
+      for (const s of clickableCapability.systems) w.addSystem(s);
+      for (const s of tweenCapability.systems) w.addSystem(s);
+      for (const s of motionApplyCapability.systems) w.addSystem(s);
+      w.createEntity('q');
+      w.addComponent('q', {
+        type: 'QueueSlots', memberTag: TICKET, capacity: 9, headCount: 1,
+        originX: 0, originY: 0, gap: 40, action: 'serve',
+      } as QueueSlots);
+      unit(w, 'a'); unit(w, 'b');
+      expect(() => w.tick()).not.toThrow();
+      expect(() => w.tick()).not.toThrow();
+      // 最小行为落点：带环照跑时压实占位可能悄悄失效——同装世界里 0..N-1 仍必须成立
+      expect(idx(w, 'a')).toBe(0);
+      expect(idx(w, 'b')).toBe(1);
+      const bad = warn.mock.calls.map((c) => c.map(String).join(' ')).filter((m) => m.includes('[topological-sort]') || m.includes('Circular'));
+      expect(bad).toEqual([]);
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

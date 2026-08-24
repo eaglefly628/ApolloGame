@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { World } from '@engine/core/world.js';
 import type { Perception, PullAnchor, Relation, Steering, Tag, Transform, Velocity } from '@engine/protocol/components.js';
 import { pullAnchorCapability } from './pull-anchor.js';
@@ -160,55 +160,71 @@ describe('pull-anchor — 确定性', () => {
 
 describe('pull-anchor — 撞环回归（同 game-103 实装能力集同装）', () => {
   it('与 motion-apply/steering/aggro 同装不成环·可 tick', () => {
-    const w = new World();
-    for (const cap of [motionApplyCapability, steeringCapability, aggroCapability, pullAnchorCapability]) {
-      for (const s of cap.systems) w.addSystem(s);
+    // 读告警纪律：推断环只 warn 不抛，收进断言（ENG-03 形状）
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const w = new World();
+      for (const cap of [motionApplyCapability, steeringCapability, aggroCapability, pullAnchorCapability]) {
+        for (const s of cap.systems) w.addSystem(s);
+      }
+      anchor(w, 'hole', 0, 0, { radius: 50, tagMask: ENEMY });
+      w.createEntity('hero');
+      w.addComponent('hero', xf(200, 0));
+      w.addComponent('hero', { type: 'Tag', flags: PLAYER } as Tag);
+      w.createEntity('mob');
+      w.addComponent('mob', xf(10, 0));
+      w.addComponent('mob', { type: 'Perception', targetTag: PLAYER, sightRadius: 0 } as Perception);
+      w.addComponent('mob', { type: 'Steering', mode: 'seek', speed: 1, stopRange: 0 } as Steering);
+      w.addComponent('mob', { type: 'Tag', flags: ENEMY } as Tag);
+      expect(() => {
+        for (let i = 0; i < 5; i++) w.tick();
+      }).not.toThrow();
+      const bad = warn.mock.calls.map((c) => c.map(String).join(' ')).filter((m) => m.includes('[topological-sort]') || m.includes('Circular'));
+      expect(bad).toEqual([]);
+    } finally {
+      warn.mockRestore();
     }
-    anchor(w, 'hole', 0, 0, { radius: 50, tagMask: ENEMY });
-    w.createEntity('hero');
-    w.addComponent('hero', xf(200, 0));
-    w.addComponent('hero', { type: 'Tag', flags: PLAYER } as Tag);
-    w.createEntity('mob');
-    w.addComponent('mob', xf(10, 0));
-    w.addComponent('mob', { type: 'Perception', targetTag: PLAYER, sightRadius: 0 } as Perception);
-    w.addComponent('mob', { type: 'Steering', mode: 'seek', speed: 1, stopRange: 0 } as Steering);
-    w.addComponent('mob', { type: 'Tag', flags: ENEMY } as Tag);
-    expect(() => {
-      for (let i = 0; i < 5; i++) w.tick();
-    }).not.toThrow();
   });
 
   it('与 game-103 蓝图实装的全量能力集（blueprint.ts import 清单）+ bounce-relay/pull-anchor 同装·可 tick', () => {
-    const w = new World();
-    for (const cap of [
-      // atoms（game-103 blueprint.ts 逐一对应）
-      transformCapability, hierarchyCapability, velocityCapability, shapeCapability,
-      overlapDetectCapability, timerCapability, resourceCapability, tagCapability,
-      relationCapability, destroyCapability, colorCapability, controllableCapability, cameraCapability,
-      // tier1
-      motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability,
-      // tier2
-      boundsClampCapability, triggerZoneCapability, eventWhenCapability, effectApplyCapability,
-      cameraFollowCapability, hitboxCapability, overTimeCapability, mortalCapability,
-      steeringCapability, launchCapability, selfRuleCapability, keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability, animStateCapability,
-      // tier3
-      prefabCapability, casterCapability, aggroCapability, flowCapability,
-      // 本次新增（W7 bounce-relay + W9 pull-anchor；W8 lure 已在上面的 aggroCapability 内）
-      bounceRelayCapability, pullAnchorCapability,
-    ]) {
-      for (const s of cap.systems) w.addSystem(s);
+    // 读告警纪律：推断环只 warn 不抛，收进断言（ENG-03 形状）
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const w = new World();
+      for (const cap of [
+        // atoms（game-103 blueprint.ts 逐一对应）
+        transformCapability, hierarchyCapability, velocityCapability, shapeCapability,
+        overlapDetectCapability, timerCapability, resourceCapability, tagCapability,
+        relationCapability, destroyCapability, colorCapability, controllableCapability, cameraCapability,
+        // tier1
+        motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability,
+        // tier2
+        boundsClampCapability, triggerZoneCapability, eventWhenCapability, effectApplyCapability,
+        cameraFollowCapability, hitboxCapability, overTimeCapability, mortalCapability,
+        steeringCapability, launchCapability, selfRuleCapability, keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability, animStateCapability,
+        // tier3
+        prefabCapability, casterCapability, aggroCapability, flowCapability,
+        // 本次新增（W7 bounce-relay + W9 pull-anchor；W8 lure 已在上面的 aggroCapability 内）
+        bounceRelayCapability, pullAnchorCapability,
+      ]) {
+        for (const s of cap.systems) w.addSystem(s);
+      }
+      anchor(w, 'hole', 0, 0, { radius: 50, tagMask: ENEMY });
+      w.createEntity('hero');
+      w.addComponent('hero', xf(200, 0));
+      w.addComponent('hero', { type: 'Tag', flags: PLAYER } as Tag);
+      w.createEntity('mob');
+      w.addComponent('mob', xf(10, 0));
+      w.addComponent('mob', { type: 'Perception', targetTag: PLAYER, sightRadius: 0, lureTag: 1 << 4 } as Perception);
+      w.addComponent('mob', { type: 'Steering', mode: 'seek', speed: 1, stopRange: 0 } as Steering);
+      w.addComponent('mob', { type: 'Tag', flags: ENEMY } as Tag);
+      expect(() => {
+        for (let i = 0; i < 5; i++) w.tick();
+      }).not.toThrow();
+      const bad = warn.mock.calls.map((c) => c.map(String).join(' ')).filter((m) => m.includes('[topological-sort]') || m.includes('Circular'));
+      expect(bad).toEqual([]);
+    } finally {
+      warn.mockRestore();
     }
-    anchor(w, 'hole', 0, 0, { radius: 50, tagMask: ENEMY });
-    w.createEntity('hero');
-    w.addComponent('hero', xf(200, 0));
-    w.addComponent('hero', { type: 'Tag', flags: PLAYER } as Tag);
-    w.createEntity('mob');
-    w.addComponent('mob', xf(10, 0));
-    w.addComponent('mob', { type: 'Perception', targetTag: PLAYER, sightRadius: 0, lureTag: 1 << 4 } as Perception);
-    w.addComponent('mob', { type: 'Steering', mode: 'seek', speed: 1, stopRange: 0 } as Steering);
-    w.addComponent('mob', { type: 'Tag', flags: ENEMY } as Tag);
-    expect(() => {
-      for (let i = 0; i < 5; i++) w.tick();
-    }).not.toThrow();
   });
 });

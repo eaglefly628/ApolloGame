@@ -39,3 +39,6 @@
 >
 > **主程下沉完成（2026-07-02·引擎域·门禁 tsc+vitest+build 三绿）**：**#1 ✅** `dice-roll` capability（`t2-dice-roll`）—— `DicePool`+`RandomSeed`(+`locked` 只重掷未锁) → Update 相位写 `RolledDice`；**#4 ✅ 已并入**（`DicePool.ban:{kind:'banHighest'|'banLowest',n}`，掷后标 `banned` 不移出、保下标对齐）；骰能力族纯函数 `opposedRoll(rng,pA,pB,tiePolicy)`（对掷平局阶梯 rollerWins/defenderWins/reroll）+ `rollDicePool`/`applyBanFilter` 下沉 `src/skills/tier2/dice.ts`（非 capability，先例 hex.ts）。**#2 ✅** poker-hand wild —— `Card.wild?:boolean`（内禀于牌、经 PlayedHand 自动流经 poker-eval，无新配置；裁量：不用 `HandMods.wildIndices`，因 poker-eval 无逐牌 flag 源、wild 是出牌内禀属性），`evaluateHand` 小规模确定性枚举求最优牌型（紧候选集+可重复组合，无 wild 逐字节等价旧行为）。**#5 ✅ 测试钉死** —— 6-suit flush 契约 + `suitMerge` 仅 4 花色语义（6-suit 禁用）契约用例进 `poker-hand.test.ts`。新增测试 24 例（dice 16 + dice-roll 8）+ poker 12 例。**#3/#6 不在本次范围**（元素对子=重组、netcode=另立）。**→ P3D 可开始接线**（game-d 把 `S` 迁组件、`RolledDice`→`PlayedHand` 映射、禁骰/wild 走数据；勿改 `src/skills`/`src/assembly` 引擎域）。
 > 【Lead 追加 2026-07-04】顺手带一行活：`game-d.ts` `gd-start-t` 的 TODO(REQ-UI-ink) 切 `color:'ink'`（ink 令牌已落地·原单已结案归档 2026-07-04）。
+
+### REQ-D-测试最薄面 · 全游戏仅 68 行单测·无 walkthrough·无确定性双跑·对抗清单零覆盖 · [2026-08-22] · Lead 立（全库测试评审 E 路实证·出口游戏中测试最薄） · **指派：P3D（game-d owner）** · status: open · 优先级: P2 · 类型: 测试护栏
+> 现状=骰面/判型/rollPool 三件单元测试。缺：整局 walkthrough·同种子双跑逐字节复现（game-a 口径）·⚔ 对抗性输入六行（docs/playbooks/testing.md）一条都没有。另 REQ-D-物理骰确定性回收（记债·出货前必收）与此同面——补测时一并核销或重申记债。
