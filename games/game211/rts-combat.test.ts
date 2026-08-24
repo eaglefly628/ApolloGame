@@ -1,155 +1,130 @@
-// RTS 数值战斗核心测试 —— 平衡表的验收在这里，改属性表必须跑这个。
+// 现代战争数值核心测试 —— 平衡表的验收在这里，改 UNIT / DMG_TABLE 必须跑这个。
 import { describe, it, expect } from 'vitest';
 import {
-  SUITS, UNIT, counters, damageMul, damageOf, hitsToKill, ticksToKill, duelWinner,
-  counterPairs, nextSpawnSuit, compTotal, EMPTY_COMP, regenSupply, canAfford, paySupply,
-  frontLine, frontWinner, COUNTER_MUL, COUNTERED_MUL, type Suit, type Composition,
+  UNITS, UNIT, DMG_TABLE, damageMul, damageOf, canEngage, hitsToKill, ticksToKill,
+  duelWinner, outranges, blindTo, nextSpawnUnit, compTotal, EMPTY_COMP,
+  regenSupply, canAfford, paySupply, frontLine, frontWinner,
+  type UnitId, type Composition,
 } from './rts-combat.js';
 
-describe('环形相克 · 拓扑', () => {
-  it('每个兵种恰好克一个、也恰好被一个克（真环·无万能兵种·无死兵种）', () => {
-    const pairs = counterPairs();
-    expect(pairs).toHaveLength(4);
-    expect(new Set(pairs.map((p) => p.from)).size).toBe(4);   // 每个都当过克制方
-    expect(new Set(pairs.map((p) => p.to)).size).toBe(4);     // 每个都当过被克方
+describe('现代战争设定 · 结构', () => {
+  it('恰好 8 个基本兵种（owner 定）', () => {
+    expect(UNITS).toHaveLength(8);
+    expect(new Set(UNITS).size).toBe(8);
   });
-  it('没有自克·没有对克（A 克 B 则 B 不克 A）', () => {
-    for (const a of SUITS) {
-      expect(counters(a, a)).toBe(false);
-      for (const b of SUITS) if (counters(a, b)) expect(counters(b, a)).toBe(false);
+  it('owner 点名的四个都在：步兵 / 坦克 / 直升机 / 火箭炮', () => {
+    for (const u of ['rifle', 'mbt', 'heli', 'mlrs'] as const) expect(UNITS).toContain(u);
+  });
+  it('**全远程·没有近兵器**：所有射程 ≥ 9', () => {
+    for (const u of UNITS) expect(UNIT[u].range).toBeGreaterThanOrEqual(9);
+  });
+  it('三个目标类都有单位（soft / armor / air 都不空）', () => {
+    for (const c of ['soft', 'armor', 'air'] as const) {
+      expect(UNITS.filter((u) => UNIT[u].cls === c).length).toBeGreaterThan(0);
     }
   });
-  it('走 4 步回到原点（环长恰好 = 4）', () => {
-    let cur: Suit = 'spade';
-    const seen: Suit[] = [cur];
-    for (let i = 0; i < 4; i++) cur = counterPairs().find((p) => p.from === cur)!.to;
-    expect(cur).toBe('spade');
-    expect(new Set(seen).size).toBe(1);
-  });
-});
-
-describe('伤害公式', () => {
-  it('相克 ×1.75 · 被克 ×0.8 · 无关 ×1（双向·读表直觉）', () => {
-    expect(damageMul('spade', 'heart')).toBe(COUNTER_MUL);
-    expect(damageMul('heart', 'spade')).toBe(COUNTERED_MUL);
-    expect(damageMul('spade', 'diamond')).toBe(1);
-  });
-  it('伤害 = 基础 × 倍率（确定性·同输入同输出·无随机）', () => {
-    expect(damageOf('spade', 'heart')).toBeCloseTo(UNIT.spade.dmg * COUNTER_MUL, 9);
-    expect(damageOf('spade', 'heart')).toBe(damageOf('spade', 'heart'));
-  });
-  it('击杀次数向上取整（打不满一下也得补一刀）', () => {
-    for (const a of SUITS) for (const b of SUITS) {
-      expect(hitsToKill(a, b)).toBe(Math.ceil(UNIT[b].hp / damageOf(a, b)));
-      expect(Number.isInteger(hitsToKill(a, b))).toBe(true);
+  it('四个弹种都有单位在用（没有摆设行）', () => {
+    for (const w of ['he', 'ap', 'atgm', 'aa'] as const) {
+      expect(UNITS.filter((u) => UNIT[u].weapon === w).length).toBeGreaterThan(0);
     }
   });
 });
 
-describe('⭐ 平衡验收：环形相克必须每一环都真的赢', () => {
-  it('相克方在一对一里必胜（这是整张属性表的存在意义）', () => {
-    const rows: string[] = [];
-    for (const { from, to } of counterPairs()) {
-      const w = duelWinner(from, to);
-      rows.push(`${UNIT[from].label} vs ${UNIT[to].label} → 胜者 ${w === 'draw' ? '平' : UNIT[w].label} `
-        + `(${ticksToKill(from, to)}t vs ${ticksToKill(to, from)}t)`);
-      expect(w).toBe(from);
-    }
-    console.info('[rts/balance] 相克环：\n  %s', rows.join('\n  '));
+describe('⭐ 真实条令：这些关系必须成立（不是硬编的相克，是伤害表算出来的）', () => {
+  it('步兵打坦克基本无效（≥50 发才打穿）', () => {
+    expect(hitsToKill('rifle', 'mbt')).toBeGreaterThanOrEqual(50);
   });
+  it('坦克主炮**打不到**直升机（AP 对空 = 0·不是伤害低，是没有交战关系）', () => {
+    expect(canEngage('mbt', 'heli')).toBe(false);
+    expect(ticksToKill('mbt', 'heli')).toBe(Infinity);
+  });
+  it('不带防空就被武直点名：只有 AA 能高效反直升机', () => {
+    expect(DMG_TABLE.aa.air).toBeGreaterThan(DMG_TABLE.he.air * 5);
+    expect(duelWinner('aa', 'heli')).toBe('aa');
+  });
+  it('机枪组是反步兵之王（打步枪兵比步枪兵打它快得多）', () => {
+    expect(ticksToKill('mg', 'rifle')).toBeLessThan(ticksToKill('rifle', 'mg'));
+  });
+  it('反坦克组能打穿坦克，但**极脆**——被机枪几发带走 ⇒ 必须有步兵掩护', () => {
+    expect(duelWinner('at', 'mbt')).toBe('at');
+    expect(hitsToKill('mg', 'at')).toBeLessThanOrEqual(5);
+    expect(ticksToKill('mg', 'at')).toBeLessThan(ticksToKill('at', 'mg'));
+  });
+  it('火箭炮射程碾压全场，但对刀打不过任何直瞄单位', () => {
+    for (const u of UNITS) if (u !== 'mlrs') expect(outranges('mlrs', u)).toBe(true);
+    expect(duelWinner('mlrs', 'mbt')).toBe('mbt');
+    expect(UNIT.mlrs.splash).toBeGreaterThan(0);   // 它的价值在面杀伤，不在对刀
+  });
+  it('防空车对地几乎无用（纯功能位·逼出配比决策）', () => {
+    expect(DMG_TABLE.aa.soft).toBeLessThan(0.3);
+    expect(DMG_TABLE.aa.armor).toBeLessThan(0.2);
+    expect(duelWinner('aa', 'mbt')).toBe('mbt');
+  });
+});
 
+describe('平衡：没有万能兵种 · 没有废兵种', () => {
   it('全矩阵一览（不断言·给调表的人看）', () => {
-    const line = (a: Suit): string => SUITS.map((b) => {
-      if (a === b) return '  —  ';
-      const w = duelWinner(a, b);
-      return (w === a ? '胜' : w === b ? '负' : '平') + String(ticksToKill(a, b)).padStart(4);
-    }).join(' ');
-    console.info('[rts/matrix] 行=攻方 列=守方（胜负 + 击杀耗时 tick）\n        %s\n%s',
-      SUITS.map((s) => UNIT[s].label.slice(0, 3).padEnd(6)).join(''),
-      SUITS.map((a) => `  ${UNIT[a].label.slice(0, 3).padEnd(5)}${line(a)}`).join('\n'));
-    expect(SUITS).toHaveLength(4);
+    const cell = (a: UnitId, b: UnitId): string => {
+      if (a === b) return '   —  ';
+      const t = ticksToKill(a, b);
+      return (t === Infinity ? ' ∅   ' : String(t).padStart(5)) + ' ';
+    };
+    console.info('[rts/matrix] 行=攻方 列=守方 · 数字=击杀耗时 tick · ∅=打不到\n         %s\n%s',
+      UNITS.map((u) => UNIT[u].short.padEnd(6)).join(''),
+      UNITS.map((a) => `  ${UNIT[a].short.padEnd(6)}${UNITS.map((b) => cell(a, b)).join('')}`).join('\n'));
+    console.info('[rts/blind] 打不到的目标类：%s',
+      UNITS.map((u) => `${UNIT[u].short}→${blindTo(u).join('/') || '无'}`).join('  '));
+    expect(UNITS).toHaveLength(8);
   });
-
-  it('没有「打谁都赢」的兵种（否则配比就没决策了）', () => {
-    for (const a of SUITS) {
-      const wins = SUITS.filter((b) => b !== a && duelWinner(a, b) === a).length;
-      expect(wins).toBeLessThan(3);
+  it('没有「打谁都赢」的兵种', () => {
+    for (const a of UNITS) {
+      const wins = UNITS.filter((b) => b !== a && duelWinner(a, b) === a).length;
+      expect(wins).toBeLessThan(UNITS.length - 1);
     }
   });
-  it('没有「打谁都输」的兵种（否则那张牌是废的）', () => {
-    for (const a of SUITS) {
-      const wins = SUITS.filter((b) => b !== a && duelWinner(a, b) === a).length;
+  it('每个兵种至少能打赢一个（没有纯废物）', () => {
+    for (const a of UNITS) {
+      const wins = UNITS.filter((b) => b !== a && duelWinner(a, b) === a).length;
       expect(wins).toBeGreaterThan(0);
     }
+  });
+  it('贵的不一定强，但强的一定贵（cost 与 hp×dmg 大致同向·防出现「又便宜又全能」）', () => {
+    expect(UNIT.mbt.cost).toBeGreaterThan(UNIT.rifle.cost);
+    expect(UNIT.heli.cost).toBeGreaterThan(UNIT.rifle.cost);
   });
 });
 
 describe('投放配比 · 确定性轮转', () => {
   const comp = (o: Partial<Composition>): Composition => ({ ...EMPTY_COMP, ...o });
-  it('空配比 → null（没得投）', () => {
-    expect(nextSpawnSuit(EMPTY_COMP, EMPTY_COMP)).toBeNull();
+  it('空配比 → null', () => { expect(nextSpawnUnit(EMPTY_COMP, EMPTY_COMP)).toBeNull(); });
+  it('1:1 → 交替，不会连出一堆同兵种', () => {
+    let sent = EMPTY_COMP; const out: UnitId[] = [];
+    for (let i = 0; i < 6; i++) { const u = nextSpawnUnit(comp({ rifle: 1, mbt: 1 }), sent)!; out.push(u); sent = { ...sent, [u]: sent[u] + 1 }; }
+    expect(out.filter((u) => u === 'rifle')).toHaveLength(3);
+    expect(out.filter((u) => u === 'mbt')).toHaveLength(3);
   });
-  it('单一兵种 → 恒投它', () => {
+  it('4:1 长跑收敛（±1）', () => {
     let sent = EMPTY_COMP;
-    for (let i = 0; i < 5; i++) {
-      const s = nextSpawnSuit(comp({ heart: 1 }), sent)!;
-      expect(s).toBe('heart');
-      sent = { ...sent, [s]: sent[s] + 1 };
-    }
+    for (let i = 0; i < 100; i++) { const u = nextSpawnUnit(comp({ rifle: 4, mbt: 1 }), sent)!; sent = { ...sent, [u]: sent[u] + 1 }; }
+    expect(Math.abs(sent.rifle - 80)).toBeLessThanOrEqual(1);
+    expect(Math.abs(sent.mbt - 20)).toBeLessThanOrEqual(1);
   });
-  it('1:1 → 交替（不会连出一堆同兵种）', () => {
-    let sent = EMPTY_COMP;
-    const out: Suit[] = [];
-    for (let i = 0; i < 6; i++) {
-      const s = nextSpawnSuit(comp({ spade: 1, club: 1 }), sent)!;
-      out.push(s); sent = { ...sent, [s]: sent[s] + 1 };
-    }
-    expect(out.filter((s) => s === 'spade')).toHaveLength(3);
-    expect(out.filter((s) => s === 'club')).toHaveLength(3);
-  });
-  it('3:1 → 长跑后比例收敛到 3:1（±1）', () => {
-    let sent = EMPTY_COMP;
-    for (let i = 0; i < 80; i++) {
-      const s = nextSpawnSuit(comp({ spade: 3, heart: 1 }), sent)!;
-      sent = { ...sent, [s]: sent[s] + 1 };
-    }
-    expect(compTotal(sent)).toBe(80);
-    expect(Math.abs(sent.spade - 60)).toBeLessThanOrEqual(1);
-    expect(Math.abs(sent.heart - 20)).toBeLessThanOrEqual(1);
-  });
-  it('确定性：同输入两次调用同结果（可回放）', () => {
-    const c = comp({ spade: 2, diamond: 1, club: 5 });
-    expect(nextSpawnSuit(c, EMPTY_COMP)).toBe(nextSpawnSuit(c, EMPTY_COMP));
+  it('确定性可回放', () => {
+    const c = comp({ rifle: 2, at: 1, mlrs: 3 });
+    expect(nextSpawnUnit(c, EMPTY_COMP)).toBe(nextSpawnUnit(c, EMPTY_COMP));
   });
 });
 
-describe('兵力资源 · 投放节奏', () => {
-  it('回复钳在上限', () => {
+describe('兵力与战线', () => {
+  it('回复钳在上限 · 买得起才扣', () => {
     expect(regenSupply({ current: 99, max: 100, regen: 5 }).current).toBe(100);
-    expect(regenSupply({ current: 100, max: 100, regen: 5 }).current).toBe(100);
-  });
-  it('买得起才扣·扣的是该兵种的 cost', () => {
     const s = { current: 20, max: 100, regen: 1 };
-    expect(canAfford(s, 'spade')).toBe(true);          // cost 10
-    expect(paySupply(s, 'spade').current).toBe(10);
-    expect(canAfford({ ...s, current: 5 }, 'diamond')).toBe(false);  // cost 18
-    expect(paySupply({ ...s, current: 5 }, 'diamond').current).toBe(5); // 不足 → 不扣
+    expect(canAfford(s, 'rifle')).toBe(true);
+    expect(paySupply(s, 'rifle').current).toBe(12);
+    expect(canAfford({ ...s, current: 5 }, 'mbt')).toBe(false);
   });
-  it('贵的兵种确实更贵（cost 与强度同向·否则没有取舍）', () => {
-    expect(UNIT.diamond.cost).toBeGreaterThan(UNIT.spade.cost);
-    expect(UNIT.heart.cost).toBeGreaterThan(UNIT.spade.cost);
-  });
-});
-
-describe('战线 · 战场规则', () => {
-  it('双方都没单位 → 战线在中点', () => {
+  it('战线中点 · 推过基地线即胜', () => {
     expect(frontLine(null, null, 50)).toBe(0);
-  });
-  it('红方推进 → 战线为正', () => {
-    expect(frontLine(20, 30, 50)).toBe(25);
-    expect(frontLine(10, 50, 50)).toBeGreaterThan(0);
-  });
-  it('推过对方基地线即胜', () => {
     expect(frontWinner(46, 50)).toBe('red');
     expect(frontWinner(-46, 50)).toBe('blue');
     expect(frontWinner(0, 50)).toBeNull();

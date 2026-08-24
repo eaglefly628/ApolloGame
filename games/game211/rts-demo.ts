@@ -38,9 +38,9 @@ import type { Transform, Camera3D, Relation, Velocity } from '@zerocraft/engine/
 import { GG_THEME_ONYX } from './ui-theme.js';
 import { mountStageShell } from './stage-shell.js';
 import {
-  SUITS, UNIT, damageOf, counterPairs, nextSpawnSuit, compTotal, EMPTY_COMP,
+  UNITS, UNIT, damageOf, canEngage, blindTo, nextSpawnUnit, compTotal, EMPTY_COMP,
   regenSupply, canAfford, paySupply, frontLine, frontWinner,
-  type Suit, type Composition, type Supply,
+  type UnitId, type Composition, type Supply,
 } from './rts-combat.js';
 
 // ── 战场 ──
@@ -48,8 +48,13 @@ const HALF_X = 60;                 // 战场半宽（红从 −x 打向 +x）
 const HALF_Z = 34;                 // 战场半深
 const LANES = [-20, 0, 20] as const;   // 三条投放道（owner 的第二个操作：投放点）
 const SPAWN_X = HALF_X - 6;        // 投放点距基地
-const MAX_UNITS = 1200;            // 规模闸（实测 2000 才贴安全线·留足余量给渲染）
-const CARD_W = 1.4, CARD_T = 0.09, CARD_H = 2.0;
+// 规模闸。`slg-scale.bench.test.ts` 实测 2000 单位才贴 sim 安全线（5.22ms/tick），
+// 这里取 1500 给渲染/战斗结算留余量。owner 要的是「海量 NPC」，别保守。
+const MAX_UNITS = 1500;
+// 单位外形（纯表现）。空中单位靠**加厚 Mesh3D.height** 浮起来——`groundPose` 把 Y 置成 height/2，
+// 所以 height 6 = 悬停在 3 的高度。纯数据，不需要 Transform3D，也就不丢自动实例化归批。
+const BODY_W = 1.5, BODY_D = 2.2;
+const BODY_H_GROUND = 0.5, BODY_H_AIR = 6.0;
 const SEP_R = 2.0, SEP_W = 2.6;
 const TAG_RED = 1 << 0, TAG_BLUE = 1 << 1;
 
@@ -62,7 +67,7 @@ const SIDE_DIR: Record<Side, number> = { red: -1, blue: 1 };   // 己方基地�
 interface Unit {
   readonly id: string;
   readonly side: Side;
-  readonly suit: Suit;
+  readonly kind: UnitId;
   hp: number;
   cd: number;          // 攻击冷却剩余 tick
 }
@@ -105,17 +110,18 @@ export function mountRtsDemo(container: HTMLElement, opts?: { onExit?: () => voi
   engine.attachRenderer(renderer, shell.stage);
 
   // ── 玩家的两个操作 ──
-  let comp: Composition = { ...EMPTY_COMP, spade: 1 };   // ① 兵种配比
+  let comp: Composition = { ...EMPTY_COMP, rifle: 3, mg: 1 };   // ① 兵种配比（起手给一套步兵）
   let lane = 1;                                          // ② 投放点（LANES 下标）
   // AI 对手：固定一套配比（原型阶段·让玩家能感到相克真的有用）
-  const aiComp: Composition = { spade: 1, heart: 1, diamond: 0, club: 1 };
+  // AI：步兵为骨干 + 装甲 + 一架武直（不带防空 → 玩家出直升机能占便宜，教学式地暴露「不带防空要吃亏」）
+  const aiComp: Composition = { ...EMPTY_COMP, rifle: 4, mg: 2, ifv: 1, mbt: 1, heli: 1 };
 
   const units = new Map<string, Unit>();
   const sent: Record<Side, Composition> = { red: { ...EMPTY_COMP }, blue: { ...EMPTY_COMP } };
-  const supply: Record<Side, Supply> = {
-    red: { current: 60, max: 140, regen: 0.42 },
-    blue: { current: 60, max: 140, regen: 0.42 },
-  };
+  // 兵力：**为「海量」调过**——regen 9/tick ≈ 540/s，配合每 3 tick 投 3 个（60/s·每方），
+  // 稳态能把场上撑到数百。上一版 0.42/tick 时 30 秒场上才 8 个，2.6/tick 也只到 52 个。
+  const SUPPLY0 = (): Supply => ({ current: 400, max: 900, regen: 9.0 });
+  const supply: Record<Side, Supply> = { red: SUPPLY0(), blue: SUPPLY0() };
   let uid = 0;
   let tick = 0;
   let front = 0;
@@ -138,9 +144,9 @@ export function mountRtsDemo(container: HTMLElement, opts?: { onExit?: () => voi
   }
 
   /** 投放一个单位（战场规则：只在己方 lane 的投放点出生·扣兵力）。 */
-  function spawn(side: Side, suit: Suit, laneIdx: number): void {
+  function spawn(side: Side, kind: UnitId, laneIdx: number): void {
     if (units.size >= MAX_UNITS) return;
-    const st = UNIT[suit];
+    const st = UNIT[kind];
     const id = `u${++uid}`;
     const dir = SIDE_DIR[side];
     const z = LANES[laneIdx] ?? 0;
@@ -149,14 +155,19 @@ export function mountRtsDemo(container: HTMLElement, opts?: { onExit?: () => voi
     engine.world.addComponent(id, { type: 'Velocity', vx: 0, vy: 0 } as unknown as Component);
     engine.world.addComponent(id, { type: 'Tag', flags: TAG_OF[side] } as unknown as Component);
     engine.world.addComponent(id, {
-      type: 'Mesh3D', shape: 'box', width: CARD_W, height: CARD_T, depth: CARD_H,
-      faceAxis: 'y', frontTint: st.tint, backTint: 0x5b6068, edgeTint: 0x2a2e34,
+      // 阵营色描边 + 兵种主色：一眼分敌我，也一眼看出是什么兵种。
+      type: 'Mesh3D', shape: 'box',
+      width: BODY_W * (st.cls === 'armor' ? 1.25 : 1),
+      height: st.cls === 'air' ? BODY_H_AIR : BODY_H_GROUND,
+      depth: BODY_D * (st.cls === 'armor' ? 1.25 : 1),
+      faceAxis: 'y', frontTint: st.tint, backTint: st.tint,
+      edgeTint: side === 'red' ? 0xd2453c : 0x3d6fd0,
     } as unknown as Component);
     engine.world.addComponent(id, {
       type: 'Steering', mode: 'seek', speed: st.speed, stopRange: st.range * 0.85,
       separation: { radius: SEP_R, weight: SEP_W, tagMask: TAG_OF[side] },
     } as unknown as Component);
-    units.set(id, { id, side, suit, hp: st.hp, cd: 0 });
+    units.set(id, { id, side, kind, hp: st.hp, cd: 0 });
   }
 
   /** 索敌 + 战斗结算（编排胶水：只读引擎维护的 Transform，不定义新组件/相位）。 */
@@ -167,7 +178,7 @@ export function mountRtsDemo(container: HTMLElement, opts?: { onExit?: () => voi
       const t = posOf(id);
       if (!t) { dead.push(id); continue; }
       if (u.cd > 0) u.cd -= 1;
-      const st = UNIT[u.suit];
+      const st = UNIT[u.kind];
       // 搜索半径取 max(射程, 一个索敌视野) —— 视野比射程大，否则单位站着不动等敌人走进射程。
       const scan = Math.max(st.range, 16);
       const near = queryRange(engine.world, t.x, t.y, scan);
@@ -176,6 +187,9 @@ export function mountRtsDemo(container: HTMLElement, opts?: { onExit?: () => voi
       for (const nid of near) {
         const foe = units.get(nid);
         if (!foe || foe.side === u.side) continue;
+        // ⚠ 必须过滤「打不到的目标类」：坦克主炮对空 = 0，不过滤的话坦克会锁住头顶的直升机
+        // 站着不动挨打（而且**零报错**）。这是现代战争设定里最容易漏的一条。
+        if (!canEngage(u.kind, foe.kind)) continue;
         const ft = posOf(nid);
         if (!ft) continue;
         const d = Math.hypot(ft.x - t.x, ft.y - t.y);
@@ -196,10 +210,22 @@ export function mountRtsDemo(container: HTMLElement, opts?: { onExit?: () => voi
       else engine.world.addComponent(id, { type: 'Relation', kind: 'target', targetId: bestId } as unknown as Component);
       // 进射程 + 冷却好了 → 结算伤害（**确定性数值·无随机**）
       if (bestD <= st.range && u.cd <= 0) {
-        const foe = units.get(bestId)!;
-        foe.hp -= damageOf(u.suit, foe.suit);
         u.cd = st.cooldown;
-        if (foe.hp <= 0) { dead.push(bestId); killed[u.side] += 1; }
+        const foe = units.get(bestId)!;
+        const ft = posOf(bestId);
+        if (st.splash && st.splash > 0 && ft) {
+          // 面杀伤（火箭炮）：落点周围同吃伤害 → 对扎堆毁灭、对散兵浪费。
+          // 「别扎堆」就此成为一条**战场规则**，而不是 UI 提示。
+          for (const sid of queryRange(engine.world, ft.x, ft.y, st.splash)) {
+            const sfoe = units.get(sid);
+            if (!sfoe || sfoe.side === u.side || !canEngage(u.kind, sfoe.kind)) continue;
+            sfoe.hp -= damageOf(u.kind, sfoe.kind);
+            if (sfoe.hp <= 0 && !dead.includes(sid)) { dead.push(sid); killed[u.side] += 1; }
+          }
+        } else {
+          foe.hp -= damageOf(u.kind, foe.kind);
+          if (foe.hp <= 0) { dead.push(bestId); killed[u.side] += 1; }
+        }
       }
     }
     for (const id of dead) {
@@ -225,7 +251,7 @@ export function mountRtsDemo(container: HTMLElement, opts?: { onExit?: () => voi
 
   /** AI 对手：兵力够就按自己的配比投，随机挑一条道（走引擎种子 PRNG）。 */
   function aiTick(): void {
-    const s = nextSpawnSuit(aiComp, sent.blue);
+    const s = nextSpawnUnit(aiComp, sent.blue);
     if (!s || !canAfford(supply.blue, s)) return;
     supply.blue = paySupply(supply.blue, s);
     sent.blue = { ...sent.blue, [s]: sent.blue[s] + 1 };
@@ -234,7 +260,7 @@ export function mountRtsDemo(container: HTMLElement, opts?: { onExit?: () => voi
 
   /** 玩家侧自动投放（配比 + 选定的投放点·唯一操作就是改这两个）。 */
   function playerTick(): void {
-    const s = nextSpawnSuit(comp, sent.red);
+    const s = nextSpawnUnit(comp, sent.red);
     if (!s || !canAfford(supply.red, s)) return;
     supply.red = paySupply(supply.red, s);
     sent.red = { ...sent.red, [s]: sent.red[s] + 1 };
@@ -242,16 +268,18 @@ export function mountRtsDemo(container: HTMLElement, opts?: { onExit?: () => voi
   }
 
   // ── HUD（LayoutNode 闭集）──
-  function countOf(side: Side, suit: Suit): number {
+  function countOf(side: Side, kind: UnitId): number {
     let n = 0;
-    for (const u of units.values()) if (u.side === side && u.suit === suit) n += 1;
+    for (const u of units.values()) if (u.side === side && u.kind === kind) n += 1;
     return n;
   }
+  const CLS_LABEL: Record<string, string> = { soft: '软', armor: '甲', air: '空' };
+  const WPN_LABEL: Record<string, string> = { he: '高爆', ap: '穿甲', atgm: '反坦导弹', aa: '防空' };
   function hudTree(): LayoutNode {
     const rows: LayoutNode[] = [];
     const redN = [...units.values()].filter((u) => u.side === 'red').length;
     const blueN = units.size - redN;
-    rows.push({ type: 'Label', id: 'rt-title', props: { text: '大规模 RTS · 兵种相克 + 投放点', size: 'lg', color: 'gold' }, layout: {} });
+    rows.push({ type: 'Label', id: 'rt-title', props: { text: '现代战争 RTS · 8 兵种 · 全远程 · 投放配比 + 投放点', size: 'lg', color: 'gold' }, layout: {} });
     rows.push({
       type: 'Label', id: 'rt-stat',
       props: {
@@ -263,22 +291,25 @@ export function mountRtsDemo(container: HTMLElement, opts?: { onExit?: () => voi
     // 兵种计数（红/蓝逐兵种·像参考图顶部那条）
     rows.push({
       type: 'Label', id: 'rt-counts',
-      props: { text: SUITS.map((s) => `${UNIT[s].label} ${countOf('red', s)}:${countOf('blue', s)}`).join('  ·  '), size: 'sm' }, layout: {},
+      props: { text: UNITS.map((k) => `${UNIT[k].short}${countOf('red', k)}:${countOf('blue', k)}`).join(' · '), size: 'sm' }, layout: {},
     });
-    // 克制关系（数据出自 counterPairs·与判定同源）
+    // 弹种 × 目标类（不是相克环·是真实的二维表）
     rows.push({
-      type: 'Label', id: 'rt-counter',
-      props: { text: '克制： ' + counterPairs().map((p) => `${UNIT[p.from].label.slice(0, 3)}→${UNIT[p.to].label.slice(0, 3)}`).join('  '), size: 'sm', color: 'ok' }, layout: {},
+      type: 'Label', id: 'rt-doc',
+      props: { text: '高爆→软1.0/甲0.2/空0.15 · 穿甲→软0.4/甲1.0/空✗ · 反坦导弹→软0.15/甲1.3/空✗ · 防空→软0.25/甲0.15/空1.5', size: 'sm', color: 'ok' }, layout: {},
     });
     // ① 兵种配比（唯一操作之一）
-    rows.push({ type: 'Label', id: 'rt-comp-t', props: { text: `投放配比（点击 +1 / 右侧清零）· 当前总份额 ${compTotal(comp)}`, size: 'sm', color: 'dim' }, layout: {} });
+    rows.push({ type: 'Label', id: 'rt-comp-t', props: { text: `投放配比（点击 +1）· 总份额 ${compTotal(comp)} · 兵力 ${Math.floor(supply.red.current)}/${supply.red.max}`, size: 'sm', color: 'dim' }, layout: {} });
     rows.push({
       type: 'Panel', id: 'rt-comp', props: { bare: true }, layout: { direction: 'row', gap: 6 },
-      children: SUITS.map((s) => ({
-        type: 'Button', id: `rt-s-${s}`,
-        // ⚠ 带参 action 的约定是 `action` + **`actionArg`** 两个字段（server.ts 读 data-action / data-arg）。
-        // 写成 `action:'pick:spade'` 会让 handler 名变成字面量 `pick:spade` → 查不到 handler → **静默无效**（已踩）。
-        props: { label: `${UNIT[s].label} ×${comp[s]}  (${UNIT[s].cost})`, kind: comp[s] > 0 ? 'primary' : 'ghost', action: 'pick', actionArg: s },
+      // ⚠ 带参 action 的约定是 `action` + **`actionArg`** 两个字段（server.ts 读 data-action / data-arg）。
+      // 写成 `action:'pick:rifle'` 会让 handler 名变字面量 → 查不到 → **静默无效**（已踩过）。
+      children: UNITS.map((k) => ({
+        type: 'Button', id: `rt-s-${k}`,
+        props: {
+          label: `${UNIT[k].label} ×${comp[k]}`,
+          kind: comp[k] > 0 ? 'primary' : 'ghost', action: 'pick', actionArg: k,
+        },
         layout: {},
       } as LayoutNode)),
     });
@@ -309,7 +340,7 @@ export function mountRtsDemo(container: HTMLElement, opts?: { onExit?: () => voi
   function renderHud(): void {
     if (hudHandle) { hudHandle.update(hudTree(), GG_THEME_ONYX); return; }
     hudHandle = mountUI(shell.hud, hudTree(), {
-      pick: (arg) => { const s = arg as Suit; if (s && SUITS.includes(s)) { comp = { ...comp, [s]: comp[s] + 1 }; renderHud(); } },
+      pick: (arg) => { const k = arg as UnitId; if (k && UNITS.includes(k)) { comp = { ...comp, [k]: comp[k] + 1 }; renderHud(); } },
       lane: (arg) => { const i = Number(arg); if (Number.isFinite(i)) { lane = i; renderHud(); } },
       clear: () => { comp = { ...EMPTY_COMP }; renderHud(); },
       restart: () => restart(),
@@ -322,8 +353,7 @@ export function mountRtsDemo(container: HTMLElement, opts?: { onExit?: () => voi
     for (const id of units.keys()) { try { engine.world.destroyEntity(id); } catch { /* 已不在 */ } }
     units.clear();
     sent.red = { ...EMPTY_COMP }; sent.blue = { ...EMPTY_COMP };
-    supply.red = { current: 60, max: 140, regen: 0.42 };
-    supply.blue = { current: 60, max: 140, regen: 0.42 };
+    supply.red = SUPPLY0(); supply.blue = SUPPLY0();
     killed = { red: 0, blue: 0 };
     over = null; front = 0; tick = 0;
     renderHud();
@@ -339,7 +369,8 @@ export function mountRtsDemo(container: HTMLElement, opts?: { onExit?: () => voi
       tick += 1;
       supply.red = regenSupply(supply.red);
       supply.blue = regenSupply(supply.blue);
-      if (tick % 12 === 0) { playerTick(); aiTick(); }   // 投放节奏（战场规则）
+      // 投放节奏（战场规则）：每 3 tick 各投一批，兵力够就一次多投几个 → 撑起「海量」观感。
+      if (tick % 3 === 0) { for (let i = 0; i < 3; i++) { playerTick(); aiTick(); } }
       combatTick();
       updateFront();
       // 镜头跟着战线走 —— 参考图那种「战线在哪镜头在哪」的观感
