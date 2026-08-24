@@ -10,7 +10,7 @@
 
 <!-- REQ-MOBILE-SHELL（手机客户端=WebView 壳·Capacitor 路线）owner 2026-08-22 令**暂停出池**——架构定性/四步分解/红线全文查 git 历史（git log -S REQ-MOBILE-SHELL）·重启时恢复原文 -->
 
-### REQ-FLOWFIELD · 群体流场寻路能力 `t2-flow-field`（大规模 RTS 的寻路地基）· [2026-08-10] · **owner 拍板要做**（原话「我建议写流场寻路，我想做大规模 rts」「这个需求提给主程序来写，我们给一些最新技术的调研」）· **施工主体 = 主程（未抢锁·本条为需求单，不代锁）** · 复查 = Lead · status: open · 优先级: **P1（大规模 RTS 的前置地基·现有寻路实测撞墙）** · 类型: 引擎能力下沉（运动/寻路线）
+### REQ-FLOWFIELD · 群体流场寻路能力 `t2-flow-field`（大规模 RTS 的寻路地基）· [2026-08-10] · **owner 拍板要做**（原话「我建议写流场寻路，我想做大规模 rts」「这个需求提给主程序来写，我们给一些最新技术的调研」）· **施工主体 = 主程 = 本 session（2026-08-24 抢锁·owner 当面指派「你就是主程」·本行即锁）** · 复查 = 另派独立 agent（复查人≠施工人红线·Lead 身份已因施工作废） · status: **in-progress（M1 施工中）** · 优先级: **P1（大规模 RTS 的前置地基·现有寻路实测撞墙）** · 类型: 引擎能力下沉（运动/寻路线）
 
 > **调研全文**：`docs/design/game211/crowd-pathfinding-research.md`（含算法谱系三层拆解 + 最新技术 §8 + 引用）。
 > **压测可复跑**：`games/game211/pathfind-scale.bench.test.ts`。
