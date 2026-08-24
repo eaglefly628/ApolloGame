@@ -213,7 +213,12 @@ describe('flow-field — 🔴 确定性', () => {
     expect(sameInputs(snap as never, field({ cols: 4, rows: 4, originX: 0.0004, goals: [{ x: 3.5, y: 3.5 }] }))).toBe(false);
   });
 
-  it('跨世界不串味：同 id 不同内容的两个世界交替跑，各自的单位走各自的方向', () => {
+  // ⚠ 改口（第二轮复查实测）：这条**不能当 P0 别名的证据**——把它原样搬回缺陷版 `bb507744` 也照样绿
+  // （旧键含摘要，两个世界 goals 不同本就分属两条目）。真正咬住 P0 的是上面那条 0.0004。
+  // 它现在的职责是**另一件事**：守住「同 id 不同内容并存时不许退化成每 tick 重铺」——
+  // 修 P0 时我把键简化成裸 id，正是这个形状让 192×192 从 3.87 掉到 26.08ms/tick。
+  // 教训（流程账）：新增的回归测试，必须在**被修的那一版**上跑一遍，确认它真会红。
+  it('跨世界不串味 + 不退化成每 tick 重铺（同 id 不同内容并存）', () => {
     clearFlowFieldCache();
     const mk = (goalX: number): World => {
       const f = field({ id: 'shared', cols: 12, rows: 3, cellSize: 1, goals: [{ x: goalX, y: 1.5 }] });
@@ -225,6 +230,8 @@ describe('flow-field — 🔴 确定性', () => {
     for (let i = 0; i < 5; i++) { left.tick(); right.tick(); }   // 交替跑 = 缓存来回换
     expect(vel(left, 'u').vx).toBeLessThan(0);                   // 撤精确比对 → 两个世界会共用一份场
     expect(vel(right, 'u').vx).toBeGreaterThan(0);
+    // 两张场各铺一次就够；退化成裸 id 单键 → 每 tick 每场都 miss ⇒ 这里会变成 10
+    expect(flowFieldBakes()).toBe(2);
   });
 
   it('无墙钟无随机（源码级：本文件零 Date.now/performance.now/Math.random）', async () => {

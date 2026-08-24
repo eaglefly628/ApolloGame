@@ -282,17 +282,39 @@ export function flowFieldBakes(): number { return bakes; }
 let lookups = 0;
 export function flowFieldLookups(): number { return lookups; }
 
+/**
+ * 分桶用摘要——**只决定去哪个桶找，不决定是否命中**（命中权威永远是 `sameInputs` 的逐字段比对）。
+ * 所以这里允许量化/有碰撞：撞了无非是那一桶比对失败、重铺一次，**不可能出现别名**。
+ *
+ * ⚠ 为什么非要它：修 P0 时我把键简化成了裸 `field.id`，于是**同 id 不同内容的两张场并存**时
+ * 每次取场必然比对失败 ⇒ 每 tick 重铺。第二轮复查同机 A/B 量出来：192×192
+ * **3.87 → 26.08 ms/tick、bakes 2 → 40（命中率归零）**。修一个别名漏洞，换来一个 6.7× 的悬崖，
+ * 不划算也没必要——分桶摘要 + 精确比对两者兼得。
+ */
+function bucketKey(field: FlowField): string {
+  let h = 0x811c9dc5;
+  const mix = (n: number): void => { h ^= n | 0; h = Math.imul(h, 0x01000193) >>> 0; };
+  mix(field.cols); mix(field.rows);
+  mix(Math.round(field.cellSize * 1000)); mix(Math.round(field.originX * 1000)); mix(Math.round(field.originY * 1000));
+  mix(field.goals.length);
+  for (const g of field.goals) { mix(Math.round(g.x * 1000)); mix(Math.round(g.y * 1000)); }
+  if (field.blocked) { mix(field.blocked.length); for (let i = 0; i < field.blocked.length; i++) mix(field.blocked[i] ? 1 : 0); }
+  if (field.cost) { mix(field.cost.length); for (let i = 0; i < field.cost.length; i++) mix(Math.round(field.cost[i] * 1000)); }
+  return `${field.id}|${field.cols}x${field.rows}:${h}`;
+}
+
 /** 取（或铺）一张场。导出 `clearFlowFieldCache` 供测试证明「缓存不改变结果」。 */
 export function getBakedField(field: FlowField): BakedField {
   lookups++;
-  const hit = cache.get(field.id);
-  if (hit && sameInputs(hit.snap, field)) return hit.baked;
+  const key = bucketKey(field);
+  const hit = cache.get(key);
+  if (hit && sameInputs(hit.snap, field)) return hit.baked;   // ← 精确比对是唯一权威（摘要只管分桶）
   const baked = bakeFlowField(field);
   bakes++;
-  cache.set(field.id, { snap: snapshotOf(field), baked });
+  cache.set(key, { snap: snapshotOf(field), baked });
   if (cache.size > CACHE_MAX) {
     const oldest = cache.keys().next().value as string | undefined;
-    if (oldest !== undefined && oldest !== field.id) cache.delete(oldest);
+    if (oldest !== undefined && oldest !== key) cache.delete(oldest);
   }
   return baked;
 }
@@ -406,10 +428,15 @@ export const flowFieldCapability = defineCapability({
         // 那是 O(格数) 的一遍扫描——放进单位循环里就成了 O(单位数 × 格数)，1000 单位 × 2304 格
         // 实测把每 tick 从 0.1ms 抬到 1.17ms（写这段时真踩到，被性能判据咬住）。
         const baked = new Map<string, ReturnType<typeof getBakedField>>();
+        const bakesBefore = flowFieldBakes();
         for (const [fid, f] of fields) baked.set(fid, getBakedField(f));
+        const rebaked = flowFieldBakes() - bakesBefore;
         // `los` 是 M2 的活（M1 不实现）——摆了就说一声，别让作者以为已经生效。
-        for (const [fid, f] of fields) {
-          if (f.los) { appendTrace(trace, tick, 'flow-field', 'reject', `场 ${fid} 的 los 被忽略（视线优化属 M2·M1 未实现）`, '摆着不报错，但这一版不生效'); break; }
+        // ⚠ **只在真重铺那一拍说**（第二轮复查实测：原来每 tick 复读，最坏 5 条/tick，超了
+        // 「每 system 每 tick ≤3 条」的密度守则——留痕过头等于没留痕，人会开始忽略它）。
+        if (rebaked > 0) {
+          const withLos = [...fields].filter(([, f]) => f.los).map(([fid]) => fid);
+          if (withLos.length > 0) appendTrace(trace, tick, 'flow-field', 'reject', `${withLos.length} 张场的 los 被忽略（视线优化属 M2·M1 未实现）`, `场：${withLos.slice(0, 3).join(',')}`);
         }
 
         let moved = 0; let stopped = 0; let noField = 0; let offGrid = 0;
