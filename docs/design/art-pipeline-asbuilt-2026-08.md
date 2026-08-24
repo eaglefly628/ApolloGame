@@ -96,5 +96,5 @@
 - 「做 X 用哪个件、按什么顺序」→ `docs/playbooks/art-pipeline.md`（手册·全员必读）
 - schema / 五步流程 / 验收口径全文 → `docs/design/art-replacement-workflow.md`
 - 卡带美术归位的图纸与如建 → `docs/design/cartridge-art-storage-2026-08.md`
-- 二期两翼（台账强制 + 资产浏览器）图纸 → `docs/design/artpipe2-blueprint-2026-08.md`
+- 二期两翼（台账强制 + 资产浏览器）图纸 → artpipe2-blueprint-2026-08（已随 2026-08-24 docs/design 清理删除·查 git 历史）
 - 07-09 终态档 → 当时的收口快照，**现状以本页为准**

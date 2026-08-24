@@ -4,7 +4,7 @@
 > 历史回滚/消费方反查）与卡带美术归位（REQ-CARTART）等变更——**管线现状以 `docs/design/art-pipeline-asbuilt-2026-08.md` 为准**，本页留作历史。
 >
 > owner 授权 Lead 一次性收口（R1/R2/R3 三单合并落地后撤单）。本页=07-09 时点的权威描述；
-> 上游设计=`docs/design/art-replacement-workflow.md`（五步流程/schema 全文），冲刺纲领=`docs/design/demo-sprint-2026-07-29.md`。
+> 上游设计=`docs/design/art-replacement-workflow.md`（五步流程/schema 全文），冲刺纲领=demo-sprint-2026-07-29（已删·查 git 历史）。
 > 有出入以本页+代码为准；发现漂移提 `docs/workflow/requests.md`。**分角色交接（PST/透视器/game-q/PA 各自要看的）=`docs/workflow/finish/art-platform-handoff-2026-07-09.md`。**
 
 ## 一、现在的样子（一句话）

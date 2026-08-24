@@ -36,7 +36,7 @@
      状态端点逐处分摊 + 卡带行报自有仓 / 拒绝路径），冒烟 25→52 腿，**复现主程那一刀（砍掉 docs/design 整类）实测 7 腿转红**、
      形态判序颠倒 ⑩ 转红；顺手删掉那句不实的「另测」注释。F2=`_dirty` 的 git 失败分支改为**留痕再降级**
      （空列表在上游读作「无产物·跳过」，与「真的干净」同形，不喊一声就是一次静默的白跑）。图纸
-     `docs/design/auto-artifact-sync-2026-08.md`。判词与全文查 git 历史 grep REQ-AUTOSAVE。 -->
+     auto-artifact-sync-2026-08（图纸已随 2026-08-24 清理删除）。判词与全文查 git 历史 grep REQ-AUTOSAVE。 -->
 
 <!-- REQ-DOKI-APPS-「获取卡带」下沉共享接线层（P1·owner 2026-08-15 令）**2026-08-18 全件完结出池·主程双路独立复查 PASS**：
      ① 共享层 dokiworld/shared/ apps-gateway（8433c8e3·抢锁 session）：createAppsGateway 带超时/降级/dispose 薄适配 + appsDeclared；9 测不 mock SDK（真 createAppsHostExtension 对端）。复查实证：launch 缺省超时真 1 小时（apps.js:14）·「未声明就不发」快速拒绝非等超时（1.5ms 即红）·reasonOf 只读 error.code 顺带消解双份 SDK dual-package 隐患·通用性成立（src 零 game108 字样）。
