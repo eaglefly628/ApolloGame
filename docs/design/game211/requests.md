@@ -58,6 +58,52 @@ games/game211/duel-spike.ts:229   const uiHost  = document.createElement('div');
 
 **Lead 推荐（不下裁决）**：**A**，reason 两段分写。理由：3 处新增与 game-z 已批先例同形同域，C 的下沉代价（占引擎硬槽 + 动 P3D 参考实现）与收益（消 3 行）不成比例，属过度设计；B 可作为独立还债单择期做，不必阻塞当前门禁。
 
+### REQ-G211-CROWDDEMO · 流场寻路 + 软分离 / ORCA 的真机 Demo 验证 · [2026-08-25] · **owner 直派**（原话「你可以先做完一个原型，然后我让 Game 211 去做一个 Demo 来验证一下我们这个事情」） · 施工主体 = **待认领（game211 线·开工第一动作把本行改成自己并推一次=锁）** · status: **open（引擎侧原型已交·等 Demo）** · P1 · 类型: 能力验证（消费引擎新能力·不写新 system）
+
+**背景一句话**：引擎侧刚下沉了 `t2-flow-field`（流场寻路）+ 两层局部避让（软分离 / ORCA）。三档都跑通了、
+测试和压测都绿，但**观感只有真机能判**——大军推进自不自然、到终点会不会摊开、有没有抖。owner 要的就是这个判断。
+
+**你要消费的东西（全在引擎·一行 system 都不用写）**
+- capability：`flowFieldCapability`（`@zerocraft/engine/skills/tier2/index.js` 导出 `t2-flow-field`）
+- 组件：`FlowField`（摆一张场：`cellSize/originX/originY/cols/rows/goals[]`，可选 `blocked[]`/`cost[]` 行主序）
+  + `FlowAgent`（每个单位：`fieldId/speed`，可选 `arriveRange`、`separation:{weight}`、`orca:{radius,timeHorizon?,maxNeighbors?}`）
+- 定序：`flow-field` 已声明 `runsAfter:['steering','path-follow']`、`runsBefore:['motion-apply']`，你只管把 capability 装进 assembly。
+
+**⚠ 一条必须知道的口径**：`FlowAgent` **绝对写** `Velocity`，同挂 `Steering` 时 steering 那一拍的输出（含它的 separation）
+**会被整段覆盖**。所以 `rts-demo.ts` 现在那套「集结点 + `Steering{seek+separation}`」是**替换关系不是叠加关系**——
+行军段换成 `FlowAgent`，别两个都挂着碰运气。索敌/接战那段仍可用 steering（不同实体或不同阶段）。
+
+**三档配置（Demo 要能一键切·这就是验证的全部内容）**
+
+| 档 | 怎么配 | 开销（引擎侧同机实测·ms/tick @1000/4000 单位） | 预期观感 |
+|---|---|---|---|
+| A 纯流场 | 只挂 `FlowAgent{fieldId,speed}` | 0.51 / 2.04 | 走位对、但会叠成一条线/一个点 |
+| B ＋软分离 | 加 `separation:{weight:0.3}` | 1.41 / 5.54 | 队伍有厚度、终点摊开·允许瞬时重叠 |
+| C ORCA | 把 `separation` **换成** `orca:{radius:0.5}` | 6.98 / **32.80** | 基本不穿模·**4000 单位超一帧预算** |
+
+**⚠ 两条配置坑（不看会踩）**：① `separation` 与 `orca` **二选一**——同时填 ORCA 优先、另一个被忽略并留痕，
+所以 C 档是**替换** B 档不是叠加。② **开 ORCA 就必须给 `arriveRange`**：一群单位走向同一个点时，
+线性规划无可行解、只能落到「尽量少撞」的兜底，真的会压进去（引擎侧实测 5 个单位挤一点，最近两心距 0.198 而半径和 0.70）。
+这不是避让算法的锅——一个点容不下五个人，得给它们一圈可以停的地方。
+
+**验收（owner 要看的四件·各附一张截图或一段录屏）**
+1. **大军推进自不自然**——A/B 对照：B 应该看得出「队伍有宽度」而不是一条排队线。
+2. **终点摊不摊开**——冲同一个 goal 的一大群，停下后是摊成一片还是叠成一个点（引擎侧已修「到点硬停」，
+   到点后软分离仍在推，但真机是唯一判据）。
+3. **抖不抖**——引擎侧栽过一次「被挤出到达线的单位满速冲回，队伍约 40 拍一个周期反复聚散」，已补 arrival 减速带；
+   Demo 要盯的是**换成真实地形/真实单位数后还抖不抖**。
+4. **凹形障碍不卡死**——摆一个开口背向目标的凹槽，单位应该绕出来（流场是 Dijkstra 铺满、没有局部极小）。
+
+**顺带希望你带回来的数字**：你自己场景下的 ms/tick（A/B/C 三档 × 你的真实单位数），以及**你觉得手感对的
+`separation.weight` 取值**。引擎侧留了两个旋钮等 Demo 反馈定档：`SEP_MAX_WEIGHT`（斥力天花板·现 0.6）
+与 ORCA 的 `timeHorizon`（现 8）。**别自己去改引擎常数**——带数字回来，走引擎池 `REQ-FLOWFIELD`。
+
+**已知未做（别当 bug 报）**：M2 视线直指（`los` 摆了不生效·会在 trace 留痕）· M3 分块增量重建（≥192×192 大图重建 13.1ms）
+· M4 接 tilemap 地形代价（`cost[]` 得自己填）。硬不重叠仍归 `collision-resolve`（在 motion 之后介入）。
+
+**背景全文**：`docs/design/game211/crowd-pathfinding-research.md`（§9 = SC2/OpenSteer 实查与我们的偏离，§10 = ORCA 落地实测与三档选型）。
+引擎池工单 `docs/workflow/requests.md` → `REQ-FLOWFIELD`。压测可复跑：`games/game211/pathfind-scale.bench.test.ts`。
+
 ---
 
 ## 已完成
