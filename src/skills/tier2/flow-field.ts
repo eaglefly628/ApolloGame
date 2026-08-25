@@ -678,16 +678,15 @@ export const flowFieldCapability = defineCapability({
         // `los` 是 M2 的活（M1 不实现）——摆了就说一声，别让作者以为已经生效。
         // ⚠ **只在真重铺那一拍说**（第二轮复查实测：原来每 tick 复读，最坏 5 条/tick，超了
         // 「每 system 每 tick ≤3 条」的密度守则——留痕过头等于没留痕，人会开始忽略它）。
-        // 配置类留痕（同 id 的场 / 摆了未实现的 los）**合成一条、且只在真重铺那拍发**。
-        // 两条理由：① 每 system 每 tick ≤3 条（日志基准守则）——`dupes` 原来每拍复读，
-        //   加上降级、越界、commit 实测一拍能到 5 条，第二轮复查点名；
-        // ② 复读的留痕等于没有留痕，人会开始忽略它。
+        // `los` 被忽略**只在真重铺那拍说一次**（复读的留痕等于没有留痕）。
+        // ⚠ `dupes`（同 id 的场）**不能挂在这道门上**（三复查实测）：中途新加一张同 id 的场
+        // 不触发重铺 ⇒ 它永远不留痕。改挂到每拍都会发的 commit 行的 why 里——不占新行、也不会漏。
         if (rebaked > 0) {
           const withLos = [...fields].filter(([, f]) => f.los).map(([fid]) => fid);
-          const bits: string[] = [];
-          if (dupes > 0) bits.push(`${dupes} 张同 id 的场被忽略（取实体序首张）`);
-          if (withLos.length > 0) bits.push(`${withLos.length} 张场的 los 被忽略（视线优化属 M2·M1 未实现）`);
-          if (bits.length > 0) appendTrace(trace, tick, 'flow-field', 'reject', bits.join(' · '), `场 ${fields.size} 张`);
+          if (withLos.length > 0) {
+            appendTrace(trace, tick, 'flow-field', 'reject',
+              `${withLos.length} 张场的 los 被忽略（视线优化属 M2·M1 未实现）`, `场：${withLos.slice(0, 3).join(',')}`);
+          }
         }
 
         // ── 邻居索引（软分离一份、ORCA 一份·**键不同、成员不同**）───────────────────────
@@ -922,14 +921,21 @@ export const flowFieldCapability = defineCapability({
             `ORCA 降级：参数非法 ${badParam} · 退化 ${orcaStats.degenerate} · 邻居不还礼 ${orcaStats.oneSided} · 无可行解 ${orcaStats.infeasible}`,
             '参数非法=当没开 ORCA·退化=w 归零改用几何方向分开·不还礼=我独自让满·无可行解=落 LP3「最不违反」即真会压进去');
         }
-        // 「找不到场」「越界」原来各占一条，与上面两条一起一拍能到 5 条（超守则）。
-        // 它们本来就是 commit 的分项，折进来——**数字一个不少**，只是不再各自占一行。
-        if (moved > 0 || stopped > 0) {
+        // 「找不到场」「越界」「同 id 的场」折进这一行的 why——**数字一个不少**，只是不各占一行（守则 ≤3 条）。
+        //
+        // ⚠ **门必须把它们也算上**（三复查实测·折叠引入的新洞）：原来的门是 `moved>0||stopped>0`，
+        // 而这两类是 `continue` 掉的、两个计数都不加 ⇒ **全员 fieldId 打错时这一拍 0 条 trace**。
+        // 「一个单位都没动起来」恰恰是最该喊的那一拍，却成了唯一一声不喊的——
+        // 而 Demo 期 `fieldId` 打错是最高频的错，一声不吭会让人在"单位不动、日志空白"上白烧时间。
+        if (moved > 0 || stopped > 0 || noField > 0 || offGrid > 0 || dupes > 0) {
           const why: string[] = [];
           if (noField > 0) why.push(`${noField} 个找不到自己的场（查 FlowAgent.fieldId 与 FlowField.id 对没对上）`);
           if (offGrid > 0) why.push(`${offGrid} 个在网格外（网格没覆盖到它们站的地方）`);
-          appendTrace(trace, tick, 'flow-field', 'commit', `写 Velocity：${moved} 走 / ${stopped} 停`,
-            why.length > 0 ? `场 ${fields.size} 张 · 停的原因：${why.join(' · ')}` : `场 ${fields.size} 张`);
+          if (dupes > 0) why.push(`${dupes} 张同 id 的场被忽略（取实体序首张）`);
+          // 一个都没动 = 这不是"提交"，是"什么都没发生" ⇒ 记 reject（守则：凡什么都没发生的分支必须记）
+          const kind = moved === 0 ? 'reject' : 'commit';
+          appendTrace(trace, tick, 'flow-field', kind, `写 Velocity：${moved} 走 / ${stopped} 停`,
+            why.length > 0 ? `场 ${fields.size} 张 · 没走成的原因：${why.join(' · ')}` : `场 ${fields.size} 张`);
         }
       },
     },

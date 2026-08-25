@@ -173,6 +173,19 @@ describe('orca — 移植自 RVO2（Apache-2.0）· 线性规划本体', () => {
     // ⇒ 约束被静默丢弃 ⇒ 两个单位钉死在一起（整合层实测 60 拍两心距恒 0.000000）。
   });
 
+  it('**退化兜底方向必须背离对方**（整个取反时 68 测曾全绿——方向零判据）', () => {
+    // 三复查 P2：把退化分支的兜底方向整体取反，单元实测从「背离」变成「朝向」对方，
+    // 而全库 68 测全绿。方向错了的"分离"是把人往一起推，比不分离更糟。
+    // 构造 w = 0 **而相对位置非零**的那一支（相对速度恰等于相对位置 / timeStep=1）：
+    const a: OrcaAgent = { x: 0, y: 0, vx: 0.4, vy: 0, radius: 0.5, idx: 0 };
+    const b: OrcaAgent = { x: 0.4, y: 0, vx: 0, vy: 0, radius: 0.5, idx: 1 };
+    //   rp = b − a = (0.4, 0) · rv = a − b = (0.4, 0) · w = rv − rp/1 = (0, 0) ⇒ 走退化分支
+    const stats: OrcaStats = { degenerate: 0, oneSided: 0, infeasible: 0 };
+    const out = orcaVelocity(a, [b], { x: 0, y: 0 }, 1, 2, 1, stats);
+    expect(stats.degenerate).toBe(1);              // 真的走了退化分支（不是碰巧从别处出来的数）
+    expect(out.x).toBeLessThan(0);                 // **背离** b（b 在 +x）——方向取反的话这里是 >0
+  });
+
   it('确定性：同位分离的方向只由下标定（交换下标 → 方向严格翻转）', () => {
     const mk = (selfIdx: number, otherIdx: number): { x: number; y: number } => orcaVelocity(
       { x: 0, y: 0, vx: 0, vy: 0, radius: 0.5, idx: selfIdx },
@@ -180,6 +193,47 @@ describe('orca — 移植自 RVO2（Apache-2.0）· 线性规划本体', () => {
       { x: 0, y: 0 }, 1, 2, 1,
     );
     expect(mk(2, 9).x).toBeCloseTo(-mk(9, 2).x, 12);
+  });
+
+  it('**LP3 在一族随机无解场景上都逼近暴力最优**（单场景样本量=1 抓不住它的退化）', () => {
+    // 三复查：把 LP3 的推进阈值 `> distance` 加到 `+0.03`（大于用例容差）**仍然全绿**——
+    // 因为那**一个**场景的答案恰好不动。判据必须跑一族。
+    let seed = 20260826;
+    const rnd = (): number => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    const worstOf = (lines: readonly OrcaLine[], v: { x: number; y: number }): number => Math.max(
+      0, ...lines.map((l) => l.direction.x * (l.point.y - v.y) - l.direction.y * (l.point.x - v.x)),
+    );
+    let scenarios = 0; let worstGap = -Infinity;
+    for (let trial = 0; trial < 120; trial++) {
+      // 随机围一圈近距离迎面单位（容易造出无可行解）
+      const n = 3 + Math.floor(rnd() * 4);
+      const self = agent(0, 0, rnd() * 0.4 - 0.2, rnd() * 0.4 - 0.2, 0.5);
+      const ring: OrcaAgent[] = [];
+      for (let i = 0; i < n; i++) {
+        const th = (i / n) * Math.PI * 2 + rnd() * 0.4;
+        const d = 0.55 + rnd() * 0.35;
+        ring.push(agent(Math.cos(th) * d, Math.sin(th) * d, -Math.cos(th) * (0.5 + rnd()), -Math.sin(th) * (0.5 + rnd()), 0.5));
+      }
+      const pref = { x: rnd() * 2 - 1, y: rnd() * 2 - 1 };
+      const lines = orcaLinesOf(self, ring, 2);
+      const lp2Only = { x: 0, y: 0 };
+      if (linearProgram2(lines, 1, pref, false, lp2Only) >= lines.length) continue;   // 有解 → 不是本条要测的
+      scenarios++;
+      const out = orcaVelocity(self, ring, pref, 1, 2, 1);
+      // 暴力：maxSpeed 圆内撒点搜最小可达违反量
+      let best = Infinity;
+      const STEPS = 120;
+      for (let i = 0; i <= STEPS; i++) {
+        for (let j = 0; j <= STEPS; j++) {
+          const vx = -1 + (2 * i) / STEPS; const vy = -1 + (2 * j) / STEPS;
+          if (vx * vx + vy * vy > 1 + 1e-12) continue;
+          best = Math.min(best, worstOf(lines, { x: vx, y: vy }));
+        }
+      }
+      worstGap = Math.max(worstGap, worstOf(lines, out) - best);
+    }
+    expect(scenarios).toBeGreaterThan(30);        // 真造出了一族无解场景（否则"全过"没有意义）
+    expect(worstGap).toBeLessThan(0.01);          // 实测 LP3 甚至常优于 120 步网格（gap 为负）
   });
 
   it('确定性：同输入逐位相同 · 邻居列表顺序不同不影响（已按距离排好序的前提下）', () => {

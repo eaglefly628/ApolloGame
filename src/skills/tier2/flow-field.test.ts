@@ -84,20 +84,36 @@ describe('flow-field — 元数据 / 定序 / 申报诚实', () => {
   // 第二轮独立复查的 N4：我新写的两块组件注释**一块都没挂上成员**——一块落在两个成员之间
   // （TS 只认紧邻成员的最后一块），一块落在接口末尾（后面根本没有成员）。
   // 后果是"我请复查人去判的那条降级披露，作者在 IDE 里根本看不到"。这条把它钉住。
-  it('`FlowAgent.separation` / `.orca` 的关键披露真挂在成员上（不是落在成员之间的孤儿注释）', async () => {
+  it('`FlowAgent.separation` / `.orca` 的关键披露**在编译器取到的文档里**（不是"源码里有这段字"）', async () => {
+    // 三复查 M2：上一版用例查的是"这段文字所在的 JSDoc 块后面紧跟成员名"，**恒绿**——
+    // 因为我在 `separation` 前面又加了一块 JSDoc，TS **只认紧邻成员的最后一块**，
+    // 于是原来那块（weight 语义 + 不保证不重叠）被挤成孤儿、有效文档从 500+ 字缩到 186 字，
+    // 而用例一声不吭。判据必须是**编译器实际取到的那份文档**，不是源码文本。
+    const ts = (await import('typescript')).default;
     const fs = await import('node:fs');
-    const src = fs.readFileSync(new URL('../../engine/protocol/components/spatial.ts', import.meta.url), 'utf8');
-    // 判据：那段文字所在的 JSDoc 块，**紧接着**就得是对应成员的声明（中间只许有空白）
-    const attachedTo = (needle: string): string | undefined => {
-      const at = src.indexOf(needle);
-      if (at < 0) return undefined;
-      const close = src.indexOf('*/', at);
-      if (close < 0) return undefined;
-      return /^\s*([A-Za-z]+)\??:/.exec(src.slice(close + 2))?.[1];
+    const file = new URL('../../engine/protocol/components/spatial.ts', import.meta.url);
+    const src = ts.createSourceFile('spatial.ts', fs.readFileSync(file, 'utf8'), ts.ScriptTarget.ES2020, true);
+    const docs = new Map<string, string>();
+    const walk = (n: import('typescript').Node): void => {
+      if (ts.isPropertySignature(n) && ts.isIdentifier(n.name)) {
+        const own = ts.getJSDocCommentsAndTags(n).map((d) => d.getText()).join('\n');
+        if (own) docs.set(n.name.text, own);
+      }
+      ts.forEachChild(n, walk);
     };
-    expect(attachedTo('软分离只在同一张场内生效')).toBe('separation');
-    expect(attachedTo('别把它当成"保证不碰"')).toBe('orca');
-    expect(attachedTo('这一档**没有下界**')).toBe('orca');
+    walk(src);
+    const sep = docs.get('separation') ?? '';
+    const orca = docs.get('orca') ?? '';
+    // separation：权重语义 + 「不保证不重叠」 + 跨场语义，三样缺一不可
+    expect(sep).toMatch(/SEP_MAX_WEIGHT/);
+    expect(sep).toMatch(/不保证不重叠/);
+    expect(sep).toMatch(/只在同一张场内生效/);
+    // orca：改口后的承诺 + 三条降级 + 「没有下界」 + timeHorizon 非单调
+    expect(orca).toMatch(/别把它当成"保证不碰"/);
+    expect(orca).toMatch(/没有下界/);
+    expect(orca).toMatch(/非单调/);
+    // 全仓不许再出现被打掉的那句旧口径
+    expect(fs.readFileSync(file, 'utf8')).not.toMatch(/保证互不碰撞/);
   });
 
   it('申报 = 真实访问（reads 含 Velocity——本系统缺省时会 addComponent 再改它）', () => {
@@ -609,7 +625,7 @@ describe('flow-field × ORCA — 强承诺：真的不重叠', () => {
   //   y=3.75 → 0.68053 · y=4.0 → 0.64442 · y=4.25 → 0.67791（**都是中场对撞**，全不过 0.69）
   // 「承重用例只钉一个初始条件」本身就是缺陷形状，尤其当被测指标对初始条件**混沌**时。
   // 所以现在：扫一族排布 · **中场与终点分开量** · 断言按各自实测的真实边界写。
-  it('**两队对穿：一族排布 × 中场/终点分开量**（ORCA 把穿模从 ~90% 压到最坏 10%·但不是 0）', () => {
+  it('**两队对穿：一族排布 × 中场/终点分开量**（ORCA 把穿模从 ~90% 压到最坏 8%·但不是 0）', () => {
     const runCrossing = (y0: number, mode: 'none' | 'sep' | 'orca'): { mid: number; end: number } => {
       clearFlowFieldCache();
       const geo = { cellSize: 1, originX: 0, originY: 0, cols: 24, rows: 12 };
@@ -649,15 +665,19 @@ describe('flow-field × ORCA — 强承诺：真的不重叠', () => {
 
     // ① **终点区**：安顿阶段每一族排布都守得住半径和（0.70）——这是 ORCA 真正兑现的那半句
     expect(worstEnd).toBeGreaterThan(0.69);
-    // ② **中场对撞**：守不住，实测最差 0.63113（穿模 ~10%）。这是**已知边界**，写死在这里，
-    //    既不假装它是 0，也不放任它退化——掉到 0.6 以下就是真回归。
-    expect(worstMid).toBeGreaterThan(0.60);
-    expect(worstMid).toBeLessThan(0.70);          // 若哪天真做到不穿模了，这条会红，提醒来改口径
+    // ② **中场对撞**：守不住，实测最差 **0.64442**（穿模 ~8%）——这是当前 `timeHorizon=8` 下的
+    //    实测值，不是"物理下限"（见 orca.ts：16 能到 0.692，但终点段会塌，是个非单调的活旋钮）。
+    //    阈值按实测收到 0.63（余量 2.2%）：既不假装穿模是 0，也不留出能藏真回归的空档。
+    //    ⚠ 上一版这里写 0.60 并注"实测最差 0.63113"——那个数是另一次扫参（maxNeighbors≥9）的，
+    //    不是本用例的。**注释里的数必须是这条用例自己跑出来的**，否则阈值就是照错数定的。
+    expect(worstMid).toBeGreaterThan(0.63);
+    // 变好了不设绊线（"变好就红"的门禁最容易被随手放宽）——打出来，人自己看。
+    console.info('[orca/crossing] worstMid=%s worstEnd=%s（半径和 %s）', worstMid.toFixed(5), worstEnd.toFixed(5), (2 * R).toFixed(2));
     // ③ 对照组：同一场景下不开避让 / 只开软分离**烂一个数量级**，证明上面那两条是 ORCA 挣来的
     const noneMid = Math.min(...FAMILY.map((y0) => runCrossing(y0, 'none').mid));
     const sepMid = Math.min(...FAMILY.map((y0) => runCrossing(y0, 'sep').mid));
     expect(noneMid).toBeLessThan(0.15);           // 实测 0.04668 = 直接对穿
-    expect(sepMid).toBeLessThan(0.15);            // 实测 0.06129 = 软承诺本来就不保证
+    expect(sepMid).toBeLessThan(0.15);            // 实测 0.06129 = 软承诺本来就不保证（中场 0.061~0.128）
     expect(worstMid / Math.max(noneMid, sepMid)).toBeGreaterThan(4);
   }, 120_000);
 
@@ -919,16 +939,37 @@ describe('flow-field × ORCA — 复查打回项的承重用例', () => {
     const commit = ev.find((e) => e.system === 'flow-field' && e.kind === 'commit')!;
     expect(commit.why).toMatch(/1 个找不到自己的场/);
     expect(commit.why).toMatch(/1 个在网格外/);
-    const cfg = ev.find((e) => e.system === 'flow-field' && /同 id 的场/.test(e.what))!;
-    expect(cfg.what).toMatch(/1 张同 id 的场被忽略/);
-    // **配置类只在真重铺那拍发一次**：再跑 5 拍（输入没变=不重铺），这条不许复读。
-    // 复读的留痕等于没有留痕——人会开始忽略它，这正是 `los` 那条上一轮被压下去的理由。
-    for (let t = 0; t < 5; t++) w.tick();
-    const after = w.getComponent<DebugTrace>('dbg', 'DebugTrace')!.events;
-    expect(after.filter((e) => /同 id 的场/.test(e.what))).toHaveLength(1);
+    expect(commit.why).toMatch(/1 张同 id 的场被忽略/);
+    // **`los` 只在真重铺那拍发一次**（复读的留痕等于没有留痕）；`dupes` 反过来**不能**挂那道门——
+    // 三复查实测：中途新加一张同 id 的场不触发重铺 ⇒ 它永远不留痕，所以改挂每拍都发的 commit。
+    w.createEntity('field3');
+    w.addComponent('field3', field({ cols: 12, rows: 12, goals: [{ x: 11.5, y: 5.5 }] }));   // 第三张同 id
+    w.tick();
+    const late = w.getComponent<DebugTrace>('dbg', 'DebugTrace')!.events;
+    expect(late[late.length - 1].why).toMatch(/2 张同 id 的场被忽略/);   // 后加入的也数得到
     // 参数非法的那个照纯流场走（不是被一条塌掉的约束卡住）
     expect(Math.hypot(vel(w, 'bad').vx, vel(w, 'bad').vy)).toBeCloseTo(0.5, 9);
     expect(geoKey(field())).toBe('5x5@1:0,0');                      // 顺带钉一下几何键格式
+  });
+
+  it('**一个单位都没动起来时必须喊一声**（折叠的门差点把最该喊的那一拍变成唯一不喊的）', () => {
+    // 三复查 M1：`noField`/`offGrid` 折进 commit 后，commit 的门还是 `moved>0||stopped>0`，
+    // 而这两类是 continue 掉的、两个计数都不加 ⇒ **全员 fieldId 打错时一拍 0 条 trace**。
+    // 上一版用例抓不到，是因为它的世界里永远有走得动的单位。
+    for (const broken of ['badField', 'offGrid'] as const) {
+      const w = world(field({ cols: 12, rows: 12, goals: [{ x: 11.5, y: 5.5 }] }));
+      w.createEntity('dbg');
+      w.addComponent('dbg', { type: 'DebugTrace', events: [], tick: 0 } as DebugTrace);
+      for (let i = 0; i < 3; i++) {
+        if (broken === 'badField') agent(w, `u${i}`, 2.5 + i, 5.5, { speed: 0.5, fieldId: 'typo' });
+        else agent(w, `u${i}`, 900 + i, 900, { speed: 0.5 });
+      }
+      w.tick();
+      const ev = w.getComponent<DebugTrace>('dbg', 'DebugTrace')!.events.filter((e) => e.system === 'flow-field');
+      expect(ev.length).toBeGreaterThan(0);                 // ← 折叠前这里是 0
+      expect(ev[ev.length - 1].kind).toBe('reject');        // 一个都没动 = 什么都没发生，不是 commit
+      expect(ev[ev.length - 1].why).toMatch(broken === 'badField' ? /3 个找不到自己的场/ : /3 个在网格外/);
+    }
   });
 
   it('`orca` 的三个参数任一填成怪值都不许炸引擎（数据面填得出的值必须当场兜住）', () => {
