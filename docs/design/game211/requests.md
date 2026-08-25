@@ -77,14 +77,19 @@ games/game211/duel-spike.ts:229   const uiHost  = document.createElement('div');
 
 | 档 | 怎么配 | 开销（引擎侧同机实测·ms/tick @1000/4000 单位） | 预期观感 |
 |---|---|---|---|
-| A 纯流场 | 只挂 `FlowAgent{fieldId,speed}` | 0.51 / 2.04 | 走位对、但会叠成一条线/一个点 |
-| B ＋软分离 | 加 `separation:{weight:0.3}` | 1.41 / 5.54 | 队伍有厚度、终点摊开·允许瞬时重叠 |
-| C ORCA | 把 `separation` **换成** `orca:{radius:0.5}` | 6.98 / **32.80** | 基本不穿模·**4000 单位超一帧预算** |
+| A 纯流场 | 只挂 `FlowAgent{fieldId,speed}` | 0.39 / 2.51 | 走位对、但会叠成一条线/一个点 |
+| B ＋软分离 | 加 `separation:{weight:0.3}` | 1.01 / 4.08 | 队伍有厚度、终点摊开·允许瞬时重叠 |
+| C ORCA | 把 `separation` **换成** `orca:{radius:0.5}` | 8.64 / **35.77** | 基本不穿模·**4000 单位超一帧预算** |
 
-**⚠ 两条配置坑（不看会踩）**：① `separation` 与 `orca` **二选一**——同时填 ORCA 优先、另一个被忽略并留痕，
+**⚠ 四条配置坑（不看会踩·后两条是 2026-08-25 独立复查查出来的）**：① `separation` 与 `orca` **二选一**——同时填 ORCA 优先、另一个被忽略并留痕，
 所以 C 档是**替换** B 档不是叠加。② **开 ORCA 就必须给 `arriveRange`**：一群单位走向同一个点时，
 线性规划无可行解、只能落到「尽量少撞」的兜底，真的会压进去（引擎侧实测 5 个单位挤一点，最近两心距 0.198 而半径和 0.70）。
 这不是避让算法的锅——一个点容不下五个人，得给它们一圈可以停的地方。
+③ **软分离只在同一张场内生效**（按 `fieldId` 找邻居），两队各跟一张场时互相不推；ORCA 反过来是**按网格几何**
+找邻居、跨场可见。要两支敌对部队互相让开 → 用 ORCA，或提工单把跨场软分离做成显式开关（别自己改引擎）。
+④ **ORCA 对"没开 ORCA 的单位"只能给半档承诺**：那些单位没有半径可言（按 0 计），ORCA 单位会绕开它们的**中心点**
+而不是它们的体积（1v1 实测最近 0.603 而半径和 0.60）。混装部队想要干净的不穿模 → 让双方都开 ORCA。
+所有降级都会写进 `DebugTrace`（挂上 `DebugTrace` 组件跑一遍就能看到「ORCA 降级：半径非法 N · 完全同位 N · 邻居不还礼 N」）。
 
 **验收（owner 要看的四件·各附一张截图或一段录屏）**
 1. **大军推进自不自然**——A/B 对照：B 应该看得出「队伍有宽度」而不是一条排队线。
@@ -101,7 +106,8 @@ games/game211/duel-spike.ts:229   const uiHost  = document.createElement('div');
 **已知未做（别当 bug 报）**：M2 视线直指（`los` 摆了不生效·会在 trace 留痕）· M3 分块增量重建（≥192×192 大图重建 13.1ms）
 · M4 接 tilemap 地形代价（`cost[]` 得自己填）。硬不重叠仍归 `collision-resolve`（在 motion 之后介入）。
 
-**背景全文**：`docs/design/game211/crowd-pathfinding-research.md`（§9 = SC2/OpenSteer 实查与我们的偏离，§10 = ORCA 落地实测与三档选型）。
+**背景全文**：`docs/design/game211/crowd-pathfinding-research.md`（§9 = SC2/OpenSteer 实查与我们的偏离，§10 = ORCA 落地实测与三档选型，
+§10.5 = 独立复查打回的六条与修法）。复查报告 `docs/design/game211/orca-review-2026-08-25.md`。
 引擎池工单 `docs/workflow/requests.md` → `REQ-FLOWFIELD`。压测可复跑：`games/game211/pathfind-scale.bench.test.ts`。
 
 ---
