@@ -194,6 +194,20 @@ class APIHandler(BaseHTTPRequestHandler):
         except ValueError:
             self.send_response(403); self.end_headers(); return
         if not target.is_file():
+            # 蓝屏修复（owner 2026-08-25 实证）：vite **日常 build** 把应用 bundle 放 dist/assets/*，
+            # 与本素材库路由同前缀——python 同源伺服日常 dist 时（zerocraft.py 默认态 vite 不在 +
+            # dist 在场即走此路），bundle 被这里 404 → 首屏永不挂载 = 深蓝空屏。
+            # PLATFORM_BUILD 的 assetsDir='app' 只救打包态、救不了门禁每次 build 出的日常 dist。
+            # 修 = 素材库查不到就落到已构建前端的 assets（穿越防护同上·仍查不到才 404）。
+            dist_base = STATIC_DIST_DIR.resolve()
+            alt = (dist_base / 'assets' / path[len('/assets/'):]).resolve()
+            try:
+                alt.relative_to(dist_base)
+            except ValueError:
+                self.send_response(403); self.end_headers(); return
+            if alt.is_file():
+                self._send_file(alt, self._STATIC_CT.get(alt.suffix.lower(), 'application/octet-stream'))
+                return
             self.send_response(404); self.end_headers(); return
         ctype = {'.json': 'application/json; charset=utf-8', '.png': 'image/png', '.webp': 'image/webp',
                  '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.svg': 'image/svg+xml',

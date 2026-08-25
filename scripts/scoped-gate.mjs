@@ -122,6 +122,10 @@ export function facesOf(files) {
     // 最该机器守的那类。
     backupSmoke: list.some((f) => f === 'main_entry/t2_replace.py' || f === 'scripts/art-replace.mjs'
       || f === 'scripts/art-backup-smoke.py'),
+    // platformStatic：平台同源静态伺服面（owner 2026-08-25 蓝屏实证）。server.py 是 dist 同源伺服 +
+    // /assets 素材库路由的主处理器，却不带 art_ 前缀 → 此前任何面旗都不命中，改它一行没门在验；
+    // 坏了的形状是「首屏 bundle 404 永不挂载 = 蓝屏」——门禁 build 天天产日常 dist，必须机器守。
+    platformStatic: list.some((f) => f === 'main_entry/server.py' || f === 'scripts/platform-static-smoke.py'),
     // dokiworld/** 的 node --test 没有别的门在验（DOKI-APPS 后续①·「写了测试没人跑」与 game108 恒石同形）：
     // 改动命中哪个 app 目录就跑哪个（.md 不算——纯文档改不了测试结果）。
     dokiApps: [...new Set(list.map((f) => { const m = f.match(/^dokiworld\/([a-z0-9-]+)\//); return m && !f.endsWith('.md') ? m[1] : null; }).filter(Boolean))].sort(),
@@ -177,6 +181,7 @@ export function planFor(c, auditGames = [], faces = {}) {
     ...(faces.testHygiene ? [{ name: 'test-hygiene', cmd: ['node', ['scripts/test-hygiene-check.mjs']] }] : []),
     ...(faces.artSmoke ? [{ name: 'art-smoke', cmd: ['python3', ['scripts/art-replace-smoke.py']] }] : []),
     ...(faces.backupSmoke ? [{ name: 'art-backup-smoke', cmd: ['python3', ['scripts/art-backup-smoke.py']] }] : []),
+    ...(faces.platformStatic ? [{ name: 'platform-static-smoke', cmd: ['python3', ['scripts/platform-static-smoke.py']] }] : []),
     ...(faces.syncSmoke ? [
       { name: 'art-sync-smoke', cmd: ['python3', ['scripts/art-sync-smoke.py']] },
       { name: 'auto-sync-smoke', cmd: ['python3', ['scripts/auto-sync-smoke.py']] },

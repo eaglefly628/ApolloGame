@@ -152,7 +152,8 @@ describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门
   it('facesOf：守卫脚本自身被改也触发各自守卫（改守卫先自证跑绿）', () => {
     expect(facesOf(['scripts/engine-random-guard.mjs']).engineRandom).toBe(true);
     expect(facesOf(['scripts/test-hygiene-check.mjs']).testHygiene).toBe(true);
-    expect(facesOf(['games/game-a/rules.ts', 'docs/workflow/requests.md'])).toEqual({ engineRandom: false, testHygiene: false, artSmoke: false, syncSmoke: false, backupSmoke: false, dokiApps: [], slowLane: [] });
+    expect(facesOf(['games/game-a/rules.ts', 'docs/workflow/requests.md'])).toEqual({ engineRandom: false, testHygiene: false, artSmoke: false, syncSmoke: false, backupSmoke: false, platformStatic: false, dokiApps: [], slowLane: [] });
+    expect(facesOf(['main_entry/server.py']).platformStatic).toBe(true); // 蓝屏面（2026-08-25）：server.py 不带 art_ 前缀·此前零旗命中
   });
 
   it('引擎面改动（full）：计划含 engine-random 步·红=拦（无 allowExit）·放 tsc 前', () => {
@@ -274,6 +275,7 @@ describe('scoped-gate 接线补牙（slowLane 正向 · docs-only 全量对账 �
       artSmoke: { value: true, steps: ['art-smoke'] },
       syncSmoke: { value: true, steps: ['art-sync-smoke', 'auto-sync-smoke'] },
       backupSmoke: { value: true, steps: ['art-backup-smoke'] },
+      platformStatic: { value: true, steps: ['platform-static-smoke'] },
       dokiApps: { value: ['game108'], steps: ['doki-test:game108'] },
       slowLane: { value: ['acceptance'], steps: ['slow-lane:acceptance'] },
     };
