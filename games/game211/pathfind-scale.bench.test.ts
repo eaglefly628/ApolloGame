@@ -189,6 +189,29 @@ describe('群体寻路选型 · A*-per-agent vs Flow Field（实测·非估算�
     }
     console.info('[pf/flow-sep] t2-flow-field 每 tick（开软分离）\n  %s', sepRows.join('\n  '));
 
+    // ── ORCA 硬避让开销（owner 2026-08-24「可以上」·每单位解一个二维线性规划）──────────
+    const orcaRows: string[] = [];
+    // 两档参数各量一遍：前瞻越远、邻居越多 → 越"礼让"也越贵。给 owner 一张真实权衡表。
+    for (const [horizon, maxN] of [[8, 8], [4, 5]] as const) {
+      for (const units of [1000, 4000] as const) {
+        const side = 64;
+        const w = new World();
+        for (const sys of flowFieldCapability.systems) w.addSystem(sys);
+        w.createEntity('field');
+        w.addComponent('field', mkField(side));
+        for (let i = 0; i < units; i++) {
+          const id = `o${i}`;
+          w.createEntity(id);
+          w.addComponent(id, { type: 'Transform', x: (i % side) + 0.5, y: (Math.floor(i / side) % side) + 0.5, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
+          w.addComponent(id, { type: 'FlowAgent', fieldId: 'f1', speed: 1, arriveRange: 3, orca: { radius: 0.35, timeHorizon: horizon, maxNeighbors: maxN } } as FlowAgent);
+        }
+        for (let i = 0; i < 20; i++) w.tick();
+        const r = bench(() => { w.tick(); }, 20);
+        orcaRows.push(`${String(units).padStart(4)} 单位 / 前瞻 ${horizon} 拍 · 最多 ${maxN} 邻居 → ${r.mean.toFixed(3)}ms/tick`);
+      }
+    }
+    console.info('[pf/flow-orca] t2-flow-field 每 tick（开 ORCA 硬避让）\n  %s', orcaRows.join('\n  '));
+
     // 判据只钉**形状**不钉绝对值（绝对值随机器变·钉死了就是给 CI 埋雷）：
     // 单位数 4× 而每 tick 不到 4×+余量 ⇒「铺场那部分没有随单位数重复付」这条卖点还活着。
     const [a, bb] = tickRows.map((row) => Number(row.match(/→ ([\d.]+)ms/)![1]));

@@ -574,3 +574,84 @@ describe('flow-field — 软分离的两条承重语义（撤修必须转红）'
     expect(four).toBeGreaterThan(one * 1.5);   // 撤成「除以实际邻居数」→ 两者几乎相等，此断言红
   });
 });
+
+// ═══ ORCA 硬避让（owner 2026-08-24「可以上」·移植自 RVO2）═══
+describe('flow-field × ORCA — 强承诺：真的不重叠', () => {
+  const R = 0.35;
+  const orcaAgent = (w: World, id: string, x: number, y: number, fieldId: string, over: Partial<Omit<FlowAgent, 'type'>> = {}): void =>
+    agent(w, id, x, y, { speed: 0.5, fieldId, orca: { radius: R }, ...over });
+
+  it('**两队对穿全程不重叠**（软分离做不到的那条承诺）', () => {
+    // 左队走向右边、右队走向左边，正面对撞。ORCA 的定义就是"前瞻期内保证不碰"。
+    const w = new World();
+    for (const s of flowFieldCapability.systems) w.addSystem(s);
+    for (const s of motionApplyCapability.systems) w.addSystem(s);
+    w.createEntity('fR');
+    w.addComponent('fR', field({ id: 'toRight', cols: 24, rows: 12, goals: [{ x: 23.5, y: 5.5 }] }));
+    w.createEntity('fL');
+    w.addComponent('fL', field({ id: 'toLeft', cols: 24, rows: 12, goals: [{ x: 0.5, y: 5.5 }] }));
+    const ids: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      const a = `L${i}`; const b = `R${i}`;
+      // ⚠ 必须给 arriveRange：不给的话 5 个单位会死追**同一个点**，挤到线性规划无可行解，
+      // 原码只能落到 LP3「尽量少撞」⇒ 真的会压进去（实测最近 0.198）。这不是 ORCA 的锅——
+      // 一个点容不下五个单位，避让算法救不了「目标本身不可行」。已写进组件注释。
+      orcaAgent(w, a, 2.5, 3.5 + i * 1.0, 'toRight', { arriveRange: 2 }); ids.push(a);
+      orcaAgent(w, b, 21.5, 3.6 + i * 1.0, 'toLeft', { arriveRange: 2 }); ids.push(b);
+    }
+    let worst = Infinity;
+    for (let t = 0; t < 120; t++) {
+      w.tick();
+      for (let i = 0; i < ids.length; i++) {
+        for (let j = i + 1; j < ids.length; j++) {
+          const p = pos(w, ids[i]); const q = pos(w, ids[j]);
+          worst = Math.min(worst, Math.hypot(p.x - q.x, p.y - q.y));
+        }
+      }
+    }
+    // 半径 0.35 → 两心距应 ≥ 0.7。留一点余量给「一拍内的积分误差」（ORCA 保证的是速度层面）。
+    expect(worst).toBeGreaterThan(2 * R * 0.8);
+  }, 60_000);
+
+  it('ORCA 不改走位：单位照样到得了目标（避让只挑最接近期望的那个速度）', () => {
+    const f = field({ cols: 20, rows: 20, goals: [{ x: 19.5, y: 19.5 }] });
+    const w = world(f, true);
+    for (let i = 0; i < 6; i++) orcaAgent(w, `u${i}`, 1.5 + (i % 3) * 0.9, 1.5 + Math.floor(i / 3) * 0.9, 'f1', { arriveRange: 2 });
+    for (let i = 0; i < 400; i++) w.tick();
+    for (let i = 0; i < 6; i++) {
+      const p = pos(w, `u${i}`);
+      expect({ id: i, arrived: Math.hypot(p.x - 19.5, p.y - 19.5) < 4 }).toMatchObject({ arrived: true });
+    }
+  }, 60_000);
+
+  it('不设 orca = 一个字节不变（零回归）· 同时设 separation 与 orca → ORCA 优先', () => {
+    const run = (opts: Partial<Omit<FlowAgent, 'type'>>): string => {
+      clearFlowFieldCache();
+      const w = world(field({ cols: 14, rows: 14, goals: [{ x: 13.5, y: 13.5 }] }), true);
+      for (let i = 0; i < 4; i++) agent(w, `u${i}`, 2.5 + i * 0.4, 2.5, { speed: 0.5, ...opts });
+      for (let i = 0; i < 20; i++) w.tick();
+      return Array.from({ length: 4 }, (_, i) => `${pos(w, `u${i}`).x.toFixed(10)},${pos(w, `u${i}`).y.toFixed(10)}`).join('|');
+    };
+    const plain = run({});
+    expect(run({})).toBe(plain);                                          // 自身确定
+    expect(run({ orca: { radius: R } })).not.toBe(plain);                  // 开了 ORCA 就该有区别
+    // 同时设两个：ORCA 后写（覆盖软分离的结果）⇒ 与只设 ORCA 相同
+    expect(run({ orca: { radius: R }, separation: { weight: 0.5 } })).toBe(run({ orca: { radius: R } }));
+  }, 60_000);
+
+  it('确定性：开 ORCA 跑两遍逐位相同 · 实体创建序颠倒结果不变', () => {
+    const run = (reverse: boolean): string => {
+      clearFlowFieldCache();
+      const w = world(field({ cols: 16, rows: 16, goals: [{ x: 15.5, y: 15.5 }] }), true);
+      const ids = ['u0', 'u1', 'u2', 'u3', 'u4'];
+      for (const id of reverse ? [...ids].reverse() : ids) {
+        const i = ids.indexOf(id);
+        orcaAgent(w, id, 3.5 + (i % 3) * 0.6, 3.5 + Math.floor(i / 3) * 0.6, 'f1');
+      }
+      for (let i = 0; i < 40; i++) w.tick();
+      return ids.map((id) => `${pos(w, id).x.toFixed(12)},${pos(w, id).y.toFixed(12)}`).join('|');
+    };
+    expect(run(false)).toBe(run(false));
+    expect(run(true)).toBe(run(false));
+  }, 60_000);
+});

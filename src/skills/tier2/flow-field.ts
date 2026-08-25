@@ -2,6 +2,7 @@ import { defineCapability } from '@engine/core/define-capability.js';
 import type { IWorld } from '@engine/core/types.js';
 import type { FlowField, FlowAgent, Transform, Velocity, Status } from '@engine/protocol/components.js';
 import { findDebugTrace, appendTrace } from '../debug-trace.js';
+import { orcaVelocity, type OrcaAgent } from './orca.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  t2-flow-field —— 群体流场寻路（REQ-FLOWFIELD·owner 2026-08-10 判 A 下沉引擎）。
@@ -77,6 +78,62 @@ export interface DensityField {
   readonly items: Int32Array;   // 按格分桶后的单位下标（桶内按单位 id 序 = 确定）
   readonly px: Float64Array;    // 单位坐标（下标 = 单位下标）
   readonly py: Float64Array;
+  readonly vx: Float64Array;    // 单位当前速度（ORCA 用：互惠避让要知道对方在怎么走）
+  readonly vy: Float64Array;
+  readonly radius: Float64Array; // 单位碰撞半径（ORCA 用）
+}
+
+/** 网格几何签名 = 邻居索引的键（**空间**相同就共用一份·与跟哪张场无关）。 */
+export const geoKey = (f: FlowField): string => `${f.cols}x${f.rows}@${f.cellSize}:${f.originX},${f.originY}`;
+
+/** ORCA 缺省前瞻拍数与邻居上限（原码里这两个是每 agent 参数·这里给缺省值）。 */
+export const ORCA_TIME_HORIZON = 8;
+export const ORCA_MAX_NEIGHBORS = 8;
+
+/**
+ * 收集 ORCA 邻居：本格 + 8 邻格里最近的 `maxNeighbors` 个（**按距离平方升序**——
+ * 与原码 `Agent::insertAgentNeighbor` 语义一致；平局按单位下标，保证全序、与遍历顺序无关）。
+ */
+export function orcaNeighbors(
+  field: FlowField, dens: DensityField, self: number, col: number, row: number,
+  x: number, y: number, range: number, maxNeighbors: number,
+): OrcaAgent[] {
+  const found: Array<{ d2: number; idx: number }> = [];
+  const rangeSq = range * range;
+  // ⚠ **逐环外扩、够数就停**（实测逼出来的）：邻域半径 = 前瞻拍数×速度 + 半径，前瞻 8 拍时
+  // 窗口是 19×19=361 格；一格一格全扫的代价是 **1000 单位 36.8ms/tick、4000 单位 189ms**
+  // ——贵的不是线性规划，是这个窗口。原码用 kd-tree 取「最近的 k 个」，我们用网格做等价的事：
+  // 从第 0 环往外一环一环扫，**一旦已经凑够 maxNeighbors 且第 k 近的距离比下一环的最小距离还近**，
+  // 就可以停——外面的不可能更近。稠密人群里通常一两环就够。
+  const win = Math.max(1, Math.ceil(range / field.cellSize));
+  for (let r = 0; r <= win; r++) {
+    for (let dr = -r; dr <= r; dr++) {
+      for (let dc = -r; dc <= r; dc++) {
+        if (Math.max(Math.abs(dr), Math.abs(dc)) !== r) continue;   // 只扫这一环（切比雪夫距离=r）
+        const ni = cellIndex(field, col + dc, row + dr);
+        if (ni < 0) continue;
+        const from = dens.start[ni];
+        const to = from + dens.count[ni];
+        for (let p = from; p < to; p++) {
+          const j = dens.items[p];
+          if (j === self) continue;
+          const dx = dens.px[j] - x; const dy = dens.py[j] - y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < rangeSq) found.push({ d2, idx: j });
+        }
+      }
+    }
+    // 够数了就看能不能收工：下一环里任何单位到我的距离都 ≥ r×cellSize（我在自己那格里的任意位置都成立）
+    if (found.length >= maxNeighbors) {
+      found.sort((p, q) => (p.d2 !== q.d2 ? p.d2 - q.d2 : p.idx - q.idx));
+      const kth = Math.sqrt(found[maxNeighbors - 1].d2);
+      if (r * field.cellSize >= kth) break;
+    }
+  }
+  found.sort((a, b) => (a.d2 !== b.d2 ? a.d2 - b.d2 : a.idx - b.idx));
+  return found.slice(0, maxNeighbors).map(({ idx }) => ({
+    x: dens.px[idx], y: dens.py[idx], vx: dens.vx[idx], vy: dens.vy[idx], radius: dens.radius[idx],
+  }));
 }
 
 /**
@@ -582,40 +639,53 @@ export const flowFieldCapability = defineCapability({
         // ── 软分离的分桶（owner 2026-08-24 定方向：分离力·soft force·流场恒主导）──────────
         // 只在**真有单位开了 separation** 时才建（没开=一个字节不变·零回归）。
         // 计数排序分桶：两遍 O(单位) + 一遍前缀和 O(格数)。桶内按单位 id 序（agents 已排序）= 确定。
-        const wantSep = agents.some(([, c]) => (c.get('FlowAgent') as FlowAgent).separation !== undefined);
+        // 软分离与 ORCA 共用同一张分桶（两者都要回答「谁在我附近」）。
+        const wantSep = agents.some(([, c]) => { const a = c.get('FlowAgent') as FlowAgent; return a.separation !== undefined || a.orca !== undefined; });
         const density = new Map<string, DensityField>();
         const cellOfAgent = new Int32Array(agents.length).fill(-1);
         const fieldOfAgent: string[] = new Array(agents.length).fill('');
         if (wantSep) {
+          // ⚠ **按网格几何分桶，不是按场 id**（实测逼出来的）：避让邻居是「谁在我附近」——
+          // 那是**空间**的属性，与「你跟的是哪张流场」无关。第一版按 fieldId 分桶，
+          // 两队各跟一张场（一队往右、一队往左）时**互相看不见**，正面对撞时 ORCA 一条约束都没有，
+          // 两队直接对穿（实测最近两心距 0.10，而半径和是 0.70）。
+          // 同几何的多张场（多目标/多阵营最常见的情形）共用一份索引，跨场也能互相避让。
+          const geoOf = geoKey;
+          const geoField = new Map<string, FlowField>();
+          for (const [, f] of fields) if (!geoField.has(geoOf(f))) geoField.set(geoOf(f), f);
           const counts = new Map<string, Int32Array>();
-          for (const [fid, f] of fields) counts.set(fid, new Int32Array(f.cols * f.rows));
+          for (const [g, f] of geoField) counts.set(g, new Int32Array(f.cols * f.rows));
           // 第一遍：数每格几个人
           agents.forEach(([, comps], i) => {
             const a = comps.get('FlowAgent') as FlowAgent;
-            if (a.separation === undefined) return;          // 没开的不占位·也不被推
+            if (a.separation === undefined && a.orca === undefined) return;   // 两个都没开的不占位·也不被推
             const f = fields.get(a.fieldId);
-            const cnt = counts.get(a.fieldId);
-            if (!f || !cnt) return;
+            if (!f) return;
+            const g = geoOf(f);
+            const cnt = counts.get(g);
+            if (!cnt) return;
             const t = comps.get('Transform') as Transform;
             const { col, row } = cellOf(f, t.x, t.y);
             const ci = cellIndex(f, col, row);
             if (ci < 0) return;
-            cellOfAgent[i] = ci; fieldOfAgent[i] = a.fieldId; cnt[ci]++;
+            cellOfAgent[i] = ci; fieldOfAgent[i] = g; cnt[ci]++;
           });
           // 前缀和 → 每格起点；第二遍：填桶
-          for (const [fid, f] of fields) {
-            const cnt = counts.get(fid)!;
+          for (const [g, f] of geoField) {
+            const cnt = counts.get(g)!;
             const n = f.cols * f.rows;
             const start = new Int32Array(n);
             let acc = 0;
             for (let i = 0; i < n; i++) { start[i] = acc; acc += cnt[i]; }
-            density.set(fid, {
+            density.set(g, {
               count: cnt, start, items: new Int32Array(acc),
               px: new Float64Array(agents.length), py: new Float64Array(agents.length),
+              vx: new Float64Array(agents.length), vy: new Float64Array(agents.length),
+              radius: new Float64Array(agents.length),
             });
           }
           const fill = new Map<string, Int32Array>();
-          for (const [fid, d] of density) fill.set(fid, Int32Array.from(d.start));
+          for (const [g, d] of density) fill.set(g, Int32Array.from(d.start));
           agents.forEach(([, comps], i) => {
             const ci = cellOfAgent[i];
             if (ci < 0) return;
@@ -625,6 +695,11 @@ export const flowFieldCapability = defineCapability({
             const t = comps.get('Transform') as Transform;
             d.items[cursor[ci]++] = i;
             d.px[i] = t.x; d.py[i] = t.y;
+            // ORCA 还要邻居的**当前速度与半径**（互惠避让的前提是「我知道你在怎么走」）。
+            const fa = comps.get('FlowAgent') as FlowAgent;
+            const nv = world.getComponent<Velocity>(agents[i][0], 'Velocity');
+            d.vx[i] = nv?.vx ?? 0; d.vy[i] = nv?.vy ?? 0;
+            d.radius[i] = fa.orca?.radius ?? 0;
           });
         }
 
@@ -675,9 +750,11 @@ export const flowFieldCapability = defineCapability({
           // 软分离（可选）：把「让一让」的力叠在流场方向上。
           // **流场恒主导**（owner 红线）：权重钳在 SEP_MAX_WEIGHT，合成后最多偏 ~31°，永不掉头。
           let sx = 0; let sy = 0;
-          const sepW = a.separation ? Math.min(Math.max(a.separation.weight, 0), SEP_MAX_WEIGHT) : 0;
+          // **ORCA 优先**（与组件注释一致）：两个都填时软分离被忽略——两套避让叠加没有意义，
+          // ORCA 的目标函数本来就是「离期望速度最近」，再往期望速度里掺一个力只会让它偏离得更多。
+          const sepW = a.separation && !a.orca ? Math.min(Math.max(a.separation.weight, 0), SEP_MAX_WEIGHT) : 0;
           if (sepW > 0) {
-            const d = density.get(a.fieldId);
+            const d = density.get(geoKey(field));
             // 终点格（流场无方向）只用质心项——见 separationDir 的 useGradient 注释。
             const atGoal = arrived || (bf.dir[ci * 2] === 0 && bf.dir[ci * 2 + 1] === 0);
             if (d) {
@@ -692,28 +769,54 @@ export const flowFieldCapability = defineCapability({
             }
           }
 
+          // ── 期望速度（流场 [+软分离] 定出来的「我想怎么走」）─────────────────────────
+          let wantX: number; let wantY: number;
           if (arrived || (dx === 0 && dy === 0)) {
-            // 已到达 / 终点格 / 墙里 / 孤岛：**不再有前进方向，只剩"互相让开"**。
-            if (sx === 0 && sy === 0) { v.vx = 0; v.vy = 0; stopped++; continue; }
-            // ⚠ 这里**不许再归一化**（第一版就栽在这·和上面同一个病）：归一化会把
-            // 「夹中间的合力≈0」抹成「所有人一样快」，于是终点上的队伍整块平移、彼此还是叠着。
-            // sx/sy 已是钳过模长的力（≤sepW<1），直接当速度比例用：受力小的几乎不动，边上的挪开。
-            v.vx = sx * a.speed * SEP_SETTLE_SCALE;
-            v.vy = sy * a.speed * SEP_SETTLE_SCALE;
-            moved++;
-            continue;
+            // 已到达 / 终点格 / 墙里 / 孤岛：**没有前进方向**，只剩「互相让开」。
+            // ⚠ 这里**不能直接 continue 掉**（实测逼出来的）：ORCA 是**互惠**算法——双方各让一半，
+            // 对面若是个"钉死不动"的单位，我只让一半就不够，照样压上去（5v5 对穿实测最近 0.332，
+            // 半径和 0.70）。让到点的单位也走 ORCA（期望速度=0），它就会被后来的挤开一点，
+            // 这恰好也是 RTS 里正确的观感：站着的人会被推着让路。
+            wantX = sx * a.speed * SEP_SETTLE_SCALE;
+            wantY = sy * a.speed * SEP_SETTLE_SCALE;
+          } else {
+            // 流场方向（按到达减速带缩放）+ 软分离，再归一 × speed。
+            const fm = Math.sqrt(dx * dx + dy * dy);
+            const rawX = (dx / fm) * flowScale + sx;
+            const rawY = (dy / fm) * flowScale + sy;
+            const m0 = Math.sqrt(rawX * rawX + rawY * rawY);
+            if (m0 === 0) { v.vx = 0; v.vy = 0; stopped++; continue; }   // 理论到不了（|sep|≤0.6<1），兜底
+            wantX = (rawX / m0) * a.speed;
+            wantY = (rawY / m0) * a.speed;
           }
 
-          // 方向归一化：整数方向 → 单位向量，叠上分离力后再归一 ×speed
-          //（浮点只在这一步·同 steering 的 IEEE 用法）。
-          const fm = Math.sqrt(dx * dx + dy * dy);
-          let vx = (dx / fm) * flowScale + sx;
-          let vy = (dy / fm) * flowScale + sy;
-          const m = Math.sqrt(vx * vx + vy * vy);
-          if (m === 0) { v.vx = 0; v.vy = 0; stopped++; continue; }   // 理论到不了（|sep|≤0.6<1），兜底
-          vx /= m; vy /= m;
-          v.vx = vx * a.speed;
-          v.vy = vy * a.speed;
+          // ── ORCA 硬避让（owner 2026-08-24「可以上」·移植自 RVO2·见 orca.ts 文件头）────────
+          // 期望速度照收，ORCA 只把它改成「最接近且 timeHorizon 拍内不会撞」的那个。
+          // **走位仍归流场**——ORCA 的目标函数就是"离期望速度最近"。
+          if (a.orca) {
+            const d = density.get(geoKey(field));
+            if (d) {
+              const horizon = a.orca.timeHorizon ?? ORCA_TIME_HORIZON;
+              const maxN = a.orca.maxNeighbors ?? ORCA_MAX_NEIGHBORS;
+              // 邻域半径照原码：timeHorizon×maxSpeed + 自身半径（前瞻期内够得到我的都算数）。
+              const range = horizon * a.speed + a.orca.radius;
+              const neighbors = orcaNeighbors(field, d, ai, col, row, t.x, t.y, range, maxN);
+              if (neighbors.length > 0) {
+                const out = orcaVelocity(
+                  { x: t.x, y: t.y, vx: v.vx, vy: v.vy, radius: a.orca.radius },
+                  neighbors, { x: wantX, y: wantY },
+                  a.speed, horizon, 1,          // timeStep=1：本引擎一拍就是一个时间单位
+                );
+                v.vx = out.x; v.vy = out.y;
+                if (out.x === 0 && out.y === 0) stopped++; else moved++;
+                continue;
+              }
+            }
+          }
+
+          if (wantX === 0 && wantY === 0) { v.vx = 0; v.vy = 0; stopped++; continue; }
+          v.vx = wantX;
+          v.vy = wantY;
           moved++;
         }
 
