@@ -10,7 +10,7 @@
 
 <!-- REQ-MOBILE-SHELL（手机客户端=WebView 壳·Capacitor 路线）owner 2026-08-22 令**暂停出池**——架构定性/四步分解/红线全文查 git 历史（git log -S REQ-MOBILE-SHELL）·重启时恢复原文 -->
 
-### REQ-FLOWFIELD · 群体流场寻路能力 `t2-flow-field`（大规模 RTS 的寻路地基）· [2026-08-10] · **owner 拍板要做**（原话「我建议写流场寻路，我想做大规模 rts」「这个需求提给主程序来写，我们给一些最新技术的调研」）· **施工主体 = 主程 = 本 session（2026-08-24 抢锁·owner 当面指派「你就是主程」·本行即锁）** · 复查 = 另派独立 agent（复查人≠施工人红线·Lead 身份已因施工作废） · status: **in-progress（M1 施工中）** · 优先级: **P1（大规模 RTS 的前置地基·现有寻路实测撞墙）** · 类型: 引擎能力下沉（运动/寻路线）
+### REQ-FLOWFIELD · 群体流场寻路能力 `t2-flow-field`（大规模 RTS 的寻路地基）· [2026-08-10] · **owner 拍板要做**（原话「我建议写流场寻路，我想做大规模 rts」「这个需求提给主程序来写，我们给一些最新技术的调研」）· **施工主体 = 主程 = 本 session（2026-08-24 抢锁·owner 当面指派「你就是主程」·本行即锁）** · 复查 = 另派独立 agent（复查人≠施工人红线·Lead 身份已因施工作废） · status: **in-progress（M1+软分离已交并复查毕·ORCA 已交待复查·M2/M3/M4 未做）** · 优先级: **P1（大规模 RTS 的前置地基·现有寻路实测撞墙）** · 类型: 引擎能力下沉（运动/寻路线）
 
 > **调研全文**：`docs/design/game211/crowd-pathfinding-research.md`（含算法谱系三层拆解 + 最新技术 §8 + 引用）。
 > **压测可复跑**：`games/game211/pathfind-scale.bench.test.ts`。
@@ -154,8 +154,24 @@ M2(LOS)/M3(分块增量)/M4(接 tilemap) 未做；`los` 摆了会在 trace 留�
 已补三条承重测试（夹中间的 vs 站边上的速度差 ≥3×／安顿后 140 拍最近间距恒 >0.2／人越挤推得越狠），
 四刀现在刀刀见红。**这一条与第二轮复查记的流程账同形：自己觉得最难的地方，恰恰最容易没测试。**
 
+**⚙ 软分离改用 Reynolds 原式（`5009161b`·owner 令「用文章中的代码去实现，不要自己想」）**：
+线性衰减换成 OpenSteer `steerToAvoidNeighbors` 的 `offset / -distanceSquared`（即 1/d²）——
+近的推得狠、远的几乎不管，比我自拟的线性更快解堆。SC2 无源码（公开资料仅到「navmesh + A* + funnel + Reynolds boids」），
+故实查落点 = Reynolds 1999 + OpenSteer 源码 + Game AI Pro 23；**逐字源码与我们的偏离逐条列在调研 §9**。
+
+**🛡 ORCA 硬避让已交（`2e9ea915`·owner 判「这个我知道的，可以上」·待独立复查）**
+`src/skills/tier2/orca.ts` = **逐行移植 RVO2 `Agent.cc`**（Apache-2.0·SPDX 头在案·`linearProgram1/2/3` 原样），
+接口 `FlowAgent.orca?: { radius, timeHorizon?, maxNeighbors? }`，**不设 = 一个字节不变**。
+偏离四条（写在文件头）：不做障碍半平面（静态障碍归流场 `blocked`）· 不用 kd-tree（复用流场网格分桶）· float32→float64 · 类改纯函数。
+**接线四坑**（都是实测撞出来的·非设计）：① 邻居桶按 `fieldId` 分 ⇒ **敌我互相看不见**（重叠 0.10→0.70）→ 改按几何键
+`cols×rows@cellSize:origin` 分；② 固定 3×3 窗口装不下 `radius+timeHorizon×speed` 的邻域 → 窗口按半径算；
+③ 全窗口扫描 36.8ms/tick → **环形搜索 + 第 k 近提前退出**，7.0ms；④ 到点硬停 ⇒ 不再回让、互惠破缺（0.33）→ 到点也跑 ORCA、pref 速度取 0。
+**三档开销**（同机·bench 三段）：纯流场 0.51/2.04 · 软分离 1.41/5.54 · ORCA **6.98/32.80** ms/tick（1000/4000 单位）。
+⇒ **4000 单位开 ORCA 超一帧预算**；建议默认软分离、ORCA 留给「不许穿模」的小队面。选型表见调研 §10。
+撤修验红四刀（撤 `u/2` 互惠 / 回退固定窗口 / 到点硬停 / 桶按 id 分）刀刀命中锚点。
+
 **下一步 = owner 已定**：交 game211 做 Demo 真机验证观感（大军推进是否自然、终点是否摊开、有没有抖）。
-Demo 反馈回来再定要不要调 `SEP_MAX_WEIGHT` / `SEP_REF_NEIGHBORS` 这两个手感旋钮。
+Demo 反馈回来再定 `SEP_MAX_WEIGHT` / ORCA `timeHorizon` 这几个手感旋钮，以及要不要补 Reynolds 的平滑累加器。
 
 ### REQ-UPBACKUP · 原图备份被替换图盖掉（「一键还原」的底牌丢了）· [2026-08-19] · Lead 巡检 owner 直传批带出（实证：game101 art-59 backupPath 文件与 gen/art-59-up.png 逐字节同） · **施工主体 = PST（已交·本行即锁）** · 复查 = Lead（2026-08-22·owner 点名） · status: **done·⚖ Lead 复查 PASS·余 F3 一腿归 PST（清完即出池）** · P3 · 类型: 创作台 bug（上传/替换/还原线）
 > **实证复现**（非按报告推断·样本已随 affbcd96 删除，故在临时目录上重建）：备份步骤**时序是对的**
