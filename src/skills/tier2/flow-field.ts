@@ -2,7 +2,7 @@ import { defineCapability } from '@engine/core/define-capability.js';
 import type { IWorld } from '@engine/core/types.js';
 import type { FlowField, FlowAgent, Transform, Velocity, Status } from '@engine/protocol/components.js';
 import { findDebugTrace, appendTrace } from '../debug-trace.js';
-import { orcaVelocity, type OrcaAgent } from './orca.js';
+import { orcaVelocity, type OrcaAgent, type OrcaStats } from './orca.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  t2-flow-field —— 群体流场寻路（REQ-FLOWFIELD·owner 2026-08-10 判 A 下沉引擎）。
@@ -80,15 +80,51 @@ export interface DensityField {
   readonly py: Float64Array;
   readonly vx: Float64Array;    // 单位当前速度（ORCA 用：互惠避让要知道对方在怎么走）
   readonly vy: Float64Array;
-  readonly radius: Float64Array; // 单位碰撞半径（ORCA 用）
+  readonly radius: Float64Array; // 单位碰撞半径（ORCA 用·没开 ORCA 的按 0 计）
+  readonly reciprocal: Uint8Array; // 这个单位自己跑不跑 ORCA（1=会还礼·见 orca.ts 的 u/2）
 }
 
-/** 网格几何签名 = 邻居索引的键（**空间**相同就共用一份·与跟哪张场无关）。 */
+/**
+ * 网格几何签名 = **ORCA** 邻居索引的键（**空间**相同就共用一份·与跟哪张场无关）。
+ *
+ * ⚠ **软分离不用它，用 fieldId**（独立复查逼出来的·别再"顺手统一"）：ORCA 落地时我把两者
+ * 一起改成了几何键，于是「只开 separation、从不碰 orca」的多场世界**轨迹变了**
+ * （复查实测同一世界 40 拍轨迹 hash 从 `2b3faf3e…` 变成 `f40ff7ee…`，末拍某单位 x 从 3.357 变 2.088）——
+ * 那是 lockstep / 存档回放面的静默分叉，而当时的口径写的是「不设 orca = 一个字节不变」。
+ * 现在两套索引**各建各的**：软分离按 fieldId（= ORCA 落地之前的语义，逐位复原），
+ * ORCA 按几何键（跨场也要能互相避让·两队正面对撞不能互相看不见）。
+ * 想让软分离也跨场 = **语义扩展**，得单独提、单独测，不许搭车。
+ */
 export const geoKey = (f: FlowField): string => `${f.cols}x${f.rows}@${f.cellSize}:${f.originX},${f.originY}`;
 
 /** ORCA 缺省前瞻拍数与邻居上限（原码里这两个是每 agent 参数·这里给缺省值）。 */
 export const ORCA_TIME_HORIZON = 8;
 export const ORCA_MAX_NEIGHBORS = 8;
+/**
+ * 邻域半径的**相对速度余量** —— 一个**记在案的取舍**，不是随手填的。
+ *
+ * 原码 `neighborDist` 是独立参数（官方示例 15，而 `timeHorizon × maxSpeed` 只有 5，即 3×）；
+ * 本仓由 `timeHorizon × speed × 本常数 + radius` 推导。独立复查指出：只算「我自己跑多远」
+ * 会把**迎面来的**邻居低估一半（最坏相对速度 = 双方之和），实测有过距离 9.0、4.15 拍后必撞
+ * 的邻居被挡在门外。
+ *
+ * **但改成 2 实测更糟**（同机·点名用例「两队对穿」）：邻域一宽，每个单位身上挂的 ORCA 约束
+ * 从「够用」变成「过约束」，线性规划在 maxSpeed 圆内**无可行解**，落到 LP3 的「最不违反」——
+ * 全程最近两心距 **0.70004 → 0.5423**（半径和 0.70，即真的压进去了）。
+ * 所以这里**保持 1，并把这条偏离与它的代价一起写在案**：漏网的那类邻居会在进入 4.35 之后
+ * 才被约束（那时距碰撞仍有 ~4 拍 < timeHorizon，ORCA 还来得及让），换来的是密集对撞不塌。
+ * 想调它 = 调"礼让多早开始"，交 Demo 拿观感定，别在这里拍脑袋。
+ */
+export const ORCA_RANGE_SLACK = 1;
+/** 环形搜索访问过的格子数（只为测试与排查·不参与判定·见 `flowFieldCellVisits`）。 */
+let cellVisits = 0;
+/**
+ * **访问格数**——环形搜索"提前退出"那段唯一的机器判据。
+ * 独立复查实测：撤掉提前退出，53 测 + bench 全绿 exit 0，而 1000 单位从 6.827 涨到 39.264ms/tick
+ * （5.75× 悬崖）。墙钟不能进 sim 测试（`test-hygiene-check`），所以量这个：
+ * 提前退出在时，稠密场每次查询平均访问 ~9 格（一两环）；撤掉就是整个窗口 361→1369 格。
+ */
+export function flowFieldCellVisits(): number { return cellVisits; }
 
 /**
  * 收集 ORCA 邻居：本格 + 8 邻格里最近的 `maxNeighbors` 个（**按距离平方升序**——
@@ -112,6 +148,7 @@ export function orcaNeighbors(
         if (Math.max(Math.abs(dr), Math.abs(dc)) !== r) continue;   // 只扫这一环（切比雪夫距离=r）
         const ni = cellIndex(field, col + dc, row + dr);
         if (ni < 0) continue;
+        cellVisits++;
         const from = dens.start[ni];
         const to = from + dens.count[ni];
         for (let p = from; p < to; p++) {
@@ -133,6 +170,8 @@ export function orcaNeighbors(
   found.sort((a, b) => (a.d2 !== b.d2 ? a.d2 - b.d2 : a.idx - b.idx));
   return found.slice(0, maxNeighbors).map(({ idx }) => ({
     x: dens.px[idx], y: dens.py[idx], vx: dens.vx[idx], vy: dens.vy[idx], radius: dens.radius[idx],
+    // `idx` 只在「完全同位」的退化分支里定左右（见 orca.ts 差异⑦）；`reciprocal` 决定 u 要不要打对折。
+    idx, reciprocal: dens.reciprocal[idx] === 1,
   }));
 }
 
@@ -636,42 +675,50 @@ export const flowFieldCapability = defineCapability({
           if (withLos.length > 0) appendTrace(trace, tick, 'flow-field', 'reject', `${withLos.length} 张场的 los 被忽略（视线优化属 M2·M1 未实现）`, `场：${withLos.slice(0, 3).join(',')}`);
         }
 
-        // ── 软分离的分桶（owner 2026-08-24 定方向：分离力·soft force·流场恒主导）──────────
-        // 只在**真有单位开了 separation** 时才建（没开=一个字节不变·零回归）。
-        // 计数排序分桶：两遍 O(单位) + 一遍前缀和 O(格数)。桶内按单位 id 序（agents 已排序）= 确定。
-        // 软分离与 ORCA 共用同一张分桶（两者都要回答「谁在我附近」）。
-        const wantSep = agents.some(([, c]) => { const a = c.get('FlowAgent') as FlowAgent; return a.separation !== undefined || a.orca !== undefined; });
-        const density = new Map<string, DensityField>();
-        const cellOfAgent = new Int32Array(agents.length).fill(-1);
-        const fieldOfAgent: string[] = new Array(agents.length).fill('');
-        if (wantSep) {
-          // ⚠ **按网格几何分桶，不是按场 id**（实测逼出来的）：避让邻居是「谁在我附近」——
-          // 那是**空间**的属性，与「你跟的是哪张流场」无关。第一版按 fieldId 分桶，
-          // 两队各跟一张场（一队往右、一队往左）时**互相看不见**，正面对撞时 ORCA 一条约束都没有，
-          // 两队直接对穿（实测最近两心距 0.10，而半径和是 0.70）。
-          // 同几何的多张场（多目标/多阵营最常见的情形）共用一份索引，跨场也能互相避让。
-          const geoOf = geoKey;
-          const geoField = new Map<string, FlowField>();
-          for (const [, f] of fields) if (!geoField.has(geoOf(f))) geoField.set(geoOf(f), f);
+        // ── 邻居索引（软分离一份、ORCA 一份·**键不同、成员不同**）───────────────────────
+        // 计数排序分桶：两遍 O(单位) + 一遍前缀和 O(格数)。桶内按单位下标序（agents 已按实体 id 排序）= 确定。
+        // 只在真有人要用时才建（都没开 = 一个字节不变·零回归）。
+        //
+        // 为什么是两份而不是一份（血换的，见 geoKey 注释）：
+        // · **软分离按 fieldId**——ORCA 落地时我把它顺手改成了几何键，结果「只开 separation」的
+        //   多场世界轨迹静默变了（lockstep/存档面）。现在逐位复原为 ORCA 之前的语义。
+        // · **ORCA 按几何键，且收下全部单位**——避让邻居是「谁在我附近」，与跟哪张场无关；
+        //   而且**没开 ORCA 的单位也得进桶**（纯流场/软分离的队伍不进桶 = 对 ORCA 队完全隐形，
+        //   复查实测 ORCA 队对穿纯流场队最近两心距 0.1000、半径和 0.70）。它们的半径按 0 计、
+        //   且在 `reciprocal=0` 上标出来 —— 见 orca.ts：不还礼的邻居我要独自让满。
+        interface AgentIndex {
+          readonly density: Map<string, DensityField>;
+          readonly cellIdxOf: Int32Array;   // 单位下标 → 格下标（-1 = 不在这份索引里）
+          readonly keyOf: string[];         // 单位下标 → 桶键
+        }
+        const buildIndex = (
+          keyFn: (f: FlowField) => string,
+          wants: (a: FlowAgent) => boolean,
+        ): AgentIndex => {
+          const density = new Map<string, DensityField>();
+          const cellIdxOf = new Int32Array(agents.length).fill(-1);
+          const keyOf: string[] = new Array(agents.length).fill('');
+          const keyField = new Map<string, FlowField>();
+          for (const [, f] of fields) if (!keyField.has(keyFn(f))) keyField.set(keyFn(f), f);
           const counts = new Map<string, Int32Array>();
-          for (const [g, f] of geoField) counts.set(g, new Int32Array(f.cols * f.rows));
+          for (const [g, f] of keyField) counts.set(g, new Int32Array(f.cols * f.rows));
           // 第一遍：数每格几个人
           agents.forEach(([, comps], i) => {
             const a = comps.get('FlowAgent') as FlowAgent;
-            if (a.separation === undefined && a.orca === undefined) return;   // 两个都没开的不占位·也不被推
+            if (!wants(a)) return;
             const f = fields.get(a.fieldId);
             if (!f) return;
-            const g = geoOf(f);
+            const g = keyFn(f);
             const cnt = counts.get(g);
             if (!cnt) return;
             const t = comps.get('Transform') as Transform;
             const { col, row } = cellOf(f, t.x, t.y);
             const ci = cellIndex(f, col, row);
             if (ci < 0) return;
-            cellOfAgent[i] = ci; fieldOfAgent[i] = g; cnt[ci]++;
+            cellIdxOf[i] = ci; keyOf[i] = g; cnt[ci]++;
           });
-          // 前缀和 → 每格起点；第二遍：填桶
-          for (const [g, f] of geoField) {
+          // 前缀和 → 每格起点
+          for (const [g, f] of keyField) {
             const cnt = counts.get(g)!;
             const n = f.cols * f.rows;
             const start = new Int32Array(n);
@@ -681,27 +728,47 @@ export const flowFieldCapability = defineCapability({
               count: cnt, start, items: new Int32Array(acc),
               px: new Float64Array(agents.length), py: new Float64Array(agents.length),
               vx: new Float64Array(agents.length), vy: new Float64Array(agents.length),
-              radius: new Float64Array(agents.length),
+              radius: new Float64Array(agents.length), reciprocal: new Uint8Array(agents.length),
             });
           }
+          // 第二遍：填桶
           const fill = new Map<string, Int32Array>();
           for (const [g, d] of density) fill.set(g, Int32Array.from(d.start));
           agents.forEach(([, comps], i) => {
-            const ci = cellOfAgent[i];
+            const ci = cellIdxOf[i];
             if (ci < 0) return;
-            const d = density.get(fieldOfAgent[i]);
-            const cursor = fill.get(fieldOfAgent[i]);
+            const d = density.get(keyOf[i]);
+            const cursor = fill.get(keyOf[i]);
             if (!d || !cursor) return;
             const t = comps.get('Transform') as Transform;
             d.items[cursor[ci]++] = i;
             d.px[i] = t.x; d.py[i] = t.y;
-            // ORCA 还要邻居的**当前速度与半径**（互惠避让的前提是「我知道你在怎么走」）。
+            // ORCA 还要邻居的**当前速度、半径、还不还礼**（互惠的前提是「我知道你在怎么走」）。
             const fa = comps.get('FlowAgent') as FlowAgent;
             const nv = world.getComponent<Velocity>(agents[i][0], 'Velocity');
             d.vx[i] = nv?.vx ?? 0; d.vy[i] = nv?.vy ?? 0;
-            d.radius[i] = fa.orca?.radius ?? 0;
+            d.radius[i] = orcaRadiusOf(fa);
+            d.reciprocal[i] = orcaRadiusOf(fa) > 0 ? 1 : 0;
           });
-        }
+          return { density, cellIdxOf, keyOf };
+        };
+
+        // `orca.radius` 必须是正数——填 0/负数/NaN 的话 combinedRadius 塌掉，ORCA 表面上在跑、
+        // 实际一条有效约束都没有（静默失效正是本仓最难查的那类 bug）。当作没开 ORCA 处理，
+        // **并在单位循环里数一次**（这个函数每单位会被调用好几次，计数放这里会重复计——
+        // 第一版就是这么写的，点名用例一跑就报「半径非法 3」而世界里只有一个）。
+        const orcaRadiusOf = (a: FlowAgent): number => {
+          if (!a.orca) return 0;
+          const r = a.orca.radius;
+          return Number.isFinite(r) && r > 0 ? r : 0;
+        };
+        let badRadius = 0;
+
+        const wantSep = agents.some(([, c]) => (c.get('FlowAgent') as FlowAgent).separation !== undefined);
+        const wantOrca = agents.some(([, c]) => orcaRadiusOf(c.get('FlowAgent') as FlowAgent) > 0);
+        const sepIdx = wantSep ? buildIndex((f) => f.id, (a) => a.separation !== undefined) : null;
+        const orcaIdx = wantOrca ? buildIndex(geoKey, () => true) : null;
+        const orcaStats: OrcaStats = { degenerate: 0, oneSided: 0 };
 
         let moved = 0; let stopped = 0; let noField = 0; let offGrid = 0;
         for (let ai = 0; ai < agents.length; ai++) {
@@ -752,9 +819,11 @@ export const flowFieldCapability = defineCapability({
           let sx = 0; let sy = 0;
           // **ORCA 优先**（与组件注释一致）：两个都填时软分离被忽略——两套避让叠加没有意义，
           // ORCA 的目标函数本来就是「离期望速度最近」，再往期望速度里掺一个力只会让它偏离得更多。
-          const sepW = a.separation && !a.orca ? Math.min(Math.max(a.separation.weight, 0), SEP_MAX_WEIGHT) : 0;
+          const useOrca = orcaRadiusOf(a) > 0;
+          if (a.orca && !useOrca) badRadius++;   // 每单位每 tick 恰好数一次
+          const sepW = a.separation && !useOrca ? Math.min(Math.max(a.separation.weight, 0), SEP_MAX_WEIGHT) : 0;
           if (sepW > 0) {
-            const d = density.get(geoKey(field));
+            const d = sepIdx?.density.get(field.id);
             // 终点格（流场无方向）只用质心项——见 separationDir 的 useGradient 注释。
             const atGoal = arrived || (bf.dir[ci * 2] === 0 && bf.dir[ci * 2 + 1] === 0);
             if (d) {
@@ -793,19 +862,22 @@ export const flowFieldCapability = defineCapability({
           // ── ORCA 硬避让（owner 2026-08-24「可以上」·移植自 RVO2·见 orca.ts 文件头）────────
           // 期望速度照收，ORCA 只把它改成「最接近且 timeHorizon 拍内不会撞」的那个。
           // **走位仍归流场**——ORCA 的目标函数就是"离期望速度最近"。
-          if (a.orca) {
-            const d = density.get(geoKey(field));
+          if (useOrca) {
+            const d = orcaIdx?.density.get(geoKey(field));
             if (d) {
-              const horizon = a.orca.timeHorizon ?? ORCA_TIME_HORIZON;
-              const maxN = a.orca.maxNeighbors ?? ORCA_MAX_NEIGHBORS;
-              // 邻域半径照原码：timeHorizon×maxSpeed + 自身半径（前瞻期内够得到我的都算数）。
-              const range = horizon * a.speed + a.orca.radius;
+              const radius = orcaRadiusOf(a);
+              const horizon = a.orca!.timeHorizon ?? ORCA_TIME_HORIZON;
+              const maxN = a.orca!.maxNeighbors ?? ORCA_MAX_NEIGHBORS;
+              // 邻域半径 = 前瞻拍数 × 速度 × 相对速度余量 + 自身半径（见 ORCA_RANGE_SLACK：
+              // 只按自己跑多远算，会把迎面高速接近的邻居挡在门外——复查实测过一个 4.15 拍必撞的漏网）。
+              const range = horizon * a.speed * ORCA_RANGE_SLACK + radius;
               const neighbors = orcaNeighbors(field, d, ai, col, row, t.x, t.y, range, maxN);
               if (neighbors.length > 0) {
                 const out = orcaVelocity(
-                  { x: t.x, y: t.y, vx: v.vx, vy: v.vy, radius: a.orca.radius },
+                  { x: t.x, y: t.y, vx: v.vx, vy: v.vy, radius, idx: ai },
                   neighbors, { x: wantX, y: wantY },
                   a.speed, horizon, 1,          // timeStep=1：本引擎一拍就是一个时间单位
+                  orcaStats,
                 );
                 v.vx = out.x; v.vy = out.y;
                 if (out.x === 0 && out.y === 0) stopped++; else moved++;
@@ -821,6 +893,13 @@ export const flowFieldCapability = defineCapability({
         }
 
         // 密度守则：每 system 每 tick ≤3 条·无事 0 条。这里只在「有单位没动起来」时各报一条摘要。
+        // ORCA 的三类**静默降级**合并成一条（密度守则：每 system 每 tick ≤3 条）。
+        // 三条都是「什么都没发生 / 悄悄少做了一半」的分支，正是必须留痕的那一类。
+        if (badRadius > 0 || orcaStats.degenerate > 0 || orcaStats.oneSided > 0) {
+          appendTrace(trace, tick, 'flow-field', 'reject',
+            `ORCA 降级：半径非法 ${badRadius} · 完全同位 ${orcaStats.degenerate} · 邻居不还礼 ${orcaStats.oneSided}`,
+            '半径非法=当没开 ORCA·同位=按下标定左右强行分开·不还礼=我独自让满（见 orca.ts 差异⑦）');
+        }
         if (noField > 0) appendTrace(trace, tick, 'flow-field', 'reject', `${noField} 个单位找不到自己的场 → 停`, '检查 FlowAgent.fieldId 与 FlowField.id 是否对上');
         if (offGrid > 0) appendTrace(trace, tick, 'flow-field', 'reject', `${offGrid} 个单位在网格外 → 停`, '网格没覆盖到它们站的地方');
         if (moved > 0 || stopped > 0) appendTrace(trace, tick, 'flow-field', 'commit', `写 Velocity：${moved} 走 / ${stopped} 停`, `场 ${fields.size} 张`);

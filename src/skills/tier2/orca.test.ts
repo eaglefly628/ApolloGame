@@ -1,8 +1,45 @@
 import { describe, it, expect } from 'vitest';
-import { orcaVelocity, linearProgram2, RVO_EPSILON, type OrcaAgent, type OrcaLine } from './orca.js';
+import { orcaVelocity, linearProgram2, RVO_EPSILON, type OrcaAgent, type OrcaLine, type OrcaStats } from './orca.js';
 
 const hyp = (v: { x: number; y: number }): number => Math.hypot(v.x, v.y);
 const agent = (x: number, y: number, vx = 0, vy = 0, radius = 0.5): OrcaAgent => ({ x, y, vx, vy, radius });
+
+/** 与实现**同源重算**的 ORCA 约束（用于"结果落在半平面内"与"LP3 违反量"两条判据）。 */
+function orcaLinesOf(self: OrcaAgent, neighbors: readonly OrcaAgent[], timeHorizon: number): OrcaLine[] {
+  const lines: OrcaLine[] = [];
+  const invT = 1 / timeHorizon;
+  for (const o of neighbors) {
+    const rp = { x: o.x - self.x, y: o.y - self.y };
+    const rv = { x: self.vx - o.vx, y: self.vy - o.vy };
+    const distSq = rp.x * rp.x + rp.y * rp.y;
+    const cr = self.radius + o.radius;
+    let dir: { x: number; y: number }; let u: { x: number; y: number };
+    if (distSq > cr * cr) {
+      const w = { x: rv.x - invT * rp.x, y: rv.y - invT * rp.y };
+      const wLenSq = w.x * w.x + w.y * w.y;
+      const dp = w.x * rp.x + w.y * rp.y;
+      if (dp < 0 && dp * dp > cr * cr * wLenSq) {
+        const wl = Math.sqrt(wLenSq); const uw = { x: w.x / wl, y: w.y / wl };
+        dir = { x: uw.y, y: -uw.x }; const k = cr * invT - wl; u = { x: k * uw.x, y: k * uw.y };
+      } else {
+        const leg = Math.sqrt(distSq - cr * cr);
+        dir = (rp.x * w.y - rp.y * w.x) > 0
+          ? { x: (rp.x * leg - rp.y * cr) / distSq, y: (rp.x * cr + rp.y * leg) / distSq }
+          : { x: -(rp.x * leg + rp.y * cr) / distSq, y: -(-rp.x * cr + rp.y * leg) / distSq };
+        const dv = rv.x * dir.x + rv.y * dir.y;
+        u = { x: dv * dir.x - rv.x, y: dv * dir.y - rv.y };
+      }
+    } else {
+      const w = { x: rv.x - rp.x, y: rv.y - rp.y };          // timeStep = 1
+      const wl = Math.sqrt(w.x * w.x + w.y * w.y);
+      const uw = { x: w.x / wl, y: w.y / wl };
+      dir = { x: uw.y, y: -uw.x }; const k = cr - wl; u = { x: k * uw.x, y: k * uw.y };
+    }
+    const share = o.reciprocal === false ? 1 : 0.5;
+    lines.push({ point: { x: self.vx + share * u.x, y: self.vy + share * u.y }, direction: dir });
+  }
+  return lines;
+}
 
 describe('orca — 移植自 RVO2（Apache-2.0）· 线性规划本体', () => {
   it('无邻居 → 原样返回期望速度（避让不该无中生有地改路）', () => {
@@ -76,13 +113,68 @@ describe('orca — 移植自 RVO2（Apache-2.0）· 线性规划本体', () => {
     expect(hyp(out)).toBeGreaterThan(0);
   });
 
-  it('**挤死时不失去速度**（linearProgram3 兜底：无可行解 → 求最不违反的那个）', () => {
-    // 四面被围住：可行域为空，原码用 LP3 求"尽量少撞"的速度。
+  it('**挤死时取「最不违反」的速度**（linearProgram3 兜底·判据 = 违反量不超过 LP2 的落点）', () => {
+    // ⚠ 用例名与实现注释首版都写的是「不失去速度」，独立复查实测**说反了**：
+    // 这个场景里 LP3 给的恰恰是 (0,0)（站住不动最不违反），撤掉 LP3 反而得到 (1,0)（撞得更狠）。
+    // LP3 优化的是**最大违反量**，与速度大小无关 —— 判据只能按这个写。
+    // 而且首版整段删掉 LP3 时 53 测全绿（零断言覆盖），所以这条是补的承重腿。
     const self = agent(0, 0, 0, 0, 0.5);
     const ring = [agent(0.6, 0, -1, 0), agent(-0.6, 0, 1, 0), agent(0, 0.6, 0, -1), agent(0, -0.6, 0, 1)];
-    const out = orcaVelocity(self, ring, { x: 1, y: 0 }, 1, 2, 1);
+    const pref = { x: 1, y: 0 };
+    const out = orcaVelocity(self, ring, pref, 1, 2, 1);
     expect(Number.isFinite(out.x) && Number.isFinite(out.y)).toBe(true);   // 不出 NaN
     expect(hyp(out)).toBeLessThanOrEqual(1 + 1e-9);
+
+    // 用同一批约束重跑一次「只到 LP2 为止」，比最大违反量。
+    const lines = orcaLinesOf(self, ring, 2);
+    const lp2Only = { x: 0, y: 0 };
+    const failAt = linearProgram2(lines, 1, pref, false, lp2Only);
+    expect(failAt).toBeLessThan(lines.length);                 // 前提：这个场景真的无可行解
+    const worstViolation = (v: { x: number; y: number }): number => Math.max(
+      0, ...lines.map((l) => l.direction.x * (l.point.y - v.y) - l.direction.y * (l.point.x - v.x)),
+    );
+    expect(worstViolation(out)).toBeLessThanOrEqual(worstViolation(lp2Only) + RVO_EPSILON);
+    // 并且 LP3 真的改了落点（否则"≤"是靠恒等式蒙过去的）
+    expect(out).not.toEqual(lp2Only);
+  });
+
+  it('**邻居不还礼时独自让满**（reciprocal:false ⇒ u 不打对折·偏离期望速度约两倍）', () => {
+    // 复查打回项 P1-3 的单元级锚点：整合层面（ORCA 队 vs 纯流场队）这条差异只有 3% 可见，
+    // 因为逐拍重解会把欠让的部分补回来；在这里它是**精确两倍**，一撤就红。
+    const self = agent(0, 0, 1, 0);
+    const other: OrcaAgent = { ...agent(4, 0.05, -1, 0), reciprocal: false };
+    const pref = { x: 1, y: 0 };
+    const half = orcaVelocity(self, [{ ...other, reciprocal: true }], pref, 1, 5, 1);
+    const full = orcaVelocity(self, [other], pref, 1, 5, 1);
+    const devHalf = Math.hypot(half.x - pref.x, half.y - pref.y);
+    const devFull = Math.hypot(full.x - pref.x, full.y - pref.y);
+    expect(devFull / devHalf).toBeCloseTo(2, 1);
+    // 缺省（不填 reciprocal）= 原码语义 = 各让一半
+    expect(orcaVelocity(self, [agent(4, 0.05, -1, 0)], pref, 1, 5, 1)).toEqual(half);
+  });
+
+  it('**完全同位不出 NaN、按下标定左右**（原码 w/|w| 在这里除以 0·NaN 约束会被静默丢弃）', () => {
+    const stats: OrcaStats = { degenerate: 0, oneSided: 0 };
+    const a: OrcaAgent = { x: 3, y: 3, vx: 0, vy: 0, radius: 0.5, idx: 1 };
+    const b: OrcaAgent = { x: 3, y: 3, vx: 0, vy: 0, radius: 0.5, idx: 7 };
+    const va = orcaVelocity(a, [b], { x: 0, y: 0 }, 1, 2, 1, stats);
+    const vb = orcaVelocity(b, [a], { x: 0, y: 0 }, 1, 2, 1, stats);
+    expect(Number.isFinite(va.x) && Number.isFinite(va.y)).toBe(true);
+    expect(stats.degenerate).toBe(2);
+    expect(va.x).toBeGreaterThan(0);      // 下标小的往 +x
+    expect(vb.x).toBeLessThan(0);         // 下标大的往 −x ⇒ 严格相反 ⇒ 互惠不破
+    expect(va.x).toBeCloseTo(-vb.x, 12);
+    // 撤掉退化分支的话这里两条速度都是 NaN·而 NaN 在 linearProgram2 的 det(...)>0 里恒假
+    // ⇒ 约束被静默丢弃 ⇒ 两个单位钉死在一起（整合层实测 60 拍两心距恒 0.000000）。
+  });
+
+  it('确定性：同位分离的方向只由下标定（交换下标 → 方向严格翻转）', () => {
+    const mk = (selfIdx: number, otherIdx: number): { x: number; y: number } => orcaVelocity(
+      { x: 0, y: 0, vx: 0, vy: 0, radius: 0.5, idx: selfIdx },
+      [{ x: 0, y: 0, vx: 0, vy: 0, radius: 0.5, idx: otherIdx }],
+      { x: 0, y: 0 }, 1, 2, 1,
+    );
+    expect(mk(2, 9).x).toBeCloseTo(-mk(9, 2).x, 12);
   });
 
   it('确定性：同输入逐位相同 · 邻居列表顺序不同不影响（已按距离排好序的前提下）', () => {
@@ -100,11 +192,23 @@ describe('orca — 移植自 RVO2（Apache-2.0）· 线性规划本体', () => {
     expect(body).not.toMatch(/Date\.now|performance\.now|Math\.random/);
   });
 
-  it('保留了 Apache-2.0 归属声明（移植代码的硬要求）', async () => {
+  it('Apache-2.0 的三件套齐全：源文件声明 + 许可证正文 + 台账里的修改说明', async () => {
+    // ⚠ 首版只有源文件里那行 SPDX，独立复查指出**不满足 §4(a)/(b)**：
+    // 分发时要随附许可证正文，且要载明「本文件被修改过」。三样缺一这条就红。
     const fs = await import('node:fs');
     const src = fs.readFileSync(new URL('./orca.ts', import.meta.url), 'utf8');
     expect(src).toContain('SPDX-License-Identifier: Apache-2.0');
     expect(src).toContain('University of North Carolina at Chapel Hill');
     expect(src).toContain('https://github.com/snape/RVO2');
+
+    const root = new URL('../../../', import.meta.url);
+    const license = fs.readFileSync(new URL('licenses/Apache-2.0.txt', root), 'utf8');
+    expect(license).toContain('Apache License');
+    expect(license).toContain('Version 2.0, January 2004');
+
+    const notices = fs.readFileSync(new URL('THIRD-PARTY-NOTICES.md', root), 'utf8');
+    expect(notices).toContain('RVO2');
+    expect(notices).toContain('src/skills/tier2/orca.ts');
+    expect(notices).toMatch(/修改说明/);
   });
 });

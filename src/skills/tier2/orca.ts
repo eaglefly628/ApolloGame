@@ -25,6 +25,18 @@
  * ③ C++ 的 `float`(32 位) → JS `number`(64 位双精度)。算法与运算顺序逐行照原样，
  *    精度更高；本仓的确定性要求是"同输入同输出"，不是"与 C++ 逐位相同"。
  * ④ 结构上把 `Agent` 类拆成纯函数（本仓 sim 层不放可变对象·便于点名测试与确定性对账）。
+ * ⑤ **邻域半径不是独立参数**：原码 `neighborDist` 与 `timeHorizon` 各填各的（官方示例 15 对 10）；
+ *    本仓由 `timeHorizon × speed × ORCA_RANGE_SLACK + radius` 推导（见 flow-field.ts）。
+ *    独立复查实测过一个漏网场景：迎面高速接近的邻居 4.15 拍后必撞，却因为在 9.0 之外被挡在门外。
+ *    **试过按相对速度加倍余量，实测更糟**（密集对撞从最近 0.70004 压到 0.5423 = 过约束 → LP 无可行解 → LP3）；
+ *    故保持不加倍，把这条偏离与代价一起记在 `ORCA_RANGE_SLACK` 的注释里。
+ * ⑥ **`timeStep` 恒为 1**：本引擎一拍就是一个时间单位（同 `Steering.speed` 的「单位/tick」口径），
+ *    不存在原码里那个可变 dt。已重叠时的脱离速度因此是「一拍脱离」。
+ * ⑦ **补了原码没有的两处**（都由独立复查实测逼出来·各带点名用例）：
+ *    · **完全同位**（相对位置与相对速度都是 0）→ 原码 `w/|w|` 得 NaN，而 NaN 约束会在
+ *      `linearProgram2` 的 `det(...) > 0` 里恒假、被**静默丢弃** ⇒ 两个单位永远分不开。见 `DEGENERATE`。
+ *    · **不还礼的邻居**（没开 ORCA 的单位：纯流场/软分离）→ 原码假设「所有人都同样讲道理」，各让一半；
+ *      对方压根不算 ORCA 时那一半没人让 ⇒ 强承诺静默变成半个承诺。见 `OrcaAgent.reciprocal`。
  */
 
 /** 原码 `RVO_EPSILON`（`src/Vector2.cc`）。 */
@@ -34,7 +46,31 @@ export interface Vec2 { x: number; y: number }
 /** 原码 `Line`：一条有向直线（point 上一点·direction 单位方向）。可行域 = 直线**左侧**半平面。 */
 export interface OrcaLine { point: Vec2; direction: Vec2 }
 /** 参与避让的一个单位（只读快照）。 */
-export interface OrcaAgent { x: number; y: number; vx: number; vy: number; radius: number }
+export interface OrcaAgent {
+  x: number; y: number; vx: number; vy: number; radius: number;
+  /**
+   * 稳定下标（本仓 = 单位在 agents 数组里的位置·按实体 id 排序）。**只在「完全同位」这一个
+   * 退化分支里用**：拿它定谁往左谁往右，保证双方算出来的脱离方向严格相反（互惠不破），
+   * 且与遍历顺序、Map 序、浮点误差全都无关。缺省 0（单元测试里两两同位时请显式给）。
+   */
+  idx?: number;
+  /**
+   * 这个邻居**自己也在跑 ORCA 吗**。ORCA 的 `u/2` 建立在「双方都让一半」上；
+   * 邻居若是纯流场/软分离单位（不还礼），我必须**独自让满**，否则强承诺静默降成半个。
+   * 缺省 `true` = 原码语义（原码里所有 agent 都跑 ORCA）。
+   */
+  reciprocal?: boolean;
+}
+
+/** 退化分支的计数（只为留痕与测试·不参与判定）。 */
+export interface OrcaStats { degenerate: number; oneSided: number }
+
+/**
+ * 完全同位时的脱离方向（见文件头差异⑦）。取 +x 轴而不是随便一个方向，是因为它必须
+ * **可复现**：下标小的往 +x、大的往 −x，双方严格相反。
+ */
+export const DEGENERATE: Vec2Const = { x: 1, y: 0 };
+interface Vec2Const { readonly x: number; readonly y: number }
 
 const det = (a: Vec2, b: Vec2): number => a.x * b.y - a.y * b.x;
 const dot = (a: Vec2, b: Vec2): number => a.x * b.x + a.y * b.y;
@@ -128,7 +164,12 @@ export function linearProgram2(
 /**
  * 原码 `linearProgram3`：**无可行解时的兜底**（人挤得太死，所有约束凑不出可行速度）。
  * 逐条把"违反得最狠"的约束当目标，在投影出来的新约束集上求"最不违反"的速度——
- * 也就是**尽量少撞**而不是求完美。RTS 里这一段必须有，否则挤爆时会直接失去速度。
+ * 也就是**尽量少撞**而不是求完美。
+ *
+ * ⚠ **别把它理解成「保住速度」**（首版注释与首版用例名都这么写，独立复查实测证伪）：
+ * 它优化的是**最大违反量**，跟速度大小没关系——四面被围的那个场景里，LP3 给的是 `(0,0)`
+ * （站住不动最不违反），撤掉 LP3 反而拿到 `(1,0)`（LP2 的失败落点·撞得更狠）。
+ * 判据因此只有一条：**LP3 的结果违反量 ≤ LP2 落点的违反量**，`orca.test.ts` 按这条断言。
  */
 export function linearProgram3(
   lines: readonly OrcaLine[], numObstLines: number, beginLine: number, radius: number, result: Vec2,
@@ -183,6 +224,7 @@ export function linearProgram3(
 export function orcaVelocity(
   self: OrcaAgent, neighbors: readonly OrcaAgent[], pref: Vec2,
   maxSpeed: number, timeHorizon: number, timeStep: number,
+  stats?: OrcaStats,
 ): Vec2 {
   const lines: OrcaLine[] = [];
   const invTimeHorizon = 1 / timeHorizon;
@@ -232,14 +274,29 @@ export function orcaVelocity(
       const invTimeStep = 1 / timeStep;
       const w = { x: relativeVelocity.x - invTimeStep * relativePosition.x, y: relativeVelocity.y - invTimeStep * relativePosition.y };
       const wLength = Math.sqrt(absSq(w));
-      const unitW = { x: w.x / wLength, y: w.y / wLength };
+      // **完全同位的退化分支**（文件头差异⑦·原码没有）：w=0 ⇒ w/|w| 是 NaN ⇒ 整条约束在
+      // `linearProgram2` 的 `det(NaN) > 0` 里恒假、被静默丢弃 ⇒ 两个单位钉在一起永远分不开
+      // （独立复查实测：两个 Transform 写同一坐标的单位 60 拍两心距恒 0.000000，连 NaN 都看不见）。
+      // 给一个**确定性**的左右分离方向：下标小的往 +x、大的往 −x，双方严格相反 ⇒ 互惠仍成立。
+      const unitW = wLength > RVO_EPSILON
+        ? { x: w.x / wLength, y: w.y / wLength }
+        : (() => {
+            if (stats) stats.degenerate++;
+            const sign = (self.idx ?? 0) <= (other.idx ?? 0) ? 1 : -1;
+            return { x: DEGENERATE.x * sign, y: DEGENERATE.y * sign };
+          })();
       direction = { x: unitW.y, y: -unitW.x };
       const k = combinedRadius * invTimeStep - wLength;
       u = { x: k * unitW.x, y: k * unitW.y };
     }
 
-    /* **各让一半**（reciprocal 的由来）：line.point = 自己的速度 + u/2 */
-    lines.push({ point: { x: self.vx + 0.5 * u.x, y: self.vy + 0.5 * u.y }, direction });
+    // **各让一半**（reciprocal 的由来）：line.point = 自己的速度 + u/2。
+    // ⚠ 邻居**不还礼**时（没开 ORCA 的纯流场/软分离单位）必须独自让满，否则那一半没人让，
+    // 「timeHorizon 内保证不撞」这句强承诺就静默变成半句（独立复查实测：ORCA 队对穿纯流场队
+    // 最近两心距 0.1000，而半径和是 0.70）。
+    const share = other.reciprocal === false ? 1 : 0.5;
+    if (share === 1 && stats) stats.oneSided++;
+    lines.push({ point: { x: self.vx + share * u.x, y: self.vy + share * u.y }, direction });
   }
 
   const result: Vec2 = { x: 0, y: 0 };

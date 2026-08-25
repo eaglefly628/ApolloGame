@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { World } from '@engine/core/world.js';
-import type { FlowField, FlowAgent, Transform, Velocity, Status } from '@engine/protocol/components.js';
+import type { FlowField, FlowAgent, Transform, Velocity, Status, DebugTrace } from '@engine/protocol/components.js';
 import { motionApplyCapability } from '@skills/tier1/index.js';
 import {
   flowFieldCapability, bakeFlowField, buildCostField, buildIntegration, buildFlow,
   cellIndex, cellOf, sameInputs, getBakedField, clearFlowFieldCache, flowFieldBakes, flowFieldLookups,
-  STRAIGHT, DIAGONAL, UNREACHABLE, SEP_MAX_WEIGHT,
+  STRAIGHT, DIAGONAL, UNREACHABLE, SEP_MAX_WEIGHT, orcaNeighbors, flowFieldCellVisits, geoKey,
+  type DensityField,
 } from './flow-field.js';
 
 const FROZEN = 1 << 0;
@@ -64,12 +65,15 @@ describe('flow-field — 元数据 / 定序 / 申报诚实', () => {
     console.error = (...a: unknown[]): void => { warns.push(a.join(' ')); };
     try {
       const w = new World();
-      for (const sys of steeringCapability.systems) w.addSystem(sys);
-      for (const sys of pathFollowCapability.systems) w.addSystem(sys);
-      for (const sys of flowFieldCapability.systems) w.addSystem(sys);
+      // ⚠ **倒着注册**（独立复查逼出来的）：首版顺着注册、且读的是 `w.systems`（**注册序**），
+      // 于是那条 `toEqual([...])` 断言恒真——把 runsAfter 全撤掉它照样绿。
+      // 现在读 `getSortedSystems()`（真实拓扑序）+ 倒序注册，定序真错了这里才会红。
       for (const sys of motionApplyCapability.systems) w.addSystem(sys);
+      for (const sys of flowFieldCapability.systems) w.addSystem(sys);
+      for (const sys of pathFollowCapability.systems) w.addSystem(sys);
+      for (const sys of steeringCapability.systems) w.addSystem(sys);
       w.tick();
-      const order = (w as unknown as { systems: Array<{ id: string }> }).systems.map((sys) => sys.id);
+      const order = w.getSortedSystems().map((sys) => sys.id);
       expect(order).toEqual(['steering', 'path-follow', 'flow-field', 'motion-apply']);
     } finally { console.warn = origWarn; console.error = origErr; }
     // 撤 runsAfter:['steering','path-follow'] → 这里会抓到
@@ -609,8 +613,10 @@ describe('flow-field × ORCA — 强承诺：真的不重叠', () => {
         }
       }
     }
-    // 半径 0.35 → 两心距应 ≥ 0.7。留一点余量给「一拍内的积分误差」（ORCA 保证的是速度层面）。
-    expect(worst).toBeGreaterThan(2 * R * 0.8);
+    // 半径 0.35 → 两心距应 ≥ 0.7。ORCA 保证的是速度层面，位置上留一拍积分误差的余量——
+    // 但**只留 1.5%**（0.69）：首版写 `2*R*0.8`=0.56 而实测 worst=0.70004，
+    // 中间那 20% 的空档能装下真回归（独立复查实测：撤掉 u/2 互惠得 0.5513，离 0.56 只差 1.6% 就漏网）。
+    expect(worst).toBeGreaterThan(0.69);
   }, 60_000);
 
   it('ORCA 不改走位：单位照样到得了目标（避让只挑最接近期望的那个速度）', () => {
@@ -654,4 +660,212 @@ describe('flow-field × ORCA — 强承诺：真的不重叠', () => {
     expect(run(false)).toBe(run(false));
     expect(run(true)).toBe(run(false));
   }, 60_000);
+});
+
+// ═══ 独立复查（2026-08-25·orca-review）打回的六条，每条一个承重用例 ═══
+// 报告全文：docs/design/game211/orca-review-2026-08-25.md。
+// **这些用例的存在理由都是"当时零覆盖"**——六条里有三条是 sabotage 撤掉实现后全库依旧全绿查出来的。
+describe('flow-field × ORCA — 复查打回项的承重用例', () => {
+  const R = 0.35;
+
+  // ── P0-1：邻居索引的键 ──
+  it('**软分离只看同一张场**（多场零回归·ORCA 落地不许改软分离的语义）', () => {
+    // ORCA 落地时我把分桶键从 fieldId 顺手统一成了几何键，于是「只开 separation、从不碰 orca」的
+    // 多场世界轨迹静默变了（复查实测 40 拍轨迹 hash 变、末拍某单位 x 从 3.357 变 2.088）。
+    // 判据：**两张同几何的场各站一个人 == 两个人各自单独在世界里跑**，逐位相同。
+    const geo = { cellSize: 1, originX: 0, originY: 0, cols: 12, rows: 12, goals: [{ x: 11.5, y: 5.5 }] };
+    const run = (both: boolean): Array<{ x: number; y: number }> => {
+      const w = new World();
+      for (const sys of flowFieldCapability.systems) w.addSystem(sys);
+      for (const sys of motionApplyCapability.systems) w.addSystem(sys);
+      w.createEntity('fA'); w.addComponent('fA', { type: 'FlowField', id: 'A', ...geo } as FlowField);
+      w.createEntity('fB'); w.addComponent('fB', { type: 'FlowField', id: 'B', ...geo } as FlowField);
+      agent(w, 'a', 2.50, 5.50, { fieldId: 'A', speed: 0.5, separation: { weight: 0.4 } });
+      if (both) agent(w, 'b', 2.55, 5.52, { fieldId: 'B', speed: 0.5, separation: { weight: 0.4 } });
+      const trail: Array<{ x: number; y: number }> = [];
+      for (let t = 0; t < 30; t++) { w.tick(); const p = pos(w, 'a'); trail.push({ x: p.x, y: p.y }); }
+      return trail;
+    };
+    // 同几何、不同场 id、贴得极近（0.05）——按几何分桶的话必定互推，按 fieldId 分桶则互不可见。
+    expect(run(true)).toEqual(run(false));
+  });
+
+  it('**ORCA 反过来必须跨场看见**（两队各跟一张场正面对撞·同一份索引不能退回 fieldId）', () => {
+    const geo = { cellSize: 1, originX: 0, originY: 0, cols: 24, rows: 12 };
+    const w = new World();
+    for (const sys of flowFieldCapability.systems) w.addSystem(sys);
+    for (const sys of motionApplyCapability.systems) w.addSystem(sys);
+    w.createEntity('fR'); w.addComponent('fR', { type: 'FlowField', id: 'toRight', ...geo, goals: [{ x: 23.5, y: 5.5 }] } as FlowField);
+    w.createEntity('fL'); w.addComponent('fL', { type: 'FlowField', id: 'toLeft', ...geo, goals: [{ x: 0.5, y: 5.5 }] } as FlowField);
+    agent(w, 'a', 8.5, 5.50, { fieldId: 'toRight', speed: 0.5, arriveRange: 2, orca: { radius: R } });
+    agent(w, 'b', 15.5, 5.55, { fieldId: 'toLeft', speed: 0.5, arriveRange: 2, orca: { radius: R } });
+    let worst = Infinity;
+    for (let t = 0; t < 60; t++) {
+      w.tick();
+      const p = pos(w, 'a'); const q = pos(w, 'b');
+      worst = Math.min(worst, Math.hypot(p.x - q.x, p.y - q.y));
+    }
+    expect(worst).toBeGreaterThan(0.69);   // 半径和 0.70·跨场看不见的话直接对穿（复查实测 0.10）
+  });
+
+  // ── P0-2：完全同位 ──
+  it('**完全同位的两个 ORCA 单位会分开**（原码 w/|w| 得 NaN·NaN 约束被静默丢弃）', () => {
+    const w = world(field({ cols: 12, rows: 12, goals: [{ x: 11.5, y: 5.5 }] }));
+    agent(w, 'a', 5.5, 5.5, { speed: 0.5, arriveRange: 2, orca: { radius: R } });
+    agent(w, 'b', 5.5, 5.5, { speed: 0.5, arriveRange: 2, orca: { radius: R } });   // 逐位同一个坐标
+    for (let t = 0; t < 40; t++) w.tick();
+    const p = pos(w, 'a'); const q = pos(w, 'b');
+    expect(Number.isFinite(p.x) && Number.isFinite(q.x)).toBe(true);       // 不出 NaN
+    expect(Math.hypot(p.x - q.x, p.y - q.y)).toBeGreaterThan(0.5);         // 真的分开了（撤修前恒 0.000000）
+  });
+
+  it('同位分离是**确定性**的（同输入两跑逐位同·方向由下标定不由浮点误差定）', () => {
+    const once = (): { x: number; y: number } => {
+      clearFlowFieldCache();
+      const w = world(field({ cols: 12, rows: 12, goals: [{ x: 11.5, y: 5.5 }] }));
+      agent(w, 'a', 5.5, 5.5, { speed: 0.5, arriveRange: 2, orca: { radius: R } });
+      agent(w, 'b', 5.5, 5.5, { speed: 0.5, arriveRange: 2, orca: { radius: R } });
+      for (let t = 0; t < 10; t++) w.tick();
+      const p = pos(w, 'a'); return { x: p.x, y: p.y };
+    };
+    expect(once()).toEqual(once());
+  });
+
+  // ── P1-3：混装单位类型 ──
+  it('**没开 ORCA 的单位也得进桶**（ORCA 队对穿纯流场队·复查实测原来 0.1000 = 直接穿过去）', () => {
+    // 慢速 1v1 迎面（速度 0.15 / 半径 0.6）——**故意摆得宽松**：这条测的是「看不看得见」，
+    // 不是「挤爆时能撑住多少」，所以要让机制本身的效果盖过一拍积分误差。
+    const R = 0.6; const SP = 0.15;
+    const geo = { cellSize: 2, originX: 0, originY: 0, cols: 16, rows: 8 };
+    const w = new World();
+    for (const sys of flowFieldCapability.systems) w.addSystem(sys);
+    for (const sys of motionApplyCapability.systems) w.addSystem(sys);
+    w.createEntity('fR'); w.addComponent('fR', { type: 'FlowField', id: 'toRight', ...geo, goals: [{ x: 31, y: 7 }] } as FlowField);
+    w.createEntity('fL'); w.addComponent('fL', { type: 'FlowField', id: 'toLeft', ...geo, goals: [{ x: 1, y: 7 }] } as FlowField);
+    agent(w, 'orcaGuy', 11, 7.0, { fieldId: 'toRight', speed: SP, arriveRange: 3, orca: { radius: R } });
+    agent(w, 'plainGuy', 21, 7.1, { fieldId: 'toLeft', speed: SP, arriveRange: 3 });   // 什么避让都不开
+    let worst = Infinity;
+    for (let t = 0; t < 200; t++) {
+      w.tick();
+      const p = pos(w, 'orcaGuy'); const q = pos(w, 'plainGuy');
+      worst = Math.min(worst, Math.hypot(p.x - q.x, p.y - q.y));
+    }
+    // 同机三档实测：进桶 **0.60333** · 只收开了 ORCA 的（= 落地时的写法）**0.14142** · 半径和 0.60。
+    // 纯流场单位没有半径可言（按 0 计），所以强承诺只能给到「自己那半径」这一档——够用，
+    // 因为要挡住的是「完全隐形 → 直接对穿」。
+    expect(worst).toBeGreaterThan(0.55);
+  });
+
+  // ── P1-6：环形搜索提前退出的**正确性** ──
+  it('**环形搜索 == 暴力最近 k 个**（随机撒点对照·提前退出撤掉后 3.2% 的查询会拿错邻居）', () => {
+    // 确定性 LCG（sim 面禁裸 Math.random·测试同口径：随机数必须可复现）
+    let seed = 20260825;
+    const rnd = (): number => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    const f = field({ cellSize: 1, originX: 0, originY: 0, cols: 20, rows: 20, goals: [{ x: 19.5, y: 19.5 }] });
+    let mismatched = 0; let queries = 0;
+    for (let trial = 0; trial < 40; trial++) {
+      const n = 6 + Math.floor(rnd() * 40);
+      const px = new Float64Array(n); const py = new Float64Array(n);
+      for (let i = 0; i < n; i++) { px[i] = rnd() * 20; py[i] = rnd() * 20; }
+      // 手工建一份与系统同构的分桶
+      const cnt = new Int32Array(f.cols * f.rows);
+      const cellIdx = new Int32Array(n);
+      for (let i = 0; i < n; i++) {
+        const { col, row } = cellOf(f, px[i], py[i]);
+        cellIdx[i] = cellIndex(f, col, row); cnt[cellIdx[i]]++;
+      }
+      const start = new Int32Array(f.cols * f.rows);
+      let acc = 0; for (let i = 0; i < start.length; i++) { start[i] = acc; acc += cnt[i]; }
+      const cursor = Int32Array.from(start); const items = new Int32Array(n);
+      for (let i = 0; i < n; i++) items[cursor[cellIdx[i]]++] = i;
+      const dens: DensityField = {
+        count: cnt, start, items, px, py,
+        vx: new Float64Array(n), vy: new Float64Array(n),
+        radius: new Float64Array(n).fill(R), reciprocal: new Uint8Array(n).fill(1),
+      };
+      for (let self = 0; self < n; self++) {
+        const range = 5 + rnd() * 6;
+        const maxN = 1 + Math.floor(rnd() * 8);
+        const { col, row } = cellOf(f, px[self], py[self]);
+        const got = orcaNeighbors(f, dens, self, col, row, px[self], py[self], range, maxN);
+        // 暴力：全表按 (距离², 下标) 全序排，取 range 内最近的 maxN 个
+        const brute = [...Array(n).keys()]
+          .filter((j) => j !== self)
+          .map((j) => ({ j, d2: (px[j] - px[self]) ** 2 + (py[j] - py[self]) ** 2 }))
+          .filter(({ d2 }) => d2 < range * range)
+          .sort((a, b) => (a.d2 !== b.d2 ? a.d2 - b.d2 : a.j - b.j))
+          .slice(0, maxN);
+        queries++;
+        const gotKey = got.map((g) => `${g.x},${g.y}`).join('|');
+        const bruteKey = brute.map(({ j }) => `${px[j]},${py[j]}`).join('|');
+        if (gotKey !== bruteKey) mismatched++;
+      }
+    }
+    expect(queries).toBeGreaterThan(500);   // 试验量够（否则"零不符"没有说服力）
+    expect(mismatched).toBe(0);
+  });
+
+  it('**平局按下标定序**（浮点上真会等距·撤掉次键邻居集就变了·全序 = lockstep 的前提）', () => {
+    const f = field({ cellSize: 4, originX: 0, originY: 0, cols: 4, rows: 4, goals: [{ x: 14, y: 14 }] });
+    // 四个点到自己的距离**逐位相等**（对称摆放），maxNeighbors=2 ⇒ 取哪两个只能由下标决定
+    const px = Float64Array.from([6, 6, 6, 2, 10]);
+    const py = Float64Array.from([6, 2, 10, 6, 6]);
+    const n = px.length;
+    const cnt = new Int32Array(16); const cellIdx = new Int32Array(n);
+    for (let i = 0; i < n; i++) { const { col, row } = cellOf(f, px[i], py[i]); cellIdx[i] = cellIndex(f, col, row); cnt[cellIdx[i]]++; }
+    const start = new Int32Array(16); let acc = 0;
+    for (let i = 0; i < 16; i++) { start[i] = acc; acc += cnt[i]; }
+    const cursor = Int32Array.from(start); const items = new Int32Array(n);
+    for (let i = 0; i < n; i++) items[cursor[cellIdx[i]]++] = i;
+    const dens: DensityField = {
+      count: cnt, start, items, px, py,
+      vx: new Float64Array(n), vy: new Float64Array(n),
+      radius: new Float64Array(n).fill(R), reciprocal: new Uint8Array(n).fill(1),
+    };
+    const { col, row } = cellOf(f, px[0], py[0]);
+    const got = orcaNeighbors(f, dens, 0, col, row, px[0], py[0], 8, 2);
+    // 四个候选到 self 的距离平方全是 16 —— 唯一的分辨依据是下标 1,2（不是 3,4，也不是遍历序）
+    expect(got.map((g) => `${g.x},${g.y}`)).toEqual(['6,2', '6,10']);
+  });
+
+  // ── P1-7：提前退出的**性能判据**（墙钟不能进 sim 测试 → 量访问格数）──
+  it('**稠密场每次查询只访问一两环**（提前退出的机器判据·撤掉就是整窗 361 格）', () => {
+    const w = world(field({ cols: 24, rows: 24, goals: [{ x: 23.5, y: 12.5 }] }));
+    // 40 个单位挤在 4×4 的范围里：邻居随手一抓就够 8 个 ⇒ 第 1 环就该收工
+    for (let i = 0; i < 40; i++) {
+      agent(w, `u${i}`, 4.2 + (i % 8) * 0.5, 10.2 + Math.floor(i / 8) * 0.5,
+        { speed: 0.4, arriveRange: 2, orca: { radius: R } });
+    }
+    const before = flowFieldCellVisits();
+    w.tick();
+    const perQuery = (flowFieldCellVisits() - before) / 40;
+    // 前瞻 8 拍 × 速度 0.4 + 0.35 ⇒ 窗口 4 环 = 81 格；提前退出在时实测 ~9（第 0+1 环）。
+    // 取 30 当门槛：既容得下密度变化，又离 81 足够远——撤掉提前退出必然撞线。
+    expect(perQuery).toBeLessThan(30);
+    expect(perQuery).toBeGreaterThan(0);
+  });
+
+  it('ORCA 的三类静默降级**都要留痕**（半径非法 / 完全同位 / 邻居不还礼）', () => {
+    // ⚠ 这条第一版写成「非法半径 → 当作没开 ORCA」，撤掉校验**全绿**——因为 `radius > 0`
+    // 这道门本来就把 0/负/NaN 全挡在外面了，校验分支的**唯一**增量是那句留痕。
+    // 「什么都没发生」的分支必须喊一声（日志基准守则），所以判据改成读 trace。
+    const w = world(field({ cols: 12, rows: 12, goals: [{ x: 11.5, y: 5.5 }] }));
+    w.createEntity('dbg');
+    w.addComponent('dbg', { type: 'DebugTrace', events: [], tick: 0 } as DebugTrace);
+    agent(w, 'bad', 2.5, 5.5, { speed: 0.5, orca: { radius: -1 } });        // 半径非法
+    agent(w, 'ok1', 6.5, 5.5, { speed: 0.5, arriveRange: 2, orca: { radius: 0.35 } });
+    agent(w, 'ok2', 6.5, 5.5, { speed: 0.5, arriveRange: 2, orca: { radius: 0.35 } });  // 与 ok1 完全同位
+    agent(w, 'plain', 6.6, 5.5, { speed: 0.5, arriveRange: 2 });            // 不还礼的邻居
+    w.tick();
+    const ev = w.getComponent<DebugTrace>('dbg', 'DebugTrace')!.events;
+    const line = ev.filter((e) => e.system === 'flow-field' && /ORCA 降级/.test(e.what));
+    expect(line).toHaveLength(1);                                   // 三类合成一条（密度守则 ≤3 条/tick）
+    expect(line[0].kind).toBe('reject');
+    expect(line[0].what).toMatch(/半径非法 1/);
+    expect(line[0].what).toMatch(/完全同位 [1-9]/);
+    expect(line[0].what).toMatch(/邻居不还礼 [1-9]/);
+    // 半径非法的那个照纯流场走（不是被一条塌掉的约束卡住）
+    expect(Math.hypot(vel(w, 'bad').vx, vel(w, 'bad').vy)).toBeCloseTo(0.5, 9);
+    expect(geoKey(field())).toBe('5x5@1:0,0');                      // 顺带钉一下几何键格式
+  });
 });
