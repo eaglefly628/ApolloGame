@@ -9,11 +9,19 @@
  * 按 Apache-2.0 第 4 条要求声明**本文件是修改过的版本**，修改点见下方「与原码的差异」。
  *
  * ══ 为什么要它（owner 2026-08-24 拍板「可以上」）══
- * 软分离（Reynolds 那层）是**软承诺**：允许瞬时重叠，靠力把人弹开。ORCA 给的是**强承诺**：
- * 在 `timeHorizon` 内**保证互不碰撞**——每个单位解一个二维线性规划，在"所有邻居都同样讲道理"
- * 的假设下取**最接近期望速度**的可行速度。两者不是一回事，也不互相替代：
+ * 软分离（Reynolds 那层）是**软承诺**：允许瞬时重叠，靠力把人弹开。ORCA 给的强得多：
+ * 每个单位解一个二维线性规划，在"所有邻居都同样讲道理"的假设下取**最接近期望速度的可行速度**。
+ *
+ * ⚠ **别把它说成「timeHorizon 拍内保证不碰」**（首版文档就是这么写的，独立复查实测打掉）：
+ * 那句话的前提是**线性规划有可行解**。人一多、迎面对撞时它经常没有——落到 `linearProgram3`
+ * 的「最不违反」就是**真的压进去**。实测（5v5 迎面对穿·半径和 0.70·把整队起始位置沿 y 扫一族）：
+ *   纯流场 0.047~0.100（直接对穿） · 软分离 0.061~0.224 · **ORCA 0.631~0.701**
+ * 也就是说 ORCA 把穿模从「~90%」压到「最坏 10%」，**但不是 0**，且最坏点出现在**中场对撞**
+ * （不是已知的终点拥挤）。准确的口径是：**逐拍重解的速度层约束 + 无解时取最不违反**——
+ * 强，但不是保证。无解的次数会记进 DebugTrace 的「无可行解 N」。
+ * 三者不是一回事，也不互相替代：
  *   · 流场   → 期望速度 prefVelocity（**走位仍由流场定·owner 红线不变**）
- *   · ORCA   → 把期望速度改成不会撞的那个（改动量最小）
+ *   · ORCA   → 把期望速度改成「尽量不会撞」的那个（改动量最小）
  *   · 软分离 → 另一种更便宜、更"涌流"的选择（不保证不碰）
  * RVO2 官方示例里 prefVelocity 就是「朝目标的方向 × 速度」——与我们把流场方向喂进去完全同形。
  *
@@ -49,11 +57,15 @@ export interface OrcaLine { point: Vec2; direction: Vec2 }
 export interface OrcaAgent {
   x: number; y: number; vx: number; vy: number; radius: number;
   /**
-   * 稳定下标（本仓 = 单位在 agents 数组里的位置·按实体 id 排序）。**只在「完全同位」这一个
-   * 退化分支里用**：拿它定谁往左谁往右，保证双方算出来的脱离方向严格相反（互惠不破），
-   * 且与遍历顺序、Map 序、浮点误差全都无关。缺省 0（单元测试里两两同位时请显式给）。
+   * 稳定下标（本仓 = 单位在 agents 数组里的位置·按实体 id 排序）。**只在退化分支里用**：
+   * 拿它定谁往左谁往右，保证双方算出来的脱离方向严格相反（互惠不破），
+   * 且与遍历顺序、Map 序、浮点误差全都无关。
+   *
+   * ⚠ **必填**（独立复查逼出来的）：首版给了 `?? 0` 的缺省，于是任何忘了传的调用方
+   * 会让两边都拿到同一个方向 ⇒ 同向平移、永不分开 = 那条 P0 原样复活。
+   * 这是导出的公开面，缺省值在这里就是陷阱——宁可让编译器拦住。
    */
-  idx?: number;
+  idx: number;
   /**
    * 这个邻居**自己也在跑 ORCA 吗**。ORCA 的 `u/2` 建立在「双方都让一半」上；
    * 邻居若是纯流场/软分离单位（不还礼），我必须**独自让满**，否则强承诺静默降成半个。
@@ -63,7 +75,7 @@ export interface OrcaAgent {
 }
 
 /** 退化分支的计数（只为留痕与测试·不参与判定）。 */
-export interface OrcaStats { degenerate: number; oneSided: number }
+export interface OrcaStats { degenerate: number; oneSided: number; infeasible: number }
 
 /**
  * 完全同位时的脱离方向（见文件头差异⑦）。取 +x 轴而不是随便一个方向，是因为它必须
@@ -274,15 +286,23 @@ export function orcaVelocity(
       const invTimeStep = 1 / timeStep;
       const w = { x: relativeVelocity.x - invTimeStep * relativePosition.x, y: relativeVelocity.y - invTimeStep * relativePosition.y };
       const wLength = Math.sqrt(absSq(w));
-      // **完全同位的退化分支**（文件头差异⑦·原码没有）：w=0 ⇒ w/|w| 是 NaN ⇒ 整条约束在
-      // `linearProgram2` 的 `det(NaN) > 0` 里恒假、被静默丢弃 ⇒ 两个单位钉在一起永远分不开
+      // **退化分支**（文件头差异⑦·原码没有）：`w` 是零向量时 `w/|w|` 是 NaN，而 NaN 约束在
+      // `linearProgram2` 的 `det(NaN) > 0` 里恒假、被**静默丢弃** ⇒ 两个单位钉在一起永远分不开
       // （独立复查实测：两个 Transform 写同一坐标的单位 60 拍两心距恒 0.000000，连 NaN 都看不见）。
-      // 给一个**确定性**的左右分离方向：下标小的往 +x、大的往 −x，双方严格相反 ⇒ 互惠仍成立。
+      //
+      // ⚠ 触发面**不只是"完全同位"**（第二轮复查指出首版注释把它说窄了）：`w = 相对速度 −
+      // 相对位置/timeStep`，所以「已重叠、且相对速度恰好等于相对位置/timeStep」同样归零。
+      // 因此兜底方向**优先用相对位置**（那才是真正的"离开对方"方向），只有连相对位置都是零
+      // （= 真·完全同位，没有任何几何信息可用）才退到按下标定的左右。
       const unitW = wLength > RVO_EPSILON
         ? { x: w.x / wLength, y: w.y / wLength }
         : (() => {
             if (stats) stats.degenerate++;
-            const sign = (self.idx ?? 0) <= (other.idx ?? 0) ? 1 : -1;
+            const rpLen = Math.sqrt(distSq);
+            if (rpLen > RVO_EPSILON) {
+              return { x: -relativePosition.x / rpLen, y: -relativePosition.y / rpLen };  // 背对对方
+            }
+            const sign = (self.idx <= other.idx) ? 1 : -1;
             return { x: DEGENERATE.x * sign, y: DEGENERATE.y * sign };
           })();
       direction = { x: unitW.y, y: -unitW.x };
@@ -301,6 +321,9 @@ export function orcaVelocity(
 
   const result: Vec2 = { x: 0, y: 0 };
   const lineFail = linearProgram2(lines, maxSpeed, pref, false, result);
-  if (lineFail < lines.length) linearProgram3(lines, 0, lineFail, maxSpeed, result);
+  if (lineFail < lines.length) {
+    if (stats) stats.infeasible++;
+    linearProgram3(lines, 0, lineFail, maxSpeed, result);
+  }
   return result;
 }

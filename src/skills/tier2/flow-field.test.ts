@@ -81,6 +81,25 @@ describe('flow-field — 元数据 / 定序 / 申报诚实', () => {
     expect(warns.filter((l) => /定序环/.test(l))).toEqual([]);
   });
 
+  // 第二轮独立复查的 N4：我新写的两块组件注释**一块都没挂上成员**——一块落在两个成员之间
+  // （TS 只认紧邻成员的最后一块），一块落在接口末尾（后面根本没有成员）。
+  // 后果是"我请复查人去判的那条降级披露，作者在 IDE 里根本看不到"。这条把它钉住。
+  it('`FlowAgent.separation` / `.orca` 的关键披露真挂在成员上（不是落在成员之间的孤儿注释）', async () => {
+    const fs = await import('node:fs');
+    const src = fs.readFileSync(new URL('../../engine/protocol/components/spatial.ts', import.meta.url), 'utf8');
+    // 判据：那段文字所在的 JSDoc 块，**紧接着**就得是对应成员的声明（中间只许有空白）
+    const attachedTo = (needle: string): string | undefined => {
+      const at = src.indexOf(needle);
+      if (at < 0) return undefined;
+      const close = src.indexOf('*/', at);
+      if (close < 0) return undefined;
+      return /^\s*([A-Za-z]+)\??:/.exec(src.slice(close + 2))?.[1];
+    };
+    expect(attachedTo('软分离只在同一张场内生效')).toBe('separation');
+    expect(attachedTo('别把它当成"保证不碰"')).toBe('orca');
+    expect(attachedTo('这一档**没有下界**')).toBe('orca');
+  });
+
   it('申报 = 真实访问（reads 含 Velocity——本系统缺省时会 addComponent 再改它）', () => {
     const sys = flowFieldCapability.systems[0];
     expect([...sys.reads].sort()).toEqual(['FlowAgent', 'FlowField', 'Status', 'Transform', 'Velocity']);
@@ -585,39 +604,62 @@ describe('flow-field × ORCA — 强承诺：真的不重叠', () => {
   const orcaAgent = (w: World, id: string, x: number, y: number, fieldId: string, over: Partial<Omit<FlowAgent, 'type'>> = {}): void =>
     agent(w, id, x, y, { speed: 0.5, fieldId, orca: { radius: R }, ...over });
 
-  it('**两队对穿全程不重叠**（软分离做不到的那条承诺）', () => {
-    // 左队走向右边、右队走向左边，正面对撞。ORCA 的定义就是"前瞻期内保证不碰"。
-    const w = new World();
-    for (const s of flowFieldCapability.systems) w.addSystem(s);
-    for (const s of motionApplyCapability.systems) w.addSystem(s);
-    w.createEntity('fR');
-    w.addComponent('fR', field({ id: 'toRight', cols: 24, rows: 12, goals: [{ x: 23.5, y: 5.5 }] }));
-    w.createEntity('fL');
-    w.addComponent('fL', field({ id: 'toLeft', cols: 24, rows: 12, goals: [{ x: 0.5, y: 5.5 }] }));
-    const ids: string[] = [];
-    for (let i = 0; i < 5; i++) {
-      const a = `L${i}`; const b = `R${i}`;
-      // ⚠ 必须给 arriveRange：不给的话 5 个单位会死追**同一个点**，挤到线性规划无可行解，
-      // 原码只能落到 LP3「尽量少撞」⇒ 真的会压进去（实测最近 0.198）。这不是 ORCA 的锅——
-      // 一个点容不下五个单位，避让算法救不了「目标本身不可行」。已写进组件注释。
-      orcaAgent(w, a, 2.5, 3.5 + i * 1.0, 'toRight', { arriveRange: 2 }); ids.push(a);
-      orcaAgent(w, b, 21.5, 3.6 + i * 1.0, 'toLeft', { arriveRange: 2 }); ids.push(b);
-    }
-    let worst = Infinity;
-    for (let t = 0; t < 120; t++) {
-      w.tick();
-      for (let i = 0; i < ids.length; i++) {
-        for (let j = i + 1; j < ids.length; j++) {
-          const p = pos(w, ids[i]); const q = pos(w, ids[j]);
-          worst = Math.min(worst, Math.hypot(p.x - q.x, p.y - q.y));
+  // ⚠ 这条第一版只钉**一个**起始排布，第二轮独立复查把整队沿 y 挪 0.25 就打穿了它想守的承诺：
+  //   起始 y=3.5 → 0.70004（过·而且这个 worst 落在**终点安顿**，压根没量到中场）
+  //   y=3.75 → 0.68053 · y=4.0 → 0.64442 · y=4.25 → 0.67791（**都是中场对撞**，全不过 0.69）
+  // 「承重用例只钉一个初始条件」本身就是缺陷形状，尤其当被测指标对初始条件**混沌**时。
+  // 所以现在：扫一族排布 · **中场与终点分开量** · 断言按各自实测的真实边界写。
+  it('**两队对穿：一族排布 × 中场/终点分开量**（ORCA 把穿模从 ~90% 压到最坏 10%·但不是 0）', () => {
+    const runCrossing = (y0: number, mode: 'none' | 'sep' | 'orca'): { mid: number; end: number } => {
+      clearFlowFieldCache();
+      const geo = { cellSize: 1, originX: 0, originY: 0, cols: 24, rows: 12 };
+      const w = new World();
+      for (const sys of flowFieldCapability.systems) w.addSystem(sys);
+      for (const sys of motionApplyCapability.systems) w.addSystem(sys);
+      w.createEntity('fR'); w.addComponent('fR', { type: 'FlowField', id: 'toRight', ...geo, goals: [{ x: 23.5, y: 5.5 }] } as FlowField);
+      w.createEntity('fL'); w.addComponent('fL', { type: 'FlowField', id: 'toLeft', ...geo, goals: [{ x: 0.5, y: 5.5 }] } as FlowField);
+      const extra = mode === 'orca' ? { orca: { radius: R } }
+        : mode === 'sep' ? { separation: { weight: 0.4 } } : {};
+      const ids: string[] = [];
+      for (let i = 0; i < 5; i++) {
+        // ⚠ 必须给 arriveRange：不给的话 5 个单位会死追**同一个点**，挤到线性规划无可行解，
+        // 落 LP3「尽量少撞」⇒ 真的会压进去。这不是 ORCA 的锅——一个点容不下五个单位。
+        agent(w, `L${i}`, 2.5, y0 + i, { fieldId: 'toRight', speed: 0.5, arriveRange: 2, ...extra }); ids.push(`L${i}`);
+        agent(w, `R${i}`, 21.5, y0 + 0.1 + i, { fieldId: 'toLeft', speed: 0.5, arriveRange: 2, ...extra }); ids.push(`R${i}`);
+      }
+      let mid = Infinity; let end = Infinity;
+      for (let t = 0; t < 120; t++) {
+        w.tick();
+        for (let i = 0; i < ids.length; i++) {
+          for (let j = i + 1; j < ids.length; j++) {
+            const p = pos(w, ids[i]); const q = pos(w, ids[j]);
+            const d = Math.hypot(p.x - q.x, p.y - q.y);
+            // 中场 = 两个单位离各自最近的目标都还有 >4；其余算终点区（安顿阶段）
+            const far = (t2: Transform): boolean => Math.min(Math.abs(t2.x - 23.5), Math.abs(t2.x - 0.5)) > 4;
+            if (far(p) && far(q)) mid = Math.min(mid, d); else end = Math.min(end, d);
+          }
         }
       }
-    }
-    // 半径 0.35 → 两心距应 ≥ 0.7。ORCA 保证的是速度层面，位置上留一拍积分误差的余量——
-    // 但**只留 1.5%**（0.69）：首版写 `2*R*0.8`=0.56 而实测 worst=0.70004，
-    // 中间那 20% 的空档能装下真回归（独立复查实测：撤掉 u/2 互惠得 0.5513，离 0.56 只差 1.6% 就漏网）。
-    expect(worst).toBeGreaterThan(0.69);
-  }, 60_000);
+      return { mid, end };
+    };
+    const FAMILY = [3.5, 3.75, 4.0, 4.25, 4.5, 4.75] as const;
+    const orca = FAMILY.map((y0) => runCrossing(y0, 'orca'));
+    const worstMid = Math.min(...orca.map((r) => r.mid));
+    const worstEnd = Math.min(...orca.map((r) => r.end));
+
+    // ① **终点区**：安顿阶段每一族排布都守得住半径和（0.70）——这是 ORCA 真正兑现的那半句
+    expect(worstEnd).toBeGreaterThan(0.69);
+    // ② **中场对撞**：守不住，实测最差 0.63113（穿模 ~10%）。这是**已知边界**，写死在这里，
+    //    既不假装它是 0，也不放任它退化——掉到 0.6 以下就是真回归。
+    expect(worstMid).toBeGreaterThan(0.60);
+    expect(worstMid).toBeLessThan(0.70);          // 若哪天真做到不穿模了，这条会红，提醒来改口径
+    // ③ 对照组：同一场景下不开避让 / 只开软分离**烂一个数量级**，证明上面那两条是 ORCA 挣来的
+    const noneMid = Math.min(...FAMILY.map((y0) => runCrossing(y0, 'none').mid));
+    const sepMid = Math.min(...FAMILY.map((y0) => runCrossing(y0, 'sep').mid));
+    expect(noneMid).toBeLessThan(0.15);           // 实测 0.04668 = 直接对穿
+    expect(sepMid).toBeLessThan(0.15);            // 实测 0.06129 = 软承诺本来就不保证
+    expect(worstMid / Math.max(noneMid, sepMid)).toBeGreaterThan(4);
+  }, 120_000);
 
   it('ORCA 不改走位：单位照样到得了目标（避让只挑最接近期望的那个速度）', () => {
     const f = field({ cols: 20, rows: 20, goals: [{ x: 19.5, y: 19.5 }] });
@@ -845,27 +887,95 @@ describe('flow-field × ORCA — 复查打回项的承重用例', () => {
     expect(perQuery).toBeGreaterThan(0);
   });
 
-  it('ORCA 的三类静默降级**都要留痕**（半径非法 / 完全同位 / 邻居不还礼）', () => {
+  it('ORCA 的四类静默降级**都要留痕**，且一拍不超过 3 条（日志基准守则）', () => {
     // ⚠ 这条第一版写成「非法半径 → 当作没开 ORCA」，撤掉校验**全绿**——因为 `radius > 0`
-    // 这道门本来就把 0/负/NaN 全挡在外面了，校验分支的**唯一**增量是那句留痕。
+    // 那道门本来就把 0/负/NaN 全挡在外面了，校验分支的**唯一**增量是那句留痕。
     // 「什么都没发生」的分支必须喊一声（日志基准守则），所以判据改成读 trace。
     const w = world(field({ cols: 12, rows: 12, goals: [{ x: 11.5, y: 5.5 }] }));
     w.createEntity('dbg');
     w.addComponent('dbg', { type: 'DebugTrace', events: [], tick: 0 } as DebugTrace);
-    agent(w, 'bad', 2.5, 5.5, { speed: 0.5, orca: { radius: -1 } });        // 半径非法
+    // ⚠ **把每一类留痕分支都点着**（第一版只点了降级那类，于是"折叠"撤掉照样 ≤3 条、全绿）：
+    w.createEntity('field2');                                               // 同 id 的第二张场
+    w.addComponent('field2', field({ cols: 12, rows: 12, goals: [{ x: 11.5, y: 5.5 }] }));
+    agent(w, 'lost', 3.5, 5.5, { speed: 0.5, fieldId: 'nope' });            // 找不到自己的场
+    agent(w, 'away', 99.5, 99.5, { speed: 0.5 });                           // 网格外
+    agent(w, 'bad', 2.5, 5.5, { speed: 0.5, orca: { radius: -1 } });        // 参数非法
     agent(w, 'ok1', 6.5, 5.5, { speed: 0.5, arriveRange: 2, orca: { radius: 0.35 } });
     agent(w, 'ok2', 6.5, 5.5, { speed: 0.5, arriveRange: 2, orca: { radius: 0.35 } });  // 与 ok1 完全同位
     agent(w, 'plain', 6.6, 5.5, { speed: 0.5, arriveRange: 2 });            // 不还礼的邻居
     w.tick();
     const ev = w.getComponent<DebugTrace>('dbg', 'DebugTrace')!.events;
     const line = ev.filter((e) => e.system === 'flow-field' && /ORCA 降级/.test(e.what));
-    expect(line).toHaveLength(1);                                   // 三类合成一条（密度守则 ≤3 条/tick）
+    expect(line).toHaveLength(1);                                   // 四类合成一条
     expect(line[0].kind).toBe('reject');
-    expect(line[0].what).toMatch(/半径非法 1/);
-    expect(line[0].what).toMatch(/完全同位 [1-9]/);
+    expect(line[0].what).toMatch(/参数非法 1/);
+    expect(line[0].what).toMatch(/退化 [1-9]/);
     expect(line[0].what).toMatch(/邻居不还礼 [1-9]/);
-    // 半径非法的那个照纯流场走（不是被一条塌掉的约束卡住）
+    expect(line[0].what).toMatch(/无可行解 \d/);
+    // **密度守则**：每 system 每 tick ≤3 条。第二轮复查实测这里一拍能到 5 条
+    // （同 id 的场每拍复读 + los + 降级 + 找不到场 + 越界 + commit）。
+    expect(ev.filter((e) => e.system === 'flow-field').length).toBeLessThanOrEqual(3);
+    // 折叠不许**吞数字**：分项仍要读得出来（折叠 ≠ 少记）
+    const commit = ev.find((e) => e.system === 'flow-field' && e.kind === 'commit')!;
+    expect(commit.why).toMatch(/1 个找不到自己的场/);
+    expect(commit.why).toMatch(/1 个在网格外/);
+    const cfg = ev.find((e) => e.system === 'flow-field' && /同 id 的场/.test(e.what))!;
+    expect(cfg.what).toMatch(/1 张同 id 的场被忽略/);
+    // **配置类只在真重铺那拍发一次**：再跑 5 拍（输入没变=不重铺），这条不许复读。
+    // 复读的留痕等于没有留痕——人会开始忽略它，这正是 `los` 那条上一轮被压下去的理由。
+    for (let t = 0; t < 5; t++) w.tick();
+    const after = w.getComponent<DebugTrace>('dbg', 'DebugTrace')!.events;
+    expect(after.filter((e) => /同 id 的场/.test(e.what))).toHaveLength(1);
+    // 参数非法的那个照纯流场走（不是被一条塌掉的约束卡住）
     expect(Math.hypot(vel(w, 'bad').vx, vel(w, 'bad').vy)).toBeCloseTo(0.5, 9);
     expect(geoKey(field())).toBe('5x5@1:0,0');                      // 顺带钉一下几何键格式
+  });
+
+  it('`orca` 的三个参数任一填成怪值都不许炸引擎（数据面填得出的值必须当场兜住）', () => {
+    // `maxNeighbors: 0` 实测**当场抛 TypeError**（环形搜索读 `found[-1]`）——这不是推理，
+    // 是写第二轮修复时用一个写坏的探针踩出来的。数据驱动面上「作者填得出」= 迟早有人填。
+    for (const bad of [
+      { radius: 0.35, maxNeighbors: 0 },
+      { radius: 0.35, maxNeighbors: -3 },
+      { radius: 0.35, timeHorizon: 0 },
+      { radius: Number.NaN },
+    ] as const) {
+      const w = world(field({ cols: 12, rows: 12, goals: [{ x: 11.5, y: 5.5 }] }));
+      agent(w, 'a', 2.5, 5.5, { speed: 0.5, orca: bad });
+      agent(w, 'b', 2.6, 5.5, { speed: 0.5, orca: bad });
+      expect(() => w.tick()).not.toThrow();
+      const v = vel(w, 'a');
+      expect(Number.isFinite(v.vx) && Number.isFinite(v.vy)).toBe(true);   // 也不许写出 NaN 速度
+    }
+    // 直接调导出的公开面也不许炸
+    const f = field();
+    const dens: DensityField = {
+      count: new Int32Array(25), start: new Int32Array(25), items: new Int32Array(0),
+      px: new Float64Array(0), py: new Float64Array(0), vx: new Float64Array(0),
+      vy: new Float64Array(0), radius: new Float64Array(0), reciprocal: new Uint8Array(0),
+    };
+    expect(orcaNeighbors(f, dens, 0, 2, 2, 2.5, 2.5, 4, 0)).toEqual([]);
+  });
+
+  it('**负半径不许串进别人的判定圈**（半径进的是共享邻居表·塌的是别人的 combinedRadius）', () => {
+    // 复查的 M6：撤掉 `radius > 0` 那道闸全库全绿。因为闸的下游还有一道 `> 0` 兜着自己，
+    // 但**邻居表里的半径是给别人用的**——负半径会把别人的 combinedRadius 缩小。
+    const mk = (badRadius: number): number => {
+      clearFlowFieldCache();
+      const w = world(field({ cols: 16, rows: 12, goals: [{ x: 15.5, y: 5.5 }] }));
+      agent(w, 'ghost', 8.5, 5.5, { speed: 0, orca: { radius: badRadius } });   // 挡在路中间
+      agent(w, 'runner', 3.5, 5.5, { speed: 0.4, arriveRange: 2, orca: { radius: 0.5 } });
+      let worst = Infinity;
+      for (let t = 0; t < 60; t++) {
+        w.tick();
+        const p = pos(w, 'ghost'); const q = pos(w, 'runner');
+        worst = Math.min(worst, Math.hypot(p.x - q.x, p.y - q.y));
+      }
+      return worst;
+    };
+    // 正常半径 0.5：runner 绕开 ghost 的 1.0 判定圈；ghost 填 −5 时若不净化，
+    // combinedRadius = 0.5 + (−5) < 0 ⇒ 约束整个反过来，runner 会从它身上碾过去。
+    expect(mk(0.5)).toBeGreaterThan(0.9);
+    expect(mk(-5)).toBeGreaterThan(0.4);   // 净化后 ghost 退化成"没开 ORCA"的点障碍
   });
 });

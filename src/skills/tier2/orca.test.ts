@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { orcaVelocity, linearProgram2, RVO_EPSILON, type OrcaAgent, type OrcaLine, type OrcaStats } from './orca.js';
 
 const hyp = (v: { x: number; y: number }): number => Math.hypot(v.x, v.y);
-const agent = (x: number, y: number, vx = 0, vy = 0, radius = 0.5): OrcaAgent => ({ x, y, vx, vy, radius });
+let idxSeq = 0;
+const agent = (x: number, y: number, vx = 0, vy = 0, radius = 0.5): OrcaAgent => ({ x, y, vx, vy, radius, idx: idxSeq++ });
 
 /** 与实现**同源重算**的 ORCA 约束（用于"结果落在半平面内"与"LP3 违反量"两条判据）。 */
 function orcaLinesOf(self: OrcaAgent, neighbors: readonly OrcaAgent[], timeHorizon: number): OrcaLine[] {
@@ -65,30 +66,9 @@ describe('orca — 移植自 RVO2（Apache-2.0）· 线性规划本体', () => {
     const out = orcaVelocity(self, neighbors, pref, 1, 2, 1);
     // 用与实现同源的构造重算约束，逐条验 det(dir, point - result) <= eps
     // （这条断言 = ORCA 的定义本身：结果必须落在所有半平面内）
-    const lines: OrcaLine[] = [];
-    const invT = 1 / 2;
-    for (const o of neighbors) {
-      const rp = { x: o.x - self.x, y: o.y - self.y };
-      const rv = { x: self.vx - o.vx, y: self.vy - o.vy };
-      const distSq = rp.x * rp.x + rp.y * rp.y;
-      const cr = self.radius + o.radius;
-      const w = { x: rv.x - invT * rp.x, y: rv.y - invT * rp.y };
-      const wLenSq = w.x * w.x + w.y * w.y;
-      const dp = w.x * rp.x + w.y * rp.y;
-      let dir: { x: number; y: number }; let u: { x: number; y: number };
-      if (dp < 0 && dp * dp > cr * cr * wLenSq) {
-        const wl = Math.sqrt(wLenSq); const uw = { x: w.x / wl, y: w.y / wl };
-        dir = { x: uw.y, y: -uw.x }; const k = cr * invT - wl; u = { x: k * uw.x, y: k * uw.y };
-      } else {
-        const leg = Math.sqrt(distSq - cr * cr);
-        dir = (rp.x * w.y - rp.y * w.x) > 0
-          ? { x: (rp.x * leg - rp.y * cr) / distSq, y: (rp.x * cr + rp.y * leg) / distSq }
-          : { x: -(rp.x * leg + rp.y * cr) / distSq, y: -(-rp.x * cr + rp.y * leg) / distSq };
-        const dv = rv.x * dir.x + rv.y * dir.y;
-        u = { x: dv * dir.x - rv.x, y: dv * dir.y - rv.y };
-      }
-      lines.push({ point: { x: self.vx + 0.5 * u.x, y: self.vy + 0.5 * u.y }, direction: dir });
-    }
+    // ⚠ 第二轮复查前这里有一份**内联的**构造拷贝，与 `orcaLinesOf` 逐字重复（全仓三份）。
+    // 已合并——同一个东西存三份，改一处忘两处只是时间问题。
+    const lines = orcaLinesOf(self, neighbors, 2);
     for (const l of lines) {
       const det = l.direction.x * (l.point.y - out.y) - l.direction.y * (l.point.x - out.x);
       expect(det).toBeLessThanOrEqual(RVO_EPSILON);
@@ -105,12 +85,19 @@ describe('orca — 移植自 RVO2（Apache-2.0）· 线性规划本体', () => {
     expect(out.x).toBeGreaterThan(0);                  // 但仍在往前走（不是掉头）
   });
 
-  it('**已经重叠**时给出脱离速度（原码 collision 分支·不许卡死在一起）', () => {
+  it('**已经重叠**时的脱离速度**量级**要对（不只是方向对·原码 collision 分支）', () => {
+    // ⚠ 第二轮复查的 M2b：把这条分支里的 `k = combinedRadius * invTimeStep` 改成 ×2，
+    // 脱离速度从 −0.400 变成 −0.900（2.25 倍），**65 测全绿**——方向断言对量级零判别力，
+    // 而 P0-2 的整个修复就住在这条分支里。所以这里改成钉闭式。
     const self = agent(0, 0, 0, 0, 0.5);
-    const other = agent(0.2, 0, 0, 0, 0.5);            // 圆心距 0.2 < 半径和 1.0 = 已重叠
+    const other = agent(0.2, 0, 0, 0, 0.5);            // 圆心距 d=0.2 < 半径和 cr=1.0 = 已重叠
     const out = orcaVelocity(self, [other], { x: 0, y: 0 }, 1, 2, 1);
     expect(out.x).toBeLessThan(0);                     // 朝远离对方的方向脱离
-    expect(hyp(out)).toBeGreaterThan(0);
+    // 闭式（timeStep=1·相对速度 0）：w = −相对位置 ⇒ |w| = d = 0.2·unitW = (−1,0)
+    // u = (cr − |w|)·unitW = (1.0 − 0.2)·(−1,0) = (−0.8, 0)，各让一半 ⇒ 约束要求 vx ≤ −0.4，
+    // 而目标速度是 0 ⇒ 取边界 −0.4。**这个数由半径和与当前间距唯一决定**，改 k 的系数就会变。
+    expect(out.x).toBeCloseTo(-0.4, 9);
+    expect(out.y).toBeCloseTo(0, 9);
   });
 
   it('**挤死时取「最不违反」的速度**（linearProgram3 兜底·判据 = 违反量不超过 LP2 的落点）', () => {
@@ -125,17 +112,31 @@ describe('orca — 移植自 RVO2（Apache-2.0）· 线性规划本体', () => {
     expect(Number.isFinite(out.x) && Number.isFinite(out.y)).toBe(true);   // 不出 NaN
     expect(hyp(out)).toBeLessThanOrEqual(1 + 1e-9);
 
-    // 用同一批约束重跑一次「只到 LP2 为止」，比最大违反量。
     const lines = orcaLinesOf(self, ring, 2);
-    const lp2Only = { x: 0, y: 0 };
-    const failAt = linearProgram2(lines, 1, pref, false, lp2Only);
-    expect(failAt).toBeLessThan(lines.length);                 // 前提：这个场景真的无可行解
     const worstViolation = (v: { x: number; y: number }): number => Math.max(
       0, ...lines.map((l) => l.direction.x * (l.point.y - v.y) - l.direction.y * (l.point.x - v.x)),
     );
+
+    // 判据①：**对 maxSpeed 圆内撒点暴力搜**最小可达违反量，LP3 必须逼近它。
+    // （复查 N8 指出：拿"与实现同源重算的约束"当唯一判据，抓不到实现与镜像**一起翻**的刀；
+    //  暴力搜是独立于实现的判据——它只用约束的定义，不用实现的求解路径。）
+    let best = Infinity;
+    const STEPS = 220;
+    for (let i = 0; i <= STEPS; i++) {
+      for (let j = 0; j <= STEPS; j++) {
+        const vx = -1 + (2 * i) / STEPS; const vy = -1 + (2 * j) / STEPS;
+        if (vx * vx + vy * vy > 1 + 1e-12) continue;           // 只在 maxSpeed 圆内
+        best = Math.min(best, worstViolation({ x: vx, y: vy }));
+      }
+    }
+    expect(worstViolation(out)).toBeLessThanOrEqual(best + 0.02);   // 网格步长 2/220 ≈ 0.009
+
+    // 判据②：也要比"只到 LP2 为止"的落点不差（前提：这个场景真的无可行解）
+    const lp2Only = { x: 0, y: 0 };
+    const failAt = linearProgram2(lines, 1, pref, false, lp2Only);
+    expect(failAt).toBeLessThan(lines.length);
     expect(worstViolation(out)).toBeLessThanOrEqual(worstViolation(lp2Only) + RVO_EPSILON);
-    // 并且 LP3 真的改了落点（否则"≤"是靠恒等式蒙过去的）
-    expect(out).not.toEqual(lp2Only);
+    expect(out).not.toEqual(lp2Only);                          // LP3 真的改了落点
   });
 
   it('**邻居不还礼时独自让满**（reciprocal:false ⇒ u 不打对折·偏离期望速度约两倍）', () => {
@@ -154,7 +155,7 @@ describe('orca — 移植自 RVO2（Apache-2.0）· 线性规划本体', () => {
   });
 
   it('**完全同位不出 NaN、按下标定左右**（原码 w/|w| 在这里除以 0·NaN 约束会被静默丢弃）', () => {
-    const stats: OrcaStats = { degenerate: 0, oneSided: 0 };
+    const stats: OrcaStats = { degenerate: 0, oneSided: 0, infeasible: 0 };
     const a: OrcaAgent = { x: 3, y: 3, vx: 0, vy: 0, radius: 0.5, idx: 1 };
     const b: OrcaAgent = { x: 3, y: 3, vx: 0, vy: 0, radius: 0.5, idx: 7 };
     const va = orcaVelocity(a, [b], { x: 0, y: 0 }, 1, 2, 1, stats);
@@ -164,6 +165,10 @@ describe('orca — 移植自 RVO2（Apache-2.0）· 线性规划本体', () => {
     expect(va.x).toBeGreaterThan(0);      // 下标小的往 +x
     expect(vb.x).toBeLessThan(0);         // 下标大的往 −x ⇒ 严格相反 ⇒ 互惠不破
     expect(va.x).toBeCloseTo(-vb.x, 12);
+    // **量级也钉住**（同上条理由）：|w|=0 ⇒ u = cr·unitW = (1.0, 0)，各让一半 ⇒ vx ≥ 0.5，
+    // 目标速度 0 ⇒ 取边界 0.5。改 `k` 的系数这条立刻红。
+    expect(va.x).toBeCloseTo(0.5, 9);
+    expect(va.y).toBeCloseTo(0, 9);
     // 撤掉退化分支的话这里两条速度都是 NaN·而 NaN 在 linearProgram2 的 det(...)>0 里恒假
     // ⇒ 约束被静默丢弃 ⇒ 两个单位钉死在一起（整合层实测 60 拍两心距恒 0.000000）。
   });
