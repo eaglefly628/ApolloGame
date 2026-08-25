@@ -90,8 +90,17 @@ export const SEP_MAX_NEIGHBORS = 12;
  * 分工：两两斥力解「叠成一堆」，梯度解「整团堵住」——前者是主力。
  */
 export const SEP_GRADIENT_W = 0.5;
-/** 力的参考邻居数：挤到这么多近邻就算"满力"。见 separationDir 里为什么不能除以实际邻居数。 */
-export const SEP_REF_NEIGHBORS = 4;
+/**
+ * 斥力标度——把 Reynolds 的「力」换算到本引擎的「速度比例」。
+ *
+ * ⚠ **本仓与 Reynolds 的结构差异，必须写清楚**：OpenSteer 里 `steerForSeparation` 返回的是**加速度**，
+ * 后面还要过 `truncateLength(maxForce)` → `/mass` → 指数平滑累加器 → `+= acc*dt` → `truncateLength(maxSpeed)`
+ * （见 `SimpleVehicle::applySteeringForce`）。**本引擎直接写速度**，没有质量、没有 dt、没有惯性，
+ * 所以那条链里的 `1/mass * dt` 在这里坍缩成这一个常数。
+ * 取 0.1 的依据：邻域边缘（d=radius）单个邻居给 0.1（几乎不动），d=0.25·radius 给 0.4，
+ * d≤0.17·radius 触顶被截断 —— 「远处的轻轻让、贴脸的用力推」。
+ */
+export const SEP_SCALE = 0.1;
 /**
  * 到点之后"安顿"的步长系数（相对 speed）。**这是阻尼，不是减速**：
  * 到了地方只剩分离力，若还按行军速度走，一步就冲过平衡间距、下一步被推回来 ⇒ 队伍在终点上抖
@@ -418,19 +427,20 @@ export function separationDir(
       // 完全重合（d=0）不造方向：随便给一个就是伪随机，两端还未必一致。
       // 这一拍靠②的梯度挪一点，下一拍就不重合了。
       if (d === 0) continue;
-      const falloff = 1 - d / radius;     // 线性衰减（同 t2-steering.separation 的口径）
-      sx += (dx / d) * falloff;
-      sy += (dy / d) * falloff;
+      // **照 Reynolds 原式**（OpenSteer `SteerLibraryMixin::steerForSeparation`）：
+      //   `steering += offset / -distanceSquared`，offset = 对方位置 - 自己位置
+      // 即「远离方向 ÷ 距离²」——除两次的原因作者自己注了：一次把方向归一化，再一次得到 **1/d 衰减**。
+      // 我第一版自创了线性衰减 `1 - d/radius`，那是我想的、不是文献里的；现在换回原式。
+      sx += (dx / (d * d)) * SEP_SCALE;
+      sy += (dy / (d * d)) * SEP_SCALE;
     }
   }
 
-  // **除以固定参考数**（不是除以实际邻居数）：
-  // · 求和不除 ⇒ 一堆人里每个人的力都远超上限，钳完**又是一样大**，堆整块平移（栽过一次）；
-  // · 除以实际邻居数（均值）⇒ **多一个远邻居会把近邻的推力稀释掉**，同一个单位的受力忽大忽小，
-  //   队伍在终点上抖（也栽过一次）。
-  // 除以常数两头都占：夹中间的正负相消≈0（不动），边上的接近/超过满力（被弹开），
-  // 而"多一个远邻居"只会让力变大一点点，不会反过来变小。
-  sx /= SEP_REF_NEIGHBORS; sy /= SEP_REF_NEIGHBORS;
+  // ⚠ **不归一化、不取均值**——这是与 Reynolds 原码的唯一一处**有意偏离**，理由是引擎结构不同：
+  // 他 `steering.normalize()` 之后交给「maxForce 截断 + 质量 + 平滑累加器 + maxSpeed 截断」那条链，
+  // 抖动由**平滑累加器**吸收；本引擎直接写速度、没有那条链，照抄 normalize 的实测后果是
+  // 「夹中间的和站边上的受力一样大 ⇒ 整堆平移、间距恒 0.0100」。
+  // 保留求和 = 保留「合力相消」这条物理，大小控制交给下面的**截断**（截断本身也是 Reynolds 的做法）。
 
   // ② 密度梯度（朝最空的邻格）
   if (useGradient) {

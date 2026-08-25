@@ -262,3 +262,72 @@ RTS 要的不是这个：我们要的是**涌流 + 局部避让**——单位互
 owner 拍板：**下沉引擎能力**，且**提给主程写**（本调研不施工、不抢锁）。
 工单已入池：`docs/workflow/requests.md` → **`REQ-FLOWFIELD`**（P1·施工主体=主程·复查=Lead），
 spec、确定性红线、M1~M4 分期、两条「明确不做」全部写死在单里。
+
+---
+
+## §9 SC2 与 Reynolds 原码实查（2026-08-24·owner 令「用文章中的代码去实现，不要自己去想」）
+
+### 9.1 先说清楚能查到什么、查不到什么
+
+**《星际争霸 II》不开源，没有代码可抄。** 公开的是 GDC 2011 上 Blizzard 首席工程师 James Anhalt 那场
+关于 SC2 群体移动的讲述，以及围绕它的技术复述。可核实到的架构是**三层**：
+
+1. **地形 → 导航网格**：对地形与建筑做**受约束 Delaunay 三角剖分**（建筑增删时重算并缓存）；
+2. **路径**：在 navmesh 上跑经典 **A\***，再用 **funnel 算法**把折线拉直（按单位半径收边）；
+3. **局部**：上面再叠**转向 + 碰撞避让**层——**转向模型基于 Craig Reynolds 的 Boids**。
+
+⇒ 所以「SC2 的分离力怎么写」这个问题，能落到代码的答案**就是 Reynolds 那一套**。
+（另注：SC2 走的是 navmesh+A\*，**不是**流场；流场那一脉的公开工程实现是
+Supreme Commander 2 的 Elijah Emerson，即 Game AI Pro 第 23 章 flow-field tiles。
+本仓走流场是因为我们的实测：A\*-per-agent 在 500 单位/2304 格上首拍 619ms。）
+
+### 9.2 抄到的原码（Reynolds 本人的 OpenSteer）
+
+`meshula/OpenSteer` · `include/OpenSteer/SteerLibrary.h` · `steerForSeparation`：
+
+```cpp
+// add in steering contribution
+// (opposite of the offset direction, divided once by distance
+// to normalize, divided another time to get 1/d falloff)
+const Vec3 offset = (**otherVehicle).position() - position();
+const float distanceSquared = offset.dot(offset);
+steering += (offset / -distanceSquared);
+...
+steering = steering.normalize();
+```
+
+`src/SimpleVehicle.cpp` · `applySteeringForce`（力**怎么施加**，这半条同样重要）：
+
+```cpp
+const Vec3 clippedForce = adjustedForce.truncateLength (maxForce ());   // 截断，不是归一化
+Vec3 newAcceleration = (clippedForce / mass());
+const float smoothRate = clip (9 * elapsedTime, 0.15f, 0.4f);
+blendIntoAccumulator (smoothRate, newAcceleration, _smoothedAcceleration);  // 指数平滑，压抖
+newVelocity += _smoothedAcceleration * elapsedTime;
+newVelocity = newVelocity.truncateLength (maxSpeed ());
+```
+
+### 9.3 我们照做了什么、有意偏离了什么（偏离都带理由与实测）
+
+| 项 | Reynolds 原码 | 本仓 `t2-flow-field` | 说明 |
+|---|---|---|---|
+| 衰减律 | `offset / -d²`（**1/d**） | **照抄** | 我第一版自创了线性 `1-d/R`，已换回原式；测试钉死「距离减半→力翻倍」（线性只会 1.5×） |
+| 求和 | 逐邻居累加 | **照抄** | 「夹中间的合力相消≈0、边上的大」这条物理由求和保证 |
+| 大小控制 | `normalize()` 后交给 maxForce 截断 + 质量 + **平滑累加器** + maxSpeed 截断 | **只截断，不归一化** | ⚠ **唯一有意偏离**：本引擎直接写速度，没有质量/dt/惯性那条链；照抄 normalize 的实测后果是「所有人受力一样大 ⇒ 整堆平移、间距恒 0.0100」 |
+| 抖动抑制 | 加速度**指数平滑累加器** | 到达减速带 + settle 系数 | 效果已实测收敛（间距 0.567→0.738→0.763→0.767 稳住）。若 Demo 里仍见抖，**上 canon 的平滑累加器**——代价是要给单位加一份引擎写的运行态（进 hash），届时再评估 |
+| 邻域 | `inBoidNeighborhood`（min/max 距离 + 视角） | 流场网格的一格（本格 + 8 邻格） | 我们本来就有网格，拿它当邻居索引；视角项 RTS 用不上 |
+| 标度 | `1/mass * dt` | 常数 `SEP_SCALE=0.1` | 那条链在本引擎里坍缩成一个常数 |
+
+### 9.4 留给 Demo 之后再定的两件
+
+1. **要不要上平滑累加器**（canon 治抖的正解·需给单位加进 hash 的运行态）；
+2. **要不要 ORCA/RVO2**（`snape/RVO2` 有可读源码）——它给的是「保证不碰撞」的强承诺，
+   代价是每单位解线性规划。owner 的方向是「软力、允许瞬时重叠」，与 ORCA 的承诺**不是一回事**，
+   除非 Demo 显示软力压不住，否则不引进（见 §8 对 MAPF 的同款判断）。
+
+**来源**：
+- [Game AI Pro Ch.23 · Crowd Pathfinding and Steering Using Flow Field Tiles（Emerson）](https://www.gameaipro.com/GameAIPro/GameAIPro_Chapter23_Crowd_Pathfinding_and_Steering_Using_Flow_Field_Tiles.pdf)
+- [OpenSteer（Reynolds 本人的库·本节代码出处）](https://github.com/meshula/OpenSteer)
+- [RVO2（ORCA 参考实现·备选）](https://github.com/snape/RVO2)
+- [SC2 群体移动的技术复述（GDC 2011 James Anhalt 那场）](https://ap011y0n.github.io/Group-Movement/)
+- [GameDev.net：SC2 用 CDT navmesh + A\* + funnel 的讨论串](https://gamedev.net/forums/topic/648438-how-to-do-starcraft-2-pathfinding/)

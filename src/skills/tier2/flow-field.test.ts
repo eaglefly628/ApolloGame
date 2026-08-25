@@ -531,9 +531,31 @@ describe('flow-field — 软分离的两条承重语义（撤修必须转红）'
     expect(worstLate).toBeGreaterThan(0.2);
   });
 
-  it('**人越挤推得越狠**（力除以固定参考数·不是除以实际邻居数）', () => {
-    // 除以实际邻居数（均值）的话：「只有一个近邻」与「被四个近邻围住」受力一样大 ——
-    // 那不合直觉，而且会让同一个单位的受力随远处邻居进出而忽大忽小（队伍在终点抖的病根之一）。
+  it('**力律 = Reynolds 的 1/d²**（距离减半 → 力翻倍；线性衰减只会是 1.5×）', () => {
+    // OpenSteer `steerForSeparation`：`steering += offset / -distanceSquared`（作者注：除两次——
+    // 一次归一化方向、一次得 1/d 衰减）。判据取**没被截断的区间**里的两点比值：
+    //   1/d 律 → force(0.25R)/force(0.5R) = 2.00
+    //   我自创的线性律 (1-d/R) → 0.75/0.5 = 1.50
+    // 这条就是把「照文章实现」钉死的地方；换回自创写法 → 本断言红。
+    const forceAt = (gap: number): number => {
+      clearFlowFieldCache();
+      const w = world(field({ cols: 12, rows: 12, goals: [{ x: 5.5, y: 5.5 }] }), false);
+      agent(w, 'u0', 5.5, 5.5, { speed: 1, arriveRange: 3, separation: { weight: 0.6 } });
+      agent(w, 'n0', 5.5 + gap, 5.5, { speed: 1, arriveRange: 3, separation: { weight: 0.6 } });
+      w.tick();
+      return Math.hypot(vel(w, 'u0').vx, vel(w, 'u0').vy);
+    };
+    const near = forceAt(0.25);   // 0.1/0.25 = 0.40（未触顶）
+    const far = forceAt(0.5);     // 0.1/0.50 = 0.20（未触顶）
+    expect(near / far).toBeGreaterThan(1.8);
+    expect(near / far).toBeLessThan(2.2);
+  });
+
+  it('**人越挤推得越狠**（力是求和·不是取均值/归一化）', () => {
+    // 取均值或归一化的话：「只有一个近邻」与「被四个近邻围住」受力一样大——那不合直觉，
+    // 而且会让同一个单位的受力随远处邻居进出而忽大忽小（队伍在终点抖的病根之一）。
+    // ⚠ 邻居摆在 0.7·radius 处**是为了让力落在截断线以下**：贴脸时两种写法都会触顶，
+    // 触顶就分不出谁大谁小了——测力的定律要在它没被钳的区间里测。
     const speedOf = (n: number): number => {
       clearFlowFieldCache();
       const w = world(field({ cols: 12, rows: 12, goals: [{ x: 5.5, y: 5.5 }] }), false);
@@ -541,7 +563,7 @@ describe('flow-field — 软分离的两条承重语义（撤修必须转红）'
       // 把 n 个邻居摆在 u0 周围同一半径上（等距·方向均匀 → 合力不对消才有可比性：这里摆成扇形）
       for (let i = 0; i < n; i++) {
         const ang = (i / Math.max(n, 1)) * (Math.PI / 2);          // 只占一个象限 ⇒ 合力不抵消
-        agent(w, `n${i}`, 5.5 + Math.cos(ang) * 0.12, 5.5 + Math.sin(ang) * 0.12, { speed: 1, arriveRange: 3, separation: { weight: 0.6 } });
+        agent(w, `n${i}`, 5.5 + Math.cos(ang) * 0.7, 5.5 + Math.sin(ang) * 0.7, { speed: 1, arriveRange: 3, separation: { weight: 0.6 } });
       }
       w.tick();
       return Math.hypot(vel(w, 'u0').vx, vel(w, 'u0').vy);
