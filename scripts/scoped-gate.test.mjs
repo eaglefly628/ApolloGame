@@ -152,8 +152,13 @@ describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门
   it('facesOf：守卫脚本自身被改也触发各自守卫（改守卫先自证跑绿）', () => {
     expect(facesOf(['scripts/engine-random-guard.mjs']).engineRandom).toBe(true);
     expect(facesOf(['scripts/test-hygiene-check.mjs']).testHygiene).toBe(true);
-    expect(facesOf(['games/game-a/rules.ts', 'docs/workflow/requests.md'])).toEqual({ engineRandom: false, testHygiene: false, artSmoke: false, syncSmoke: false, backupSmoke: false, platformStatic: false, dokiApps: [], slowLane: [] });
+    expect(facesOf(['games/game-a/rules.ts', 'docs/workflow/requests.md'])).toEqual({ engineRandom: false, testHygiene: false, artSmoke: false, syncSmoke: false, backupSmoke: false, platformStatic: false, workshopProvider: false, dokiApps: [], slowLane: [] });
     expect(facesOf(['main_entry/server.py']).platformStatic).toBe(true); // 蓝屏面（2026-08-25）：server.py 不带 art_ 前缀·此前零旗命中
+    // 假产物面（2026-08-26）：工作台选供应商那段与 generate_api 此前同样零旗命中——
+    // 改一行「兜底可以落 mock」就能让全站生成变成同一份固定样例，而没有任何门在验。
+    expect(facesOf(['workshop/index.dc.html']).workshopProvider).toBe(true);
+    expect(facesOf(['main_entry/generate_api.py']).workshopProvider).toBe(true);
+    expect(facesOf(['scripts/workshop-provider-guard.mjs']).workshopProvider).toBe(true);
   });
 
   it('引擎面改动（full）：计划含 engine-random 步·红=拦（无 allowExit）·放 tsc 前', () => {
@@ -267,7 +272,7 @@ describe('scoped-gate 接线补牙（slowLane 正向 · docs-only 全量对账 �
     ]);
   });
 
-  it('面旗↔步总对账（表驱动·七旗全盖）：每旗置位时 planFor 必产对应步——加旗忘接步即红', () => {
+  it('面旗↔步总对账（表驱动·八旗全盖）：每旗置位时 planFor 必产对应步——加旗忘接步即红', () => {
     // 旗名 → 该旗单独置位时计划里必须出现的步名。数组旗（dokiApps/slowLane）用代表值。
     const FLAG_TO_STEPS = {
       engineRandom: { value: true, steps: ['engine-random'] },
@@ -276,10 +281,11 @@ describe('scoped-gate 接线补牙（slowLane 正向 · docs-only 全量对账 �
       syncSmoke: { value: true, steps: ['art-sync-smoke', 'auto-sync-smoke'] },
       backupSmoke: { value: true, steps: ['art-backup-smoke'] },
       platformStatic: { value: true, steps: ['platform-static-smoke'] },
+      workshopProvider: { value: true, steps: ['workshop-provider-guard'] },
       dokiApps: { value: ['game108'], steps: ['doki-test:game108'] },
       slowLane: { value: ['acceptance'], steps: ['slow-lane:acceptance'] },
     };
-    // 总对账下限：facesOf 产出的旗集合 = 本表键集合。往 facesOf 加第 8 旗而不进此表 → 这里先红，
+    // 总对账下限：facesOf 产出的旗集合 = 本表键集合。往 facesOf 加第 9 旗而不进此表 → 这里先红，
     // 逼施工者同时补 planFor 接线断言（防「加旗忘接步」静默失效——旗亮了计划却没步）。
     expect(Object.keys(facesOf([])).sort()).toEqual(Object.keys(FLAG_TO_STEPS).sort());
     for (const [flag, { value, steps }] of Object.entries(FLAG_TO_STEPS)) {

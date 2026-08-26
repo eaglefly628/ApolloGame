@@ -126,6 +126,12 @@ export function facesOf(files) {
     // /assets 素材库路由的主处理器，却不带 art_ 前缀 → 此前任何面旗都不命中，改它一行没门在验；
     // 坏了的形状是「首屏 bundle 404 永不挂载 = 蓝屏」——门禁 build 天天产日常 dist，必须机器守。
     platformStatic: list.some((f) => f === 'main_entry/server.py' || f === 'scripts/platform-static-smoke.py'),
+    // workshopProvider：创作台「用哪个供应商生成」面（owner 2026-08-26 实证事故）。
+    // 坏了的形状是**假产物**：mock 对任何 prompt 都回同一份内置 manifest，而它此前既能被
+    // `provider()` 的兜底选中、又被 `providerChips` 从界面上过滤掉 ⇒「所有游戏生成出来一模一样」
+    // 且界面上找不到任何原因。index.dc.html 与 generate_api.py 此前都不带任何面旗。
+    workshopProvider: list.some((f) => f === 'workshop/index.dc.html' || f === 'main_entry/generate_api.py'
+      || f === 'main_entry/mock.py' || f === 'scripts/workshop-provider-guard.mjs'),
     // dokiworld/** 的 node --test 没有别的门在验（DOKI-APPS 后续①·「写了测试没人跑」与 game108 恒石同形）：
     // 改动命中哪个 app 目录就跑哪个（.md 不算——纯文档改不了测试结果）。
     dokiApps: [...new Set(list.map((f) => { const m = f.match(/^dokiworld\/([a-z0-9-]+)\//); return m && !f.endsWith('.md') ? m[1] : null; }).filter(Boolean))].sort(),
@@ -182,6 +188,7 @@ export function planFor(c, auditGames = [], faces = {}) {
     ...(faces.artSmoke ? [{ name: 'art-smoke', cmd: ['python3', ['scripts/art-replace-smoke.py']] }] : []),
     ...(faces.backupSmoke ? [{ name: 'art-backup-smoke', cmd: ['python3', ['scripts/art-backup-smoke.py']] }] : []),
     ...(faces.platformStatic ? [{ name: 'platform-static-smoke', cmd: ['python3', ['scripts/platform-static-smoke.py']] }] : []),
+    ...(faces.workshopProvider ? [{ name: 'workshop-provider-guard', cmd: ['node', ['scripts/workshop-provider-guard.mjs']] }] : []),
     ...(faces.syncSmoke ? [
       { name: 'art-sync-smoke', cmd: ['python3', ['scripts/art-sync-smoke.py']] },
       { name: 'auto-sync-smoke', cmd: ['python3', ['scripts/auto-sync-smoke.py']] },
