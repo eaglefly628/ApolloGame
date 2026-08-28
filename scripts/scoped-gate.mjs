@@ -132,6 +132,11 @@ export function facesOf(files) {
     // 且界面上找不到任何原因。index.dc.html 与 generate_api.py 此前都不带任何面旗。
     workshopProvider: list.some((f) => f === 'workshop/index.dc.html' || f === 'main_entry/generate_api.py'
       || f === 'main_entry/mock.py' || f === 'scripts/workshop-provider-guard.mjs'),
+    // distStale：「过期构建产物」判据面（owner 2026-08-26 实证事故）。dist 是 gitignore 的，
+    // git pull 不更新它 ⇒ 旧 bundle 一直被端出去，症状是「点任何游戏都打开同一个旧演示场」，
+    // 而 URL/API/卡带内容全对——人眼几乎查不出来，必须机器守。
+    distStale: list.some((f) => f === 'main_entry/dist_check.py' || f === 'main_entry/cli.py'
+      || f === 'scripts/dist-staleness-guard.py'),
     // dokiworld/** 的 node --test 没有别的门在验（DOKI-APPS 后续①·「写了测试没人跑」与 game108 恒石同形）：
     // 改动命中哪个 app 目录就跑哪个（.md 不算——纯文档改不了测试结果）。
     dokiApps: [...new Set(list.map((f) => { const m = f.match(/^dokiworld\/([a-z0-9-]+)\//); return m && !f.endsWith('.md') ? m[1] : null; }).filter(Boolean))].sort(),
@@ -189,6 +194,7 @@ export function planFor(c, auditGames = [], faces = {}) {
     ...(faces.backupSmoke ? [{ name: 'art-backup-smoke', cmd: ['python3', ['scripts/art-backup-smoke.py']] }] : []),
     ...(faces.platformStatic ? [{ name: 'platform-static-smoke', cmd: ['python3', ['scripts/platform-static-smoke.py']] }] : []),
     ...(faces.workshopProvider ? [{ name: 'workshop-provider-guard', cmd: ['node', ['scripts/workshop-provider-guard.mjs']] }] : []),
+    ...(faces.distStale ? [{ name: 'dist-staleness-guard', cmd: ['python3', ['scripts/dist-staleness-guard.py']] }] : []),
     ...(faces.syncSmoke ? [
       { name: 'art-sync-smoke', cmd: ['python3', ['scripts/art-sync-smoke.py']] },
       { name: 'auto-sync-smoke', cmd: ['python3', ['scripts/auto-sync-smoke.py']] },

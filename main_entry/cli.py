@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .server import start_api_server
 from .sysutil import ROOT, VITE_PORT, _cleanup, _processes, _spawn, banner, c, check_env, env, get_project_status, is_port_in_use
+from .dist_check import dist_status
 from . import server
 
 # ── Vite 服务器 ──
@@ -120,6 +121,22 @@ def cmd_workshop():
     except KeyboardInterrupt:
         _cleanup()
 
+def _warn_stale_dist(static_dir: Path) -> None:
+    """过期构建产物：**喊出来**（owner 2026-08-26 实证事故）。
+
+    dist 是 gitignore 的，`git pull` 永远不更新它；而平台就靠它伺服整个前端。
+    一份旧 bundle 端出去的症状是「点任何游戏都打开同一个旧演示场」——URL/API/卡带全对，
+    只有界面是旧的，人眼几乎不可能看出来（当天从 mock 一路查到模板才定位到）。
+    所以这里必须在启动时就吼一声，而不是等人自己发现。
+    """
+    st = dist_status(ROOT, static_dir)
+    if st['state'] == 'stale':
+        print(c("  [!! 过期产物 !!]", 'r'), st['detail'])
+        print(c("  [!! 过期产物 !!]", 'r'), "在没重建之前，你在浏览器里看到的**不是当前代码**。")
+    elif st['state'] == 'missing':
+        print(c("  [PLATFORM]", 'y'), st['detail'])
+
+
 def cmd_platform():
     """平台离线打包运行入口：python3 zerocraft.py platform（platform-packaging-spec.md D2-D4）。
     只起 API 服务器——它现在**同时伺服已构建的静态前端**（main_entry/server.py `_serve_static`
@@ -134,6 +151,7 @@ def cmd_platform():
     print(c("  [PLATFORM]", 'g'), f"启动平台后端（同端口伺服前端静态 + /api/*）→ http://127.0.0.1:{port}/")
     static_dir = env('ZEROCRAFT_STATIC_DIR') or str(ROOT / 'dist')
     print(c("  [PLATFORM]", 'dim'), f"静态前端目录：{static_dir}" + ('（不存在——先 vite build）' if not Path(static_dir).is_dir() else ''))
+    _warn_stale_dist(Path(static_dir))
     start_api_server()
     try:
         threading.Event().wait()  # 阻塞主线程直到 Ctrl+C / 父进程（electron）杀掉本进程
