@@ -38,7 +38,7 @@
   SyncOrchestrator（新·M3）：本地先写 → 后台推云 → 拉取按 merge 表合并 → 冲突留痕不静默
 ```
 
-1. **M1 本地 DB（先做·无裁决依赖）**：`IndexedDbKV` 薄封装（get/put/delete/list·单库单表·key=`{ns}:{slot}`）→
+1. **M1 本地 DB（先做·无裁决依赖）**（**owner 2026-08-28 发令开工·施工主体 = 主程（本 session）·本行即锁·复查 = 另派独立 agent**）：`IndexedDbKV` 薄封装（get/put/delete/list·单库单表·key=`{ns}:{slot}`）→
    `IndexedDbStoragePort` + `IndexedDbSavePort`（各自契约照抄既有 LocalStorage 版·序列化口径不变=旧档可一次性迁入）
    → select-storage 优先级插到 localStorage 前（有 IndexedDB 用它·无则回落·**迁移=首次启动把 localStorage 存档搬进 DB 后留只读备份键**）。
    测试口径照大扫除刚立的坏路标准：坏档/半写/配额满/事务失败回滚 + 迁移往返。
