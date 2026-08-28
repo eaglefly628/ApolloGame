@@ -167,6 +167,23 @@ describe('storage · localStorage → IndexedDB 一次性迁移', () => {
     expect(ls.getItem('apollo-save:__migrated__:s1')).toBe(rawS1); // 备份仍立
   });
 
+  it('索引合并：DB 已有索引条目与迁入新条目并存（复查 S4 实证缺口回填·合并改覆写即红）', async () => {
+    // 场景：旗标未落 + DB 已有 save() 同形原子写入的档 a + localStorage 只有新槽 b。
+    // 迁移须把 b 并进已有索引而非覆写——否则 a 从 list() 消失（数据在库·索引失明）。
+    const kv = freshKv();
+    const a = game('a', 99, 9900);
+    await kv.putMany([
+      ['snap:a', JSON.stringify(a)],
+      ['snap:__index__', JSON.stringify([a.meta])],
+    ]);
+    const ls = new FakeLs();
+    ls.setItem('apollo-save:b', JSON.stringify(game('b', 7, 700)));
+    const port = new IndexedDbStoragePort({ kv, ls });
+    expect((await port.list()).map((m) => m.slot).sort()).toEqual(['a', 'b']); // 合并·a 不丢
+    expect((await port.load('a'))?.meta.tick).toBe(99);
+    expect((await port.load('b'))?.meta.tick).toBe(7);
+  });
+
   it('迁移失败重试：迁移事务被顶回 → 原键原地不动·同端口下次操作重迁成功', async () => {
     const { ls, rawS1 } = seed();
     const kv = new FaultKV({ factory: new IDBFactory() });
