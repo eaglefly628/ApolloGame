@@ -73,5 +73,13 @@ with tempfile.TemporaryDirectory() as td:
     os.utime(t, (2_000_000_000, 2_000_000_000))
     check(dist_status(r4, r4 / 'dist')['state'] == 'fresh', '④ 只改测试不报过期（否则跑完测试就报，报到没人看）')
 
+# ⑤ 告警接线：**每个入口都要吼**，不能只在 cmd_platform 里提醒——
+#    launcher/player/workshop 起的是同一个 API 服务器，直接开 :4000 拿到的同样是那份旧 bundle。
+_srv = (ROOT / 'main_entry' / 'server.py').read_text(encoding='utf-8')
+check('dist_status(' in _srv and '过期产物' in _srv, '⑤ 告警接在 start_api_server（所有入口共用）')
+check(_srv.index('dist_status(') > _srv.index('def start_api_server'), '⑤ 告警在服务器起来时就打，不是等人去点')
+_cli = (ROOT / 'main_entry' / 'cli.py').read_text(encoding='utf-8')
+check('过期产物' not in _cli, '⑤ cmd_platform 里不再重复一份（同一句吼两遍等于没吼）')
+
 print(f'\nDIST-STALENESS-GUARD: {"PASS" if FAIL == 0 else "FAIL"} ({PASS} passed, {FAIL} failed)')
 sys.exit(0 if FAIL == 0 else 1)

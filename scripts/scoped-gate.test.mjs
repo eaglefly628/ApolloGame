@@ -163,6 +163,7 @@ describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门
     // 只有界面是旧的 —— 人眼查不出来，判据必须有门守着。
     expect(facesOf(['main_entry/dist_check.py']).distStale).toBe(true);
     expect(facesOf(['scripts/dist-staleness-guard.py']).distStale).toBe(true);
+    expect(facesOf(['main_entry/server.py']).distStale).toBe(true);   // 告警就接在这里
   });
 
   it('引擎面改动（full）：计划含 engine-random 步·红=拦（无 allowExit）·放 tsc 前', () => {
