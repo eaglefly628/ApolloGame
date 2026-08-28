@@ -38,7 +38,7 @@
   SyncOrchestrator（新·M3）：本地先写 → 后台推云 → 拉取按 merge 表合并 → 冲突留痕不静默
 ```
 
-1. **M1 本地 DB（先做·无裁决依赖）**（**owner 2026-08-28 发令开工·施工主体 = 主程（本 session）·本行即锁·复查 = 另派独立 agent**）：`IndexedDbKV` 薄封装（get/put/delete/list·单库单表·key=`{ns}:{slot}`）→
+1. **M1 本地 DB（先做·无裁决依赖）**（**owner 2026-08-28 发令开工·施工主体 = 主程（本 session）·本行即锁·status: 施工毕待独立复查**。落地：`indexeddb-kv.ts`（单库单表 KV·putMany 单事务原子·⚠实证：put 同步异常不自动中止事务，须显式 abort 否则半批提交）+ `IndexedDbStoragePort`/`IndexedDbSavePort`（口径照抄 localStorage 版·字节原样迁入）+ 迁移助手（形状认领分流两线·索引从值重建不信共享 `__index__`·DB 已有键优先防旧砸新·失败不落旗标下次重试·原键转只读备份键）+ 工厂优先级③插 localStorage 前。测试 19 例含坏档/索引坏/事务回滚/配额满注入/迁移往返/DB-wins/失败重试/优先级契约；devDep +fake-indexeddb）：`IndexedDbKV` 薄封装（get/put/delete/list·单库单表·key=`{ns}:{slot}`）→
    `IndexedDbStoragePort` + `IndexedDbSavePort`（各自契约照抄既有 LocalStorage 版·序列化口径不变=旧档可一次性迁入）
    → select-storage 优先级插到 localStorage 前（有 IndexedDB 用它·无则回落·**迁移=首次启动把 localStorage 存档搬进 DB 后留只读备份键**）。
    测试口径照大扫除刚立的坏路标准：坏档/半写/配额满/事务失败回滚 + 迁移往返。

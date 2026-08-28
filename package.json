@@ -59,6 +59,7 @@
     "@vitejs/plugin-react": "^4.3.1",
     "electron": "33.0.0",
     "electron-builder": "^25.0.0",
+    "fake-indexeddb": "^6.2.5",
     "happy-dom": "^20.10.6",
     "playwright": "^1.61.1",
     "typescript": "^5.5.3",
