@@ -87,7 +87,7 @@ export const diceRollCapability = defineCapability({
         if (signals.size === 0) return;
         // 世界单例 RNG（首个 RandomSeed 实体，同 effect-apply/card-scoring 惯例）。无 RNG → 无法确定性掷 → 静默不掷（fail-closed）。
         let rng: RandomSeed | undefined;
-        for (const [rid] of world.query('RandomSeed')) { rng = world.getComponent<RandomSeed>(rid, 'RandomSeed'); break; }
+        { const rid = world.singleton('RandomSeed'); if (rid !== undefined) rng = world.getComponent<RandomSeed>(rid, 'RandomSeed'); } // 黑板单例（P1b）：严格模式多份即抛·生产按创建序取首个（= 旧 for…break 语义）
         if (!rng) return;
         // 多骰盅按实体 id 升序依次掷（共用世界 RNG，序列确定）。
         const poolIds = world.query('DicePool').map(([id]) => id).sort();

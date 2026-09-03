@@ -201,3 +201,53 @@ describe('行为零变 · 非严格视图 = 透传', () => {
     expect(() => w.tick()).toThrow(/系统 "mover" 读取 组件 "Other"/);
   });
 });
+
+describe('P1b · tick 内事件总线 + 黑板单例', () => {
+  it('emit/events：多读者·每实体多条·发出序·tick 末清空·不进快照', () => {
+    const w = new World({ strict: true });
+    seed(w);
+    const seen: string[] = [];
+    w.addSystem(sys({ id: 'producer', emits: ['hit'], execute(world) { world.emit('hit', { who: 'a', dmg: 1 }); world.emit('hit', { who: 'a', dmg: 2 }); } }));
+    w.addSystem(sys({ id: 'listener-1', listens: ['hit'], execute(world) { seen.push(...world.events<{ dmg: number }>('hit').map((e) => `1:${e.dmg}`)); } }));
+    w.addSystem(sys({ id: 'listener-2', listens: ['hit'], execute(world) { seen.push(...world.events<{ dmg: number }>('hit').map((e) => `2:${e.dmg}`)); } }));
+    w.tick();
+    expect(seen).toEqual(['1:1', '1:2', '2:1', '2:2']); // 两个读者都读到全部两条·发出序
+    expect(w.events('hit')).toEqual([]); // tick 末清空
+    expect(JSON.stringify(w.snapshot())).not.toContain('dmg'); // 不进快照
+    // 拓扑：emitter → listener 推断边（listener 声明在 producer 之前也排在它后面）
+    const w2 = new World({ strict: true });
+    const order: string[] = [];
+    w2.addSystem(sys({ id: 'L', listens: ['ev'], execute() { order.push('L'); } }));
+    w2.addSystem(sys({ id: 'P', emits: ['ev'], execute(world) { order.push('P'); world.emit('ev', 1); } }));
+    w2.tick();
+    expect(order).toEqual(['P', 'L']);
+  });
+
+  it('严格模式：未申报 emits 的 emit / 未申报 listens 的 events 抛错点名', () => {
+    const w = new World({ strict: true });
+    w.addSystem(sys({ id: 'sneaky', execute(world) { world.emit('x', 1); } }));
+    expect(() => w.tick()).toThrow(/系统 "sneaky" emit 事件 "x"，但没申报 emits/);
+    const w2 = new World({ strict: true });
+    w2.addSystem(sys({ id: 'peek', execute(world) { world.events('x'); } }));
+    expect(() => w2.tick()).toThrow(/系统 "peek" 读事件 "x"，但没申报 listens/);
+  });
+
+  it('singleton：0 个 → undefined；1 个 → 该 id；>1 个严格模式抛、生产按创建序取首个（= 旧 query 取首个语义）', () => {
+    const w = new World({ strict: true });
+    expect(w.singleton('Pos')).toBeUndefined();
+    w.createEntity('s1'); w.addComponent<Pos>('s1', { type: 'Pos', x: 1, tags: [] });
+    expect(w.singleton('Pos')).toBe('s1');
+    w.createEntity('s0'); w.addComponent<Pos>('s0', { type: 'Pos', x: 0, tags: [] });
+    expect(() => w.singleton('Pos')).toThrow(/singleton\("Pos"\) 有 2 个持有者/);
+    const prod = new World({ strict: false });
+    prod.createEntity('later'); prod.createEntity('earlier');
+    prod.addComponent<Pos>('later', { type: 'Pos', x: 1, tags: [] });
+    prod.addComponent<Pos>('earlier', { type: 'Pos', x: 0, tags: [] });
+    // later 先创建 → 创建序首个 = later（与 query('Pos') 首个一致）
+    expect(prod.singleton('Pos')).toBe('later');
+    expect(prod.query('Pos')[0][0]).toBe('later');
+    // 视图：取单例受读申报门约束
+    const v = new SystemView(w, sys({ id: 'nosee', execute() {} }), true);
+    expect(() => v.singleton('Pos')).toThrow(/取单例 组件 "Pos"/);
+  });
+});

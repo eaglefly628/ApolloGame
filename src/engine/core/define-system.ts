@@ -12,7 +12,7 @@ import type { EntityId, ComponentType, Component, SystemDeclaration, IWorld } fr
 // ═══════════════════════════════════════════════════════════════
 
 /** 只暴露申报过的类型名的世界面。R = 可读（reads ∪ writes ∪ consumes），W = 可写（writes ∪ consumes）。 */
-export interface TypedWorld<R extends ComponentType, W extends ComponentType> {
+export interface TypedWorld<R extends ComponentType, W extends ComponentType, E extends string = never, L extends string = never> {
   createEntity(id: EntityId): void;
   destroyEntity(id: EntityId): void;
   getAllEntities(): EntityId[];
@@ -23,6 +23,9 @@ export interface TypedWorld<R extends ComponentType, W extends ComponentType> {
   removeComponent(entityId: EntityId, type: W): void;
   query(...types: Array<R | W>): Array<[EntityId, Map<ComponentType, Component>]>;
   queryEntities(...types: Array<R | W>): EntityId[];
+  singleton(type: R | W): EntityId | undefined;
+  emit<Ev>(type: E, event: Ev): void;
+  events<Ev>(type: L): readonly Ev[];
   /** 视图的根世界（缓存键用）。 */
   readonly root?: IWorld;
 }
@@ -31,6 +34,8 @@ export interface TypedSystemSpec<
   R extends readonly ComponentType[],
   W extends readonly ComponentType[],
   C extends readonly ComponentType[],
+  Em extends readonly string[] = readonly [],
+  Li extends readonly string[] = readonly [],
 > {
   id: string;
   reads: R;
@@ -39,7 +44,9 @@ export interface TypedSystemSpec<
   phase?: number;
   runsAfter?: string[];
   runsBefore?: string[];
-  run(world: TypedWorld<R[number] | W[number] | C[number], W[number] | C[number]>): void;
+  emits?: Em;
+  listens?: Li;
+  run(world: TypedWorld<R[number] | W[number] | C[number], W[number] | C[number], Em[number], Li[number]>): void;
 }
 
 /** 类型级申报对账的系统声明：run 里对未申报类型名的访问 = tsc 错。 */
@@ -47,7 +54,9 @@ export function defineSystem<
   const R extends readonly ComponentType[],
   const W extends readonly ComponentType[],
   const C extends readonly ComponentType[] = readonly [],
->(spec: TypedSystemSpec<R, W, C>): SystemDeclaration {
+  const Em extends readonly string[] = readonly [],
+  const Li extends readonly string[] = readonly [],
+>(spec: TypedSystemSpec<R, W, C, Em, Li>): SystemDeclaration {
   const consumes = (spec.consumes ?? []) as readonly ComponentType[];
   return {
     id: spec.id,
@@ -57,8 +66,10 @@ export function defineSystem<
     ...(spec.phase !== undefined ? { phase: spec.phase } : {}),
     ...(spec.runsAfter ? { runsAfter: spec.runsAfter } : {}),
     ...(spec.runsBefore ? { runsBefore: spec.runsBefore } : {}),
+    ...(spec.emits ? { emits: [...spec.emits] } : {}),
+    ...(spec.listens ? { listens: [...spec.listens] } : {}),
     execute(world: IWorld) {
-      spec.run(world as unknown as TypedWorld<R[number] | W[number] | C[number], W[number] | C[number]>);
+      spec.run(world as unknown as TypedWorld<R[number] | W[number] | C[number], W[number] | C[number], Em[number], Li[number]>);
     },
   };
 }

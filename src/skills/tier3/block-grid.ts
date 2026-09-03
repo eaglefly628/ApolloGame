@@ -192,7 +192,7 @@ export const blockGridCapability = defineCapability({
       execute(world: IWorld) {
         let board: BlockGrid | undefined;
         let boardId = '';
-        for (const [bid] of world.query('BlockGrid')) { board = world.getComponent<BlockGrid>(bid, 'BlockGrid'); boardId = bid; break; }
+        { const bid = world.singleton('BlockGrid'); if (bid !== undefined) { board = world.getComponent<BlockGrid>(bid, 'BlockGrid'); boardId = bid; } } // 黑板单例（P1b）：严格模式多份即抛·生产按创建序取首个（= 旧 for…break 语义）
         if (!board) return;
 
         // 取本拍首条放置意图（按实体 id 升序，确定），处理后清除全部意图。
@@ -253,7 +253,7 @@ export const blockGridCapability = defineCapability({
       execute(world: IWorld) {
         let board: BlockGrid | undefined;
         let boardId = '';
-        for (const [bid] of world.query('BlockGrid')) { board = world.getComponent<BlockGrid>(bid, 'BlockGrid'); boardId = bid; break; }
+        { const bid = world.singleton('BlockGrid'); if (bid !== undefined) { board = world.getComponent<BlockGrid>(bid, 'BlockGrid'); boardId = bid; } } // 黑板单例（P1b）：严格模式多份即抛·生产按创建序取首个（= 旧 for…break 语义）
         if (!board) return;
         for (const [eid] of world.query('BoardCell')) {
           const bc = world.getComponent<BoardCell>(eid, 'BoardCell')!;

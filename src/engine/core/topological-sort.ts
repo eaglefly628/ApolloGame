@@ -49,6 +49,21 @@ function sortWithinPhase(systems: SystemDeclaration[], phase: number): SystemDec
       for (const w of writers) if (w !== i) componentEdges[w].add(i);
     }
   }
+  // 1b) 事件推断边（P1b 总线）：emitter(E) → listener(E)。与组件推断边同等（软边·可被显式边覆盖·可平局裁决）。
+  const emittersOf = new Map<string, number[]>();
+  for (let i = 0; i < n; i++) {
+    for (const e of systems[i].emits ?? []) {
+      if (!emittersOf.has(e)) emittersOf.set(e, []);
+      emittersOf.get(e)!.push(i);
+    }
+  }
+  for (let i = 0; i < n; i++) {
+    for (const e of systems[i].listens ?? []) {
+      const ems = emittersOf.get(e);
+      if (!ems) continue;
+      for (const w of ems) if (w !== i) componentEdges[w].add(i);
+    }
+  }
 
   // 2) 显式定序边（仅限本桶内的 id）：runsAfter[X] ⇒ X→self；runsBefore[Y] ⇒ self→Y。
   const explicitEdges: Array<[number, number]> = [];

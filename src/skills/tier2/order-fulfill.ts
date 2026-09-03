@@ -26,8 +26,8 @@ import { weightedPick } from './weighted-pick.js';
 
 /** 世界里第一个 RandomSeed 实体（约定单例，同 weighted-spawn/effect-apply/dice-roll 找首个单例的惯例）。 */
 function findWorldSeed(world: IWorld): RandomSeed | undefined {
-  for (const [id] of world.query('RandomSeed')) return world.getComponent<RandomSeed>(id, 'RandomSeed');
-  return undefined;
+  const id = world.singleton('RandomSeed'); // 黑板单例（P1b）：严格模式多份即抛·生产按创建序取首个（= 旧 for…break 语义）
+  return id === undefined ? undefined : world.getComponent<RandomSeed>(id, 'RandomSeed');
 }
 
 /** REQ-ORDERROT：集齐发奖后从 order.pool 取下一单写回 needItems/reward + 清 filled（调用前已确认 pool 非空）。

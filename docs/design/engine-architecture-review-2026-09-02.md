@@ -357,6 +357,18 @@ type Write = {to:Ref, op:'set'|'add'|'mul', value:Expr}   // 一律入队，不�
 
 **P1a 之后 D1/D2a 的状态**：写入对 World 可见（脏集）·申报可验（双门）。剩下的 D2b（平局键=manifest 序）与 D2c（相位表）归 P2d。
 
+### P1b · tick 内事件总线 + 黑板单例 —— ✅ 基础设施落地（既有事件组件的搬迁裁定见下）
+
+| 项 | 落点 | 说明 |
+|---|---|---|
+| 事件总线 | `world.ts` `emit / events / clearEvents`；`types.ts` IWorld + `SystemDeclaration.emits/listens` | 多读者（谁 listens 谁读·不独占不清扫）、每实体多条（数组·不受「一实体一组件」限制）、发出序稳定、**tick 末清空·不进快照/hash**。严格模式：未申报 emits 的 emit / 未申报 listens 的 events 抛错点名 |
+| 拓扑 | `topological-sort.ts` 1b · `system-graph.ts` | emitter(E) → listener(E) 推断边，与组件推断边同等（软边·可被显式边覆盖·可平局裁决）；system-graph 点名 `event:E`；fidelity 测试钉两套模型对齐 |
+| 类型门 | `define-system.ts` | `defineSystem({ emits, listens, run })`：`run` 里 emit/events 只认申报过的事件名 |
+| 黑板单例 | `world.ts` `singleton(type)` | 0 个 → undefined；1 个 → id；>1 个严格模式抛（真实数据错）·生产按创建序取首个（= 旧「query 取首个 break」语义·零回归）。迁移 12 处手写现场（RandomSeed×6·HexBoard×2·BlockGrid×2·NavGraph·PrefabLibrary·ModifierTotals）；全库严格跑实证没有任何世界挂多份 |
+| 自测 | `system-view.test.ts` P1b 组 · `system-graph.test.ts` | 多读者/发出序/tick 末清空/不进快照/拓扑方向/严格门/单例三态与旧语义对拍 |
+
+**裁定：既有事件组件（Signal / ResourceModify / SpawnRequest / DestroyRequest / TimerDone…）本轮不搬进总线。** 实查它们的真实语义是「挂到被消费为止」——Commit 相位产出的 Signal 活到下一拍 event-when 清扫、resource-apply 之后产出的 ResourceModify 活到下一拍才被吃，二者**都进快照与 hash**。tick 内总线是「同拍发出→同拍消费」语义，整体搬迁 = 改行为 + 改 hash + 破存档兼容，属 🔴 定序/快照面的独立工单（建议随 P2a 规则内核的 `Write` 入队一起设计：Write 队列天然是「挂到被消费」语义且进快照，Signal 类瞬时事件才走总线）。D3 的六类 hack（载体实体、拆系统、代发字段、覆盖）随之在 P2a 收口。
+
 ---
 
 ## 附录 A · 证据索引（file:line）

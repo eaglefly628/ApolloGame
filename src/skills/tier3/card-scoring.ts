@@ -153,7 +153,7 @@ export const cardScoringCapability = defineCapability({
 
         const trace = findScoreTrace(world); // REQ-019：poker-eval 已清空，这里只 append（opt-in：无则 no-op）
         let rng: RandomSeed | undefined; // REQ-E-023②：per-card 概率门用世界 RNG（逐张独立 roll，如 Bloodstone 每张♥ 1/2）
-        for (const [rid] of world.query('RandomSeed')) { rng = world.getComponent<RandomSeed>(rid, 'RandomSeed'); break; }
+        { const rid = world.singleton('RandomSeed'); if (rid !== undefined) rng = world.getComponent<RandomSeed>(rid, 'RandomSeed'); } // 黑板单例（P1b）：严格模式多份即抛·生产按创建序取首个（= 旧 for…break 语义）
         for (const [eid] of world.query('PerCardScore', 'PlayedHand')) {
           const cfg = world.getComponent<PerCardScore>(eid, 'PerCardScore')!;
           const played = world.getComponent<PlayedHand>(eid, 'PlayedHand')!;

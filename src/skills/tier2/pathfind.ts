@@ -127,7 +127,7 @@ export const pathfindCapability = defineCapability({
       execute(world: IWorld) {
         // NavGraph 单例。
         let nav: NavGraph | undefined;
-        for (const [gid] of world.query('NavGraph')) { nav = world.getComponent<NavGraph>(gid, 'NavGraph'); break; }
+        { const gid = world.singleton('NavGraph'); if (gid !== undefined) nav = world.getComponent<NavGraph>(gid, 'NavGraph'); } // 黑板单例（P1b）：严格模式多份即抛·生产按创建序取首个（= 旧 for…break 语义）
         if (!nav || nav.nodes.length === 0) return;
         const navG = nav;
 

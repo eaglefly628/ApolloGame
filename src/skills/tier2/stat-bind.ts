@@ -66,11 +66,8 @@ export function projectStatBind(op: 'set' | 'mul' | 'add' | 'div', base: number 
 
 /** 世界里第一个 ModifierTotals 实体（约定单例，同 dice-roll/effect-apply 找首个 RandomSeed 的惯例）。 */
 function findWorldTotals(world: IWorld): ModifierTotals | undefined {
-  for (const [id] of world.query('ModifierTotals')) {
-    const mt = world.getComponent<ModifierTotals>(id, 'ModifierTotals');
-    if (mt) return mt;
-  }
-  return undefined;
+  const id = world.singleton('ModifierTotals'); // 黑板单例（P1b）：严格模式多份即抛·生产按创建序取首个（= 旧 for…break 语义）
+  return id === undefined ? undefined : world.getComponent<ModifierTotals>(id, 'ModifierTotals');
 }
 
 export const statBindCapability = defineCapability({

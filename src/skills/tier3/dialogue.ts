@@ -118,8 +118,8 @@ function applyEffects(world: IWorld, effects: DialogueEffect[] | undefined): voi
 
 // 取世界里的 RandomSeed（约定单例，挂在 world 实体）。无则 check 退化为无方差（roll=0）。
 function findSeed(world: IWorld): RandomSeed | undefined {
-  for (const [eid] of world.query('RandomSeed')) return world.getComponent<RandomSeed>(eid, 'RandomSeed');
-  return undefined;
+  const eid = world.singleton('RandomSeed'); // 黑板单例（P1b）：严格模式多份即抛·生产按创建序取首个（= 旧 for…break 语义）
+  return eid === undefined ? undefined : world.getComponent<RandomSeed>(eid, 'RandomSeed');
 }
 
 // 从单例 InputQueue 读本 tick 的对话输入动作（R3 接缝；UI 经 enqueueAction 注入，applyRawActions 落进队列）。

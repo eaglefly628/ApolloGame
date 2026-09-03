@@ -46,6 +46,8 @@ export class SystemView implements IWorld {
   private readonly reads: ReadonlySet<ComponentType>;
   private readonly writes: ReadonlySet<ComponentType>; // writes ∪ consumes
   private readonly readable: ReadonlySet<ComponentType>; // reads ∪ writes ∪ consumes
+  private readonly emits: ReadonlySet<string>;
+  private readonly listens: ReadonlySet<string>;
   private readonly strict: boolean; // throw 或 report 都为 true（走检查路径）
   private readonly mode: StrictMode;
   private readonly frozen = new WeakMap<object, object>();
@@ -57,6 +59,8 @@ export class SystemView implements IWorld {
     this.reads = new Set(system.reads);
     this.writes = new Set([...system.writes, ...system.consumes]);
     this.readable = new Set([...system.reads, ...system.writes, ...system.consumes]);
+    this.emits = new Set(system.emits ?? []);
+    this.listens = new Set(system.listens ?? []);
     this.mode = strict === true ? 'throw' : strict === false ? 'off' : strict;
     this.strict = this.mode !== 'off';
   }
@@ -183,6 +187,27 @@ export class SystemView implements IWorld {
   queryEntities(...types: ComponentType[]): EntityId[] {
     if (this.strict) for (const t of types) this.assertReadable(t, '按类型查询');
     return this.root.queryEntities(...types);
+  }
+
+  // ── tick 内事件总线（P1b）──
+
+  emit<E>(type: string, event: E): void {
+    if (this.strict && !this.emits.has(type)) {
+      this.violation(`e:${this.sysId}:${type}`, `[strict] 系统 "${this.sysId}" emit 事件 "${type}"，但没申报 emits——补进 emits（拓扑据此排 emitter→listener）。`);
+    }
+    this.root.emit(type, event);
+  }
+
+  events<E>(type: string): readonly E[] {
+    if (this.strict && !this.listens.has(type)) {
+      this.violation(`l:${this.sysId}:${type}`, `[strict] 系统 "${this.sysId}" 读事件 "${type}"，但没申报 listens——补进 listens。`);
+    }
+    return this.root.events<E>(type);
+  }
+
+  singleton(type: ComponentType): EntityId | undefined {
+    if (this.strict) this.assertReadable(type, '取单例');
+    return this.root.singleton(type);
   }
 }
 

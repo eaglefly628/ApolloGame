@@ -45,8 +45,8 @@ import { weightedPick } from './weighted-pick.js';
 
 /** 世界里第一个 RandomSeed 实体（约定单例，同 dice-roll/effect-apply/stat-bind 找首个单例的惯例）。 */
 function findWorldSeed(world: IWorld): RandomSeed | undefined {
-  for (const [id] of world.query('RandomSeed')) return world.getComponent<RandomSeed>(id, 'RandomSeed');
-  return undefined;
+  const id = world.singleton('RandomSeed'); // 黑板单例（P1b）：严格模式多份即抛·生产按创建序取首个（= 旧 for…break 语义）
+  return id === undefined ? undefined : world.getComponent<RandomSeed>(id, 'RandomSeed');
 }
 
 export const weightedSpawnCapability = defineCapability({

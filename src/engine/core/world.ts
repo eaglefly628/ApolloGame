@@ -2,6 +2,9 @@ import type { EntityId, ComponentType, Component, SystemDeclaration, IWorld, Tic
 import { topologicalSort } from './topological-sort.js';
 import { SystemView, strictByEnv, type StrictMode } from './system-view.js';
 
+const EMPTY: readonly never[] = Object.freeze([]);
+const singletonReported = new Set<string>();
+
 export interface WorldOptions {
   /** 严格模式：系统视图对未申报访问抛错、只读组件深冻结（测试/门禁用·缺省读环境变量 ZEROCRAFT_STRICT=1|report）。
    *  true='throw'·false='off'·'report'=盘点（同类只 warn 一次·不抛不改行为）。 */
@@ -24,6 +27,8 @@ export class World implements IWorld {
   readonly strict: StrictMode;
   private views = new Map<SystemDeclaration, SystemView>();
   private dirty = new Set<EntityId>();
+  // ── tick 内事件总线（P1b）──：type → 本 tick 发出的事件（发出序）。tick 末清空·不进快照。
+  private bus = new Map<string, unknown[]>();
 
   constructor(options: WorldOptions = {}) {
     const s = options.strict ?? strictByEnv();
@@ -74,6 +79,46 @@ export class World implements IWorld {
   /** 当前脏实体数（测试/观测用·不清）。 */
   get dirtyCount(): number {
     return this.dirty.size;
+  }
+
+  // ── tick 内事件总线（P1b）──
+
+  emit<E>(type: string, event: E): void {
+    let q = this.bus.get(type);
+    if (!q) {
+      q = [];
+      this.bus.set(type, q);
+    }
+    q.push(event);
+  }
+
+  events<E>(type: string): readonly E[] {
+    return (this.bus.get(type) as E[] | undefined) ?? EMPTY;
+  }
+
+  /** 清空总线（tick 末自动调；宿主在 tick 外 emit 的事件会活到下一 tick 末）。 */
+  clearEvents(): void {
+    if (this.bus.size) this.bus.clear();
+  }
+
+  // ── 黑板单例 ──
+
+  singleton(type: ComponentType): EntityId | undefined {
+    const owners = this.typeIndex.get(type);
+    if (!owners || owners.size === 0) return undefined;
+    if (owners.size > 1 && this.strict !== 'off') {
+      const msg = `[strict] singleton("${type}") 有 ${owners.size} 个持有者（${[...owners].join(', ')}）——黑板单例组件每个世界只能有一份；多份是数据错。`;
+      if (this.strict === 'throw') throw new Error(msg);
+      if (!singletonReported.has(type)) { singletonReported.add(type); console.warn(msg); }
+    }
+    // 生产：按创建序取首个（= 旧「query 取首个 break」语义·query 候选序即创建序）。
+    let best: EntityId | undefined;
+    let bestSeq = Infinity;
+    for (const id of owners) {
+      const seq = this.creationSeq.get(id)!;
+      if (seq < bestSeq) { bestSeq = seq; best = id; }
+    }
+    return best;
   }
 
   getAllEntities(): EntityId[] {
@@ -221,6 +266,7 @@ export class World implements IWorld {
       this.observer?.onSystemEnd?.(system);
     }
 
+    this.clearEvents(); // tick 内事件总线：tick 末清空（P1b）
     this.version++;
     this.observer?.onTickEnd?.(this.version);
   }

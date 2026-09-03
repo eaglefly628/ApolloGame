@@ -117,7 +117,7 @@ export const effectApplyCapability = defineCapability({
         const trace = findScoreTrace(world);
         // REQ-E-023②：概率门用的世界 RNG（首个 RandomSeed；roll 推进其序列，确定/录放安全）。
         let rng: RandomSeed | undefined;
-        for (const [rid] of world.query('RandomSeed')) { rng = world.getComponent<RandomSeed>(rid, 'RandomSeed'); break; }
+        { const rid = world.singleton('RandomSeed'); if (rid !== undefined) rng = world.getComponent<RandomSeed>(rid, 'RandomSeed'); } // 黑板单例（P1b）：严格模式多份即抛·生产按创建序取首个（= 旧 for…break 语义）
 
         for (const { eid, ef } of hits) {
           if (ef.chance && !chancePass(rng, ef.chance.num, ef.chance.den)) continue; // REQ-E-023②：概率未中 → 跳过本效果（roll 已推进 RNG）

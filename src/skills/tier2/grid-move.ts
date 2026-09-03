@@ -132,7 +132,7 @@ export const gridMoveCapability = defineCapability({
       execute(world: IWorld) {
         // 棋盘单例。
         let board: HexBoard | undefined;
-        for (const [bid] of world.query('HexBoard')) { board = world.getComponent<HexBoard>(bid, 'HexBoard'); break; }
+        { const bid = world.singleton('HexBoard'); if (bid !== undefined) board = world.getComponent<HexBoard>(bid, 'HexBoard'); } // 黑板单例（P1b）：严格模式多份即抛·生产按创建序取首个（= 旧 for…break 语义）
         if (!board) return;
 
         // 占位集 vs 位置表（REQ-F-051 收窄，评审修正版）：两种用途分开——

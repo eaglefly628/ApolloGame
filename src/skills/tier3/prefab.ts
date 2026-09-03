@@ -18,8 +18,8 @@ import type { SpawnRequest, PrefabLibrary, PrefabTemplate, SpawnOverrides } from
 // ═══════════════════════════════════════════════════════════════
 
 function findLibrary(world: IWorld): PrefabLibrary | undefined {
-  for (const [e] of world.query('PrefabLibrary')) return world.getComponent<PrefabLibrary>(e, 'PrefabLibrary');
-  return undefined;
+  const e = world.singleton('PrefabLibrary'); // 黑板单例（P1b）：严格模式多份即抛·生产按创建序取首个（= 旧 for…break 语义）
+  return e === undefined ? undefined : world.getComponent<PrefabLibrary>(e, 'PrefabLibrary');
 }
 
 // ── REQ-F-033：模板内部实体引用重映射（Unity/Godot nested-prefab 标配语义）──

@@ -20,6 +20,10 @@ export interface SystemDeclaration {
   // 跨 phase 的先后仍由 phase 号决定；引用了不在本 phase 的 id 会被忽略。
   readonly runsAfter?: string[]; // 本系统排在这些系统之后
   readonly runsBefore?: string[]; // 本系统排在这些系统之前
+  // tick 内事件总线申报（P1b）：emits = 本系统会 world.emit 的事件类型；listens = 会 world.events 读的事件类型。
+  // 拓扑：emitter → listener 推断边（软边·与组件推断边同等对待）。严格模式下未申报的 emit/events 抛错。
+  readonly emits?: readonly string[];
+  readonly listens?: readonly string[];
   execute(world: IWorld): void;
 }
 
@@ -47,6 +51,17 @@ export interface IWorld {
   queryEntities(...types: ComponentType[]): EntityId[];
 
   getVersion(): number;
+
+  // ── tick 内事件总线（P1b · engine-architecture-review-2026-09-02 §5 P1b · D3）──
+  // 与「事件当组件」的区别：多读者（谁 listens 谁读·不独占不清扫）、每实体多条（数组·不受 Map 按 type 键限制）、
+  // 按发出序稳定、**tick 末清空、不进快照/hash**。故只适合「同一 tick 内发出→消费」的瞬时事件；
+  // 要跨 tick 挂起等消费的（如 ResourceModify 队列）仍用组件 + consumes。
+  emit<E>(type: string, event: E): void;
+  events<E>(type: string): readonly E[];
+
+  /** 黑板单例：持有该组件的唯一实体 id。0 个 → undefined；>1 个 → 严格模式抛（真实数据错）·生产按创建序取首个
+   *  （= 此前各能力「query 取首个 break」的事实语义·零回归）。取代 9 处手写的 for…break。 */
+  singleton(type: ComponentType): EntityId | undefined;
 
   /** 视图的根世界（World 本体 = 自身；SystemView = 它包的 World）。按世界身份做缓存的能力（spatial-query）
    *  用它当键——多个系统视图共享同一份缓存，建索引时刻不随「哪个系统先查」漂移。 */

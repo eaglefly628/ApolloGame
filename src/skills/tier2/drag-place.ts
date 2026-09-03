@@ -155,7 +155,7 @@ export const dragPlaceCapability = defineCapability({
 
         // 棋盘单例（snap 用；无板=自由落点）。
         let board: HexBoard | undefined;
-        for (const [bid] of world.query('HexBoard')) { board = world.getComponent<HexBoard>(bid, 'HexBoard'); break; }
+        { const bid = world.singleton('HexBoard'); if (bid !== undefined) board = world.getComponent<HexBoard>(bid, 'HexBoard'); } // 黑板单例（P1b）：严格模式多份即抛·生产按创建序取首个（= 旧 for…break 语义）
 
         const t = world.getComponent<Transform>(eid, 'Transform');
         if (!t) return;
