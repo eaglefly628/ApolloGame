@@ -1,4 +1,7 @@
 import { defineCapability } from '@engine/core/define-capability.js';
+import { defineComponent } from '@engine/core/define-component.js';
+import { t } from '@engine/core/schema.js';
+import { FlowStateSchema } from '@engine/protocol/schemas/logic.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
 import type { GameFlow, FlowState, FlowAction, Resource, Flag, State } from '@engine/protocol/components.js';
@@ -64,16 +67,16 @@ export const flowCapability = defineCapability({
 
   components: {
     provides: {
-      GameFlow: {
+      GameFlow: defineComponent('GameFlow', {
+        id: t.str('flow 标识（多 flow 区分）'),
+        current: t.str('当前状态 id'),
+        states: t.arr(FlowStateSchema, 'FlowState[]：{id,onEnter?:FlowAction[],transitions?:[{when?:ConditionExpr,after?,to,do?:FlowAction[]}]}'),
+        entered: t.opt(t.bool('内部：当前状态 onEnter 是否已跑（转移后置 false）')),
+        elapsed: t.opt(t.num('内部：进入当前状态后经过的 tick 数（after 时序门）')),
+      }, {
         category: 'config',
         describe: '声明式流程状态机（数据）。current=当前状态 id；states=状态列表（onEnter 动作 + 带 when 条件的转移）。',
-        fields: {
-          id: { type: 'string', describe: 'flow 标识（多 flow 区分）' },
-          current: { type: 'string', describe: '当前状态 id' },
-          states: { type: 'string', describe: 'FlowState[]：{id,onEnter?:FlowAction[],transitions?:[{when:ConditionExpr,to,do?:FlowAction[]}]}' },
-          entered: { type: 'boolean', describe: '内部：当前状态 onEnter 是否已跑（转移后置 false）' },
-        },
-      },
+      }),
     },
     reads: ['GameFlow', 'Resource', 'Flag', 'State'],
     writes: ['GameFlow', 'Resource', 'Flag', 'State'],

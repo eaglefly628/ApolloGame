@@ -369,6 +369,21 @@ type Write = {to:Ref, op:'set'|'add'|'mul', value:Expr}   // 一律入队，不�
 
 **裁定：既有事件组件（Signal / ResourceModify / SpawnRequest / DestroyRequest / TimerDone…）本轮不搬进总线。** 实查它们的真实语义是「挂到被消费为止」——Commit 相位产出的 Signal 活到下一拍 event-when 清扫、resource-apply 之后产出的 ResourceModify 活到下一拍才被吃，二者**都进快照与 hash**。tick 内总线是「同拍发出→同拍消费」语义，整体搬迁 = 改行为 + 改 hash + 破存档兼容，属 🔴 定序/快照面的独立工单（建议随 P2a 规则内核的 `Write` 入队一起设计：Write 队列天然是「挂到被消费」语义且进快照，Signal 类瞬时事件才走总线）。D3 的六类 hack（载体实体、拆系统、代发字段、覆盖）随之在 P2a 收口。
 
+### P1c · schema 单一真相 —— ✅ 内核落地 + 玩法嵌套数据先行（全量迁移渐进）
+
+| 项 | 落点 | 说明 |
+|---|---|---|
+| 组合子内核 | `src/engine/core/schema.ts`（≈200 行·零依赖） | `t.num/str/bool/entity/asset/lit/enum/arr/obj/openObj/rec/union(tag)/opt/lazy/named/any`；一份 schema 同时推导 TS 类型 `Infer<S>`、递归校验器 `validate`（嵌套/枚举/标签联合/必填/未知字段 warning）、目录签名 `sig`、旧 `provides.fields` 形态 `legacyField` |
+| defineComponent | `src/engine/core/define-component.ts` | 产出对象**就是**旧 `ComponentSchema` 形状（现有 catalog/studio/derive-asset-index 零改）+ `schema/sim/singleton/refine`；进程级 `COMPONENT_DEFS` 注册表，同名异形即抛 |
+| 校验接线 | `validate-manifest.ts` · `capability-catalog.ts` | 带 `schema` 的组件走递归校验（error/warning 口径不变）+ `refine` 字段间约束；目录签名打真实形状（枚举值集、具名嵌套类型）而不是 `'string'` 占位 |
+| 先行迁移 | `protocol/schemas/logic.ts` + event-when / effect-apply / self-rule / flow | ConditionExpr（递归标签联合）、FlowAction/Transition/State、SelfAction；EventWhen / Signal / Effect / SelfRule / GameFlow 五个玩法组件——此前 `when/do/states` 被声明成 `'string'`，现在 `kind:'resorce'` 在装载期点名到 `EventWhen.when.of[0]` |
+| 真实数据实证 | `scripts/schema-sweep.test.mjs` | 6 款游戏蓝图（108/a/103/101/102/e/f）全量过递归校验零 error；抓出一条**接口比数据严**：`Effect.targetId` TS 接口必填，game102 的物理/批量 kind 实际不填 → schema 改为按 kind 分支必填（`refine`），接口留债 |
+| sim 对账 | 同上 | `defineComponent.sim` ⇔ `NON_DETERMINISTIC` 两处漂移即红（迁移面逐步扩大后名单可由注册表生成） |
+| manifest 版本位 | `manifest.ts` `schema` / `MANIFEST_SCHEMA` / `MANIFEST_MIGRATIONS` / `migrateManifest` | 缺省 1；低版本逐级升（warning 留痕）；比引擎新拒收；非数字拒收 |
+| 自测 | `schema.test.ts` · `manifest.test.ts` | 标量/容器/递归联合点名路径/Infer 编译门/签名/旧适配/注册表冲突；版本位四态；嵌套拒收与修正后通过 |
+
+**未在 P1c 做（渐进项）**：其余 ~148 个组件仍手写 `provides.fields`（迁一个域就少一份手抄）；`component-map.ts` / `component-universe.gen.ts` 由注册表生成要等迁移面覆盖全部组件；存档信封 `engineSchema` 归 P3b。
+
 ---
 
 ## 附录 A · 证据索引（file:line）

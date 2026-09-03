@@ -13,8 +13,32 @@ import { validateReferences } from './validate-references.js';
 // ═══════════════════════════════════════════════════════════════
 
 export interface Manifest {
+  /** manifest 格式版本（P1c）。缺省 1。装载时 < 当前版本按 MANIFEST_MIGRATIONS 逐级升；> 当前版本拒收（引擎太旧）。 */
+  schema?: number;
   capabilities?: string[];
   entities: Record<string, Record<string, unknown>>;
+}
+
+/** 当前 manifest 格式版本。改组件字段名/形状时 +1 并在 MANIFEST_MIGRATIONS 登记 N→N+1 的升级函数。 */
+export const MANIFEST_SCHEMA = 1;
+
+/** 版本迁移链：键 = 源版本，函数 = 把该版本的 raw 升到下一版（纯函数·可单测）。目前无历史版本。 */
+export const MANIFEST_MIGRATIONS: Readonly<Record<number, (raw: Record<string, unknown>) => Record<string, unknown>>> = {};
+
+/** 把 raw manifest 升到当前版本（缺 schema 视为 1）。返回 [升级后的 raw, 走过的版本号列表]。 */
+export function migrateManifest(raw: Record<string, unknown>): [Record<string, unknown>, number[]] {
+  let v = typeof raw.schema === 'number' ? raw.schema : 1;
+  if (v > MANIFEST_SCHEMA) fail(`schema ${v} 比本引擎支持的 ${MANIFEST_SCHEMA} 新——升级引擎，或用旧版工具导出`);
+  const steps: number[] = [];
+  let cur = raw;
+  while (v < MANIFEST_SCHEMA) {
+    const m = MANIFEST_MIGRATIONS[v];
+    if (!m) fail(`schema ${v} → ${v + 1} 无迁移函数（引擎漏登记）`);
+    cur = { ...m(cur), schema: v + 1 };
+    steps.push(v);
+    v++;
+  }
+  return [cur, steps];
 }
 
 export interface ParseResult {
@@ -45,7 +69,8 @@ export interface ParseOptions {
 /** 校验 + 加载规范 manifest → 可运行 WorldBlueprint（带推断/告警信息）。 */
 export function parseManifestDetailed(raw: unknown, opts: ParseOptions = {}): ParseResult {
   if (typeof raw !== 'object' || raw === null) fail('根必须是对象');
-  const obj = raw as Record<string, unknown>;
+  if ('schema' in (raw as object) && typeof (raw as Record<string, unknown>).schema !== 'number') fail('schema 必须是数字（manifest 格式版本）');
+  const [obj, migrated] = migrateManifest(raw as Record<string, unknown>);
 
   const ent = obj.entities;
   if (Array.isArray(ent)) fail('entities 是数组——疑似旧生成格式，需先转成 { 实体id: { 组件名: 数据 } } 对象');
@@ -72,6 +97,7 @@ export function parseManifestDetailed(raw: unknown, opts: ParseOptions = {}): Pa
   }
 
   const warnings: string[] = [];
+  if (migrated.length) warnings.push(`manifest 已从 schema ${migrated[0]} 逐级升到 ${MANIFEST_SCHEMA}（走过 ${migrated.join('→')}）`);
   let inferred = false;
   let capIds: string[];
   const rawCaps = obj.capabilities;

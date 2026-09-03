@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseManifest, parseManifestDetailed } from './manifest.js';
+import { parseManifest, parseManifestDetailed, MANIFEST_SCHEMA } from './manifest.js';
 import { exportManifest } from '../studio/inspect.js';
 import { Engine } from '../runtime/engine.js';
 import { benchBlueprint } from '../bench/zerocraft-bench.js';
@@ -30,6 +30,25 @@ describe('manifest 桥接：导出↔导入对称、可加载、可玩', () => {
       expect(benchBlueprint(name, rebuilt).passed).toBe(true);
     });
   }
+
+  it('schema 版本位（P1c）：缺省=1 通过；等于当前版本通过；比引擎新 → 拒收；非数字 → 拒收', () => {
+    const base = { capabilities: ['a1-transform'], entities: { e: { Transform: { x: 0, y: 0 } } } };
+    expect(() => parseManifest(base)).not.toThrow();
+    expect(() => parseManifest({ ...base, schema: MANIFEST_SCHEMA })).not.toThrow();
+    expect(() => parseManifest({ ...base, schema: MANIFEST_SCHEMA + 1 })).toThrow(/比本引擎支持的/);
+    expect(() => parseManifest({ ...base, schema: '1' })).toThrow(/schema 必须是数字/);
+  });
+
+  it('嵌套校验（P1c）：EventWhen.when 里错 kind → 装载期拒收并点名路径（此前 when 被声明成 string·静默通过）', () => {
+    const bad = {
+      capabilities: ['t2-event-when', 'f1-resource'],
+      entities: { r: { Resource: { id: 'hp', current: 1, min: 0, max: 9 } }, ew: { EventWhen: { signal: 's', mode: 'edge', armed: false, when: { kind: 'and', of: [{ kind: 'resorce', id: 'hp', cmp: 'lte', value: 0 }] } } } },
+    };
+    expect(() => parseManifest(bad)).toThrow(/EventWhen\.when\.of\[0\].*"kind" 应为/);
+    const ok = JSON.parse(JSON.stringify(bad));
+    ok.entities.ew.EventWhen.when.of[0].kind = 'resource';
+    expect(() => parseManifest(ok)).not.toThrow();
+  });
 
   it('未知 capability id → 明确报错', () => {
     expect(() => parseManifest({ capabilities: ['nope.nope'], entities: {} })).toThrow(/未知 capability/);

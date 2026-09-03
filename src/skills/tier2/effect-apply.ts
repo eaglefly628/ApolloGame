@@ -1,4 +1,7 @@
 import { defineCapability } from '@engine/core/define-capability.js';
+import { defineComponent } from '@engine/core/define-component.js';
+import { t } from '@engine/core/schema.js';
+import { ScalarValueSchema } from '@engine/protocol/schemas/logic.js';
 import { SystemPhase, type IWorld } from '@engine/core/types.js';
 import type { Effect, Signal, Sensor, Visibility, DestroyRequest, Timer, Tag, PrefabOrigin, RandomSeed, Flag } from '@engine/protocol/components.js';
 import { buildConditionLookup } from './condition.js';
@@ -30,6 +33,33 @@ function countByTag(world: IWorld, mask: number): number {
   return n;
 }
 
+// Effect 字段 schema（P1c）。真实数据实证（game102 sweep）：物理/批量 kind 不填 targetId（用 targetEntity/tagMask 寻址），
+// 故 targetId 只对逻辑 kind 必填——TS 接口写的是必填（历史·蓝图侧 as 掉了），schema 以数据为准、按 kind 分支精确要求。
+const EFFECT_COMMON = {
+  onSignal: t.str('触发该效果的信号名（event-when 产出的 Signal.name）'),
+  targetEntity: t.opt(t.entity("物理/时序 kind：set-sensor/set-visible/destroy/reset-timer 的目标实体 id；哨兵 '@signal-source' = 触发信号的源实体")),
+  tagMask: t.opt(t.num('批量 kind：Tag 掩码（destroy-tagged/set-visible-tagged/set-flag-tagged）')),
+  keepResource: t.opt(t.str('destroy-tagged：保留持有该 Resource.id 的实体不销毁')),
+  value: t.opt(ScalarValueSchema),
+  op: t.opt(t.enum(['add', 'mul', 'set'] as const, "modify-resource 运算(REQ-012)：add(默认,current+value)|mul(current*value)|set(=value)")),
+  order: t.opt(t.num('结算顺序(REQ-012)：同信号命中的 Effect 按 order 升序依次结算（缺省 0）。乘法依赖顺序时必填。')),
+  valueFrom: t.opt(t.obj({
+    resourceId: t.opt(t.str('base = 具名 Resource.current')),
+    coeff: t.opt(t.num('系数（缺省 1）')),
+    timesResourceId: t.opt(t.str('再乘另一资源 current（资源×资源）')),
+    countOf: t.opt(t.num('base = Tag 掩码命中的实体数（每个 ×coeff）')),
+  }, '动态值(REQ-013/E-023①)：v=base×factor')),
+  chance: t.opt(t.obj({ num: t.num(), den: t.num() }, '概率门(REQ-E-023②)：nextRandom < num/den 才施用')),
+} as const;
+const LOGICAL_KINDS = ['set-flag', 'set-flag-tagged', 'modify-resource', 'set-state'] as const; // 按 id 路由 → targetId 必填
+const PHYSICAL_KINDS = ['set-sensor', 'set-visible', 'set-visible-tagged', 'destroy', 'destroy-tagged', 'reset-timer'] as const; // 按实体/tag 寻址
+const EFFECT_PROPS = {
+  kind: t.enum([...LOGICAL_KINDS, ...PHYSICAL_KINDS] as const,
+    "逻辑:set-flag|modify-resource|set-state（targetId 必填）；物理(REQ-008):set-sensor|set-visible|destroy|reset-timer；批量(按Tag掩码):destroy-tagged|set-visible-tagged|set-flag-tagged"),
+  targetId: t.opt(t.str('逻辑 kind 必填：Flag.id / Resource.id / State.fsmId（按 id 全局定位）；set-flag-tagged：Flag.id（tagMask 命中的实体里再按此 id 指名）')),
+  ...EFFECT_COMMON,
+} as const;
+
 export const effectApplyCapability = defineCapability({
   id: 't2-effect-apply',
   version: '1.0.0',
@@ -55,20 +85,13 @@ export const effectApplyCapability = defineCapability({
 
   components: {
     provides: {
-      Effect: {
+      Effect: defineComponent('Effect', EFFECT_PROPS, {
         category: 'config',
         describe: '声明「当 onSignal 在场时施加的效果」。kind 决定改 Flag/Resource/State（按 id 全局定位）或按 Tag 掩码批量作用一片实体。',
-        fields: {
-          onSignal: { type: 'string', describe: '触发该效果的信号名（event-when 产出的 Signal.name）' },
-          kind: { type: 'string', describe: "逻辑:'set-flag'|'modify-resource'|'set-state'；物理(REQ-008):'set-sensor'|'set-visible'|'destroy'；批量(按Tag掩码):'destroy-tagged'(value=Tag掩码,清场REQ-F-032)|'set-visible-tagged'(tagMask=Tag掩码,批量切可见REQ-F-056)|'set-flag-tagged'(tagMask=Tag掩码+targetId=Flag.id,批量置flag)；时序(REQ-009):'reset-timer'" },
-          targetId: { type: 'string', describe: '逻辑 kind：Flag.id / Resource.id / State.fsmId（按 id 全局定位）；set-flag-tagged：Flag.id（tagMask 命中的实体里再按此 id 指名哪个 Flag）' },
-          targetEntity: { type: 'EntityId', describe: '物理/时序 kind：set-sensor/set-visible/destroy/reset-timer 的目标实体 id' },
-          value: { type: 'string', describe: 'modify-resource=数值；set-flag/set-flag-tagged/set-sensor/set-visible/set-visible-tagged=布尔；set-state=目标状态名；destroy/destroy-tagged 忽略' },
-          op: { type: 'string', describe: "modify-resource 运算(REQ-012)：'add'(默认,current+value)|'mul'(current*value,×倍率)|'set'(=value)" },
-          order: { type: 'number', describe: '结算顺序(REQ-012)：同信号命中的 Effect 按 order 升序依次结算（缺省 0）。乘法依赖顺序时必填。' },
-          valueFrom: { type: 'string', describe: "动态值(REQ-013/E-023①)：{resourceId?,coeff?,timesResourceId?,countOf?}，v=base×factor；base=countOf(按Tag掩码数实体)或具名Resource，factor=另一资源|系数。解 score+=chips×mult、每$1+2c、abstract每小丑+3倍；缺省用静态 value" },
-        },
-      },
+        refine: (v) => ((LOGICAL_KINDS as readonly string[]).includes(String(v.kind)) && typeof v.targetId !== 'string'
+          ? [{ path: 'targetId', message: `kind:${JSON.stringify(v.kind)} 按 id 路由，targetId 必填（Flag.id / Resource.id / State.fsmId）`, severity: 'error' }]
+          : []),
+      }),
     },
     reads: ['Effect', 'Signal', 'Timer', 'Tag', 'PrefabOrigin', 'RandomSeed'],
     writes: ['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest', 'Timer', 'RandomSeed'],

@@ -1,4 +1,5 @@
-import type { CapabilityDefinition } from '@engine/core/define-capability.js';
+import type { CapabilityDefinition, ComponentSchema } from '@engine/core/define-capability.js';
+import { sig } from '@engine/core/schema.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  capability-catalog —— 把引擎能力的**自描述元数据**(describe + provides 字段)聚成一份
@@ -17,7 +18,11 @@ export interface CatalogOptions {
 }
 
 // 一个组件的字段签名：Comp{f1:type, f2:type}（type 含 'assetKey' 等，提示 AI 该填清单 key）。
-function componentSig(type: string, fields: Record<string, { type: string }> | undefined): string {
+function componentSig(type: string, fields: Record<string, { type: string }> | undefined, schema?: ComponentSchema['schema']): string {
+  // P1c：带组合子 schema 的组件打真实形状（枚举值/嵌套具名类型），而不是 'string' 占位——LLM 看到 kind 的合法值集。
+  if (schema && schema.k === 'obj') {
+    return `${type}${sig(schema)}`;
+  }
   const fs = Object.entries(fields ?? {})
     .map(([f, s]) => `${f}:${s.type}`)
     .join(', ');
@@ -34,7 +39,7 @@ export function buildCapabilityCatalog(caps: readonly CapabilityDefinition[], op
     out.push(`- ${c.id} (${d.name}): ${d.summary}`);
     const provides = Object.entries(c.components?.provides ?? {});
     if (provides.length) {
-      out.push(`    provides: ${provides.map(([t, s]) => componentSig(t, s.fields)).join(' · ')}`);
+      out.push(`    provides: ${provides.map(([t, s]) => componentSig(t, s.fields, s.schema)).join(' · ')}`);
     }
     if (withWhenToUse && d.whenToUse) out.push(`    when: ${d.whenToUse}`);
     if (withExamples && d.examples?.length) out.push(`    e.g.: ${d.examples.join(' ｜ ')}`);

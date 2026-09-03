@@ -1,4 +1,7 @@
 import { defineCapability } from '@engine/core/define-capability.js';
+import { defineComponent } from '@engine/core/define-component.js';
+import { t } from '@engine/core/schema.js';
+import { ConditionExprSchema, SelfActionSchema } from '@engine/protocol/schemas/logic.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld, EntityId } from '@engine/core/types.js';
 import type { SelfRule, SelfAction, ConditionExpr, CmpOp, Resource, Flag, State, Timer, StringVar, DestroyRequest, Transform, Relation, SpawnRequest } from '@engine/protocol/components.js';
@@ -128,17 +131,16 @@ export const selfRuleCapability = defineCapability({
 
   components: {
     provides: {
-      SelfRule: {
+      SelfRule: defineComponent('SelfRule', {
+        when: ConditionExprSchema,
+        do: t.arr(SelfActionSchema, 'SelfAction[]：施于自身；spawn 发 SpawnRequest(at self/target)'),
+        once: t.opt(t.bool('true=条件上升沿只施一次（armed 迟滞，回落复位）；缺省=条件成立每拍施')),
+        armed: t.opt(t.bool('内部（once 迟滞状态）')),
+        whenGlobal: t.opt(ConditionExprSchema),
+      }, {
         category: 'config',
-        describe: '实体本地规则：对自身组件求 when、对自身施 do。once=上升沿一次（迟滞）；缺省每拍。',
-        fields: {
-          when: { type: 'string', describe: 'ConditionExpr，按**自身**组件求值（resource/flag/state/timer/string 读自身那份）' },
-          do: { type: 'string', describe: 'SelfAction[]：{kind:set-flag|modify-resource|set-state|destroy|spawn, value?, op?, template?, at?}，施于自身；spawn 发 SpawnRequest(at self/target)' },
-          once: { type: 'boolean', describe: 'true=条件上升沿只施一次（armed 迟滞，回落复位）；缺省=条件成立每拍施' },
-          armed: { type: 'boolean', describe: '内部（once 迟滞状态）' },
-          whenGlobal: { type: 'string', describe: 'ConditionExpr，按**全局** id 求值的阶段门(REQ-F-035)，与 when 取 AND：备战/结算不动手(in_combat)、回合行动门、全场暂停。缺省不设=零迁移' },
-        },
-      },
+        describe: '实体本地规则：对自身组件求 when、对自身施 do。once=上升沿一次（迟滞）；缺省每拍。whenGlobal=按全局 id 求值的阶段门(REQ-F-035)，与 when 取 AND。',
+      }),
     },
     reads: ['SelfRule', 'Resource', 'Flag', 'State', 'Timer', 'StringVar', 'Transform', 'Relation'],
     writes: ['SelfRule', 'Flag', 'Resource', 'State', 'DestroyRequest', 'SpawnRequest'],
