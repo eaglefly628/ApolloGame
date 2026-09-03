@@ -47,6 +47,10 @@ export interface IWorld {
   queryEntities(...types: ComponentType[]): EntityId[];
 
   getVersion(): number;
+
+  /** 视图的根世界（World 本体 = 自身；SystemView = 它包的 World）。按世界身份做缓存的能力（spatial-query）
+   *  用它当键——多个系统视图共享同一份缓存，建索引时刻不随「哪个系统先查」漂移。 */
+  readonly root?: IWorld;
 }
 
 export interface RendererBackend {

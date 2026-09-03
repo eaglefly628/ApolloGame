@@ -876,7 +876,7 @@ export const matrixDuelCapability = defineCapability({
       // 读 `Flag` 是给结算门用的（REQ-108-ENG-06）。**为什么门判在这儿**：Update 的结算系统
       // 加任何读面都成环（实测 `Flag` 当场闭合 `[resource-apply, self-rule, matrix-duel]`），
       // 而本系统在 Commit，读 Flag 实测不成环（定序用例覆盖）。
-      reads: ['DuelMatrix', 'Signal', 'Flag'],
+      reads: ['DuelMatrix', 'Signal', 'Flag', 'Resource'], // Resource：`hasComponent(side,'Resource')` 判信号源是不是对局侧（P1a 严格模式补齐·此前漏报）
       writes: ['DuelIntent'],
       consumes: [],
       runsAfter: ['matrix-duel-announce'], // 播报的胜负信号绝不该被当成出招输入（同拍两者都在 Commit）

@@ -27,7 +27,10 @@ const cellKey = (cx: number, cy: number): number => (cx + 16384) * 100000 + (cy 
 
 function indexOf(world: IWorld): Cache {
   const v = world.getVersion();
-  const cur = caches.get(world);
+  // 缓存键 = 根世界（P1a：系统拿到的是各自的 SystemView，若按视图键则每个系统各建一份索引、且建索引时刻
+  // 随「哪个系统先查」漂移 → 行为分叉；按 root 键则与改造前「一个世界一份、本 tick 首查时建」逐位同义）。
+  const key = world.root ?? world;
+  const cur = caches.get(key);
   if (cur && cur.version === v) return cur;
   const posGrid = new Map<number, Ent[]>();
   const byBit = new Map<number, Ent[]>();
@@ -44,7 +47,7 @@ function indexOf(world: IWorld): Cache {
     while (f) { const bit = f & -f; let arr = byBit.get(bit); if (!arr) byBit.set(bit, (arr = [])); arr.push(e); f ^= bit; }
   }
   const c: Cache = { version: v, posGrid, byBit };
-  caches.set(world, c);
+  caches.set(key, c);
   return c;
 }
 

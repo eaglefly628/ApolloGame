@@ -105,7 +105,7 @@ export const pathFollowCapability = defineCapability({
       },
     },
     reads: ['PathFollow', 'Transform', 'Velocity'],
-    writes: ['Velocity', 'DestroyRequest', 'SpawnRequest'],
+    writes: ['Velocity', 'DestroyRequest', 'SpawnRequest', 'PathFollow'], // PathFollow：航点游标 index 是自身运行态（P1a 严格模式补齐·此前漏报）
     consumes: [],
   },
 
@@ -122,7 +122,7 @@ export const pathFollowCapability = defineCapability({
       runsAfter: ['steering'],
       runsBefore: ['motion-apply'],
       reads: ['PathFollow', 'Transform', 'Velocity'],
-      writes: ['Velocity', 'DestroyRequest', 'SpawnRequest'],
+      writes: ['Velocity', 'DestroyRequest', 'SpawnRequest', 'PathFollow'], // PathFollow：航点游标 index 是自身运行态（P1a 严格模式补齐·此前漏报）
       consumes: [],
       execute(world: IWorld) {
         const ids = world.query('PathFollow', 'Transform').map(([id]) => id).sort();

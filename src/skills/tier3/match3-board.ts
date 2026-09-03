@@ -634,7 +634,7 @@ export const match3BoardCapability = defineCapability({
       // 相位状态机：推进逻辑网格、产出 ResourceModify。Update 相位（晚于 clickable 产选中信号、早于 resource-apply 结算）。
       id: 'match-resolve',
       reads: ['MatchBoard', 'BoardCell', 'Signal', 'RandomSeed', 'Resource'],
-      writes: ['MatchBoard', 'ResourceModify'],
+      writes: ['MatchBoard', 'ResourceModify', 'RandomSeed'], // RandomSeed：补位随机 nextRandom 推进 seed（P1a 严格模式补齐·此前漏报）
       consumes: [],
       // 定序（R10 修订·game-j 撞出四系统环 resource-apply→event-when→clickable→match-resolve→resource-apply）：
       // 显式排在 resource-apply **之后**压制 writer→consumer 自动边——产料/扣步**下一拍**被结算

@@ -50,8 +50,8 @@ export const eventWhenCapability = defineCapability({
         },
       },
     },
-    reads: ['EventWhen', 'Resource', 'Flag', 'State'],
-    writes: ['Signal'],
+    reads: ['EventWhen', 'Resource', 'Flag', 'State', 'Timer', 'StringVar'], // Timer/StringVar：条件树 kind:'timer'/'string' 经 buildConditionLookup 读（P1a 严格模式补齐·此前漏报）
+    writes: ['Signal', 'EventWhen'], // EventWhen：edge 模式改自身 armed（P1a 严格模式补齐·此前漏报）
     consumes: [],
   },
 
@@ -60,8 +60,8 @@ export const eventWhenCapability = defineCapability({
   systems: [
     {
       id: 'event-when',
-      reads: ['EventWhen', 'Resource', 'Flag', 'State'],
-      writes: ['Signal'],
+      reads: ['EventWhen', 'Resource', 'Flag', 'State', 'Timer', 'StringVar'], // Timer/StringVar：条件树 kind:'timer'/'string' 经 buildConditionLookup 读（P1a 严格模式补齐·此前漏报）
+      writes: ['Signal', 'EventWhen'], // EventWhen：edge 模式改自身 armed（P1a 严格模式补齐·此前漏报）
       consumes: [],
       execute(world) {
         // 每帧重算：先清掉上一帧的 Signal（直接挂在 EventWhen 实体上，removeComponent 即可，

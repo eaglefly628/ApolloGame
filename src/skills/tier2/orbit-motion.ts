@@ -69,7 +69,7 @@ export const orbitMotionCapability = defineCapability({
       },
     },
     reads: ['Orbit', 'Transform'],
-    writes: ['Transform'],
+    writes: ['Transform', 'Orbit'], // Orbit：rotor 状态 dirX/dirY 每拍推进（P1a 严格模式补齐·此前漏报）
     consumes: [],
   },
 
@@ -86,7 +86,7 @@ export const orbitMotionCapability = defineCapability({
       phase: SystemPhase.PostResolve,
       runsAfter: ['motion-apply', 'hierarchy-resolve'],
       reads: ['Orbit', 'Transform'],
-      writes: ['Transform'],
+      writes: ['Transform', 'Orbit'], // Orbit：rotor 状态 dirX/dirY 每拍推进（P1a 严格模式补齐·此前漏报）
       consumes: [],
       execute(world: IWorld) {
         const ids = world.query('Orbit', 'Transform').map(([id]) => id).sort();

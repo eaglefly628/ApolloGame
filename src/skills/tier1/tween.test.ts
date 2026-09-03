@@ -22,7 +22,7 @@ describe('T1 tween — metadata', () => {
   it('id / 读 Tween / 只写 Transform+Color（逻辑数值不走 tween，Gemini Q6）', () => {
     expect(tweenCapability.id).toBe('t1-tween');
     expect(tweenCapability.components.reads).toEqual(['Tween']);
-    expect(tweenCapability.components.writes).toEqual(['Transform', 'Color']);
+    expect(tweenCapability.components.writes).toEqual(['Transform', 'Color', 'Tween']); // P1a 严格模式补齐：推进 elapsed / 播完摘掉 = 写自身
   });
 });
 

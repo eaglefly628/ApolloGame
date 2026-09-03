@@ -187,7 +187,7 @@ export const blockGridCapability = defineCapability({
       phase: SystemPhase.Update,
       runsAfter: ['resource-apply'],
       reads: ['BlockGrid', 'PlaceBlockIntent', 'RandomSeed', 'Resource', 'Flag'],
-      writes: ['BlockGrid', 'ResourceModify', 'Flag'],
+      writes: ['BlockGrid', 'ResourceModify', 'Flag', 'RandomSeed'], // RandomSeed：nextRandom 推进 seed（P1a 严格模式补齐·此前漏报）
       consumes: ['PlaceBlockIntent'],
       execute(world: IWorld) {
         let board: BlockGrid | undefined;

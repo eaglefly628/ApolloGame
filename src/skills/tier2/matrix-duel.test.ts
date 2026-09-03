@@ -804,7 +804,7 @@ describe('matrix-duel — 输入接缝 intentSignals（REQ-108-ENG-02）', () =>
   it('接缝系统的契约：Commit 相位 · 诚实 reads·writes · 排在播报之后', () => {
     const seam = matrixDuelCapability.systems.find((s) => s.id === 'matrix-duel-intent')!;
     expect(seam.phase).toBe(SystemPhase.Commit); // 放 Update 会与 event-when 合围成环（下条实测）
-    expect(seam.reads).toEqual(['DuelMatrix', 'Signal', 'Flag']);
+    expect(seam.reads).toEqual(['DuelMatrix', 'Signal', 'Flag', 'Resource']); // P1a：hasComponent(side,'Resource') 判对局侧 = 读
     expect(seam.writes).toEqual(['DuelIntent']);
     expect(seam.runsAfter).toEqual(['matrix-duel-announce']); // 播报的胜负信号不得被当成出招输入
   });

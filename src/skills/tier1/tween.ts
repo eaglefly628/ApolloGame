@@ -99,7 +99,7 @@ export const tweenCapability = defineCapability({
       },
     },
     reads: ['Tween'],
-    writes: ['Transform', 'Color'],
+    writes: ['Transform', 'Color', 'Tween'], // Tween：播完 keep=false 时 removeComponent（P1a 严格模式补齐·此前漏报）
     consumes: [],
   },
 
@@ -109,7 +109,7 @@ export const tweenCapability = defineCapability({
     {
       id: 'tween',
       reads: ['Tween'],
-      writes: ['Transform', 'Color'],
+      writes: ['Transform', 'Color', 'Tween'], // Tween：播完 keep=false 时 removeComponent（P1a 严格模式补齐·此前漏报）
       consumes: [],
       execute(world) {
         for (const [eid] of world.query('Tween')) {

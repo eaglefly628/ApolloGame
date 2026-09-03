@@ -181,10 +181,12 @@ describe('系统图软环棘轮 — 全库 SCC 点名基线（根因①·告警�
  * 变更纪律：新增 = 先按根因① matrix-duel 先例尝试显式边/数据路由消解，消不动才带理由改行；
  * 减少 = 同提交更新（记下是谁破的环）。禁静默改基线换绿。
  */
+// 2026-09-03 P1a 严格模式补申报：match-resolve 补报 writes RandomSeed（nextRandom 推进 seed·此前漏报）→ 与其它
+// RandomSeed RMW 系统在全库超集图里显影为同一 SCC（真实世界从不同时装载·全库测试 tick 零成环告警）。基线随之 +1 成员。
 const SCC_BASELINE: string[] = [
   // p0 大环 45 系统：prefab-spawn「展开殿后」十连钉边后 caster/merge-rule/mortal/prefab-spawn 已脱环
   // （PrefabOrigin/SpawnRequest 不再是闭环组件）——本行若再变大，先查是谁的新申报/新读面把它拉回来的。
-  'p0:accel-apply+aggro+block-place+bounce-relay+card-pile+card-play-input+card-score-pass+clickable+dialogue+dice-roll+drag-place+drop-zone+event-when+flow+flow-field+grid-drag-square+grid-move+group-count+hitbox+keybind+launch+match3-drag-swap+matrix-duel+merge-on-place+merge-proximity-clear+motion-apply+nav-follow+navmesh-bake+order-fulfill+over-time+overlap-detect+path-follow+poker-eval+pull-anchor+queue-slots+resource-apply+self-rule+state-sync+steering+string-apply+t3-slot-payout+timeline+tray+trigger-zone+tween+zone-occupancy|via:Bounce,Clickable,Flag,HexPos,MergeEvent,NavGraph,OverTime,Overlap,PlaceBlockIntent,PlayedHand,RandomSeed,Relation,Resource,ResourceModify,RolledDice,Signal,State,Status,StringVar,Transform,Trigger,Tween,Velocity',
+  'p0:accel-apply+aggro+block-place+bounce-relay+card-pile+card-play-input+card-score-pass+clickable+dialogue+dice-roll+drag-place+drop-zone+event-when+flow+flow-field+grid-drag-square+grid-move+group-count+hitbox+keybind+launch+match-resolve+match3-drag-swap+matrix-duel+merge-on-place+merge-proximity-clear+motion-apply+nav-follow+navmesh-bake+order-fulfill+over-time+overlap-detect+path-follow+poker-eval+pull-anchor+queue-slots+resource-apply+self-rule+state-sync+steering+string-apply+t3-slot-payout+timeline+tray+trigger-zone+tween+zone-occupancy|via:Bounce,Clickable,Flag,HexPos,MergeEvent,NavGraph,OverTime,Overlap,PlaceBlockIntent,PlayedHand,RandomSeed,Relation,Resource,ResourceModify,RolledDice,Signal,State,Status,StringVar,Transform,Trigger,Tween,Velocity',
   'p10:collision-resolve+collision-resolve-3d+tile-collision|via:Transform,Velocity',
   'p20:anim-state+match-view-sync|via:Sprite',
   'p20:bounds-clamp+facing|via:Transform',

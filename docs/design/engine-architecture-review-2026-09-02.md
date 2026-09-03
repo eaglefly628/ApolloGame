@@ -343,6 +343,20 @@ type Write = {to:Ref, op:'set'|'add'|'mul', value:Expr}   // 一律入队，不�
 
 **不在 P0 做的**（有意）：games/** 非测试面的 innerHTML/createElement/react 红旗仍由 `game-skill-audit` 棘轮管（P2b 收口后并入 eslint）；`no-restricted-imports` 拦 games 深路径留到 P3e（今天 168 处存量）；archetype/定点数等见 §6。
 
+### P1a · World 写入通道 + 系统视图 —— ✅ 已落地
+
+| 项 | 落点 | 说明 |
+|---|---|---|
+| 系统视图 | `src/engine/core/system-view.ts` | `World.tick` 不再把 World 递给系统，改递按**该系统申报**构造的 `SystemView`。生产模式=透传 + 脏标（取 writes 申报的组件、add/remove/create/destroy 记脏·保守）；严格模式（`ZEROCRAFT_STRICT=1`·vitest 缺省开·浏览器关）=未申报 get/has/query/add/remove 抛错点名、只申报 reads 的组件深只读代理（改字段/push 即抛）、query 返回的组件 Map 同样受检；`report` 模式一次盘点全库 |
+| 写入通道 | `src/engine/core/world.ts` | `markDirty / drainDirty / dirtyCount`；restore 全脏；consume 记脏。P2c 增量 hash / 脏渲染 / delta 以此为输入。`root` 指回本体，`spatial-query` 缓存改按 root 键（多视图共享一份索引·行为逐位不变） |
+| 类型门 | `src/engine/core/define-system.ts` | `defineSystem({ reads, writes, run(world) })`：`run` 收到 `TypedWorld<R,W>`，对未申报类型名的访问 = tsc 错；试点 `t1-motion-apply`。旧 `execute(world)` 形状照旧（有运行时门·无类型门） |
+| 豁免（有意） | 同上 | ① 本次 execute 内新建的实体挂任何组件不受写门（生成≠改共享态·prefab-spawn 按模板填组件）；② DebugTrace/ScoreTrace 横切观测组件不受申报门不记脏（进申报就进拓扑成环·本就在确定性域外）；③ create/destroy 不受约束 |
+| 申报对账结果 | 12 处撒谎·全库 | 严格模式 report 一次收齐：漏读 event-when(Timer,StringVar)·matrix-duel-intent(Resource)·stat-bind(Velocity)；漏写 tween(Tween)；「只报 reads 却改字段」event-when(EventWhen.armed)·tween(Tween.elapsed)·path-follow(PathFollow.index)·orbit-motion(Orbit.dirX)·match-resolve/block-place(RandomSeed.seed)·stat-bind(Velocity)。全部补申报；stat-bind 的数据驱动目标改为闭集 `STAT_BIND_TARGETS`（= writes 申报·单一真相），表外目标 reject 留痕跳过 |
+| 定序影响 | 实证 | 补申报后全库 511 文件 4907 测试全绿·`[topological-sort]` 成环告警 0（前后皆 0）·黄金 hash 零变；全库超集 SCC 棘轮 +1 成员（match-resolve 显影进 RandomSeed RMW 环·真实世界从不同时装载） |
+| 自测 | `src/engine/core/system-view.test.ts` | 申报门五种操作·深只读·query Map 受检·tick 走视图（撤 `viewOf` 接线即红）·新建实体豁免·观测组件豁免·report 模式·脏跟踪·透传零变·defineSystem 双门一致（`@ts-expect-error` + 运行时抛） |
+
+**P1a 之后 D1/D2a 的状态**：写入对 World 可见（脏集）·申报可验（双门）。剩下的 D2b（平局键=manifest 序）与 D2c（相位表）归 P2d。
+
 ---
 
 ## 附录 A · 证据索引（file:line）

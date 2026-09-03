@@ -126,6 +126,9 @@ export default defineConfig({
     ],
   },
   test: {
+    // P1a 严格模式缺省开（system-view.ts）：系统对未申报组件的访问一跑就炸·只读组件深冻结。
+    // 生产（浏览器）无 process.env → off；这里只影响 vitest。要盘点全库改 ZEROCRAFT_STRICT=report。
+    env: { ZEROCRAFT_STRICT: process.env.ZEROCRAFT_STRICT ?? '1' },
     // 排除并行 Programmer 的 worktree 副本（.claude/worktrees）——否则 vitest 会把副本里的
     // 测试也扫进来、测试数虚高（曾出现 1515 假象）。保留默认的 node_modules/dist 排除。
     //
