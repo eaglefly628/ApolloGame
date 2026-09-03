@@ -12,7 +12,7 @@
 //    · 位置放哪 = 消费游戏事（知道玩家/竞技场）；给可选 ring 则本核确定性环形布点，否则只出 templateId。
 //    · 真实例化 = k1-spawn（模板展开由 assembly spawner 负责）。本核只出「该发的清单」。
 //  确定性（lockstep/录放安全）：状态全在 director 对象里（elapsed/每波累积/开波爆发标/seedState 整数）——
-//  可序列化、可从 {waves,seed} 重建；环形布点用 mulberry32 步进 seedState（绝不 Math.random）。
+//  可序列化、可从 {waves,seed} 重建；环形布点用 mulberry32 步进 seedState（绝不 Math.random·绝不 cos/sin）。
 // ═══════════════════════════════════════════════════════════════
 import type { SpawnRequest } from '@engine/protocol/components.js';
 
@@ -74,8 +74,18 @@ function draw(dir: Director): number {
 /** 按可选 ring 给一个 spawn 定位（无 ring → 原点·消费方自放）。出真 SpawnRequest（含 type 判别位·可直接入队 k1-spawn）。 */
 function placed(dir: Director, template: string, ring: SpawnRing | undefined): SpawnRequest {
   if (!ring) return { type: 'SpawnRequest', templateId: template, x: 0, y: 0 };
-  const ang = draw(dir) * Math.PI * 2;
-  return { type: 'SpawnRequest', templateId: template, x: ring.cx + Math.cos(ang) * ring.radius, y: ring.cy + Math.sin(ang) * ring.radius };
+  // 环上均匀取点·零三角函数（P0 治理围栏：sim 面禁 Math.cos/sin——非正确舍入·跨引擎可异）：
+  // Marsaglia 拒绝采样——单位方块内取 (a,b) 直到落进单位圆，则 ((a²−b²)/(a²+b²), 2ab/(a²+b²)) 在单位圆上**均匀**分布，
+  // 只用 ± × ÷（IEEE 正确舍入）。抽样次数随 PRNG 走、确定性不变；同 seed 同点。
+  let a: number, b: number, r2: number;
+  do {
+    a = draw(dir) * 2 - 1;
+    b = draw(dir) * 2 - 1;
+    r2 = a * a + b * b;
+  } while (r2 === 0 || r2 > 1);
+  const ux = (a * a - b * b) / r2;
+  const uy = (2 * a * b) / r2;
+  return { type: 'SpawnRequest', templateId: template, x: ring.cx + ux * ring.radius, y: ring.cy + uy * ring.radius };
 }
 
 /** 推进一 tick：按波表算本 tick 该发的 spawn 列（尊重 rate 累积 + cap 上限 + 波段时序）。

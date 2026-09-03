@@ -10,6 +10,7 @@ const canvas = document.getElementById('game') as HTMLCanvasElement;
 const ctx = canvas.getContext('2d')!;
 const statusEl = document.getElementById('status')!;
 
+// eslint-disable-next-line zerocraft/no-unseeded-random -- 浏览器 IO 壳造每标签页唯一 peerId（实查 2026-08-16·原 engine-random-guard 白名单）：诉求是「同代码同起点的各标签页互不相同」，与种子 PRNG 相反；id 只作信道身份，不进 sim
 const peerId = Math.random().toString(36).slice(2, 8);
 
 // BroadcastChannel：同源、同浏览器的多个标签页互通。
@@ -101,6 +102,7 @@ function render(v: ClientView): void {
   ctx.fillText(`tick ${v.tick}   hash ${v.hash}   玩家 ${v.peerCount}   ${sync}`, 16, 48);
 }
 
+// eslint-disable-next-line zerocraft/no-wall-clock -- 页面 rAF 循环的帧间隔（宿主壳·不进 sim/hash）
 let last = performance.now();
 function frame(now: number): void {
   const dt = now - last;

@@ -1,3 +1,4 @@
+/* eslint-disable zerocraft/no-wall-clock -- 压测基准：performance.now 只量墙钟耗时作报告，不进断言/不进 sim（慢车道·slow-lane-guard 管） */
 // game211 · 群体寻路选型压测（owner 2026-08-10「我可能要考虑一些群体 AI 寻路的算法，帮我做个调研」）。
 //
 // 调研不能靠读代码下结论，**选型必须有数**。这里量两条路在**我们的真实规模**下的开销：

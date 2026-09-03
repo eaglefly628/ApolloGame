@@ -26,10 +26,12 @@ export function orbitAt(radius: number, startAngle: number, angularStep: number,
   return {
     ...(centerId !== undefined ? { centerId } : {}),
     radius,
+    /* eslint-disable zerocraft/no-transcendental -- authoring-only：蓝图装配期一次性算 rotor 初值存进数据，运行时零 trig（本文件头注） */
     dirX: Math.cos(startAngle),
     dirY: Math.sin(startAngle),
     cosStep: Math.cos(angularStep),
     sinStep: Math.sin(angularStep),
+    /* eslint-enable zerocraft/no-transcendental */
   };
 }
 

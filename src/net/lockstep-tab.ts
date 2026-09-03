@@ -117,6 +117,7 @@ export class LockstepClient {
     this.getInput = opts.getInput;
     this.buildWorld = opts.buildWorld ?? defaultBuildWorld;
     this.onDesync = opts.onDesync;
+    // eslint-disable-next-line zerocraft/no-wall-clock -- 宿主时钟缺省值·可注入（opts.now·测试注入假钟）·只喂 FixedStepClock 的帧间隔，不进 sim/hash
     this.now = opts.now ?? (() => (typeof performance !== 'undefined' ? performance.now() : Date.now()));
     this.inputDelay = Math.max(1, opts.inputDelay ?? 4);
     this.clock = new FixedStepClock(opts.tickRate ?? 30, { maxSteps: 8 });

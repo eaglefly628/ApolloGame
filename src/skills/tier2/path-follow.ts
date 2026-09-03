@@ -13,7 +13,8 @@ import type { PathFollow, Transform, Velocity, SpawnRequest, DestroyRequest } fr
 //  runsBefore:['motion-apply'] 打破（先定速度再移动）。不读 Relation/Status/Tag，故不与 aggro（写
 //  Relation）/hitbox/over-time（写 Status）产生耦合——与索敌/抛射簇同装不成拓扑环（见回归测试）。
 //
-//  确定性：只用 IEEE sqrt/÷（Math.hypot 求距，内部即 sqrt，与 steering/orbit-motion 同类安全）；
+//  确定性：只用 IEEE sqrt/÷（求距一律 sqrt(dx*dx+dy*dy)；**不用 Math.hypot**——ES 规范不保证其正确舍入，V8/JSC 实现
+//  可差 1 ULP → 跨端 lockstep 分叉·P0 治理围栏 zerocraft/no-transcendental 硬拦）；
 //  无 Math.random/Date.now/墙钟。index 游标是运行时状态、进 snapshot，回放/rollback 安全。
 //
 //  queueId/minGap（REQ-CONVEYOR-CAP M1：有序不重叠占位 + 队列递进——传送带/排队通用，非 game102 专属）：
@@ -64,7 +65,7 @@ export function pathFollowAt(
 // O(index) per call：waypoints 表通常几十项、成员数十——按 tick×成员重算足够快，避免额外缓存状态（简单优先）。
 function pathProgress(wps: { x: number; y: number }[], index: number, remaining: number): number {
   let cum = 0;
-  for (let k = 1; k <= index; k++) cum += Math.hypot(wps[k].x - wps[k - 1].x, wps[k].y - wps[k - 1].y);
+  for (let k = 1; k <= index; k++) { const ex = wps[k].x - wps[k - 1].x, ey = wps[k].y - wps[k - 1].y; cum += Math.sqrt(ex * ex + ey * ey); }
   return cum - remaining;
 }
 
@@ -152,7 +153,7 @@ export const pathFollowCapability = defineCapability({
           let wp = wps[i];
           let dx = wp.x - t.x;
           let dy = wp.y - t.y;
-          let d = Math.hypot(dx, dy);
+          let d = Math.sqrt(dx * dx + dy * dy);
 
           const arrive = pf.arriveRadius ?? 4;
           if (d <= arrive) {
@@ -162,7 +163,7 @@ export const pathFollowCapability = defineCapability({
             wp = wps[i];
             dx = wp.x - t.x;
             dy = wp.y - t.y;
-            d = Math.hypot(dx, dy);
+            d = Math.sqrt(dx * dx + dy * dy);
           }
 
           // onEnd（REQ-PATHEND-DROP）：非 loop 且游标已在末航点、本 tick 在 arriveRadius 内 → 触发一次
@@ -215,7 +216,7 @@ export const pathFollowCapability = defineCapability({
               const allowed = leader.progress - follower.minGap; // 前一名起点进度 − minGap（排头不设界）
               const maxAdvance = Math.max(0, allowed - follower.progress);
               const v = world.getComponent<Velocity>(follower.id, 'Velocity')!;
-              const step = Math.hypot(v.vx, v.vy);
+              const step = Math.sqrt(v.vx * v.vx + v.vy * v.vy);
               if (step > maxAdvance) {
                 const scale = maxAdvance > 0 ? maxAdvance / step : 0;
                 v.vx *= scale;

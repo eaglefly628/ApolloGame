@@ -327,6 +327,24 @@ type Write = {to:Ref, op:'set'|'add'|'mul', value:Expr}   // 一律入队，不�
 
 ---
 
+## 施工记录（owner 2026-09-03 令「按顺序从 P0 开始跑·完成后 P1 继续·不要问」）
+
+### P0 · 治理围栏 —— ✅ 已落地（本节随施工推进更新）
+
+| 项 | 落点 | 说明 |
+|---|---|---|
+| ESLint 围栏 | `eslint.config.mjs` + `tools/eslint/zerocraft-rules.mjs` | 本地插件 6 条 AST 规则（no-unseeded-random / no-transcendental / no-wall-clock / no-timers / no-external-io / no-html-injection），按面分配：SIM（engine/skills/assembly·排除 engine/host）·NET·SVC·DOM（src）·TEST（src+games 的 *.test）。故意不挂 recommended（围栏不是风格检查）。豁免一律行内 `eslint-disable-next-line zerocraft/<rule> -- 理由`，禁 JSON 基线 |
+| 模块边界围栏 | `.dependency-cruiser.cjs` | games 相对逃逸 / src→games / engine 最底层 / skills·net 不碰表现层 / 解析不到即红；原 decouple-check 白名单与两条祖父跨界原样进 pathNot |
+| 旧 regex 守卫退役 | `scripts/{engine-random-guard,test-hygiene-check,decouple-check}.mjs` | 三者改为薄包装入口（保留路径与判词·供单独点名跑）；原白名单 → 源码行内豁免（mp-client peerId·lockstep-tab now·debug.test 故意随机·两份 bench 的 performance.now） |
+| 门禁接线 | `scripts/scoped-gate.mjs` | game/full 两档常驻 `eslint`（≈15s）+ `depcruise`（≈7s）两步·放 tsc 前；engineRandom/testHygiene 两旗删除；围栏配置文件列入共享面（改即 full） |
+| CI | `.github/workflows/gate.yml` · `.github/CODEOWNERS` | push/PR 到 claude/mainbranch 真跑 `scoped-gate --run --base <before>`；每夜 02:00（北京）深车道全量 + 全部 on-demand 守卫。**分支保护须 owner 在 GitHub 设置开启**（workflow 开不了） |
+| D12 实修 | `src/skills/tier2/path-follow.ts` · `spawn-director.ts` | 4 处 `Math.hypot` → `sqrt(dx*dx+dy*dy)`；环形布点 `cos/sin` → Marsaglia 拒绝采样单位向量（零 trig·均匀·确定性不变）；orbit-motion authoring 助手块级豁免注明 |
+| 自测 | `scripts/lint-fence.test.mjs` · `scripts/depcruise-fence.test.mjs` | 规则写法变体（`Math['random']`·解构·`globalThis.Math`·`(Math as any)[k]`·同行 `"http://"` 假注释）必咬、合法形态（sqrt·`innerHTML=''`·`setTimeout(fn,0)`）不咬、面分配、豁免语法、包装入口判词；depcruise 临时树红腿三条规则各恰命中 |
+
+**不在 P0 做的**（有意）：games/** 非测试面的 innerHTML/createElement/react 红旗仍由 `game-skill-audit` 棘轮管（P2b 收口后并入 eslint）；`no-restricted-imports` 拦 games 深路径留到 P3e（今天 168 处存量）；archetype/定点数等见 §6。
+
+---
+
 ## 附录 A · 证据索引（file:line）
 
 | 断言 | 锚点 |
