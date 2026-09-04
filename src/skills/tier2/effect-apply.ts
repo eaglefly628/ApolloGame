@@ -5,6 +5,7 @@ import { ScalarValueSchema } from '@engine/protocol/schemas/logic.js';
 import { SystemPhase, type IWorld } from '@engine/core/types.js';
 import type { Effect, Signal, Sensor, Visibility, DestroyRequest, Timer, Tag, PrefabOrigin, RandomSeed, Flag } from '@engine/protocol/components.js';
 import { buildConditionLookup } from './condition.js';
+import { ctxOf, applyWrite, evalValue, writeTargetOf } from '@engine/logic/index.js';
 import { chancePass } from '@atom-skills/index.js';
 import { findScoreTrace, appendScoreEvent } from '../score-trace.js';
 
@@ -23,16 +24,6 @@ import { findScoreTrace, appendScoreEvent } from '../score-trace.js';
 
 // REQ-E-023①：数 Tag.flags 命中掩码的实体数（集合计数，与遍历序无关 → 确定）。供 valueFrom.countOf
 // 表达"每个 tagged 物 +X"（每小丑/每张牌/每钢铁牌…）——自描述一行、零游戏侧记账，过弱-LLM 尺子。
-function countByTag(world: IWorld, mask: number): number {
-  if (!Number.isFinite(mask) || mask === 0) return 0;
-  let n = 0;
-  for (const [tid] of world.query('Tag')) {
-    const tg = world.getComponent<Tag>(tid, 'Tag');
-    if (tg && (tg.flags & mask) !== 0) n++;
-  }
-  return n;
-}
-
 // Effect 字段 schema（P1c）。真实数据实证（game102 sweep）：物理/批量 kind 不填 targetId（用 targetEntity/tagMask 寻址），
 // 故 targetId 只对逻辑 kind 必填——TS 接口写的是必填（历史·蓝图侧 as 掉了），schema 以数据为准、按 kind 分支精确要求。
 const EFFECT_COMMON = {
@@ -125,7 +116,7 @@ export const effectApplyCapability = defineCapability({
         const targetsOf = (ef: Effect): string[] =>
           ef.targetEntity === '@signal-source' ? (sources.get(ef.onSignal) ?? []) : ef.targetEntity ? [ef.targetEntity] : [];
 
-        const lookup = buildConditionLookup(world);
+        const ctx = ctxOf(world, buildConditionLookup(world)); // P2a：规则内核上下文（global 寻址·同 tick 一份 id 索引）
 
         // REQ-012：收集本 tick 命中的 Effect，按 order **升序**（并列按 eid tie-break）依次结算。
         // 乘法（×mult）引入顺序依赖 → 结算顺序须是显式数据；modify-resource 就地连写 r.current，按此序天然有序确定。
@@ -145,10 +136,11 @@ export const effectApplyCapability = defineCapability({
         for (const { eid, ef } of hits) {
           if (ef.chance && !chancePass(rng, ef.chance.num, ef.chance.den)) continue; // REQ-E-023②：概率未中 → 跳过本效果（roll 已推进 RNG）
           switch (ef.kind) {
-            case 'set-flag': {
-              const f = lookup.flag(ef.targetId);
-              // 显式布尔/字符串判定，避免 Boolean("false")===true 的 JS 陷阱（Reviewer Bug1）。
-              if (f) f.active = ef.value === true || ef.value === 'true';
+            // set-flag / set-state 走规则内核 applyWrite（P2a）：按 id 全局路由·目标不存在则不动；
+            // flag 布尔化（'true' 字符串也算真·避免 Boolean("false")===true 的 JS 陷阱）由内核统一。
+            case 'set-flag':
+            case 'set-state': {
+              applyWrite(ctx, { to: writeTargetOf(ef.kind, ef.targetId), value: ef.value });
               break;
             }
             // ── set-flag-tagged（REQ-ORDERROT 姊妹条·批量 tag 域解锁）：destroy-tagged/set-visible-tagged 的
@@ -174,53 +166,19 @@ export const effectApplyCapability = defineCapability({
               break;
             }
             case 'modify-resource': {
-              // REQ-012：op 决定运算 —— add(默认 current+value) / mul(current*value，×倍率) / set(value)；钳进 [min,max]。
-              const r = lookup.resource(ef.targetId);
-              if (r) {
-                // REQ-013：valueFrom 在场 → v 取自资源（量纲动态值 / 两资源相乘），否则用静态 value。
-                //   v = resource[resourceId].current × (timesResourceId ? resource[timesResourceId].current : coeff ?? 1)
-                // 解最终计分 score += chips×mult、Bull 每$1+2c、星球升级 chips += level×增量。缺资源按 0 处理（无效=不动）。
-                let v: number;
-                // 「缺资源 = 无效 = 不动」这条契约必须显式实现，不能靠 v=0 兜（engine-review-2026-08-04
-                // §3.3 · P1）：v=0 只对 add 恰好等价「不动」，对 mul 是**把资源清零**、对 set 是**设成 0**
-                // ——同一句注释在三个 op 下语义相反。故这里记下「来源缺失」，下面整步跳过。
-                let sourceMissing = false;
-                if (ef.valueFrom) {
-                  // REQ-E-023①：countOf 在场 → base = Tag.flags 命中掩码的实体数（每个 tagged 物 ×coeff）；否则读具名 Resource。
-                  let base: number;
-                  if (ef.valueFrom.countOf !== undefined) {
-                    base = countByTag(world, ef.valueFrom.countOf); // 计数 0 是合法结果、不算缺失
-                  } else {
-                    const br = lookup.resource(ef.valueFrom.resourceId ?? '');
-                    if (!br) sourceMissing = true;
-                    base = br?.current ?? 0;
-                  }
-                  let factor: number;
-                  if (ef.valueFrom.timesResourceId) {
-                    const fr = lookup.resource(ef.valueFrom.timesResourceId);
-                    if (!fr) sourceMissing = true;
-                    factor = fr?.current ?? 0;
-                  } else {
-                    factor = ef.valueFrom.coeff ?? 1;
-                  }
-                  v = base * factor;
-                } else {
-                  v = Number(ef.value); // value 缺失/非数 → NaN，由下面的有限性门拦住
-                }
-                // 非有限值（value 漏填得 NaN、±Infinity）绝不能落进 world：NaN 的钳位比较全为 false，
-                // 上面那行 min/max 钳位**钳不住**，NaN 会直接写进 Resource 并**污染确定性 hash**
-                // （lockstep 立刻误报 desync、存档 hash 也跟着废）。同「缺资源」一并按无效步跳过。
-                if (sourceMissing || !Number.isFinite(v)) break;
-                const next = ef.op === 'mul' ? r.current * v : ef.op === 'set' ? v : r.current + v;
-                r.current = next < r.min ? r.min : next > r.max ? r.max : next;
-                // REQ-019：记一步（target/op/本步量 v/本步后值/来源=Effect 实体 id）。UI 据 target/source 演出小丑抖动。
-                appendScoreEvent(trace, 'effect', ef.targetId, (ef.op ?? 'add') as 'set' | 'add' | 'mul', v, r.current, eid);
-              }
-              break;
-            }
-            case 'set-state': {
-              const st = lookup.state(ef.targetId);
-              if (st) st.current = String(ef.value);
+              // REQ-012/013/E-023①：op 决定运算（add/mul/set）、valueFrom 决定量（资源×资源 / 计数×系数），
+              // 钳进 [min,max]。P2a：量折成内核 ValueExpr（缺资源 → undefined = 无效不动·countOf 计 0 合法），
+              // 写入走 applyWrite（唯一的一份 clamp·非有限值拒写）；ScoreTrace 记内核返回的本步量/写后值。
+              const value = ef.valueFrom
+                ? evalValue(ctx, {
+                    mul: [
+                      ef.valueFrom.countOf !== undefined ? { count: ef.valueFrom.countOf } : { res: ef.valueFrom.resourceId ?? '' },
+                      ef.valueFrom.timesResourceId ? { res: ef.valueFrom.timesResourceId } : (ef.valueFrom.coeff ?? 1),
+                    ],
+                  })
+                : Number(ef.value);
+              const res = applyWrite(ctx, { to: { res: ef.targetId }, op: ef.op, value });
+              if (res.ok) appendScoreEvent(trace, 'effect', ef.targetId, (ef.op ?? 'add') as 'set' | 'add' | 'mul', res.v!, res.after!, eid);
               break;
             }
             // ── 物理 kind（REQ-008）：信号→物理改动，按 targetEntity 定位。补上"踩开关→门开"的最后一环。──
@@ -290,7 +248,7 @@ export const effectApplyCapability = defineCapability({
                 }
                 let doomedList = matched;
                 if (ef.keepResource) {
-                  const keepRes = lookup.resource(ef.keepResource);
+                  const keepRes = ctx.lookup!.resource(ef.keepResource);
                   const keep = keepRes ? Math.max(0, Math.floor(keepRes.current)) : 0;
                   matched.sort((a, b) => a.seq - b.seq || (a.tid < b.tid ? -1 : a.tid > b.tid ? 1 : 0));
                   doomedList = matched.slice(keep);

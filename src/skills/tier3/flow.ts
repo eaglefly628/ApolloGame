@@ -4,8 +4,9 @@ import { t } from '@engine/core/schema.js';
 import { FlowStateSchema } from '@engine/protocol/schemas/logic.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { GameFlow, FlowState, FlowAction, Resource, Flag, State } from '@engine/protocol/components.js';
+import type { GameFlow, FlowState, FlowAction } from '@engine/protocol/components.js';
 import { evaluateCondition, buildConditionLookup } from '@skills/tier2/condition.js';
+import { applyWrite, ctxOf, writeTargetOf } from '@engine/logic/index.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  flow —— 声明式「游戏流程状态机」解释器（REQ-020；Tier3 解释器型，与 dialogue 同构）。
@@ -24,29 +25,10 @@ import { evaluateCondition, buildConditionLookup } from '@skills/tier2/condition
 //  确定性：转移按声明序短路、动作就地施加、条件树确定；entered 进 snapshot → 录放一致。
 // ═══════════════════════════════════════════════════════════════
 
-// 施加一条流程动作（复用 condition 的 id 索引；动词=Effect 子集 set-flag/set-state/modify-resource）。
+// 施加一条流程动作（动词=Effect 子集 set-flag/set-state/modify-resource）。P2a：走规则内核 applyWrite（global 寻址·
+// 唯一的一份 clamp）；lookup 复用同一 tick 的 id 索引。
 function applyAction(world: IWorld, lookup: ReturnType<typeof buildConditionLookup>, a: FlowAction): void {
-  switch (a.kind) {
-    case 'set-flag': {
-      const f = lookup.flag(a.targetId);
-      if (f) f.active = a.value === true || a.value === 'true';
-      break;
-    }
-    case 'set-state': {
-      const s = lookup.state(a.targetId);
-      if (s) s.current = String(a.value);
-      break;
-    }
-    case 'modify-resource': {
-      const r = lookup.resource(a.targetId);
-      if (r) {
-        const v = Number(a.value);
-        const next = a.op === 'set' ? v : r.current + v; // add(默认) | set
-        r.current = next < r.min ? r.min : next > r.max ? r.max : next;
-      }
-      break;
-    }
-  }
+  applyWrite(ctxOf(world, lookup), { to: writeTargetOf(a.kind, a.targetId), op: a.op, value: a.value });
 }
 
 export const flowCapability = defineCapability({

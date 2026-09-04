@@ -384,6 +384,18 @@ type Write = {to:Ref, op:'set'|'add'|'mul', value:Expr}   // 一律入队，不�
 
 **未在 P1c 做（渐进项）**：其余 ~148 个组件仍手写 `provides.fields`（迁一个域就少一份手抄）；`component-map.ts` / `component-universe.gen.ts` 由注册表生成要等迁移面覆盖全部组件；存档信封 `engineSchema` 归 P3b。
 
+### P2a · 规则内核 `src/engine/logic/` —— ✅ 第一步落地（只换求值器不换 JSON 形状·黄金 hash 零变）
+
+| 项 | 落点 | 说明 |
+|---|---|---|
+| 内核 | `src/engine/logic/index.ts` | `Ref`（res/flag/state/timer/str/count）· 两作用域（global 按 id 首份 / self 读自身·id 空串通配）· `evalCondition`（ConditionExpr 就是 v1 布尔语法·global 与 self **同一份**实现）· `evalValue`（常量/引用/乘/加/计数·缺引用 → undefined）· `applyWrite`（**唯一的一份 clamp**：add/mul/set 钳 [min,max]、非有限值拒写、缺目标不动、flag 布尔化、state/str 字符串化）· `compare`（唯一的一份） |
+| 迁移 | condition.ts（薄兼容层）· self-rule · flow · timeline · effect-apply | 5 份 clamp → 1；2 份 cmp → 1；2 份条件求值（global/self）→ 1；effect-apply 的 `valueFrom`（资源×资源 / 计数×系数 / 缺资源不动）折成 `evalValue` 表达式；既有导出（`evaluateCondition / buildConditionLookup / evaluateSelfCondition`）形状不变 |
+| 语义修正（仅坏数据） | applyWrite | flow/self/timeline 此前对 `value` 漏填会把 NaN 写进 Resource（钳不住·污染 hash）；内核统一拒写非有限值（effect-apply 原本就这么做）。合法数据零变 |
+| 实证 | 全量门禁 | 513 文件全绿·黄金 hash 零变（8 个直接消费能力 136 测试 + 全库） |
+| 自测 | `src/engine/logic/logic.test.ts` | 两作用域寻址与既有语义逐字对拍·vsResource·缺引用传染·count 0 合法·clamp 三 op·拒写·布尔化/字符串化·self 通配写 |
+
+**第二步（另立工单·改 hash·须 owner 判）**：Write 入队（与 ResourceModify 同「挂到被消费」语义·Resource 只剩一个 writer → 65 对软环归零）、Scope 扩 parent/source/@signal-source/tag、v2 JSON 形状（Effect/SelfAction/FlowAction/TimelineCueDo/DialogueEffect 折成 `Write[]`、PerCardWhen 折成 Expr）、BT 数据叶模式。这一步会改既有游戏的逐拍行为（写入从「当拍立即」变「入队被消费」），黄金 hash 与存档格式随之变，需要 manifest schema 2 + 迁移函数配套。
+
 ---
 
 ## 附录 A · 证据索引（file:line）
