@@ -50,6 +50,25 @@ describe('manifest 桥接：导出↔导入对称、可加载、可玩', () => {
     expect(() => parseManifest(ok)).not.toThrow();
   });
 
+  it('模板 + $repeat（P2b）：buildBlueprint 的 for 循环/工厂函数有了 JSON 等价物；无这些键时逐字原样', () => {
+    const raw = {
+      capabilities: ['a1-transform', 'f1-resource'],
+      templates: { slot: { Transform: { x: '{{x}}', y: 0 }, Resource: { id: 'slot-{{i}}-hp', current: '{{hp}}', min: 0, max: 100 } } },
+      entities: {
+        hero: { Transform: { x: 1, y: 2 } },
+        'slot-{{i}}': { $repeat: { count: 3 }, $template: 'slot', $params: { x: 10, hp: 50 } },
+        'unit-{{item.name}}': { $repeat: { items: [{ name: 'a', p: 5 }, { name: 'b', p: 7 }] }, $template: 'slot', $params: { x: '{{item.p}}', hp: 1 }, Transform: { x: 99, y: '{{i}}' } },
+      },
+    };
+    const bp = parseManifest(raw);
+    expect(Object.keys(bp.entities).sort()).toEqual(['hero', 'slot-0', 'slot-1', 'slot-2', 'unit-a', 'unit-b']);
+    expect(bp.entities['slot-1']).toEqual({ Transform: { x: 10, y: 0 }, Resource: { id: 'slot-1-hp', current: 50, min: 0, max: 100 } }); // 整串占位 → 数值原类型
+    expect(bp.entities['unit-b']).toEqual({ Transform: { x: 99, y: 1 }, Resource: { id: 'slot-1-hp', current: 1, min: 0, max: 100 } }); // 组件级覆盖整体替换 Transform
+    expect(() => parseManifest({ ...raw, entities: { z: { $template: 'nope' } } })).toThrow(/不存在的模板 "nope"/);
+    expect(() => parseManifest({ ...raw, entities: { same: { $repeat: { count: 2 }, $template: 'slot' } } })).toThrow(/重复实体 id "same"/);
+    expect(() => parseManifest({ ...raw, templates: [] })).toThrow(/templates 必须是/);
+  });
+
   it('未知 capability id → 明确报错', () => {
     expect(() => parseManifest({ capabilities: ['nope.nope'], entities: {} })).toThrow(/未知 capability/);
   });

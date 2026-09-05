@@ -396,6 +396,20 @@ type Write = {to:Ref, op:'set'|'add'|'mul', value:Expr}   // 一律入队，不�
 
 **第二步（另立工单·改 hash·须 owner 判）**：Write 入队（与 ResourceModify 同「挂到被消费」语义·Resource 只剩一个 writer → 65 对软环归零）、Scope 扩 parent/source/@signal-source/tag、v2 JSON 形状（Effect/SelfAction/FlowAction/TimelineCueDo/DialogueEffect 折成 `Write[]`、PerCardWhen 折成 Expr）、BT 数据叶模式。这一步会改既有游戏的逐拍行为（写入从「当拍立即」变「入队被消费」），黄金 hash 与存档格式随之变，需要 manifest schema 2 + 迁移函数配套。
 
+### P2b · UI `repeat` 原语 + 样式逃生口消毒 + 蓝图模板/展开 —— ✅ 已落地
+
+| 项 | 落点 | 说明 |
+|---|---|---|
+| `repeat` 集合迭代 | `ui/components/types.ts` `RepeatSpec` · `bindings.ts` `resolveBindings` | 节点成为容器：children = 静态 children ++ 按 `UIDataSource.list(source)` 每项克隆 template；模板任何字符串属性可写 `{{item.字段}}` / `{{index}}` / `{{count}}`（整串占位 → 原类型代入·数值/布尔不变串；文本内 → 拼接）；id 自动 `#key` 后缀；`visibleWhen`/`bind`/`action`/`actionArg` 代入后照常生效 → 逐项条件显隐与逐项动作参数纯数据可表达；`empty` 占位、`limit` 截断；展开后的树不再带 repeat（渲染/校验只见字面节点） |
+| 世界数据源 | `src/engine/host/ui-data-source.ts` `createWorldDataSource(world, lists)` | resource/value/flag 按 id 首份（= 各家手写循环同义）；`list` 按**纯数据** `UIListSpec`（query / tag 掩码 / fields 取标量 / sortBy 稳定排序）从 ECS 投影，每项恒含 `id`。引擎只 import ui 的类型（层向围栏放行） |
+| 样式消毒 | `render.ts` `safeFill` / `shadowColor` / `Screen.image→safeUrl` | `{custom}` 与遗留裸串此前原样拼进 `style="…"`；现在 url 内容剥引号括号空白反斜杠、url 外剥 `; " ' < > \\ :`；game-g/game211 的 `url('…') center/cover no-repeat` 与各家 `linear-gradient(…rgba())` 逐字保留（测试钉） |
+| 数据层拒收 | `validate.ts` `unsafe-style` / `bad-repeat` | `{custom:'x"onmouseover=…'}` / `;` / `expression(` / `javascript:` 在校验环硬错点名；repeat 的 source 必填、template/empty 递归校验 |
+| 蓝图模板与展开 | `assembly/manifest.ts` `templates` / `$template` / `$params` / `$repeat` / `expandEntities` | `buildBlueprint()` 里 for 循环与工厂函数的 JSON 等价物：模板字符串值 `{{param}}` 代入（整串占位 → 原类型）；`$repeat:{count}|{items}` 按 `{{i}}` / `{{item.字段}}` 展开实体 id 与参数；条目自带组件键做组件级覆盖；无这些键时逐字原样（零回归）；累积对象无原型（`__proto__` 保留名照旧 fail-closed） |
+| 清死码 | 删除 `src/ui/GameOverlay.tsx` · `src/ui/templates/Bar.tsx` | 零 import。`ui/shell` + `ui/themes` 仍被 launcher/studio/game-f/game-i/game102 消费 → 不删（评审原判「只剩冻结的 game-f」不准确·此次实查纠正） |
+| 自测 | `bindings.test.ts` P2b 组 · `engine/host/ui-data-source.test.ts` · `ui/components/fill-sanitize.test.ts` · `manifest.test.ts` | 端到端：世界里 5 张牌 + 一段 JSON → 手牌区节点·打出一张后同一段 JSON 重解析即新树（**无 TS builder**）——这就是 game-a `hud.ts` 手牌区的数据形态 |
+
+**未做（有意）**：`onboarding-overlay.ts` 的 spotlight 手拼 HTML 改 LayoutNode（PUI 域·需 Float 绝对定位 + 镂空阴影两件货架件·另立单）；既有游戏的 TS builder 迁 repeat（游戏面·各游戏自领）；`UIListSpec` 进 manifest 顶层字段（等第一个纯数据消费方立项时定形状）。
+
 ---
 
 ## 附录 A · 证据索引（file:line）
