@@ -26,6 +26,7 @@
 **棋盘/战棋类**
 - 六边格 A* + 逐格移动（自走棋/战棋/塔防）→ `grid-move`；拖拽摆子 → `drag-place` + 席位 `tray` / 排队递补 `queue-slots`
 - 连续空间寻路（NavGraph 航点图）→ `pathfind`；固定巡逻/传送带轨 → `path-follow`
+- **大量单位奔同一处**（RTS 行军/怪潮）→ `flow-field`（铺一次全场共享·比 A*-per-agent 每 tick 快两个数量级）；别互相叠 → `FlowAgent.separation`（软）/ `FlowAgent.orca`（强·贵 8×·二选一）——四选一分诊表见 `movement-pathfinding.md`
 - 同时决策 × 收益矩阵（猜拳/博弈结算）→ `matrix-duel`
 
 **剧情/VN 类**
