@@ -24,16 +24,22 @@ export class Engine {
   private listeners: Array<() => void> = [];
   private renderer: RendererBackend | null = null;
   private readonly services: FrameService[] = []; // 每帧服务（音频/存档/平台…），与渲染器同侧同步
-  private readonly tickRate: number;
+  private _tickRate: number;
   private readonly input: InputSource | null;
 
   constructor(options: EngineOptions = {}) {
     this.world = new World();
-    this.tickRate = options.tickRate ?? 60;
+    this._tickRate = options.tickRate ?? 60;
     this.input = options.input ?? null;
   }
 
+  /** 当前模拟频率（蓝图 meta.tickRate 优先于构造选项——tickRate 是玩法数据·P2d）。 */
+  get tickRate(): number {
+    return this._tickRate;
+  }
+
   load(blueprint: WorldBlueprint): void {
+    if (blueprint.meta?.tickRate !== undefined) this._tickRate = blueprint.meta.tickRate; // 蓝图是游戏的数据·它说了算
     for (const cap of blueprint.capabilities) {
       for (const system of cap.systems) {
         this.world.addSystem(system);
@@ -65,7 +71,7 @@ export class Engine {
     if (this.rafId !== null) return;
 
     // 固定步长循环：用真实流逝时间累加，跑整数个模拟步；渲染每帧一次。
-    const clock = new FixedStepClock(this.tickRate);
+    const clock = new FixedStepClock(this._tickRate);
     let last = performance.now();
 
     const loop = (now: number) => {

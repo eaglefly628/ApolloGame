@@ -422,6 +422,21 @@ type Write = {to:Ref, op:'set'|'add'|'mul', value:Expr}   // 一律入队，不�
 
 **语义边界**：本体 `getComponent` 记脏是保守选择——正确性不依赖调用方纪律；代价是绕过视图直改的路径每次取都推进版本。真正的 Merkle（每实体独立 hash·合并 O(脏)）会改 hash 值 → 与存档格式一起归 P3b 的 schema 2。
 
+### P2d · 调度：确定性平局键 + 严格软环即错 + 具名相位 + 调度指纹握手 + tickRate/时长糖 —— ✅ 已落地
+
+| 项 | 落点 | 说明 |
+|---|---|---|
+| 平局键 = 系统 id 字典序 | `topological-sort.ts` `idOrder / kahn` | Kahn 每步取入度为零里 **id 最小**的（= 字典序最小的拓扑序）；此前取「装载序」——同一份数据换个 manifest 排列就换定序、换 hash。现在定序只由「系统集合 + 申报边」决定，与装载顺序无关；软环成员同样按 id 裁决（`orderCycleMembers`） |
+| 严格模式软环即错 | `SortOptions.softCycle` · `world.ts ensureSorted` | CYCLEHAZ B 之后成环只 `console.warn` 不抛，落序不合语义照跑（2026-08-06 ENG-03 的 Commit 相位环就是这么漏的）。现在 `World` 非 `strict:'off'`（vitest 缺省严格）→ **抛错点名环成员与闭环组件**；浏览器生产仍 warn（不把玩家打崩）。全库跑一遍：无任何真实世界成环（只 3 处故意造环的测试改 `strict:false`） |
+| 具名相位 | `types.ts SystemPhase` | 加 `Input(-20) / Intent(-10) / Simulate(0) / Cleanup(30)`；既有 `Update/Rotate/Resolve/PostResolve/Commit` 数值不动（零回归）。相位表现在是引擎的具名阶梯而不是各游戏私约的数字 |
+| 调度指纹 | `src/net/world-hash.ts scheduleFingerprint(world, tickRate)` | = FNV-1a(有序系统 id 列表 + `@tickRate`)。两端能力集/版本/tickRate 有一处不同 → 指纹不同 |
+| lockstep 握手 | `lockstep-tab.ts` hello `sched` · `LockstepOptions.onIncompatible` | hello 带指纹；对端指纹不同 → **开局即拒**（不组 epoch·console.error 一次·回调一次），而不是跑几分钟后 hash 才报 desync；旧版对端（hello 无 sched）照旧接纳（兼容）。`resetEpoch` 时按当前世界重算 |
+| tickRate 入蓝图 | `demo.assembly.ts BlueprintMeta` · `manifest.ts meta.tickRate` · `runtime/engine.ts tickRate` | 蓝图 `meta.tickRate`（Hz·正数校验）随 manifest 装载进 Engine（`engine.tickRate`）；此前 tickRate 只在各游戏 loop 参数里，和数据脱钩 |
+| 时长单位糖 | `validate-manifest.ts coerceDurations` | 组件数值字段（schema `num/opt(num)` 或 legacy `type:'number'`）可写 `"1.5s" / "300ms" / "2min"`，装载期按 tickRate 折成整数拍并 warning 留痕；纯数字逐字不动（零回归）。「最弱 LLM」写 `duration: "2s"` 比算 `120` 不容易错 |
+| 自测 | `topological-sort.test.ts` · `cycle-tiebreak.test.ts` · `lockstep-tab.test.ts` 握手组 · `manifest.test.ts` · `runtime/engine.tickrate.test.ts` | id 序平局（含无边独立系统）· 严格抛/宽松 warn 双态 · 对端多一系统/tickRate 不同 → 拒组局 · 旧版无 sched 接纳 · meta.tickRate 校验 + 时长糖折拍 · Engine 装载读取 tickRate |
+
+**行为变更（有意·非零变）**：平局键从装载序改 id 序——**只影响此前靠装载序碰运气的软环/无边并列**；全库黄金 hash 零变（实证：全量门禁全绿），说明现有游戏无一处定序真依赖装载序。**未做（有意）**：Rotate 相位保留（改名 = 游戏面批量改）；`consume` 收拢到 Cleanup 相位统一执行（改「谁吃谁」的语义与 hash·归 P2a 第二步一起判）。
+
 ---
 
 ## 附录 A · 证据索引（file:line）

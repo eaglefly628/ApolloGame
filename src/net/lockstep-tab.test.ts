@@ -380,3 +380,47 @@ describe('LockstepClient — epoch 桶淘汰（REQ-NETGAPS②·MAX_INPUT_EPOCHS=
     expect(A.view().hash).toBe(B.view().hash);
   });
 });
+
+// ── P2d · 调度指纹握手（engine-architecture-review-2026-09-02 D2b）──
+describe('LockstepClient — 调度指纹握手（系统序 + tickRate）', () => {
+  it('两端调度不同（对端多装一个系统）→ 不组局：epoch 各自 solo·onIncompatible 一次·console.error 一次', () => {
+    const bus = new MockBus();
+    let clock = 0;
+    const now = () => clock;
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const seen: Array<{ peer: string }> = [];
+    const A = new LockstepClient({ peerId: 'A', channel: bus.channel('A'), getInput: () => ({ dx: 0, dy: 0 }), now, tickRate: 30, inputDelay: 4, onIncompatible: (i) => seen.push(i) });
+    const B = new LockstepClient({
+      peerId: 'B', channel: bus.channel('B'), getInput: () => ({ dx: 0, dy: 0 }), now, tickRate: 30, inputDelay: 4,
+      buildWorld: (ids) => { const w = buildMpWorld(); ids.forEach((id, i) => addPlayer(w, i, id)); w.addSystem({ id: 'extra-sys', reads: [], writes: [], consumes: [], execute() {} }); return w; },
+    });
+    for (let i = 0; i < 12; i++) { clock += STEP; A.pump(STEP); B.pump(STEP); }
+    expect(A.view().epoch).toBe('A'); // 没把 B 收进来
+    expect(B.view().epoch).toBe('B');
+    expect(seen.map((i) => i.peer)).toEqual(['B']); // A 只报一次
+    expect(errSpy.mock.calls.filter((c) => String(c[0]).includes('调度指纹')).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('tickRate 不同 = 调度不同（同一份数据联机时快慢不一）→ 同样拒组局', () => {
+    const bus = new MockBus();
+    let clock = 0;
+    const now = () => clock;
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const A = new LockstepClient({ peerId: 'A', channel: bus.channel('A'), getInput: () => ({ dx: 0, dy: 0 }), now, tickRate: 30, inputDelay: 4 });
+    const B = new LockstepClient({ peerId: 'B', channel: bus.channel('B'), getInput: () => ({ dx: 0, dy: 0 }), now, tickRate: 60, inputDelay: 4 });
+    for (let i = 0; i < 12; i++) { clock += STEP; A.pump(STEP); B.pump(STEP); }
+    expect(A.view().epoch).toBe('A');
+    expect(B.view().epoch).toBe('B');
+  });
+
+  it('旧版对端（hello 无 sched）照旧接纳（兼容）', () => {
+    const bus = new MockBus();
+    let clock = 0;
+    const now = () => clock;
+    const A = new LockstepClient({ peerId: 'A', channel: bus.channel('A'), getInput: () => ({ dx: 0, dy: 0 }), now, tickRate: 30, inputDelay: 4 });
+    const legacy = bus.channel('L');
+    legacy.onMessage(() => {});
+    for (let i = 0; i < 12; i++) { clock += STEP; legacy.post({ t: 'hello', peer: 'L' }); A.pump(STEP); }
+    expect(A.view().epoch).toBe('A|L');
+  });
+});

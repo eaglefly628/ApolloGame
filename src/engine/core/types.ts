@@ -30,11 +30,18 @@ export interface SystemDeclaration {
 // 系统执行阶段（数值越小越早）。绝大多数系统留缺省 Update，靠组件拓扑自动定序；
 // 只有"读完本帧状态后再修正同一状态"的系统（碰撞解算、约束）才排到更后的阶段。
 export const SystemPhase = {
+  // ── P2d 具名阶段（engine-architecture-review-2026-09-02 D2c）：固定管线 Input → Intent → Simulate → Resolve → Commit → Cleanup。
+  // 旧数字键（Update/Rotate/PostResolve）原样保留为别名/兼容档：改它们的数值 = 改全库定序。Rotate 是「缺字段级写粒度」
+  // 的历史补丁（rotation-apply 与 motion-apply 都 RMW Transform），新系统勿再用；Cleanup 供只做清扫/回收的系统。
+  Input: -20,      // 输入落地：把外部命令翻成世界组件（applyCommands 的系统化落点·P3c）
+  Intent: -10,     // 意图：读输入/条件产意图组件（尚不改物理态）
+  Simulate: 0,     // = Update：积分 / 检测 / 计时 / 生命周期……（组件拓扑自动定序）
   Update: 0,       // 默认：积分 / 检测 / 计时 / 生命周期……（组件拓扑自动定序）
   Rotate: 4,       // 角度积分：rotation-apply 与 motion-apply 同为 Transform 读改写，须各占一阶段
   Resolve: 10,     // 解算：读完位置后再修正位置/速度（碰撞推开）
   PostResolve: 14, // 解算后：基于已解算结果再改 Transform/Velocity（层级跟随=改T、摩擦=改V，可同阶段）
   Commit: 20,      // 提交：基于解算结果的最终写入（跳跃=改V、边界钳制=改T）
+  Cleanup: 30,     // 清扫：回收瞬时实体 / 清事件（本身不产语义写入）
 } as const;
 
 export interface IWorld {

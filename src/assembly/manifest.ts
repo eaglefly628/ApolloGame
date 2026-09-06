@@ -1,6 +1,6 @@
 import type { WorldBlueprint, EntityBlueprint } from './demo.assembly.js';
 import { resolveCapabilities, inferCapabilityIds, AMBIGUOUS_COMPONENTS } from './capability-registry.js';
-import { validateComponentData, validateAssetRefs, formatIssues } from './validate-manifest.js';
+import { validateComponentData, validateAssetRefs, formatIssues, coerceDurations } from './validate-manifest.js';
 import { validateReferences } from './validate-references.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -16,6 +16,8 @@ export interface Manifest {
   /** manifest 格式版本（P1c）。缺省 1。装载时 < 当前版本按 MANIFEST_MIGRATIONS 逐级升；> 当前版本拒收（引擎太旧）。 */
   schema?: number;
   capabilities?: string[];
+  /** 蓝图元数据（P2d）：`tickRate`（Hz·缺省 60）。时长单位糖（"2s"/"500ms"/"1.5min"）按它换算成 tick。 */
+  meta?: { tickRate?: number };
   /**
    * 实体模板（P2b · 评审 §1.4「蓝图是 TS 不是 JSON」的 JSON 等价物）：名字 → { 组件名: 数据 }，字符串值里可写 `{{param}}`
    * 占位（整串恰为一个占位符 → 按参数原类型代入·数值不变字符串）。实体用 `$template` 引用、`$params` 传参、其余键作组件级覆盖。
@@ -214,6 +216,19 @@ export function parseManifestDetailed(raw: unknown, opts: ParseOptions = {}): Pa
 
   const capabilities = resolveCapabilities(capIds);
 
+  // P2d：meta.tickRate 校验 + 时长单位糖。数字字段里写 "2s" / "500ms" / "1.5min" → 按 tickRate 换算成整数 tick；
+  // 能力内部仍只认 tick（sim 唯一时钟），单位只存在于数据入口。
+  let meta: { tickRate?: number } | undefined;
+  if (obj.meta !== undefined) {
+    if (typeof obj.meta !== 'object' || obj.meta === null || Array.isArray(obj.meta)) fail('meta 必须是对象');
+    const m = obj.meta as Record<string, unknown>;
+    if (m.tickRate !== undefined && (typeof m.tickRate !== 'number' || !Number.isFinite(m.tickRate) || m.tickRate <= 0)) fail('meta.tickRate 必须是正数（Hz）');
+    meta = m.tickRate !== undefined ? { tickRate: m.tickRate as number } : {};
+  }
+  const tickRate = meta?.tickRate ?? 60;
+  const coerced = coerceDurations(capabilities, entities, tickRate);
+  if (coerced.length) warnings.push(`时长单位糖已按 ${tickRate}Hz 换算成 tick：${coerced.join(', ')}`);
+
   // 体检：用了某组件却无任何 capability 提供它 → 该组件大概率不被解释（渲染/行为缺失）。
   const provided = new Set<string>();
   for (const c of capabilities) for (const t of Object.keys(c.components?.provides ?? {})) provided.add(t);
@@ -240,7 +255,7 @@ export function parseManifestDetailed(raw: unknown, opts: ParseOptions = {}): Pa
     if (assetErrors.length) fail(`资产引用错误（${assetErrors.length} 处）—— ${formatIssues(assetErrors)}`);
   }
 
-  return { blueprint: { capabilities, entities }, inferredCapabilities: inferred, warnings };
+  return { blueprint: { capabilities, entities, ...(meta ? { meta } : {}) }, inferredCapabilities: inferred, warnings };
 }
 
 /** 便捷版：只取可运行蓝图。 */

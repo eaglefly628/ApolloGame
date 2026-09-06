@@ -326,7 +326,7 @@ export class World implements IWorld {
 
   private ensureSorted(): void {
     if (this.needsSort) {
-      this.sorted = topologicalSort(this.systems);
+      this.sorted = topologicalSort(this.systems, { softCycle: this.strict === 'off' ? 'warn' : 'throw' }); // P2d：严格模式软环即抛
       this.needsSort = false;
     }
   }

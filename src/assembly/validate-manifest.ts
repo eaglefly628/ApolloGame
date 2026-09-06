@@ -146,3 +146,47 @@ export function formatIssues(issues: readonly SchemaIssue[]): string {
     .map((i) => `${i.entity}.${i.component}${i.field ? `.${i.field}` : ''} —— ${i.message}`)
     .join('；');
 }
+
+// ── P2d · 时长单位糖 ────────────────────────────────────────────────────────────────
+// 能力全按 tick 计时（sim 唯一时钟·整数 tick 是 lockstep/回放的正确选择），但把 "2 秒" 写成 120 是把 60Hz 烤进数据。
+// 数据入口允许数字字段写 "2s" / "500ms" / "1.5min"，装载期按 meta.tickRate 换算成整数 tick（四舍五入）。
+// 只认「声明为 number 的顶层字段」（旧 fields.type==='number' 或组合子 num/opt(num)）；别的字段原样。
+const DURATION = /^\s*(\d+(?:\.\d+)?)\s*(ms|s|min)\s*$/;
+const UNIT_SECONDS: Record<string, number> = { ms: 0.001, s: 1, min: 60 };
+
+function isNumberField(cs: ComponentSchema, field: string): boolean {
+  const sc = cs.schema;
+  if (sc && sc.k === 'obj') {
+    let f = sc.props[field];
+    if (!f) return false;
+    if (f.k === 'opt') f = f.of;
+    return f.k === 'num';
+  }
+  return cs.fields?.[field]?.type === 'number';
+}
+
+/** 就地把数字字段里的时长串换算成 tick。返回换算记录（"实体.组件.字段: 2s→120"）。 */
+export function coerceDurations(
+  capabilities: readonly CapabilityDefinition[],
+  entities: Record<string, EntityBlueprint>,
+  tickRate: number,
+): string[] {
+  const schemas = collectComponentSchemas(capabilities);
+  const log: string[] = [];
+  for (const [eid, comps] of Object.entries(entities)) {
+    for (const [ctype, data] of Object.entries(comps as Record<string, unknown>)) {
+      const cs = schemas.get(ctype);
+      if (!cs || typeof data !== 'object' || data === null) continue;
+      const rec = data as Record<string, unknown>;
+      for (const [f, v] of Object.entries(rec)) {
+        if (typeof v !== 'string' || !isNumberField(cs, f)) continue;
+        const m = DURATION.exec(v);
+        if (!m) continue;
+        const ticks = Math.round(Number(m[1]) * UNIT_SECONDS[m[2]] * tickRate);
+        rec[f] = ticks;
+        log.push(`${eid}.${ctype}.${f}: ${v.trim()}→${ticks}`);
+      }
+    }
+  }
+  return log;
+}

@@ -69,6 +69,28 @@ describe('manifest 桥接：导出↔导入对称、可加载、可玩', () => {
     expect(() => parseManifest({ ...raw, templates: [] })).toThrow(/templates 必须是/);
   });
 
+  it('meta.tickRate（P2d）：进蓝图 meta；非正数拒收；时长单位糖 "2s"/"500ms"/"1.5min" 按 tickRate 换算成整数 tick', () => {
+    const raw = {
+      capabilities: ['e1-timer', 'f1-resource'],
+      meta: { tickRate: 30 },
+      entities: {
+        t: { Timer: { id: 'door', elapsed: 0, duration: '2s', loop: false } },
+        r: { Resource: { id: 'hp', current: '500ms', min: 0, max: '1.5min' } },
+      },
+    };
+    const { blueprint, warnings } = parseManifestDetailed(raw);
+    expect(blueprint.meta).toEqual({ tickRate: 30 });
+    expect((blueprint.entities.t as { Timer: { duration: number } }).Timer.duration).toBe(60); // 2s @30Hz
+    expect((blueprint.entities.r as { Resource: { current: number; max: number } }).Resource.current).toBe(15); // 500ms
+    expect((blueprint.entities.r as { Resource: { max: number } }).Resource.max).toBe(2700); // 1.5min
+    expect(warnings.some((w) => w.includes('时长单位糖') && w.includes('30Hz'))).toBe(true);
+    // 缺 meta → 60Hz 换算；字符串字段（Timer.id）不动
+    const bp2 = parseManifest({ ...raw, meta: undefined, entities: { t: { Timer: { id: '2s', elapsed: 0, duration: '2s', loop: false } } } });
+    expect((bp2.entities.t as { Timer: { id: string; duration: number } }).Timer).toMatchObject({ id: '2s', duration: 120 });
+    expect(() => parseManifest({ ...raw, meta: { tickRate: 0 } })).toThrow(/meta.tickRate 必须是正数/);
+    expect(() => parseManifest({ ...raw, meta: [] })).toThrow(/meta 必须是对象/);
+  });
+
   it('未知 capability id → 明确报错', () => {
     expect(() => parseManifest({ capabilities: ['nope.nope'], entities: {} })).toThrow(/未知 capability/);
   });

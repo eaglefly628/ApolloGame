@@ -70,3 +70,11 @@ export function hasherOf(world: World): WorldHasher {
   hashWorld(world);
   return hashers.get(world)!;
 }
+
+/**
+ * 调度指纹（P2d · D2b）：有序系统 id 列表 + tickRate 的 FNV-1a。lockstep 握手时交换：两端调度不同（能力集/版本/
+ * tickRate 不同）→ 开局即拒，而不是跑几分钟后 hash 才报 desync。
+ */
+export function scheduleFingerprint(world: World, tickRate: number): string {
+  return fnv1aHex(`${world.getSortedSystems().map((s) => s.id).join(',')}@${tickRate}`);
+}
