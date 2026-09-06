@@ -1,4 +1,5 @@
 import type { CapabilityDefinition } from '@engine/core/define-capability.js';
+import { buildCapabilityIndex, inferCapabilityIdsWith, metaOf, unknownCapabilityError } from './capability-index.js';
 import { allAtomCapabilities, extensionAtomCapabilities } from '@atom-skills/index.js';
 import {
   motionApplyCapability,
@@ -204,33 +205,21 @@ export function resolveCapabilities(ids: readonly string[]): CapabilityDefinitio
     if (cap) out.push(cap);
     else unknown.push(id);
   }
-  if (unknown.length) {
-    throw new Error(`manifest: 未知 capability id: ${unknown.join(', ')}（不在能力注册表内）`);
-  }
+  if (unknown.length) throw unknownCapabilityError(unknown);
   return out;
 }
+
+// ── 组件 → 能力 索引（P2e 起由 capability-index 的纯函数算·懒注册表同一份算法·两边对拍见 capability-registry.gen.test）──
+export const CAPABILITY_INDEX = buildCapabilityIndex(ALL_CAPABILITIES.map(metaOf));
+const INDEX = CAPABILITY_INDEX;
 
 /** 组件类型 → **全部**声明提供它的 capability id（登记序）。多于 1 个 = 该组件被多个能力共用。
  *  共用本身可以是刻意的（如 `BoardCell` 被 match3-board / block-grid 共用同一视图格接口，
  *  两边字段完全相同），但它让「从组件反推能力」这件事**在语义上就无解**——见下方 AMBIGUOUS。 */
-export const COMPONENT_PROVIDERS_ALL: ReadonlyMap<string, readonly string[]> = (() => {
-  const m = new Map<string, string[]>();
-  for (const cap of ALL_CAPABILITIES) {
-    for (const type of Object.keys(cap.components?.provides ?? {})) {
-      const list = m.get(type);
-      if (list) list.push(cap.id);
-      else m.set(type, [cap.id]);
-    }
-  }
-  return m;
-})();
+export const COMPONENT_PROVIDERS_ALL: ReadonlyMap<string, readonly string[]> = INDEX.providersAll;
 
 /** 被多个能力共同提供的组件 → 提供者清单。推断**刻意不碰**这些（不猜），由 manifest 显式声明。 */
-export const AMBIGUOUS_COMPONENTS: ReadonlyMap<string, readonly string[]> = (() => {
-  const m = new Map<string, readonly string[]>();
-  for (const [type, ids] of COMPONENT_PROVIDERS_ALL) if (ids.length > 1) m.set(type, ids);
-  return m;
-})();
+export const AMBIGUOUS_COMPONENTS: ReadonlyMap<string, readonly string[]> = INDEX.ambiguous;
 
 /** 组件类型 → 提供它的 capability id。**只收唯一提供者**；多提供者组件不入表（见 AMBIGUOUS_COMPONENTS）。
  *
@@ -242,11 +231,7 @@ export const AMBIGUOUS_COMPONENTS: ReadonlyMap<string, readonly string[]> = (() 
  *  「按 A 的规格校验字段、却把 B 的解释器装给你」。
  *  共用组件的正确姿势是**承认推不出来**：不猜、由 parseManifest 发告警要求显式声明能力，
  *  fail-loud 取代 fail-silent。单一提供者的组件（绝大多数）推断行为完全不变。 */
-export const COMPONENT_PROVIDERS: ReadonlyMap<string, string> = (() => {
-  const m = new Map<string, string>();
-  for (const [type, ids] of COMPONENT_PROVIDERS_ALL) if (ids.length === 1) m.set(type, ids[0]!);
-  return m;
-})();
+export const COMPONENT_PROVIDERS: ReadonlyMap<string, string> = INDEX.providers;
 
 /**
  * 从 entities 用到的组件类型，反推"提供这些组件"的能力 id 集合。
@@ -254,12 +239,5 @@ export const COMPONENT_PROVIDERS: ReadonlyMap<string, string> = (() => {
  * 不提供组件、推不出来——所以 manifest 最好显式带 capabilities，inference 仅作兜底/提示。
  */
 export function inferCapabilityIds(entities: Record<string, Record<string, unknown>>): string[] {
-  const ids = new Set<string>();
-  for (const comps of Object.values(entities)) {
-    for (const type of Object.keys(comps)) {
-      const capId = COMPONENT_PROVIDERS.get(type);
-      if (capId) ids.add(capId);
-    }
-  }
-  return [...ids];
+  return inferCapabilityIdsWith(INDEX, entities);
 }

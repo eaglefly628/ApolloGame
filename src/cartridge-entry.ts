@@ -1,6 +1,7 @@
 import { createPlatformPort, firstBootAchievement } from './services/platform/index.js';
 
-interface GameModule { mount: (el: HTMLElement) => () => void }
+// mount 可同步（工程游戏）或异步（内联数据卡带：能力按需 import·P2e）。
+interface GameModule { mount: (el: HTMLElement) => (() => void) | Promise<() => void> }
 
 const GAMES: Record<string, { title: string; subtitle: string }> = {
   'game-e': { title: 'Game E: Balatro-like',         subtitle: '小丑牌 · 卡牌构建' },
@@ -112,7 +113,12 @@ async function main() {
   // Mount game behind shell, then crossfade
   const gameRoot = el('game-root');
   gameRoot.style.transition = 'opacity 0.55s ease';
-  mod.mount(gameRoot);
+  try {
+    await mod.mount(gameRoot);
+  } catch (e) {
+    log(`MOUNT FAILED: ${String(e)}`, 'warn');
+    return;
+  }
 
   await sleep(80);
   gameRoot.style.opacity = '1';

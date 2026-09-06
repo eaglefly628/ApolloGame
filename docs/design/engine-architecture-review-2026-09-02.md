@@ -437,6 +437,21 @@ type Write = {to:Ref, op:'set'|'add'|'mul', value:Expr}   // 一律入队，不�
 
 **行为变更（有意·非零变）**：平局键从装载序改 id 序——**只影响此前靠装载序碰运气的软环/无边并列**；全库黄金 hash 零变（实证：全量门禁全绿），说明现有游戏无一处定序真依赖装载序。**未做（有意）**：Rotate 相位保留（改名 = 游戏面批量改）；`consume` 收拢到 Cleanup 相位统一执行（改「谁吃谁」的语义与 hash·归 P2a 第二步一起判）。
 
+### P2e · 懒能力注册表 + manifest 异步装载 + 卡带按子集摇树 —— ✅ 已落地（验收：10 能力卡带外壳 JS 317 KB → 76 KB）
+
+| 项 | 落点 | 说明 |
+|---|---|---|
+| 能力索引（元数据） | `src/assembly/capability-index.ts` | 「组件 → 能力」索引（唯一提供者 / 共用组件不猜 / 推断）抽成只吃 `{ id, provides }` 的纯函数；静态注册表与懒注册表喂同一份算法，两边逐项对拍（`capability-registry.gen.test`）。此前这三件事只活在静态注册表里——谁碰 manifest 谁就 import 全部 ~100 个能力 |
+| 懒注册表（生成） | `scripts/gen-capability-registry.mjs` → `src/assembly/capability-registry.gen.ts`（`npm run gen:registry`·`--check` 门） | 经 vite-node 真 import `src/skills/**` 扫出每个 defineCapability 的本体模块 + 导出名 + provides，按 ALL_CAPABILITIES **登记序**（迁移期冻结）写成一行一条 `{ id, provides, load: () => import('…').then(m => m.x) }`；每条 load() 拿到的**就是**静态注册表里那个对象（同模块单例·hash 一致·测试钉）。gen 过期 → 测试点名重生成 |
+| manifest 拆两半 | `manifest-core.ts` `prepareManifest / finishManifest` · `manifest.ts`（同步门面·静态注册表·创作台/脚本/测试）· `manifest-async.ts`（`parseManifestAsync`·懒注册表·`await Promise.all(load)`） | core 不 import 任何能力对象；两条门面共用同一份校验 → 在线能跑 = 打包能跑。同步 API 形状、判词、告警顺序零变（全库 manifest 测试原样绿） |
+| 卡带外壳走异步 | `cartridge-inline-run.ts` `mount → Promise` · `cartridge-entry.ts` await + `MOUNT FAILED` 错误态 | 内联卡带只 import 元数据表；坏 manifest → reject（引导壳转错误态·不白屏） |
+| 按子集摇树 | `scripts/lib/registry-subset.mjs` + `vite.config.cartridge.ts` `capabilitySubsetPlugin` | `VITE_CART_CAPABILITIES=id,…` → `load` 钩子把 gen 文件裁成只剩点名行（行式契约·未登记 id 打包期抛）；rollup 单文件 `inlineDynamicImports` 下没被引用的能力连名字都不进包。未设且目标 `__inline__` → 全量通用外壳；目标是工程游戏 → 空（那里内联运行器是死分支·不必拖 100+ 懒 chunk） |
+| package-web 接线 | `scripts/package-web.mjs` `resolveCartCapabilities` · `manifest-check.mjs` 回执加 `capabilities` | 打包前经 manifest-check（引擎真 parseManifest + 装载探针）取该卡带**真用到**的能力 id（含推断）喂给构建；装不起来的 manifest 在这一步就拒绝打包（此前会打出一个开局就炸的 HTML）。`--full-shell` 回退全量 |
+| 桶导出治理 | `runtime/engine.ts` · `studio/cart-run-core.ts` | 实证：`@net/index` 桶再导出 mp-world → playground.assembly → 十几个原子能力的静态 import，把它们全拖进每个卡带（裁剪后仍 119 KB）；改指本体模块后 bundle 里恰好只剩 manifest 点名的 10 个 skill 模块（sourcemap 逐模块核对） |
+| 验收 | `scripts/package-web-smoke.mjs`（opt-in 真构建）· `capability-registry.gen.test.ts` · `registry-subset.test.mjs` · `cartridge-inline-run.test.ts` | 10 能力弹球卡带：外壳 JS **317 KB → 76 KB**（整页 gzip 136 → 28 KB）·`matrix-duel / hand-pattern / poker-hand` 零命中；异步与同步门面同一 manifest 跑 120 拍 hash 同值；子集外壳对越界 id 判词点名 |
+
+**未做（有意·各附理由）**：① **目录按域重组**（`src/skills/<domain>/` + `genre/*`·tier 降为 `describe.semantic` 标签）——games/** 今天 168 处深路径 import 直指 `tier2/xxx.js`，物理搬家 = 全游戏面批量改 + 每个游戏重跑门禁，属跨游戏共享面 🔴 且与 P3e（引擎成包·`no-restricted-imports` 拦深路径）是同一件事：先立 exports 口子再搬目录，否则搬两次。懒注册表按 id 寻址、对目录无感，届时只需重跑生成器。② **构建编排器收成 `scripts/build.mjs` + `games.json`**（sh/py 删除）——`build-game.sh / build_game.py / dist.py / build-platform.mjs` 各自服务不同出口（Steam/Electron/DokiWorld），game-publisher 域，与本阶段「摇树」目标无关，单独立单。③ catalog 块 lazy——`buildCapabilityCatalog` 只在创作台/脚本用（本就不进卡带外壳），无收益。
+
 ---
 
 ## 附录 A · 证据索引（file:line）

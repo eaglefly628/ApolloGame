@@ -1,9 +1,12 @@
 import { World } from '@engine/core/world.js';
 import type { Component, RendererBackend, IWorld } from '@engine/core/types.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
-import { FixedStepClock, applyCommands } from '@net/index.js';
+// 直指本体模块而非 @net/index 桶：桶再导出 mp-world → playground.assembly → 十几个原子能力的静态 import，
+// 会把它们全部拖进每个卡带外壳（P2e 摇树实证：桶一换本体，10 能力卡带少 ~60 KB 源码）。
+import { FixedStepClock } from '@net/fixed-step.js';
+import { applyCommands } from '@net/commands.js';
 import { hashWorld } from '@net/world-hash.js';
-import type { InputSource } from '@net/index.js';
+import type { InputSource } from '@net/commands.js';
 
 export interface EngineOptions {
   // 模拟频率（Hz）。固定步长 → 任何显示器刷新率下"一个 tick"都是同一份模拟时间。
