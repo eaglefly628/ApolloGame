@@ -410,6 +410,18 @@ type Write = {to:Ref, op:'set'|'add'|'mul', value:Expr}   // 一律入队，不�
 
 **未做（有意）**：`onboarding-overlay.ts` 的 spotlight 手拼 HTML 改 LayoutNode（PUI 域·需 Float 绝对定位 + 镂空阴影两件货架件·另立单）；既有游戏的 TS builder 迁 repeat（游戏面·各游戏自领）；`UIListSpec` 进 manifest 顶层字段（等第一个纯数据消费方立项时定形状）。
 
+### P2c · 增量 hash / delta 快照 / 类型版本号 —— ✅ 已落地（hash 值与旧全量算法逐字节同值）
+
+| 项 | 落点 | 说明 |
+|---|---|---|
+| 版本号 | `world.ts` `entityVersion / typeVersion / writeSequence` | 每次「可能改了」推进全局写序号并记到实体与组件类型；推进点 = SystemView 写申报取 · add/remove/consume/create/destroy/restore · **本体 `getComponent`（保守：绕过视图的直改者 applyCommands/宿主/测试无从得知）** |
+| 只读通道 | `world.ts` `peek / readView / componentsOf` | 渲染器与每帧服务改收 `readView()`（`Engine.attachRenderer/attachService/loop`）：读不记脏，否则每帧全脏、增量退化成全量。SystemView 内部也改经 peek（只读申报的取不推进版本·写申报的取显式记脏） |
+| 增量 hash | `src/net/world-hash.ts` `WorldHasher / hashWorld` | 按实体版本缓存规范片段，只重算脏实体；片段按 id 升序 `;` 相连后 FNV-1a——**同值于 `hashSnapshot(world.snapshot())`**（老存档 / golden / 对端全不受影响）；零 structuredClone。`Engine.hash()` · `LockstepSession` · `LockstepClient`（每 peer 每拍）全部切换 |
+| delta 快照 | `world.ts` `snapshotDelta(base) / applyDelta` | 自写序号 base 起的整实体变更 + removed（tombstone）；往返同 hash。`state-sync` 的「两份全量快照做 diff」以后可直接用它 |
+| 实证 | `src/net/world-hash.test.ts` | 随机 600 步操作序列（建/挂/经视图改/经本体改/摘/毁/consume/restore/数字样 id）逐步对拍同值；静止世界 recomputed=0、改 1 个实体 recomputed=1、readView/peek 不记脏；NON_DETERMINISTIC 不进 hash；delta 往返 |
+
+**语义边界**：本体 `getComponent` 记脏是保守选择——正确性不依赖调用方纪律；代价是绕过视图直改的路径每次取都推进版本。真正的 Merkle（每实体独立 hash·合并 O(脏)）会改 hash 值 → 与存档格式一起归 P3b 的 schema 2。
+
 ---
 
 ## 附录 A · 证据索引（file:line）

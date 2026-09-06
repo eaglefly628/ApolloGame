@@ -1,7 +1,8 @@
 import { World } from '@engine/core/world.js';
 import type { Component, RendererBackend, IWorld } from '@engine/core/types.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
-import { FixedStepClock, applyCommands, hashSnapshot } from '@net/index.js';
+import { FixedStepClock, applyCommands } from '@net/index.js';
+import { hashWorld } from '@net/world-hash.js';
 import type { InputSource } from '@net/index.js';
 
 export interface EngineOptions {
@@ -50,14 +51,14 @@ export class Engine {
   attachRenderer(renderer: RendererBackend, container: HTMLElement): void {
     this.renderer = renderer;
     renderer.init(container);
-    renderer.sync(this.world);
+    renderer.sync(this.world.readView()); // 只读视图（P2c）：渲染读不记脏·增量 hash 才有增量
   }
 
   // 挂一个每帧服务（如 AudioSync）。与渲染器同侧：attach 即同步一次，之后随循环每帧同步。
   // sim 外、不进 hash —— 服务只读世界 outcome-first，不回灌（守住确定性红线）。
   attachService(service: FrameService): void {
     this.services.push(service);
-    service.sync(this.world);
+    service.sync(this.world.readView());
   }
 
   start(): void {
@@ -71,8 +72,9 @@ export class Engine {
       const steps = clock.advance(now - last);
       last = now;
       for (let i = 0; i < steps; i++) this.step();
-      this.renderer?.sync(this.world);
-      for (const s of this.services) s.sync(this.world); // 音频/存档/平台服务每帧随渲染同步
+      const ro = this.world.readView(); // P2c：表现侧只读视图（不记脏）
+      this.renderer?.sync(ro);
+      for (const s of this.services) s.sync(ro); // 音频/存档/平台服务每帧随渲染同步
       // 先重挂下一帧、再通知监听者：监听者在回调里同步调 stop()（局终冻结的常见写法）时，
       // cancel 掉的正是刚挂上的这一帧 → 停机即刻生效。反过来（通知在前、重挂在后）会把
       // stop() 的取消覆盖掉，引擎照跑（REQ-LOOPSTOP）。
@@ -107,9 +109,9 @@ export class Engine {
     };
   }
 
-  // 当前世界状态的确定性指纹（与 lockstep 守卫同一套哈希）。
+  // 当前世界状态的确定性指纹（与 lockstep 守卫同一套哈希）。P2c：增量算（只重算脏实体·同值于全量）。
   hash(): string {
-    return hashSnapshot(this.world.snapshot());
+    return hashWorld(this.world);
   }
 
   private notifyListeners(): void {

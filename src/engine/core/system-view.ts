@@ -25,7 +25,7 @@ import type { EntityId, ComponentType, Component, SystemDeclaration, IWorld } fr
 //  （否则每个系统各建一份索引·且建索引时刻随系统而异 → 行为漂移）。
 // ═══════════════════════════════════════════════════════════════
 
-export type ViewRoot = IWorld & { markDirty(id: EntityId): void };
+export type ViewRoot = IWorld & { markDirty(id: EntityId, type?: ComponentType): void; peek<T extends Component>(id: EntityId, type: ComponentType): T | undefined };
 export type StrictMode = 'off' | 'throw' | 'report';
 
 /** 横切观测组件：申报门与脏标都不管（见文件头）。 */
@@ -161,10 +161,12 @@ export class SystemView implements IWorld {
 
   getComponent<T extends Component>(entityId: EntityId, type: ComponentType): T | undefined {
     if (this.strict) this.assertReadable(type, '读取');
-    const c = this.root.getComponent<T>(entityId, type);
+    // 经 peek 取（不记脏）：只读申报的取不该推进版本；写申报的取由下面显式记脏——本体 getComponent 的保守记脏只给
+    // 「绕过视图的直改者」（applyCommands / 宿主 / 测试）用。
+    const c = this.root.peek<T>(entityId, type);
     if (c === undefined) return undefined;
     if (this.writes.has(type)) {
-      this.root.markDirty(entityId);
+      this.root.markDirty(entityId, type);
       return c;
     }
     if (!this.strict || OBSERVABILITY_COMPONENTS.has(type) || this.created.has(entityId)) return c;

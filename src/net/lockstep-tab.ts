@@ -1,7 +1,7 @@
 import { World } from '@engine/core/world.js';
 import { applyCommands } from './commands.js';
 import type { Command } from './commands.js';
-import { hashSnapshot } from './determinism.js';
+import { hashWorld } from './world-hash.js';
 import { FixedStepClock } from './fixed-step.js';
 import { buildMpWorld, addPlayer, playerEntityId, renderEnts, PLAYER_COLORS } from './mp-world.js';
 import type { RenderEnt } from './mp-world.js';
@@ -128,7 +128,7 @@ export class LockstepClient {
 
   // 渲染 / HUD 读取的当前视图。
   view(): ClientView {
-    const hash = hashSnapshot(this.world.snapshot());
+    const hash = hashWorld(this.world); // P2c 增量·同值于 hashSnapshot(snapshot)
     // 三态判定（REQ-DESYNC①）：旧实现只看 peerHashAt.get(simTick)、缺数据默认 true——
     // 领先端本 tick 永远等不到对端 hash，60/60 拍全分叉也显示同步。现在：
     // 没有真比过一拍 = pending（不谎报）；确认过分叉 = desynced（本 epoch 内不摘牌）。
@@ -315,7 +315,7 @@ export class LockstepClient {
     applyCommands(this.world, cmds);
     this.world.tick();
     this.simTick = tick;
-    const hash = hashSnapshot(this.world.snapshot());
+    const hash = hashWorld(this.world); // P2c 增量·同值于 hashSnapshot(snapshot)
     this.myHashAt.set(tick, hash);
     // 落后端视角：对端 hash 已先到、本端刚拍到这一拍 → 立刻比（最近可比拍判定的另一半）。
     const bt = this.peerHashAt.get(tick);

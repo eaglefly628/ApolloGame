@@ -77,6 +77,14 @@ export interface RendererBackend {
 // 完整世界状态快照（组件皆 POD，可 JSON 序列化）—— record/replay 与时间旅行调试用
 export type WorldSnapshot = Record<EntityId, Record<ComponentType, Component>>;
 
+/** 增量快照（P2c）：自写序号 base 起的变更。changed 是整实体（按实体粒度·不做字段级 diff）。 */
+export interface WorldDelta {
+  readonly base: number;
+  readonly seq: number;
+  readonly changed: WorldSnapshot;
+  readonly removed: EntityId[];
+}
+
 // tick 期间的观测钩子 —— Debug 体系据此观察各系统(skill)之间的协作
 export interface TickObserver {
   onTickStart?(tick: number): void;

@@ -48,18 +48,35 @@ const escNested = (s: string): string => (NESTED_KEY_UNSAFE.test(s) ? JSON.strin
 function canonical(snap: WorldSnapshot): string {
   const parts: string[] = [];
   for (const entityId of Object.keys(snap).sort()) {
-    const comps = snap[entityId];
-    for (const type of Object.keys(comps).sort()) {
-      if (NON_DETERMINISTIC.has(type)) continue; // 跳过纯表现组件
-      const comp = comps[type] as unknown as Record<string, unknown>;
-      const fields = Object.keys(comp)
-        .filter((k) => comp[k] !== undefined) // undefined 字段 ≡ 缺席：不进 hash，防「写 field=undefined」的 writer 跨端分裂
-        .sort()
-        .map((k) => `${escFlat(k)}=${stableValue(comp[k])}`);
-      parts.push(`${escFlat(entityId)}|${escFlat(type)}|${fields.join(',')}`);
-    }
+    const frag = canonicalEntity(entityId, Object.entries(snap[entityId]));
+    if (frag) parts.push(frag);
   }
   return parts.join(';');
+}
+
+/**
+ * 一个实体的规范片段（P2c 增量 hash 的缓存单元）：组件按类型名升序、字段升序、跳过 NON_DETERMINISTIC 与 undefined。
+ * 全世界的 canonical = 各实体片段按实体 id 升序用 ';' 相连（空片段跳过）——与旧全量实现**逐字节相同**。
+ * 接受 `[type, comp]` 迭代（快照对象或 World 活 Map 皆可·不克隆）。
+ */
+export function canonicalEntity(entityId: string, comps: Iterable<[string, unknown]>): string {
+  const types: Array<[string, Record<string, unknown>]> = [];
+  for (const [type, comp] of comps) if (!NON_DETERMINISTIC.has(type)) types.push([type, comp as Record<string, unknown>]);
+  types.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+  const parts: string[] = [];
+  for (const [type, comp] of types) {
+    const fields = Object.keys(comp)
+      .filter((k) => comp[k] !== undefined) // undefined 字段 ≡ 缺席：不进 hash，防「写 field=undefined」的 writer 跨端分裂
+      .sort()
+      .map((k) => `${escFlat(k)}=${stableValue(comp[k])}`);
+    parts.push(`${escFlat(entityId)}|${escFlat(type)}|${fields.join(',')}`);
+  }
+  return parts.join(';');
+}
+
+/** FNV-1a 32 位（导出给增量 hasher·同一实现）。 */
+export function fnv1aHex(str: string): string {
+  return fnv1a(str);
 }
 
 function stableValue(v: unknown): string {
