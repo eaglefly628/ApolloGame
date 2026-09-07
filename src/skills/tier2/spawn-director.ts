@@ -14,7 +14,8 @@
 //  确定性（lockstep/录放安全）：状态全在 director 对象里（elapsed/每波累积/开波爆发标/seedState 整数）——
 //  可序列化、可从 {waves,seed} 重建；环形布点用 mulberry32 步进 seedState（绝不 Math.random·绝不 cos/sin）。
 // ═══════════════════════════════════════════════════════════════
-import type { SpawnRequest } from '@engine/protocol/components.js';
+import type { SpawnRequest, RandomSeed } from '@engine/protocol/components.js';
+import { nextRandom } from '@atom-skills/random/index.js';
 
 /** 一条波表项（纯数据）。atTime=起效时刻（秒·now≥atTime 该波激活）；template=k1-spawn 模板 id；
  *  ratePerSec=每秒刷几个（累积制·可小数）；cap=该 template 同屏上限（含本 tick 已发·达上限不再发）；
@@ -62,13 +63,12 @@ export function createDirector(waves: readonly DirectorWave[], seed = 0): Direct
   };
 }
 
-/** mulberry32 步进（就地推进 director.seedState，返回 [0,1)）——环形布点确定性取角度用。 */
+/** 步进 director.seedState 取 [0,1)——环形布点确定性取角度用。走 atoms/random 的 nextRandom（B-7：不再私藏一份 mulberry32·逐位同序列）。 */
 function draw(dir: Director): number {
-  dir.seedState = (dir.seedState + 0x6d2b79f5) | 0;
-  let t = dir.seedState;
-  t = Math.imul(t ^ (t >>> 15), t | 1);
-  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  const st: RandomSeed = { type: 'RandomSeed', seed: dir.seedState, sequence: 0 };
+  const r = nextRandom(st);
+  dir.seedState = st.seed;
+  return r;
 }
 
 /** 按可选 ring 给一个 spawn 定位（无 ring → 原点·消费方自放）。出真 SpawnRequest（含 type 判别位·可直接入队 k1-spawn）。 */

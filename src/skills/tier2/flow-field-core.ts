@@ -1,5 +1,6 @@
 import type { FlowField, FlowAgent, Transform } from '@engine/protocol/components.js';
 import type { OrcaAgent } from './orca.js';
+import { index, indexOrNeg, cellFloor } from '@engine/math/grid.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  flow-field-core —— 流场寻路的**纯函数核**（owner 2026-09-05 令「避免超大 skill·底层要沉淀」）。
@@ -208,16 +209,12 @@ export interface BakedField {
 
 /** 行主序索引；越界返回 -1。 */
 export function cellIndex(field: FlowField, col: number, row: number): number {
-  if (col < 0 || row < 0 || col >= field.cols || row >= field.rows) return -1;
-  return row * field.cols + col;
+  return indexOrNeg(col, row, field.cols, field.rows);
 }
 
 /** 世界坐标 → 网格列行（**向下取整**·负坐标同样成立）。 */
 export function cellOf(field: FlowField, x: number, y: number): { col: number; row: number } {
-  return {
-    col: Math.floor((x - field.originX) / field.cellSize),
-    row: Math.floor((y - field.originY) / field.cellSize),
-  };
+  return cellFloor(x, y, field.originX, field.originY, field.cellSize);
 }
 
 /** ① cost field：blocked=1 → 0（不可走）；否则取 cost（缺省 1·向下取整到 ≥1 的整数）。 */
@@ -303,7 +300,7 @@ export function buildIntegration(field: FlowField, cost: Int32Array): Int32Array
       const nc = col + dx;
       const nr = row + dy;
       if (nc < 0 || nr < 0 || nc >= cols || nr >= rows) continue;
-      const ni = nr * cols + nc;
+      const ni = nr * cols + nc;                                  // 热循环故意裸写（见上方性能注释·= grid.index）
       const nCost = cost[ni];
       if (nCost === 0) continue;                                  // 墙
       if (dx !== 0 && dy !== 0) {                                 // 斜走不切墙角
@@ -326,7 +323,7 @@ export function buildFlow(field: FlowField, cost: Int32Array, integ: Int32Array)
   const dir = new Int8Array(cols * rows * 2);
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
-      const i = row * cols + col;
+      const i = index(col, row, cols);
       if (cost[i] === 0 || integ[i] === 0 || integ[i] === UNREACHABLE) continue;   // 墙/终点/孤岛 → (0,0)
       let bestVal = integ[i];
       let bx = 0; let by = 0;

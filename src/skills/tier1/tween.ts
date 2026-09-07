@@ -95,6 +95,7 @@ export const tweenCapability = defineCapability({
           done: { type: 'boolean', describe: '是否已结束（初始 false）' },
           loop: { type: 'string', describe: '到点后：none(停,默认) | restart(归零重跑) | pingpong(交换 from/to 再归零)' },
           loops: { type: 'number', describe: '循环程数（restart/pingpong 有效）；缺省=无限' },
+          keep: { type: 'boolean', describe: '播完是否保留 Tween 组件（缺省 true=保留供回放/倒带；false=播完 removeComponent）' },
         },
       },
     },

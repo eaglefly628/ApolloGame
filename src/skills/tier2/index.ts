@@ -142,3 +142,6 @@ export type {
   DuelIntent,
   DuelOutcome,
 } from './matrix-duel.js';
+// 牌码编解码 + 建牌堆（纯函数·非 capability·B-6）。
+export { cardCode, codeSuit, codeRank, isJoker, buildDeck, SUIT_SPADE, SUIT_HEART, SUIT_DIAMOND, SUIT_CLUB, RANK_JACK, RANK_QUEEN, RANK_KING, RANK_ACE, RANK_SMALL_JOKER, RANK_BIG_JOKER } from './cardboard-codec.js';
+export type { DeckSpec } from './cardboard-codec.js';

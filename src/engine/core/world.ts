@@ -126,6 +126,7 @@ export class World implements IWorld {
         query: (...types) => w.query(...types),
         queryEntities: (...types) => w.queryEntities(...types),
         singleton: (t) => w.singleton(t),
+        byId: (t, f, id) => w.byId(t, f, id),
         emit: (t, e) => w.emit(t, e),
         events: (t) => w.events(t),
         getVersion: () => w.getVersion(),
@@ -250,6 +251,28 @@ export class World implements IWorld {
 
   hasComponent(entityId: EntityId, type: ComponentType): boolean {
     return this.entities.get(entityId)?.has(type) ?? false;
+  }
+
+  // ── 语义 id 索引（B-3）──：(type, idField) → { 建索引时的类型版本, id 值 → 创建序首个实体 }。
+  // 类型版本在 add/remove/consume/destroy/restore 与本体 getComponent（可能改字段）时推进 → 索引按需重建；
+  // 只读路径（peek/readView/SystemView 只读申报）不推进版本，索引不失效——它们也改不了 id 字段。
+  private idIndex = new Map<string, { ver: number; map: Map<string, EntityId> }>();
+
+  byId(type: ComponentType, idField: string, id: string): EntityId | undefined {
+    const key = `${type}\u0000${idField}`;
+    const ver = this.typeVersion(type);
+    let entry = this.idIndex.get(key);
+    if (!entry || entry.ver !== ver) {
+      const map = new Map<string, EntityId>();
+      // 候选按创建序（= query 序）→ 同 id 多份时取首个，与旧线性扫 / buildIdLookup 的 `!has` 语义逐字一致。
+      for (const e of this.queryEntities(type)) {
+        const v = (this.entities.get(e)!.get(type) as unknown as Record<string, unknown>)[idField];
+        if (typeof v === 'string' && !map.has(v)) map.set(v, e);
+      }
+      entry = { ver, map };
+      this.idIndex.set(key, entry);
+    }
+    return entry.map.get(id);
   }
 
   // ── Queries ──

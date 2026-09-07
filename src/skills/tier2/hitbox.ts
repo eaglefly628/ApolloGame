@@ -125,6 +125,15 @@ export const hitboxCapability = defineCapability({
           onHit: { type: 'string', describe: '{spawnTemplate}：命中（过滤门通过后）在目标位置发 SpawnRequest；缺省不发（击中火花/受击特效/穿透弹逐命中生成）' },
         },
       },
+      // C 治理（engine-base-tier-review-2026-09-06 §3.3）：Status 此前无任何能力 provides（目录查不到·schema 不校验）。
+      // 本能力是它的唯一 writer（setMask/clearMask）→ 在此登记契约；steering/nav-agent/flow-agent 只读 haltStatusMask。
+      Status: {
+        category: 'config',
+        describe: '动态战斗状态位掩码（frozen/burning/stunned…）：与 Tag（静态身份/阵营）分开的第二张 32 位表。hitbox 置/清位，移动类能力按 haltStatusMask 读。',
+        fields: {
+          flags: { type: 'number', describe: '32 位状态掩码；hitbox.setMask 置位 / clearMask 清位' },
+        },
+      },
     },
     reads: ['Trigger', 'Hitbox', 'Tag', 'Status', 'Resource', 'PrefabOrigin', 'Transform'], // 后两项=per-caster 溯源 + 命中几何（申报对账·根因①）
     writes: ['ResourceModify', 'Status', 'OverTime', 'DestroyRequest', 'SpawnRequest'],

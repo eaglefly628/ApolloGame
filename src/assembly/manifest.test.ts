@@ -91,6 +91,30 @@ describe('manifest 桥接：导出↔导入对称、可加载、可玩', () => {
     expect(() => parseManifest({ ...raw, meta: [] })).toThrow(/meta 必须是对象/);
   });
 
+  it('tags 名字表（B-8）：数字字段写 "enemy|boss" 装载折成位或；未知名字硬错；tags 非法拒收；无 tags 表时字符串照旧走类型错', () => {
+    const raw = {
+      capabilities: ['g1-tag', 't2-group-count', 'f1-resource'],
+      tags: { enemy: 1, boss: 2, player: 4 },
+      entities: {
+        e: { Tag: { flags: 'enemy|boss' } },
+        p: { Tag: { flags: 'player' } },
+        c: { GroupCount: { countResource: 'n', requiredTag: ' enemy | boss ' }, Resource: { id: 'n', current: 0, min: 0, max: 99 } },
+      },
+    };
+    const { blueprint, warnings } = parseManifestDetailed(raw);
+    expect((blueprint.entities.e as { Tag: { flags: number } }).Tag.flags).toBe(3);
+    expect((blueprint.entities.p as { Tag: { flags: number } }).Tag.flags).toBe(4);
+    expect((blueprint.entities.c as { GroupCount: { requiredTag: number } }).GroupCount.requiredTag).toBe(3);
+    expect(warnings.some((w) => w.includes('Tag 名字已折成位掩码'))).toBe(true);
+    expect(() => parseManifest({ ...raw, entities: { e: { Tag: { flags: 'enemy|bozz' } } } })).toThrow(/未声明的 tag 名 "bozz"/);
+    expect(() => parseManifest({ ...raw, tags: { enemy: -1 } })).toThrow(/tags.enemy 必须是/);
+    expect(() => parseManifest({ ...raw, tags: [] })).toThrow(/tags 必须是/);
+    // 无 tags 表：字符串留给 schema 校验按类型错拒收（旧行为不变）
+    expect(() => parseManifest({ capabilities: ['g1-tag'], entities: { e: { Tag: { flags: 'enemy' } } } })).toThrow();
+    // 纯数字照旧
+    expect((parseManifest({ ...raw, entities: { e: { Tag: { flags: 5 } } } }).entities.e as { Tag: { flags: number } }).Tag.flags).toBe(5);
+  });
+
   it('未知 capability id → 明确报错', () => {
     expect(() => parseManifest({ capabilities: ['nope.nope'], entities: {} })).toThrow(/未知 capability/);
   });

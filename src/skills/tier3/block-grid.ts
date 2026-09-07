@@ -4,6 +4,7 @@ import type { IWorld } from '@engine/core/types.js';
 import type { BlockGrid, BlockShapeDef, PlaceBlockIntent, BoardCell, Color, Flag, ResourceModify, RandomSeed } from '@engine/protocol/components.js';
 import { findByComponentId } from '@engine/core/query.js';
 import { randomInt } from '@atom-skills/index.js';
+import { index } from '@engine/math/grid.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  block-grid —— 方块网格棋盘机制（REQ-CAP-block-grid；Tier 3「算法/解释器型机制」大类）。
@@ -32,7 +33,7 @@ import { randomInt } from '@atom-skills/index.js';
 
 /** cells 扁平下标。 */
 export function bgIndex(c: number, r: number, cols: number): number {
-  return r * cols + c;
+  return index(c, r, cols);
 }
 
 /** 遍历形状的每个 (dc,dr) 偏移对，回调绝对格 (c+dc, r+dr)。cells 为扁平 [dc,dr,…]，奇数长度末位忽略。 */

@@ -190,3 +190,40 @@ export function coerceDurations(
   }
   return log;
 }
+
+// ── B-8 · Tag 名字糖（engine-base-tier-review-2026-09-06 §3.2）────────────────────────────────────────
+// Tag/targetMask/requiredTag 一类字段是 32 位掩码；让 LLM 写 `1<<5|1<<2` 是在制造 bug。manifest 顶层可给
+// `tags: { enemy: 1, boss: 2, player: 4 }`（名字 → 位值），数字字段里写 "enemy|boss" 装载期折成 3。
+// 只认「声明为 number 的顶层字段」里的**标识符串**；名字不在表里 → 硬错点名（拼错 = 静默 0 掩码 = 什么都不匹配）。
+const TAG_LIST = /^\s*[A-Za-z_][A-Za-z0-9_-]*(?:\s*\|\s*[A-Za-z_][A-Za-z0-9_-]*)*\s*$/;
+
+/** 就地把数字字段里的 "a|b" 名字串折成位或。返回换算记录；未知名字 → 抛（fail-closed）。 */
+export function coerceTags(
+  capabilities: readonly CapabilityDefinition[],
+  entities: Record<string, EntityBlueprint>,
+  tags: Readonly<Record<string, number>>,
+): string[] {
+  const schemas = collectComponentSchemas(capabilities);
+  const log: string[] = [];
+  for (const [eid, comps] of Object.entries(entities)) {
+    for (const [ctype, data] of Object.entries(comps as Record<string, unknown>)) {
+      const cs = schemas.get(ctype);
+      if (!cs || typeof data !== 'object' || data === null) continue;
+      const rec = data as Record<string, unknown>;
+      for (const [f, v] of Object.entries(rec)) {
+        if (typeof v !== 'string' || !isNumberField(cs, f) || !TAG_LIST.test(v)) continue;
+        let mask = 0;
+        for (const name of v.split('|').map((n) => n.trim())) {
+          const bit = tags[name];
+          if (bit === undefined) {
+            throw new Error(`manifest: ${eid}.${ctype}.${f} 引用了未声明的 tag 名 "${name}"（tags 表里有：${Object.keys(tags).join(', ') || '无'}）`);
+          }
+          mask |= bit;
+        }
+        rec[f] = mask;
+        log.push(`${eid}.${ctype}.${f}: ${v.trim()}→${mask}`);
+      }
+    }
+  }
+  return log;
+}

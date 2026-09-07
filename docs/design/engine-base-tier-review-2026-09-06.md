@@ -152,6 +152,57 @@ Lead 推荐 **B 先行**（纯函数·零风险），`TimerSet` 等第一个真�
 - **底层真正缺的一层是库**：数学、索引、遍历、计时。它们不出现在周期表里，所以一直没人建，结果每个 tier2 作者都从 `dx*dx+dy*dy` 重新开始。建这层比加原子收益大、风险零。
 - **先修消费链再加件**。6 件零消费方的下沉件是警报：不修 audit 与工单催办，新原子也会落地即闲置。
 
+
+## 6. 底层功能库地图（owner 2026-09-07 追问「从游戏开发角度底层还缺什么功能库」）
+
+按游戏开发者的工具箱分域列，每条标：**已有** / **本轮补** / **待拉动**（标准工具箱里有、本仓今天没人用——按 manifesto 等第一个消费方立项，不预建）/ **不做**（与确定性契约冲突或归别的层）。所有 sim 面库遵守同一规矩：纯函数、零 trig 零 hypot、逐位可复现。
+
+| 域 | 件 | 状态 | 说明 |
+|---|---|---|---|
+| 标量 | clamp / lerp / invLerp / remap / smoothstep / sign / signOr1 / wrap / cmpNum / cmpStr | **本轮补** `engine/math/scalar` | 27+12 处内联收敛；sign 分叉分名 |
+| 标量 | 定点数 / 整数 sqrt | 不做 | 确定性靠「不把浮点喂给 Condition 比较」这条纪律，全库无一处需要跨架构逐位一致的三角/指数（IEEE 加减乘除 sqrt 本就确定） |
+| 向量 | len / len2 / dist / dist2 / dot / cross / normalize / inCircle / inBox | **本轮补** `engine/math/vec2` | 分量式为主，热路径零分配 |
+| 向量 | 旋转 / 角度 | 已有（数据化） | 旋子常量 cosStep/sinStep 由 authoring 助手算好写进数据（orbit-motion 先例）；sim 内无 sin/cos，这是设计不是缺口 |
+| 网格 | index / colOf / rowOf / inBounds / adjacent4 / cellFloor / cellNearest / cellCenter / NEIGHBORS4/8 / forEachNeighbor | **本轮补** `engine/math/grid` | 6 定义 + 22 处裸写收敛；floor/round 分名 |
+| 网格 | 六边形（axial/odd-r/距离/邻接/A*） | 已有 `tier2/hex.ts` | 不并入 grid（另一套坐标系） |
+| 网格 | Bresenham 视线 / 泛洪填充 / 连通域 | 待拉动 | 消消乐与 block-grid 各有局部实现，但形状不同；第一个要「视线」的游戏立项时下沉 |
+| 几何 | AABB / SAT / 接触法线 / 3D SAT / 导航栅格 | 已有 `engine/spatial` | |
+| 几何 | 线段相交 / 点在多边形内 / 射线 | 待拉动 | spatial-query 宣传的射线未实现；无消费方 |
+| 图 | A*（图无关·整数 id·确定性 tie-break）· 多源 Dijkstra 积分场 | 已有 `spatial/astar` · `tier2/flow-field-core` | hex A* 未迁到通用 astar 是已记的债 |
+| 随机 | nextRandom / randomInt / chancePass / mulberry32 / seededShuffle | 已有 `atoms/random` | |
+| 随机 | deriveSeed（流派生） | **本轮补** | game211 meta-random / game-a 性格流 / spawn-director 私藏副本的共同缺件 |
+| 随机 | 加权抽取 / 抽签袋（shuffle-bag）/ 正态近似 | 部分已有 | weighted-pick 已有；抽签袋与正态（用均匀和·无 log/cos）待拉动 |
+| 时间 | Timer 原子 / tween 缓动（多项式） | 已有 | |
+| 时间 | tickDown 统一步进 · TimerSet 多计时器 | 待 owner 判（§3.2 B-5） | 7 处自计时先收成一个纯函数；多计时器等真需求 |
+| 索引 | byId（语义 id → 实体）· sortedIds（确定性遍历）· worldSeed | **本轮补** `World.byId` / `engine/core/query` | 三条查找路径归一；28 处手写遍历归一 |
+| 集合 | 有序实体集合 Group | 待 owner 判（§3.1 A-2） | 手牌/背包/队伍/座位的共同形 |
+| 归属 | Owner | 待 owner 判（§3.1 A-1） | |
+| 卡牌 | cardCode / codeSuit / codeRank / buildDeck | **本轮补** `tier2/cardboard-codec` | game-a/c 逐字相同的手写收敛 |
+| 卡牌 | 判型 / 压制序 / 计分 | 已有 tier3 | |
+| 数据糖 | 时长 "2s" · Tag 名字 "enemy\|boss" | 已有（P2d）· **本轮补**（B-8） | 装载期折算·零运行时改动 |
+| 颜色 | hex ↔ rgb / 颜色插值 | 不进 sim | 表现层（渲染器/UI 主题）已有各自实现，sim 不应碰颜色数学 |
+| 字符串 | 数字格式化 / 模板代入 | 已有 UI 层 `Label.format` · manifest `{{param}}` | 不进 sim |
+| 哈希 | fnv1aHex | 已有 `net/determinism` | flow-field-core 里那份本地 FNV 待迁 |
+| 事件 | tick 内总线 emit/events | 已有（P1b）·零消费 | 治理项：先让 tier2/3 用起来，再谈新事件件 |
+
+**判断**：标准游戏工具箱里「本仓真没有且今天就有多处手写」的，本轮全补了；剩下的要么是「有了没人用」（治理），要么是「标准但本仓无消费方」（等拉动·每件都是半天活·不预建）。底层功能库这层不会再是隐形的：`src/engine/math` 现在是周期表旁边那张「工具表」。
+
+## 施工记录（owner 2026-09-07 令「先开工底层库治理」·第一波 · 零行为变化）
+
+| 项 | 落点 | 说明 |
+|---|---|---|
+| B-1 / B-2 数学库 | `src/engine/math/{scalar,vec2,grid,index}.ts` + `math.test.ts` | 建库；迁移 tier2/3 + atoms 共 30 文件：sqrt/len2 27 处、normalize、clamp 三元式 8 处、`cmpStr` 8 处、网格索引 22 处 + 6 个定义改成薄包装、世界点→格 3 份分名 `cellFloor`/`cellNearest`、tilemap 的 `sign` 改名 `signOr1`。**运算顺序逐字保持**；黄金 hash 零变（全量门禁）。**有意未迁**：`Math.max(lo, Math.min(hi, v))` 5 处（bounds-clamp / merge-proximity-clear / order-fulfill / slot-payout ×2）——lo > hi 时与三元 clamp 结果不同（前者恒 lo），bounds 比 shape 窄是真实数据形态，不能当零变；orca 的 `norm` 零向量给 NaN 而库给 (0,0)，保留局部适配。flow-field-core 热循环三处保留裸算术（文件自带的性能注释） |
+| B-3 语义 id 索引 | `world.ts byId` · `types.ts IWorld.byId` · `system-view.ts`（严格模式按 reads 把关）· `define-system.ts TypedWorld` · `query.ts findByComponentId → byId` · `by-id.test.ts` | (type, idField) → { 类型版本, id → 创建序首个 } 缓存，按 P2c 的 typeVersion 失效；只读路径不失效也不需要。8 文件 14 处 `findByComponentId` 自动由 O(n) 变 O(1)；手写循环 7 处 + 三份逐字相同的懒 Map + 6 处 seed 取法全部收敛（gauge / text-binding / card-scoring / slot-payout / matrix-duel / dice-roll / dialogue / effect-apply / order-fulfill / weighted-spawn）。**唯一一处有意的语义对齐**：card-scoring 旧懒 Map 是「后写者胜」，索引是「创建序首个」——与 resource-apply / buildIdLookup 全局路由口径对齐，同 id 多份本就是数据错 |
+| B-4 确定性遍历 | `query.ts sortedIds / worldSeed` | 28 处 `query().map(id).sort()` 迁完（25 文件）；5 处 `for…push…sort()` 同义异形留作后续 |
+| B-6 卡牌编码 | `tier2/cardboard-codec.ts`（桶再导出） | cardCode/codeSuit/codeRank/isJoker/buildDeck{decks,jokers,minRank}；游戏侧迁移归各游戏 |
+| B-7 随机流派生 | `atoms/random deriveSeed` · spawn-director `draw` 改走 `nextRandom` | spawn-director 不再私藏 mulberry32（序列逐位同） |
+| B-8 Tag 名字糖 | `validate-manifest.ts coerceTags` · `manifest-core.ts tags` | manifest 顶层 `tags:{enemy:1,boss:2}`，数字字段写 `"enemy|boss"` 装载折位；未知名硬错点名；非法表拒收；无表时字符串照旧走类型错 |
+| C · provider 守卫 | `assembly/provider-guard.test.ts` | COMPONENT_UNIVERSE 每型：有 provider / 3D 渲染线 / 白名单（DebugTrace·ScoreTrace·Coachmark·HeldHand 附理由）。七个孤儿组件归位：Status→hitbox · Collider3D→overlap-detect-3d · NavMesh→navmesh-bake · InputQueue→input-capture（schema 组合子）· PrefabOrigin→prefab · Sensor→trigger-zone · MergeEvent→merge-on-place；懒注册表已重生成 |
+| C · audit 红旗 | `scripts/game-skill-audit.mjs engineTwin` · `audit-baseline.json` · `audit-ratchet.test.mjs` | `localStorage.` / `class GameLog|EventLog` / `recordScore` / `Math.imul(` 计红；存量按既往不咎律灌入基线（a2 b1 c4 e2 g8 102:1 103:7 108:9 211:8·Lead 批注）；只许降不许升，消费迁移工单落一处降一处 |
+| 文档卫生 | wiki 周期表头注指向 gen 注册表；Shape（polygon/vertices/category/mask）· SpawnRequest（source）· Tween（keep）· StringSet（scope）原子 schema 补齐到接口 | |
+
+**未做（有意）**：A-1 Owner / A-2 Group（等 owner 判）；B-5 多计时器（等真需求）；游戏侧消费迁移（各游戏工单·红旗棘轮盯）；5 处 `for…push…sort()` 异形。
+
 ---
 
 ## 附录 A · 证据索引（节选·全部可 grep 复核）

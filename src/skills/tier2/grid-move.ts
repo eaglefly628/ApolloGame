@@ -3,6 +3,7 @@ import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
 import type { HexBoard, HexPos, GridMover, Relation, Transform, Status } from '@engine/protocol/components.js';
 import { hexNextStep, hexCellKey, hexDistance, type Hex } from './hex.js';
+import { len } from '@engine/math/vec2.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  grid-move —— 六边形网格逐格移动（REQ-024；金铲铲/TFT 式自动战斗移动）。
@@ -56,7 +57,7 @@ function syncTransform(world: IWorld, eid: string, board: HexBoard, hp: HexPos, 
   if (!glideSpeed || glideSpeed <= 0) { t.x = p.x; t.y = p.y; return; } // 缺省：瞬移（保全部既有回归）
   const dx = p.x - t.x;
   const dy = p.y - t.y;
-  const d = Math.sqrt(dx * dx + dy * dy);
+  const d = len(dx, dy);
   if (d <= glideSpeed) { t.x = p.x; t.y = p.y; return; } // 到点贴齐（精确，不渐近）
   t.x += (dx / d) * glideSpeed;
   t.y += (dy / d) * glideSpeed;

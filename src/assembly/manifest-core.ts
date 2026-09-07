@@ -1,7 +1,7 @@
 import type { CapabilityDefinition } from '@engine/core/define-capability.js';
 import type { WorldBlueprint, EntityBlueprint } from './demo.assembly.js';
 import { inferCapabilityIdsWith, type CapabilityIndex } from './capability-index.js';
-import { validateComponentData, validateAssetRefs, formatIssues, coerceDurations } from './validate-manifest.js';
+import { validateComponentData, validateAssetRefs, formatIssues, coerceDurations, coerceTags } from './validate-manifest.js';
 import { validateReferences } from './validate-references.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -25,6 +25,8 @@ export interface Manifest {
   capabilities?: string[];
   /** 蓝图元数据（P2d）：`tickRate`（Hz·缺省 60）。时长单位糖（"2s"/"500ms"/"1.5min"）按它换算成 tick。 */
   meta?: { tickRate?: number };
+  /** Tag 名字表（B-8）：名字 → 位值（非负整数）。数字字段可写 "enemy|boss"，装载期折成位或；未知名字拒收。 */
+  tags?: Record<string, number>;
   /**
    * 实体模板（P2b · 评审 §1.4「蓝图是 TS 不是 JSON」的 JSON 等价物）：名字 → { 组件名: 数据 }，字符串值里可写 `{{param}}`
    * 占位（整串恰为一个占位符 → 按参数原类型代入·数值不变字符串）。实体用 `$template` 引用、`$params` 传参、其余键作组件级覆盖。
@@ -168,6 +170,7 @@ export interface PreparedManifest {
   inferredCapabilities: boolean;
   warnings: string[];
   meta?: { tickRate?: number };
+  tags?: Record<string, number>;
 }
 
 /** 前半：结构校验 + 模板展开 + 定 capability id 列表（显式声明或按 index 推断）。不装载任何能力。 */
@@ -239,7 +242,16 @@ export function prepareManifest(raw: unknown, index: CapabilityIndex): PreparedM
     if (m.tickRate !== undefined && (typeof m.tickRate !== 'number' || !Number.isFinite(m.tickRate) || m.tickRate <= 0)) fail('meta.tickRate 必须是正数（Hz）');
     meta = m.tickRate !== undefined ? { tickRate: m.tickRate as number } : {};
   }
-  return { entities, capIds, inferredCapabilities: inferred, warnings, ...(meta ? { meta } : {}) };
+  // B-8：tags 名字表校验（名字 → 非负整数位值）。
+  let tags: Record<string, number> | undefined;
+  if (obj.tags !== undefined) {
+    if (typeof obj.tags !== 'object' || obj.tags === null || Array.isArray(obj.tags)) fail('tags 必须是 { 名字: 位值 } 对象');
+    for (const [k, v] of Object.entries(obj.tags as Record<string, unknown>)) {
+      if (typeof v !== 'number' || !Number.isInteger(v) || v < 0 || v > 0x7fffffff) fail(`tags.${k} 必须是 0..2^31-1 的整数位值`);
+    }
+    tags = obj.tags as Record<string, number>;
+  }
+  return { entities, capIds, inferredCapabilities: inferred, warnings, ...(meta ? { meta } : {}), ...(tags ? { tags } : {}) };
 }
 
 /** 后半：能力对象到手后的全部校验（时长糖 / 字段 schema / 引用链接 / 资产 key）→ 可运行蓝图。 */
@@ -251,6 +263,10 @@ export function finishManifest(prep: PreparedManifest, capabilities: CapabilityD
   // 能力内部仍只认 tick（sim 唯一时钟），单位只存在于数据入口。
   const coerced = coerceDurations(capabilities, entities, tickRate);
   if (coerced.length) warnings.push(`时长单位糖已按 ${tickRate}Hz 换算成 tick：${coerced.join(', ')}`);
+  if (prep.tags) {
+    const folded = coerceTags(capabilities, entities, prep.tags);
+    if (folded.length) warnings.push(`Tag 名字已折成位掩码：${folded.join(', ')}`);
+  }
 
   // 体检：用了某组件却无任何 capability 提供它 → 该组件大概率不被解释（渲染/行为缺失）。
   const provided = new Set<string>();

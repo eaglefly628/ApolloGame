@@ -1,8 +1,11 @@
 import { defineCapability } from '@engine/core/define-capability.js';
+import { sortedIds } from '@engine/core/query.js';
 import type { IWorld } from '@engine/core/types.js';
 import type { FlowField, FlowAgent, Transform, Velocity, Status } from '@engine/protocol/components.js';
 import { findDebugTrace, appendTrace } from '../debug-trace.js';
 import { orcaVelocity, type OrcaStats } from './orca.js';
+import { cmpStr } from '@engine/math/scalar.js';
+import { len } from '@engine/math/vec2.js';
 import {
   STRAIGHT, DIAGONAL, UNREACHABLE, SEP_MAX_WEIGHT, SEP_MAX_NEIGHBORS, SEP_GRADIENT_W,
   SEP_SCALE, SEP_SETTLE_SCALE, ORCA_TIME_HORIZON, ORCA_MAX_NEIGHBORS, ORCA_RANGE_SLACK,
@@ -129,7 +132,7 @@ export const flowFieldCapability = defineCapability({
       execute(world: IWorld) {
         // 一次 query 拿到「id + 该实体的组件表」，省掉每个单位两次 Map 查找（1000 单位实测省约 25%）。
         // 仍按 id 排序：遍历序必须与 Map 内部序无关（确定性）。
-        const agents = world.query('FlowAgent', 'Transform').sort((x, y) => (x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0));
+        const agents = world.query('FlowAgent', 'Transform').sort((x, y) => cmpStr(x[0], y[0]));
         if (agents.length === 0) return;
 
         const trace = findDebugTrace(world);
@@ -138,7 +141,7 @@ export const flowFieldCapability = defineCapability({
         // 场按 id 收拢（同 id 多张 → 取实体 id 排序后的第一张·并留痕，不静默挑一张）。
         const fields = new Map<string, FlowField>();
         let dupes = 0;
-        for (const fid of world.queryEntities('FlowField').sort()) {
+        for (const fid of sortedIds(world, 'FlowField')) {
           const f = world.getComponent<FlowField>(fid, 'FlowField');
           if (!f) continue;
           if (fields.has(f.id)) { dupes++; continue; }
@@ -257,7 +260,7 @@ export const flowFieldCapability = defineCapability({
               const s2 = separationDir(field, d, ai, col, row, t.x, t.y, !atGoal);
               // **钳模长**（不是归一化）：|sep| ≤ sepW ≤ SEP_MAX_WEIGHT < 1 = |flow| ⇒ 流场恒主导，
               // 而小于上限的力保持原样 ⇒ 「夹中间的不动、站边上的被弹开」这条物理留住了。
-              const sm = Math.sqrt(s2.sx * s2.sx + s2.sy * s2.sy);
+              const sm = len(s2.sx, s2.sy);
               if (sm > 0) {
                 const k = sm > sepW ? sepW / sm : 1;
                 sx = s2.sx * k; sy = s2.sy * k;
@@ -277,10 +280,10 @@ export const flowFieldCapability = defineCapability({
             wantY = sy * a.speed * SEP_SETTLE_SCALE;
           } else {
             // 流场方向（按到达减速带缩放）+ 软分离，再归一 × speed。
-            const fm = Math.sqrt(dx * dx + dy * dy);
+            const fm = len(dx, dy);
             const rawX = (dx / fm) * flowScale + sx;
             const rawY = (dy / fm) * flowScale + sy;
-            const m0 = Math.sqrt(rawX * rawX + rawY * rawY);
+            const m0 = len(rawX, rawY);
             if (m0 === 0) { v.vx = 0; v.vy = 0; stopped++; continue; }   // 理论到不了（|sep|≤0.6<1），兜底
             wantX = (rawX / m0) * a.speed;
             wantY = (rawY / m0) * a.speed;

@@ -211,6 +211,11 @@ export class SystemView implements IWorld {
     if (this.strict) this.assertReadable(type, '取单例');
     return this.root.singleton(type);
   }
+
+  byId(type: ComponentType, idField: string, id: string): EntityId | undefined {
+    if (this.strict) this.assertReadable(type, '按 id 找实体');
+    return this.root.byId(type, idField, id);
+  }
 }
 
 /** 严格模式缺省：环境变量 `ZEROCRAFT_STRICT=1`（throw·vitest/门禁）或 `=report`（盘点）；浏览器无 process → off。 */

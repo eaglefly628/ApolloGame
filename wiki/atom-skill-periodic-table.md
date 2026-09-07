@@ -1,6 +1,7 @@
 # ZeroCraft Preview — 原子 Skill 清单 v6 (游戏元素周期表)
 
 > ⚠ **历史文档（口径已过期）**：原子数/能力数/游戏清单/测试数以机读真相为准（`docs/llm-onboarding.md` §0）。本文仅存考古价值，新 session/新 LLM 勿以此为教材。
+> **原子/能力的机读清单 = `src/assembly/capability-registry.gen.ts`**（生成物·每能力一行 id + provides·`npm run gen:registry` 重生成）；本表没有的 controllable / overlap-detect-3d / navmesh-bake / collision-resolve-3d 以它为准。底层缺什么的评审见 `docs/design/engine-base-tier-review-2026-09-06.md`。
 
 > **判定标准：能用其他原子的组合描述 → 不是原子。每个原子回答一个且仅一个问题。**
 >

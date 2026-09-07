@@ -48,3 +48,17 @@ describe('random atom', () => {
     }
   });
 });
+
+describe('deriveSeed（B-7）', () => {
+  it('同 seed 同 label 同结果；不同 label / 不同 seed 分流；返回 int32；派生流可照常 nextRandom', async () => {
+    const { deriveSeed, nextRandom } = await import('./index.js');
+    expect(deriveSeed(42, 'ai:p1')).toBe(deriveSeed(42, 'ai:p1'));
+    expect(deriveSeed(42, 'ai:p1')).not.toBe(deriveSeed(42, 'ai:p2'));
+    expect(deriveSeed(42, 'ai:p1')).not.toBe(deriveSeed(43, 'ai:p1'));
+    const s = deriveSeed(7, 'meta');
+    expect(Number.isInteger(s) && s >= -2147483648 && s <= 2147483647).toBe(true);
+    const a = { type: 'RandomSeed', seed: s, sequence: 0 } as { type: 'RandomSeed'; seed: number; sequence: number };
+    const b = { type: 'RandomSeed', seed: s, sequence: 0 } as { type: 'RandomSeed'; seed: number; sequence: number };
+    expect([nextRandom(a), nextRandom(a)]).toEqual([nextRandom(b), nextRandom(b)]);
+  });
+});

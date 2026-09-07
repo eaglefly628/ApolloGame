@@ -1,4 +1,5 @@
 import { defineCapability } from '@engine/core/define-capability.js';
+import { worldSeed } from '@engine/core/query.js';
 import { defineComponent } from '@engine/core/define-component.js';
 import { t } from '@engine/core/schema.js';
 import { ScalarValueSchema } from '@engine/protocol/schemas/logic.js';
@@ -8,6 +9,7 @@ import { buildConditionLookup } from './condition.js';
 import { ctxOf, applyWrite, evalValue, writeTargetOf } from '@engine/logic/index.js';
 import { chancePass } from '@atom-skills/index.js';
 import { findScoreTrace, appendScoreEvent } from '../score-trace.js';
+import { cmpStr } from '@engine/math/scalar.js';
 
 // effect-apply —— Condition→Event→**Effect** 的 Effect 侧（链的合龙石）。
 //
@@ -125,13 +127,12 @@ export const effectApplyCapability = defineCapability({
           const ef = world.getComponent<Effect>(eid, 'Effect');
           if (ef && signals.has(ef.onSignal)) hits.push({ eid, ef });
         }
-        hits.sort((a, b) => (a.ef.order ?? 0) - (b.ef.order ?? 0) || (a.eid < b.eid ? -1 : a.eid > b.eid ? 1 : 0));
+        hits.sort((a, b) => (a.ef.order ?? 0) - (b.ef.order ?? 0) || cmpStr(a.eid, b.eid));
 
         // REQ-019：opt-in 计分 trace（仅当世界有 ScoreTrace 单例；限 modify-resource 数值步，redline）。
         const trace = findScoreTrace(world);
         // REQ-E-023②：概率门用的世界 RNG（首个 RandomSeed；roll 推进其序列，确定/录放安全）。
-        let rng: RandomSeed | undefined;
-        { const rid = world.singleton('RandomSeed'); if (rid !== undefined) rng = world.getComponent<RandomSeed>(rid, 'RandomSeed'); } // 黑板单例（P1b）：严格模式多份即抛·生产按创建序取首个（= 旧 for…break 语义）
+        const rng = worldSeed(world); // 黑板单例（P1b）·统一取法（B-3）
 
         for (const { eid, ef } of hits) {
           if (ef.chance && !chancePass(rng, ef.chance.num, ef.chance.den)) continue; // REQ-E-023②：概率未中 → 跳过本效果（roll 已推进 RNG）
@@ -250,7 +251,7 @@ export const effectApplyCapability = defineCapability({
                 if (ef.keepResource) {
                   const keepRes = ctx.lookup!.resource(ef.keepResource);
                   const keep = keepRes ? Math.max(0, Math.floor(keepRes.current)) : 0;
-                  matched.sort((a, b) => a.seq - b.seq || (a.tid < b.tid ? -1 : a.tid > b.tid ? 1 : 0));
+                  matched.sort((a, b) => a.seq - b.seq || cmpStr(a.tid, b.tid));
                   doomedList = matched.slice(keep);
                 }
                 for (const { tid } of doomedList) {

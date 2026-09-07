@@ -37,6 +37,23 @@ export function mulberry32(seed: number): () => number {
   };
 }
 
+// 派生子种子（B-7 · engine-base-tier-review-2026-09-06 §3.2）：同一世界种子 + 一个标签 → 一条独立且可复现的随机流种子
+// （AI 性格流 / sim 外的 meta 流 / 每波刷怪流）。此前 game211 整个 meta-random.ts 只为包一层、game-a 按性格
+// 手派 mulberry32(种子)、spawn-director 自带 seedState。算法：FNV-1a(label) ⊕ seed 再过一轮 mulberry 搅拌 → int32。
+// 用法：`const ai: RandomSeed = { type: 'RandomSeed', seed: deriveSeed(world.seed, 'ai:p2'), sequence: 0 }`，之后照常 nextRandom。
+export function deriveSeed(seed: number, label: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < label.length; i++) {
+    h ^= label.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  let a = ((h ^ (seed | 0)) + 0x6d2b79f5) | 0;
+  let t = Math.imul(a ^ (a >>> 15), a | 1);
+  t = (t + Math.imul(t ^ (t >>> 7), t | 61)) ^ t;
+  a = (t ^ (t >>> 14)) | 0;
+  return a;
+}
+
 // 确定性 Fisher-Yates 洗牌（不改原数组·同 seed 同结果）。卡牌/抽牌/随机排列的单一真相。
 export function seededShuffle<T>(items: readonly T[], seed: number): T[] {
   const out = [...items];

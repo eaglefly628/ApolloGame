@@ -70,6 +70,11 @@ export interface IWorld {
    *  （= 此前各能力「query 取首个 break」的事实语义·零回归）。取代 9 处手写的 for…break。 */
   singleton(type: ComponentType): EntityId | undefined;
 
+  /** 按语义 id 找实体（B-3 · engine-base-tier-review-2026-09-06 §3.2）：持有 `type` 且其 `idField` 字段 === `id` 的
+   *  **创建序首个**实体（= 此前 findByComponentId / buildIdLookup 「首个匹配」语义·零回归）。World 内建索引、
+   *  按类型版本失效——O(1) 取代 8 文件 14 处的线性扫与 7 处手写循环。纯读·不记脏。 */
+  byId(type: ComponentType, idField: string, id: string): EntityId | undefined;
+
   /** 视图的根世界（World 本体 = 自身；SystemView = 它包的 World）。按世界身份做缓存的能力（spatial-query）
    *  用它当键——多个系统视图共享同一份缓存，建索引时刻不随「哪个系统先查」漂移。 */
   readonly root?: IWorld;

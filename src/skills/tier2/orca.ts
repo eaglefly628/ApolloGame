@@ -55,6 +55,8 @@
  */
 
 /** 原码 `RVO_EPSILON`（`src/Vector2.cc`）。 */
+import { cross, dot as vdot, len, len2 } from '@engine/math/vec2.js';
+
 export const RVO_EPSILON = 0.00001;
 
 export interface Vec2 { x: number; y: number }
@@ -91,10 +93,10 @@ export interface OrcaStats { degenerate: number; oneSided: number; infeasible: n
 export const DEGENERATE: Vec2Const = { x: 1, y: 0 };
 interface Vec2Const { readonly x: number; readonly y: number }
 
-const det = (a: Vec2, b: Vec2): number => a.x * b.y - a.y * b.x;
-const dot = (a: Vec2, b: Vec2): number => a.x * b.x + a.y * b.y;
-const absSq = (a: Vec2): number => a.x * a.x + a.y * a.y;
-const norm = (a: Vec2): Vec2 => { const m = Math.sqrt(absSq(a)); return { x: a.x / m, y: a.y / m }; };
+const det = (a: Vec2, b: Vec2): number => cross(a.x, a.y, b.x, b.y);
+const dot = (a: Vec2, b: Vec2): number => vdot(a.x, a.y, b.x, b.y);
+const absSq = (a: Vec2): number => len2(a.x, a.y);
+const norm = (a: Vec2): Vec2 => { const m = len(a.x, a.y); return { x: a.x / m, y: a.y / m }; };
 
 /**
  * 原码 `linearProgram1`：在**第 lineNo 条直线上**求解——把可行区间夹到 [tLeft,tRight]，

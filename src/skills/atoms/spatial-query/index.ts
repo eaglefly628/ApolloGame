@@ -1,6 +1,8 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import type { IWorld, EntityId } from '@engine/core/types.js';
 import type { SpatialIndex, Transform, Tag } from '@engine/protocol/components.js';
+import { cmpStr } from '@engine/math/scalar.js';
+import { len2 } from '@engine/math/vec2.js';
 
 export type { SpatialIndex };
 
@@ -63,7 +65,7 @@ export function nearestByTag(
   const maxR2 = opts?.maxRadius && opts.maxRadius > 0 ? opts.maxRadius * opts.maxRadius : Infinity;
   const consider = (e: Ent): void => {
     if (e.id === opts?.excludeId) return;
-    const dx = e.x - x, dy = e.y - y, d2 = dx * dx + dy * dy;
+    const dx = e.x - x, dy = e.y - y, d2 = len2(dx, dy);
     if (d2 > maxR2) return;
     if (d2 < bestD2 || (d2 === bestD2 && bestId !== undefined && e.id < bestId)) { bestD2 = d2; bestId = e.id; }
   };
@@ -91,7 +93,7 @@ export function queryRange(world: IWorld, x: number, y: number, radius: number):
     for (let cy = cy0; cy <= cy1; cy++) {
       const bucket = idx.posGrid.get(cellKey(cx, cy));
       if (!bucket) continue;
-      for (const e of bucket) { const dx = e.x - x, dy = e.y - y; if (dx * dx + dy * dy <= r2) out.push(e.id); }
+      for (const e of bucket) { const dx = e.x - x, dy = e.y - y; if (len2(dx, dy) <= r2) out.push(e.id); }
     }
   }
   return out;
@@ -105,11 +107,11 @@ export function queryNearest(world: IWorld, x: number, y: number, count: number,
     const t = world.getComponent<Transform>(id, 'Transform')!;
     const dx = t.x - x;
     const dy = t.y - y;
-    scored.push({ id, d2: dx * dx + dy * dy });
+    scored.push({ id, d2: len2(dx, dy) });
   }
   // BUG-005：距离相等按 id 升序 tie-break（与 nearestByTag 一致）→ 不依赖实体构建/遍历序，
   // 两端构建序不同（rejoin/快照恢复后追加实体）也选同一组 → lockstep 不分叉。
-  scored.sort((a, b) => a.d2 - b.d2 || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  scored.sort((a, b) => a.d2 - b.d2 || cmpStr(a.id, b.id));
   return scored.slice(0, count).map((s) => s.id);
 }
 

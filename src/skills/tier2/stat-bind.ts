@@ -1,4 +1,5 @@
 import { defineCapability } from '@engine/core/define-capability.js';
+import { sortedIds } from '@engine/core/query.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld, Component } from '@engine/core/types.js';
 import type { StatBind, ModifierTotals, Stats } from '@engine/protocol/components.js';
@@ -121,7 +122,7 @@ export const statBindCapability = defineCapability({
       writes: [...STAT_BIND_TARGETS],
       consumes: [],
       execute(world: IWorld) {
-        const ids = world.query('StatBind').map(([id]) => id).sort();
+        const ids = sortedIds(world, 'StatBind');
         if (ids.length === 0) return;
 
         // 世界单例 ModifierTotals：本 tick 只查一次（同 dice-roll 找首个 RandomSeed 的缓存惯例）。

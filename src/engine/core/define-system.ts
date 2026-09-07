@@ -24,6 +24,7 @@ export interface TypedWorld<R extends ComponentType, W extends ComponentType, E 
   query(...types: Array<R | W>): Array<[EntityId, Map<ComponentType, Component>]>;
   queryEntities(...types: Array<R | W>): EntityId[];
   singleton(type: R | W): EntityId | undefined;
+  byId(type: R | W, idField: string, id: string): EntityId | undefined;
   emit<Ev>(type: E, event: Ev): void;
   events<Ev>(type: L): readonly Ev[];
   /** 视图的根世界（缓存键用）。 */
