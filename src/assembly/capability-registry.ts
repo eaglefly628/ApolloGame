@@ -10,6 +10,7 @@ import {
   hierarchyResolveCapability,
   hierarchyCascadeCapability,
   tweenCapability,
+  groupGcCapability,
 } from '@skills/tier1/index.js';
 import {
   collisionResolveCapability,
@@ -86,6 +87,7 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   hierarchyResolveCapability,
   hierarchyCascadeCapability,
   tweenCapability,
+  groupGcCapability,
   // tier2
   collisionResolveCapability,
   groundSenseCapability,

@@ -26,6 +26,8 @@
 | 确定性遍历 | `sortedIds(world, ...types)`——**系统里遍历多实体一律用它**（lockstep 序稳定） |
 | 世界随机种子 | `worldSeed(world)`（黑板单例） |
 | 单例组件 | `world.singleton(type)` |
+| 归属 / 阵营（谁的·哪队） | 原子 `g3-owner`：`Owner{ownerId, team}` + `ownerOf teamOf sameTeam isOwnedBy`（`@atom-skills/owner`）——**别再用 Tag 位 / Relation{kind:'owner'} / 自写 side 表达归属** |
+| 有序实体集合（手牌/背包/队伍/座位） | 原子 `g4-group`：`Group{id, members[], capacity?}` + `groupAdd/Remove/Move/InsertAt findGroup`（`@atom-skills/group`）+ 配套 `t1-group-gc`（销毁成员自动摘除）——背包 = Group + capacity |
 | 条件/求值/写入（规则内核） | `@engine/logic`: `ctxOf selfCtx evalCondition evalValue applyWrite`（唯一的一份 clamp） |
 | tick 内事件总线 | `world.emit(type, ev)` / `world.events(type)` + 系统申报 `emits/listens`——**同拍发出→同拍消费的瞬时事件走它**（多读者·不进快照）；跨拍挂起等消费的仍用组件 + consumes（Signal/ResourceModify） |
 

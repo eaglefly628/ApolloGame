@@ -77,6 +77,8 @@
 |---|------|-----------|-----------|
 | G1 | **tag** | `Tag { flags: Bitmask }` | 实体属于哪些分类？ |
 | G2 | **relation** | `Relation { kind, targetId }` | 实体跟谁有什么逻辑关系？（targeting、owned-by） |
+| G3 | **owner**（2026-09-08 补） | `Owner { ownerId, team }` | 它属于谁？站哪边？ |
+| G4 | **group**（2026-09-08 补） | `Group { id, members[], capacity? }` | 它装着哪些实体？什么顺序？最多几个？ |
 
 > tag 用 Bitmask——60Hz 下位运算 O(1)。
 > relation 只处理非空间逻辑关联，空间父子由 hierarchy(A2) 承担。

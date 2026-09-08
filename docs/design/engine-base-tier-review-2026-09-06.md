@@ -203,6 +203,16 @@ Lead 推荐 **B 先行**（纯函数·零风险），`TimerSet` 等第一个真�
 
 **未做（有意）**：A-1 Owner / A-2 Group（等 owner 判）；B-5 多计时器（等真需求）；游戏侧消费迁移（各游戏工单·红旗棘轮盯）；5 处 `for…push…sort()` 异形。
 
+### 第三波 · 两个原子（owner 2026-09-08 判 A：Owner 与 Group 都补；现有游戏不重写）
+
+| 项 | 落点 | 说明 |
+|---|---|---|
+| G3 owner | `src/skills/atoms/owner/`（`g3-owner`）· 协议 `combat.ts Owner` | `Owner{ownerId, team}` 纯数据原子；助手 `ownerOf`（主人销毁判空）/ `teamOf` / `sameTeam` / `isOwnedBy` |
+| G4 group | `src/skills/atoms/group/`（`g4-group`）· 协议 `combat.ts Group` | `Group{id, members[], capacity?}`；助手 `groupAdd/InsertAt/Remove/Move`（拒重复·满则拒·move 原子）· `findGroup`（走 byId） |
+| T1 group-gc | `src/skills/tier1/group-gc.ts`（`t1-group-gc`） | Cleanup 相位；销毁成员同拍从所有集合摘除；静止世界零写入（hash/写序号稳定·测试钉） |
+| 登记 | `atoms/index.ts`（32 核心）· `tier1/index.ts` · `capability-registry.ts` · 重生成 `component-universe.gen.ts` / `capability-registry.gen.ts` · onboarding / wiki / base-lib 手册各一行 | |
+| **不迁**（owner 令） | — | 5 种旧归属编码与既有数组字段原样保留；新能力/新游戏读新卡。`t2-turn-order`（座位环 + 游标）待第一个牌桌游戏拉动时立项 |
+
 ### 第二波（owner 2026-09-08「补齐再列」）
 
 | 项 | 落点 | 说明 |
