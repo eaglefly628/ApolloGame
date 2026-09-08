@@ -73,7 +73,8 @@ export {
 };
 
 // 世界级服务的纯函数助手
-export { nextRandom, randomInt, chancePass, mulberry32, seededShuffle, deriveSeed } from './random/index.js';
+export { nextRandom, randomInt, chancePass, mulberry32, seededShuffle, deriveSeed, createShuffleBag, drawFromBag, gaussianApprox } from './random/index.js';
+export type { ShuffleBag } from './random/index.js';
 export { queryRange, queryNearest } from './spatial-query/index.js';
 
 // 全部核心原子（30 个；用于注册到 World 或 assembly 蓝图）

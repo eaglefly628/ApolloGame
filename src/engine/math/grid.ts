@@ -93,3 +93,69 @@ export function forEachNeighbor(
     if (fn(nc, nr, nr * cols + nc) === false) return;
   }
 }
+
+/** Bresenham 整数直线：从 (c0,r0) 到 (c1,r1) 经过的格（含两端·确定顺序）。 */
+export function bresenhamLine(c0: number, r0: number, c1: number, r1: number): Array<readonly [number, number]> {
+  const out: Array<readonly [number, number]> = [];
+  const dx = Math.abs(c1 - c0);
+  const dy = -Math.abs(r1 - r0);
+  const sx = c0 < c1 ? 1 : -1;
+  const sy = r0 < r1 ? 1 : -1;
+  let err = dx + dy;
+  let c = c0; let r = r0;
+  for (;;) {
+    out.push([c, r]);
+    if (c === c1 && r === r1) break;
+    const e2 = 2 * err;
+    if (e2 >= dy) { err += dy; c += sx; }
+    if (e2 <= dx) { err += dx; r += sy; }
+  }
+  return out;
+}
+
+/** 视线：(c0,r0) 到 (c1,r1) 的 Bresenham 路径上（不含起点·含终点）是否无一格被 blocked 判真。 */
+export function lineOfSight(c0: number, r0: number, c1: number, r1: number, blocked: (c: number, r: number) => boolean): boolean {
+  const line = bresenhamLine(c0, r0, c1, r1);
+  for (let i = 1; i < line.length; i++) {
+    const [c, r] = line[i];
+    if (blocked(c, r)) return false;
+  }
+  return true;
+}
+
+/**
+ * 泛洪填充（BFS·四邻·确定顺序）：从 start 下标出发，经 passable(i) 为真的格可达的全部下标（含起点）。
+ * 返回按访问序的下标数组；起点不可通行 → 空数组。
+ */
+export function floodFill(start: number, cols: number, rows: number, passable: (i: number) => boolean, dirs: ReadonlyArray<readonly [number, number]> = NEIGHBORS4): number[] {
+  if (start < 0 || start >= cols * rows || !passable(start)) return [];
+  const seen = new Uint8Array(cols * rows);
+  const out: number[] = [start];
+  seen[start] = 1;
+  for (let head = 0; head < out.length; head++) {
+    const i = out[head];
+    const c = i % cols; const r = Math.floor(i / cols);
+    for (const [dc, dr] of dirs) {
+      const nc = c + dc; const nr = r + dr;
+      if (nc < 0 || nr < 0 || nc >= cols || nr >= rows) continue;
+      const ni = nr * cols + nc;
+      if (seen[ni] || !passable(ni)) continue;
+      seen[ni] = 1;
+      out.push(ni);
+    }
+  }
+  return out;
+}
+
+/** 连通域标号（四邻·确定序）：返回每格的分量号（-1 = 不可通行）与分量数。 */
+export function connectedComponents(cols: number, rows: number, passable: (i: number) => boolean, dirs: ReadonlyArray<readonly [number, number]> = NEIGHBORS4): { label: Int32Array; count: number } {
+  const n = cols * rows;
+  const label = new Int32Array(n).fill(-1);
+  let count = 0;
+  for (let i = 0; i < n; i++) {
+    if (label[i] !== -1 || !passable(i)) continue;
+    for (const j of floodFill(i, cols, rows, passable, dirs)) label[j] = count;
+    count++;
+  }
+  return { label, count };
+}

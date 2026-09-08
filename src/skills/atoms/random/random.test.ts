@@ -62,3 +62,33 @@ describe('deriveSeed（B-7）', () => {
     expect([nextRandom(a), nextRandom(a)]).toEqual([nextRandom(b), nextRandom(b)]);
   });
 });
+
+describe('shuffleBag / gaussianApprox（§6 补齐）', () => {
+  it('抽签袋：一轮内每项恰出现一次·抽空自动重洗·同 seed 同序列·空袋 undefined', async () => {
+    const { createShuffleBag, drawFromBag } = await import('./index.js');
+    const seed = { type: 'RandomSeed', seed: 99, sequence: 0 } as { type: 'RandomSeed'; seed: number; sequence: number };
+    const bag = createShuffleBag(['a', 'b', 'c', 'd'], seed);
+    const round1 = [drawFromBag(bag), drawFromBag(bag), drawFromBag(bag), drawFromBag(bag)];
+    expect([...round1].sort()).toEqual(['a', 'b', 'c', 'd']);
+    const round2 = [drawFromBag(bag), drawFromBag(bag), drawFromBag(bag), drawFromBag(bag)];
+    expect([...round2].sort()).toEqual(['a', 'b', 'c', 'd']);
+    const seed2 = { type: 'RandomSeed', seed: 99, sequence: 0 } as typeof seed;
+    const bag2 = createShuffleBag(['a', 'b', 'c', 'd'], seed2);
+    expect([drawFromBag(bag2), drawFromBag(bag2), drawFromBag(bag2), drawFromBag(bag2)]).toEqual(round1);
+    expect(drawFromBag(createShuffleBag([], seed))).toBeUndefined();
+  });
+
+  it('正态近似：确定性·均值/方差落在合理范围·推进 sequence 12/次', async () => {
+    const { gaussianApprox } = await import('./index.js');
+    const s = { type: 'RandomSeed', seed: 7, sequence: 0 } as { type: 'RandomSeed'; seed: number; sequence: number };
+    const xs: number[] = [];
+    for (let i = 0; i < 2000; i++) xs.push(gaussianApprox(s, 10, 2));
+    expect(s.sequence).toBe(24000);
+    const mean = xs.reduce((a, b) => a + b, 0) / xs.length;
+    const varc = xs.reduce((a, b) => a + (b - mean) * (b - mean), 0) / xs.length;
+    expect(Math.abs(mean - 10)).toBeLessThan(0.2);
+    expect(Math.abs(Math.sqrt(varc) - 2)).toBeLessThan(0.2);
+    const t = { type: 'RandomSeed', seed: 7, sequence: 0 } as typeof s;
+    expect(gaussianApprox(t, 10, 2)).toBe(xs[0]);
+  });
+});

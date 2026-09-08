@@ -165,15 +165,15 @@ Lead 推荐 **B 先行**（纯函数·零风险），`TimerSet` 等第一个真�
 | 向量 | 旋转 / 角度 | 已有（数据化） | 旋子常量 cosStep/sinStep 由 authoring 助手算好写进数据（orbit-motion 先例）；sim 内无 sin/cos，这是设计不是缺口 |
 | 网格 | index / colOf / rowOf / inBounds / adjacent4 / cellFloor / cellNearest / cellCenter / NEIGHBORS4/8 / forEachNeighbor | **本轮补** `engine/math/grid` | 6 定义 + 22 处裸写收敛；floor/round 分名 |
 | 网格 | 六边形（axial/odd-r/距离/邻接/A*） | 已有 `tier2/hex.ts` | 不并入 grid（另一套坐标系） |
-| 网格 | Bresenham 视线 / 泛洪填充 / 连通域 | 待拉动 | 消消乐与 block-grid 各有局部实现，但形状不同；第一个要「视线」的游戏立项时下沉 |
+| 网格 | Bresenham 视线 / 泛洪填充 / 连通域 | **本轮补** `grid.bresenhamLine/lineOfSight/floodFill/connectedComponents` | owner 2026-09-08 令补齐 |
 | 几何 | AABB / SAT / 接触法线 / 3D SAT / 导航栅格 | 已有 `engine/spatial` | |
-| 几何 | 线段相交 / 点在多边形内 / 射线 | 待拉动 | spatial-query 宣传的射线未实现；无消费方 |
+| 几何 | 线段相交 / 点在多边形内 / 射线 | **本轮补** `engine/math/geom2` | segmentsIntersect / segmentIntersectT / pointInPolygon / pointSegmentDist2 / raycastAabb / raycastCircle |
 | 图 | A*（图无关·整数 id·确定性 tie-break）· 多源 Dijkstra 积分场 | 已有 `spatial/astar` · `tier2/flow-field-core` | hex A* 未迁到通用 astar 是已记的债 |
 | 随机 | nextRandom / randomInt / chancePass / mulberry32 / seededShuffle | 已有 `atoms/random` | |
 | 随机 | deriveSeed（流派生） | **本轮补** | game211 meta-random / game-a 性格流 / spawn-director 私藏副本的共同缺件 |
-| 随机 | 加权抽取 / 抽签袋（shuffle-bag）/ 正态近似 | 部分已有 | weighted-pick 已有；抽签袋与正态（用均匀和·无 log/cos）待拉动 |
-| 时间 | Timer 原子 / tween 缓动（多项式） | 已有 | |
-| 时间 | tickDown 统一步进 · TimerSet 多计时器 | 待 owner 判（§3.2 B-5） | 7 处自计时先收成一个纯函数；多计时器等真需求 |
+| 随机 | 加权抽取 / 抽签袋（shuffle-bag）/ 正态近似 | 已有 + **本轮补** | weighted-pick 已有；`createShuffleBag/drawFromBag`、`gaussianApprox`（12 均匀和·无 log/cos）补齐 |
+| 时间 | Timer 原子 / 缓动曲线 | 已有 + **本轮补** `engine/math/ease` | tween 的私有 switch 抽成共享曲线（tween 改薄包装·逐字同） |
+| 时间 | 计时步进 · TimerSet 多计时器 | **本轮补** `engine/math/tick.advanceTimer/everyN/remaining/progress`（timer 原子改调它） · 多计时器待 owner 判 | 7 处自计时是否迁看各自语义（不强迁） |
 | 索引 | byId（语义 id → 实体）· sortedIds（确定性遍历）· worldSeed | **本轮补** `World.byId` / `engine/core/query` | 三条查找路径归一；28 处手写遍历归一 |
 | 集合 | 有序实体集合 Group | 待 owner 判（§3.1 A-2） | 手牌/背包/队伍/座位的共同形 |
 | 归属 | Owner | 待 owner 判（§3.1 A-1） | |
@@ -182,10 +182,10 @@ Lead 推荐 **B 先行**（纯函数·零风险），`TimerSet` 等第一个真�
 | 数据糖 | 时长 "2s" · Tag 名字 "enemy\|boss" | 已有（P2d）· **本轮补**（B-8） | 装载期折算·零运行时改动 |
 | 颜色 | hex ↔ rgb / 颜色插值 | 不进 sim | 表现层（渲染器/UI 主题）已有各自实现，sim 不应碰颜色数学 |
 | 字符串 | 数字格式化 / 模板代入 | 已有 UI 层 `Label.format` · manifest `{{param}}` | 不进 sim |
-| 哈希 | fnv1aHex | 已有 `net/determinism` | flow-field-core 里那份本地 FNV 待迁 |
-| 事件 | tick 内总线 emit/events | 已有（P1b）·零消费 | 治理项：先让 tier2/3 用起来，再谈新事件件 |
+| 哈希 | fnv1aHex · fnv1a32 / hashInts / fnvMixInt | 已有 + **本轮补** `engine/math/hash` | flow-field-core 的本地 mix 已改调（逐位同） |
+| 事件 | tick 内总线 emit/events | 已有（P1b） | owner 2026-09-08：保留·后续新能力/新游戏用它消费；已写进 `playbooks/base-lib.md` |
 
-**判断**：标准游戏工具箱里「本仓真没有且今天就有多处手写」的，本轮全补了；剩下的要么是「有了没人用」（治理），要么是「标准但本仓无消费方」（等拉动·每件都是半天活·不预建）。底层功能库这层不会再是隐形的：`src/engine/math` 现在是周期表旁边那张「工具表」。
+**判断**：标准游戏工具箱里的 sim 面件，本轮**全部补齐**（owner 2026-09-08 令「补齐再列」·推翻 Lead 原「等拉动」立场）；有意不做的只剩定点数、颜色数学进 sim、时间缩放（理由 §3.4）。`src/engine/math` 现在是周期表旁边那张「工具表」，入口手册 `docs/playbooks/base-lib.md`——owner 明令：event-log / local-store / 事件总线保留，后面做的时候让他们用这个消费；`game-skill-audit` 的 engineTwin 红旗盯手写同形。
 
 ## 施工记录（owner 2026-09-07 令「先开工底层库治理」·第一波 · 零行为变化）
 
@@ -202,6 +202,20 @@ Lead 推荐 **B 先行**（纯函数·零风险），`TimerSet` 等第一个真�
 | 文档卫生 | wiki 周期表头注指向 gen 注册表；Shape（polygon/vertices/category/mask）· SpawnRequest（source）· Tween（keep）· StringSet（scope）原子 schema 补齐到接口 | |
 
 **未做（有意）**：A-1 Owner / A-2 Group（等 owner 判）；B-5 多计时器（等真需求）；游戏侧消费迁移（各游戏工单·红旗棘轮盯）；5 处 `for…push…sort()` 异形。
+
+### 第二波（owner 2026-09-08「补齐再列」）
+
+| 项 | 落点 | 说明 |
+|---|---|---|
+| 几何 | `engine/math/geom2.ts` | segmentsIntersect / segmentIntersectT / pointInPolygon（射线法·边上算内·凹多边形）/ pointSegmentDist2 / raycastAabb（slab）/ raycastCircle |
+| 网格算法 | `engine/math/grid.ts` 增 | bresenhamLine / lineOfSight / floodFill（BFS 确定序）/ connectedComponents |
+| 缓动 | `engine/math/ease.ts` | linear/easeIn/easeOut/easeInOut/easeSmooth/easeOutBack；`tier1/tween` 改薄包装（函数体逐字同） |
+| 哈希 | `engine/math/hash.ts` | fnv1a32 / hashInts / fnvMixInt；`flow-field-core.bucketKey` 改调（逐位同） |
+| 计时步进 | `engine/math/tick.ts` | advanceTimer（= timer-advance 语义·原子改调它）/ everyN / remaining / progress |
+| 随机 | `atoms/random` 增 | createShuffleBag / drawFromBag（不放回·抽空重洗·状态可序列化）· gaussianApprox（Irwin–Hall·无 log/cos） |
+| 手册 | `docs/playbooks/base-lib.md` + 索引登记（索引封顶 4700→4900·理由在基线 _doc） | 「先查后写」入口：数学 / 查询 / 事件总线 / 随机 / 数据糖 / 共享件（event-log · persist · 牌码 · 修正栈 · 宿主壳）；手写同形 = engineTwin 红旗 |
+| 自测 | `engine/math/math-extra.test.ts` · `atoms/random/random.test.ts` | 与被替换实现逐位对拍（ease switch · flow-field mix · timer-advance）+ 边界（凹多边形/共线/零长段/背向射线/停表/loop 归零） |
+
 
 ---
 

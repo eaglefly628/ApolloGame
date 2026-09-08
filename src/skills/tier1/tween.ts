@@ -1,4 +1,5 @@
 import { defineCapability } from '@engine/core/define-capability.js';
+import { ease as easeBy } from '@engine/math/ease.js';
 import type { IWorld } from '@engine/core/types.js';
 import type { Tween, Transform, Color } from '@engine/protocol/components.js';
 
@@ -12,18 +13,8 @@ import type { Tween, Transform, Color } from '@engine/protocol/components.js';
 // 逻辑数值渐变请用整数分步（timer + ResourceModify）。
 // 用途：立绘淡入(Color.alpha)、立绘滑入/镜头缓动(Transform.x/y)。
 
-function ease(t: Tween['easing'], x: number): number {
-  switch (t) {
-    case 'linear':
-      return x;
-    case 'easeIn':
-      return x * x;
-    case 'easeOut':
-      return x * (2 - x);
-    case 'easeInOut':
-      return x < 0.5 ? 2 * x * x : 1 - ((-2 * x + 2) * (-2 * x + 2)) / 2;
-  }
-}
+// 曲线本体抽到 engine/math/ease（B 补齐·函数体逐字同 → 零行为变化）；本地名保留给下文调用。
+const ease = (t: Tween['easing'], x: number): number => easeBy(t, x);
 
 // 硬编码点号访问的单态写入：避免 comp[field]=value 的动态下标让 V8 放弃 JIT 内联（Reviewer #5）。
 function writeField(world: IWorld, eid: string, target: Tween['target'], value: number): void {

@@ -1,6 +1,7 @@
 import type { FlowField, FlowAgent, Transform } from '@engine/protocol/components.js';
 import type { OrcaAgent } from './orca.js';
 import { index, indexOrNeg, cellFloor } from '@engine/math/grid.js';
+import { FNV_OFFSET, fnvMixInt } from '@engine/math/hash.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  flow-field-core —— 流场寻路的**纯函数核**（owner 2026-09-05 令「避免超大 skill·底层要沉淀」）。
@@ -433,8 +434,8 @@ export function flowFieldLookups(): number { return lookups; }
  * 不划算也没必要——分桶摘要 + 精确比对两者兼得。
  */
 function bucketKey(field: FlowField): string {
-  let h = 0x811c9dc5;
-  const mix = (n: number): void => { h ^= n | 0; h = Math.imul(h, 0x01000193) >>> 0; };
+  let h = FNV_OFFSET;
+  const mix = (n: number): void => { h = fnvMixInt(h, n); }; // engine/math/hash（逐位同旧本地实现）
   mix(field.cols); mix(field.rows);
   mix(Math.round(field.cellSize * 1000)); mix(Math.round(field.originX * 1000)); mix(Math.round(field.originY * 1000));
   mix(field.goals.length);
