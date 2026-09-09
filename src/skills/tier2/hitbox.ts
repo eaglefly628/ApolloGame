@@ -1,4 +1,5 @@
 import { defineCapability } from '@engine/core/define-capability.js';
+import { multiplierAgainst } from './damage-table.js';
 import type { IWorld } from '@engine/core/types.js';
 import type { Trigger, Hitbox, Tag, Status, Resource, DestroyRequest, PrefabOrigin, Transform, SpawnRequest } from '@engine/protocol/components.js';
 import { findByComponentId, findSourceResource } from '@engine/core/query.js';
@@ -111,6 +112,7 @@ export const hitboxCapability = defineCapability({
           resource: { type: 'string', describe: '目标身上要改的 Resource id（如 hp）' },
           amount: { type: 'number', describe: '固定伤害（正数 = 伤害，内部按负向施加）' },
           fracOfMax: { type: 'number', describe: '计算伤害 = 目标该资源 max 的此分数（0.2 = 20%）' },
+          damageType: { type: 'string', describe: '伤害类型（可选）：与目标 Armor.kind 查世界 DamageTable 乘倍率（t2-damage-table）' },
           targetMask: { type: 'number', describe: '仅作用于 Tag.flags 含此位的目标（阵营过滤；0 = 不限）' },
           requireMask: { type: 'number', describe: '仅作用于 Status.flags 含齐此位的目标（如 frozen）' },
           requireHpFracBelow: { type: 'number', describe: '仅作用于 hp 比例 < 此值的目标（残血技；REQ-F-061）' },
@@ -135,7 +137,7 @@ export const hitboxCapability = defineCapability({
         },
       },
     },
-    reads: ['Trigger', 'Hitbox', 'Tag', 'Status', 'Resource', 'PrefabOrigin', 'Transform'], // 后两项=per-caster 溯源 + 命中几何（申报对账·根因①）
+    reads: ['Trigger', 'Hitbox', 'Tag', 'Status', 'Resource', 'PrefabOrigin', 'Transform', 'Armor', 'DamageTable'], // 后两项=per-caster 溯源 + 命中几何（申报对账·根因①）；Armor/DamageTable=克制表（t2-damage-table·可选）
     writes: ['ResourceModify', 'Status', 'OverTime', 'DestroyRequest', 'SpawnRequest'],
     consumes: [],
   },
@@ -145,7 +147,7 @@ export const hitboxCapability = defineCapability({
   systems: [
     {
       id: 'hitbox',
-      reads: ['Trigger', 'Hitbox', 'Tag', 'Status', 'Resource', 'PrefabOrigin', 'Transform'], // 后两项=per-caster 溯源 + 命中几何（申报对账·根因①）
+      reads: ['Trigger', 'Hitbox', 'Tag', 'Status', 'Resource', 'PrefabOrigin', 'Transform', 'Armor', 'DamageTable'], // 后两项=per-caster 溯源 + 命中几何（申报对账·根因①）；Armor/DamageTable=克制表（t2-damage-table·可选）
       // DestroyRequest：REQ-F-044 consumeOnHit 自毁（写者→cascade/destroy-apply 单向汇入，无回边）。
       // SpawnRequest：onHit 命中特效——唯一读+consume 它的是 prefab（t3-prefab），prefab 不写
       // Trigger/Hitbox/Tag/Status/Resource，只产生本系统→prefab 单向边，不成环（见文件头/回归测试）。
@@ -197,6 +199,8 @@ export const hitboxCapability = defineCapability({
           }
           let dmg = base;
           if (hb.fracOfMax) dmg += Math.floor(maxOf(world, target, hb.resource) * hb.fracOfMax);
+          // t2-damage-table：damageType + 目标 Armor + 世界 DamageTable 三者齐备才乘（缺任一 ×1·零回归）；整数伤害保持整数。
+          if (hb.damageType) { const m = multiplierAgainst(world, hb.damageType, target); if (m !== 1) dmg = Math.floor(dmg * m); }
           if (dmg !== 0) {
             queueResourceMod(world, target, hb.resource, -dmg, 'local');
           }

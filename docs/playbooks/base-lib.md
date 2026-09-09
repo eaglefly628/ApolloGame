@@ -55,6 +55,21 @@
 | 牌码 / 建牌堆 | `@skills/tier2/cardboard-codec.js`: `cardCode codeSuit codeRank isJoker buildDeck({decks,jokers,minRank})` | cards.md |
 | 修正栈聚合 | `@skills/tier2/modifier-stack.js: aggregateModifiers` | combat.md |
 | 宿主壳 / 运行环 / 美术装载 | `engine/host mountHost createRunLoop` · `assets/game-art-load` | game-production.md |
+| 多语言串表（UI 文案·`@t/key?n=3`） | `@services/i18n`: `createStrings(table, lang)` → `t has setLang` · `withStrings(dataSource, strings)` | ui.md |
+| 成就台账（解锁/进度·本地持久） | `@services/persist`: `createAchievementLedger(defs, {key?})` → `unlock progress has list` | save-platform.md |
+
+## 5b. 预建高频件（owner 2026-09-09「预先写高频控件」·全部纯数据 + 引擎解释）
+
+| 要做什么 | 用 | 说明 |
+|---|---|---|
+| 回合轮转（座位环/游标/方向/跳过） | `t2-turn-order`: `TurnOrder{order, current, direction, advanceSignal, changedSignal?, roundSignal?, skipFlag?}` · `currentSeat nextIndex` | 牌桌/回合制 |
+| 多冷却（一实体多槽） | `t2-cooldown`: `Cooldowns{slots:[{id,duration,remaining}], startOn, readySignal?, blockedSignal?}` · 条件叶 `{kind:"cooldown", id, ready}` · `cooldownProgress` | Commit 相位 |
+| 兵种/属性克制 | `t2-damage-table`: 世界单例 `DamageTable{rows}` + 目标 `Armor{kind}` + `Hitbox.damageType` | 查不到 = ×1 |
+| 背包堆叠 | `t2-inventory`: `Inventory{slots, maxStack, items}` · `invAdd invRemove invSplit invMerge invMove invSort` | 纯函数 |
+| 骰子修正 | `@skills/tier2/dice`: `rollWithMods(sides, rng, {bonus, advantage, rerollBelow, explodeOn…})` · `rollDist winProb expectedValue` | |
+| 限流调度（同拍最多 N 起·配对去重） | `@skills/tier2/rate-limit`: `planStarts(cands, cfg, state)` · `pairKey pairMembers` | 纯函数 |
+| 传送带队列（同拍 N 份 → N 个上带·容量/突破·出带前移） | `t2-conveyor-queue`: `ConveyorQueue{template, enqueueSignal, capacity, burstCapacity?, burstFlag?, popSignal?, fullSignal?, originX/Y, stepX/Y}` | PostResolve；需 t3-prefab + e1-timer + t1-lifetime + k2-destroy |
+| 2D 粒子（爆发/出生/冲击环/喷射/拖尾） | `l7-vfx2d`: `Vfx2D{kind, trigger?, count, life, speed, spread, color, colorEnd, gravity, shape, blend}` | 纯表现·不进 hash·CanvasRenderer 自带解释器 |
 
 ## 6. 查不到怎么办
 

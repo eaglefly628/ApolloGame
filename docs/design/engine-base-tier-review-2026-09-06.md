@@ -213,6 +213,24 @@ Lead 推荐 **B 先行**（纯函数·零风险），`TimerSet` 等第一个真�
 | 登记 | `atoms/index.ts`（32 核心）· `tier1/index.ts` · `capability-registry.ts` · 重生成 `component-universe.gen.ts` / `capability-registry.gen.ts` · onboarding / wiki / base-lib 手册各一行 | |
 | **不迁**（owner 令） | — | 5 种旧归属编码与既有数组字段原样保留；新能力/新游戏读新卡。`t2-turn-order`（座位环 + 游标）待第一个牌桌游戏拉动时立项 |
 
+### 第四波 · 预建高频件（owner 2026-09-09「都实现了吧，one by one 不要来问我」+「预先写高频控件也可以」）
+
+| 项 | 落点 | 说明 |
+|---|---|---|
+| 2D 粒子通道 | `atoms/vfx2d/`（`l7-vfx2d`·第 33 核心原子）· `renderer/vfx2d.ts` · `canvas-renderer.ts` 钩子 · `NON_DETERMINISTIC += Vfx2D` | render-only：burst / pop / ring / stream / trail；触发 = 同实体 Signal；渲染器私有粒子池（mulberry32·种子 = 实体 id 哈希）；sim 零感知、不进 hash |
+| 多语言串表 | `services/i18n/`（`createStrings` / `interpolate` / `parseTRef` / `withStrings`） | UI 数据源装饰：`@t/key?n=3` 由 value 通道折成串；缺 key 回 key 本身 |
+| 回合轮转 | `tier2/turn-order.ts`（`t2-turn-order`·Update） | `TurnOrder{order,current,round,direction,advanceSignal,changedSignal?,roundSignal?,skipFlag?}`；跳过 = Flag `${skipFlag}:${座位}`；入 p0 大 SCC（同 dice-roll 等 Signal 读写者·基线登记） |
+| 多冷却 | `tier2/cooldown.ts`（`t2-cooldown`·Commit）· 条件叶 `{kind:'cooldown'}`（`engine/logic` + 协议 + schema）· event-when / self-rule / flow / timeline reads += Cooldowns | 就绪才开·否则 blockedSignal（「什么都没发生」可见）；放 Commit 避开与 event-when 的 Update 环 |
+| 骰子修正 | `tier2/dice.ts` 增 | `rollWithMods`（bonus/floor/twice/advantage/disadvantage/rerollBelow/explodeOn·爆炸封顶 8）· `rollDist winProb expectedValue` |
+| 背包堆叠 | `tier2/inventory.ts`（`t2-inventory`·无 system） | `Inventory{slots,maxStack,items}` + 14 个纯函数（加/减/拆/合/移/排序·满则拒） |
+| 克制表 | `tier2/damage-table.ts`（`t2-damage-table`）· `hitbox.ts` 接线（`Hitbox.damageType`·reads += Armor/DamageTable） | 缺任一 = ×1 → 现有游戏逐字旧伤害（测试以无 damageType 基线对拍） |
+| 限流调度 | `tier2/rate-limit.ts`（纯函数） | `planStarts`：同拍最多 N 起 · 最小间隔 · 配对去重（`pairKey`） |
+| 成就台账 | `services/persist/achievements-ledger.ts` | 在 localStore/jsonCodec 上：解锁/进度/列举，不进 sim |
+| 传送带队列 | `tier2/conveyor-queue.ts`（`t2-conveyor-queue`·PostResolve） | REQ-G102-BURST 下沉：同拍 N 份 enqueueSignal → N 个载体实体各挂 SpawnRequest + Timer{life}（prefab-spawn 展开·lifetime 回收）；容量/突破 Flag/满发 fullSignal/popSignal 出带/成员按 PrefabOrigin.source 归属并排位。**相位教训**：放 Commit 经 Flag→本系统→Signal→effect-apply 闭环；放 PostResolve 且**只写不读 Transform** 才不与 hierarchy-resolve/orbit-motion 结环（SCC 棘轮两次报红实证） |
+| 登记 | `tier2/index.ts` · `capability-registry.ts` · `atoms/index.ts`（33 核心）· 重生成 universe / gen 注册表 / manifest 基线 · `PHASE_BASELINE` p14 += conveyor-queue · p20 += cooldown · `SCC_BASELINE` p0 += turn-order · onboarding 原子数 · base-lib 手册 §5/§5b | |
+
+**本波有意未做**：输入层重做（上一轮评审 P3·不是库）；flow-field M2–M4（自有 REQ）；现有游戏迁移到新件（owner 令「前面写过的游戏没必要重写」）。
+
 ### 第二波（owner 2026-09-08「补齐再列」）
 
 | 项 | 落点 | 说明 |

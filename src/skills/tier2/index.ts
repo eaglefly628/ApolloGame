@@ -38,8 +38,8 @@ export { cardPlayCapability, decodeCard, encodeCard } from './card-play.js';
 // dice-roll（REQ-GAMED #1）：掷一份声明好的骰池——rollOnSignal 触发→消费 RandomSeed 确定性掷 DicePool→写 RolledDice。
 // 锁定重掷（只重掷未锁骰）+ 结算前禁骰（#4 并入）。骰能力族：对掷 opposedRoll 为同族纯函数（dice.ts，非 capability）。
 export { diceRollCapability } from './dice-roll.js';
-export { rollDicePool, applyBanFilter, opposedRoll, OPPOSED_MAX_REROLL } from './dice.js';
-export type { TiePolicy, OpposedResult } from './dice.js';
+export { rollDicePool, applyBanFilter, opposedRoll, OPPOSED_MAX_REROLL, rollWithMods, rollDist, winProb, expectedValue, NO_ROLL_MODS, EXPLODE_CAP } from './dice.js';
+export type { TiePolicy, OpposedResult, RollMods } from './dice.js';
 // draft-offer（REQ-SURVIVOR编排 E1）：Roguelite 升级三选一抽选纯函数核（非 capability·先例见 dice.ts）——
 // 按已持有/槽位满否过滤候选池 → 加权抽 N 个不重复 offer → applyPick 回填。种子化确定性。
 export { rollOffer, applyPick, isEligible } from './draft-offer.js';
@@ -145,3 +145,16 @@ export type {
 // 牌码编解码 + 建牌堆（纯函数·非 capability·B-6）。
 export { cardCode, codeSuit, codeRank, isJoker, buildDeck, SUIT_SPADE, SUIT_HEART, SUIT_DIAMOND, SUIT_CLUB, RANK_JACK, RANK_QUEEN, RANK_KING, RANK_ACE, RANK_SMALL_JOKER, RANK_BIG_JOKER } from './cardboard-codec.js';
 export type { DeckSpec } from './cardboard-codec.js';
+// owner 2026-09-09「都实现·预建高频件」：回合轮转 / 多冷却 / 克制表 / 背包堆叠 / 限流调度（纯函数）。
+export { turnOrderCapability, currentSeat, nextIndex } from './turn-order.js';
+export type { TurnOrder } from './turn-order.js';
+export { cooldownCapability, cooldownReady, cooldownStart, cooldownProgress, cooldownSlot, findCooldownHolder } from './cooldown.js';
+export type { Cooldowns, CooldownSlot } from './cooldown.js';
+export { damageTableCapability, damageMultiplier, multiplierAgainst, findDamageTable } from './damage-table.js';
+export type { DamageTable, Armor } from './damage-table.js';
+export { inventoryCapability, invAdd, invRemove, invCount, invHas, invCanAdd, invFreeSlots, invSplit, invMerge, invMove, invSort, findInventory } from './inventory.js';
+export type { Inventory, InventoryStack } from './inventory.js';
+export { planStarts, pairKey, pairMembers } from './rate-limit.js';
+export type { RateLimitConfig, RateLimitState, Candidate } from './rate-limit.js';
+export { conveyorQueueCapability, effectiveCapacity } from './conveyor-queue.js';
+export type { ConveyorQueue } from './conveyor-queue.js';

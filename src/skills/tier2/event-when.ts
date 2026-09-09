@@ -52,7 +52,7 @@ export const eventWhenCapability = defineCapability({
         describe: '某 EventWhen 这帧触发了。每帧先清后标，直接挂在该 EventWhen 实体上，下游 query Signal 消费。',
       }),
     },
-    reads: ['EventWhen', 'Resource', 'Flag', 'State', 'Timer', 'StringVar'], // Timer/StringVar：条件树 kind:'timer'/'string' 经 buildConditionLookup 读（P1a 严格模式补齐·此前漏报）
+    reads: ['EventWhen', 'Resource', 'Flag', 'State', 'Timer', 'StringVar', 'Cooldowns'], // Timer/StringVar：条件树 kind:'timer'/'string' 经 buildConditionLookup 读（P1a 严格模式补齐·此前漏报）
     writes: ['Signal', 'EventWhen'], // EventWhen：edge 模式改自身 armed（P1a 严格模式补齐·此前漏报）
     consumes: [],
   },
@@ -62,7 +62,7 @@ export const eventWhenCapability = defineCapability({
   systems: [
     {
       id: 'event-when',
-      reads: ['EventWhen', 'Resource', 'Flag', 'State', 'Timer', 'StringVar'], // Timer/StringVar：条件树 kind:'timer'/'string' 经 buildConditionLookup 读（P1a 严格模式补齐·此前漏报）
+      reads: ['EventWhen', 'Resource', 'Flag', 'State', 'Timer', 'StringVar', 'Cooldowns'], // Timer/StringVar：条件树 kind:'timer'/'string' 经 buildConditionLookup 读（P1a 严格模式补齐·此前漏报）
       writes: ['Signal', 'EventWhen'], // EventWhen：edge 模式改自身 armed（P1a 严格模式补齐·此前漏报）
       consumes: [],
       execute(world) {

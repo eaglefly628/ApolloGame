@@ -90,7 +90,7 @@ export const selfRuleCapability = defineCapability({
         describe: '实体本地规则：对自身组件求 when、对自身施 do。once=上升沿一次（迟滞）；缺省每拍。whenGlobal=按全局 id 求值的阶段门(REQ-F-035)，与 when 取 AND。',
       }),
     },
-    reads: ['SelfRule', 'Resource', 'Flag', 'State', 'Timer', 'StringVar', 'Transform', 'Relation'],
+    reads: ['SelfRule', 'Resource', 'Flag', 'State', 'Timer', 'StringVar', 'Transform', 'Relation', 'Cooldowns'],
     writes: ['SelfRule', 'Flag', 'Resource', 'State', 'DestroyRequest', 'SpawnRequest'],
     consumes: [],
   },
@@ -110,7 +110,7 @@ export const selfRuleCapability = defineCapability({
       // hitbox→resource-apply→self-rule 合成显式环，无解）。写 SpawnRequest/DestroyRequest 与
       // caster/mortal 仅为同汇（请求集合语义，writer 间无需定序）。无这些系统的世界 id 被忽略。
       runsAfter: ['flow', 'resource-apply', 'hitbox', 'zone-occupancy', 'group-count'],
-      reads: ['SelfRule', 'Resource', 'Flag', 'State', 'Timer', 'StringVar', 'Transform', 'Relation'],
+      reads: ['SelfRule', 'Resource', 'Flag', 'State', 'Timer', 'StringVar', 'Transform', 'Relation', 'Cooldowns'],
       writes: ['SelfRule', 'Flag', 'Resource', 'State', 'DestroyRequest', 'SpawnRequest'],
       consumes: [],
       execute(world: IWorld) {

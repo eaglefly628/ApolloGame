@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  Atom Skills — 核心原子统一导出（32 核心 + 1 扩展；唯一真相=本文件导出表）
+//  Atom Skills — 核心原子统一导出（33 核心 + 1 扩展；唯一真相=本文件导出表）
 //  参见 wiki/atom-skill-periodic-table.md
 // ═══════════════════════════════════════════════════════════════
 import type { CapabilityDefinition } from '@engine/core/define-capability.js';
@@ -36,6 +36,7 @@ import { cameraCapability } from './camera/index.js';
 import { textCapability } from './text/index.js';
 import { randomCapability } from './random/index.js';
 import { spatialQueryCapability } from './spatial-query/index.js';
+import { vfx2dCapability } from './vfx2d/index.js';
 
 // 扩展原子（周期表 Extension，非核心原子）
 import { stringVariableCapability } from './string-variable/index.js';
@@ -73,6 +74,7 @@ export {
   textCapability,
   randomCapability,
   spatialQueryCapability,
+  vfx2dCapability,
   stringVariableCapability,
 };
 
@@ -117,6 +119,7 @@ export const allAtomCapabilities: CapabilityDefinition[] = [
   textCapability,
   randomCapability,
   spatialQueryCapability,
+  vfx2dCapability,
 ];
 
 // 扩展原子（按需引入，不计入核心原子）。

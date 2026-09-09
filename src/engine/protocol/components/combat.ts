@@ -53,6 +53,7 @@ export interface Hitbox extends Component {
   resource: string; // 目标身上要改的 Resource id（如 'hp'）
   amount?: number; // 固定伤害（正数 = 伤害；内部按负向施加）
   fracOfMax?: number; // 计算伤害 = 目标该资源 max 的此分数（如 0.2 = 20% max）
+  damageType?: string; // 伤害类型（可选）：目标 Armor.kind × 世界 DamageTable → 倍率（t2-damage-table·缺任一 ×1）
   targetMask?: number; // 仅作用于 Tag.flags 含此位的目标（阵营过滤；缺省/0 = 不限）
   requireMask?: number; // 仅作用于 Status.flags 含齐此位的目标（如碎冰要求 frozen）
   setMask?: number; // 命中后给目标 Status 置这些位（如 frozen）

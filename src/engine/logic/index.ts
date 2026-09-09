@@ -127,6 +127,20 @@ export function resolveString(ctx: LogicCtx, id: string): StringVar | undefined 
   return ctx.self !== undefined ? selfComp<StringVar>(ctx, 'StringVar', 'id', id) : lookupOf(ctx).string(id);
 }
 
+interface CooldownsLike { slots: Array<{ id: string; remaining: number }> }
+/** 冷却槽是否就绪（engine 不依赖 tier2·按结构读 Cooldowns）。 */
+export function resolveCooldownReady(ctx: LogicCtx, slotId: string): boolean {
+  const w = ctx.world;
+  const holders = ctx.self !== undefined ? [ctx.self] : w.queryEntities('Cooldowns');
+  for (const e of holders) {
+    const cd = w.getComponent<Component & CooldownsLike>(e, 'Cooldowns');
+    if (!cd) continue;
+    for (const s of cd.slots) if (s.id === slotId) return s.remaining <= 0;
+    if (ctx.self !== undefined) return true;
+  }
+  return true;
+}
+
 /** Tag 掩码命中的实体数（掩码非有限/为 0 → 0）。按 id 升序扫描无关（纯计数）。 */
 export function countByTag(world: IWorld, mask: number): number {
   if (!Number.isFinite(mask) || mask === 0) return 0;
@@ -180,6 +194,11 @@ export function evalCondition(ctx: LogicCtx, expr: ConditionExpr): boolean {
     case 'timer': {
       const t = resolveTimer(ctx, expr.id);
       return t ? compare(t.elapsed, expr.cmp, expr.value) : false;
+    }
+    case 'cooldown': {
+      // t2-cooldown 槽就绪：self → 自身 Cooldowns；global → 创建序首个持有该槽的实体。无此槽 = 就绪（未配置不受约束）。
+      const ready = resolveCooldownReady(ctx, expr.id);
+      return ready === (expr.ready ?? true);
     }
     case 'string': {
       const s = resolveString(ctx, expr.id);

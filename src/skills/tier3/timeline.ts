@@ -99,7 +99,7 @@ export const timelineCapability = defineCapability({
         },
       },
     },
-    reads: ['Timeline', 'TimelinePlayback', 'Signal', 'Flag', 'Resource'],
+    reads: ['Timeline', 'TimelinePlayback', 'Signal', 'Flag', 'Resource', 'Cooldowns'],
     writes: ['TimelinePlayback', 'Signal', 'SpawnRequest', 'Flag', 'Resource'],
     consumes: [],
   },
@@ -111,7 +111,7 @@ export const timelineCapability = defineCapability({
       id: 'timeline',
       // 在信号产出者之后跑：① 看得见本 tick 的 playOnSignal/skipOnSignal；② 自己发的 Signal 不被 event-when 的全局清扫误删（同 keybind/caster 纪律）。
       runsAfter: ['event-when', 'keybind', 'clickable'],
-      reads: ['Timeline', 'TimelinePlayback', 'Signal', 'Flag', 'Resource'],
+      reads: ['Timeline', 'TimelinePlayback', 'Signal', 'Flag', 'Resource', 'Cooldowns'],
       writes: ['TimelinePlayback', 'Signal', 'SpawnRequest', 'Flag', 'Resource'],
       consumes: [],
       execute(world: IWorld) {

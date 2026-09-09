@@ -21,10 +21,11 @@ export const ConditionExprSchema: Schema = t.lazy('ConditionExpr', () =>
       t.obj({ kind: t.lit('state'), fsmId: t.str('State.fsmId'), equals: t.str('目标状态名') }),
       t.obj({ kind: t.lit('timer'), id: t.str('Timer.id'), cmp: CmpOpSchema, value: t.num('elapsed 阈值（tick）') }),
       t.obj({ kind: t.lit('string'), id: t.str('StringVar.id'), equals: t.str() }),
+      t.obj({ kind: t.lit('cooldown'), id: t.str('Cooldowns 槽名'), ready: t.opt(t.bool('缺省 true=判就绪')) }),
     ],
     'kind',
   ),
-  '布尔条件树 ConditionExpr（and/or/not + resource/flag/state/timer/string 叶子·按语义 id 读世界值）');
+  '布尔条件树 ConditionExpr（and/or/not + resource/flag/state/timer/string/cooldown 叶子·按语义 id 读世界值）');
 
 export const ScalarValueSchema = t.union([t.num(), t.bool(), t.str()], undefined, '数值/布尔/字符串');
 
