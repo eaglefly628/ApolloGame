@@ -60,7 +60,7 @@ export const flowCapability = defineCapability({
         describe: '声明式流程状态机（数据）。current=当前状态 id；states=状态列表（onEnter 动作 + 带 when 条件的转移）。',
       }),
     },
-    reads: ['GameFlow', 'Resource', 'Flag', 'State', 'Cooldowns'],
+    reads: ['GameFlow', 'Resource', 'Flag', 'State', 'Cooldowns', 'Timer', 'StringVar'], // Timer/StringVar：条件树 kind:'timer'/'string' 经 engine/logic 读（P1a 严格模式漏报·game-f 慢车道 2026-09-10 抓出）
     writes: ['GameFlow', 'Resource', 'Flag', 'State'],
     consumes: [],
   },
@@ -77,7 +77,7 @@ export const flowCapability = defineCapability({
       // 显式 runsAfter 覆盖反向组件推断边破环（同 REQ-F-025）。语义：先数清占位/羁绊等派生事实，
       // flow 再据此判阶段转移。与上方 runsBefore 合成一致偏序：zone-occupancy/group-count → flow → event-when/resource-apply。
       runsAfter: ['zone-occupancy', 'group-count'],
-      reads: ['GameFlow', 'Resource', 'Flag', 'State', 'Cooldowns'],
+      reads: ['GameFlow', 'Resource', 'Flag', 'State', 'Cooldowns', 'Timer', 'StringVar'], // Timer/StringVar：条件树 kind:'timer'/'string' 经 engine/logic 读（P1a 严格模式漏报·game-f 慢车道 2026-09-10 抓出）
       writes: ['GameFlow', 'Resource', 'Flag', 'State'],
       consumes: [],
       execute(world: IWorld) {
