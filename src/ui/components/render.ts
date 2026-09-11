@@ -678,7 +678,7 @@ function renderProgressBar(id: string, p: ProgressBarProps, ls: string, t: UIThe
       `</div></div>${center}</div>`;
   }
   const header = (p.label || p.showValue)
-    ? `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">${p.label ? `<span style="font-size:11px;color:${t.sub};font-family:${t.fontUi}">${esc(p.label)}</span>` : '<span></span>'}${p.showValue ? `<span style="font-size:11px;color:${t.dim};font-family:${t.fontMono}">${esc(valTxt)}</span>` : ''}</div>`
+    ? `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">${p.label ? `<span style="font-size:11px;color:${t.sub};font-family:${t.fontUi}">${esc(p.label)}</span>` : '<span></span>'}${p.showValue ? `<span style="font-size:11px;color:${t.sub};font-family:${t.fontMono}">${esc(valTxt)}</span>` : ''}</div>`
     : '';
   return `<div id="${esc(id)}" style="display:flex;flex-direction:column;${ls}">${header}<div style="height:8px;border-radius:5px;background:${t.bg3};overflow:hidden"><div style="width:${pct}%;height:100%;background:${fill};border-radius:5px;transition:width .2s"></div></div></div>`;
 }

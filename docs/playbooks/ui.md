@@ -1,5 +1,9 @@
 # UI / HUD / 菜单手册（接线图·薄壳）
 
+> **🔎 先搜再问：`node scripts/ui-find.mjs <大白话>`**（如 `血条` / `货币` / `选关` / `弹窗` / `右键菜单`）——
+> 直接给你**哪个控件 + 全部 prop + 去展台哪一段看活的 + 照抄哪个文件**。不必先知道控件叫什么名字。
+> 摊开一件 `--type Label`｜总览 `--list`｜某页演了啥 `--tab tab-new`｜机读 `--json`。
+> 索引真相 = `catalog.ts` 的 `demo[]`/`tags[]`（`ui-find.test.mjs` 守着·段 id 死链当场红）。**搜不到再考虑报 PUI 扩控件，别手搓逃生。**
 > **本页是薄壳。做任何 UI 前先读 `docs/design/ui-playbook.md`**（黄金流程 + 防重叠/对比度/透明度/布局卫生四准则 + 自检清单——schema 之外的合理性靠它）。
 > **UI 铁律**：所有游戏 UI/HUD/菜单/面板/VN chrome **必须用 `LayoutNode` 数据描述**（控件=闭集 `ComponentType`；显示绑定=resourceId/StringVar id；写世界=`action` 信号名入队）。play-field 走 render 组件（rendering-fx.md）。本页只补**引擎接线**。
 

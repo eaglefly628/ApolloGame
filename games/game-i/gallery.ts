@@ -185,9 +185,11 @@ function pageLayout(): LayoutNode { return {
 }; }
 
 // ── 页 2 · 数据展示 ──────────────────────────────────────────
-const labelColors: Array<'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger'> =
-  ['text', 'sub', 'dim', 'jade', 'gold', 'ok', 'warn', 'danger'];
-const labelSizes: Array<'xs' | 'sm' | 'md' | 'lg' | 'xl'> = ['xs', 'sm', 'md', 'lg', 'xl'];
+// 11 语义色令牌全档（与 LabelProps.color 闭集对齐·mine/foe=阵营·ink=深墨压金底）。
+const labelColors: Array<'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger' | 'mine' | 'foe' | 'ink'> =
+  ['text', 'sub', 'dim', 'jade', 'gold', 'ok', 'warn', 'danger', 'mine', 'foe', 'ink'];
+// 7 具名字号档全档（xs10…xxxl34）；另可填裸 px 任意字号（复刻像素稿用）。
+const labelSizes: Array<'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl' | 'xxxl'> = ['xs', 'sm', 'md', 'lg', 'xl', 'xxl', 'xxxl'];
 
 function pageDisplay(): LayoutNode { return {
   type: 'Panel',
@@ -195,7 +197,7 @@ function pageDisplay(): LayoutNode { return {
   props: { scroll: true },
   layout: { direction: 'column', gap: 18, padding: 20 },
   children: [
-    sectionTitle('t-lbl-size', 'LABEL · 五尺寸'),
+    sectionTitle('t-lbl-size', 'LABEL · 字号（7 具名档 xs10…xxxl34 + 裸 px 任意档）'),
     {
       type: 'Panel',
       id: 'demo-lbl-size',
@@ -205,30 +207,92 @@ function pageDisplay(): LayoutNode { return {
         type: 'Label', id: `lbl-size-${s}`, props: { text: s.toUpperCase(), size: s, bold: true },
       })),
     },
-    sectionTitle('t-lbl-color', 'LABEL · 八语义色 + 等宽'),
+    // 裸 px：复刻像素稿/设计稿精确字号时用（具名档保和谐、裸 px 保精确）。
+    {
+      type: 'Panel', id: 'demo-lbl-px', props: { bare: true },
+      layout: { direction: 'row', gap: 16, align: 'end', padding: 10 },
+      children: [
+        ...[9, 15, 26, 44].map((n): LayoutNode => ({
+          type: 'Label', id: `lbl-px-${n}`, props: { text: `${n}px`, size: n, bold: true, color: 'jade' },
+        })),
+        { type: 'Label', id: 'lbl-px-hint', props: { text: '← size 填数字=裸 px（复刻稿子精确字号）；填令牌=7 具名档（保排版和谐）', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+      ],
+    },
+    // 用法模式：同一件 Label 在真实屏上的四种典型角色（层级靠字号+色+粗细拉开·别全用一档）。
+    { type: 'Label', id: 'lbl-usage-note', props: { text: '典型用法：标题 / 正文 / 副文 / 爆数字——层级靠「字号 + 色 + bold」三者一起拉开', color: 'sub', size: 'sm' } },
+    {
+      type: 'Panel', id: 'demo-lbl-usage', props: { bg: 'sunken' },
+      layout: { direction: 'column', gap: 4, padding: 14, radius: 10 },
+      children: [
+        { type: 'Label', id: 'lu-title', props: { text: '第 12 关 · 雨夜书斋', size: 'xl', bold: true, color: 'gold' } },
+        { type: 'Label', id: 'lu-body', props: { text: '收集三枚印章即可通关。', size: 'md', color: 'text' } },
+        { type: 'Label', id: 'lu-sub', props: { text: '提示：印章藏在书架后', size: 'sm', color: 'sub' } },
+        { type: 'Label', id: 'lu-dmg', props: { text: '-240', size: 'xxl', bold: true, color: 'danger', stroke: true } },
+      ],
+    },
+    sectionTitle('t-lbl-color', 'LABEL · 11 语义色令牌（换皮自适应）+ {custom} 自由色逃生'),
     {
       type: 'Panel',
       id: 'demo-lbl-color',
       props: {},
       layout: { direction: 'row', gap: 14, padding: 10 },
       children: [
-        ...labelColors.map((c): LayoutNode => ({
+        // ink 不进这一排：它是**深墨**令牌，专给金/浅底上的深色字（压在暗底上必然读不清）——单独演在金底上。
+        ...labelColors.filter((c) => c !== 'ink').map((c): LayoutNode => ({
           type: 'Label', id: `lbl-color-${c}`, props: { text: c, color: c, bold: true },
         })),
         { type: 'Label', id: 'lbl-mono', props: { text: 'mono 0123', mono: true, color: 'sub' } },
       ],
     },
+    // ink 令牌的正确用法：坐在金/浅底上当深色字（放暗底=自造低对比·ui-audit 会当场抓）。
+    {
+      type: 'Panel', id: 'demo-lbl-ink', props: { bare: true },
+      layout: { direction: 'row', gap: 12, align: 'center', padding: 10 },
+      children: [
+        {
+          type: 'Panel', id: 'lbl-ink-chip', props: { bg: 'gold' },
+          layout: { padding: 8, radius: 8, align: 'center' },
+          children: [{ type: 'Label', id: 'lbl-color-ink', props: { text: 'ink 深墨字', color: 'ink', bold: true } }],
+        },
+        { type: 'Label', id: 'lbl-ink-hint', props: { text: '← ink = 金底/浅底上的深色字（如金 CTA 的键面字）。压暗底会读不清——色要配底选，不是随便挑。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+      ],
+    },
+    // 语义色 = 换皮自适应（换主题自动跟着变）；{custom} = 特别指定才用（花色/稿子精确墨色·仍非裸串）。
+    {
+      type: 'Panel', id: 'demo-lbl-custom', props: { bare: true },
+      layout: { direction: 'row', gap: 18, align: 'center', padding: 10 },
+      children: [
+        { type: 'Label', id: 'lc-suit', props: { spans: [{ text: '♠13 ', color: { custom: '#8a94a6' } }, { text: '♥13 ', color: { custom: '#d8483f' } }, { text: '♦13 ', color: { custom: '#d3a03a' } }, { text: '♣13', color: { custom: '#3f9a5a' } }], size: 'xl', bold: true } },
+        { type: 'Label', id: 'lc-hint', props: { text: '← 四花色=令牌装不下的用色，走 {custom} 逃生（audit 会提示优先迁令牌）', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+      ],
+    },
+    // 常见语义配对：别自己发明配色，按「状态→令牌」照抄。
+    {
+      type: 'Panel', id: 'demo-lbl-semantic', props: { bg: 'sunken' },
+      layout: { direction: 'row', gap: 18, padding: 14, radius: 10 },
+      children: [
+        { type: 'Label', id: 'ls-buff', props: { text: '+12 攻击', color: 'ok', bold: true } },
+        { type: 'Label', id: 'ls-debuff', props: { text: '-8 防御', color: 'danger', bold: true } },
+        { type: 'Label', id: 'ls-coin', props: { text: '1280 金币', color: 'gold', bold: true } },
+        { type: 'Label', id: 'ls-lock', props: { text: '未解锁', color: 'dim' } },
+        { type: 'Label', id: 'ls-mine', props: { text: '我方', color: 'mine', bold: true } },
+        { type: 'Label', id: 'ls-foe', props: { text: '敌方', color: 'foe', bold: true } },
+      ],
+    },
     divider('d-d1'),
-    sectionTitle('t-badge', 'BADGE · 三态徽章'),
+    sectionTitle('t-badge', 'BADGE · 6 语义色 + icon 图标槽（角标/状态/红点/数量）'),
     {
       type: 'Panel',
       id: 'demo-badge',
       props: {},
-      layout: { direction: 'row', gap: 10, padding: 10 },
+      layout: { direction: 'row', gap: 10, padding: 10, align: 'center' },
       children: [
         { type: 'Badge', id: 'bdg-ok', props: { text: '在线', tone: 'ok' } },
         { type: 'Badge', id: 'bdg-warn', props: { text: '警示', tone: 'warn' } },
         { type: 'Badge', id: 'bdg-dim', props: { text: '离线', tone: 'dim' } },
+        { type: 'Badge', id: 'bdg-accent', props: { text: '新', tone: 'accent' } },
+        { type: 'Badge', id: 'bdg-gold', props: { text: '限定', tone: 'gold' } },
+        { type: 'Badge', id: 'bdg-danger', props: { text: '危', tone: 'danger' } },
         { type: 'Badge', id: 'bdg-icon', props: { text: '冠军', tone: 'ok', icon: DEMO_IMG } }, // icon 槽（补齐 Tag/Button 一致性·2026-08 查缺补漏）
       ],
     },
@@ -247,17 +311,30 @@ function pageDisplay(): LayoutNode { return {
       ],
     },
     divider('d-d3'),
-    sectionTitle('t-progress', 'PROGRESSBAR · 进度条（五语义色 + 标签 + 显数值）'),
+    sectionTitle('t-progress', 'PROGRESSBAR · 线性条 5 语义色（环形 ring / 液面 liquid 见 🧊 3D UI 页）'),
     {
       type: 'Panel',
       id: 'demo-progress',
       props: {},
       layout: { direction: 'column', gap: 10, padding: 10 },
       children: [
-        { type: 'ProgressBar', id: 'pb-accent', props: { value: 72, label: '加载进度', showValue: true, tone: 'accent' } },
-        { type: 'ProgressBar', id: 'pb-ok', props: { value: 100, label: '已完成', showValue: true, tone: 'ok' } },
+        // ⚠ max 必填对：不给 max 时缺省 max=1，value:72 会被夹成满格（这段旧版就踩过）。
+        { type: 'ProgressBar', id: 'pb-accent', props: { value: 72, max: 100, label: '加载进度', showValue: true, tone: 'accent' } },
+        { type: 'ProgressBar', id: 'pb-ok', props: { value: 100, max: 100, label: '已完成', showValue: true, tone: 'ok' } },
         { type: 'ProgressBar', id: 'pb-warn', props: { value: 45, max: 100, label: '体力', tone: 'warn' } },
-        { type: 'ProgressBar', id: 'pb-danger', props: { value: 12, label: '血量', showValue: true, tone: 'danger' } },
+        { type: 'ProgressBar', id: 'pb-danger', props: { value: 12, max: 100, label: '血量', showValue: true, tone: 'danger' } },
+      ],
+    },
+    // 典型 HUD 四条：同一件换 tone/max 即成血/蓝/经验/护盾——别为每种条各搓一个件。
+    { type: 'Label', id: 'pb-usage-note', props: { text: '典型用法：血/蓝/经验/护盾 = 同一件换 tone + max（换皮自适应）。绑世界资源见下方 t-bind 段。', color: 'sub', size: 'sm' } },
+    {
+      type: 'Panel', id: 'demo-progress-hud', props: { bg: 'sunken' },
+      layout: { direction: 'column', gap: 8, padding: 14, radius: 10 },
+      children: [
+        { type: 'ProgressBar', id: 'pbh-hp', props: { value: 340, max: 520, label: '生命', showValue: true, tone: 'danger' } },
+        { type: 'ProgressBar', id: 'pbh-mp', props: { value: 88, max: 120, label: '法力', showValue: true, tone: 'accent' } },
+        { type: 'ProgressBar', id: 'pbh-xp', props: { value: 7300, max: 10000, label: '经验', showValue: true, tone: 'gold' } },
+        { type: 'ProgressBar', id: 'pbh-sh', props: { value: 60, max: 100, label: '护盾', showValue: true, tone: 'ok' } },
       ],
     },
     divider('d-d4'),
