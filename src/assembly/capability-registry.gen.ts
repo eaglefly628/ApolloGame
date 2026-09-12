@@ -103,6 +103,8 @@ export const CAPABILITY_LOADERS: readonly CapabilityLoader[] = [
   { id: 't2-damage-table', provides: ['DamageTable', 'Armor'], load: () => import('@skills/tier2/damage-table.js').then((m) => m.damageTableCapability) },
   { id: 't2-inventory', provides: ['Inventory'], load: () => import('@skills/tier2/inventory.js').then((m) => m.inventoryCapability) },
   { id: 't2-conveyor-queue', provides: ['ConveyorQueue'], load: () => import('@skills/tier2/conveyor-queue.js').then((m) => m.conveyorQueueCapability) },
+  { id: 't2-memory', provides: ['Memory', 'MemoryRules'], load: () => import('@skills/tier2/memory.js').then((m) => m.memoryCapability) },
+  { id: 't2-intent-barrier', provides: ['IntentBarrier', 'IntentInbox'], load: () => import('@skills/tier2/intent-barrier.js').then((m) => m.intentBarrierCapability) },
   { id: 't3-dialogue', provides: ['DialogueScript', 'DialogueAdvance', 'DialogueChoose'], load: () => import('@skills/tier3/dialogue.js').then((m) => m.dialogueCapability) },
   { id: 't3-match3-board', provides: ['MatchBoard', 'BoardCell'], load: () => import('@skills/tier3/match3-board.js').then((m) => m.match3BoardCapability) },
   { id: 't3-prefab', provides: ['PrefabOrigin', 'PrefabLibrary'], load: () => import('@skills/tier3/prefab.js').then((m) => m.prefabCapability) },

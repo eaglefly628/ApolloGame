@@ -52,7 +52,7 @@
 
 **红线**：四项都**不得改变既有 golden hash**（除非同提交给出逐条理由与新基线）；碰确定性面的改动按 🔴 主程口径走。
 
-### REQ-111-AINPC · LLM NPC 三件套下沉（`NpcAgentPort` + `t2-intent-barrier`）· [2026-09-12] · **owner 判 A×2**（game111 `framework.md` §6 缺口②③）+ owner 令「game111 的需求你也做一下」 · **施工主体 = 主程 = 本 session（2026-09-12 抢锁·本行即锁）** · 复查 = 另派独立 agent（复查人≠施工人） · status: **in-progress** · P1 · 类型: 引擎能力下沉
+### REQ-111-AINPC · LLM NPC 三件套下沉（`NpcAgentPort` + `t2-intent-barrier`）· [2026-09-12] · **owner 判 A×2**（game111 `framework.md` §6 缺口②③）+ owner 令「game111 的需求你也做一下」 · **施工主体 = 主程 = 本 session（2026-09-12 抢锁·本行即锁）** · 复查 = 另派独立 agent（复查人≠施工人·**待派**） · status: **✅ 已交（2026-09-12·门禁全绿·已推送）·等复查** · P1 · 类型: 引擎能力下沉
 
 **捆绑不拆**（owner 判词原文「只做端口不做 barrier = 最坏组合」）：有了调模型的能力却没有把结果确定性落地的能力，
 不确定性直漏 sim。症状是「偶发 desync / 存档读出来不一样」——本仓最难查的 bug 形状。
@@ -60,15 +60,27 @@
 **一句话**：外部 AI 当**输入源**（不当解释器）。端口只产 `Intent[]` 不写世界；barrier 把乱序/迟到/失败的异步回包
 **收成一个确定性结果**：按 npcId 排序注入 · 超期按**整数回合数**（禁墙钟）补默认动词 · 闭集外动词当场拒收并记 `reject`。
 
-**全文别在池子里重抄**：裁决原文（实查留痕 · A/B 两路代价 · 红线）→ `docs/design/game111/requests.md`
-REQ-111-ENG-01 / REQ-111-ENG-02；架构依据 → `docs/design/game111/framework.md` §1.2 · §2 · §6②③。
+**全文别在池子里重抄**：裁决原文（实查留痕 · A/B 两路代价 · 红线）+ 交付细节 + 撤修验红记录
+→ `docs/design/game111/requests.md` REQ-111-ENG-01 / REQ-111-ENG-02；架构依据 → `framework.md` §1.2 · §2 · §6②③。
+
+**落地**：契约 `src/engine/protocol/agent.ts`（`Intent`/`AgentContext`/`NpcAgentPort`）· 端口 `src/services/npc-agent/`
+（Null 确定性桩 + Http 骨架·**绝不抛**）· 门 `src/skills/tier2/intent-barrier{,-core}.ts` = `t2-intent-barrier`（registry 已登记）。
+
+**施工中真撞出来的两条**（spec 只预警了第一条的存在，没预警它会「恰好排对」）：
+① 首版让门读 `TurnOrder.round` 当回合号 → 与 `turn-order` 组件推断边双向成立 → 真 2-环。软环**只告警不抛**，
+   平局裁决按系统 id 字典序，那次排出来**恰好是对的**——纯属碰巧，改个系统名就反过来且全绿。
+   先用显式 `runsBefore` 压住（单文件测试全绿），**但全库 SCC 棘轮照样红** → 治本是去掉那条读边：
+   回合号改由 `setBarrierTurn` 推。另：我曾误判「去掉读边就脱离了全库软环 blob」——实测没有，
+   它与 turn-order/keybind/clickable 同款（runsAfter event-when + writes Signal 必然入环），已按棘轮纪律更新基线留理由。
+② lockstep 缺一条 spec 没写的：非权威端必须 `authority:false` 永不自结算。否则权威端收真意图、对端全部超期补默认
+   → 第一回合就分叉，**而两端各自全绿**。
 
 **复查门按这几条核**：① 端口不碰 world/snapshot/hash ② `NullNpcAgentPort` 无网可跑（**全库 AI 游戏的 CI 基建**）
 ③ barrier 产出与回包到达次序**无关**（乱序投递测试必须同 hash）④ 超期判据零墙钟、零浮点
 ⑤ 异步暂存组件登记 `NON_DETERMINISTIC`（漏登记 = 开日志就改 hash，lockstep 当场误报）
 ⑥ 定序测试断言 `topological-sort` **warn 数为零**（它成环只告警不抛 → 绿灯不等于没话说）。
 
-### REQ-111-MEMORY · 记忆能力 `t2-memory`（衰减 · 确定性 top-K 检索 · 跨实体流转）· [2026-09-12] · **owner 判 A**（game111 `framework.md` §6 缺口①） · **施工主体 = 主程 = 本 session（2026-09-12 抢锁·本行即锁）** · 复查 = 另派独立 agent · status: **in-progress** · P1 · 类型: 引擎能力下沉
+### REQ-111-MEMORY · 记忆能力 `t2-memory`（衰减 · 确定性 top-K 检索 · 跨实体流转）· [2026-09-12] · **owner 判 A**（game111 `framework.md` §6 缺口①） · **施工主体 = 主程 = 本 session（2026-09-12 抢锁·本行即锁）** · 复查 = 另派独立 agent（**待派**） · status: **✅ 已交（2026-09-12·门禁全绿·已推送）·等复查** · P1 · 类型: 引擎能力下沉
 
 **为什么是引擎面不是 game111 面**：「谁在何时对谁做了什么，且这件事会淡忘、会被传开」是 RPG/模拟/社交的通用原语。
 通用性证据已在库里——`docs/design/game101/`（海港绯闻）整作以「绯闻传播」为名，与记忆流转同构。判 B 则 101/108/111
@@ -78,7 +90,12 @@ REQ-111-ENG-01 / REQ-111-ENG-02；架构依据 → `docs/design/game111/framewor
 **红线**：检索打分**全整数**（强度/时近/标签命中均整数权重）——浮点跨端 JIT/FMA 可能 1 ULP 漂移，纳入排序即误报
 desync（`determinism.ts` 对 Camera 的同款理由）。条目进 hash → 注意快照体积与**存档兼容**，新组件要给迁移口径。
 
-**全文**：`docs/design/game111/requests.md` REQ-111-ENG-03。
+**落地**：`src/skills/tier2/memory{,-core}.ts` = `t2-memory`（registry 已登记）。衰减触发二选一（具名信号 / 拍周期）·
+检索整数打分 top-K 同分按 id 兜底 · `shareMemory` 打折转述且副本 `source` 记 `share:<from>`。
+**多做一条**：`entries` 恒按 id 升序存——数组序会进 canonical 即进 hash，按插入序存等于把「谁先被记」焊进指纹。
+**存档口径**：新组件旧档缺席 → 旧档 hash 语义原样不变；加记忆属新世代存档，不做旧档原地迁移。
+
+**全文 + 撤修验红记录**：`docs/design/game111/requests.md` REQ-111-ENG-03。
 
 ### REQ-UPBACKUP · 原图备份被替换图盖掉（「一键还原」的底牌丢了）· [2026-08-19] · Lead 巡检 owner 直传批带出（实证：game101 art-59 backupPath 文件与 gen/art-59-up.png 逐字节同） · **施工主体 = PST（已交·本行即锁）** · 复查 = Lead（2026-08-22·owner 点名） · status: **done·⚖ Lead 复查 PASS·余 F3 一腿归 PST（清完即出池）** · P3 · 类型: 创作台 bug（上传/替换/还原线）
 > **实证复现**（非按报告推断·样本已随 affbcd96 删除，故在临时目录上重建）：备份步骤**时序是对的**

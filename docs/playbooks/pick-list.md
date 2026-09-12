@@ -37,6 +37,8 @@
 - 随机（唯一合法源）→ RandomSeed + `dice-roll` / `weighted-pick`（纯函数核）/ seededShuffle（`docs/playbooks/randomness.md`·裸 Math.random=审计红旗）
 - 条件→事件→效果 → `event-when` + `effect-apply`；本实体自治域 → `self-rule`；按 Tag 集合计数（羁绊/人口）→ `group-count`
 - AI：决策树 → `behavior-tree`（五节点闭集·叶走注册表）；信号→按数据放技能 → `caster`
+- NPC 记忆（会淡忘 / 会被传开 / 要检索）→ `memory`（整数打分 top-K·`shareMemory` 打折转述）；**只数计数**用 `resource` 台账就够，别上 memory
+- 外部 LLM / 远端服务当 NPC 决策者 → `services/npc-agent` 的 `NpcAgentPort`（`NullNpcAgentPort` = 无网 CI 与断网降级）+ **必配** `intent-barrier`（乱序回包 → 按 id 升序一次性注入·超期按整数回合数补默认动词）——只接端口不接门 = 不确定性直漏 sim，细则见 `opponent-ai.md`
 - HUD：数字 → `text-binding`；血条/读条 → `gauge`；演出编排（第 N tick 发什么）→ `timeline`
 
 ## 查不到怎么办（唯一合法姿势）

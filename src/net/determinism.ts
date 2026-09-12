@@ -32,7 +32,10 @@ export function hashWithOrder(snap: WorldSnapshot, order: readonly string[] | un
 // 对账，保证每一项都是真实组件名。
 // Mesh3D/Coachmark 的组件契约（render.ts）明写「绝不进 hash」，故必须在此排除——
 // 二者曾漏登记，是潜伏雷：任何人按契约在渲染侧改它们，lockstep 立刻误报 desync。
-export const NON_DETERMINISTIC = new Set<string>(['Camera','Camera3D', 'Mesh3D', 'Coachmark', 'Transform3D', 'Sky3D', 'Model3D', 'AnimState3D', 'Anim3D', 'Pivot3D', 'Light3D', 'Post3D', 'Fog3D', 'Material3D', 'Vfx3D', 'Trail3D', 'Line3D', 'Decal3D', 'Path3D', 'Billboard3D', 'WorldUI3D', 'Diegetic3D', 'RigidBody3D', 'Impulse3D', 'Joint3D', 'Glow3D', 'Pickable3D', 'ScoreTrace', 'DebugTrace', 'PhysicsWorld3D', 'Reflector3D', 'Vfx2D']);
+// IntentInbox（t2-intent-barrier·REQ-111-AINPC）同理但理由更硬：它装的是「哪个 NPC 的异步回包先到」，
+// 即纯粹的**本地网络事实**。进 hash 等于把网络抖动焊进指纹，两端必然分叉；而门的确定性产出
+// （IntentBarrier.resolved·按 npcId 升序）照常进 hash，该被校验的一点没少。
+export const NON_DETERMINISTIC = new Set<string>(['Camera','Camera3D', 'Mesh3D', 'Coachmark', 'Transform3D', 'Sky3D', 'Model3D', 'AnimState3D', 'Anim3D', 'Pivot3D', 'Light3D', 'Post3D', 'Fog3D', 'Material3D', 'Vfx3D', 'Trail3D', 'Line3D', 'Decal3D', 'Path3D', 'Billboard3D', 'WorldUI3D', 'Diegetic3D', 'RigidBody3D', 'Impulse3D', 'Joint3D', 'Glow3D', 'Pickable3D', 'ScoreTrace', 'DebugTrace', 'PhysicsWorld3D', 'Reflector3D', 'Vfx2D', 'IntentInbox']);
 
 // 键位转义（2026-08-22 测试大扫除实证修复）：实体id/组件名/字段名/嵌套键此前裸拼进 canonical——
 // id 含分隔符即可伪造结构 → 两个不同状态同 hash（desync/存档篡改假绿·实证碰撞见 determinism.test.ts

@@ -59,13 +59,19 @@
 | `net/commands` · `net/queued-input` | `src/net/` | **架构基石**：`InputSource` 接缝 · tick 边界确定性释放 |
 | `net/world-hash` · `net/determinism` | `src/net/` | 快照指纹 · `NON_DETERMINISTIC` 名单 |
 
-### 2.3 待下沉能力（⏳ owner 已判 A·已提 requests.md）
+### 2.3 已下沉能力（✅ 2026-09-12 交付·owner 判 A ×3）
 
-| capability | 用来做什么 | 状态 |
+| capability / 模块 | 用来做什么 | 状态 |
 |---|---|---|
-| `t2-memory`（暂名） | 记忆条目（主体/客体/时刻/强度/标签）· 逐回合衰减 · 确定性 top-K 检索 · **跨 NPC 流转（打折强度）** | ⏳ **REQ-111-ENG-03**（owner 判 A） |
-| `NpcAgentPort`（service 端口） | `decide(ctx): Promise<Intent[]>` + `NullNpcAgentPort`（确定性桩·无网 CI）+ `HttpNpcAgentPort`。**端口不写世界** | ⏳ **REQ-111-ENG-01**（owner 判 A） |
-| `intent-barrier` | 异步意图收齐门：登记待决 NPC · 超时按**回合数**（禁墙钟）确定性降级补默认意图 · 收齐后**按 npcId 排序**注入 | ⏳ **REQ-111-ENG-02**（owner 判 A·与上条捆绑） |
+| `t2-memory` | 记忆条目（主体/客体/回合/强度/标签/**来源**）· 逐标签衰减与遗忘 · **整数** top-K 检索 · 跨实体转述（打折强度） | ✅ **已交**（REQ-111-MEMORY·`src/skills/tier2/memory.ts` + `memory-core.ts`·registry 已登记） |
+| `NpcAgentPort`（service 端口） | `decide(ctx): Promise<Intent[]>` + `NullNpcAgentPort`（确定性桩·无网 CI）+ `HttpNpcAgentPort`。**端口不写世界·绝不抛** | ✅ **已交**（REQ-111-AINPC·`src/services/npc-agent/`；契约在 `src/engine/protocol/agent.ts`） |
+| `t2-intent-barrier` | 异步意图收齐门：登记待决 id · 超期按**整数回合数**（禁墙钟）确定性降级 · 收齐后**按 npcId 升序**一次性产出 · 闭集外动词拒收留 `reject` | ✅ **已交**（REQ-111-AINPC·`src/skills/tier2/intent-barrier.ts` + `intent-barrier-core.ts`·registry 已登记） |
+
+> **游戏层据此开工的三条硬口径**（交付时定死，别再自己发明）：
+> ① `AgentContext` / `Intent` 的形状**从 `@engine/protocol/agent` import**，不在游戏层另定（§6 裁决条件②）。
+> ② 意图落地走 `IntentBarrier.resolved` → 动词表映射成 `Effect` 列表 → `t2-effect-apply`；**游戏层不写意图解释器**。
+> ③ 降级可观测：`IntentBarrier.filled` 就是「这回合有几个 NPC 没拿到决策」，UI/测试直接读它，别另记一份。
+> 交付细节与撤修验红记录见 `docs/design/game111/requests.md` 各单的「✅ 已交」段。
 
 > **裁决 ④ = B**：不设 `Motive` 组件。动机每回合由「需求 + 记忆」现推，只活在 prompt 里，不落世界。
 > **附带约束（Lead 记在此备查）**：链式影响必须**另有可观测落点**，否则玩法不可测——落点定为「记忆条目的 `source` 字段」（哪条记忆来自哪次玩家发言）+ `SETTLE` 相位的 `commit` trace。若实测仍不可观测，**回头重开 ④ 走 A**，不许在游戏层偷偷补一个动机结构。
@@ -85,12 +91,12 @@
 | `DIRECTOR_VERBS` | 导演闭集：`nudge` / `schedule_event` / `adjust_pacing` | `t3-timeline` + `t2-effect-apply` |
 | `BT_TREES` | L3 NPC 的行为模式树（纯数据） | `t2-behavior-tree` |
 | `DIALOGUE_GRAPHS` | L1 NPC 的固定对话图 | `t3-dialogue` |
-| `MEMORY_TAGS` | 记忆标签闭集 + 各标签衰减率 | ⏳ `t2-memory` |
+| `MEMORY_TAGS` | 记忆标签闭集 + 各标签衰减率 | `t2-memory`（✅ 已交·表摆成 `MemoryRules.decay:[{tag,amount}]`） |
 
 > **红线自查（模板原文：不许填「数据表 + 待写的游戏层解释器」）**
 > 本表**零虚胖**。唯一有被误做成自写解释器风险的是 `INTENT_VERBS`——**已消解**：一个意图动词**不是**一段游戏代码，而是**一份 `Effect` 列表数据**，由现有 `t2-effect-apply` 执行。例：
 > `move_to(zoneId)` → `[{kind:'set-string', id:'npc.zone', value:zoneId}, {kind:'set-flag', id:'npc.moved', active:true}]`
-> 因此 game111 **不含任何意图解释器代码**。校验闭集成员资格与参数形状的那一层归 `intent-barrier`（引擎侧·REQ-INTENTBAR），不归游戏层。
+> 因此 game111 **不含任何意图解释器代码**。校验闭集成员资格与参数形状的那一层归 `intent-barrier`（引擎侧·**已交**·`checkIntent` 三道门：pending 归属 / 动词在表内 / 参数个数），不归游戏层。
 
 ---
 
@@ -98,8 +104,8 @@
 
 | 例外 | 为什么现有能力表达不了 | 预计行数 | Lead 裁决 | 偿还计划 |
 |---|---|---|---|---|
-| **BT 叶注册** `registerBTLeaves('game111', {...})`：L3 NPC 的 3–5 个行为模式叶（`goRest` / `seekSocial` / `wander`） | `t2-behavior-tree` 的 describe 明写「叶 = 唯一过审 TS 例外」；叶体只读黑板（Resource/Flag/StringVar）写信号，不含自由逻辑 | ~60 | ⬜ 待裁 | 记债。若三个以上游戏出现同形叶 → 下沉 |
-| **prompt 组装纯函数** `buildAgentContext(snapshotSlice) → AgentContext` | 意图层在 **sim 之外**（不进 hash）。它把快照切片 + 检索到的记忆拼成端口入参。**不写世界、不读墙钟、无随机** | ~80 | ⬜ 待裁 | 若第二个 AI 游戏出现 → 下沉进 `NpcAgentPort` 的 helper |
+| **BT 叶注册** `registerBTLeaves('game111', {...})`：L3 NPC 的 3–5 个行为模式叶（`goRest` / `seekSocial` / `wander`） | `t2-behavior-tree` 的 describe 明写「叶 = 唯一过审 TS 例外」；叶体只读黑板（Resource/Flag/StringVar）写信号，不含自由逻辑 | ~60 | ✅ **准**（§6 条件①） | 记债。若三个以上游戏出现同形叶 → 下沉 |
+| **prompt 组装纯函数** `buildAgentContext(snapshotSlice) → AgentContext` | 意图层在 **sim 之外**（不进 hash）。它把快照切片 + 检索到的记忆拼成端口入参。**不写世界、不读墙钟、无随机** | ~80 | ✅ **有条件准**（§6 条件②：`AgentContext` 形状归引擎，已随 ENG-01 导出；游戏层只填） | 若第二个 AI 游戏出现 → 下沉进 `NpcAgentPort` 的 helper |
 
 > **没有第三条。** 特别声明**不申请**以下常见逃生口：
 > - ❌ 不写意图解释器（§3 已消解为数据 + `t2-effect-apply`）

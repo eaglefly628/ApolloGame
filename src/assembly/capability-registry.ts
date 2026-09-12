@@ -68,6 +68,8 @@ import {
   damageTableCapability,
   inventoryCapability,
   conveyorQueueCapability,
+  memoryCapability,
+  intentBarrierCapability,
 } from '@skills/tier2/index.js';
 import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapability, aggroCapability, pokerHandCapability, cardScoringCapability, flowCapability, mergeRuleCapability, timelineCapability, slotPayoutCapability, blockGridCapability, handPatternCapability } from '@skills/tier3/index.js';
 
@@ -181,6 +183,14 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   damageTableCapability,
   inventoryCapability,
   conveyorQueueCapability,
+  // t2-memory（REQ-111-MEMORY·owner 2026-09-12 判 A）：记忆原语——条目(主体/客体/回合/强度/标签/来源) +
+  // 逐标签衰减与遗忘 + **整数** top-K 检索（标签命中/强度/时近·禁浮点排序）+ 跨实体转述打折强度。
+  // 「谁在何时对谁做了什么，且这件事会淡忘、会被传开」：绯闻/仇怨/好感来源/证词链通用（game101 同构）。
+  memoryCapability,
+  // t2-intent-barrier（REQ-111-AINPC·owner 2026-09-12 判 A·与 services/npc-agent 的 NpcAgentPort 捆绑）：
+  // 异步意图收齐门——登记本回合待决实体 → 乱序回包进暂存（IntentInbox·不进 hash）→ 收齐或按**整数回合数**
+  // 超期 → 按 id 升序一次性产出意图流，没着落的补默认动词。外部 AI 当输入源而非解释器的那块接缝。
+  intentBarrierCapability,
   // tier3
   dialogueCapability,
   match3BoardCapability,

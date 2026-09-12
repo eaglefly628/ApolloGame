@@ -43,6 +43,16 @@ interface NpcAgentPort {
 
 **图纸**：`framework.md` §1.2 · §6② · `capability-plan.md` §2.3
 
+**✅ 已交（2026-09-12·主程 session）**
+- 契约落 `src/engine/protocol/agent.ts`（`Intent` / `IntentVerbSpec` / `AgentContext` / `AgentMemoryView` / `NpcAgentPort`）。
+  **为什么不落在端口文件里**：生产者在 services（sim 外·异步·可失败），消费者在 skills（sim 内·确定性），
+  形状归任一侧另一侧就得跨层依赖（`.dependency-cruiser` 的 `skills-no-presentation` 只放过 type-only）；归 protocol 两边都只依赖最底层。
+  这同时满足 Lead 批 capability-plan §4 第二条例外时写死的条件「AgentContext 的形状归引擎，游戏层只负责填」。
+- 实现落 `src/services/npc-agent/`：`NullNpcAgentPort`（规则表驱动·同入参恒同出参·无网无墙钟）+ `HttpNpcAgentPort`（失败恒落 `[]`+`lastError`·**绝不抛**）。
+- **端口刻意不判闭集**：动词是否在表内归 barrier。端口先过滤掉的那些就永远不留 `reject` 痕迹 —— 正是「什么都没发生」最难查的形状。
+- **回包里的 `npcId` 一律不采信**（用本地的）：否则后端一句 `npcId:"<别人>"` 就能代别的 NPC 下指令。
+- 测试 `src/services/npc-agent/npc-agent.test.ts`（18 条）。撤修验红：采信回包 npcId → ④ 转红；`lowestNeed` 去掉 key 升序 → ② 转红。
+
 ---
 
 ## REQ-111-ENG-02 · 异步意图收齐门 `intent-barrier`
@@ -74,6 +84,29 @@ interface NpcAgentPort {
 
 **图纸**：`framework.md` §6③ · `capability-plan.md` §5.2
 
+**✅ 已交（2026-09-12·主程 session）**`src/skills/tier2/intent-barrier.ts` = `t2-intent-barrier`（registry 已登记）。
+- 组件两个：`IntentBarrier`（**进 hash**·pending 登记即排序 + 整数回合判据 + 动词闭集 + 产物 `resolved`/`filled`）、
+  `IntentInbox`（**不进 hash**·已登记 `NON_DETERMINISTIC`，装「谁先回包」这种纯本地事实）。
+- 超期判据两条路都是整数自增、零墙钟：回合时钟的主人用 `setBarrierTurn` 推回合号；没人推则退化成本门拍计数。
+- **定序踩到了单子里预警的那个坑，且是实撞不是推演·我还判错过一次，记下全过程**：
+  首版让门自己读 `TurnOrder.round` 当回合号 → 本系统 reads TurnOrder / writes Signal，`turn-order` 反向
+  → 组件推断边两头成立即闭成 **真 2-环**。`topological-sort` 对纯推断软环**只告警不抛**，按「系统 id 字典序」
+  平局裁决，那次排出来**恰好是对的**（intent-barrier → turn-order），纯属字典序碰巧：改个系统名就反过来且全绿。
+  · 第一版修法 = 显式 `runsBefore:['turn-order']` 压掉反向推断边。单文件定序测试因此全绿，
+    但**全库 SCC 棘轮（`declaration-audit.test.ts`）照样红** —— 压住了环，没去掉成因。
+  · 治本 = **去掉那条读边**：回合号改由 `setBarrierTurn` 推。2-环消失，显式边也不必要了。
+  · **我当时判错的一点**：以为去掉读边就连「全库软环 blob 成员资格」也一起没了。实测并没有——
+    本系统仍在 p0 那个 blob 里，入边 `runsAfter event-when`、出边 `writes Signal`，与
+    turn-order / keybind / clickable **同款形状**：凡「排在事件清扫之后且发信号」必然在里面。
+    那是 CYCLEHAZ 的类问题（正解是方案 C 相位化），不是本件的申报缺陷 → 按棘轮纪律**有意识更新基线并留理由**。
+  测试按单子要求断言「严格模式不抛 + `console.warn` 一次不响 + 系统不读 TurnOrder + 不靠显式边压环」。
+- **lockstep 多补一条单子里没写的**：非权威端 `authority:false` 永不自结算，只接 `applySettled`。
+  少了这条，权威端收到真意图、对端全部超期补默认 → 第一回合就分叉，而两端各自全绿。
+- 测试 `src/skills/tier2/intent-barrier.test.ts`（26 条·含六种投递次序全排列同 hash）。撤修验红四刀：
+  产出改按到达序 → ② 承重点红；撤 `authority` 判断 → ⑥ 红；`IntentInbox` 漏登记名单 → ⑤ 红；
+  `barrierNow` 无视 `currentTurn` → ③ 回合时钟那条红；SCC 基线里删掉 intent-barrier → 棘轮红（证它真咬）。
+  （首版那刀「撤 `runsBefore` → ⑦ 三条红」随读边一起作废，留档说明为何不再需要那条边。）
+
 ---
 
 ## REQ-111-ENG-03 · 记忆能力 `t2-memory`
@@ -104,8 +137,26 @@ interface NpcAgentPort {
 
 **图纸**：`framework.md` §6① · `capability-plan.md` §2.3
 
+**✅ 已交（2026-09-12·主程 session）**`src/skills/tier2/memory.ts` = `t2-memory`（registry 已登记）。
+- `Memory{entries,rulesId?}` + `MemoryRules{decay:[{tag,amount}],defaultDecay,forgetBelow,max,shareDiscount,decaySignal|period}`。
+  衰减触发二选一：具名信号（回合制一回合恰好一次）或拍周期（照 `t2-over-time` 的形状）；多标签命中取**最快**那个速率。
+- 检索 `recall`/`recallFrom`：`命中×100 + 强度×1 + max(0,窗口-距今)×2`，**全整数**；同分按条目 id 升序兜底。
+- `shareMemory`：副本 id `<原>><收方>`、强度 `floor(原×折扣/1000)`、`source` 记 `share:<转述方>`（链式影响的可观测落点）；
+  再转述同 id 走刷新路径不增殖；折后为 0 / 原条目不存在 → 不写并记 `reject`。
+- **存档口径（单子点名要的）**：两个组件都是新增，旧档里不存在 → 缺席即不进 canonical，**旧档 hash 语义原样不变**。
+  已有档要加记忆就挂空 `Memory{entries:[]}`，但空 entries 本身也改 hash，故属**新世代存档**，不做旧档原地迁移。
+- **多做了一条**：`entries` 恒按 id 升序存。数组序会进 canonical = 进 hash，按插入序存就等于把「谁先被记」焊进世界指纹，
+  而那是个本地事实（哪个 NPC 先回包）。排序存之后「记忆集合相同 ⇒ hash 相同」。
+- 测试 `src/skills/tier2/memory.test.ts`（21 条）。撤修验红三刀：撤排序存 → ⑤「插入序不改 hash」红；
+  撤检索同分兜底 → ③ 红；撤整数归一 → ① 两条红。
+
 ---
 
 ## 已结案
 
-（暂无）
+三件全部 **✅ 已交并推送**（2026-09-12·主程 session·门禁全绿）。各单原位保留「✅ 已交」段做交接依据，
+待**独立复查**（复查人 ≠ 施工人·红线）过后再删条目，全文留 git 历史。
+
+**下一步不在本三件**：引擎侧已齐，接下来是 game111 游戏层——写 `gdd.md`「NPC AI」章 → 摆 L0 数据表
+（`INTENT_VERBS` / `MEMORY_TAGS` / `NPC_CARDS` / `TURN_PHASES`）→ 按 §2.3 的三条硬口径接线。
+**别再在游戏层重造这三件**：记忆用 `t2-memory`、决策端口用 `services/npc-agent`、异步对齐用 `t2-intent-barrier`。

@@ -158,3 +158,11 @@ export { planStarts, pairKey, pairMembers } from './rate-limit.js';
 export type { RateLimitConfig, RateLimitState, Candidate } from './rate-limit.js';
 export { conveyorQueueCapability, effectiveCapacity } from './conveyor-queue.js';
 export type { ConveyorQueue } from './conveyor-queue.js';
+// REQ-111-MEMORY（owner 2026-09-12 判 A）：记忆原语——条目/衰减遗忘/整数 top-K 检索/跨实体转述。
+export { memoryCapability, remember, recall, recallFrom, scoreEntry, shareMemory, findMemoryRules, decayAmount, DEFAULT_WEIGHTS } from './memory.js';
+export type { Memory, MemoryEntry, MemoryRules, RecallQuery, RecallWeights } from './memory.js';
+// REQ-111-AINPC（owner 2026-09-12 判 A·与 NpcAgentPort 捆绑）：异步意图收齐门——乱序回包 → 确定性产出。
+export { intentBarrierCapability, openBarrier, deliverIntents, failIntents, applySettled, setBarrierTurn, findBarrier, checkIntent, draftSettle, allAccountedFor, barrierNow, normalizePending, orderIntents } from './intent-barrier.js';
+export type { IntentBarrier, IntentInbox, OpenBarrierSpec, IntentCheck, SettleDraft } from './intent-barrier.js';
+// 上两件的纯函数核（零 World·打分/排序/衰减/淘汰 与 闭集校验/结算产物 都在核里可直接喂数据断言）。
+export { normalizeEntry, evictWeakest, sortById } from './memory-core.js';
