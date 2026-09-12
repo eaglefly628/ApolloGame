@@ -52,6 +52,34 @@
 
 **红线**：四项都**不得改变既有 golden hash**（除非同提交给出逐条理由与新基线）；碰确定性面的改动按 🔴 主程口径走。
 
+### REQ-111-AINPC · LLM NPC 三件套下沉（`NpcAgentPort` + `t2-intent-barrier`）· [2026-09-12] · **owner 判 A×2**（game111 `framework.md` §6 缺口②③）+ owner 令「game111 的需求你也做一下」 · **施工主体 = 主程 = 本 session（2026-09-12 抢锁·本行即锁）** · 复查 = 另派独立 agent（复查人≠施工人） · status: **in-progress** · P1 · 类型: 引擎能力下沉
+
+**捆绑不拆**（owner 判词原文「只做端口不做 barrier = 最坏组合」）：有了调模型的能力却没有把结果确定性落地的能力，
+不确定性直漏 sim。症状是「偶发 desync / 存档读出来不一样」——本仓最难查的 bug 形状。
+
+**一句话**：外部 AI 当**输入源**（不当解释器）。端口只产 `Intent[]` 不写世界；barrier 把乱序/迟到/失败的异步回包
+**收成一个确定性结果**：按 npcId 排序注入 · 超期按**整数回合数**（禁墙钟）补默认动词 · 闭集外动词当场拒收并记 `reject`。
+
+**全文别在池子里重抄**：裁决原文（实查留痕 · A/B 两路代价 · 红线）→ `docs/design/game111/requests.md`
+REQ-111-ENG-01 / REQ-111-ENG-02；架构依据 → `docs/design/game111/framework.md` §1.2 · §2 · §6②③。
+
+**复查门按这几条核**：① 端口不碰 world/snapshot/hash ② `NullNpcAgentPort` 无网可跑（**全库 AI 游戏的 CI 基建**）
+③ barrier 产出与回包到达次序**无关**（乱序投递测试必须同 hash）④ 超期判据零墙钟、零浮点
+⑤ 异步暂存组件登记 `NON_DETERMINISTIC`（漏登记 = 开日志就改 hash，lockstep 当场误报）
+⑥ 定序测试断言 `topological-sort` **warn 数为零**（它成环只告警不抛 → 绿灯不等于没话说）。
+
+### REQ-111-MEMORY · 记忆能力 `t2-memory`（衰减 · 确定性 top-K 检索 · 跨实体流转）· [2026-09-12] · **owner 判 A**（game111 `framework.md` §6 缺口①） · **施工主体 = 主程 = 本 session（2026-09-12 抢锁·本行即锁）** · 复查 = 另派独立 agent · status: **in-progress** · P1 · 类型: 引擎能力下沉
+
+**为什么是引擎面不是 game111 面**：「谁在何时对谁做了什么，且这件事会淡忘、会被传开」是 RPG/模拟/社交的通用原语。
+通用性证据已在库里——`docs/design/game101/`（海港绯闻）整作以「绯闻传播」为名，与记忆流转同构。判 B 则 101/108/111
+各写一套，正是 `modifier-stack` 下沉前的原样。**实查**：registry 零记忆能力；`t1-event-log` 只是平铺流水
+（无衰减/无检索/无归属，且未注册为 capability）。
+
+**红线**：检索打分**全整数**（强度/时近/标签命中均整数权重）——浮点跨端 JIT/FMA 可能 1 ULP 漂移，纳入排序即误报
+desync（`determinism.ts` 对 Camera 的同款理由）。条目进 hash → 注意快照体积与**存档兼容**，新组件要给迁移口径。
+
+**全文**：`docs/design/game111/requests.md` REQ-111-ENG-03。
+
 ### REQ-UPBACKUP · 原图备份被替换图盖掉（「一键还原」的底牌丢了）· [2026-08-19] · Lead 巡检 owner 直传批带出（实证：game101 art-59 backupPath 文件与 gen/art-59-up.png 逐字节同） · **施工主体 = PST（已交·本行即锁）** · 复查 = Lead（2026-08-22·owner 点名） · status: **done·⚖ Lead 复查 PASS·余 F3 一腿归 PST（清完即出池）** · P3 · 类型: 创作台 bug（上传/替换/还原线）
 > **实证复现**（非按报告推断·样本已随 affbcd96 删除，故在临时目录上重建）：备份步骤**时序是对的**
 > （`handle_art_upload` 确实在 `write_bytes` 之前抓），真病根在**重入**——备份靠 `'orig' not in row`

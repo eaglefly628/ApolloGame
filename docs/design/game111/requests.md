@@ -13,7 +13,7 @@
 ## REQ-111-ENG-01 · LLM NPC 决策端口 `NpcAgentPort`
 
 - **owner 裁决**：2026-09-12 判 **A（下沉引擎）**（`framework.md` §6 缺口②）
-- **归属**：🔴 主程面 · **指派：Opus** · 施工主体 = 待抢锁 · status: open · P1
+- **归属**：🔴 主程面 · **指派：Opus** · **施工主体 = 主程 = 本 session（2026-09-12 抢锁）** · status: **in-progress** · P1 · **已晋升引擎池 = `REQ-111-AINPC`**
 - **捆绑**：与 `REQ-111-ENG-02` 同批做。**只做端口不做 barrier = 最坏组合**（有了调模型的能力，却没有把结果确定性落地的能力，不确定性直漏 sim）。
 
 **想实现的行为**
@@ -48,7 +48,7 @@ interface NpcAgentPort {
 ## REQ-111-ENG-02 · 异步意图收齐门 `intent-barrier`
 
 - **owner 裁决**：2026-09-12 判 **A（下沉引擎）**（`framework.md` §6 缺口③）
-- **归属**：🔴 **主程面**（碰定序/相位 · 确定性与快照 hash · lockstep · 新增 system）· **指派：Opus** · 施工主体 = 待抢锁 · status: open · P1
+- **归属**：🔴 **主程面**（碰定序/相位 · 确定性与快照 hash · lockstep · 新增 system）· **指派：Opus** · **施工主体 = 主程 = 本 session（2026-09-12 抢锁）** · status: **in-progress** · P1 · **已晋升引擎池 = `REQ-111-AINPC`**
 
 **想实现的行为**
 1. 本回合登记 N 个待决 NPC。
@@ -79,7 +79,7 @@ interface NpcAgentPort {
 ## REQ-111-ENG-03 · 记忆能力 `t2-memory`
 
 - **owner 裁决**：2026-09-12 判 **A（下沉引擎）**（`framework.md` §6 缺口①）
-- **归属**：🔴 主程面（进 hash · 影响快照体积与存档）· **指派：Opus** · 施工主体 = 待抢锁 · status: open · P1
+- **归属**：🔴 主程面（进 hash · 影响快照体积与存档）· **指派：Opus** · **施工主体 = 主程 = 本 session（2026-09-12 抢锁）** · status: **in-progress** · P1 · **已晋升引擎池 = `REQ-111-MEMORY`**
 
 **想实现的行为**
 - 记忆条目 = 数据：主体 / 客体 / 时刻（回合号）/ 强度 / 标签 / **来源**。
