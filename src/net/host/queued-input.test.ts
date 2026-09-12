@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
 import type { InputQueue } from '@engine/protocol/components.js';
-import { QueuedInputSource, applyCommands, INPUT_QUEUE_ENTITY } from './index.js';
+import { QueuedInputSource } from './index.js';
+import { applyCommands, INPUT_QUEUE_ENTITY } from '../index.js';
 
 describe('QueuedInputSource — 异步事件按 tick 确定性释放', () => {
   it('enqueue 的事件在下一 commandsForTick 释放后清空', () => {

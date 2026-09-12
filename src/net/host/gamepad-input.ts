@@ -1,4 +1,4 @@
-import type { Command, InputSource } from './commands.js';
+import type { Command, InputSource } from '../commands.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  手柄输入源 — Gamepad API → 每 tick 命令（Steam Deck / 主机 / PC 手柄）

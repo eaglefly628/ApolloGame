@@ -80,8 +80,16 @@ export interface IWorld {
   readonly root?: IWorld;
 }
 
-export interface RendererBackend {
-  init(container: HTMLElement): void;
+/**
+ * 渲染后端拿到的「挂载面」。**core 不认识 DOM**（P3a 机器围栏 `tsconfig.sim.json` 逼出来的）：
+ * sim 面要能在 Node / Worker 里不带 dom lib 编译，而 `HTMLElement` 写死在这里时它过不去。
+ * 浏览器后端照旧声明 `RendererBackend<HTMLElement>`，一个字不用改；将来的 Worker / Ascii /
+ * 离屏后端各自填自己的面——**后端知道自己挂在什么上，core 不需要知道**。
+ */
+export type RenderSurface = unknown;
+
+export interface RendererBackend<S = RenderSurface> {
+  init(surface: S): void;
   sync(world: IWorld): void;
   destroy(): void;
 }

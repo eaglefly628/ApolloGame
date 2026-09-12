@@ -146,6 +146,12 @@ export function facesOf(files) {
     creationLoop: list.some((f) => f.startsWith('main_entry/') || f.startsWith('src/studio/')
       || f === 'src/launcher.tsx' || f === 'scripts/dump-capability-catalog.mjs'
       || f === 'scripts/creation-loop-guard.py'),
+    // simDom：sim 面 DOM 围栏（P3a·REQ-P3TAIL M1）。碰 engine/skills/net 或围栏本身就跑——
+    // 它是 P3a 的验收判据本身（「sim 在 Node/Worker 里不带 dom lib 也过 tsc」），
+    // 此前这句话只住在文档里，主 tsconfig 带 dom，sim 面偷用 window 也照样编译过。
+    simDom: list.some((f) => (f.startsWith('src/engine/') || f.startsWith('src/skills/') || f.startsWith('src/net/'))
+      && f.endsWith('.ts') && !f.includes('.test.'))
+      || list.some((f) => f === 'tsconfig.sim.json' || f === 'types/sim-env.d.ts' || f === 'scripts/sim-dom-fence.mjs'),
     // dokiworld/** 的 node --test 没有别的门在验（DOKI-APPS 后续①·「写了测试没人跑」与 game108 恒石同形）：
     // 改动命中哪个 app 目录就跑哪个（.md 不算——纯文档改不了测试结果）。
     dokiApps: [...new Set(list.map((f) => { const m = f.match(/^dokiworld\/([a-z0-9-]+)\//); return m && !f.endsWith('.md') ? m[1] : null; }).filter(Boolean))].sort(),
@@ -208,6 +214,7 @@ export function planFor(c, auditGames = [], faces = {}) {
     ...(faces.distStale ? [{ name: 'dist-staleness-guard', cmd: ['python3', ['scripts/dist-staleness-guard.py']] }] : []),
     ...(faces.skillShape ? [{ name: 'skill-shape-guard', cmd: ['node', ['scripts/skill-shape-guard.mjs']] }] : []),
     ...(faces.creationLoop ? [{ name: 'creation-loop-guard', cmd: ['python3', ['scripts/creation-loop-guard.py']] }] : []),
+    ...(faces.simDom ? [{ name: 'sim-dom-fence', cmd: ['node', ['scripts/sim-dom-fence.mjs']] }] : []),
     ...(faces.syncSmoke ? [
       { name: 'art-sync-smoke', cmd: ['python3', ['scripts/art-sync-smoke.py']] },
       { name: 'auto-sync-smoke', cmd: ['python3', ['scripts/auto-sync-smoke.py']] },

@@ -1,4 +1,4 @@
-import type { Command, InputSource, RawInputData } from './commands.js';
+import type { Command, InputSource, RawInputData } from '../commands.js';
 
 // 队列输入源 —— 把异步到达的"原始输入事件"(指针/点击/UI onClick)缓冲，在 tick 边界确定性释放（R3）。
 // 这就是 PB 要的"React 事件 → 当帧 input source"接缝：UI 侧 enqueue，引擎按 tick 取走写进单例 InputQueue。

@@ -1,49 +1,41 @@
-import type { Command, InputSource } from './commands.js';
+import type { Command, InputSource } from '../commands.js';
+import { DEFAULT_KEYMAP, type KeyMap } from './local-input.js';
 
 // ═══════════════════════════════════════════════════════════════
-//  本地键盘输入源 — 实时键盘 → 每 tick 命令
+//  可切换输入源 — 单人轮替操控多个角色（"切换双人玩"）
 // ═══════════════════════════════════════════════════════════════
 //
-//  按键 → 移动/跳跃意图。实现 InputSource，与网络对端可互换：引擎只问
-//  commandsForTick(tick)，不关心命令来自键盘还是网线。键位由 keymap 可配 ——
-//  同一份键盘开两个不同 keymap、不同 playerId 的源，再用 MultiInputSource 合并，
-//  即本地双人。（仅浏览器使用；headless / 测试用脚本源，不导入本文件。）
+//  一套键盘只驱动「当前激活」的那个 playerId；按切换键（缺省 Tab）在 playerIds
+//  间循环轮换。非激活角色本 tick 收不到命令 → applyMovement 把其 vx 清零（原地
+//  待命，重力照常下落/支撑），于是"停 B、操 A 过关；再切回 B"的协作解谜成立。
+//
+//  纯输入层、零协议/引擎改动：emit 的 Command 与任何源同构，路由仍走既有的
+//  Controllable.playerId（findControlled）。与 MultiInputSource(两套键盘=本地双人)
+//  互为两种接线方式：真有两名玩家就用后者，单人想轮替就用本源。
+//
+//  注：active 是输入层的本地可变状态（不入世界快照）→ 仅用于单机轮替；联机
+//  lockstep 的"换人"应做成世界内的 control-assignment 组件（见 requests），不走这里。
+//  仅浏览器使用（监听键盘事件）；headless/测试用 commandsForTick + 注入事件验证。
 // ═══════════════════════════════════════════════════════════════
 
-export interface KeyBinding {
-  dx?: number;
-  dy?: number;
-  jump?: boolean;
-  // 离散动作键（边沿触发）：按下时发一条具名动作事件 → Command.actions → 单例 InputQueue，
-  // 供 keybind 能力（KeyBinding 组件）匹配 key 产 Signal（技能释放/UI 动作）。区别于 dx/dy 的持续按住。
-  action?: string;
-}
-export type KeyMap = Record<string, KeyBinding>;
-
-// 默认键位（单人）：方向键 + WASD 移动，空格跳。
-export const DEFAULT_KEYMAP: KeyMap = {
-  ArrowUp: { dy: -1 },
-  KeyW: { dy: -1 },
-  ArrowDown: { dy: 1 },
-  KeyS: { dy: 1 },
-  ArrowLeft: { dx: -1 },
-  KeyA: { dx: -1 },
-  ArrowRight: { dx: 1 },
-  KeyD: { dx: 1 },
-  Space: { jump: true },
-};
-
-export class KeyboardInputSource implements InputSource {
+export class SwitchableInputSource implements InputSource {
   private readonly pressed = new Set<string>();
-  // 待释放的离散动作事件（边沿触发，下一 tick 取走）。
+  private active = 0;
+  // 待释放的离散动作事件（边沿触发，归属当前激活 playerId）。
   private pendingActions: { source: string; key: string; phase: string }[] = [];
 
   private readonly onDown = (e: KeyboardEvent) => {
+    // 切换键：仅边沿（非 OS 自动重复）轮换激活角色；吃掉默认行为（Tab 焦点跳转）。
+    if (e.code === this.switchKey) {
+      if (!this.pressed.has(e.code)) this.active = (this.active + 1) % this.playerIds.length;
+      this.pressed.add(e.code);
+      e.preventDefault();
+      return;
+    }
     const b = this.keymap[e.code];
     if (b) {
-      // 动作键：仅在边沿（非 OS 自动重复）发一次具名动作事件。
       if (b.action && !this.pressed.has(e.code)) {
-        this.pendingActions.push({ source: this.playerId, key: b.action, phase: 'down' });
+        this.pendingActions.push({ source: this.playerIds[this.active], key: b.action, phase: 'down' });
       }
       this.pressed.add(e.code);
       e.preventDefault();
@@ -52,19 +44,26 @@ export class KeyboardInputSource implements InputSource {
   private readonly onUp = (e: KeyboardEvent) => {
     this.pressed.delete(e.code);
   };
-  // 丢焦点时 keyup 收不到 → 清空按下集合，防止"按键卡住"持续移动。
+  // 丢焦点时清空按下集合，防止"按键卡住"。
   private readonly onBlur = () => {
     this.pressed.clear();
   };
 
   constructor(
-    private readonly playerId: string,
+    private readonly playerIds: readonly string[],
     private readonly target: EventTarget = window,
     private readonly keymap: KeyMap = DEFAULT_KEYMAP,
+    private readonly switchKey: string = 'Tab',
   ) {
+    if (playerIds.length === 0) throw new Error('SwitchableInputSource 需要至少 1 个 playerId');
     this.target.addEventListener('keydown', this.onDown as EventListener);
     this.target.addEventListener('keyup', this.onUp as EventListener);
     this.target.addEventListener('blur', this.onBlur as EventListener);
+  }
+
+  /** 当前被操控的 playerId（表现层据此高亮激活角色）。 */
+  activePlayerId(): string {
+    return this.playerIds[this.active];
   }
 
   commandsForTick(tick: number): Command[] {
@@ -83,7 +82,7 @@ export class KeyboardInputSource implements InputSource {
     const actions = this.pendingActions;
     this.pendingActions = [];
     if (dx === 0 && dy === 0 && !jump && actions.length === 0) return [];
-    const cmd: Command = { playerId: this.playerId, tick, move: { dx, dy } };
+    const cmd: Command = { playerId: this.playerIds[this.active], tick, move: { dx, dy } };
     if (jump) (cmd as { jump?: boolean }).jump = true;
     if (actions.length) (cmd as { actions?: typeof actions }).actions = actions;
     return [cmd];

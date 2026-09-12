@@ -1,5 +1,5 @@
-import { LockstepClient } from './lockstep-tab.js';
-import type { Channel, ClientView, NetMsg } from './lockstep-tab.js';
+import { LockstepClient } from '../lockstep-tab.js';
+import type { Channel, ClientView, NetMsg } from '../lockstep-tab.js';
 
 // 帧同步 demo 的浏览器端：BroadcastChannel 当"网线"，键盘当输入，canvas 画服务器…
 // 不，没有服务器——每个标签页各跑一份确定性世界，这里只负责 IO + 渲染。
