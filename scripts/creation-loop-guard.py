@@ -5,7 +5,7 @@
 本冒烟守住其中**能机器判**的那几条（判不了"忠实实现"，那需要验收剧本，属 S5）：
 
   ① 编号 slug 不许与手写游戏撞脸（`game-104` vs `game104`）—— 真根因，复跑挖出来的
-  ② 建库重试复用空壳，不再产 `xxx-2` 孤儿
+  ② 建库重试复用空壳，不再产 `xxx-2` 孤儿（含第二轮实伤：中文名按 slug 找永远找不到 · 有设计稿的不许当残骸）
   ③ git 版本保存失败不许报成功（假成功 = 回滚的底牌悄悄没了）
   ④ 生成成功路径要带上引擎告警（软环/降级/兼容性不许静默）
   ⑤ 原型生成前的计划体检：编造的 capability id / 未裁决的缺口要报出来
@@ -89,6 +89,38 @@ try:
     _, r3 = LA.library_create({'name': 'Retry Probe', 'description': 'x'})
     check(r3.get('slug') != r1.get('slug'), '② 非空同名项目照旧新建（不吞掉作者已有的成果）')
 
+    # WARN **中文名这一腿是第二轮打回的实伤，不是补充**（审查方实测复现：测试小游戏 → game-212，
+    #      重试 → game-213，reused=False；同样的操作换英文名就正常复用）。根因：中文名走
+    #      `_slugify` → `_next_game_no()`，而它**每次调用都发一个新号** ⇒ 两次的 base 不是同一个
+    #      字符串 ⇒ 按 slug 找空壳永远找不到。修法是按 `meta.name` 找。
+    _, c1 = LA.library_create({'name': '测试小游戏', 'description': 'x'})
+    _, c2 = LA.library_create({'name': '测试小游戏', 'description': 'x'})
+    check(c1.get('slug') == c2.get('slug'), '② **中文名**同名重试也复用（按名字找空壳·不按 slug）',
+          f"{c1.get('slug')} vs {c2.get('slug')}")
+    check(c2.get('reused') is True, '② 中文名复用同样如实报 reused=true')
+    check(sum(1 for p in tmp.iterdir() if p.is_dir()) == 3,
+          '② 中文名重试没有留下第二个孤儿目录', str(sorted(p.name for p in tmp.iterdir())))
+
+    # WARN 「零实体 = 失败空壳」**不成立**（第二轮打回的正确意见）：DesignStudio 的正常流程就是
+    #      先建库、先讨论、先落 design/*.md，实体以后才有。只看实体数会把这种真项目当残骸覆盖掉。
+    _, d1 = LA.library_create({'name': 'Design First', 'description': 'x'})
+    ddir = tmp / d1['slug'] / 'design'
+    ddir.mkdir(parents=True, exist_ok=True)
+    (ddir / 'gdd.md').write_text('# 设计稿\n', encoding='utf-8')
+    _, d2 = LA.library_create({'name': 'Design First', 'description': 'x'})
+    check(d2.get('slug') != d1.get('slug'),
+          '② 有设计稿的同名项目**不被复用**（刚写完策划案还没摆实体的真项目不是残骸）',
+          f"{d1.get('slug')} vs {d2.get('slug')}")
+    check((ddir / 'gdd.md').is_file() and (ddir / 'gdd.md').read_text(encoding='utf-8').startswith('#'),
+          '② 且他的设计稿原封不动（复用会覆盖 meta·这就是为什么判据必须收紧）')
+
+    # 有能力但零实体的同样不算空壳（摆了能力 = 有人真往里放过东西）
+    _, e1 = LA.library_create({'name': 'Caps Only', 'description': 'x'})
+    (tmp / e1['slug'] / 'manifest.json').write_text(
+        json.dumps({'capabilities': ['a1-transform'], 'entities': {}}), encoding='utf-8')
+    _, e2 = LA.library_create({'name': 'Caps Only', 'description': 'x'})
+    check(e2.get('slug') != e1.get('slug'), '② 有能力零实体的同名项目也不被复用')
+
     # ── ③ git 假成功 ──────────────────────────────────────────────
     gd2 = tmp / 'git-probe'
     gd2.mkdir()
@@ -129,6 +161,19 @@ check("'warnings': warn_lines" in api_src, '④ 保存接口回的 warnings 是�
 ui_src = (ROOT / 'src' / 'launcher.tsx').read_text(encoding='utf-8')
 check('savedNext.warnings' in ui_src, '④ 前端真把 warnings 画出来（声明了字段却不渲染 = 等于没有）')
 
+# WARN 上面那条只守住了 Launcher 那一条路。**DesignStudio 这条路当时是假覆盖**（第二轮打回）：
+#      服务端 `_handle_prototype` 早就把 planCheck/warnings 原样带回了，可 DesignStudio 既不存也不画，
+#      作者在创作台里从头到尾看不见「编造的能力 id / 未裁的缺口」。字段在、渲染没有 = 等于没有。
+ds_src = (ROOT / 'src' / 'studio' / 'DesignStudio.tsx').read_text(encoding='utf-8')
+check('d.planCheck' in ds_src and 'setPlanCheck' in ds_src,
+      '④ DesignStudio 真把服务端回的 planCheck 收下来（此前整块丢掉）')
+check('setGenWarnings' in ds_src and 'genWarnings.map' in ds_src,
+      '④ 且把 warnings **逐条画出来**（不是只存不画）')
+check('unknownIds' in ds_src and 'pendingGaps' in ds_src,
+      '④ 编造的能力 id 与未裁决缺口在界面上点名（这两条是体检的全部价值）')
+check('onSaved(slug, genWarnings' in ds_src,
+      '④ 保存入库时把告警传给 Launcher（否则横幅那条路对 DesignStudio 永远是空的）')
+
 # ── ⑤ 原型前的计划体检 ────────────────────────────────────────────────
 from main_entry.design_flow import check_plan  # noqa: E402
 
@@ -138,6 +183,21 @@ check('t2-totally-made-up' in r['unknownIds'], '⑤ 编造的 capability id 要�
 check('t2-steering' not in r['unknownIds'], '⑤ 真实存在的不许误报')
 check(len(r['pendingGaps']) == 1, '⑤ 未裁决的缺口（⏳/待裁）要报出来')
 check(check_plan({})['hasPlan'] is False, '⑤ 压根没有 capability-plan 也要报（= 跳过了 S2）')
+
+# WARN **产品路径也得省**（第二轮打回）：首版把索引面只写在 CLI 里，于是「省上下文」只有命令行
+#      享受得到——浏览器照旧 buildCapabilityCatalog 全量 → POST 给服务端，一个字节没省。
+#      同一判据只许有一份实现（放共享模块），两边都 import 它。
+cat_src = (ROOT / 'src' / 'assembly' / 'capability-catalog.ts').read_text(encoding='utf-8')
+check('export function buildCapabilityIndex' in cat_src,
+      '⑥ 索引面实现在共享模块（不是只活在 CLI 脚本里）')
+cli_src = (ROOT / 'scripts' / 'dump-capability-catalog.mjs').read_text(encoding='utf-8')
+check('buildCapabilityIndex' in cli_src and 'namesCatalog = buildCapabilityIndex' in cli_src,
+      '⑥ CLI 改 import 共享实现（两份实现必然一边修好一边照旧）')
+ui_src2 = (ROOT / 'src' / 'launcher.tsx').read_text(encoding='utf-8')
+check('buildCapabilityIndex' in ui_src2 and 'catalogIndex' in ui_src2,
+      '⑥ 产品路径真的把索引面建出来并传下去')
+check('catalog: catalogIndex ?? catalog' in ds_src,
+      '⑥ 分解阶段发索引面（出 manifest 那步仍发全量·省不得的地方不省）')
 
 # ── ⑥ catalog 两阶段 ──────────────────────────────────────────────────
 def dump(*args):

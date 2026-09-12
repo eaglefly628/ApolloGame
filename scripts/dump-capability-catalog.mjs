@@ -15,7 +15,7 @@
 //   npx vite-node scripts/dump-capability-catalog.mjs --names         # 只要索引
 //   npx vite-node scripts/dump-capability-catalog.mjs --only t2-steering,t3-aggro
 //   npx vite-node scripts/dump-capability-catalog.mjs --stats         # 只报体量（排障用）
-import { buildCapabilityCatalog } from '../src/assembly/capability-catalog.ts';
+import { buildCapabilityCatalog, buildCapabilityIndex } from '../src/assembly/capability-catalog.ts';
 import { ALL_CAPABILITIES } from '../src/assembly/capability-registry.ts';
 
 const argv = process.argv.slice(2);
@@ -27,15 +27,9 @@ const valueOf = (f) => {
   return inline ?? (argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : null);
 };
 
-/** ① 索引面：id + 一句话摘要。模型据此挑件，再去要 schema。 */
-export function namesCatalog(caps) {
-  const lines = ['# 能力索引（只有名字与一句话·挑完再用 --only 要细节）', ''];
-  for (const c of [...caps].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))) {
-    const sum = (c.describe?.summary || '').split('。')[0].slice(0, 64);
-    lines.push(`- \`${c.id}\` — ${sum}`);
-  }
-  return lines.join('\n') + '\n';
-}
+/** ① 索引面：id + 一句话摘要。**实现在 `capability-catalog.ts`**（第二轮打回：同一判据只许有一份，
+ *  否则命令行省了上下文、产品路径照旧全量——那次就是这么漏的）。此处保留同名导出给既有调用方。 */
+export const namesCatalog = buildCapabilityIndex;
 
 const onlyRaw = valueOf('--only');
 let caps = ALL_CAPABILITIES;

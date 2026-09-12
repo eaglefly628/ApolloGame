@@ -68,8 +68,14 @@ def library_delete(slug: str) -> tuple:
     return (200, {'success': True, 'slug': slug, 'removed': removed})
 
 def _is_empty_shell(slug: str) -> bool:
-    """这个 slug 是不是「上一次建库失败留下的空壳」——目录在、manifest 在、但**零实体**。
-    零实体的项目不可能是作者要保留的成果（空卡带连运行器都拒绝放行），复用它是安全的。"""
+    """这个 slug 是不是「上一次建库失败留下的空壳」——复用它之前必须过的四道。
+
+    **「零实体 = 空壳」是不够的**（独立审查 2026-09-12 第二轮打回的正确意见）：DesignStudio 的
+    正常流程就是「先建库 → 讨论 → 落 design/*.md → 以后才有实体」。只看实体数，会把一个
+    作者刚写完设计稿、还没摆实体的真项目判成垃圾，然后**把它的 meta 覆盖掉**。所以四道全过才算空壳：
+      ① manifest 读得出来 ② 零实体 ③ 零能力 ④ **零设计稿**（`design/` 下没有任何 .md）。
+    ③④ 任一非空，就说明有人真往里放过东西 —— 那不是失败残骸，照旧 dedup 另起一个。
+    """
     if not _valid_slug(slug):
         return False
     d = LIBRARY_DIR / slug
@@ -80,7 +86,41 @@ def _is_empty_shell(slug: str) -> bool:
     except Exception:
         return False
     ents = mf.get('entities')
-    return not (isinstance(ents, dict) and len(ents) > 0)
+    if isinstance(ents, dict) and len(ents) > 0:
+        return False
+    caps = mf.get('capabilities')
+    if isinstance(caps, (list, tuple)) and len(caps) > 0:
+        return False
+    ddir = d / 'design'
+    if ddir.is_dir() and any(p.suffix == '.md' for p in ddir.rglob('*') if p.is_file()):
+        return False
+    return True
+
+
+def _reusable_shell_for(name: str) -> str | None:
+    """同名项目里，有没有一个可复用的空壳（返回它的 slug）。
+
+    **为什么按名字找、不按 slug 找**（独立审查 2026-09-12 第二轮实测复现的缺陷）：
+    中文名走 `_slugify` 会落到 `_next_game_no()`，而那个函数**每次调用都发一个新号**。
+    于是「建库 → 存 manifest 失败 → 作者点重试」时，两次的 `base` 根本不是同一个字符串
+    （测试小游戏 → `game-212`，重试 → `game-213`），`_is_empty_shell(base)` 永远为假，
+    复用逻辑形同不存在 —— 英文名能复用、中文名一路生孤儿，正是复现出来的样子。
+    按 `meta.name` 找就与 slug 怎么派生无关了。多个同名空壳取 slug 最小的那个（确定性）。
+    """
+    if not name or not LIBRARY_DIR.is_dir():
+        return None
+    for d in sorted(LIBRARY_DIR.iterdir(), key=lambda p: p.name):
+        if not d.is_dir() or not _valid_slug(d.name):
+            continue
+        try:
+            meta = json.loads((d / 'meta.json').read_text(encoding='utf-8'))
+        except Exception:
+            continue
+        if str(meta.get('name') or '').strip() != name:
+            continue
+        if _is_empty_shell(d.name):
+            return d.name
+    return None
 
 
 def library_create(body: dict) -> tuple:
@@ -98,14 +138,20 @@ def library_create(body: dict) -> tuple:
     if desc:
         meta_over['description'] = desc
 
-    # ⚠ **重试不许再生一个孤儿**（独立审查 2026-09-12 打回）：前端的「建库 → 存 manifest」是两步，
+    # ⚠ **重试不许再生一个孤儿**（独立审查 2026-09-12 两轮打回）：前端的「建库 → 存 manifest」是两步，
     # 第二步失败后作者点重试，首版每次都 `_dedup_slug` 造一个新 slug ⇒ 一串 `xxx-2` / `xxx-3` 空项目。
-    # 真正的事务化 API（requestId + 一次调用落两件）是接口级改动，得 owner 定形状；
-    # 这里先把**症状**治掉：同名项目已存在**且是空壳**（零实体 = 只可能是上一次失败留下的）就复用它，
-    # 而不是另起炉灶。非空的同名项目照旧 dedup（那是作者真的想要第二个）。
-    base = _slugify(name)
-    slug = base if _is_empty_shell(base) else _dedup_slug(base)
-    reused = slug == base and _is_empty_shell(base)
+    # 真正的事务化 API（requestId + 一次调用落两件）是接口级改动，得 owner 定形状；这里治症状：
+    # 同名项目已存在**且是可复用空壳**就复用它，而不是另起炉灶。非空的同名项目照旧 dedup（作者真想要第二个）。
+    # 第二轮修的两处：① 按**名字**找空壳（中文名的 slug 每次都不同，按 slug 找等于没找·见 _reusable_shell_for）
+    # ② 「空壳」的判据从「零实体」收紧到「零实体 + 零能力 + 零设计稿」（别把刚写完设计稿的真项目当残骸覆盖）。
+    # 先按**名字**找可复用的空壳（与 slug 怎么派生无关——中文名的 slug 每次都不一样，见 _reusable_shell_for）。
+    existing = _reusable_shell_for(name)
+    if existing is not None:
+        slug, reused = existing, True
+    else:
+        base = _slugify(name)
+        slug = base if _is_empty_shell(base) else _dedup_slug(base)
+        reused = slug == base and _is_empty_shell(base)
     if reused:
         _write_meta(_game_dir(slug), name, str(body.get('provider') or 'user'), meta_over)
         meta = json.loads((_game_dir(slug) / 'meta.json').read_text(encoding='utf-8'))

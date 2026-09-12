@@ -1,12 +1,12 @@
 // 生产流程板自检（owner 2026-07-10「N 步拆分·每步 review·不能只靠手册」）：
 // 形态识别 · 内容指纹（排除 pipeline.json/gen-mock·变更即过期）· 看板推导（机器门×人门双验语义）。
 import { describe, it, expect } from 'vitest';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { detectForm, gameHash, gapsHash, boardFor, artSubState, STAGES, GATE_STAGES, pipelineFile, mockDebt, writeConcept, priorGaps, orderGate, reviewPrereqGaps, acceptanceScenarioCount, MIN_ACCEPTANCE_SCENARIOS, REVIEW_CHECKLISTS, selfCheckArtifacts, selfCheckBlock, selfCheckNote, MIN_SELFCHECK_SHOTS, readCapabilityGaps, evalCapabilityGaps, blockingGaps, GAP_STATES, GAP_ROUTES, GAP_PRIORITIES, capabilityGapsFile } from './game-pipeline.mjs';
+import { detectForm, isDesignOnly, gameHash, gapsHash, boardFor, artSubState, STAGES, GATE_STAGES, pipelineFile, mockDebt, writeConcept, priorGaps, orderGate, reviewPrereqGaps, acceptanceScenarioCount, MIN_ACCEPTANCE_SCENARIOS, REVIEW_CHECKLISTS, selfCheckArtifacts, selfCheckBlock, selfCheckNote, MIN_SELFCHECK_SHOTS, readCapabilityGaps, evalCapabilityGaps, blockingGaps, GAP_STATES, GAP_ROUTES, GAP_PRIORITIES, capabilityGapsFile } from './game-pipeline.mjs';
 
 const withRoot = async (fn) => { const r = mkdtempSync(join(tmpdir(), 'gpipe-')); try { return await fn(r); } finally { rmSync(r, { recursive: true, force: true }); } };
 const put = (root, rel, content) => { const p = join(root, rel); mkdirSync(join(p, '..'), { recursive: true }); writeFileSync(p, typeof content === 'string' ? content : JSON.stringify(content, null, 2)); };
@@ -31,6 +31,48 @@ describe('形态识别', () => {
     expect(detectForm(root, 'g2')).toBe('builtin');
     expect(detectForm(root, 'g3')).toBe('compiled');
     expect(detectForm(root, 'nope')).toBeNull();
+  }));
+
+  // 鸡生蛋（独立审查 2026-09-12 打回·实撞 game110/game111）：S1/S2 是设计阶段，按流程必须先过，
+  // 实现体才被允许出现；可 detectForm 只认实现体 → 新立项一上板就「未知游戏, exit 1」。
+  it('只有 docs/design/<slug>/ → design（不再是 null·新立项能上板）', () => withRoot(async (root) => {
+    put(root, 'docs/design/g9/capability-plan.md', '# plan');
+    expect(detectForm(root, 'g9')).toBe('design');
+    expect(isDesignOnly(detectForm(root, 'g9'))).toBe(true);
+    expect(boardFor(root, 'g9').ok).toBe(true);
+    expect(boardFor(root, 'g9').form).toBe('design');
+  }));
+
+  it('**实现体优先**：有实现体时设计档不把它降级成 design（顺序错了会把全库已实现游戏判成设计态）', () => withRoot(async (root) => {
+    put(root, 'docs/design/g1/capability-plan.md', '# plan');
+    put(root, 'docs/design/g2/capability-plan.md', '# plan');
+    put(root, 'docs/design/g3/capability-plan.md', '# plan');
+    put(root, 'library/g1/manifest.json', MANIFEST);
+    put(root, 'public/games/g2/manifest.json', MANIFEST);
+    mkdirSync(join(root, 'games/g3'), { recursive: true });
+    expect(detectForm(root, 'g1')).toBe('cart');
+    expect(detectForm(root, 'g2')).toBe('builtin');
+    expect(detectForm(root, 'g3')).toBe('compiled');
+    for (const g of ['g1', 'g2', 'g3']) expect(isDesignOnly(detectForm(root, g))).toBe(false);
+  }));
+
+  it('设计态的板：S1/S2 照常评，S3+ 明说「还没有实现体」且 **S4 不判红**', () => withRoot(async (root) => {
+    put(root, 'docs/design/g9/capability-plan.md', '# plan');
+    const b = boardFor(root, 'g9');
+    const st = (id) => b.stages.find((s) => s.id === id);
+    expect(st('S2').machine.state).toBe('ok');                       // plan 在档 + 零缺口
+    for (const id of ['S3', 'S4', 'S5', 'S8']) {
+      expect(st(id).machine.state).toBe('dim');
+      expect(st(id).machine.detail).toContain('设计态');
+    }
+    // 「还没写 walkthrough 测试」对一个还没有实现体的立项不是缺陷而是进度——红只留给真有实现体却无测试的。
+    expect(st('S4').machine.state).not.toBe('fail');
+    expect(st('S4').status).not.toBe('fail');
+  }));
+
+  it('对照：有实现体却无 walkthrough 测试 → S4 照旧判红（设计态豁免没把这条放过去）', () => withRoot(async (root) => {
+    put(root, 'public/games/g8/manifest.json', MANIFEST);
+    expect(boardFor(root, 'g8').stages.find((s) => s.id === 'S4').machine.state).toBe('fail');
   }));
 });
 
@@ -524,6 +566,46 @@ describe('去 Apollo 化过渡期 env 旧名 fallback（REQ-PKG-位置无关与�
       expect(r.status).not.toBe(0); // 前关欠·同「前关欠」用例的判词——证明它真读到了这个临时根（非真仓库）
       expect(r.stderr).toContain('顺序闸');
       expect(r.stderr).toContain('S1');
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+});
+
+describe('设计态 CLI（新立项不再「未知游戏」·S3+ 拒跑且不落假证据）', () => {
+  const mkDesign = () => {
+    const r = mkdtempSync(join(tmpdir(), 'design-cli-'));
+    mkdirSync(join(r, 'docs', 'design', 'g9'), { recursive: true });
+    writeFileSync(join(r, 'docs', 'design', 'g9', 'capability-plan.md'), '# plan');
+    return r;
+  };
+
+  it('board 设计态游戏 → exit 0 并标 (design)（此前是「未知游戏」exit 1 = 新立项根本进不了流水线）', () => {
+    const root = mkDesign();
+    try {
+      const r = runCli(root, ['board', 'g9']);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toContain('（design）');
+      expect(r.stdout).toContain('设计态');
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it('S2 门照常可跑（设计阶段的门本来就是纯 fs·不需要实现体）', () => {
+    const root = mkDesign();
+    try {
+      const r = runCli(root, ['gate', 'g9', 'S2']);
+      expect(r.status).toBe(0);
+      expect(JSON.parse(r.stdout.trim().split('\n').pop()).ok).toBe(true);
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it('S3 门 → exit 2 且 **pipeline.json 不落证据**（落红证据等于说「跑过没过」，可它无从跑起）', () => {
+    const root = mkDesign();
+    try {
+      // 不带 --out-of-order：设计态这道拒绝**排在顺序闸之前**，所以顺序闸根本轮不到开口。
+      // （这正是它该在前面的理由：先告诉作者「你还没有实现体」，别让他照着顺序闸的欠项白跑一趟。）
+      const r = runCli(root, ['gate', 'g9', 'S3']);
+      expect(r.status).toBe(2);                       // 2=用法错，与真·门失败(1)区分
+      expect(r.stderr).toContain('设计态');
+      expect(existsSync(join(root, 'public', 'games', 'g9', 'pipeline.json'))).toBe(false);
     } finally { rmSync(root, { recursive: true, force: true }); }
   });
 });

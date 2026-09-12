@@ -12,6 +12,24 @@ import { sig } from '@engine/core/schema.js';
 //  确定性/纯函数：只读 describe 元数据，无副作用。供 zerocraft.py 生成 prompt、studio、文档共用。
 // ═══════════════════════════════════════════════════════════════
 
+/**
+ * ① 索引面：`id — 一句话`。**两阶段检索的第一阶段**（独立审查 2026-09-12 打回）：
+ * 全量目录实测 9 万多字符，整份塞进生成请求会吃光弱模型的上下文，而绝大多数请求只用得上十来件。
+ *
+ * **为什么这个函数住在这里而不是住在 CLI 里**（第二轮打回的正确意见）：首版只在
+ * `scripts/dump-capability-catalog.mjs` 里写了一份，于是「省上下文」这件事只有命令行享受得到——
+ * 产品路径（浏览器 `buildCapabilityCatalog` 全量 → POST 给服务端）一个字节都没省。
+ * 同一个判据必须只有一份实现，两边都 import 它，才不会一边修好、另一边照旧。
+ */
+export function buildCapabilityIndex(caps: readonly CapabilityDefinition[]): string {
+  const lines = ['# 能力索引（只有名字与一句话·挑完再要细节）', ''];
+  for (const c of [...caps].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))) {
+    const sum = (c.describe?.summary || '').split('。')[0].slice(0, 64);
+    lines.push(`- \`${c.id}\` — ${sum}`);
+  }
+  return lines.join('\n') + '\n';
+}
+
 export interface CatalogOptions {
   withExamples?: boolean; // 含 describe.examples（教 AI 数据形状，信号最高；缺省 true）
   withWhenToUse?: boolean; // 含 whenToUse（缺省 true）

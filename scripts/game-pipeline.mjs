@@ -51,12 +51,27 @@ const writeJson = (f, v) => { mkdirSync(dirname(f), { recursive: true }); writeF
 export const pipelineFile = (root, slug) => join(root, 'public', 'games', slug, 'pipeline.json');
 
 // 游戏形态：cart=创作台卡带（library/）· builtin=内置纯数据（public/games/<slug>/manifest.json tracked）· compiled=编译期（games/）。
+/**
+ * 游戏形态。四种，**`design` 是 2026-09-12 补的第四种**（独立审查打回的鸡生蛋）：
+ * S1/S2 是**设计阶段**，按流程它们必须先过，实现体才被允许出现；可此前 detectForm 只认
+ * 「library / public/games / games 三处之一有实现体」，于是新立项的游戏（只有 `docs/design/<slug>/`）
+ * 一上板就 `未知游戏, exit 1` —— **要过 S2 得先有实现体，要有实现体得先过 S2**。实撞：game110 / game111。
+ * 补 `design` 形态后：S1/S2 照常跑（它们的门本来就是纯 fs），S3+ 明说「还没有实现体」而不是「不认识你」。
+ * 顺序要紧：实现体优先——设计档一直在，它只能当**最后的兜底**，否则已实现的游戏会被误判成设计态。
+ */
 export function detectForm(root, slug) {
   if (existsSync(join(root, 'library', slug, 'manifest.json'))) return 'cart';
   if (existsSync(join(root, 'public', 'games', slug, 'manifest.json'))) return 'builtin';
   if (existsSync(join(root, 'games', slug))) return 'compiled';
+  if (existsSync(join(root, 'docs', 'design', slug))) return 'design';
   return null;
 }
+
+/** 还没有实现体（只有设计档）——S3 及以后的关无从谈起。 */
+export const isDesignOnly = (form) => form === 'design';
+/** 设计态在 S3+ 的统一说法（板上/门上同一只嘴，免得两处各说各话）。 */
+const DESIGN_ONLY_NOTE = (slug) =>
+  `设计态（只有 docs/design/${slug}/·还没有实现体）：先把 manifest 或 games/${slug}/ 源码落地，本关才有东西可跑`;
 
 const manifestPath = (root, slug, form) =>
   form === 'cart' ? join(root, 'library', slug, 'manifest.json')
@@ -372,7 +387,7 @@ function evalEvidence(ev, freshHash, headNow) {
 /** 看板推导（读盘+轻推导·不跑重活）。绿=机器 ok/免 + 人门 ok；任何一边欠=黄；机器 fail=红。 */
 export function boardFor(root, slug) {
   const form = detectForm(root, slug);
-  if (!form) return { ok: false, error: `未知游戏: ${slug}（library/public/src 三处均无）` };
+  if (!form) return { ok: false, error: `未知游戏: ${slug}（library/ · public/games/ · games/ · docs/design/ 四处均无）` };
   const pf = readJson(pipelineFile(root, slug), { version: 1, slug, concept: {}, signoffs: {}, evidence: {} });
   const hashNow = gameHash(root, slug);
   const head = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).stdout?.trim() || '';
@@ -418,7 +433,8 @@ export function boardFor(root, slug) {
         // R1（REQ-RENDERCHECK）：编译期游戏免 manifest 校验，但 gate 现在追加跑渲染探针——
         // 有证据（跑过）就照实证据走（ok/fail/stale）；从未跑过才显示「免」的旧提示（未跑≠免责）。
         machine = evalEvidence(pf.evidence?.S3, hashNow, head);
-        if (machine.state === 'dim' && !manifestPath(root, slug, form)) {
+        if (machine.state === 'dim' && isDesignOnly(form)) machine.detail = DESIGN_ONLY_NOTE(slug);
+        else if (machine.state === 'dim' && !manifestPath(root, slug, form)) {
           machine.detail = '编译期游戏免 manifest 校验·渲染探针未跑（gate 跑一次落证据）';
         }
         break;
@@ -426,17 +442,20 @@ export function boardFor(root, slug) {
         machine = evalEvidence(pf.evidence?.S4, hashNow, head);
         const nScen = acceptanceScenarioCount(root, slug);
         const scenNote = `验收剧本 ${nScen}/${MIN_ACCEPTANCE_SCENARIOS}${nScen < MIN_ACCEPTANCE_SCENARIOS ? '（GD 补）' : ' ✓'}`;
-        if (machine.state === 'dim') machine.detail = form === 'cart' ? `未跑（gate=bench 五轴 + ${scenNote}）` : hasTests ? `未跑（gate=该游戏 vitest + ${scenNote}）` : `✗ 无 walkthrough 测试（testing.md：先补测试再谈玩法完成）· ${scenNote}`;
-        if (machine.state === 'dim' && form !== 'cart' && !hasTests) machine.state = 'fail';
-        machine.detail += ` · ${selfCheckNote(root, slug, 'S4', pf.selfCheck?.S4, hashNow)}`;
+        if (machine.state === 'dim') machine.detail = isDesignOnly(form) ? `${DESIGN_ONLY_NOTE(slug)} · ${scenNote}`
+          : form === 'cart' ? `未跑（gate=bench 五轴 + ${scenNote}）` : hasTests ? `未跑（gate=该游戏 vitest + ${scenNote}）` : `✗ 无 walkthrough 测试（testing.md：先补测试再谈玩法完成）· ${scenNote}`;
+        // 设计态不判红：「还没写测试」对一个还没有实现体的立项不是缺陷，是进度。红只留给真有实现体却无测试的。
+        if (machine.state === 'dim' && form !== 'cart' && !isDesignOnly(form) && !hasTests) machine.state = 'fail';
+        if (!isDesignOnly(form)) machine.detail += ` · ${selfCheckNote(root, slug, 'S4', pf.selfCheck?.S4, hashNow)}`;
         break;
       }
       case 'S5':
         machine = form === 'cart'
           ? { state: 'ok', detail: '纯数据卡带无游戏层代码（LayoutNode 纪律天然满足）' }
           : evalEvidence(pf.evidence?.S5, hashNow, head);
+        if (isDesignOnly(form) && machine.state === 'dim') machine.detail = DESIGN_ONLY_NOTE(slug);
         // 卡带 S5 本就免审计（无游戏层代码）→ 不加自证前置；其余形态板上常显自证态（缺=✗·陈旧=⚠）。
-        if (form !== 'cart') machine.detail += ` · ${selfCheckNote(root, slug, 'S5', pf.selfCheck?.S5, hashNow)}`;
+        if (form !== 'cart' && !isDesignOnly(form)) machine.detail += ` · ${selfCheckNote(root, slug, 'S5', pf.selfCheck?.S5, hashNow)}`;
         break;
       case 'S6':
         machine = artSubState(root, slug);
@@ -446,7 +465,8 @@ export function boardFor(root, slug) {
         break;
       case 'S8':
         machine = evalEvidence(pf.evidence?.S8, hashNow, head);
-        if (machine.state === 'dim') machine.detail = form === 'cart' ? '未跑（gate=manifest-check+bench+MOCK 清账·卡带轻量终检）' : '未跑（gate=tsc+vitest+build 三绿）';
+        if (machine.state === 'dim') machine.detail = isDesignOnly(form) ? DESIGN_ONLY_NOTE(slug)
+          : form === 'cart' ? '未跑（gate=manifest-check+bench+MOCK 清账·卡带轻量终检）' : '未跑（gate=tsc+vitest+build 三绿）';
         break;
       default:
         machine = { state: 'dim', detail: '' };
@@ -729,7 +749,7 @@ if (isMain) {
   const opt = (name) => { const i = argv.indexOf(name); return i >= 0 ? argv[i + 1] : undefined; };
   if (!cmd || !slug) { console.error('用法: game-pipeline.mjs <board|gate|checklist|review|scorecard|signoff|concept> <slug> …（头注有全表）'); process.exit(1); }
   const form = detectForm(ROOT, slug);
-  if (!form) { console.error(`未知游戏: ${slug}`); process.exit(1); }
+  if (!form) { console.error(`未知游戏: ${slug}（library/ · public/games/ · games/ · docs/design/ 四处均无）`); process.exit(1); }
 
   if (cmd === 'board') {
     const b = boardFor(ROOT, slug);
@@ -819,6 +839,16 @@ if (isMain) {
   if (cmd === 'gate') {
     const stage = a3;
     if (!GATE_STAGES.includes(stage)) { console.error(`gate 只认 ${GATE_STAGES.join('/')}（其余阶段是纯推导或纯人门）`); process.exit(1); }
+    // 设计态（只有 docs/design/<slug>/·没有实现体）跑 S3+ 的门：**当场拒绝，不落证据，排在顺序闸之前**。
+    // · 排在顺序闸之前：「你还没有实现体」比「前面几关没绿」更根本，先说那句才有用——
+    //   否则作者看到的是一串顺序闸欠项，照着去补，补完再撞这道，白跑一趟。
+    // · 不落证据：落一条红证据等于说「这关跑过而且没过」，可它根本无从跑起；那条红还会一直挂在板上逼人日后手动清。
+    // · exit 2（用法错）与真·门失败（exit 1）区分开，编排器据此不把它当「门红」重派会话。
+    if (isDesignOnly(form) && stage !== 'S2') {
+      console.error(`✗ ${DESIGN_ONLY_NOTE(slug)}`);
+      console.error(`  → 现在能跑的是 S1（立项卡 concept）与 S2（能力计划 gap-check）；实现体落地后本关自然可跑。`);
+      process.exit(2);
+    }
     // F·阶段顺序闸：前置阶段（S1..S(N-1)）非全绿则拒跑，除非带 --out-of-order "<理由>" 记账放行。
     const oooReason = opt('--out-of-order');
     // **S2 不过顺序闸**（独立复查 2026-08-16 P0：接上顺序闸后 game-d/game102 的 `verifyStage('S2')`

@@ -6,7 +6,7 @@ import { SHELL } from './ui/shell-theme.js';
 import { resolveArtRefs } from './assembly/resolve-art-refs.js';
 import { artlibRecords, type LibraryRecord } from '@assets/index.js';
 import type { ArtLibIndex } from '@assets/artlib.js';
-import { buildCapabilityCatalog } from './assembly/capability-catalog.js';
+import { buildCapabilityCatalog, buildCapabilityIndex } from './assembly/capability-catalog.js';
 import { ALL_CAPABILITIES } from './assembly/capability-registry.js';
 import {
   metaToGameEntry, libSlug, providerStatus, LIB_ID_PREFIX,
@@ -274,7 +274,11 @@ export function Launcher() {
   // 保存新卡带后请求轮播选中它（`lib:<slug>`）。
   const [selectSlug, setSelectSlug] = useState<string | null>(null);
   // 能力目录（从引擎 ALL_CAPABILITIES 自动派生）：向导生成请求随之送出，注入系统词。派生一次即可。
+  // **两份**（独立审查 2026-09-12 第二轮）：全量目录近 7 万字符，整份塞进每一次请求会吃光弱模型的上下文。
+  // 索引面（id + 一句话·约 7.8k·省 88.7%）给「讨论/分解」这类只需按名字挑件的调用；
+  // 全量留给「出 manifest」那一步——那里真要逐字段的形状，省不得。
   const catalog = React.useMemo(() => buildCapabilityCatalog(ALL_CAPABILITIES), []);
+  const catalogIndex = React.useMemo(() => buildCapabilityIndex(ALL_CAPABILITIES), []);
 
   useEffect(() => {
     apiCall('/api/generate/providers')
@@ -785,6 +789,7 @@ export function Launcher() {
           api={API}
           providers={providers ?? []}
           catalog={catalog}
+          catalogIndex={catalogIndex}
           resolveArt={resolveArt}
           initialSlug={designStudio.slug}
           initialName={designStudio.name}
