@@ -5,7 +5,7 @@ import shutil
 import re
 
 from .blueprints import PRESET_BLUEPRINTS
-from .library import _art_replace_cli, _git_commit_all, _git_game, _git_ok, _history, _list_library, _preset_manifest, _read_design, _scaffold, _snapshot, _touch_meta, _version_save, _version_save_all, _write_design_file
+from .library import _art_replace_cli, _write_meta, _git_commit_all, _git_game, _git_ok, _history, _list_library, _preset_manifest, _read_design, _scaffold, _snapshot, _touch_meta, _version_save, _version_save_all, _write_design_file
 from .paths import LIBRARY_DIR, _dedup_slug, _game_dir, _lib_parts, _run_manifest_check, _slugify, _valid_design_relpath, _valid_slug, _write_json
 from .sysutil import ROOT, _spawn, c
 from .workshop_store import _WORKSHOP_CHATS_DIR
@@ -67,6 +67,22 @@ def library_delete(slug: str) -> tuple:
     print(c('  [LIB]', 'y'), f'删除卡带 {slug} · {"+".join(removed)}')
     return (200, {'success': True, 'slug': slug, 'removed': removed})
 
+def _is_empty_shell(slug: str) -> bool:
+    """这个 slug 是不是「上一次建库失败留下的空壳」——目录在、manifest 在、但**零实体**。
+    零实体的项目不可能是作者要保留的成果（空卡带连运行器都拒绝放行），复用它是安全的。"""
+    if not _valid_slug(slug):
+        return False
+    d = LIBRARY_DIR / slug
+    if not d.is_dir():
+        return False
+    try:
+        mf = json.loads((d / 'manifest.json').read_text(encoding='utf-8'))
+    except Exception:
+        return False
+    ents = mf.get('entities')
+    return not (isinstance(ents, dict) and len(ents) > 0)
+
+
 def library_create(body: dict) -> tuple:
     name = str(body.get('name') or '').strip()
     if not name:
@@ -76,15 +92,28 @@ def library_create(body: dict) -> tuple:
         manifest = _preset_manifest(PRESET_BLUEPRINTS[template])
     else:
         manifest = {'capabilities': [], 'entities': {}}
-    slug = _dedup_slug(_slugify(name))
     # 一句话玩法（REQ-WORKSHOP C1）：一处来源两处受益——meta.description（卡带架副标题）+ concept.pitch（S1 立项卡）。
     desc = str(body.get('description') or '').strip()[:300]
     meta_over = dict(body.get('meta') or {})
     if desc:
         meta_over['description'] = desc
-    _, meta, versioned = _scaffold(slug, name, manifest, str(body.get('provider') or 'user'),
-                                   meta_over, 'create', pitch=desc)
-    return (200, {'success': True, 'slug': slug, 'meta': meta, 'versioned': versioned})
+
+    # ⚠ **重试不许再生一个孤儿**（独立审查 2026-09-12 打回）：前端的「建库 → 存 manifest」是两步，
+    # 第二步失败后作者点重试，首版每次都 `_dedup_slug` 造一个新 slug ⇒ 一串 `xxx-2` / `xxx-3` 空项目。
+    # 真正的事务化 API（requestId + 一次调用落两件）是接口级改动，得 owner 定形状；
+    # 这里先把**症状**治掉：同名项目已存在**且是空壳**（零实体 = 只可能是上一次失败留下的）就复用它，
+    # 而不是另起炉灶。非空的同名项目照旧 dedup（那是作者真的想要第二个）。
+    base = _slugify(name)
+    slug = base if _is_empty_shell(base) else _dedup_slug(base)
+    reused = slug == base and _is_empty_shell(base)
+    if reused:
+        _write_meta(_game_dir(slug), name, str(body.get('provider') or 'user'), meta_over)
+        meta = json.loads((_game_dir(slug) / 'meta.json').read_text(encoding='utf-8'))
+        versioned = _version_save(_game_dir(slug), manifest, 'create (reuse empty shell)')
+    else:
+        _, meta, versioned = _scaffold(slug, name, manifest, str(body.get('provider') or 'user'),
+                                       meta_over, 'create', pitch=desc)
+    return (200, {'success': True, 'slug': slug, 'meta': meta, 'versioned': versioned, 'reused': reused})
 
 def library_install_sample(body: dict) -> tuple:
     """装官方示例卡带。preset='all'（或缺省）=全套幂等安装（已存在的跳过）；指定单个 preset 也幂等。
@@ -123,7 +152,10 @@ def library_put_manifest(slug: str, body: dict) -> tuple:
         _art_replace_cli(['derive', slug])
     except Exception:
         pass  # 刷新失败不阻塞落盘（美术平台打开时客户端 derive 兜底仍在）
-    return (200, {'success': True, 'slug': slug, 'versioned': versioned, 'warnings': msg})
+    # warnings 统一成**数组**（前端逐条渲染；首版是整块字符串，调用方只能整段丢或整段贴）。
+    warn_lines = [ln for ln in (msg or '').strip().splitlines() if ln.strip()]
+    return (200, {'success': True, 'slug': slug, 'versioned': versioned,
+                  'warnings': warn_lines, 'versionedMode': versioned})
 
 def library_rollback(slug: str, body: dict) -> tuple:
     game_dir = _game_dir(slug)

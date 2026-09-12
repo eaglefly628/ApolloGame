@@ -149,7 +149,7 @@ describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门
   });
 
   it('facesOf：守卫脚本自身被改也触发各自守卫（改守卫先自证跑绿）', () => {
-    expect(facesOf(['games/game-a/rules.ts', 'docs/workflow/requests.md'])).toEqual({ artSmoke: false, syncSmoke: false, backupSmoke: false, platformStatic: false, workshopProvider: false, distStale: false, skillShape: false, dokiApps: [], slowLane: [] });
+    expect(facesOf(['games/game-a/rules.ts', 'docs/workflow/requests.md'])).toEqual({ artSmoke: false, syncSmoke: false, backupSmoke: false, platformStatic: false, workshopProvider: false, distStale: false, skillShape: false, creationLoop: false, dokiApps: [], slowLane: [] });
     expect(facesOf(['main_entry/server.py']).platformStatic).toBe(true); // 蓝屏面（2026-08-25）：server.py 不带 art_ 前缀·此前零旗命中
     // 假产物面（2026-08-26）：工作台选供应商那段与 generate_api 此前同样零旗命中——
     // 改一行「兜底可以落 mock」就能让全站生成变成同一份固定样例，而没有任何门在验。
@@ -164,6 +164,9 @@ describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门
     // 能力形状面（2026-09-05）：改任何能力壳都要过棘轮，新长出来的超大件当场拦。
     expect(facesOf(['src/skills/tier2/steering.ts']).skillShape).toBe(true);
     expect(facesOf(['scripts/skill-shape-baseline.json']).skillShape).toBe(true);
+    // 创作闭环面（2026-09-12）：建库/编号/版本保存/生成告警这条链此前零旗命中。
+    expect(facesOf(['main_entry/library.py']).creationLoop).toBe(true);
+    expect(facesOf(['src/studio/CreationWizard.tsx']).creationLoop).toBe(true);
   });
 
   it('美术面改动（full）：计划含 art-smoke 步（python3 点名）·红=拦', () => {
@@ -267,10 +270,11 @@ describe('scoped-gate 接线补牙（slowLane 正向 · docs-only 全量对账 �
       workshopProvider: { value: true, steps: ['workshop-provider-guard'] },
       distStale: { value: true, steps: ['dist-staleness-guard'] },
       skillShape: { value: true, steps: ['skill-shape-guard'] },
+      creationLoop: { value: true, steps: ['creation-loop-guard'] },
       dokiApps: { value: ['game108'], steps: ['doki-test:game108'] },
       slowLane: { value: ['acceptance'], steps: ['slow-lane:acceptance'] },
     };
-    // 总对账下限：facesOf 产出的旗集合 = 本表键集合。往 facesOf 加第 11 旗而不进此表 → 这里先红，
+    // 总对账下限：facesOf 产出的旗集合 = 本表键集合。往 facesOf 加第 12 旗而不进此表 → 这里先红，
     // 逼施工者同时补 planFor 接线断言（防「加旗忘接步」静默失效——旗亮了计划却没步）。
     expect(Object.keys(facesOf([])).sort()).toEqual(Object.keys(FLAG_TO_STEPS).sort());
     for (const [flag, { value, steps }] of Object.entries(FLAG_TO_STEPS)) {

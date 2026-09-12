@@ -142,7 +142,7 @@ describe('② 看门狗：停滞→杀→重派一次→failed', () => {
     ].join('\n'));
 
     const t0 = Date.now();
-    const r = await dispatch({ root, slug, stage: 'S3', claudeBin: bin, idleTimeoutMs: 200, killGraceMs: 150 });
+    const r = await dispatch({ root, slug, stage: 'S3', claudeBin: bin, idleTimeoutMs: 200, killGraceMs: 150, startupGraceMs: 200 });
     const elapsed = Date.now() - t0;
 
     expect(r.ok).toBe(false);
@@ -164,7 +164,7 @@ describe('② 看门狗：停滞→杀→重派一次→failed', () => {
       `let n = 0;`,
       `const t = setInterval(() => { console.log('{"type":"stream","n":' + (++n) + '}'); if (n >= 6) { clearInterval(t); process.exit(0); } }, 50);`,
     ].join('\n'));
-    const r = await dispatch({ root, slug, stage: 'S3', claudeBin: bin, idleTimeoutMs: 200, killGraceMs: 150 });
+    const r = await dispatch({ root, slug, stage: 'S3', claudeBin: bin, idleTimeoutMs: 200, killGraceMs: 150, startupGraceMs: 200 });
     expect(r.attempts).toBe(1);                          // 没重派
     expect(r.session.outcome).toBe('exited');            // 自然退出（总时长 300ms > 200ms 空闲阈，但一直有心跳）
     expect(r.session.code).toBe(0);

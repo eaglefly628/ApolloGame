@@ -342,12 +342,14 @@ export function Launcher() {
   }, []);
 
   // 向导 / 设计工作台保存成功 → 关面板、刷卡带架、请求选中新卡带 + 「下一步 → 🏭」引导条（REQ-WORKSHOP C1 导流）。
-  const [savedNext, setSavedNext] = useState<{ slug: string } | null>(null);
-  const onWizardSaved = useCallback((slug: string) => {
+  const [savedNext, setSavedNext] = useState<{ slug: string; warnings?: string[] } | null>(null);
+  const onWizardSaved = useCallback((slug: string, warnings?: string[]) => {
     setWizard(null);
     setDesignStudio(null);
     setSelectSlug(`${LIB_ID_PREFIX}${slug}`);
-    setSavedNext({ slug });
+    // 告警随「已入库」条一起显示（独立审查 2026-09-12：软环/降级/兼容性告警此前在成功路径被整段吞掉，
+    // 作者只看到「创建成功」）。告警不阻断入库，但必须看得见。
+    setSavedNext({ slug, warnings: (warnings || []).filter(Boolean) });
     setLibRefresh((k) => k + 1);
   }, []);
   // 轮播跳转完成 → 清 selectSlug（一次性，之后刷架不再强跳）。
@@ -689,7 +691,17 @@ export function Launcher() {
           background: SHELL.jadeWash, border: `1px solid ${SHELL.jadeLine}`,
           color: SHELL.jade, fontSize: 13, fontFamily: SHELL.fontUi,
         }}>
-          <span>✓ 已入库 <b>{libGameEntries.find((g) => libSlug(g.id) === savedNext.slug)?.title ?? savedNext.slug}</b></span>
+          <span>
+            {(savedNext.warnings?.length ?? 0) > 0 ? '⚠' : '✓'} 已入库{' '}
+            <b>{libGameEntries.find((g) => libSlug(g.id) === savedNext.slug)?.title ?? savedNext.slug}</b>
+            {(savedNext.warnings?.length ?? 0) > 0 && (
+              <span style={{ display: 'block', marginTop: 4, color: SHELL.warn, fontSize: 11, lineHeight: 1.6, maxWidth: 520 }}>
+                {savedNext.warnings!.length} 条引擎告警（已入库·但请看一眼）：
+                {savedNext.warnings!.slice(0, 4).map((w, i) => <span key={i} style={{ display: 'block' }}>· {w}</span>)}
+                {savedNext.warnings!.length > 4 && <span style={{ display: 'block' }}>· …还有 {savedNext.warnings!.length - 4} 条</span>}
+              </span>
+            )}
+          </span>
           <button
             onClick={() => {
               const title = libGameEntries.find((g) => libSlug(g.id) === savedNext.slug)?.title ?? savedNext.slug;

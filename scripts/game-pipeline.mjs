@@ -380,6 +380,12 @@ export function boardFor(root, slug) {
   const hasTests = form !== 'cart' && existsSync(join(root, 'games', slug))
     && readdirSync(join(root, 'games', slug)).some((f) => f.endsWith('.test.ts'));
   const planFile = join(root, 'docs', 'design', slug, 'capability-plan.md');
+  // ⚠ **设计文档有两个落点**（独立审查 2026-09-12 打回的 P0）：创作台的 DesignStudio 把设计稿写进
+  // `library/<slug>/design/`（`design_flow.py` → `_game_dir`），而本流水线只读 `docs/design/<slug>/`。
+  // 后果是作者在创作台把设计做完了，S2 这边照样报「无能力计划」——**而且报得像是他没做**。
+  // 统一存储是迁移级决定（owner 判），但**沉默是不可接受的**：这里先把"另一处有"这件事说出来。
+  const studioPlanFile = join(root, 'library', slug, 'design', 'capability-plan.md');
+  const planSplit = !existsSync(planFile) && existsSync(studioPlanFile);
   // 缺口台账（REQ-S18PANEL②③）：**板上现算**（不读证据）——缺口台账已被排除出 gameHash，
   // 若改走证据就再没有东西替它标过期；现算则「把缺口标 delivered」下一次 board 立刻反映。
   const gapsRes = readCapabilityGaps(root, slug);
@@ -400,7 +406,11 @@ export function boardFor(root, slug) {
         const planDetail = existsSync(planFile) ? 'capability-plan.md 在档'
           : c.planWaiver ? `纯数据卡带免正式 plan（裁决在案：${String(c.planWaiver).slice(0, 40)}）` : null;
         machine = planDetail === null
-          ? { state: 'dim', detail: '无能力计划也无免 plan 裁决（模板见手册列）' }
+          ? (planSplit
+            // 两套事实源撞上了：别报「没做」，报「做在另一处」并给出搬运命令——这是作者能自救的唯一信息。
+            ? { state: 'warn', detail: `能力计划在 **library/${slug}/design/**（创作台落点），而流水线只读 docs/design/${slug}/`
+                + ` —— 两套事实源（P0·待 owner 判统一方向）。暂行：cp -r library/${slug}/design/* docs/design/${slug}/` }
+            : { state: 'dim', detail: '无能力计划也无免 plan 裁决（模板见手册列）' })
           : { state: gapEval.state, detail: `${planDetail} · ${gapEval.detail}` };
         break;
       }

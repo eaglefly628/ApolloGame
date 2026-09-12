@@ -140,6 +140,12 @@ export function facesOf(files) {
     // 而不是等下一次 review 才发现（实测立门当天中位壳 98 行、最大 654 行 = 6.7×）。
     skillShape: list.some((f) => f.startsWith('src/skills/') && f.endsWith('.ts') && !f.includes('.test.'))
       || list.some((f) => f === 'scripts/skill-shape-guard.mjs' || f === 'scripts/skill-shape-baseline.json'),
+    // creationLoop：创作闭环面（独立审查 2026-09-12 打回六条·owner 令「该补足的补足」）。
+    // 病灶一句话：**能生成、能运行，却没有证据证明生成的是设计要求的那个游戏**。
+    // 这条链（建库 → 编号 → 版本保存 → 生成告警 → 原型前计划体检 → catalog）此前**零面旗命中**。
+    creationLoop: list.some((f) => f.startsWith('main_entry/') || f.startsWith('src/studio/')
+      || f === 'src/launcher.tsx' || f === 'scripts/dump-capability-catalog.mjs'
+      || f === 'scripts/creation-loop-guard.py'),
     // dokiworld/** 的 node --test 没有别的门在验（DOKI-APPS 后续①·「写了测试没人跑」与 game108 恒石同形）：
     // 改动命中哪个 app 目录就跑哪个（.md 不算——纯文档改不了测试结果）。
     dokiApps: [...new Set(list.map((f) => { const m = f.match(/^dokiworld\/([a-z0-9-]+)\//); return m && !f.endsWith('.md') ? m[1] : null; }).filter(Boolean))].sort(),
@@ -201,6 +207,7 @@ export function planFor(c, auditGames = [], faces = {}) {
     ...(faces.workshopProvider ? [{ name: 'workshop-provider-guard', cmd: ['node', ['scripts/workshop-provider-guard.mjs']] }] : []),
     ...(faces.distStale ? [{ name: 'dist-staleness-guard', cmd: ['python3', ['scripts/dist-staleness-guard.py']] }] : []),
     ...(faces.skillShape ? [{ name: 'skill-shape-guard', cmd: ['node', ['scripts/skill-shape-guard.mjs']] }] : []),
+    ...(faces.creationLoop ? [{ name: 'creation-loop-guard', cmd: ['python3', ['scripts/creation-loop-guard.py']] }] : []),
     ...(faces.syncSmoke ? [
       { name: 'art-sync-smoke', cmd: ['python3', ['scripts/art-sync-smoke.py']] },
       { name: 'auto-sync-smoke', cmd: ['python3', ['scripts/auto-sync-smoke.py']] },
