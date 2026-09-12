@@ -434,6 +434,12 @@ export async function dispatch(opts = {}) {
     extraFlags = (process.env.ZEROCRAFT_ORCH_FLAGS || '').split(/\s+/).filter(Boolean),
     verifyCmd = null,   // 测试注入替身门（仅施工模式）；生产恒 null → 走 verifyStage 真门。
                         // 复查模式不接注入：重验=纯 fs+指纹核对（verifyReview），测试造真记录即可。
+    // 会话执行器可注入（独立复查 2026-09-12 的建议：**注 clock/runner，别加 sleep**）。
+    // 为什么非注不可：看门狗的「停滞→杀→重派一次→failed」这条编排逻辑，用真子进程验时
+    // 必然在赌「Node 冷启动比阈值快」——慢机器上替身还没启动完就被杀，标记文件都没写下，
+    // 断言当场失真（复查方在自己机器上就是这么红的，而我这儿是绿的：同一份代码两种结果 = 判据不可靠）。
+    // 注进来之后，编排逻辑的测试**零子进程、零计时**，完全确定；真子进程的杀进程机制另留一条测试覆盖。
+    runSessionImpl = runSession,
     pid = process.pid,
   } = opts;
 
@@ -473,7 +479,7 @@ export async function dispatch(opts = {}) {
     for (let attempt = 1; attempt <= attemptCap; attempt += 1) {
       attempts = attempt;
       touchLock(root, { attempt, lastOutputAt: new Date().toISOString() }, { pid, throttleMs: 0 });
-      session = await runSession({
+      session = await runSessionImpl({
         bin: rt.bin, args, prompt, cwd: root, idleTimeoutMs: idleMs, killGraceMs, startupGraceMs, logFile,
         // 心跳落锁（P1b 横幅/status 读它判 running vs stalled）。内存节流：1s 一次，流式输出不刷爆 fs。
         onOutput: () => {
