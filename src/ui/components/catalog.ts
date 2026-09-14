@@ -275,9 +275,12 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'icon', type: 'string', describe: '键首内联图标 URL（1em 随字号·居 label 前）' },
     ],
     sample: { type: 'Button', id: 's-button', props: { label: '⚔ 出征 · 第 3 关', kind: 'hero', sub: '挑战 曹操 · 难度 ★★', action: 'play' } },
-    tags: ['按钮', '开始', '确定', '技能键', '点击', '出战', '领取', '操作'],
+    tags: ['按钮', '开始', '确定', '技能键', '点击', '出战', '领取', '操作', '主菜单', '按钮布局', '排布', '技能扇'],
     demo: [
       { tab: 'tab-input', section: 't-btn', note: '三种风格加禁用态' },
+      { tab: 'tab-3dbtn', section: 't-3dbtn-depth', note: '景深主菜单（布局六法）' },
+      { tab: 'tab-3dbtn', section: 't-3dbtn-arc', note: '弧形技能扇排布' },
+      { tab: 'tab-3dbtn', section: 't-3dbtn-candy', note: '糖果厚钮网格·触屏' },
       { tab: 'tab-new', section: 't-hero', note: '金色倒角大主按钮' },
       { tab: 'tab-new', section: 't-shape', note: '八种异形轮廓钮' },
       { tab: 'tab-new', section: 't-skin', note: '贴图皮与九宫格拉伸' },

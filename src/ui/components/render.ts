@@ -306,7 +306,10 @@ function renderButton(id: string, p: ButtonProps, ls: string, t: UITheme): strin
   const kindStyle: Record<string, string> = {
     primary: `background:${t.jadeWash};color:${t.jade};border:1px solid ${t.jadeLine};font-weight:600`,
     ghost:   `background:rgba(255,255,255,0.03);color:${t.sub};border:1px solid ${t.line}`,
-    quiet:   `background:transparent;color:${t.dim};border:1px solid transparent`,
+    // quiet=克制态，但它仍是**可点的按钮文字**：用 t.dim 实测 2.93 < 硬地板 3.0（暗主题下键面读不清·
+    // 波及 25 处含 @ui/starters 起手包的「重来/设置」）。降权用 t.sub（比 text 弱、仍过地板）——
+    // dim 留给真正的三级非必读文字。同 ProgressBar.showValue 的同类修（2026-09）。
+    quiet:   `background:transparent;color:${t.sub};border:1px solid transparent`,
   };
   const kind = p.kind ?? 'ghost';
   // 皮解析（批29 owner 07-15「按键也可换」）：node 级 skin 优先（含 skin:'' 显式关皮逃生）；未给则落主题级
