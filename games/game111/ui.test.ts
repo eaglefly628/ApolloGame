@@ -7,9 +7,11 @@ import type { Resource } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildBlueprint, setupTown } from './blueprint.js';
 import { runTurn } from './turn-driver.js';
 import { buildTownView, fill } from './project.js';
-import { buildHome, buildTownBoard, buildRelationGraph, buildFeed, UI_ACTIONS, labelOf } from './ui.js';
+import { buildHome, buildTownBoard, buildTalkScreen, buildRelationGraph, buildFeed, UI_ACTIONS, labelOf } from './ui.js';
 import type { TownView } from './ui.js';
-import { NEEDS, TITLES, AGENT_NPC_IDS, affinityId, titleFlag } from './world-data.js';
+import { NEEDS, TITLES, AGENT_NPC_IDS, TOPICS, TOPIC_IDS, STUB_REPLIES, stubReply, affinityId, titleFlag, saySignal } from './world-data.js';
+import { applyCommands } from '@zerocraft/engine/net/index.js';
+import { QueuedInputSource } from '@zerocraft/engine/net/host/index.js';
 
 function town(): Engine {
   const e = new Engine();
@@ -32,6 +34,22 @@ function walk(n: LayoutNode, out: LayoutNode[] = []): LayoutNode[] {
   return out;
 }
 const typesIn = (n: LayoutNode): Set<string> => new Set(walk(n).map((x) => x.type));
+
+function readAff(e: Engine, npc: string): number {
+  for (const [eid] of e.world.query('Resource')) {
+    const r = e.world.getComponent<Resource>(eid, 'Resource');
+    if (r?.id === affinityId(npc)) return r.current;
+  }
+  return -1;
+}
+/** 发一个具名动作走真链路（enqueueAction → applyCommands → keybind → Signal → Effect）。 */
+function fireSayRaw(e: Engine, signal: string): void {
+  const q = new QueuedInputSource('player');
+  q.enqueueAction(signal);
+  applyCommands(e.world, q.commandsForTick(1));
+  e.world.tick();
+}
+const fireSay = (e: Engine, npc: string, topic: string): void => fireSayRaw(e, saySignal(npc, topic));
 
 describe('game111 UI · schema 合法性（机器门）', () => {
   it('主菜单 validateLayoutNode 零 issue', () => {
@@ -220,5 +238,131 @@ describe('game111 UI · 信号闭集', () => {
         if (a !== undefined && a !== '') expect(known.has(a), `${a} 不在 UI_ACTIONS`).toBe(true);
       }
     }
+  });
+});
+
+describe('game111 · 玩家说话（核心卖点入口）', () => {
+  it('对话屏用 VN 三件闭集控件，validateLayoutNode 零 issue', () => {
+    const base = { npcId: 'nao', name: '娜洛', persona: '有边界感的咖啡店主', affinity: 12, stubbed: true };
+    for (const v of [base, { ...base, said: '你说今天云走得真快', reply: '云走得快，说明要变天了。' }]) {
+      const tree = buildTalkScreen(v);
+      expect(validateLayoutNode(tree), JSON.stringify(v)).toEqual([]);
+      const t = new Set<string>(walk(tree).map((n) => n.type));
+      for (const want of ['portrait', 'dialog', 'choiceList']) {
+        expect(t.has(want), `VN 三件缺 ${want}（禁手写 VN chrome）`).toBe(true);
+      }
+    }
+  });
+
+  it('选项 = 话题闭集，一条不多一条不少', () => {
+    const tree = buildTalkScreen({ npcId: 'nao', name: '娜洛', persona: '', affinity: 0, stubbed: true });
+    const cl = walk(tree).find((n) => n.type === 'choiceList')!;
+    const opts = (cl.props as { options: { label: string; actionArg: string }[] }).options;
+    expect(opts.map((o) => o.actionArg)).toEqual(TOPIC_IDS);
+  });
+
+  it('桩回话三级回落：点名 → 通用话题 → 兜底', () => {
+    expect(stubReply('nao', 'quiet')).toContain('续了半杯');   // 点名
+    expect(stubReply('gud', 'praise')).toBe(STUB_REPLIES['*:praise']); // 该 NPC 无点名 → 通用
+    expect(stubReply('gud', 'nonexistent-topic')).toBe(STUB_REPLIES['*:*']); // 话题也没有 → 兜底
+  });
+
+  it('demo 桩要明着标出来（别让人以为已经接了模型）', () => {
+    const tree = buildTalkScreen({ npcId: 'nao', name: '娜洛', persona: '', affinity: 0, stubbed: true });
+    const texts = walk(tree).map((n) => String((n.props as { text?: string }).text ?? ''));
+    expect(texts.some((t) => t.includes('桩表'))).toBe(true);
+    const real = buildTalkScreen({ npcId: 'nao', name: '娜洛', persona: '', affinity: 0, stubbed: false });
+    expect(walk(real).map((n) => String((n.props as { text?: string }).text ?? '')).some((t) => t.includes('桩表'))).toBe(false);
+  });
+
+  it('每张 NPC 卡都有进对话的入口', async () => {
+    const e = town();
+    const last = await runTurn(e.world, 1, port);
+    const v = buildTownView(e.world, 1, last);
+    const btns = walk(buildTownBoard(v)).filter((n) => (n.props as { action?: string }).action === 'npc.talk');
+    expect(btns.length).toBe(v.npcs.length);
+    expect(btns.map((b) => (b.props as { actionArg?: string }).actionArg)).toEqual(v.npcs.map((n) => n.id));
+  });
+});
+
+describe('game111 · 说话真进世界（不是只改屏幕）', () => {
+  it('玩家说话 → 好感度真涨（走 keybind→Effect 的真链路）', () => {
+    const e = town();
+    const before = readAff(e, 'nao');
+    fireSay(e, 'nao', 'praise');
+    expect(readAff(e, 'nao')).toBe(before + TOPICS.find((t) => t.id === 'praise')!.affinity);
+  });
+
+  it('sabotage 锚点：撤掉 say 的接线 → 好感不再涨', () => {
+    const bp = buildBlueprint();
+    const key = 'kb-say-nao-praise';
+    expect(bp.entities[key], '锚点必须命中真实接线实体').toBeDefined();
+    delete bp.entities[key];
+    const e = new Engine(); e.load(bp); setupTown(e.world, 0);
+    const before = readAff(e, 'nao');
+    fireSay(e, 'nao', 'praise');
+    expect(readAff(e, 'nao')).toBe(before);
+  });
+
+  it('闭集外的话题什么都不发生（同 barrier 的拒收口径）', () => {
+    const e = town();
+    const before = readAff(e, 'nao');
+    fireSayRaw(e, 'say:nao:hack');
+    expect(readAff(e, 'nao')).toBe(before);
+  });
+});
+
+describe('game111 UI · 真机截图撞出来的四条（回归钉）', () => {
+  it('Screen 会丢 layout → padding/gap 必须挂内层 bare Panel', () => {
+    // 依据：render.ts 的 renderScreen(id, props, children, t) 不接 ls 参数。
+    // 首版把 padding 写在 Screen 上，真机截图里标题贴死屏幕左上角。
+    for (const tree of [buildTownBoard({ turn: 1, npcs: [], feed: [], titles: [] }),
+                        buildTalkScreen({ npcId: 'nao', name: '娜洛', persona: '', affinity: 0, stubbed: true })]) {
+      expect(tree.type).toBe('Screen');
+      expect(tree.layout, 'Screen 上不许挂 layout（渲染侧会丢）').toBeUndefined();
+      const inner = tree.children![0];
+      expect(inner.type).toBe('Panel');
+      expect(inner.layout?.padding, '内层 bare Panel 必须带 padding').toBeGreaterThan(0);
+      expect(inner.layout?.maxWidth, '整页 chrome 用 maxWidth').toBeGreaterThan(0);
+    }
+  });
+
+  it('右上角是壳层保留区 → 两屏都不许把带 action 的控件放顶栏右侧', () => {
+    // 依据：launcher 的 ⚙ 菜单钉死右上，其 subtree 吃掉命中测试（真机 Playwright：
+    // 「⚙ from <div> subtree intercepts pointer events」，连 force 点击也只打到齿轮上）。
+    const board = buildTownBoard({ turn: 1, npcs: [], feed: [], titles: [] });
+    const topbar = walk(board).find((n) => n.id === 'topbar')!;
+    expect(walk(topbar).some((n) => (n.props as { action?: string }).action !== undefined),
+      '看板顶栏不许有可点控件').toBe(false);
+    const talk = buildTalkScreen({ npcId: 'nao', name: '娜洛', persona: '', affinity: 0, stubbed: true });
+    const head = walk(talk).find((n) => n.id === 'talk-head')!;
+    expect(walk(head).some((n) => (n.props as { action?: string }).action !== undefined),
+      '对话屏顶栏不许有可点控件').toBe(false);
+  });
+
+  it('回合号：tween 会顶替 text → 前后缀必须是独立的静态 Label', () => {
+    // 真机截图实测：`{text:'第 1 回合', tween:{...}}` 被渲成光秃秃的「1」。
+    const tree = buildTownBoard({ turn: 7, npcs: [], feed: [], titles: [] });
+    const num = walk(tree).find((n) => n.id === 'town-turn')!;
+    expect((num.props as { tween?: unknown }).tween).toBeDefined();
+    expect((num.props as { text?: string }).text, 'tween 的节点不许同时给 text').toBeUndefined();
+    const ids = walk(tree).map((n) => n.id);
+    expect(ids).toContain('town-turn-pre');
+    expect(ids).toContain('town-turn-post');
+  });
+
+  it('玩家说的话原样进小星书（不套模板）', async () => {
+    const e = town();
+    await runTurn(e.world, 1, port);
+    const topic = TOPICS.find((t) => t.id === 'praise')!;
+    // 照宿主 say() 的写法记一条玩家记忆
+    const { remember } = await import('@zerocraft/engine/skills/tier2/memory.js');
+    remember(e.world, 'npc-nao', {
+      id: 'say:t1:nao:praise', subject: 'player', object: 'nao', turn: 1,
+      strength: topic.strength, tags: [...topic.tags], source: `player:${topic.id}`,
+    });
+    const v = buildTownView(e.world, 1);
+    const line = v.feed.find((f) => f.id === 'say:t1:nao:praise');
+    expect(line?.text, '玩家原话该原样显示').toBe(topic.text);
   });
 });

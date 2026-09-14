@@ -6,6 +6,6 @@ export { runTurn } from './turn-driver.js';
 export type { TurnReport } from './turn-driver.js';
 export * from './world-data.js';
 export { mount } from './game111.js';
-export { buildHome, buildTownBoard, buildRelationGraph, buildFeed, UI_ACTIONS } from './ui.js';
-export type { TownView, NpcView, FeedItem } from './ui.js';
+export { buildHome, buildTownBoard, buildTalkScreen, buildRelationGraph, buildFeed, UI_ACTIONS } from './ui.js';
+export type { TownView, NpcView, FeedItem, TalkView } from './ui.js';
 export { buildTownView } from './project.js';

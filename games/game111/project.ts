@@ -6,8 +6,8 @@ import type { IWorld } from '@zerocraft/engine/engine/core/types.js';
 import type { Resource, State, Flag } from '@zerocraft/engine/engine/protocol/components.js';
 import { recall } from '@zerocraft/engine/skills/tier2/memory.js';
 import type { Intent } from '@zerocraft/engine/engine/protocol/agent.js';
-import { NPCS, NEEDS, TITLES, AGENT_NPC_IDS, needId, zoneFsm, affinityId, titleFlag } from './world-data.js';
-import { ACTION_TEXT, FEED_TEXT, labelOf, type TownView, type NpcView, type FeedItem } from './ui.js';
+import { NPCS, NEEDS, TITLES, TOPICS, AGENT_NPC_IDS, needId, zoneFsm, affinityId, titleFlag } from './world-data.js';
+import { ACTION_TEXT, FEED_TEXT, FEED_TEXT_NOOBJ, labelOf, type TownView, type NpcView, type FeedItem } from './ui.js';
 
 function resourceOf(world: IWorld, id: string): number {
   for (const [eid] of world.query('Resource')) {
@@ -72,11 +72,22 @@ export function buildTownView(
   const feed: FeedItem[] = [];
   for (const id of AGENT_NPC_IDS) {
     for (const m of recall(world, `npc-${id}`, { k: 3, now: turn })) {
+      // 玩家说的话：**把你真说的那句原样显示出来**，不套模板。
+      // `source` 形如 `player:<topicId>`（写入方=宿主的 say()），从话题表现推原句——
+      // 记忆里存的是结构化的 id，句子在数据表里，两边不各存一份。
+      // 这一条是 demo 的说服力所在：你说过的话，会以你说的样子留在这座小镇上。
+      const topicId = m.source.startsWith('player:') ? m.source.slice('player:'.length) : undefined;
+      const playerLine = topicId !== undefined ? TOPICS.find((t) => t.id === topicId)?.text : undefined;
+
       const tag = m.tags[0] ?? 'talk';
+      // 有宾语走带 {o} 的模板；没宾语走专门的无宾语句子（否则会渲出「和说了会儿话。」这种半句话）。
+      const tpl = m.object !== undefined && m.object !== ''
+        ? (FEED_TEXT[tag] ?? FEED_TEXT.talk)
+        : (FEED_TEXT_NOOBJ[tag] ?? FEED_TEXT_NOOBJ.talk);
       feed.push({
         id: m.id,
         who: NAME_OF.get(id) ?? id,
-        text: fill(FEED_TEXT[tag] ?? FEED_TEXT.talk, m.object),
+        text: playerLine ?? fill(tpl, m.object),
         turn: m.turn,
         strength: m.strength,
         source: m.source,

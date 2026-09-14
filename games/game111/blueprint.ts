@@ -36,10 +36,10 @@ import {
   turnOrderCapability, memoryCapability, intentBarrierCapability,
 } from '@zerocraft/engine/skills/tier2/index.js';
 import {
-  NPCS, NEEDS, ZONES, ZONE_IDS, NPC_IDS, TITLES, INTENT_VERBS, MEMORY_DECAY,
+  NPCS, NEEDS, ZONES, ZONE_IDS, NPC_IDS, TITLES, INTENT_VERBS, MEMORY_DECAY, TOPICS,
   TICKS_PER_TURN, SHARE_DISCOUNT, MEMORY_MAX, FORGET_BELOW, DEFAULT_VERB,
   BARRIER_ID, MEMORY_RULES_ID, TURN_RESOURCE, MAX_TURNS,
-  needId, zoneFsm, affinityId, titleFlag, intentSignal,
+  needId, zoneFsm, affinityId, titleFlag, intentSignal, saySignal,
 } from './world-data.js';
 
 /** 一次 rest 回多少精力 / 一次 observe 回多少好奇心 / 一次 talk 回多少社交欲（纯数据·手感调校面）。 */
@@ -126,6 +126,27 @@ function intentEffectEntities(): Record<string, EntityBlueprint> {
   return out;
 }
 
+// ── 玩家说话 → 好感度（**与 NPC 意图同一条输入路径**·预展开表·零解释器）────────
+// 引擎眼里玩家和 LLM 没有区别：两者都只能发具名动作，都经 keybind 变信号，都由 Effect 落地。
+// 这不是巧合，正是 framework §1.2 的论点——写代码时它就长这样。
+function sayEffectEntities(): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  for (const npc of NPC_IDS) {
+    for (const t of TOPICS) {
+      const sig = saySignal(npc, t.id);
+      out[`kb-say-${npc}-${t.id}`] = { KeyBinding: { key: sig, signal: sig, phase: 'action' } };
+      out[`fx-say-${npc}-${t.id}`] = {
+        Effect: { onSignal: sig, kind: 'modify-resource', targetId: affinityId(npc), op: 'add', value: t.affinity, order: 0 },
+      };
+      // 说话也让对方心情好一点（顺带效果·同一信号挂第二条 Effect）。
+      out[`fx-say-${npc}-${t.id}-mood`] = {
+        Effect: { onSignal: sig, kind: 'modify-resource', targetId: needId(npc, 'mood'), op: 'add', value: 4, order: 1 },
+      };
+    }
+  }
+  return out;
+}
+
 // ── 称号：好感度达标(edge) → 置解锁旗。归属具体 NPC（framework §5.1 铁律）──────
 function titleEntities(): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
@@ -167,6 +188,7 @@ export function buildBlueprint(seed = 111): WorldBlueprint {
     ...needEntities(),
     ...npcEntities(),
     ...intentEffectEntities(),
+    ...sayEffectEntities(),
     ...titleEntities(),
   };
 

@@ -329,3 +329,32 @@ const houseTheme = !!host.querySelector('[data-apollo-skin]') || flair.skin > 0;
 
 **建议**（PUI 裁）：二选一——① 判据改为认主题级信号（如 `UITheme.texture`/`panelTexture` 在场）；
 ② 给 `apolloOnyx`/`apolloBrocade` 补 `buttonSkins`（那样三款 house 皮才名副其实等价）。
+
+
+---
+
+## REQ-111-UI-03 · `portrait` / `Avatar` 的首字占位在暗皮上读不清（报 PUI）
+
+- **发现**：2026-09-14 game111 对话屏 `/check-ui` 实测 · status: open · P3（有程序化绕法）
+
+**现象**：`portrait` 缺 `art`、`Avatar` 缺 `src` 时都会回落成「名字首字」。在 house 暗皮 `apolloOnyx` 上：
+
+```
+✕ <div>  "娜"  ratio=2.46   （portrait 占位·硬失败）
+!  <span> "娜"  ratio=3.51   （Avatar 占位·AA 未达）
+```
+
+**根因**：`src/ui/components/render.ts:1254`
+
+```js
+`<div style="…background:linear-gradient(160deg,${t.bg2},${t.bg0});color:${t.dim};…">`
+```
+
+首字色**烤死成 `t.dim`**，底是 `bg2→bg0`。暗皮里这三个令牌本来就挨得近，比值必然低，
+而且**数据侧无法干预**（没有任何 prop 能改这个回落色）。亮皮（apolloBrocade/apolloToon）大概率不显。
+
+**建议**（PUI 裁）：回落色别用 `t.dim`——用 `t.text` 或按底色明度二选一；底也可加深以拉开差。
+这条影响所有「还没有真立绘」的游戏，而那正是每个新游戏的起手状态。
+
+**当前绕法**：`games/game111/portrait-art.ts` 程序化矢量占位（深底 + 亮色肩颈剪影 + 首字），
+满足 art-pipeline「占位最低标准=成形矢量图」，真美术到位即让位。

@@ -102,14 +102,58 @@ L3 NPC 的行为模式树在 v0 未接（现有 NPC 是 L1/L2/L4，没有 L3）�
 **顺带报给 PUI 两条**（`requests.md` REQ-111-UI-01/02）：`Connector.label` 与审计 `solidBgUp` 的盲区；
 `ui-audit` 的 house 主题判据对 `apolloOnyx`/`apolloBrocade` 恒为否（那两款 house 皮没有 `buttonSkins`）。
 
+## 4.6 玩家 ↔ NPC 对话（2026-09-14 追加·owner 令「先用一个假的」）
+
+**核心卖点的入口通了**：素材那句「玩家只需在闲聊中自然说话，就能改变 NPC 后续的行动意图」现在可玩。
+
+**机制**（一句话）：玩家选一个话题 → 写进该 NPC 的记忆（tag `player`·**衰减最慢**）+ 好感增量
+→ **下一回合它的 prompt 里就带着你说过的话** → 模型看到的东西变了 → 它的意图跟着变。
+
+**玩家和 LLM 走的是同一条路**：`saySignal(npc,topic)` → `QueuedInputSource` → `applyCommands`
+→ `t2-keybind` → `Signal` → `t2-effect-apply`。和 NPC 意图逐字同构，只是信号名前缀不同。
+这不是「设计上像」，是**同一段代码**。
+
+**唯一「假」的地方 = `STUB_REPLIES` 一张表**（`world-data.ts`）。它只决定屏幕上显示哪句话，
+**不参与任何世界状态**——好感、记忆、下一回合的意图全走真链路。真模型上线后这张表由端口回包顶替，
+世界那一侧一行都不用改，因为世界从来没读过它。UI 上有一行小字明着标注这一点，不让人误以为已接模型。
+
+### 真机实测撞出来的四条（`tools/ui-audit.mjs` 全绿也没拦住的）
+
+审计跑的是**离线树 + 1060×760 + 最坏数据**；真机跑的是**launcher 壳层里 + 1280×900 + 真数据**。
+四条全部只在真机出现，已各钉一条回归测试：
+
+| # | 症状 | 根因 | 修法 |
+|---|---|---|---|
+| 1 | 标题贴死屏幕左上角 | **`Screen` 会丢掉 `layout`**——`render.ts:1315` 的 `renderScreen(id, props, children, t)` 压根不接 `ls` 参数 | padding/gap/maxWidth 挂内层 bare Panel（`page()` 工具） |
+| 2 | 顶栏右侧的按钮点不动 | **右上角是壳层保留区**：launcher 的 ⚙ 菜单钉死在那儿，其 subtree 吃掉命中测试（Playwright：「⚙ from `<div>` subtree intercepts pointer events」，**连 force 点击也只打到齿轮上**） | 两屏的可点控件一律移出顶栏右侧；主 CTA 改放底部动作条（顺带也是更对的位置） |
+| 3 | 「第 1 回合」渲成光秃秃的「1」 | **`Label.tween` 会顶替 `text`** | 数字单独一个 tween 节点，前后缀两个静态 Label |
+| 4 | 小星书出现「和说了会儿话。」半句话 | 模板有 `{o}` 占位，但 `rest`/`observe` 的记忆没有 object | 加 `FEED_TEXT_NOOBJ` 无宾语分支；**玩家说的话则原样显示**（从 `source` 的 `player:<topicId>` 现推原句） |
+
+> **教训**：ui-audit 是必要不充分。它能量重叠和对比，量不到「壳层压住了你的按钮」「控件的某个 prop 会顶替另一个」
+> 「模板的空占位分支」。**这几条只有把真东西跑起来、点一遍才会掉出来。**
+
+另修一条控件回落缺陷：`portrait` 缺 `art` 时回落的「名字首字」颜色被烤死成 `t.dim`
+（`render.ts:1254`），暗皮上实测 `ratio=2.46` 硬失败。做了程序化矢量占位 `portrait-art.ts`
+（深底 + 亮色肩颈剪影 + 首字·满足美术手册「占位最低标准=成形矢量图」），真美术到位即让位。
+`Avatar` 的首字占位同病同治。已报 PUI（REQ-111-UI-03）。
+
+### demo 怎么看
+
+```bash
+npm run dev                      # → http://localhost:5173/?game=game111
+```
+
+一条完整闭环（实测走通）：进小镇 → 推两回合看需求衰减与记忆累积 → 点「说句话」→ 说三句
+→ 好感 0→22 → 回看板再推一回合 → **娜洛给了称号「老位子那位」**，小星书里留着你说过的原话。
+
 ## 5. 下一阶段（未做·不是欠账清单，是 owner 定过的分期）
 
-表现层已于 2026-09-14 落地（§4.5）。**仍未做**的两件：
+表现层（§4.5）与对话入口（§4.6）已落地。**仍未做**的三件：
 
-1. **玩家 ↔ NPC 对话入口**——现在玩家只能推进回合看小镇自己转，还不能开口。这是「闲聊就能改变
-   NPC 动机」那条核心卖点的入口，要接 `t3-dialogue` + `queued-input`，并把玩家发言写进 NPC 记忆
-   （`tags:['player']`·衰减最慢）。
-2. **小星书的真帖子**——现在 feed 是拿记忆按模板渲的（素材原话「NPC 用记忆发帖」，语义对得上），
+1. **接上真 DeepSeek 跑一遍**——链路已端到端验过（本地 OpenAI 形状桩），但还没用真 key 真跑。
+   owner 有 key 时一条命令即可：起 `scripts/game111-deepseek-proxy.mjs`，游戏侧传 `VITE_GAME111_ENDPOINT`。
+2. **NPC 回话换成模型产出**——现在是 `STUB_REPLIES` 一张表（§4.6）。端口回包顶替它即可，世界侧零改动。
+3. **小星书的真帖子**——现在 feed 是拿记忆渲的（素材原话「NPC 用记忆发帖」，语义对得上），
    但 `feed_post` 动词仍缺（偏差②：`Effect` 的 kind 闭集里没有 spawn）。真帖子实体要等那条缺口有结论。
 
 美术台账（capability-plan §4.5 的 `scripts/game111-art-requirements.mjs`）也未做——现在全是程序化观感，

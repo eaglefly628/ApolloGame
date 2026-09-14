@@ -126,6 +126,68 @@ export const TITLES: readonly TitleDef[] = [
   { id: 't-tai-quiet', byNpc: 'tai', minAffinity: 40, text: '懂得安静的人', rarity: 'rare' },
 ];
 
+// ── 玩家能说的话（闭集·L0 纯数据）────────────────────────────────────────
+// 这是素材那条核心卖点的入口：「玩家只需在闲聊中自然说话，就能改变 NPC 后续的行动意图」。
+// 落法：一句话 = 一条写进该 NPC 记忆的条目（tag `player`·**衰减最慢**）+ 好感增量。
+// 下一回合这条记忆进 prompt → 模型看到的东西变了 → 它的意图跟着变 → 链式影响起点。
+export interface TopicDef {
+  readonly id: string;
+  /** 选项上显示的短标签。 */
+  readonly label: string;
+  /** 真正写进记忆的那句话（也是进 prompt 的那句）。 */
+  readonly text: string;
+  /** 记忆标签（含 `player` 才享受最慢衰减）。 */
+  readonly tags: readonly string[];
+  /** 好感增量。 */
+  readonly affinity: number;
+  /** 记忆初始强度。 */
+  readonly strength: number;
+}
+
+export const TOPICS: readonly TopicDef[] = [
+  { id: 'weather', label: '聊聊天气', text: '你说今天云走得真快', tags: ['player', 'talk'], affinity: 3, strength: 40 },
+  { id: 'praise', label: '夸他一句', text: '你说他今天看起来状态很好', tags: ['player', 'talk'], affinity: 8, strength: 70 },
+  { id: 'hill', label: '提起后山', text: '你说后山傍晚的天是粉紫色的', tags: ['player', 'move'], affinity: 5, strength: 85 },
+  { id: 'gossip', label: '说点别人的事', text: '你提起谷多曼最近逢人就问同一个问题', tags: ['player', 'gossip'], affinity: 4, strength: 75 },
+  { id: 'quiet', label: '什么都不说，陪着', text: '你什么也没说，只是在旁边坐了一会儿', tags: ['player'], affinity: 6, strength: 90 },
+];
+
+export const TOPIC_IDS: readonly string[] = TOPICS.map((t) => t.id);
+
+/**
+ * NPC 回话表 —— **桩（owner 2026-09-14 令「先用一个假的」）**。
+ *
+ * ⚠ 这是全项目**唯一**一处「假」的地方，故意集中在一张表里，且**不参与任何世界状态**：
+ * 它只决定屏幕上显示哪句话，好感/记忆/意图一律走真链路。真模型上线后，这张表由端口回包顶替，
+ * 世界那一侧一行都不用改——因为世界从来就没读过它。
+ * 键 = `<npcId>:<topicId>`，缺省回落 `*:<topicId>`，再缺省回落 `*:*`。
+ */
+export const STUB_REPLIES: Readonly<Record<string, string>> = {
+  'nao:quiet': '……嗯。（她没抬头，又给你续了半杯。）',
+  'nao:praise': '你不用每次都这么说。……不过谢谢。',
+  'nao:gossip': '别人的事我不太想聊。你自己呢？',
+  'nao:weather': '云走得快，说明要变天了。外套带了吗。',
+  'nao:hill': '后山啊。我已经很久没上去过了。',
+  'mor:quiet': '诶？你不说话我反而有点紧张了。',
+  'mor:praise': '真的吗！那我今天出门前照镜子照了三次是有用的。',
+  'mor:gossip': '我也发现了！他是不是在找什么人啊。',
+  'mor:weather': '那我得赶紧去拍两张，云跑了就没了。',
+  'mor:hill': '我知道！我上周还去拍过，可惜手抖了。',
+  '*:quiet': '（他安静地点了点头。）',
+  '*:praise': '哈哈，被你这么一说我都不好意思了。',
+  '*:gossip': '哦？还有这种事。',
+  '*:weather': '是啊，今天天不错。',
+  '*:hill': '后山那边我也挺久没去了。',
+  '*:*': '嗯。',
+};
+
+/** 查桩回话（三级回落·纯查表）。 */
+export function stubReply(npcId: string, topicId: string): string {
+  return STUB_REPLIES[`${npcId}:${topicId}`]
+    ?? STUB_REPLIES[`*:${topicId}`]
+    ?? STUB_REPLIES['*:*'];
+}
+
 // ── 世界 id 约定（单点定义·各处引用不手拼）────────────────────────────────
 export const BARRIER_ID = 'town-intents';
 export const MEMORY_RULES_ID = 'town-memory';
@@ -149,3 +211,6 @@ export const titleFlag = (titleId: string): string => `title.${titleId}`;
  */
 export const intentSignal = (npcId: string, verb: string, args?: readonly (string | number)[]): string =>
   args && args.length > 0 ? `i:${npcId}:${verb}:${args.join(':')}` : `i:${npcId}:${verb}`;
+
+/** 玩家对某 NPC 说某个话题的信号名（与意图同一条输入路径·玩家和 LLM 在引擎眼里一模一样）。 */
+export const saySignal = (npcId: string, topicId: string): string => `say:${npcId}:${topicId}`;
