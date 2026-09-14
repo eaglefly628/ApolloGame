@@ -15,6 +15,9 @@ import { turnOrderCapability, type TurnOrder } from './turn-order.js';
 import { memoryCapability } from './memory.js';
 import { effectApplyCapability } from './effect-apply.js';
 import { overTimeCapability } from './over-time.js';
+import { flowCapability } from '@skills/tier3/flow.js';
+import { zoneOccupancyCapability } from './zone-occupancy.js';
+import type { Effect, Flag, GameFlow } from '@engine/protocol/components.js';
 
 // t2-intent-barrier（REQ-111-AINPC）点名测试。承重点只有一个：**产物与回包到达次序无关**。
 //   ① 收齐即结算（按 id 升序） ② 乱序投递 → hash 逐字节相同 ③ 超期降级补默认动词（整数回合判据·零墙钟）
@@ -299,6 +302,69 @@ describe('⑥ lockstep：非权威端永不自结算，只接权威端广播的�
     expect(findBarrier(w, 'turn-intents')!.eid).toBe('town');
     expect(findBarrier(w, 'gossip-intents')!.eid).toBe('other');
     expect(findBarrier(w, 'nope')).toBeUndefined();
+  });
+});
+
+// ⑧ 与 `t3-flow` 同装（REQ-111-ENG-04 附带的定序问询·game111 PE 2026-09-14 提）。
+// PE 报的理由是「七相位并进 flow 会和 barrier 互为前驱成环」。**实跑复现不出来**：两者共享零个组件
+// （flow 碰 GameFlow/Resource/Flag/State/Cooldowns/Timer/StringVar，门碰 IntentBarrier/IntentInbox/Signal），
+// 任一方向都没有推断边，落序干净得出、warn 数为零。所以「成环」不是不摊开七相位的理由。
+// 真正的约束是另一件事，也钉在下面：**flow 读不到 `IntentBarrier.state`**（不在它的 reads 里，
+// 条件树也没有这个 kind）⇒ 不能直接拿「门结算了」当转移条件。桥是现成的纯数据：
+// 门发 `settleSignal` → `Effect{onSignal, kind:'set-flag'}` 落一面旗 → flow 的 when 读那面旗。
+// 代价是标准离散反馈的一拍延迟，而 `resolved` 只活一拍 —— 所以**意图的消费必须挂在结算信号上
+// （同拍 Commit 相位），不能等 flow 转移过去再读**。这两条都用真世界跑出来，不靠推断。
+describe('⑧ 与 t3-flow 同装：不成环 · 结算信号当相位边 · 意图同拍可消费', () => {
+  const withFlow = (): SystemDeclaration[] => [
+    ...eventWhenCapability.systems, ...intentBarrierCapability.systems, ...flowCapability.systems,
+    ...turnOrderCapability.systems, ...memoryCapability.systems, ...effectApplyCapability.systems,
+    ...zoneOccupancyCapability.systems,
+  ] as SystemDeclaration[];
+
+  it('flow 与 barrier **不成环**（PE 报的理由复现不出来）：严格模式不抛 + warn 数为零', () => {
+    expect(() => topologicalSort(withFlow(), { softCycle: 'throw' })).not.toThrow();
+    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      topologicalSort(withFlow(), { softCycle: 'warn' });
+      expect(spy).not.toHaveBeenCalled();
+    } finally { spy.mockRestore(); }
+  });
+
+  it('落序语义正确：flow → event-when → intent-barrier（相位先推进、信号再清场、门最后结算）', () => {
+    const order = topologicalSort(withFlow(), { softCycle: 'throw' }).map((s) => s.id);
+    expect(order.indexOf('flow')).toBeLessThan(order.indexOf('event-when'));
+    expect(order.indexOf('event-when')).toBeLessThan(order.indexOf('intent-barrier'));
+  });
+
+  it('结算信号 →（同拍 Commit）set-flag：flow 能拿这面旗当转移条件，全程零新代码', () => {
+    const w = new World();
+    for (const c of [eventWhenCapability, intentBarrierCapability, effectApplyCapability, flowCapability]) {
+      for (const sys of c.systems) w.addSystem(sys);
+    }
+    w.createEntity('town');
+    openBarrier(w, 'town', { id: 'g', npcIds: ['npc-a', 'npc-b'], turn: 7, deadlineTurns: 0, verbs: VERBS, settleSignal: 'intentsReady' });
+    // 桥：门发的信号 → 落一面旗（纯数据·effect-apply 跑在 Commit，与门同拍）
+    w.createEntity('bridge');
+    w.addComponent<Flag>('bridge', { type: 'Flag', id: 'intentsReady', active: false });
+    w.addComponent<Effect>('bridge', { type: 'Effect', onSignal: 'intentsReady', kind: 'set-flag', targetId: 'intentsReady', value: true } as Effect);
+    // 七相位里的那一段：INTENT 等旗亮才走 COMMIT
+    w.createEntity('turn');
+    w.addComponent<GameFlow>('turn', {
+      type: 'GameFlow', id: 'turn', current: 'INTENT',
+      states: [{ id: 'INTENT', transitions: [{ when: { kind: 'flag', id: 'intentsReady' }, to: 'COMMIT' }] }, { id: 'COMMIT' }],
+    } as GameFlow);
+
+    w.tick();   // Update：门超期结算 + 发信号 → Commit：effect-apply 把旗点亮
+    expect(bar(w).state).toBe('settled');
+    expect(bar(w).resolved).toHaveLength(2);
+    expect(w.getComponent<Flag>('bridge', 'Flag')!.active).toBe(true);
+    expect(w.getComponent<GameFlow>('turn', 'GameFlow')!.current).toBe('INTENT');   // 旗本拍才亮，flow 下一拍才读到
+
+    w.tick();   // flow 读到旗 → 转 COMMIT
+    expect(w.getComponent<GameFlow>('turn', 'GameFlow')!.current).toBe('COMMIT');
+    // **陷阱钉**：等 flow 转过去的时候，resolved 已经被收走了（它只活一拍）。
+    // 所以意图的消费要挂在结算信号上（同拍 Commit），不能等相位转移。
+    expect(bar(w).resolved).toEqual([]);
   });
 });
 

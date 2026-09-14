@@ -152,6 +152,81 @@ interface NpcAgentPort {
 
 ---
 
+## REQ-111-ENG-04 · `ComponentDataMap` 漏登（游戏蓝图写不出这些组件名）
+
+- **提出**：game111 PE 2026-09-14（撞到 `MemoryRules` / `TurnOrder` 挂不进蓝图，只能在宿主层手挂）
+- **归属**：🔴 主程面（跨游戏共享面）· **施工主体 = 主程（2026-09-14 接单）** · status: **✅ done（门禁全绿·已推送）· 等独立复查** · P1
+- **PE 做对的一件事**：没有自己动手改共享面，按域红线报上来。这条正是「别的 session 勿擅改」要的行为。
+
+**实查结论：报的是 5 个，实际是 28 个。**
+
+PE 报 `TurnOrder` / `Memory` / `MemoryRules` / `IntentBarrier` / `IntentInbox` 五型。对着
+`component-universe.gen.ts`（从源码生成的组件全集·166）与 `ComponentDataMap`（手维护闭集·当时 138）
+逐一对差，漏登 **28** 个：
+
+```
+Armor BlockGrid BlockTrayPiece Bounce ConveyorQueue Cooldowns DamageTable DebugTrace
+FlowAgent FlowField Group IntentBarrier IntentInbox Inventory LineWins Memory MemoryRules
+Orbit Owner PathFollow PhysicsWorld3D PlaceBlockIntent PullAnchor QueueMember QueueSlots
+SlotMachine TurnOrder Vfx2D
+```
+
+里面有 2026-09-09 那批「预建高频件」（cooldown / damage-table / inventory / conveyor-queue），
+也有 flow-field、block-grid、slot-payout 这些更早的。**这不是本次下沉的疏忽，是一条积了很久的系统性漂移。**
+症状之所以没人发现：能力照常注册、照常跑、门禁全绿，唯一的后果是游戏层在蓝图里**写不出那个组件名**
+（闭集牙在编译期咬掉），只能退回宿主层手挂——正是数据驱动宣言最不该出现的形状，也正是 PE 撞到的那个。
+
+**PE 的第二个建议成立，而且它才是本单的根因半边。**
+
+「registry 登了、component-map 没登，没有任何门会挡」——实查确认：`registry-guard` 只对「能力 id ↔ loader」，
+`build-component-map.test.mjs` 只对「生成物 vs 现算」，**两张组件表之间此前零对账**。补两道，各咬各的：
+
+1. **编译期**（`component-map.ts` 末尾）：`Exclude<RuntimeComponentName, keyof ComponentDataMap>` 必须为 `never`，
+   反向同理。漏登那一刻 `tsc` 就报错并**点名**（撤修实测：删掉 `TurnOrder` 一行 →
+   `Type '"TurnOrder"' does not satisfy the constraint 'never'`）。scoped-gate 任何一档都跑 tsc，天然接在推送路径上。
+2. **跑时**（`src/assembly/component-map.test.ts`·7 条）：给出可读差集清单，并且是可撤修验红的那一半——
+   只有类型断言的话，撤掉它 tsc 红但没有任何测试红；只有测试的话，撤掉测试就全无。
+
+---
+
+## 定序问询答复 · 七相位要不要用 `t3-flow` 摊开
+
+**PE 报的理由复现不出来。** 报的是「INTENT 相位要等异步回包，并进 flow 会和 barrier 互为前驱成环，
+而 `topological-sort` 只告警不抛」。真跑一遍（flow + barrier + event-when + turn-order + memory +
+effect-apply + zone-occupancy）：
+
+```
+落序: zone-occupancy → flow → event-when → intent-barrier → turn-order → memory-decay → effect-apply
+warn 数: 0      严格模式(softCycle:'throw'): 不抛
+```
+
+原因很直白：**两者共享零个组件**。flow 碰 `GameFlow/Resource/Flag/State/Cooldowns/Timer/StringVar`，
+门碰 `IntentBarrier/IntentInbox/Signal`，任一方向都推不出边。所以「成环」不构成不摊开七相位的理由。
+（PE 提到「主程为同一件事已经改过一版」——那一版改的是**门自己去读 `TurnOrder`** 引起的 2-环，
+与 flow 无关；治法是把回合号交给 `setBarrierTurn` 推，读边一去环就没了。）
+
+**真正的约束是另一件事，PE 没说到但确实存在**：flow **读不到 `IntentBarrier.state`**（不在它的 reads 里，
+条件树也没有对应 kind）⇒ 不能直接拿「门结算了」当转移条件。桥是现成的纯数据，零新代码：
+
+```
+门 settleSignal:"intentsReady"
+  → Effect{ onSignal:"intentsReady", kind:"set-flag", targetId:"intentsReady", value:true }   （effect-apply·Commit 相位·同拍）
+  → GameFlow 的 INTENT 态 transitions:[{ when:{kind:"flag", id:"intentsReady"}, to:"COMMIT" }]  （下一拍读到）
+```
+
+**⚠ 一个会咬人的细节，务必照办**：`IntentBarrier.resolved` **只活一拍**（同 Signal 口径，防同一批意图被应用两次）。
+等 flow 把相位转到 COMMIT 的时候，`resolved` 已经被收走了。所以——
+
+> **意图的消费挂在结算信号上（同拍 Commit 相位），不要等相位转移过去再读。**
+> flow 的相位推进只承担「摊开 + 上屏 + 记账」，不承担「取意图」。
+
+**结论：七相位照 plan 摊开，不必偏差。** 以上三条（不成环 · 落序语义 · 桥 + 一拍陷阱）已全部钉成测试，
+不是口头结论：`src/skills/tier2/intent-barrier.test.ts` ⑧ 组（撤掉 settleSignal → 红；让 resolved 活两拍 → 红）。
+
+**另两处偏差**：`impl-notes.md` 还没推上来（仓库里查无此文件），等它到了再逐条看。PE 不自裁、先记账再问，做法对。
+
+---
+
 ## 已结案
 
 三件全部 **✅ 已交并推送**（2026-09-12·主程 session·门禁全绿）。各单原位保留「✅ 已交」段做交接依据，

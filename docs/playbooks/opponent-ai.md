@@ -41,6 +41,12 @@
 - BT 叶=TS 例外，须 capability-plan 过审记债；简单平铺分支用 event-when/condition 就够，**别上 BT**（`t2-behavior-tree` describe 原话）。
 - **LLM 是输入源，不是解释器**（REQ-111-AINPC 架构基石）：模型只能吐**闭集动词 + 定长标量参数**，闭集外一律拒收并留 `reject` 痕；模型吐的 JSON **绝不**直接反序列化成组件。一个 LLM NPC 在架构上与一个远端人类玩家同构——录的是意图流不是模型，重放不调模型即 bit 一致。
 - **有端口必须配 barrier**（owner 2026-09-12 判词原文「只做端口不做 barrier = 最坏组合」）：按回包到达序应用 → 每次跑出的世界都不同，症状是「偶发 desync / 存档读出来不一样」。超期判据一律**整数回合数**，禁墙钟；异步暂存组件（`IntentInbox`）必须登记 `NON_DETERMINISTIC`。
+- **门与 `t3-flow` 同装的唯一正确接法**（2026-09-14 实跑钉死·别再各自发明）：flow 读不到 `IntentBarrier.state`，
+  所以拿「门结算了」当相位转移条件要走现成的纯数据桥——门发 `settleSignal` → `Effect{onSignal,kind:'set-flag'}`
+  落旗 → flow 的 `when:{kind:'flag'}` 读旗。**⚠ `resolved` 只活一拍**：等 flow 转过相位时它已被收走，
+  所以**意图的消费挂在结算信号上（同拍 Commit），flow 的相位推进只管摊开/上屏/记账**。
+  顺带纠一个流传过的说法：flow 与 barrier **不成环**（共享零组件·严格模式不抛·warn 数为零），
+  「怕成环」不是不摊开相位的理由。
 - **记忆进 hash**：强度/权重/打分**全整数**（浮点跨端 1 ULP 漂移进排序即误报 desync），同分排序必须有 id 兜底，`entries` 恒按 id 存（数组序会进指纹）。
 
 ## ④ 正样例 / 反面教材
