@@ -160,3 +160,49 @@ interface NpcAgentPort {
 **下一步不在本三件**：引擎侧已齐，接下来是 game111 游戏层——写 `gdd.md`「NPC AI」章 → 摆 L0 数据表
 （`INTENT_VERBS` / `MEMORY_TAGS` / `NPC_CARDS` / `TURN_PHASES`）→ 按 §2.3 的三条硬口径接线。
 **别再在游戏层重造这三件**：记忆用 `t2-memory`、决策端口用 `services/npc-agent`、异步对齐用 `t2-intent-barrier`。
+
+---
+
+## REQ-111-ENG-04 · `ComponentDataMap` 未登记五个新组件（blueprint 声明不了）
+
+- **发现**：2026-09-14 game111 框架层施工实撞
+- **归属**：🔴 **主程**（`src/assembly/component-map.ts` = 跨游戏共享面）· status: open · P2
+- **本层不自行改动**：CLAUDE.md 施工归属第 1 条，跨游戏共享面只归主程；拿不准按 🔴 走。
+
+**现象**
+
+把 `Memory` / `MemoryRules` / `IntentBarrier` / `IntentInbox` / `TurnOrder` 写进 `WorldBlueprint.entities`
+的任一实体，TS 当场拒：
+
+```
+error TS2353: Object literal may only specify known properties,
+and 'Memory' does not exist in type 'EntityBlueprint'.
+```
+
+**根因**
+
+`src/assembly/demo.assembly.ts:18`：
+
+```ts
+export type EntityBlueprint = { [K in keyof ComponentDataMap]?: Record<string, unknown> };
+```
+
+而 `src/assembly/component-map.ts` 的 `ComponentDataMap` 里没有这五型。`t2-turn-order`（2026-09-09）
+与 LLM 三件套（2026-09-13）都只登了 `capability-registry.gen.ts`，**没登 blueprint 的组件映射**。
+两处登记不同步，registry 绿而 blueprint 用不了。
+
+**影响**
+
+任何游戏都无法在蓝图里声明这五个组件。对 `IntentBarrier`/`Memory` 影响小（`openBarrier`/`remember`
+本就是引擎给的运行时路径），但 `MemoryRules` / `TurnOrder` 是**纯配置组件**——它们本该和 `OverTime`、
+`EventWhen` 一样躺在蓝图数据里，现在只能在宿主层 `addComponent`，等于把一份配置从数据面挪进了代码面。
+
+**建议**（主程裁）
+
+补 `ComponentDataMap` 五行 + 相应 import。顺带查一下**下沉流程是否缺一道门**：能力下沉时
+registry 与 component-map 应当同步登记，现在缺同步守卫，所以这类漏登不会被任何门挡住
+（同「手册与 registry 同步是下沉工作的一部分」的既有纪律）。
+
+**当前绕法**：`games/game111/blueprint.ts` 的 `setupTown()`，零自造语义，缺口补上后可搬回蓝图。
+
+**证据**：`docs/design/game111/impl-notes.md` §3。

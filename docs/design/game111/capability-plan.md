@@ -292,7 +292,13 @@
 
 ---
 
-## 7. 下一步
+## 7. 施工状态（2026-09-14 补）
+
+三条引擎需求已由主程落树（commit `963e34c3`）。game111 框架层已交付并自证：
+`games/game111/{world-data,blueprint,agent-context,turn-driver}.ts` + 24 例测试 + DeepSeek 接入代理。
+**与本 plan 的三处偏差、撞出的引擎缺口、两条配平教训全部记在 `impl-notes.md`**（偏差 = 债，不默认放着）。
+
+## 8. 下一步
 
 1. Lead 批 §6（本 plan + 两条例外）。
 2. 过审 → 写 `docs/design/game111/gdd.md`（含「NPC AI」详设章）。
