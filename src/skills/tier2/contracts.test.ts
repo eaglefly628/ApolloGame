@@ -5,11 +5,14 @@ import { eventWhenCapability } from './event-when.js';
 import { turnOrderCapability, type TurnOrder } from './turn-order.js';
 import { cooldownCapability, type Cooldowns } from './cooldown.js';
 import { conveyorQueueCapability, type ConveyorQueue } from './conveyor-queue.js';
+import { gaugeCapability } from './gauge.js';
+import { overTimeCapability } from './over-time.js';
 import { prefabCapability } from '@skills/tier3/prefab.js';
 import { timerCapability } from '@atom-skills/timer/index.js';
+import { resourceCapability } from '@atom-skills/resource/index.js';
 import { lifetimeCapability } from '@skills/tier1/lifetime.js';
 import { destroyCapability } from '@atom-skills/destroy/index.js';
-import type { Flag, PrefabLibrary } from '@engine/protocol/components.js';
+import type { Flag, PrefabLibrary, Resource, Gauge, Hierarchy, Shape, OverTime } from '@engine/protocol/components.js';
 
 // 契约三件套（test-kit）：带运行态的 capability 都要过——确定性 / 存档续跑 / 静止零写入。
 // 语义测试各自在 *.test.ts；这里只钉「跨 capability 一致的底线」，新 capability 往下加一段即可。
@@ -42,6 +45,25 @@ const belt = (): World => {
   return w;
 };
 
+const gaugeBar = (): World => {
+  const w = worldWith(gaugeCapability);
+  w.createEntity('owner');
+  w.addComponent<Resource>('owner', { type: 'Resource', id: 'hp', current: 60, min: 0, max: 100 });
+  w.createEntity('bar');
+  w.addComponent<Hierarchy>('bar', { type: 'Hierarchy', parentId: 'owner', localX: 0, localY: 0, localRotation: 0, localScaleX: 1, localScaleY: 1 });
+  w.addComponent<Shape>('bar', { type: 'Shape', kind: 'box', width: 40, height: 4 });
+  w.addComponent<Gauge>('bar', { type: 'Gauge', resourceId: 'hp', fromParent: true, width: 40 });
+  return w;
+};
+
+const dotWorld = (): World => {
+  const w = worldWith(overTimeCapability, resourceCapability);
+  w.createEntity('mob');
+  w.addComponent<Resource>('mob', { type: 'Resource', id: 'hp', current: 100, min: 0, max: 100 });
+  w.addComponent<OverTime>('mob', { type: 'OverTime', effects: [{ id: 'poison', resource: 'hp', amountPerTick: -5, period: 2, duration: 6, elapsed: 0 }] });
+  return w;
+};
+
 describe('契约三件套', () => {
   it('t2-turn-order', () => {
     const drive = (w: World) => { press(w, 'btn'); press(w, 'btn'); tickN(w, 1); press(w, 'btn'); };
@@ -64,5 +86,25 @@ describe('契约三件套', () => {
     // 存档点落在「载体已发、prefab 尚未展开」的最脆弱一拍
     expectRestoreContinues(belt, (w) => press(w, 't1', 't2'), (w) => { tickN(w, 3); press(w, 'fireBtn'); tickN(w, 4); });
     const w = belt(); press(w, 't1', 't2'); expectQuiescent(w, 4, 6);
+  });
+
+  it('t2-gauge（资源改变后的投影可重放；无输入时宽度与锚位不漂移）', () => {
+    const drive = (w: World) => {
+      tickN(w, 1);
+      w.getComponent<Resource>('owner', 'Resource')!.current = 25;
+      tickN(w, 2);
+    };
+    expectDeterministic(gaugeBar, drive);
+    expectRestoreContinues(gaugeBar, (w) => tickN(w, 1), (w) => {
+      w.getComponent<Resource>('owner', 'Resource')!.current = 25;
+      tickN(w, 2);
+    });
+    expectQuiescent(gaugeBar(), 4, 1);
+  });
+
+  it('t2-over-time（周期中途存档仍按原拍结算；到期后世界静止）', () => {
+    expectDeterministic(dotWorld, (w) => tickN(w, 8));
+    expectRestoreContinues(dotWorld, (w) => tickN(w, 3), (w) => tickN(w, 5));
+    expectQuiescent(dotWorld(), 4, 6);
   });
 });
