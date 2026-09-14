@@ -160,6 +160,17 @@ export const GAMES: GameEntry[] = [
     status: 'playable',
   },
   {
+    id: 'game111',
+    title: 'Game 111:《小都会》',
+    subtitle: '没有剧本的小镇 · AI NPC 活世界',
+    description:
+      '一座回合推进的小镇：五个居民由大语言模型驱动，自己决定今天去哪、找谁说话、要不要歇一会儿。没有固定剧本——他们的动机来自各自的经历，经历会淡忘、会在彼此之间传开，于是事情一件牵着一件地发生。好感度攒够了，NPC 会给你一个只属于你们俩的称号；他们也会拿和你相处的记忆去小星书发帖。架构基石=「LLM 不是解释器，LLM 是输入源」：模型只能吐闭集意图，经 intent-barrier 收齐排序后走和人类玩家完全相同的输入路径进世界，所以录放 bit 一致、断网自动降级照样转。当前=框架层：回合/需求衰减/记忆流转/意图闭集/称号/看板 UI 已通，接 DeepSeek 走 scripts/game111-deepseek-proxy.mjs；无端点则走确定性桩。玩家↔NPC 对话入口=下一阶段。',
+    color: '#070e17',
+    accentColor: '#ff5d2e',
+    icon: '🏘️',
+    status: 'playable',
+  },
+  {
     id: 'game-103',
     title: 'Game 103: 幸存者核心',
     subtitle: '俯视割草 Roguelite · 吸血鬼幸存者式',

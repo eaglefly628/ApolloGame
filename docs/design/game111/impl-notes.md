@@ -74,9 +74,43 @@ L3 NPC 的行为模式树在 v0 未接（现有 NPC 是 L1/L2/L4，没有 L3）�
    而 `move_to` 只改所在地、不回好奇心 → 十回合全员卡在「动身去后山」刷屏。**活锁不是模型的毛病，
    是规则表自己把自己锁死了。** 真后端也吃这条：prompt 里给的动词语义要和 Effect 表真实对得上。
 
+## 4.5 表现层（2026-09-14 追加·华丽起手三步 + `/check-ui` 实测）
+
+**交付**：`ui.ts`（LayoutNode 纯数据屏）· `project.ts`（世界→视图只读投影）· `game111.ts`（卡带宿主 mount）·
+`ui.test.ts`（15 例）· `tools/audits/game111-board.audit.ts` · launcher 注册（`game111` 可在游戏库直接开）。
+
+**华丽起手三步的落点**：① house 主题 `apolloOnyx`（不自写 UITheme）② 主菜单走 `@ui/starters` 的
+`buildStarterHome`（不从空白搭）③ 成熟件：`Avatar.ring`(好感环) · `Connector`(关系线) · `VirtualList`(小星书)
+· `ProgressBar`(需求条) · `Particles`(称号庆祝) · `Panel.glass`(磨砂) · `press3d`(卡实体感) ·
+`Label.tween`(回合号滚动) · `Button.shape:'cut'`+`sheen-hover`(主 CTA)。
+
+**UI 侧零世界访问**：`ui.ts` 只吃 `TownView` 这样的 POD，世界读取全在 `project.ts`。所以 UI 可无世界单测，
+也不会有人在 LayoutNode 里偷偷读组件。
+
+**`/check-ui` 实测记录（四处硬失败 → 零）**——每一条都是量出来的，没有一条是看出来的：
+
+| 症状 | 实测 | 根因 | 修法 |
+|---|---|---|---|
+| 降级文案读不清 | ratio=2.46 | `color:'dim'`(#56657a) 落在 raised 面 | 改 `warn`（语义上也更对） |
+| 两处面板小标题读不清 | ratio=2.93 | `Panel.title` 的阔字距小标题**字色不可由数据指定** | 换成能指定 `color` 令牌的 `Label` |
+| 关系线中点标读不清 | ratio=1.21→1.05 | 换亮色也没救（见下） | **去掉 label**（信息由分区 Tag 重复承载·零损失）+ 报 PUI |
+| 称号药丸未达 AA | ratio=3.38 | **`tone:'normal'` 根本不在 Badge 闭集**（闭集=ok/warn/dim/accent/gold/danger），schema 不认 → 退默认灰 | 按稀有度映射 ok/accent/gold |
+
+末态：**重叠 0 · 硬性低对比 0 · border-image 前提齐 · 华丽件 7 处命中**。余 20 处 AA 警告已复核：
+全部是控件内部 span（`Avatar` 首字、`ProgressBar` 的标签/数值），非游戏数据可控面，且审计明标非阻断。
+
+**顺带报给 PUI 两条**（`requests.md` REQ-111-UI-01/02）：`Connector.label` 与审计 `solidBgUp` 的盲区；
+`ui-audit` 的 house 主题判据对 `apolloOnyx`/`apolloBrocade` 恒为否（那两款 house 皮没有 `buttonSkins`）。
+
 ## 5. 下一阶段（未做·不是欠账清单，是 owner 定过的分期）
 
-owner 2026-09-14 的原话是「**先**搭起框架」。框架已可跑可测可接真模型。尚未做的是**表现层**：
-LayoutNode UI（`apolloOnyx` + `@ui/starters` + `Connector` 关系网 + `VirtualList` 小星书）、
-玩家↔NPC 对话入口、称号的玩家侧解锁路径。这三件都在 capability-plan §4.6 写死了用什么件，
-开工前按 UI 铁律先读 `docs/design/ui-playbook.md` + `docs/playbooks/ui.md`，交付前跑 `/check-ui`。
+表现层已于 2026-09-14 落地（§4.5）。**仍未做**的两件：
+
+1. **玩家 ↔ NPC 对话入口**——现在玩家只能推进回合看小镇自己转，还不能开口。这是「闲聊就能改变
+   NPC 动机」那条核心卖点的入口，要接 `t3-dialogue` + `queued-input`，并把玩家发言写进 NPC 记忆
+   （`tags:['player']`·衰减最慢）。
+2. **小星书的真帖子**——现在 feed 是拿记忆按模板渲的（素材原话「NPC 用记忆发帖」，语义对得上），
+   但 `feed_post` 动词仍缺（偏差②：`Effect` 的 kind 闭集里没有 spawn）。真帖子实体要等那条缺口有结论。
+
+美术台账（capability-plan §4.5 的 `scripts/game111-art-requirements.mjs`）也未做——现在全是程序化观感，
+`game-skill-audit` 为此报一条 🟡。**不伪造台账**：等真有皮肤槽要填时一并做。

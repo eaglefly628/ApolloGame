@@ -281,3 +281,51 @@ registry 与 component-map 应当同步登记，现在缺同步守卫，所以�
 **当前绕法**：`games/game111/blueprint.ts` 的 `setupTown()`，零自造语义，缺口补上后可搬回蓝图。
 
 **证据**：`docs/design/game111/impl-notes.md` §3。
+
+---
+
+## REQ-111-UI-01 · `Connector.label` 在深色主题下读不清（报 PUI）
+
+- **发现**：2026-09-14 game111 看板 `/check-ui` 实测
+- **归属**：PUI（`src/ui/components` 域）· status: open · P3（有零损失绕法，不阻塞）
+
+**现象**：`Connector` 的线中点标 `label` 在 `apolloOnyx` 深底上，`tools/ui-audit.mjs` 判
+
+```
+✕ <text>  "同在中央广场"  ratio=1.21   （tone: 'jade'）
+✕ <text>  "同在中央广场"  ratio=1.05   （tone: 'gold'，换亮色也没救）
+```
+
+**分析**：渲染侧 `render.ts:1276` 写的是
+`<text fill="${col}" style="paint-order:stroke;stroke:${t.bg0};stroke-width:3px">`——
+靠 `paint-order` 描边保可读，真浏览器里大概率是看得清的。但 `ui-audit` 的 `solidBgUp(el)`
+**量不到 SVG 的实底**，于是把描边的效果算丢了。所以这更像**审计器的盲区**而非渲染缺陷，
+但两者必须有一个动：要么审计认 `paint-order` 描边，要么控件换一种保可读的做法（如给标一个不透明小胶囊底）。
+
+**当前绕法**：game111 不给 `label`（该信息由每张 NPC 卡的分区 `Tag` 重复承载，去掉零损失），
+并在 `ui.test.ts` 钉了断言防人加回来。
+
+---
+
+## REQ-111-UI-02 · `ui-audit` 的「house 主题」判据对 `apolloOnyx`/`apolloBrocade` 永远为否（报 PUI）
+
+- **发现**：同上 · status: open · P3（非阻断警告）
+
+**现象**：看板显式传了 house 主题 `apolloOnyx`，审计仍报 `house 主题：否`：
+
+```
+[华丽度] 7 处华丽件命中（shape:1 fx:1 glass:2 juice:3）· house 主题：否
+```
+
+**根因**：`tools/ui-audit.mjs:171`
+
+```js
+const houseTheme = !!host.querySelector('[data-apollo-skin]') || flair.skin > 0;
+```
+
+判据是「有没有按钮贴图皮 / border-image」。而 `src/ui/components/apollo-kit.ts` 里
+`apolloOnyx` 与 `apolloBrocade` **都没有 `buttonSkins`**（只有 `apolloToon`/`STARTER_THEME` 有糖果厚唇钮皮）。
+于是手册钦定的三款 house 皮里，**有两款永远点不亮这个信号**，用它们的游戏会被恒定警告「疑似朴素默认屏」。
+
+**建议**（PUI 裁）：二选一——① 判据改为认主题级信号（如 `UITheme.texture`/`panelTexture` 在场）；
+② 给 `apolloOnyx`/`apolloBrocade` 补 `buttonSkins`（那样三款 house 皮才名副其实等价）。
