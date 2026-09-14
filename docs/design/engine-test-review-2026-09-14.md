@@ -1,12 +1,12 @@
 # 引擎与新游戏创作流程 · 测试审查（2026-09-14）
 
-> 审查基线：`claude/mainbranch` @ `646f8b4bf`。本文件是复查导航与待补用例，不改变生产行为，也不把建议中的测试写成已通过。沿用 `docs/playbooks/testing.md` 的「条款原文 → 对抗反例 → 撤修验红」纪律；不以行覆盖率或自报全绿代替行为证据。
+> 首轮基线：`claude/mainbranch` @ `646f8b4bf`；game111 框架层复查基线：`5cc45d383`。本文件是复查导航与待补用例，不把建议中的测试写成已通过。沿用 `docs/playbooks/testing.md` 的「条款原文 → 对抗反例 → 撤修验红」纪律；不以行覆盖率或自报全绿代替行为证据。
 
 ## 0. 判词与实跑证据
 
 - **已有基础**：creation-loop 守卫 38/38；选定的创作台、编排器、NPC 端口、记忆和 barrier 测试 149/149；`game110` 只有设计文档时看板可打开；系统图硬检查 PASS（89 个系统）。这些只能证明现有判据通过。
 - **两个新增反例实际转红**（隔离快照，未写入仓库）：同一 NPC 两份不同意图交换到达顺序，`draftSettle` 产出由 `left` 变 `right`；当前门 `openedTurn=8` 时，`checkIntent` 接受 `turn=7` 的旧意图。两项都触及 `t2-intent-barrier` 自称的「到达次序无关 / 回放确定性」承诺，应在 game111 接入前修复。
-- **验证边界**：本次隔离快照的 `tsc/build` 因本机 `node_modules` 缺少已在 `package.json` 声明的 `fake-indexeddb` 而无法完成；这是依赖安装状态，不据此判源码编译失败。完整门禁仍须在依赖齐全的施工环境独立复跑。
+- **本轮门禁**：首轮隔离快照的 `tsc/build` 曾因本机缺少已声明的 `fake-indexeddb` 无法完成，不据此判源码编译失败。本轮在隔离副本按锁文件安装依赖后，`node scripts/scoped-gate.mjs --run` 判为 `GAME:game111`，audit、eslint、depcruise、tsc、25/25 游戏测试、build、文档/预算守卫全部通过，退出码 0。audit 的「game111 无美术台账」、art-ledger 既有挂账及 Vite 大 chunk 为警告，未误记为零问题。尚未实现的红例不能被现有绿灯覆盖。
 
 ## 1. P0：意图收齐门，先补能抓住确定性错误的用例
 
@@ -40,9 +40,26 @@
 2. **S8 绿后游戏内容改变**：重新打包前重算指纹，旧证据不能继续放行；测试分别修改 manifest、设计输入、艺术资源。
 3. **平台出口一致**：zip、web、DokiWorld 等入口共享同一发布判词；不能只有某个 CLI 拦、API 异步 job 绕过。
 
-## 4. 执行顺序与交付门槛
+## 4. game111 框架层到来后，测试要从「能跑」推进到「不会卡、不会悄悄失效」
 
-1. **先修 barrier 两条已红反例**，再跑同 ID 全排列、跨回合迟到、双端 replay/hash；这是 game111 使用 `NpcAgentPort → IntentInbox → IntentBarrier` 的前置复查门。
+`5cc45d383` 新增的 `games/game111/game111.test.ts` 原有 24 例、引擎/端口靶向测试共 84/84、DeepSeek 代理 `--selftest` 15/15，均已独立复跑。其正常路径覆盖已不错；本轮针对弱断言做了三处**已落地**优化：
+
+- `rest` 原只断言「精力变多」；现在用同种子、同拍数、只差一个动词的两盘世界，断言 `rest` 与 `observe` 的精力/好奇心差值分别精确等于数据表的回复量。把 Effect 的 `value: amt` 临时改成 `amt - 1` 后，差分测试实红（原来的「变多」仍可能绿），然后已恢复生产代码。
+- 意图接线原只抽查 `nao × move_to × 6 区` 的 KeyBinding；现在遍历全部 NPC × 合法分区/对象 × 四个动词，逐条核对 KeyBinding **和目标/数值正确的 Effect**。同一 `amt - 1` 破坏也使其转红。
+- 称号原只验娜洛的一条；现在每条都验「阈值 - 1 不解锁、恰好阈值解锁」。故意断开 `t-mor-muse` 的 Effect 后，新测试点名转红，然后已恢复生产代码。
+
+另有两条**新复现红，未并入正式门禁**（隔离工作树用零墙钟、零外部 IO 的临时探针验证后删除）：
+
+| 用例 / 放置处 | 输入与动作 | 必须断言 | 实际 |
+|---|---|---|---|
+| `never-settling-port-falls-back` · `games/game111/game111.test.ts` | 一个 NPC 的 `NpcAgentPort.decide()` 返回永不完成的 Promise；宿主把 barrier 推到期限 | `runTurn` 最终完成并对该 NPC 填默认意图；不得把异步等待放在 barrier 超期机制之前 | **红**：`turn-driver.ts` 先 `await Promise.all`，永远到不了 COMMIT。HTTP 端口的 `timeoutMs` 又是可选项，故「超期不死等」不是当前端到端保证 |
+| `failure-report-permutation` · 同上 | 两个 NPC 都返回空数组，轮流让其中一个多让出几个微任务 | 相同失败事实集合的 `TurnReport.failures` 同序、同内容（按 `npcId` 全序）；不把网络到达序带进报告/回放日志 | **红**：数组按 Promise 完成顺序 `push`，两次运行的 `nao/mor` 顺序相反。世界 hash 相同不能替报告判词背书 |
+
+还需单独设计 `move_to(不存在的分区)` / `talk_to(不存在的 NPC)`：当前 barrier 只校验动词与参数个数，预展开接线对不存在的参数无 Effect；意图可能被记录为已成功而世界不变化。此项先请玩法 owner 定义「拒收并降级」还是「有效意图但目标不存在」，再把判词写成测试，不从现有实现倒推期望。game111 尚无 S4 的三条设计剧本与真实浏览器玩家手势；框架单测绿不等于游戏已验收可玩。
+
+## 5. 执行顺序与交付门槛
+
+1. **先修 barrier 两条已红反例与 game111 的永不返回端口**，再跑同 ID 全排列、跨回合迟到、端到端超期、双端 replay/hash；这是 game111 使用 `NpcAgentPort → IntentInbox → IntentBarrier` 的前置复查门。
 2. **再补创作流故障注入**：建库成功/PUT 失败重试、双设计存储同步、警告真实可见。只加正常路径断言不能关单。
 3. **发布策略确定后补 S8 API 测试**，再补草稿/正式包的真端到端冒烟。
 4. 每项在干净基线上先绿，再做带锚点的撤修验红，最后跑 scoped gate；改变 `tier2`/引擎共享面还要跑慢车道与受影响游戏的验收剧本。报告退出码与 stderr 告警，不把「没有运行」写成 PASS。

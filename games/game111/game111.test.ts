@@ -7,11 +7,11 @@ import type { AgentContext, Intent, NpcAgentPort } from '@zerocraft/engine/engin
 import type { Resource, State, Flag } from '@zerocraft/engine/engine/protocol/components.js';
 import { recall } from '@zerocraft/engine/skills/tier2/memory.js';
 import { findBarrier } from '@zerocraft/engine/skills/tier2/intent-barrier.js';
-import { buildBlueprint, setupTown } from './blueprint.js';
+import { buildBlueprint, setupTown, REST_ENERGY, OBSERVE_CURIOSITY, TALK_SOCIAL } from './blueprint.js';
 import { runTurn } from './turn-driver.js';
 import { buildAgentContext } from './agent-context.js';
 import {
-  AGENT_NPC_IDS, NPCS, NEEDS, ZONE_IDS, TITLES, BARRIER_ID,
+  AGENT_NPC_IDS, NPCS, NPC_IDS, NEEDS, ZONE_IDS, TITLES, BARRIER_ID,
   needId, zoneFsm, affinityId, titleFlag, intentSignal,
 } from './world-data.js';
 
@@ -81,7 +81,19 @@ describe('game111 意图落地（闭集 → keybind → Effect·零解释器）'
     const before = res(e, needId('nao', 'energy'))!;
     await runTurn(e.world, 1, scripted({ nao: [{ verb: 'rest' }], mor: [{ verb: 'rest' }] }));
     const after = res(e, needId('nao', 'energy'))!;
-    expect(after).toBeGreaterThan(before); // +25 回复 盖过 -6 衰减
+    expect(after).toBeGreaterThan(before); // 可玩性粗检；回复量的精确接线由下方差分测试守
+  });
+
+  it('同条件差分：rest 只多回 REST_ENERGY 精力，observe 只多回 OBSERVE_CURIOSITY 好奇心', async () => {
+    // 两盘世界只改 nao 的动词：同种子、同拍数、mor 同动作。这样衰减无需写魔法拍数，
+    // 也不会把「只回了 1 点」误判成 rest/observe 已正确接线。
+    const resting = town();
+    const observing = town();
+    await runTurn(resting.world, 1, scripted({ nao: [{ verb: 'rest' }], mor: [{ verb: 'rest' }] }));
+    await runTurn(observing.world, 1, scripted({ nao: [{ verb: 'observe' }], mor: [{ verb: 'rest' }] }));
+    expect(res(resting, needId('nao', 'energy'))! - res(observing, needId('nao', 'energy'))!).toBe(REST_ENERGY);
+    expect(res(observing, needId('nao', 'curiosity'))! - res(resting, needId('nao', 'curiosity'))!).toBe(OBSERVE_CURIOSITY);
+    expect(res(resting, needId('nao', 'mood'))).toBe(res(observing, needId('nao', 'mood')));
   });
 
   it('sabotage 锚点：撤掉意图的 keybind 接线 → move_to 不再落地', async () => {
@@ -246,20 +258,24 @@ describe('game111 记忆与链式影响', () => {
 });
 
 describe('game111 称号（NPC 给的·不是系统发的）', () => {
-  it('好感度达标 → 对应称号旗置位；每条称号都归属一个真实 NPC', async () => {
+  it('每条称号在阈值前不解锁、恰好达到阈值才由对应 NPC 解锁', async () => {
     for (const t of TITLES) {
       expect(NPCS.some((n) => n.id === t.byNpc), `${t.id} 的授予者不存在`).toBe(true);
+      const e = town();
+      const ownerAffinity = affinityId(t.byNpc);
+      for (const [eid] of e.world.query('Resource')) {
+        const r = e.world.getComponent<Resource>(eid, 'Resource');
+        if (r?.id === ownerAffinity) r.current = t.minAffinity - 1;
+      }
+      await runTurn(e.world, 1, undefined);
+      expect(flagOn(e, titleFlag(t.id)), `${t.id} 提前在阈值-1 解锁`).toBe(false);
+      for (const [eid] of e.world.query('Resource')) {
+        const r = e.world.getComponent<Resource>(eid, 'Resource');
+        if (r?.id === ownerAffinity) r.current = t.minAffinity;
+      }
+      await runTurn(e.world, 2, undefined);
+      expect(flagOn(e, titleFlag(t.id)), `${t.id} 达到阈值仍未解锁`).toBe(true);
     }
-    const e = town();
-    const t0 = TITLES.find((t) => t.byNpc === 'nao' && t.rarity === 'common')!;
-    expect(flagOn(e, titleFlag(t0.id))).toBe(false);
-    // 直接把好感度顶到阈值（玩家互动路径尚未接·本测只验解锁接线）
-    for (const [eid] of e.world.query('Resource')) {
-      const r = e.world.getComponent<Resource>(eid, 'Resource');
-      if (r?.id === affinityId('nao')) r.current = t0.minAffinity;
-    }
-    await runTurn(e.world, 1, undefined);
-    expect(flagOn(e, titleFlag(t0.id))).toBe(true);
   });
 });
 
@@ -285,14 +301,29 @@ describe('game111 prompt 组装（形状归引擎·游戏层只填）', () => {
 });
 
 describe('game111 意图信号命名（接缝的单一真相）', () => {
-  it('带参/无参两种形状，且 blueprint 里每个都有对应接线', () => {
+  it('全 NPC × 全合法参数：每条意图都有 KeyBinding 与目标正确的 Effect', () => {
     expect(intentSignal('nao', 'rest')).toBe('i:nao:rest');
     expect(intentSignal('nao', 'move_to', ['z-hill'])).toBe('i:nao:move_to:z-hill');
     const bp = buildBlueprint();
-    for (const zone of ZONE_IDS) {
-      const sig = intentSignal('nao', 'move_to', [zone]);
-      const wired = Object.values(bp.entities).some((ent) => (ent as { KeyBinding?: { key?: string } }).KeyBinding?.key === sig);
-      expect(wired, `${sig} 没有 KeyBinding 接线`).toBe(true);
+    const entities = Object.values(bp.entities);
+    const cases: Array<{ signal: string; kind: string; targetId: string; value: string | number }> = [];
+    for (const npc of NPC_IDS) {
+      for (const zone of ZONE_IDS) cases.push({
+        signal: intentSignal(npc, 'move_to', [zone]), kind: 'set-state', targetId: zoneFsm(npc), value: zone,
+      });
+      for (const other of NPC_IDS) if (other !== npc) cases.push({
+        signal: intentSignal(npc, 'talk_to', [other]), kind: 'modify-resource', targetId: needId(npc, 'social'), value: TALK_SOCIAL,
+      });
+      cases.push({ signal: intentSignal(npc, 'rest'), kind: 'modify-resource', targetId: needId(npc, 'energy'), value: REST_ENERGY });
+      cases.push({ signal: intentSignal(npc, 'observe'), kind: 'modify-resource', targetId: needId(npc, 'curiosity'), value: OBSERVE_CURIOSITY });
+    }
+    expect(cases.length).toBe(NPC_IDS.length * (ZONE_IDS.length + NPC_IDS.length - 1 + 2));
+    for (const c of cases) {
+      expect(entities.some((ent) => ent.KeyBinding?.key === c.signal && ent.KeyBinding?.signal === c.signal),
+        `${c.signal} 没有 KeyBinding 接线`).toBe(true);
+      expect(entities.some((ent) => ent.Effect?.onSignal === c.signal && ent.Effect.kind === c.kind
+        && ent.Effect.targetId === c.targetId && ent.Effect.value === c.value),
+        `${c.signal} 缺失目标正确的 Effect`).toBe(true);
     }
   });
 });
