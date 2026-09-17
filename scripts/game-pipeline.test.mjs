@@ -540,6 +540,18 @@ describe('selfCheckNote 新鲜度（图纸②·绑 gameHash·⚠提示不硬拦�
     expect(stage('c', 'S5').machine.detail).not.toContain('自证');
     expect(stage('c', 'S4').machine.detail).toContain('自证 ✗'); // 卡带的玩法关同受自证约束
   }));
+  // 样例纪律（2026-09-17·外部实践 GameFactory-3A 的一条：样例只教结构不教玩法）。
+  // 手册里立了规矩，这里钉住**复查真会问**——否则规矩只活在文档里，没有任何一关会开口。
+  it('复查清单 S3/S4 各含「样例只教结构 + 说得出为什么读」行', () => {
+    for (const stage of ['S3', 'S4']) {
+      const joined = REVIEW_CHECKLISTS[stage].join('\n');
+      expect(joined).toContain('为什么读');
+      expect(joined).toContain('使用铁律 5');
+    }
+    expect(REVIEW_CHECKLISTS.S3.join('\n')).toContain('没有从样例继承来的玩法');
+    expect(REVIEW_CHECKLISTS.S4.join('\n')).toContain('玩法来自本作需求而非样例');
+  });
+
   it('复查清单 S4/S5 各含「对齐单抽样重走 ≥3 条」+「好玩三问」行', () => {
     for (const stage of ['S4', 'S5']) {
       const joined = REVIEW_CHECKLISTS[stage].join('\n');
