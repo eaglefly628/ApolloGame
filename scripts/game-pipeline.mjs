@@ -592,10 +592,33 @@ export function interpretGoldenCompare(baseSummary, compareExit, compareTail) {
  *  纯函数（不碰盘/不 spawn）——导出供单测直接灌各退出码。判红只认「真出错」（装载失败/驱动点击后
  *  控制台 error/未捕获异常/零验收剧本）——UI 可驱动率低是诚实发现（剧本 signal 词表与 UI 词表本就
  *  不同源），不拿它当红线（同 spec-trace-guard.mjs「human 型占比」先例：报告不设阈值门）。 */
-export function interpretUiWalkthrough(baseSummary, probeExit, probeTail) {
+/**
+ * UI 走查结果 → 门判词。
+ *
+ * ⚠ **可驱动率目前只报不拦，而且这件事必须写在脸上**（2026-09-17 实证）：此前判词只写
+ * 「✓ UI 走查过（可驱动率见 …json）」，于是 game108 的板上挂着一个 ✓，而那份 json 里
+ * 躺着 **0/74**——74 个剧本动作没有一个能在真界面上点出来。量到了、落盘了、然后不用它判，
+ * 板上还显绿：这正是本仓最警惕的「写了不查」，只不过这次是我们自己犯的。
+ * 治本（把低可驱动率判红、阈值定多少、存量游戏怎么办）是有代价的口径改动 → 等 owner 裁。
+ * 在那之前至少**把数字摆到判词里**，别让人以为绿灯等于「真玩得动」。
+ * @param rate 可驱动率（0-1）；探针没给就 undefined，判词退回旧措辞。
+ */
+export function interpretUiWalkthrough(baseSummary, probeExit, probeTail, rate) {
   if (probeExit === 3) return { exit: 0, summary: `${baseSummary} · ⚠ UI 走查未跑·环境无浏览器（权威判定以有浏览器环境为准）` };
-  if (probeExit === 0) return { exit: 0, summary: `${baseSummary} · ✓ UI 走查过（可驱动率见 public/games/<slug>/probe/S4-uiwalk.json）` };
+  if (probeExit === 0) {
+    const pct = typeof rate === 'number' && Number.isFinite(rate) ? `${Math.round(rate * 100)}%` : '见 probe/S4-uiwalk.json';
+    const flag = typeof rate === 'number' && rate === 0 ? '（⚠ 零可驱动：剧本动作一个都点不出来·当前只报不拦）' : '';
+    return { exit: 0, summary: `${baseSummary} · ✓ UI 走查过·可驱动率 ${pct}${flag}` };
+  }
   return { exit: 1, summary: `${baseSummary} · ✗ UI 走查未过${probeTail ? ' · ' + probeTail : ''}` };
+}
+
+/** 读探针落盘的可驱动率（读不到 → undefined·判词自动退回旧措辞·零回归）。导出供接线测试。 */
+export function uiWalkRate(root, slug) {
+  const f = join(root, 'public', 'games', slug, 'probe', 'S4-uiwalk.json');
+  const r = readJson(f, null);
+  const v = r && r.uiDrivableRate;
+  return typeof v === 'number' && Number.isFinite(v) ? v : undefined;
 }
 
 /** S4 门收尾（REQ-RENDERCHECK R2b）：conformance（+ bench/walkthrough）已绿才追加真界面走查——
@@ -606,7 +629,7 @@ function withUiWalkthroughGate(slug, base) {
   const script = join(dirname(fileURLToPath(import.meta.url)), 'ui-walkthrough-probe.mjs');
   const probe = run('node', [script, '--game', slug]);
   const tail = (probe.stdout || probe.stderr || '').trim().split('\n').slice(-2).join(' / ').slice(0, 200);
-  return interpretUiWalkthrough(base.summary, probe.status ?? 1, tail);
+  return interpretUiWalkthrough(base.summary, probe.status ?? 1, tail, uiWalkRate(ROOT, slug));
 }
 
 /** S5/S8 门收尾（REQ-RENDERCHECK R3）：base 门（audit/三绿等）已过才追加标准照比对——base 已红

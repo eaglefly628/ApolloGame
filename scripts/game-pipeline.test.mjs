@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { detectForm, isDesignOnly, gameHash, gapsHash, boardFor, artSubState, STAGES, GATE_STAGES, pipelineFile, mockDebt, writeConcept, priorGaps, orderGate, reviewPrereqGaps, acceptanceScenarioCount, MIN_ACCEPTANCE_SCENARIOS, REVIEW_CHECKLISTS, selfCheckArtifacts, selfCheckBlock, selfCheckNote, MIN_SELFCHECK_SHOTS, readCapabilityGaps, evalCapabilityGaps, blockingGaps, GAP_STATES, GAP_ROUTES, GAP_PRIORITIES, capabilityGapsFile } from './game-pipeline.mjs';
+import { detectForm, isDesignOnly, gameHash, gapsHash, boardFor, artSubState, STAGES, GATE_STAGES, pipelineFile, mockDebt, writeConcept, priorGaps, orderGate, reviewPrereqGaps, acceptanceScenarioCount, MIN_ACCEPTANCE_SCENARIOS, REVIEW_CHECKLISTS, interpretUiWalkthrough, uiWalkRate, selfCheckArtifacts, selfCheckBlock, selfCheckNote, MIN_SELFCHECK_SHOTS, readCapabilityGaps, evalCapabilityGaps, blockingGaps, GAP_STATES, GAP_ROUTES, GAP_PRIORITIES, capabilityGapsFile } from './game-pipeline.mjs';
 
 const withRoot = async (fn) => { const r = mkdtempSync(join(tmpdir(), 'gpipe-')); try { return await fn(r); } finally { rmSync(r, { recursive: true, force: true }); } };
 const put = (root, rel, content) => { const p = join(root, rel); mkdirSync(join(p, '..'), { recursive: true }); writeFileSync(p, typeof content === 'string' ? content : JSON.stringify(content, null, 2)); };
@@ -542,6 +542,43 @@ describe('selfCheckNote 新鲜度（图纸②·绑 gameHash·⚠提示不硬拦�
   }));
   // 样例纪律（2026-09-17·外部实践 GameFactory-3A 的一条：样例只教结构不教玩法）。
   // 手册里立了规矩，这里钉住**复查真会问**——否则规矩只活在文档里，没有任何一关会开口。
+  // 可驱动率上判词（2026-09-17 实证：game108 板上挂 ✓、json 里躺着 0/74）。
+  // 「量到了、落盘了、然后不用它判」是本仓最警惕的形状，这次是我们自己犯的；
+  // 判红是有代价的口径改动（存量游戏会当场转红）等 owner 裁，在那之前**至少把数字摆到脸上**。
+  it('UI 走查判词带可驱动率；零可驱动要额外点名（只报不拦·但不许显成干净的 ✓）', () => {
+    const zero = interpretUiWalkthrough('base', 0, '', 0);
+    expect(zero.exit).toBe(0);                    // 当前口径：只报不拦
+    expect(zero.summary).toContain('可驱动率 0%');
+    expect(zero.summary).toContain('零可驱动');    // 不许只显一个干净的「✓ UI 走查过」
+    const good = interpretUiWalkthrough('base', 0, '', 0.75);
+    expect(good.summary).toContain('可驱动率 75%');
+    expect(good.summary).not.toContain('零可驱动');
+    // 读不到率 → 退回旧措辞（零回归：老 probe 产物没这个字段也不炸）
+    expect(interpretUiWalkthrough('base', 0, '').summary).toContain('S4-uiwalk.json');
+    // 无浏览器/真失败两条判词不受影响
+    expect(interpretUiWalkthrough('base', 3, '').exit).toBe(0);
+    expect(interpretUiWalkthrough('base', 1, 'boom').exit).toBe(1);
+  });
+
+  // 上一条只测了纯函数。**撤掉「门把率传进判词」那行接线，它照样全绿**——自己犯了一次
+  // 「测了判据没测接线」，所以补这两条：读盘那半边真跑，接线那半边对源码断言。
+  it('uiWalkRate 真从探针产物读率；缺文件/坏 JSON/缺字段一律 undefined（不炸·不瞎猜）', () => withRoot(async (root) => {
+    expect(uiWalkRate(root, 'g')).toBeUndefined();                       // 没跑过探针
+    put(root, 'public/games/g/probe/S4-uiwalk.json', { uiDrivableRate: 0 });
+    expect(uiWalkRate(root, 'g')).toBe(0);                               // 0 是真值，不许当缺失
+    put(root, 'public/games/g/probe/S4-uiwalk.json', { uiDrivableRate: 0.5 });
+    expect(uiWalkRate(root, 'g')).toBe(0.5);
+    put(root, 'public/games/g/probe/S4-uiwalk.json', { ok: true });      // 老产物无该字段
+    expect(uiWalkRate(root, 'g')).toBeUndefined();
+    writeFileSync(join(root, 'public', 'games', 'g', 'probe', 'S4-uiwalk.json'), '{ 坏 JSON');
+    expect(uiWalkRate(root, 'g')).toBeUndefined();
+  }));
+
+  it('门把率接进判词（接线断了 → 板上又会显成干净的 ✓）', () => {
+    const src = readFileSync(CLI, 'utf8');
+    expect(src).toContain('interpretUiWalkthrough(base.summary, probe.status ?? 1, tail, uiWalkRate(ROOT, slug))');
+  });
+
   it('复查清单 S3/S4 各含「样例只教结构 + 说得出为什么读」行', () => {
     for (const stage of ['S3', 'S4']) {
       const joined = REVIEW_CHECKLISTS[stage].join('\n');
