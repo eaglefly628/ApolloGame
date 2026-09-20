@@ -13,6 +13,8 @@
 
 ## 生产线 → 手册 → 负责角色
 
+> 每条线已配 `/module-*` skill；主 agent=`game-dev`（`.claude/`）。
+
 | 生产线 | 手册 | 基座核心 | 负责角色/agent |
 |---|---|---|---|
 | **游戏生产总线（八阶段流程板）** | `playbooks/game-production.md` | 生产流程板 pipeline.json · 每步三门（机器+复查+人）· `scripts/game-pipeline.mjs` | **全员（任何新游戏/续做先看板）**；判官=Lead |
