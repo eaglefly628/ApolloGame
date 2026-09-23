@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "slug": "game112",
+  "concept": {
+    "name": "《星尾会客厅》（工作名·待 owner 定）",
+    "pitch": "在喵星的星尾会客厅里，遇见、收养并陪伴拥有往昔记忆的猫；也可以上传自己爱猫的照片，让它成为能陪你打牌、玩耍、继续留下新回忆的数字陪伴化身。数字宠物陪伴 × 轻卡牌（星爪牌）× 回忆叙事 × 收藏布置 × 身份锚定的照片转活视频（爱诗）；确定性玩法层 + 缓存优先的媒体表现层；不做经营、不做第二次失去、不卖关系。",
+    "refs": "docs/design/game112/gdd.md · brief.md · menu-flow.md · ui-visual-handoff.md；参照：数字宠物陪伴（无惩罚）· Balatro 式轻卡牌（星爪牌为原创提案）",
+    "style": "高保真猫（照片转活视频·身份稳定）+ 轻绘本式喵星空间；有人生活过的痕迹（磨损/歪斜/遮挡）；燕麦旧木暖光 × 灰蓝雾青喵星冷光；视觉锚 visual/cat-art-direction-ragdoll-v2-lived-in.png + scene-cat-play-ragdoll-v1.png"
+  },
+  "signoffs": {},
+  "evidence": {
+    "S2": {
+      "exit": 1,
+      "summary": "capability-plan.md 在档 · ⚠ 缺口 10/10 未裁决（走缺口裁决协议：先查 → 摆 A/B → owner 判）· GAP-112-01[P1·engine] GAP-112-02[P1·engine] GAP-112-03[P1·engine] GAP-112-04[P2·engine] GAP-112-05[P1·engine] GAP-112-06[P1·engine] GAP-112-07[P2·pui] GAP-112-08[P1·engine] GAP-112-09[P2·engine] GAP-112-10[P3·pui]",
+      "at": "2026-09-23T03:04:40.802Z",
+      "gameHash": "2b236798284b494f"
+    }
+  },
+  "history": [
+    {
+      "action": "gate",
+      "stage": "S2",
+      "exit": 1,
+      "at": "2026-09-23T02:48:41.430Z"
+    },
+    {
+      "action": "concept",
+      "at": "2026-09-23T02:49:31.833Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S2",
+      "exit": 1,
+      "at": "2026-09-23T03:04:40.802Z"
+    }
+  ]
+}

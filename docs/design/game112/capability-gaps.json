@@ -1,0 +1,82 @@
+[
+  {
+    "id": "GAP-112-01",
+    "title": "公共星盘：持久公共牌堆 + 目标堆出牌 + 堆操作动词（换盘/压牌/拨顶）+ 牌库余量出口。实查：card-pile.ts:141 出牌区在同实体、:179-180 每拍清空；card-play 一拍脉冲；effect-apply kind 闭集无改牌动词；CardPile 无 deckCount 出口。A=下沉 t2-shared-pile（主程·桌游通用）/ B=改牌规为「出牌即结算」适配现有词表（零引擎改·失去三星盘博弈）。推荐 A。全文 framework.md §6 ①",
+    "priority": "P1",
+    "route": "engine",
+    "state": "open",
+    "blocks": ["S4"]
+  },
+  {
+    "id": "GAP-112-02",
+    "title": "组合判型 DSL：hand-pattern 缺「同花色任意点数」kind、缺循环点数域（月相回绕）、Card 只有 suit/rank 两维（爪印无字段）。实查：hand-pattern.ts:27-32 kind 闭集、:237-245 线性域；cardboard.ts:58-73；poker-hand flush/straight ≥5。A=扩 DSL（suited-set + rankCycle + 第三属性编码·🟢 扩写）/ B=收窄牌属性到两维。推荐 A（随 ① 同判）。全文 framework.md §6 ②",
+    "priority": "P1",
+    "route": "engine",
+    "state": "open",
+    "blocks": ["S4"]
+  },
+  {
+    "id": "GAP-112-03",
+    "title": "指针跟随实体 + 距离/速度条件叶（逗猫驱动量）。实查：PointerInputSource{move:true} 能入队但全仓无 sim 消费方；keybind 不透传 x/y；ConditionExpr 闭集无 distance/speed 叶；t3-caster 是唯一读指针的 sim 件。A=下沉 t2-pointer-follow（写 Transform·派生 speed/dwell Resource）+ distance 叶 / B=逗猫降级为区占用旗+拍数。推荐 A。全文 framework.md §6 ③",
+    "priority": "P1",
+    "route": "engine",
+    "state": "open",
+    "blocks": []
+  },
+  {
+    "id": "GAP-112-04",
+    "title": "触摸手势数值载荷（方向/速度/持续时长）。实查：clickable.ts:113 Signal 不带坐标；phase 只 down/up；drag 只起终点无时长；AABB 命中。A=Clickable.emitPayload 或与 ③ 合并 / B=首版只按分区+安心/兴致判。推荐 B 先行、随 ③ 交付时补。全文 framework.md §6 ④",
+    "priority": "P2",
+    "route": "engine",
+    "state": "open",
+    "blocks": []
+  },
+  {
+    "id": "GAP-112-05",
+    "title": "AishePort 扩展：身份参考图/角色 ID/首尾帧 + poll/cancel/delete。实查：aishe-port.ts 只有 generate(prompt,{aspect,negativePrompt,seconds,seed})，零图片字段，pending 后无法查询；全仓仅 NullAishePort 被实例化。A=扩端口 + 开发期代理（key 不进浏览器）/ B=无参考图 → 身份不稳定，违反 GDD §8.7。推荐 A。全文 framework.md §6 ⑤",
+    "priority": "P1",
+    "route": "engine",
+    "state": "open",
+    "blocks": []
+  },
+  {
+    "id": "GAP-112-06",
+    "title": "媒体作业链：玩家上传端点 / 素材检查 / 身份锚生成 / 主人审核队列 / 媒体 Blob 缓存 / 删除导出。实查：/api/art/upload 是创作者换槽单图；/api/assets/* 全是开发期件；IndexedDbKV 只收 string；无 CacheStorage；现仓无「玩家运行时后端」层。A=立 MediaJobPort/MediaCachePort 薄端口 + Null/Http + 开发期代理，真后端 owner 另定 / B=首版只做官方猫，上传延后。推荐 A 端口先立。全文 framework.md §6 ⑥",
+    "priority": "P1",
+    "route": "engine",
+    "state": "open",
+    "blocks": []
+  },
+  {
+    "id": "GAP-112-07",
+    "title": "玩家侧文件/照片上传控件。实查：LayoutNode Input.type 只 text|number；type=file 仅 studio React。A=PUI 扩 Input.type:'file'（accept/multiple/capture → action 带句柄）/ B=宿主自由 DOM（违反 UI 铁律·不接受）。推荐 A。全文 framework.md §6 ⑦",
+    "priority": "P2",
+    "route": "pui",
+    "state": "open",
+    "blocks": []
+  },
+  {
+    "id": "GAP-112-08",
+    "title": "生成片段 → alpha 序列帧图集转换管线 + video/prerendered-sequence 资产桥接（媒体线关键重组）。实查：AssetType 闭集已含 video 但 registerAssetIndex 只桥 texture/mesh；asset-types 已有 prerendered-sequence；t2-anim-state + l1-sprite + clickable 播放/遮挡/命中/确定性全现成；/api/assets/matte 只单张。A=转换管线（逐帧 matte → 图集 + manifest）+ 桥接（🟢 资产面）/ B=真视频路线（=⑨）。推荐 A 作 Loop-1 基线。全文 framework.md §6 ⑧",
+    "priority": "P1",
+    "route": "engine",
+    "state": "open",
+    "blocks": []
+  },
+  {
+    "id": "GAP-112-09",
+    "title": "VideoActor 视频角色投影件：宿主视频层 / alpha 合成 / 预载切换 / 结束事件对齐 sim tick。实查：mount-host 分层无视频槽；canvas-renderer 无遮罩/视频纹理；<video> 不透明且改 src 整元素重建；无 ended 监听。A=下沉（主程·1-2 周·浏览器透明视频兼容坑）/ B=延后，用 ⑧ 覆盖。推荐 B。全文 framework.md §6 ⑨",
+    "priority": "P2",
+    "route": "engine",
+    "state": "open",
+    "blocks": []
+  },
+  {
+    "id": "GAP-112-10",
+    "title": "Video 控件事件与绑定：onEnded action / bind / fit / catalog 补登 muted。实查：types.ts:642 VideoProps 无事件；server.ts 监听表无 ended/timeupdate；Image 有 bind 而 Video 无。A=PUI 扩 / B=回忆影片播完无信号（不能「先停留不弹奖励」）。推荐 A。全文 framework.md §6 ⑩",
+    "priority": "P3",
+    "route": "pui",
+    "state": "open",
+    "blocks": []
+  }
+]

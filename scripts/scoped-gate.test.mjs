@@ -57,6 +57,13 @@ describe('scoped-gate 分类器（缩范围只在可证明安全时）', () => {
     const c = classify(['public/games/game-a/art/cards/ace-of-spades.svg']);
     expect(c).toMatchObject({ scope: 'game', game: 'game-a' });
   });
+
+  it('仅流程板台账（public/games/<g>/pipeline.json）→ docs-only（台账只经 CLI 写·改不了编译产物·设计态游戏没测试可跑）', () => {
+    expect(classify(['public/games/game112/pipeline.json']).scope).toBe('docs-only');
+    // 台账 + 该游戏设计档 仍是 docs-only；台账 + 游戏源码 才升 game
+    expect(classify(['public/games/game112/pipeline.json', 'docs/design/game112/capability-plan.md']).scope).toBe('docs-only');
+    expect(classify(['public/games/game-a/pipeline.json', 'games/game-a/rules.ts'])).toMatchObject({ scope: 'game', game: 'game-a' });
+  });
 });
 
 // ── audit 进推送门（8/4 大评审 Q1 消费路径批·2026-08-10）──

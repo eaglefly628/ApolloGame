@@ -50,7 +50,11 @@ const gameOf = (f) => {
   const m = f.match(/^games\/([a-z0-9-]+)\//) || f.match(/^public\/games\/([a-z0-9-]+)\//) || f.match(/^docs\/design\/([a-z0-9-]+)\//);
   return m ? m[1] : null;
 };
-const isDoc = (f) => f.endsWith('.md') || f.startsWith('docs/');
+// 流程板台账 public/games/<g>/pipeline.json 按文档算：它只经 game-pipeline CLI 写（证据/立项卡），
+// 改不了任何编译产物；设计态游戏（只有 docs/design/<g>/·2026-09-12 补的第四形态）第一次 concept 落卡
+// 就只有这一个文件，若按资产算会对一个没有实现体的游戏跑 vitest → 「No test files」红门（2026-09-23 game112 实撞）。
+const isPipelineLedger = (f) => /^public\/games\/[a-z0-9-]+\/pipeline\.json$/.test(f);
+const isDoc = (f) => f.endsWith('.md') || f.startsWith('docs/') || isPipelineLedger(f);
 const isEngineOrShared = (f) =>
   ENGINE_FILES.has(f) || (f.startsWith('src/launcher/')) || ENGINE_PREFIXES.some((p) => f.startsWith(p));
 

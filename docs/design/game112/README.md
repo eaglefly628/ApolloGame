@@ -1,6 +1,7 @@
 # Game 112《星尾会客厅》·策划档案索引
 
-> 当前阶段：**S1 策划定稿前**。本目录记录产品定义、体验流程与视觉交接；尚未批准写游戏代码。
+> 当前阶段：**S1 立项卡已落板 · S2 能力计划已交、十项缺口待 owner 判 A/B**（`node scripts/game-pipeline.mjs board game112`）。尚未批准写游戏代码。
+> 引擎侧文档（GD/PE-112 · 2026-09-23）：`framework.md`（骨架 + 缺口 A/B 摆盘）· `capability-plan.md`（能力总览·待 Lead 审）· `capability-gaps.json`（机读缺口台账）· `requests.md`（游戏级需求单）· `cat-ai.md`（猫 AI 设定·必填档）。
 
 ## 建议阅读顺序
 
@@ -9,6 +10,10 @@
 3. [`menu-flow.md`](./menu-flow.md) — 全部菜单、页面、导航与异常流程，交给产品/UI 设计使用。
 4. [`ui-visual-handoff.md`](./ui-visual-handoff.md) — 交给 Crow Code 或 UI 设计人员的页面表现要求。
 5. [`visual/`](./visual/) — 当前视觉方向图与场景概念。
+6. [`framework.md`](./framework.md) — **引擎骨架**：四层分工（sim / 宿主 / 投影 / UI）、能力对账、**十项缺口 A/B 请 owner 判**、竖切三环。
+7. [`capability-plan.md`](./capability-plan.md) — 能力总览（模板 `docs/design/capability-plan-template.md`），S2 机器门读它。
+8. [`cat-ai.md`](./cat-ai.md) — 猫 AI 设定（牌桌四性格 + 狩猎链参数），`opponent-ai.md` 规定的必填档。
+9. [`requests.md`](./requests.md) · [`capability-gaps.json`](./capability-gaps.json) — 需求单与机读缺口台账。
 
 ## 决策标记
 
