@@ -146,6 +146,12 @@
       "stage": "S3",
       "exit": 0,
       "at": "2026-09-24T03:52:21.082Z"
+    },
+    {
+      "action": "review",
+      "stage": "S3",
+      "verdict": "CONCERNS",
+      "at": "2026-09-24T03:53:44.491Z"
     }
   ],
   "reviews": {
@@ -159,10 +165,10 @@
     },
     "S3": {
       "verdict": "CONCERNS",
-      "note": "复跑(HEAD 16a10e9b净树):vitest 20/20·audit PASS(⚠墙钟game112.ts:74可注入)·tsc 0错·art 0/0/0·无WARN。范围:diff 29文件对README:5全对上。撤修①blueprint:136 mask→0恰红2例(离线回收+ui主厅)②world-data:80 sit心光→0红3例(陪坐/章节edge/心光只增);复原全绿。证据gameHash b390a20c=现算;png标题屏0error;click 12/11属实。15组件型全对registry·零私加system·玩法溯gdd。CONCERNS:①StringVar activeCat(blueprint:142)零消费者②destroy-tagged targetId(:136)引擎不读(effect-apply:238用value;schema:34却写tagMask)③Tag/destroy-tagged未列plan§2.1④三离线档同表(:121)⑤sensitive无UI消费⑥数值/阈值gdd无源⑦样例清单未落README。",
-      "by": "S3-reviewer-agent",
-      "at": "2026-09-24T03:26:34.812Z",
-      "gameHash": "b390a20cc58950bc"
+      "note": "复跑@c301caba(HEAD accfd0a9·game112代码同2ce71692):vitest 20/20 exit0零WARN;audit PASS/RATCHET PASS(⚠墙钟game112.ts:74宿主层可注入·合法);gate被S2 stale闸拒→临时worktree跑render-probe exit0(0 error)·click-probe exit0(12控件/11变);范围:2ce71692所碰文件全在README边界栏内。撤修验红:blueprint.ts:139 value→0(锚点命中1处)红2条(离线回收·ui主厅「看过了」)·复原绿。七条:①✓project.ts:82读StringVar实跑得xuetuan·但写死ACTIVE_CAT/改'nobody'仍20/20绿=无测试守;②✓仍用value·targetId占位+注释·REQ-112-ENG-12已立(requests.md:120)·effect-apply.ts:34/238不一致属实;③✓plan:49已列g1-tag/destroy-tagged;④✓三档表实数short ",
+      "by": "S3-reviewer-agent-r2",
+      "at": "2026-09-24T03:53:44.491Z",
+      "gameHash": "c301caba640da8f5"
     }
   },
   "outOfOrder": [
