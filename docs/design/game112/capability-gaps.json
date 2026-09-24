@@ -40,18 +40,18 @@
     "title": "AishePort 扩展：身份参考图/角色 ID/首尾帧 + poll/cancel/delete。实查：aishe-port.ts 只有 generate(prompt,{aspect,negativePrompt,seconds,seed})，零图片字段，pending 后无法查询；全仓仅 NullAishePort 被实例化。A=扩端口 + 开发期代理（key 不进浏览器）/ B=无参考图 → 身份不稳定，违反 GDD §8.7。推荐 A。全文 framework.md §6 ⑤ ‖ owner 2026-09-24 判 A：要做，要跟爱诗对接。与 06 合成引擎能力「AI 视频生成」",
     "priority": "P1",
     "route": "engine",
-    "state": "accepted",
+    "state": "delivered",
     "blocks": [],
-    "ticket": "requests.md REQ-112-ENG-05（待晋升引擎池·主程接单抢锁）"
+    "ticket": "requests.md REQ-112-ENG-05 · 引擎池 REQ-112-AIGP（2026-09-24 已交·等独立复查）"
   },
   {
     "id": "GAP-112-06",
     "title": "媒体作业链：玩家上传端点 / 素材检查 / 身份锚生成 / 主人审核队列 / 媒体 Blob 缓存 / 删除导出。实查：/api/art/upload 是创作者换槽单图；/api/assets/* 全是开发期件；IndexedDbKV 只收 string；无 CacheStorage；现仓无「玩家运行时后端」层。A=立 MediaJobPort/MediaCachePort 薄端口 + Null/Http + 开发期代理，真后端 owner 另定 / B=首版只做官方猫，上传延后。推荐 A 端口先立。全文 framework.md §6 ⑥ ‖ owner 2026-09-24 判 A：先立端口（暂时可能接别的组件·端口要抽象）。与 05 合成「AI 视频生成」",
     "priority": "P1",
     "route": "engine",
-    "state": "accepted",
+    "state": "delivered",
     "blocks": [],
-    "ticket": "requests.md REQ-112-ENG-06（待晋升引擎池·主程接单抢锁）"
+    "ticket": "requests.md REQ-112-ENG-06 · 引擎池 REQ-112-AIGP（2026-09-24 已交·等独立复查）"
   },
   {
     "id": "GAP-112-07",
