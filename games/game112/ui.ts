@@ -319,7 +319,15 @@ export function buildMemory(v: HallView): LayoutNode {
             children: [
               { type: 'Label', id: `chap-${c.id}-title`, props: { text: c.title, size: 'lg', bold: true, color: 'text' } },
               subLabel(`chap-${c.id}-hint`, c.hint),
-              { type: 'Badge', id: `chap-${c.id}-state`, props: { text: c.unlocked ? '已发光' : `心光 ${c.need} 时发亮`, tone: c.unlocked ? 'gold' : 'dim' } },
+              {
+                type: 'Panel', id: `chap-${c.id}-badges`, props: { bare: true },
+                layout: { direction: 'row', gap: 6, align: 'center' },
+                children: [
+                  { type: 'Badge', id: `chap-${c.id}-state`, props: { text: c.unlocked ? '已发光' : `心光 ${c.need} 时发亮`, tone: c.unlocked ? 'gold' : 'dim' } },
+                  // 敏感章节先给控制权（GDD §2.3·S66）：标出来，玩家今天可以选择不看。
+                  ...(c.sensitive ? [{ type: 'Badge', id: `chap-${c.id}-sensitive`, props: { text: '可能触动情绪·可跳过', tone: 'warn' } } as LayoutNode] : []),
+                ],
+              },
             ],
           },
           { type: 'Button', id: `chap-${c.id}-read`, props: { label: '看它的回忆', kind: c.unlocked ? 'primary' : 'ghost', action: 'memory.read', actionArg: c.id, disabled: !c.unlocked } },

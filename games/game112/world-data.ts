@@ -2,6 +2,8 @@
 // 口径：docs/design/game112/capability-plan.md §3（每张表的解释器都是注册能力）。
 // 所有 id 全局唯一 `<量>.<catId>`（events-logic.md「全局 id 路由」坑）。
 // 🟡 = 待 owner 定（牌规 / 逗猫重设计），S3 只留接口位。
+// ⚠ 数值口径：GDD 只定了「无惩罚·心光只增·兴致当次临时」等**方向**，没有具体数字——本文件里的阈值/增量/价格
+//   全是 S3 占位（S4 手感调校面·随对齐单迭代·非 GDD 出处），改数不改结构。
 import type { DialogueGraph } from '@zerocraft/engine/skills/tier3/index.js';
 
 export const GAME_ID = 'game112';
@@ -64,7 +66,7 @@ export const MOOD_DRIFT = { amountPerTick: -1, period: 40 } as const;
 // ── 陪伴动作（GDD §4.1 / §9.1·首版只按动作判·触摸分区 🟡 随逗猫重设计）──────
 export interface CareAction {
   readonly id: string;
-  /** UI 动作名 = keybind key（menu-flow §13 词表）。 */
+  /** UI 动作名 = keybind key（机器键·对应 menu-flow §13 的玩家可见标签；§13 只写中文标签，机器键以 ui.ts UI_ACTIONS 为真相）。 */
   readonly key: string;
   readonly label: string;
   readonly sub: string;
@@ -147,12 +149,13 @@ export const offlineSignal = (t: OfflineTier): string => `offline:${t}`;
 export const OFFLINE_ACK_KEY = 'offline.ack';
 /** 离线小事件实体的 Tag 位（ack 时 destroy-tagged 批量回收）。 */
 export const OFFLINE_TAG = 1 << 3;
-export interface OfflineEvent { readonly id: string; readonly text: string; readonly weight: number }
+export interface OfflineEvent { readonly id: string; readonly text: string; readonly weight: Readonly<Record<OfflineTier, number>> }
+/** 每档权重不同：短暂离开只见小动静；隔天回来才见「睡过你的位置」（0 = 该档抽不到）。 */
 export const OFFLINE_EVENTS: readonly OfflineEvent[] = [
-  { id: 'bag-hid-cards', text: '它趁你不在，把三张牌藏进了纸袋。', weight: 3 },
-  { id: 'toy-on-table', text: '玩具被叼到了桌边，歪着。', weight: 3 },
-  { id: 'slept-on-seat', text: '你常坐的位置上，有一小圈压平的毛。', weight: 4 },
-  { id: 'coaster-flipped', text: '杯垫被打翻了，它若无其事地在舔毛。', weight: 2 },
+  { id: 'bag-hid-cards', text: '它趁你不在，把三张牌藏进了纸袋。', weight: { short: 2, long: 3, days: 2 } },
+  { id: 'toy-on-table', text: '玩具被叼到了桌边，歪着。', weight: { short: 3, long: 3, days: 1 } },
+  { id: 'slept-on-seat', text: '你常坐的位置上，有一小圈压平的毛。', weight: { short: 0, long: 2, days: 5 } },
+  { id: 'coaster-flipped', text: '杯垫被打翻了，它若无其事地在舔毛。', weight: { short: 2, long: 2, days: 2 } },
 ];
 /** 离开多久算哪一档（宿主用墙钟算·sim 只见 key）。 */
 export function offlineTierOf(elapsedMs: number): OfflineTier | undefined {

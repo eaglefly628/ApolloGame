@@ -1,0 +1,40 @@
+// author: GD-112
+// GD-112 验收剧本 ① · 陪伴动作与兴致（gdd §4.1 陪伴 / §6.2 四量）。
+//   轻声呼唤：亲近 +2 · 兴致 +6 · 星砂 +1；陪它坐坐：心光 +2 · 安心 +2 · 星砂 +2。
+//   兴致每 40 拍自然 −1（当次临时）；亲近/心光**不因空等下降**（无惩罚·§5.4）。
+// 对抗目标（改坏被测逻辑应变红）：
+//   · 呼唤的 Effect 表丢一项 → 对应量断言红；· 兴致 OverTime 断了 → 「41 拍后 −1」红；
+//   · 谁给亲近/心光挂了衰减 → 「空等不降」红。
+{
+  "name": "陪伴动作一拍反馈 · 兴致自然下行 · 长期量不因空等下降",
+  "game": "game112",
+  "seed": 112,
+  "steps": [
+    { "expect": [
+      { "res": "stardust", "eq": 0 },
+      { "res": "closeness.xuetuan", "eq": 0 },
+      { "res": "ease.xuetuan", "eq": 20 },
+      { "res": "heartlight.xuetuan", "eq": 0 },
+      { "res": "mood.xuetuan", "eq": 60 },
+    ] },
+    { "signal": "cat.greet" }, { "tick": 2 },
+    { "expect": [
+      { "res": "closeness.xuetuan", "eq": 2 },
+      { "res": "mood.xuetuan", "eq": 66 },
+      { "res": "stardust", "eq": 1 },
+    ] },
+    { "signal": "cat.sit" }, { "tick": 2 },
+    { "expect": [
+      { "res": "heartlight.xuetuan", "eq": 2 },
+      { "res": "ease.xuetuan", "eq": 22 },
+      { "res": "stardust", "eq": 3 },
+    ] },
+    // 空等到兴致的第一个下行周期过去（40 拍一次 −1；此前已推 6 拍）
+    { "waitUntil": [ { "res": "mood.xuetuan", "lte": 65 } ], "cap": 60 },
+    { "expect": [
+      { "res": "mood.xuetuan", "eq": 65 },
+      { "res": "closeness.xuetuan", "eq": 2 },
+      { "res": "heartlight.xuetuan", "eq": 2 },
+    ] },
+  ]
+}

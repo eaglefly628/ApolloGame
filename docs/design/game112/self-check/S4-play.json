@@ -1,0 +1,141 @@
+{
+  "at": "2026-09-24T03:45:48.356Z",
+  "checks": [
+    {
+      "name": "标题页：主 CTA「回到星尾馆」在",
+      "pass": true
+    },
+    {
+      "name": "关于页：情感红线文案在（不制造第二次失去）",
+      "pass": true
+    },
+    {
+      "name": "进主厅：猫画面 + 星砂 0 + 情绪短语",
+      "pass": true,
+      "detail": "stardust=0 mood=安静地待着 hasHall=true screen=hot-orbs actions=10"
+    },
+    {
+      "name": "陪坐 10 次：星砂 20（数字真的变了）",
+      "pass": true,
+      "detail": "stardust=20"
+    },
+    {
+      "name": "星砂铺：物品网格 + 顶栏星砂 20",
+      "pass": true,
+      "detail": "stardust=20"
+    },
+    {
+      "name": "纸袋（20）可买·羽毛杆（30）禁用",
+      "pass": true
+    },
+    {
+      "name": "买纸袋：星砂 0 · 「已拥有 ×1」",
+      "pass": true,
+      "detail": "stardust=0 badge=已拥有 ×1"
+    },
+    {
+      "name": "玩具篮：有「放到馆里」",
+      "pass": true
+    },
+    {
+      "name": "放到馆里 → 回主厅 → 纸袋出现在馆里（购买回到共同空间）",
+      "pass": true,
+      "detail": "placed=true"
+    },
+    {
+      "name": "回忆廊：章节「已发光」",
+      "pass": true,
+      "detail": "state=已发光"
+    },
+    {
+      "name": "阅读：台词框 + 「继续」",
+      "pass": true
+    },
+    {
+      "name": "第三节是选择：choiceList 出现",
+      "pass": true
+    },
+    {
+      "name": "选后到终节点：显示「到这里」且「继续」消失",
+      "pass": true
+    },
+    {
+      "name": "终局出口在：「回到回忆廊」",
+      "pass": true
+    },
+    {
+      "name": "出口点得动：回到回忆廊",
+      "pass": true
+    },
+    {
+      "name": "新一轮还能接着陪：呼唤后星砂 1",
+      "pass": true,
+      "detail": "stardust=1"
+    },
+    {
+      "name": "晶球厅：当前猫晶球 + 「接回自己的猫」空位",
+      "pass": true
+    },
+    {
+      "name": "星牌桌：接口位（牌规待定说明）",
+      "pass": true
+    },
+    {
+      "name": "设置：可信优先文案",
+      "pass": true
+    },
+    {
+      "name": "存档在（带 checksum 的信封·apollo-save:main）",
+      "pass": true
+    },
+    {
+      "name": "回馆：「你不在的时候」小事件展开一条 + 「看过了」",
+      "pass": true,
+      "detail": "text=杯垫被打翻了，它若无其事地在舔毛。"
+    },
+    {
+      "name": "回馆：进度随存档带回（星砂 1·纸袋仍在馆里）",
+      "pass": true,
+      "detail": "stardust=1 placed=true"
+    },
+    {
+      "name": "看过了：小事件收起、不再追弹",
+      "pass": true
+    },
+    {
+      "name": "词表 20 个动作：屏上都出现过（宿主条件键 1 个另注）",
+      "pass": true,
+      "detail": "未见=无"
+    },
+    {
+      "name": "全程零控制台 error / 未捕获异常",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "shots": 16,
+  "consoleErrors": [],
+  "actionsSeen": [
+    "cat.greet",
+    "cat.sit",
+    "decor.place",
+    "dialogue.advance",
+    "hall.back",
+    "home.about",
+    "home.enter",
+    "home.exit",
+    "later",
+    "memory.advance",
+    "memory.back",
+    "memory.choose",
+    "memory.open",
+    "memory.read",
+    "offline.ack",
+    "orbs.open",
+    "settings.open",
+    "shop.buy",
+    "shop.open",
+    "table.open",
+    "toys.open"
+  ]
+}

@@ -1,0 +1,23 @@
+// author: GD-112
+// GD-112 验收剧本 ② · 星砂杂货铺（gdd §12.4 商店原则 · menu-flow §10「购买后放到馆里看看」）。
+//   可负担才成交，否则**整单不动**（不扣不给不置旗）；成交 = 扣价 + 计数 +1 + own 旗；放到馆里 = placed 旗。
+// 对抗目标：
+//   · 商店改成先扣后判 → 星砂 10 买羽毛杆后不再是 10；· 成交漏置旗 → own 断言红；
+//   · 放到馆里没接 Effect → placed 断言红；· 价格表改动 → 20 那条红。
+{
+  "name": "杂货铺：星砂不够 → 整单不动（不扣不给不置旗）· restart 按 config 回初值",
+  "game": "game112",
+  "seed": 112,
+  "config": { "state": { "stardust": 10 } },
+  "steps": [
+    { "signal": "shop.buy", "args": { "item": "feather" } }, { "tick": 2 },
+    { "expect": [
+      { "res": "stardust", "eq": 10 },
+      { "res": "item.feather", "eq": 0 },
+      { "flag": "own.feather", "eq": false },
+    ] },
+    // 重开一局，带够星砂（config 同形状=宿主读档）
+    { "signal": "restart" },
+    { "expect": [ { "res": "stardust", "eq": 10 } ] },
+  ]
+}

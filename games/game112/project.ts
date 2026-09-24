@@ -1,6 +1,6 @@
 // game112 —— 世界 → UI 投影（只读·纯函数·宿主层）。UI 侧零世界访问，只吃 HallView 这样的 POD。
 import type { IWorld } from '@zerocraft/engine/engine/core/types.js';
-import type { Resource, State, Flag, Tag, Text } from '@zerocraft/engine/engine/protocol/components.js';
+import type { Resource, State, Flag, Tag, Text, StringVar } from '@zerocraft/engine/engine/protocol/components.js';
 import {
   ACTIVE_CAT, RELATIONS, SHOP_ITEMS, CHAPTERS, OFFLINE_TAG, STARDUST,
   relId, itemCount, placedFlag, chapterFlag, chapterFsm, catOf, chapterOf,
@@ -26,6 +26,13 @@ export function stateOf(world: IWorld, fsmId: string): string {
   for (const [eid] of world.query('State')) {
     const s = world.getComponent<State>(eid, 'State');
     if (s?.fsmId === fsmId) return s.current;
+  }
+  return '';
+}
+export function stringVarOf(world: IWorld, id: string): string {
+  for (const [eid] of world.query('StringVar')) {
+    const v = world.getComponent<StringVar>(eid, 'StringVar');
+    if (v?.id === id) return v.value;
   }
   return '';
 }
@@ -71,13 +78,15 @@ export function moodPhraseOf(catId: string, mood: number): string {
 }
 
 export function buildHallView(world: IWorld): HallView {
-  const cat = catOf(ACTIVE_CAT);
-  const relations = Object.fromEntries(RELATIONS.map((r) => [r.key, resourceOf(world, relId(r.key, ACTIVE_CAT))])) as Record<RelationKey, number>;
+  // 当前陪伴猫从世界 StringVar 读（一个活动镜头一只猫·GDD §6.4）；多猫切换 = 改这个变量，不改投影。
+  const catId = stringVarOf(world, 'activeCat') || ACTIVE_CAT;
+  const cat = catOf(catId);
+  const relations = Object.fromEntries(RELATIONS.map((r) => [r.key, resourceOf(world, relId(r.key, catId))])) as Record<RelationKey, number>;
   return {
-    catId: ACTIVE_CAT,
-    catName: cat?.name ?? ACTIVE_CAT,
+    catId,
+    catName: cat?.name ?? catId,
     catLine: cat?.hallLine ?? '',
-    moodPhrase: moodPhraseOf(ACTIVE_CAT, relations.mood),
+    moodPhrase: moodPhraseOf(catId, relations.mood),
     stardust: resourceOf(world, STARDUST),
     relations,
     owned: SHOP_ITEMS

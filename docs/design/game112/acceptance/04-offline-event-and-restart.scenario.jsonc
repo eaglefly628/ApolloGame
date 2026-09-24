@@ -1,0 +1,31 @@
+// author: GD-112
+// GD-112 验收剧本 ④ · 离线小事件与重开（gdd §3.4「田螺姑娘」/ §6.2 兴致当次临时 / §5.4 无欠账）。
+//   回馆注入 offline.long → 恰好展开**一个**小事件；看过了 → 全部回收；
+//   restart（带 config）→ 兴致回初值 60、心光按档带回、离线事件不复现（没再注入）。
+//   档里**故意塞一个兴致 90**（坏档/旧档形态）：兴致是当次临时量，蓝图必须无视它——开局与重开都是 60。
+// 对抗目标：
+//   · 权重表全 0 / 生成器丢 Transform → count 0；· ack 掩码错 → 回收后仍 1；
+//   · 兴致被持久化（蓝图从档里读 mood）→ 开局/restart 后是 90 不是 60。
+//     （递归复核 2026-09-24 第 1 轮抓到本条裸奔：原剧本 config 没带 mood，蓝图读不读档都是 60——
+//       「能被两种实现同时满足的断言 = 没测到东西」·testing.md。故补 mood 90。）
+{
+  "name": "离线小事件恰一个 · 看过即回收 · 重开不带兴致",
+  "game": "game112",
+  "seed": 112,
+  "config": { "state": { "relations": { "heartlight.xuetuan": 4, "mood.xuetuan": 90 } } },
+  "steps": [
+    { "expect": [ { "res": "offline.count", "eq": 0 }, { "res": "mood.xuetuan", "eq": 60 } ] },
+    { "signal": "offline.long" }, { "tick": 2 },
+    { "expect": [ { "res": "offline.count", "eq": 1 } ] },
+    { "signal": "offline.ack" }, { "tick": 2 },
+    { "expect": [ { "res": "offline.count", "eq": 0 } ] },
+    { "signal": "cat.greet" }, { "tick": 2 },
+    { "expect": [ { "res": "mood.xuetuan", "eq": 66 } ] },
+    { "signal": "restart" },
+    { "expect": [
+      { "res": "mood.xuetuan", "eq": 60 },
+      { "res": "heartlight.xuetuan", "eq": 4 },
+      { "res": "offline.count", "eq": 0 },
+    ] },
+  ]
+}

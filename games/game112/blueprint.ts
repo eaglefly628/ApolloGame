@@ -118,8 +118,9 @@ function chapterEntities(s: PersistedState): Record<string, EntityBlueprint> {
 // ── 离线小事件：分档 key → 种子抽模板 → prefab 展开；ack 批量回收 ─────────────
 function offlineEntities(): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
-  const table = OFFLINE_EVENTS.map((e) => ({ templateId: e.id, weight: e.weight }));
   for (const t of OFFLINE_TIERS) {
+    // 每档一张权重表（离开越久，「睡过你的位置」这类痕迹越重·纯数据）；权重 0 的模板不会被抽到。
+    const table = OFFLINE_EVENTS.map((e) => ({ templateId: e.id, weight: e.weight[t] })).filter((x) => x.weight > 0);
     out[`kb-offline-${t}`] = { KeyBinding: { key: offlineKey(t), signal: offlineSignal(t), phase: 'action' } };
     out[`gen-offline-${t}`] = { Transform: { ...AT_ORIGIN }, WeightedSpawn: { onSignal: offlineSignal(t), table } };
   }
@@ -132,8 +133,10 @@ function offlineEntities(): Record<string, EntityBlueprint> {
     },
   };
   out['kb-offline-ack'] = { KeyBinding: { key: OFFLINE_ACK_KEY, signal: 'offline:ack', phase: 'action' } };
-  // destroy-tagged 的掩码走 `value`（logic.ts:143「destroy-tagged：value=Tag 掩码」·tagMask 是 set-*-tagged 姊妹条用的）。
-  out['fx-offline-ack'] = { Effect: { onSignal: 'offline:ack', kind: 'destroy-tagged', targetId: 'offline', value: OFFLINE_TAG } };
+  // destroy-tagged 的掩码走 `value`（logic.ts:143「destroy-tagged：value=Tag 掩码」·effect-apply.ts:238 实读 value；
+  // schema 注释写 tagMask 是姊妹条 set-*-tagged 的口径——已报 S3 复查记录）。`targetId` 该 kind 不读，
+  // 但 Effect 类型要求非空字符串 → 填语义名占位，不是路由键。
+  out['fx-offline-ack'] = { Effect: { onSignal: 'offline:ack', kind: 'destroy-tagged', targetId: 'offline-props', value: OFFLINE_TAG } };
   return out;
 }
 

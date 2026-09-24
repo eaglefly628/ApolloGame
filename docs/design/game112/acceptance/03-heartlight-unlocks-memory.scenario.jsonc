@@ -1,0 +1,35 @@
+// author: GD-112
+// GD-112 验收剧本 ③ · 心光解锁回忆（gdd §11.3 回忆解锁逻辑：通过自然陪伴获得心光，不是购买钥匙）。
+//   心光 8 → 未解锁；陪坐一次 +2 → 到 10 那一拍（上升沿）解锁 `xuetuan-1`；
+//   章节：n1 → 继续 → n2 → 继续 → n3（选择）→ 选第二项 → n4b（next=null·终节点）。
+// 对抗目标：
+//   · 阈值写错/edge 变 level → 「心光 8 未解锁」或重复触发；· 章节图断链 → 游标断言红；
+//   · 选项下标错位 → 落到 n4a 而非 n4b。
+{
+  "name": "心光到 10 那一拍解锁章节，章节能读到终节点",
+  "game": "game112",
+  "seed": 112,
+  "config": { "state": { "relations": { "heartlight.xuetuan": 8 } } },
+  "steps": [
+    { "tick": 2 },
+    { "expect": [
+      { "res": "heartlight.xuetuan", "eq": 8 },
+      { "flag": "chapter.xuetuan-1.unlocked", "eq": false },
+      { "comp": { "entity": "dlg-xuetuan-1", "component": "State", "field": "current" }, "eq": "n1" },
+    ] },
+    { "signal": "cat.sit" }, { "tick": 3 },
+    { "expect": [
+      { "res": "heartlight.xuetuan", "eq": 10 },
+      { "flag": "chapter.xuetuan-1.unlocked", "eq": true },
+    ] },
+    { "signal": "memory.advance" },
+    { "expect": [ { "comp": { "entity": "dlg-xuetuan-1", "component": "State", "field": "current" }, "eq": "n2" } ] },
+    { "signal": "memory.advance" },
+    { "expect": [ { "comp": { "entity": "dlg-xuetuan-1", "component": "State", "field": "current" }, "eq": "n3" } ] },
+    { "signal": "memory.choose", "args": { "index": 1 } },
+    { "expect": [ { "comp": { "entity": "dlg-xuetuan-1", "component": "State", "field": "current" }, "eq": "n4b" } ] },
+    // 终节点上再「继续」不该炸、不该跳走（next=null）
+    { "signal": "memory.advance" }, { "tick": 1 },
+    { "expect": [ { "comp": { "entity": "dlg-xuetuan-1", "component": "State", "field": "current" }, "eq": "n4b" } ] },
+  ]
+}

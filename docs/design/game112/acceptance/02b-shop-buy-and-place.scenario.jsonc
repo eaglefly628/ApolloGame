@@ -1,0 +1,26 @@
+// author: GD-112
+// GD-112 验收剧本 ②b · 杂货铺成交与放置（与 ② 同条款·换初值：星砂 50）。
+//   买 30 的羽毛杆 → 20 · 计数 1 · own 旗；放到馆里 → placed 旗；再买 40 的软垫 → 20 不够 → 整单不动。
+{
+  "name": "杂货铺：够了成交 → 放到馆里 → 再买不够仍整单不动",
+  "game": "game112",
+  "seed": 112,
+  "config": { "state": { "stardust": 50 } },
+  "steps": [
+    { "signal": "shop.buy", "args": { "item": "feather" } }, { "tick": 2 },
+    { "expect": [
+      { "res": "stardust", "eq": 20 },
+      { "res": "item.feather", "eq": 1 },
+      { "flag": "own.feather", "eq": true },
+      { "flag": "placed.feather", "eq": false },
+    ] },
+    { "signal": "decor.place", "args": { "item": "feather" } }, { "tick": 2 },
+    { "expect": [ { "flag": "placed.feather", "eq": true } ] },
+    { "signal": "shop.buy", "args": { "item": "cushion" } }, { "tick": 2 },
+    { "expect": [
+      { "res": "stardust", "eq": 20 },
+      { "res": "item.cushion", "eq": 0 },
+      { "flag": "own.cushion", "eq": false },
+    ] },
+  ]
+}

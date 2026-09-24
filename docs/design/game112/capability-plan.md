@@ -46,7 +46,7 @@
 | `a2-hierarchy` · `c1-shape` · `a1-transform` | 猫的分区子实体 · 玩具 · 布置物位置 | ✅ 现有 |
 | `t2-zone-occupancy` | 关注区 / 纸袋遮挡区（玩具在区内 → Flag）——逗猫重设计中·暂留 | ✅ 现有 |
 | `t3-aggro` · `t2-steering` · `t1-motion-apply` | 猫朝玩具移动（Track/Search） | ✅ 现有 |
-| `t2-weighted-spawn` · `t3-prefab` · `k1-spawn` · `k2-destroy` | 离线小事件按权重表在布置点展开 · 事件回收 | ✅ 现有 |
+| `t2-weighted-spawn` · `t3-prefab` · `k1-spawn` · `k2-destroy` · `g1-tag` | 离线小事件按权重表在布置点展开（每档一表）· 展开物挂 Tag 位 · `effect-apply destroy-tagged` 按位批量回收 | ✅ 现有 |
 | `t3-dialogue` | 回忆章节（line/choice/requires）· 首次引导 | ✅ 现有 |
 | `t3-timeline` | 初遇演出 cue（猫远远观察 → 靠近）· 章节完成演出 | ✅ 现有 |
 | `l1-sprite` · `l3-frame` · `t1-animation` · `t2-anim-state` · `t2-facing` · `h1-visibility` | **猫的投影（序列帧路线·缺口 ⑧ 选 A 时）**：按 `State{fsmId}` 切 clip · 前景遮挡靠 zOrder | ✅ 现有 |

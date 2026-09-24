@@ -117,6 +117,13 @@
 
 ---
 
+## REQ-112-ENG-12 · `effect-apply` schema 文案与实现不一致（报主程·P3·文档级）
+- **发现**：S3 复查（S3-reviewer-agent 2026-09-24）——`src/skills/tier2/effect-apply.ts:34` schema 写「tagMask：批量 kind（destroy-tagged/…）」，而 `:238` 实现 `destroy-tagged` 读的是 `Number(ef.value)`；`logic.ts:143` 注释与实现一致（value=掩码）。game112 首版照 schema 填 `tagMask` 撞红（`blueprint.ts` fx-offline-ack）。
+- **归属**：🔴 主程面（`src/skills/tier2`）· status: **open** · P3
+**建议**：二选一——schema 文案改成「destroy-tagged 掩码走 value；tagMask 仅 set-flag-tagged/set-visible-tagged」，或实现改成 `tagMask ?? value` 兼容。**当前绕法**：game112 按实现填 `value`（已注释）。
+
+---
+
 ## 定项问询（owner 一并判）
 - **§5 竖切三环**：Loop-0（主厅静态 + 星爪牌 + 星砂/杂货铺 + 一段回忆）零媒体缺口先跑 S4 → Loop-1 逗猫 + 序列帧猫 → Loop-2 上传/生成。⬜ 准 ⬜ 按 GDD §16.1 一次到位。
 - **名字**：立项卡暂用工作名《星尾会客厅》（GDD 🟡）。
