@@ -12,14 +12,14 @@
     "S2": {
       "exit": 0,
       "summary": "capability-plan.md 在档 · ✓ 缺口 11 条全已裁决 · 未交付 2：GAP-112-07→锁无 GAP-112-11→锁无",
-      "at": "2026-09-24T03:18:16.008Z",
-      "gameHash": "b390a20cc58950bc"
+      "at": "2026-09-24T03:51:20.295Z",
+      "gameHash": "c301caba640da8f5"
     },
     "S3": {
       "exit": 0,
       "summary": "编译期游戏免 manifest 校验 · ✓ 渲染探针过（截图 public/games/<slug>/probe/S3-render.png） · ✓ 点击打穿（12 个控件 · 11 个点后 DOM 真的变了 · 零控制台 error）",
-      "at": "2026-09-24T03:20:25.830Z",
-      "gameHash": "b390a20cc58950bc"
+      "at": "2026-09-24T03:52:21.082Z",
+      "gameHash": "c301caba640da8f5"
     }
   },
   "history": [
@@ -116,15 +116,45 @@
       "stage": "S3",
       "verdict": "CONCERNS",
       "at": "2026-09-24T03:26:34.812Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S2",
+      "exit": 0,
+      "at": "2026-09-24T03:49:47.437Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S2",
+      "exit": 0,
+      "at": "2026-09-24T03:51:20.295Z"
+    },
+    {
+      "action": "review",
+      "stage": "S2",
+      "verdict": "CONCERNS",
+      "at": "2026-09-24T03:52:01.119Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "owner 2026-09-24 原话「游戏端的你来连续实现，引擎端我让 leader 实现」——S1/S2 人门待 owner/Lead 真人签（不代签）；S2 机器门绿 + 复查在案",
+      "at": "2026-09-24T03:52:01.234Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-09-24T03:52:21.082Z"
     }
   ],
   "reviews": {
     "S2": {
-      "verdict": "PASS",
-      "note": "三核(HEAD=origin b49fe369):§2.1 47名/§3 26名对registry 113id缺0;§3 18表解释器全注册名/宿主/缺口⑪;§4例外④真存·Lead裁决⬜待人门;§4.5脚本game112-art-requirements.mjs已落→台账5行·art-ledger-guard game112 0/0/0(全库WARN系game-a/c/101旧账);gate S2 exit0·零open·05/06 delivered(引擎池REQ-112-AIGP存)·07/11锁无;budget PASS。范围:README边界栏与diff --stat origin~2 26文件逐一对上(games/game112·public art+pipeline·docs·launcher×2·art脚本);设计正文5档未动。S3在途:vitest 20/20绿·audit PASS/RATCHET PASS(seed经opts.now注入·:74默认Date.now仍⚠×1)。残留:scoped-gate越域主程review欠;AIGP等复查。",
-      "by": "S2-reviewer-agent",
-      "at": "2026-09-24T03:19:39.346Z",
-      "gameHash": "b390a20cc58950bc",
+      "verdict": "CONCERNS",
+      "note": "增量复查(HEAD 2ce71692·hash c301caba):gate S2 exit0(不经管道)·11缺口全裁·07/11未交付·stderr零告警;skill-audit AUDIT PASS/RATCHET PASS(仅game112.ts:74墙钟可注入·宿主端·上次已记);范围:两提交38文件全在README:5边界栏内(probe/**·playthrough·spec-recursion同提交补列);src/与scoped-gate未动。能力名plan§2.1 48个逐个对src/skills id 48/48存在(新增g1-tag=atoms/tag/index.ts:7);blueprint 16种组件全对plan;上次S3③已补(plan:49列g1-tag+destroy-tagged);游戏层零新增system;§4例外①-④未动·Lead裁决⬜待人门;§4.5/art未动。CONCERNS(纯文档·不阻塞):①plan:104仍写OFFLINE_EVENTS「每猫权重表」而实现已是每档一张表(world-data.ts:153-159·blueprin",
+      "by": "S2-reviewer-agent-r2",
+      "at": "2026-09-24T03:52:01.119Z",
+      "gameHash": "c301caba640da8f5",
       "gapsHash": "438ede8001bb0205"
     },
     "S3": {
@@ -140,6 +170,11 @@
       "stage": "S3",
       "reason": "owner 2026-09-24 原话「游戏端的你来连续实现，引擎端我让 leader 实现」——S1/S2 人门待 owner/Lead 真人签（不代签）；S2 机器门绿 + 复查 PASS（S2-reviewer-agent）在案",
       "at": "2026-09-24T03:20:06.727Z"
+    },
+    {
+      "stage": "S3",
+      "reason": "owner 2026-09-24 原话「游戏端的你来连续实现，引擎端我让 leader 实现」——S1/S2 人门待 owner/Lead 真人签（不代签）；S2 机器门绿 + 复查在案",
+      "at": "2026-09-24T03:52:01.234Z"
     }
   ]
 }
