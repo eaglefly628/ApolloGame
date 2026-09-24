@@ -202,6 +202,9 @@ desync（`determinism.ts` 对 Camera 的同款理由）。条目进 hash → 注
 
 <!-- REQ-DOKIPACK-DokiWorld 出包线（P1·owner 2026-08-12 令「以后产物都往这里打包」）首件已完结出池：手册 docs/playbooks/dokiworld-pack.md + 规范快照 docs/design/dokiworld/ 在档=常备产线；game108 首包 ✅ Lead 终审 PASS——dokiworld/game108/（manifest 生成器§5 逐条校验·SDK 薄接线零规则·toGameResult 纯函数=血差线性投影与验收剧本同口径·12 测独立复跑绿·施工方 outcome 反转验红+Lead 钳位破坏恰中边界测·无宿主等待屏与 createAppHost 真握手挂载双目击截图在档）。game108 加 setWorldObserver 只读观察口（照 setCard 形态·render-only）。**下一步触发者=owner**：整目录复制/PR 到 dokiworld-apps 仓 + 真宿主跑一遍（§12 末项·本仓无那边推送权）。**记债**：引擎两条站点绝对资产约定（/games/<slug>/art·/ui-fonts）在 iframe 子路径下逃包，现由打包层改写+复制资产兜住——「资产 URL 基准可配置」是引擎缺口候选,下个游戏出包再撞就立单下沉。后续游戏照手册,World 形态等首个剧情向产物。 -->
 
+### REQ-112-AIGP · AI 视频生成两件套（`AishePort` 扩展 + `MediaJobPort`/`MediaCachePort` 立端口）· [2026-09-24] · **owner 判 A×2**（game112 ENG-05「要做，毕竟要跟爱诗对接」· ENG-06「先立端口」要求与供应商解耦） · **施工主体 = 主程 = 本 session（2026-09-24 抢锁·本行即锁）** · 复查 = 另派独立 agent（复查人≠施工人·**待派**） · status: **in-progress** · P1 · 类型: 引擎能力下沉
+全文与实查留痕 = `docs/design/game112/requests.md` ENG-05/ENG-06（**不在池内重抄**·池余量 2811 字符）。边界：`src/services/aigp/**` + `src/services/media-job/**` + 开发期代理脚本；纪律同 `HttpNpcAgentPort` 三条（**绝不抛 · 绝不碰 world · 只归一形状**）。配对单 **ENG-11「内嵌 AI 视频播放」本轮未抢锁**（含 `src/ui/components` = PUI 域·跨域另议）。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。

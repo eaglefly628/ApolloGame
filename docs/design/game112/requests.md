@@ -45,7 +45,7 @@
 
 ## REQ-112-ENG-05 · `AishePort` 扩展（GAP-112-05）——引擎能力「AI 视频生成」之一
 - **owner 裁决**：**A（2026-09-24）**「要做，毕竟要跟爱诗对接」
-- **归属**：🔴 主程面 `src/services/aigp` · status: **accepted · 待晋升引擎池（主程接单抢锁）** · P1
+- **归属**：🔴 主程面 `src/services/aigp` · **施工主体 = 主程 = 本 session（2026-09-24 抢锁·本行即锁）** · 复查 = 另派独立 agent（复查人≠施工人·**待派**） · status: **in-progress** · P1 · 引擎池指针单 = `REQ-112-AIGP`
 **想实现的行为**：`AisheGenerateOptions` 加 `referenceImages[]/characterId/firstFrame/lastFrame`；端口加 `poll(id)/cancel(id)/delete(id)`；开发期代理 `scripts/game112-aishe-proxy.mjs`（照 `game111-deepseek-proxy.mjs`：key 只在本进程·`--selftest`）。
 **实查留痕**：`aishe-port.ts` 接口全文（`generate` 唯一方法·零图片字段）；`http-aishe.ts` POST 体；`aishe.test.ts`；全仓 `new HttpAishePort` 零命中、`NullAishePort` 仅 `games/game-i/game-i.ts:136`。
 **边界**：`src/services/aigp/**` + 代理脚本；纪律同 `HttpNpcAgentPort` 三条（绝不抛 · 绝不碰 world · 只归一形状）。
@@ -54,7 +54,7 @@
 
 ## REQ-112-ENG-06 · 媒体作业链端口（GAP-112-06）——引擎能力「AI 视频生成」之二
 - **owner 裁决**：**A·先立端口（2026-09-24）**「现在暂时可能会接别的组件」→ 端口形状必须与具体供应商解耦（同 NpcAgentPort/AishePort 纪律）
-- **归属**：🔴 主程面 `src/services/media-job` + 产品后端（本仓外·owner 另定）· status: **accepted · 待晋升引擎池** · P1
+- **归属**：🔴 主程面 `src/services/media-job` + 产品后端（本仓外·owner 另定）· **施工主体 = 主程 = 本 session（2026-09-24 抢锁·本行即锁）** · 复查 = 另派独立 agent（**待派**） · status: **in-progress** · P1 · 引擎池指针单 = `REQ-112-AIGP`
 **想实现的行为**：`MediaJobPort{submit(kind,inputs),poll,cancel,delete,export}` · `MediaCachePort`（Blob·非 string KV）· 审核队列数据形状 `{jobId,catId,kind,status:'pending'|'approved'|'rejected',reason}` · Null 实现可跑 CI。
 **实查留痕**：`main_entry/server.py` `/api/art/upload` 单图 dataBase64 白名单 png/webp/jpg/jpeg/glb（创作者换槽用）；`/api/assets/{matte,generate,review,autotag}` 开发期件；`services/storage` `IndexedDbKV` 只收 string；全仓无 CacheStorage/Service Worker。
 **边界**：端口薄；不在游戏层写网络胶水。
