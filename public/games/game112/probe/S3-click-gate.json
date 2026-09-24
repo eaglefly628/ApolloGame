@@ -117,14 +117,17 @@
       "id": "care-greet",
       "changed": true,
       "changedIds": [
-        "hall-stardust"
+        "hall-stardust",
+        "hall-cat-line"
       ]
     },
     {
       "id": "care-sit",
       "changed": true,
       "changedIds": [
-        "hall-stardust"
+        "hall-stardust",
+        "hall-cat-line",
+        "hot-orbs-sub"
       ]
     },
     {

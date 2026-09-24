@@ -205,6 +205,12 @@ desync（`determinism.ts` 对 Camera 的同款理由）。条目进 hash → 注
 ### REQ-112-AIGP · AI 视频生成两件套（`AishePort` 扩展 + `MediaJobPort`/`MediaCachePort` 立端口）· [2026-09-24] · **owner 判 A×2**（game112 ENG-05「要做，毕竟要跟爱诗对接」· ENG-06「先立端口」要求与供应商解耦） · **施工主体 = 主程 = 本 session（2026-09-24 抢锁·本行即锁）** · 复查 = 另派独立 agent（复查人≠施工人·**待派**） · status: **✅ 已交（2026-09-24·门禁全绿·已推送）·等复查** · P1 · 类型: 引擎能力下沉
 全文与实查留痕 = `docs/design/game112/requests.md` ENG-05/ENG-06（**不在池内重抄**·池余量 2811 字符）。边界：`src/services/aigp/**` + `src/services/media-job/**` + 开发期代理脚本；纪律同 `HttpNpcAgentPort` 三条（**绝不抛 · 绝不碰 world · 只归一形状**）。配对单 **ENG-11「内嵌 AI 视频播放」本轮未抢锁**（含 `src/ui/components` = PUI 域·跨域另议）。
 
+### REQ-UIWALK-ENTRY · S4 真界面走查探针缺「入场序列」（可驱动率恒 0%）· [2026-09-24] · GD/PE-112 立（game112 S4 门实证 0/17·同 game108 0/74 同形·`ui-walkthrough-probe.mjs` 头注 1b 已自认）· **指派：主程（scripts/ 探针面）** · status: open · 优先级: P3 · 类型: 门禁接线
+- 想实现的行为：菜单驱动的游戏（标题屏 → 主厅）能让 `ui-walkthrough-probe` 先点几步再开跑剧本，可驱动率真实反映「剧本动作在 UI 上点不点得到」。
+- 已经试了什么：game112 剧本词表 = UI 词表同源（adapter 直走 `routeAction`），逐步 `liveActions` 只有 `home.about/home.enter/home.exit` → 纯粹「探针没入场」（头注 1b 第二种原因），不是词表不同源。
+- 卡在哪：探针无任何入场/预热参数；剧本 schema（`acceptance-schema.mjs`）也没有「UI 入场」字段。
+- 建议方案：剧本顶层加可选 `uiEntry: ["home.enter"]`（只探针读·acceptance-run 忽略·纯数据）；探针开跑前按序点这些 `data-action` 并等 `networkidle`。边界：`scripts/ui-walkthrough-probe.mjs` + `scripts/acceptance-schema.mjs` + 其测试；游戏侧只加一行数据。game112 在此之前以 `scripts/game112-playthrough.mjs`（26 断言·真点真按钮·含入场）作为 UI 可驱动的证据。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。

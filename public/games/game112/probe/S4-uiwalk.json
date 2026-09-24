@@ -1,0 +1,503 @@
+{
+  "slug": "game112",
+  "at": "2026-09-24T04:05:14.137Z",
+  "gameHash": "ce92ddd3346516cb",
+  "ok": true,
+  "form": "compiled",
+  "uiDrivableRate": 0,
+  "totalSummary": {
+    "signalSteps": 17,
+    "drivenSteps": 0,
+    "tickSteps": 12,
+    "expectSteps": 20,
+    "uiDrivableRate": 0
+  },
+  "scenarios": [
+    {
+      "name": "陪伴动作一拍反馈 · 兴致自然下行 · 长期量不因空等下降",
+      "file": "01-care-actions-and-mood.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 1,
+          "kind": "signal",
+          "signal": "cat.greet",
+          "driven": false,
+          "liveActions": [
+            "home.about",
+            "home.enter",
+            "home.exit"
+          ],
+          "note": "活体 DOM 无匹配 [data-action]（两种可能：① 剧本词表与 UI 词表不同源 ② 探针没入场·当前屏根本不是该动作所在的屏——看 liveActions 判哪种）"
+        },
+        {
+          "step": 2,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 3,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 4,
+          "kind": "signal",
+          "signal": "cat.sit",
+          "driven": false,
+          "liveActions": [
+            "home.about",
+            "home.enter",
+            "home.exit"
+          ],
+          "note": "活体 DOM 无匹配 [data-action]（两种可能：① 剧本词表与 UI 词表不同源 ② 探针没入场·当前屏根本不是该动作所在的屏——看 liveActions 判哪种）"
+        },
+        {
+          "step": 5,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 6,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 7,
+          "kind": "signal",
+          "driven": false,
+          "liveActions": [
+            "home.about",
+            "home.enter",
+            "home.exit"
+          ],
+          "note": "活体 DOM 无匹配 [data-action]（两种可能：① 剧本词表与 UI 词表不同源 ② 探针没入场·当前屏根本不是该动作所在的屏——看 liveActions 判哪种）"
+        },
+        {
+          "step": 8,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 9,
+        "signalSteps": 3,
+        "drivenSteps": 0,
+        "tickSteps": 2,
+        "expectSteps": 4,
+        "uiDrivableRate": 0
+      }
+    },
+    {
+      "name": "杂货铺：星砂不够 → 整单不动（不扣不给不置旗）· restart 按 config 回初值",
+      "file": "02-shop-atomic-and-place.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "signal",
+          "signal": "shop.buy",
+          "arg": "feather",
+          "driven": false,
+          "liveActions": [
+            "home.about",
+            "home.enter",
+            "home.exit"
+          ],
+          "note": "活体 DOM 无匹配 [data-action]（两种可能：① 剧本词表与 UI 词表不同源 ② 探针没入场·当前屏根本不是该动作所在的屏——看 liveActions 判哪种）"
+        },
+        {
+          "step": 1,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 2,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 3,
+          "kind": "signal",
+          "signal": "restart",
+          "driven": false,
+          "liveActions": [
+            "home.about",
+            "home.enter",
+            "home.exit"
+          ],
+          "note": "活体 DOM 无匹配 [data-action]（两种可能：① 剧本词表与 UI 词表不同源 ② 探针没入场·当前屏根本不是该动作所在的屏——看 liveActions 判哪种）"
+        },
+        {
+          "step": 4,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 5,
+        "signalSteps": 2,
+        "drivenSteps": 0,
+        "tickSteps": 1,
+        "expectSteps": 2,
+        "uiDrivableRate": 0
+      }
+    },
+    {
+      "name": "杂货铺：够了成交 → 放到馆里 → 再买不够仍整单不动",
+      "file": "02b-shop-buy-and-place.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "signal",
+          "signal": "shop.buy",
+          "arg": "feather",
+          "driven": false,
+          "liveActions": [
+            "home.about",
+            "home.enter",
+            "home.exit"
+          ],
+          "note": "活体 DOM 无匹配 [data-action]（两种可能：① 剧本词表与 UI 词表不同源 ② 探针没入场·当前屏根本不是该动作所在的屏——看 liveActions 判哪种）"
+        },
+        {
+          "step": 1,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 2,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 3,
+          "kind": "signal",
+          "signal": "decor.place",
+          "arg": "feather",
+          "driven": false,
+          "liveActions": [
+            "home.about",
+            "home.enter",
+            "home.exit"
+          ],
+          "note": "活体 DOM 无匹配 [data-action]（两种可能：① 剧本词表与 UI 词表不同源 ② 探针没入场·当前屏根本不是该动作所在的屏——看 liveActions 判哪种）"
+        },
+        {
+          "step": 4,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 5,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 6,
+          "kind": "signal",
+          "signal": "shop.buy",
+          "arg": "cushion",
+          "driven": false,
+          "liveActions": [
+            "home.about",
+            "home.enter",
+            "home.exit"
+          ],
+          "note": "活体 DOM 无匹配 [data-action]（两种可能：① 剧本词表与 UI 词表不同源 ② 探针没入场·当前屏根本不是该动作所在的屏——看 liveActions 判哪种）"
+        },
+        {
+          "step": 7,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 8,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 9,
+        "signalSteps": 3,
+        "drivenSteps": 0,
+        "tickSteps": 3,
+        "expectSteps": 3,
+        "uiDrivableRate": 0
+      }
+    },
+    {
+      "name": "心光到 10 那一拍解锁章节，章节能读到终节点",
+      "file": "03-heartlight-unlocks-memory.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 1,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 2,
+          "kind": "signal",
+          "signal": "cat.sit",
+          "driven": false,
+          "liveActions": [
+            "home.about",
+            "home.enter",
+            "home.exit"
+          ],
+          "note": "活体 DOM 无匹配 [data-action]（两种可能：① 剧本词表与 UI 词表不同源 ② 探针没入场·当前屏根本不是该动作所在的屏——看 liveActions 判哪种）"
+        },
+        {
+          "step": 3,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 4,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 5,
+          "kind": "signal",
+          "signal": "memory.advance",
+          "driven": false,
+          "liveActions": [
+            "home.about",
+            "home.enter",
+            "home.exit"
+          ],
+          "note": "活体 DOM 无匹配 [data-action]（两种可能：① 剧本词表与 UI 词表不同源 ② 探针没入场·当前屏根本不是该动作所在的屏——看 liveActions 判哪种）"
+        },
+        {
+          "step": 6,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 7,
+          "kind": "signal",
+          "signal": "memory.advance",
+          "driven": false,
+          "liveActions": [
+            "home.about",
+            "home.enter",
+            "home.exit"
+          ],
+          "note": "活体 DOM 无匹配 [data-action]（两种可能：① 剧本词表与 UI 词表不同源 ② 探针没入场·当前屏根本不是该动作所在的屏——看 liveActions 判哪种）"
+        },
+        {
+          "step": 8,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 9,
+          "kind": "signal",
+          "signal": "memory.choose",
+          "arg": "1",
+          "driven": false,
+          "liveActions": [
+            "home.about",
+            "home.enter",
+            "home.exit"
+          ],
+          "note": "活体 DOM 无匹配 [data-action]（两种可能：① 剧本词表与 UI 词表不同源 ② 探针没入场·当前屏根本不是该动作所在的屏——看 liveActions 判哪种）"
+        },
+        {
+          "step": 10,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 11,
+          "kind": "signal",
+          "signal": "memory.advance",
+          "driven": false,
+          "liveActions": [
+            "home.about",
+            "home.enter",
+            "home.exit"
+          ],
+          "note": "活体 DOM 无匹配 [data-action]（两种可能：① 剧本词表与 UI 词表不同源 ② 探针没入场·当前屏根本不是该动作所在的屏——看 liveActions 判哪种）"
+        },
+        {
+          "step": 12,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 13,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 14,
+        "signalSteps": 5,
+        "drivenSteps": 0,
+        "tickSteps": 3,
+        "expectSteps": 6,
+        "uiDrivableRate": 0
+      }
+    },
+    {
+      "name": "离线小事件恰一个 · 看过即回收 · 重开不带兴致",
+      "file": "04-offline-event-and-restart.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 1,
+          "kind": "signal",
+          "signal": "offline.long",
+          "driven": false,
+          "liveActions": [
+            "home.about",
+            "home.enter",
+            "home.exit"
+          ],
+          "note": "活体 DOM 无匹配 [data-action]（两种可能：① 剧本词表与 UI 词表不同源 ② 探针没入场·当前屏根本不是该动作所在的屏——看 liveActions 判哪种）"
+        },
+        {
+          "step": 2,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 3,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 4,
+          "kind": "signal",
+          "signal": "offline.ack",
+          "driven": false,
+          "liveActions": [
+            "home.about",
+            "home.enter",
+            "home.exit"
+          ],
+          "note": "活体 DOM 无匹配 [data-action]（两种可能：① 剧本词表与 UI 词表不同源 ② 探针没入场·当前屏根本不是该动作所在的屏——看 liveActions 判哪种）"
+        },
+        {
+          "step": 5,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 6,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 7,
+          "kind": "signal",
+          "signal": "cat.greet",
+          "driven": false,
+          "liveActions": [
+            "home.about",
+            "home.enter",
+            "home.exit"
+          ],
+          "note": "活体 DOM 无匹配 [data-action]（两种可能：① 剧本词表与 UI 词表不同源 ② 探针没入场·当前屏根本不是该动作所在的屏——看 liveActions 判哪种）"
+        },
+        {
+          "step": 8,
+          "kind": "tick",
+          "driven": false,
+          "note": "装配/时间推进类·UI 无对应控件"
+        },
+        {
+          "step": 9,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 10,
+          "kind": "signal",
+          "signal": "restart",
+          "driven": false,
+          "liveActions": [
+            "home.about",
+            "home.enter",
+            "home.exit"
+          ],
+          "note": "活体 DOM 无匹配 [data-action]（两种可能：① 剧本词表与 UI 词表不同源 ② 探针没入场·当前屏根本不是该动作所在的屏——看 liveActions 判哪种）"
+        },
+        {
+          "step": 11,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 12,
+        "signalSteps": 4,
+        "drivenSteps": 0,
+        "tickSteps": 3,
+        "expectSteps": 5,
+        "uiDrivableRate": 0
+      }
+    }
+  ],
+  "assertions": {
+    "consoleErrors": {
+      "pass": true,
+      "count": 0,
+      "messages": []
+    },
+    "noUncaught": {
+      "pass": true,
+      "count": 0,
+      "messages": []
+    }
+  },
+  "browser": {
+    "execPath": "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+    "via": "explicit"
+  }
+}

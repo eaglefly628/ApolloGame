@@ -18,8 +18,14 @@
     "S3": {
       "exit": 0,
       "summary": "编译期游戏免 manifest 校验 · ✓ 渲染探针过（截图 public/games/<slug>/probe/S3-render.png） · ✓ 点击打穿（12 个控件 · 11 个点后 DOM 真的变了 · 零控制台 error）",
-      "at": "2026-09-24T03:52:21.082Z",
-      "gameHash": "c301caba640da8f5"
+      "at": "2026-09-24T04:04:54.686Z",
+      "gameHash": "ce92ddd3346516cb"
+    },
+    "S4": {
+      "exit": 0,
+      "summary": "walkthrough 绿（ Test Files  3 passed (3) ·       Tests  24 passed (24)）· 验收剧本 5 场景绿 · ✓ UI 走查过·可驱动率 0%（⚠ 零可驱动：剧本动作一个都点不出来·当前只报不拦）",
+      "at": "2026-09-24T04:05:14.168Z",
+      "gameHash": "ce92ddd3346516cb"
     }
   },
   "history": [
@@ -170,23 +176,59 @@
       "stage": "S2",
       "exit": 0,
       "at": "2026-09-24T04:03:56.638Z"
+    },
+    {
+      "action": "review",
+      "stage": "S2",
+      "verdict": "PASS",
+      "at": "2026-09-24T04:04:35.693Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "owner 2026-09-24 原话「游戏端的你来连续实现，引擎端我让 leader 实现」——S1/S2 人门待 owner/Lead 真人签（不代签）；S2 机器门绿 + 复查 PASS(r3) 在案",
+      "at": "2026-09-24T04:04:35.790Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-09-24T04:04:54.686Z"
+    },
+    {
+      "action": "review",
+      "stage": "S3",
+      "verdict": "PASS",
+      "at": "2026-09-24T04:05:06.218Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "owner 2026-09-24 原话「游戏端的你来连续实现，引擎端我让 leader 实现」——S1/S2 人门待 owner/Lead 真人签（不代签）；S2/S3 机器门绿 + 复查 PASS(r3) 在案",
+      "at": "2026-09-24T04:05:06.316Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-09-24T04:05:14.168Z"
     }
   ],
   "reviews": {
     "S2": {
-      "verdict": "CONCERNS",
-      "note": "增量复查(HEAD 2ce71692·hash c301caba):gate S2 exit0(不经管道)·11缺口全裁·07/11未交付·stderr零告警;skill-audit AUDIT PASS/RATCHET PASS(仅game112.ts:74墙钟可注入·宿主端·上次已记);范围:两提交38文件全在README:5边界栏内(probe/**·playthrough·spec-recursion同提交补列);src/与scoped-gate未动。能力名plan§2.1 48个逐个对src/skills id 48/48存在(新增g1-tag=atoms/tag/index.ts:7);blueprint 16种组件全对plan;上次S3③已补(plan:49列g1-tag+destroy-tagged);游戏层零新增system;§4例外①-④未动·Lead裁决⬜待人门;§4.5/art未动。CONCERNS(纯文档·不阻塞):①plan:104仍写OFFLINE_EVENTS「每猫权重表」而实现已是每档一张表(world-data.ts:153-159·blueprin",
-      "by": "S2-reviewer-agent-r2",
-      "at": "2026-09-24T03:52:01.119Z",
-      "gameHash": "c301caba640da8f5",
+      "verdict": "PASS",
+      "note": "r3@06bf7439:①已修plan:104「每档一张权重表」与blueprint.ts:127 weight[t]滤0·:129 WeightedSpawn一致;g1-tag(atoms/tag/index.ts:7)/destroy-tagged(effect-apply.ts:48/237·blueprint:143)实名;②已修plan:78-79 ⑤⑥=delivered与capability-gaps.json:43/52一致;⑪仍待接单正确;CARE_POSE(plan:105):j1-state=atoms/state/index.ts:5·set-state=effect-apply.ts:47/143;blueprint.ts:68 State{fsmId:poseFsm}·:74 Effect set-state·project.ts:88读。范围20文件全在README:5边界内未碰src/scoped-gate。复跑gate S2 exit0(不经管道)11/11裁·07/11未交付·stderr空;skill-audit AUDIT PASS/RATCHE",
+      "by": "S2-reviewer-agent-r3",
+      "at": "2026-09-24T04:04:35.693Z",
+      "gameHash": "ce92ddd3346516cb",
       "gapsHash": "438ede8001bb0205"
     },
     "S3": {
-      "verdict": "CONCERNS",
-      "note": "复跑@c301caba(HEAD accfd0a9·game112代码同2ce71692):vitest 20/20 exit0零WARN;audit PASS/RATCHET PASS(⚠墙钟game112.ts:74宿主层可注入·合法);gate被S2 stale闸拒→临时worktree跑render-probe exit0(0 error)·click-probe exit0(12控件/11变);范围:2ce71692所碰文件全在README边界栏内。撤修验红:blueprint.ts:139 value→0(锚点命中1处)红2条(离线回收·ui主厅「看过了」)·复原绿。七条:①✓project.ts:82读StringVar实跑得xuetuan·但写死ACTIVE_CAT/改'nobody'仍20/20绿=无测试守;②✓仍用value·targetId占位+注释·REQ-112-ENG-12已立(requests.md:120)·effect-apply.ts:34/238不一致属实;③✓plan:49已列g1-tag/destroy-tagged;④✓三档表实数short ",
-      "by": "S3-reviewer-agent-r2",
-      "at": "2026-09-24T03:53:44.491Z",
-      "gameHash": "c301caba640da8f5"
+      "verdict": "PASS",
+      "note": "r3@06bf7439:①vitest exit0 24/24(ui6·guards4·game112 14)·stderr零告警零成环。②撤修验红(临时worktree·锚点各命中1次):(a)project.ts:85 activeCat写死→只红①;(b)blueprint.ts:127 weight→.short→只红④;(c)ui.ts:334 sensitive→false→只红⑤;(d)blueprint.ts:74 set-state value→'rest'→只红八问②;四处均1 failed/3 passed与预告一致;worktree已删。N2✓。③姿态机=数据+引擎能力:blueprint.ts:68一个State·:74每动作一条Effect set-state(effect-apply.ts:47/143原生kind);project.ts:88-94 stateOf查表投影只读;ui.ts:82 orbSub只取view;零新增system零写世界。④范围:20文件全在README:5边界栏;skill-audit exit0 AUDIT PASS/RAT",
+      "by": "S3-reviewer-agent-r3",
+      "at": "2026-09-24T04:05:06.218Z",
+      "gameHash": "ce92ddd3346516cb"
     },
     "S4": {
       "verdict": "CONCERNS",
@@ -206,6 +248,23 @@
       "stage": "S3",
       "reason": "owner 2026-09-24 原话「游戏端的你来连续实现，引擎端我让 leader 实现」——S1/S2 人门待 owner/Lead 真人签（不代签）；S2 机器门绿 + 复查在案",
       "at": "2026-09-24T03:52:01.234Z"
+    },
+    {
+      "stage": "S3",
+      "reason": "owner 2026-09-24 原话「游戏端的你来连续实现，引擎端我让 leader 实现」——S1/S2 人门待 owner/Lead 真人签（不代签）；S2 机器门绿 + 复查 PASS(r3) 在案",
+      "at": "2026-09-24T04:04:35.790Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "owner 2026-09-24 原话「游戏端的你来连续实现，引擎端我让 leader 实现」——S1/S2 人门待 owner/Lead 真人签（不代签）；S2/S3 机器门绿 + 复查 PASS(r3) 在案",
+      "at": "2026-09-24T04:05:06.316Z"
     }
-  ]
+  ],
+  "selfCheck": {
+    "S4": {
+      "at": "2026-09-24T04:05:14.168Z",
+      "shots": 16,
+      "gameHash": "ce92ddd3346516cb"
+    }
+  }
 }
