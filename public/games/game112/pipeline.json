@@ -17,15 +17,15 @@
     },
     "S3": {
       "exit": 0,
-      "summary": "编译期游戏免 manifest 校验 · ✓ 渲染探针过（截图 public/games/<slug>/probe/S3-render.png） · ✓ 点击打穿（12 个控件 · 11 个点后 DOM 真的变了 · 零控制台 error）",
-      "at": "2026-09-24T04:04:54.686Z",
-      "gameHash": "ce92ddd3346516cb"
+      "summary": "编译期游戏免 manifest 校验 · ✓ 渲染探针过（截图 public/games/<slug>/probe/S3-render.png） · ✓ 点击打穿（12 个控件 · 12 个点后 DOM 真的变了 · 零控制台 error）",
+      "at": "2026-09-24T04:29:52.963Z",
+      "gameHash": "187143607d4e4b42"
     },
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  3 passed (3) ·       Tests  24 passed (24)）· 验收剧本 5 场景绿 · ✓ UI 走查过·可驱动率 0%（⚠ 零可驱动：剧本动作一个都点不出来·当前只报不拦）",
-      "at": "2026-09-24T04:05:14.168Z",
-      "gameHash": "ce92ddd3346516cb"
+      "summary": "walkthrough 绿（ Test Files  3 passed (3) ·       Tests  25 passed (25)）· 验收剧本 5 场景绿 · ✓ UI 走查过·可驱动率 0%（⚠ 零可驱动：剧本动作一个都点不出来·当前只报不拦）",
+      "at": "2026-09-24T04:30:01.395Z",
+      "gameHash": "187143607d4e4b42"
     }
   },
   "history": [
@@ -278,30 +278,72 @@
       "stage": "S2",
       "exit": 0,
       "at": "2026-09-24T04:27:28.500Z"
+    },
+    {
+      "action": "review",
+      "stage": "S2",
+      "verdict": "PASS",
+      "at": "2026-09-24T04:29:33.852Z"
+    },
+    {
+      "action": "review",
+      "stage": "S3",
+      "verdict": "PASS",
+      "at": "2026-09-24T04:29:33.915Z"
+    },
+    {
+      "action": "review",
+      "stage": "S4",
+      "verdict": "PASS",
+      "at": "2026-09-24T04:29:33.975Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "owner 2026-09-24 原话「游戏端的你来连续实现，引擎端我让 leader 实现」——S1/S2 人门待 owner/Lead 真人签（不代签）；S2/S3/S4 机器门绿 + 复查 PASS(r6) 在案",
+      "at": "2026-09-24T04:29:34.072Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-09-24T04:29:52.963Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "owner 2026-09-24 原话「游戏端的你来连续实现，引擎端我让 leader 实现」——S1/S2 人门待 owner/Lead 真人签（不代签）；S2/S3/S4 机器门绿 + 复查 PASS(r6) 在案",
+      "at": "2026-09-24T04:29:53.067Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-09-24T04:30:01.395Z"
     }
   ],
   "reviews": {
     "S2": {
-      "verdict": "CONCERNS",
-      "note": "r5@2d77980a:范围26文件全在README:5边界栏;引擎池只删REQ-UI-STAGEMODE 7行未动他人。checklist 5条逐核:plan:105四能力名实名(flag/index.ts:7·keybind.ts:23·effect-apply.ts:57·types.ts:719);gate S2 exit0 hash 80cbea42;重组成立:ui.ts只加6处visibleWhen+2 Button·game112.ts只多resolveBindings一层+2 case·零新system零if/else重建树。CONCERNS唯一原因:game-skill-audit被复查人环境权限拦截未跑成·退出码缺失(需下一轮复查人补跑)。",
-      "by": "S23-reviewer-agent-r5",
-      "at": "2026-09-24T04:24:07.671Z",
-      "gameHash": "80cbea42969b618c",
+      "verdict": "PASS",
+      "note": "r6@37605bde(最终增量·纯文档+1行注释):范围4文件全在README:5边界栏(已补列docs/workflow/requests.md);playthrough:227只加注释且属实(?game=壳层页·game-runner.tsx:105传exit→canExit=true)。S2:skill-audit exit0 AUDIT PASS/RATCHET PASS零红旗零缺防线stderr空·仅墙钟×1(game112.ts:77宿主注入·合plan:215);gate S2 exit0缺口11/11裁;plan:105 UI_STAGE_ONLY(f2-flag=atoms/flag/index.ts:7·t2-keybind=tier2/keybind.ts:23·visibleWhen=bindings.ts:83)·:106 CARE_POSE(j1-state=atoms/state/index.ts:5·set-state=effect-apply.test:51)实名。",
+      "by": "final-reviewer-agent-r6",
+      "at": "2026-09-24T04:29:33.852Z",
+      "gameHash": "187143607d4e4b42",
       "gapsHash": "438ede8001bb0205"
     },
     "S3": {
       "verdict": "PASS",
-      "note": "r5@2d77980a:checklist 6条逐核;vitest 25/25 exit0 stderr零告警;撤修验红(临时worktree·锚点各命中1处·均红在「沉浸模式」用例):删navBar visibleWhen→navbar expected true to be false;fx-stage-hide改false→expected false to be true;复原25/25。在档探针hash ce92ddd3过期·S3 gate被S2复查闸拦→临时worktree直跑探针:render exit0 hash 80cbea42 console 0错;click exit0 12/12打穿;worktree已移除。",
-      "by": "S23-reviewer-agent-r5",
-      "at": "2026-09-24T04:24:07.746Z",
-      "gameHash": "80cbea42969b618c"
+      "note": "r6@37605bde(最终增量·纯文档+1行注释):范围4文件全在README:5边界栏(已补列docs/workflow/requests.md);playthrough:227只加注释且属实(?game=壳层页·game-runner.tsx:105传exit→canExit=true)。S3:vitest 25/25 exit0 stderr空;S3证据过期→临时worktree补跑探针:render exit0(nonBlank方差144.36·console 0·pageErrors 0);click exit0 12/12点后DOM变·零error;worktree已移除。",
+      "by": "final-reviewer-agent-r6",
+      "at": "2026-09-24T04:29:33.915Z",
+      "gameHash": "187143607d4e4b42"
     },
     "S4": {
-      "verdict": "CONCERNS",
-      "note": "r3@2d77980a:align-count exit0(✅19⚠6❌0);vitest 25/25 exit0;acceptance 5本PASS;试玩28/28 exit0 stderr空已复原。看图:13只剩猫/台词/「显示界面」/纸袋+宿主⚙;12界面完整;满足menu-flow:79;试玩:185-187真点ui.show并断导航动作回来。撤修验红(临时clone·锚点命中):删navbar visibleWhen→ui.test红;删fx-stage-show→红;宿主去resolveBindings→vitest仍绿·试玩26/28红(宿主接线只靠试玩守)。r4三条:1✓池单grep0·requests.md:127-131三件套齐;2✓;3✓(9/10槽)。第7问✓22动作全见。CONCERNS(文档):S4-1对齐单:22/:33引S4-play-15离线图·重编号后15是牌桌应为16;:9写26断言实为28;:108写⚠7工具算6。S5-2 README:5边界栏漏列docs/workflow/requests.md·标题仍「S3」。S5-3 playthroug",
-      "by": "S4-reviewer-agent-r3",
-      "at": "2026-09-24T04:22:19.638Z",
-      "gameHash": "80cbea42969b618c"
+      "verdict": "PASS",
+      "note": "r6@37605bde(最终增量·纯文档+1行注释):范围4文件全在README:5边界栏(已补列docs/workflow/requests.md);playthrough:227只加注释且属实(?game=壳层页·game-runner.tsx:105传exit→canExit=true)。S4:align-count exit0(✅19⚠6全有去向❌0/25);acceptance exit0 5本21检查点PASS;shots 15=table·16=hall-return-offline·17=hall-return-acked·对齐单:22/:33/:54/:57引用一致;:9 28断言17图;:109 3b行在;「⚠7」仅剩:106/:107历史迭代记录非漂移;所有stderr零告警。非阻塞:README:3阶段线仍写S4 PASS(r2)/等复核·下次落账顺手更新。",
+      "by": "final-reviewer-agent-r6",
+      "at": "2026-09-24T04:29:33.975Z",
+      "gameHash": "187143607d4e4b42"
     }
   },
   "outOfOrder": [
@@ -324,13 +366,23 @@
       "stage": "S4",
       "reason": "owner 2026-09-24 原话「游戏端的你来连续实现，引擎端我让 leader 实现」——S1/S2 人门待 owner/Lead 真人签（不代签）；S2/S3 机器门绿 + 复查 PASS(r3) 在案",
       "at": "2026-09-24T04:05:06.316Z"
+    },
+    {
+      "stage": "S3",
+      "reason": "owner 2026-09-24 原话「游戏端的你来连续实现，引擎端我让 leader 实现」——S1/S2 人门待 owner/Lead 真人签（不代签）；S2/S3/S4 机器门绿 + 复查 PASS(r6) 在案",
+      "at": "2026-09-24T04:29:34.072Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "owner 2026-09-24 原话「游戏端的你来连续实现，引擎端我让 leader 实现」——S1/S2 人门待 owner/Lead 真人签（不代签）；S2/S3/S4 机器门绿 + 复查 PASS(r6) 在案",
+      "at": "2026-09-24T04:29:53.067Z"
     }
   ],
   "selfCheck": {
     "S4": {
-      "at": "2026-09-24T04:05:14.168Z",
-      "shots": 16,
-      "gameHash": "ce92ddd3346516cb"
+      "at": "2026-09-24T04:30:01.395Z",
+      "shots": 17,
+      "gameHash": "187143607d4e4b42"
     }
   }
 }
