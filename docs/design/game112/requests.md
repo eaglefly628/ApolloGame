@@ -8,8 +8,8 @@
 ---
 
 ## REQ-112-ENG-01 · 公共星盘 `t2-shared-pile`（GAP-112-01）
-- **owner 裁决**：⬜ 待判（`framework.md` §6 ①·推荐 A）
-- **归属**：🔴 主程面（碰 `CardPile` 定序 · card-scoring 读取面）· status: **open** · P1 · **锁 S4**
+- **owner 裁决**：**wontfix（2026-09-24）**——「游戏专属规则不进引擎」→ 见 REQ-112-GAME-01
+- **归属**：— · status: **wontfix** · 原文保留作实查记录
 **想实现的行为**：三个公共星盘作为持久落牌区；出牌输入带目标堆；堆顶/堆深/牌库余量可被条件与判型读到；猫爪动作（换盘 / 压住一张牌 / 拨走顶牌）作为输入键或 Effect 动词。
 **已经试了什么（实查留痕）**：`grep -n "PlayedHand" src/skills/tier2/card-pile.ts` → `:141` 「出牌区在同实体」、`:179-180` 「reset-then-apply…清空出牌区」；`card-play.ts:78-89` 每 tick 覆写；`effect-apply.ts:47-48` kind 闭集无改牌动词；`cardboard.ts:191-217` `CardPile` 无 deckCount 出口；牌做实体走 `queue-slots/tray` 则计分件读不到。
 **卡在哪**：手牌 → 他实体持久堆 的转移不存在；堆操作动词不存在。
@@ -18,8 +18,8 @@
 ---
 
 ## REQ-112-ENG-02 · 判型 DSL 扩展（GAP-112-02）
-- **owner 裁决**：⬜ 待判（§6 ②·推荐 A·随 01 同判）
-- **归属**：🟢 已有能力扩写（纯函数·spec 明确）= **提需方（PE-112）写 · 主程 review** · status: **open** · P1 · **锁 S4**
+- **owner 裁决**：**wontfix（2026-09-24）**——随 01 → REQ-112-GAME-01
+- **归属**：— · status: **wontfix** · 原文保留作实查记录
 **想实现的行为**：`HandFamily.kind` 增 `suited-set`（同 suit 任意 rank）；`HandFamily.rankCycle?: number` 让 sequence 可回绕；定第三属性（爪印）编码约定。
 **实查留痕**：`hand-pattern.ts:27-32` kind 闭集；`:237-245` 线性域 1..14；`cardboard.ts:58-73` Card 二维；`poker-hand.ts:112/119` flush/straight ≥5。
 **边界**：`src/skills/tier3/hand-pattern.ts` + 其测试；不改 `matchPattern` 既有族语义（掼蛋回归全绿）。
@@ -36,8 +36,8 @@
 ---
 
 ## REQ-112-ENG-04 · 触摸手势数值载荷（GAP-112-04）
-- **owner 裁决**：⬜ 待判（§6 ④·推荐 **B 先行**，随 03 交付时补 A）
-- **归属**：🔴 主程面 · status: **open** · P2 · 不锁关
+- **owner 裁决**：**B·撤单（2026-09-24）**——首版只按分区判；随 03 交付后若仍需再开新单
+- **归属**：— · status: **wontfix**
 **想实现的行为**：`Clickable.emitPayload:true` → Signal 附 `{x,y,dx,dy,dwellTicks}`；或复用 03 的 speed/dwell Resource。
 **实查留痕**：`clickable.ts:113` Signal 无坐标；`:44-46` phase 只 down/up；`queued-input.ts:45-57` drag 只起终点。
 
@@ -89,6 +89,15 @@
 - **发现**：`types.ts:642` `VideoProps` 无事件/bind；catalog `:173-181` 漏登 `muted`；改 `src` 整元素重建。
 - **归属**：PUI · status: **open** · P3
 **建议**：`onEnded: action`（进 UI 层）· `bind`（同 Image）· `fit`；`visibleWhen` 切换时保留 DOM 的可选项。
+
+---
+
+## REQ-112-GAME-01 · 星爪牌规则核（游戏层·原 ENG-01/02 的去向）
+- **owner 裁决**：2026-09-24「游戏专属规则直接在游戏逻辑里实现」
+- **归属**：PE-112 `games/game112/starclaw-rules.ts` · status: **accepted（S3 起做）** · 记债（`capability-plan.md` §4 例外④）
+**做什么**：纯函数确定性模块——三星盘公共堆 · 目标堆出牌 · 猫爪动作（换盘/压牌/拨顶）· 组合计分（同色任意/月相循环/成对/三连/爪印）· 胜负；随机只吃传入 seed（`seededShuffle`）；状态经 Resource/Flag 投影给 UI/AI/条件；成对/三连/同色三连仍调 `t3-hand-pattern.matchPattern`。
+**边界**：零 DOM · 零 `Math.random` · 不写 system（由宿主会话驱动在输入点调用）· 测试 ≥30 含撤修锚点。先例 `games/game-c/holdem-eval.ts`。
+**偿还**：第三个游戏出现同形「公共堆」需求再议下沉。
 
 ---
 

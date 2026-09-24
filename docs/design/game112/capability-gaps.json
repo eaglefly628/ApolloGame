@@ -1,19 +1,21 @@
 [
   {
     "id": "GAP-112-01",
-    "title": "公共星盘：持久公共牌堆 + 目标堆出牌 + 堆操作动词（换盘/压牌/拨顶）+ 牌库余量出口。实查：card-pile.ts:141 出牌区在同实体、:179-180 每拍清空；card-play 一拍脉冲；effect-apply kind 闭集无改牌动词；CardPile 无 deckCount 出口。A=下沉 t2-shared-pile（主程·桌游通用）/ B=改牌规为「出牌即结算」适配现有词表（零引擎改·失去三星盘博弈）。推荐 A。全文 framework.md §6 ①",
+    "title": "公共星盘：持久公共牌堆 + 目标堆出牌 + 堆操作动词（换盘/压牌/拨顶）+ 牌库余量出口。实查：card-pile.ts:141 出牌区在同实体、:179-180 每拍清空；card-play 一拍脉冲；effect-apply kind 闭集无改牌动词；CardPile 无 deckCount 出口。A=下沉 t2-shared-pile（主程·桌游通用）/ B=改牌规为「出牌即结算」适配现有词表（零引擎改·失去三星盘博弈）。推荐 A。全文 framework.md §6 ① ‖ owner 2026-09-24 判：游戏专属规则不进引擎，在游戏层确定性 TS 模块实现（game-c 摊牌/边池先例）→ capability-plan.md §4 例外④ · requests.md REQ-112-GAME-01",
     "priority": "P1",
     "route": "engine",
-    "state": "open",
-    "blocks": ["S4"]
+    "state": "wontfix",
+    "blocks": [],
+    "ticket": "capability-plan.md §4 例外④（星爪牌规则核·游戏层 TS）"
   },
   {
     "id": "GAP-112-02",
-    "title": "组合判型 DSL：hand-pattern 缺「同花色任意点数」kind、缺循环点数域（月相回绕）、Card 只有 suit/rank 两维（爪印无字段）。实查：hand-pattern.ts:27-32 kind 闭集、:237-245 线性域；cardboard.ts:58-73；poker-hand flush/straight ≥5。A=扩 DSL（suited-set + rankCycle + 第三属性编码·🟢 扩写）/ B=收窄牌属性到两维。推荐 A（随 ① 同判）。全文 framework.md §6 ②",
+    "title": "组合判型 DSL：hand-pattern 缺「同花色任意点数」kind、缺循环点数域（月相回绕）、Card 只有 suit/rank 两维（爪印无字段）。实查：hand-pattern.ts:27-32 kind 闭集、:237-245 线性域；cardboard.ts:58-73；poker-hand flush/straight ≥5。A=扩 DSL（suited-set + rankCycle + 第三属性编码·🟢 扩写）/ B=收窄牌属性到两维。推荐 A（随 ① 同判）。全文 framework.md §6 ② ‖ owner 2026-09-24 判：游戏专属规则不进引擎，在游戏层确定性 TS 模块实现（game-c 摊牌/边池先例）→ capability-plan.md §4 例外④ · requests.md REQ-112-GAME-01",
     "priority": "P1",
     "route": "engine",
-    "state": "open",
-    "blocks": ["S4"]
+    "state": "wontfix",
+    "blocks": [],
+    "ticket": "capability-plan.md §4 例外④（星爪牌规则核·游戏层 TS）"
   },
   {
     "id": "GAP-112-03",
@@ -25,11 +27,12 @@
   },
   {
     "id": "GAP-112-04",
-    "title": "触摸手势数值载荷（方向/速度/持续时长）。实查：clickable.ts:113 Signal 不带坐标；phase 只 down/up；drag 只起终点无时长；AABB 命中。A=Clickable.emitPayload 或与 ③ 合并 / B=首版只按分区+安心/兴致判。推荐 B 先行、随 ③ 交付时补。全文 framework.md §6 ④",
+    "title": "触摸手势数值载荷（方向/速度/持续时长）。实查：clickable.ts:113 Signal 不带坐标；phase 只 down/up；drag 只起终点无时长；AABB 命中。A=Clickable.emitPayload 或与 ③ 合并 / B=首版只按分区+安心/兴致判。推荐 B 先行、随 ③ 交付时补。全文 framework.md §6 ④ ‖ owner 2026-09-24 判：B 先行，撤单",
     "priority": "P2",
     "route": "engine",
-    "state": "open",
-    "blocks": []
+    "state": "wontfix",
+    "blocks": [],
+    "ticket": "capability-plan.md §3 TOUCH_ZONES（首版只按分区判·随 GAP-112-03 交付时再议）"
   },
   {
     "id": "GAP-112-05",

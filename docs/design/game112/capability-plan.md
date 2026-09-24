@@ -71,10 +71,10 @@
 
 | # | 能力（拟名） | 用来做什么 | 状态 |
 |---|---|---|---|
-| ① | `t2-shared-pile` | 三个公共星盘（目标堆出牌·持久堆·堆顶/深度/牌库余量·换盘/压牌/拨顶动词） | ⏳ open |
-| ② | `t3-hand-pattern` DSL 扩 | `suited-set` · `rankCycle` · 第三属性编码 | ⏳ open |
+| ① | ~~`t2-shared-pile`~~ | 三个公共星盘 —— **owner 2026-09-24 判：游戏专属规则，不进引擎** → §4 例外④ | ✅ wontfix（游戏层） |
+| ② | ~~`t3-hand-pattern` DSL 扩~~ | 星盘组合计分 —— **同上，随 ① 进同一模块** | ✅ wontfix（游戏层） |
 | ③ | `t2-pointer-follow` + `distance` 条件叶 | 逗猫棒跟手 · 速度/停留 · 狩猎链驱动量 | ⏳ open |
-| ④ | Clickable 载荷 | 触摸方向/速度/时长 | ⏳ open（推荐 B 先行） |
+| ④ | ~~Clickable 载荷~~ | 触摸方向/速度/时长 —— **owner 2026-09-24 判：B 先行，撤单** | ✅ wontfix（首版按区判） |
 | ⑤ | `AishePort` 扩展 | 参考图/角色 ID/首尾帧 · poll/cancel/delete | ⏳ open |
 | ⑥ | `MediaJobPort` + `MediaCachePort` | 上传/质检/身份锚/审核队列/Blob 缓存/删除导出 | ⏳ open |
 | ⑦ | `Input.type:'file'`（PUI） | 上传照片控件 | ⏳ open |
@@ -125,6 +125,7 @@
 | ① BT 叶注册：`enumerate-moves` / `take-best-score` / `use-claw` / `hold-and-place-low` / `place-by-tempo`（`cat-ai.md` §1.2） | `t2-behavior-tree` 叶 = 消费方注册表（describe 原文）；着法枚举/估值无引擎级件（`hand-pattern.legalResponses` 是压制语义） | ~90 | ⬜ | 记债；同形叶在第三个牌游戏出现即下沉「候选枚举」纯函数核 |
 | ② 宿主会话驱动（`game112.ts`）：建 Engine · 装载信封 → 蓝图初值 · 分档 key/主人确认 → `QueuedInputSource` · 媒体库索引 · 回退链选片 · 退出写信封 | 宿主契约明许的 sim 外胶水（同 game111 `turn-driver`/`game111.ts`） | ~200 | ⬜ | 非规则逻辑；复查门核「零玩法判定」 |
 | ③ 装载期数据拼装：`CAT_CARDS` → 蓝图实体 · 上传猫回忆 → DialogueScript JSON · `CLIP_CATALOG` → anim-state clip 表 | 表展开 ≠ 解释器（`game-103 ringSpawnerEntities()` / game111 `intentEffectEntities` 先例） | ~120 | ⬜ | 无 |
+| ④ **星爪牌规则核** `games/game112/starclaw-rules.ts`：三星盘公共堆 · 目标堆出牌 · 猫爪动作（换盘/压牌/拨顶）· 组合计分（同色任意/月相循环/成对/三连/爪印）· 胜负 | **owner 2026-09-24 判**：星盘与计分是本作专属规则，不抽象进引擎（原缺口 ①②）。先例 = game-c 摊牌/边池确定性 TS 模块。纯函数、零 DOM、随机只吃传入 seed、状态经 Resource/Flag 投影给 UI/AI/条件 | ~250 + 测试 ≥30 | ⬜ | 记债；若第三个游戏出现同形「公共堆」再议下沉 |
 
 **没有第四条**：❌ 不申请视频播放器 · ❌ 不申请自由 DOM/React 屏 · ❌ 不申请自写状态机 · ❌ 不申请计分循环 · ❌ 不申请网络生成胶水进 sim。审计红旗零申报。
 
@@ -190,10 +191,9 @@
 | 离线小事件 | **L1** keybind → weighted-spawn → prefab | 时长分档由宿主 |
 | 狩猎链骨架 | **L1** `flow` + `chance` + `zone-occupancy` | 驱动量 → L2 |
 | 逗猫棒跟手 · 速度/停留 · 距离条件 | **L2** capgap 待裁 → `requests.md` REQ-112-ENG-03 | 缺口 ③ |
-| 触摸方向/速度/时长 | **L2** 待裁（推荐 B 先行）→ REQ-112-ENG-04 | 缺口 ④ |
+| 触摸方向/速度/时长 | ⚪ 首版不做（owner 2026-09-24 判 B） | 随 ③ 交付再议 |
 | 星爪牌手牌/牌库/轮转 | **L1** `card-pile` + `turn-order` | 无 |
-| 公共星盘 · 猫爪动作 · 牌库余量 | **L2** 待裁 → REQ-112-ENG-01 | 缺口 ① |
-| 组合判型（同色任意/循环/第三属性） | **L2** 待裁 → REQ-112-ENG-02；成对/三连/同色三连 = L1 `hand-pattern` | 缺口 ② |
+| 公共星盘 · 猫爪动作 · 牌库余量 · 组合判型 | **L3** 受控 TS（§4 例外④·owner 2026-09-24 判） | 游戏专属规则；成对/三连/同色三连仍调 `hand-pattern` 纯函数 |
 | 猫 AI 着法枚举/估值叶 | **L3** 受控 TS（§4 例外①） | L0-L2 表达不了：候选枚举无引擎件·记债 |
 | 宿主会话驱动 · 装载期拼装 | 宿主胶水（契约明许·§4 例外②③） | 非规则逻辑 |
 | 猫的画面（序列帧） | **L1** `anim-state` + `sprite`；转换管线 → L2 REQ-112-ENG-08 | 缺口 ⑧ |
@@ -243,12 +243,14 @@
 - 提交人 / 日期：GD/PE-112（Game Maker 二·程序策划）· 2026-09-23
 - 前置裁决：`framework.md` §6 十项 + §5 三环 —— **⬜ 待 owner**
 - Lead 裁决：⬜ ✅ 通过 / ⬜ 🔶 有条件通过（条件：…）/ ⬜ ❌ 驳回（理由：…）
-- 待裁项对 S2 门的影响：`capability-gaps.json` 十条全 `open` → 门红是**预期**（「不许带未裁决缺口往下走」）；owner 判后改 state + ticket 即转绿。
+- **owner 2026-09-24 判词（第一批）**：①②④ = 游戏专属 → wontfix（①② 进 §4 例外④ 游戏层规则核；④ 首版不做）。剩余 ③⑤⑥⑦⑧⑨⑩ 为引擎/PUI 通用缺口，逐条待判。
+- 待裁项对 S2 门的影响：`capability-gaps.json` 仍有 `open` → 门红是**预期**；owner 判完改 state + ticket 即转绿。
 - 派工与归属（预填·Lead 改）：
 
 | 工件 | 归属 | 理由 |
 |---|---|---|
-| 缺口 ①③⑤⑥⑨ | 🔴 主程 | 碰定序 / 共享面 / services |
-| 缺口 ② ⑧ | 🟢 提需方可写·主程 review | 纯函数扩写 / 资产面脚本，spec 写死 |
+| 缺口 ③⑤⑥⑨ | 🔴 主程 | 碰定序 / 共享面 / services |
+| 缺口 ⑧ | 🟢 提需方可写·主程 review | 资产面脚本，spec 写死 |
+| 星爪牌规则核（原①②） | PE-112 | 游戏层 TS 模块 + 测试（§4 例外④） |
 | 缺口 ⑦ ⑩ | PUI | `src/ui` 域 |
 | `games/game112/**` + `docs/design/game112/**` | PE/GD-112 | 本游戏域 |

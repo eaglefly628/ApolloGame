@@ -11,9 +11,9 @@
   "evidence": {
     "S2": {
       "exit": 1,
-      "summary": "capability-plan.md 在档 · ⚠ 缺口 10/10 未裁决（走缺口裁决协议：先查 → 摆 A/B → owner 判）· GAP-112-01[P1·engine] GAP-112-02[P1·engine] GAP-112-03[P1·engine] GAP-112-04[P2·engine] GAP-112-05[P1·engine] GAP-112-06[P1·engine] GAP-112-07[P2·pui] GAP-112-08[P1·engine] GAP-112-09[P2·engine] GAP-112-10[P3·pui]",
-      "at": "2026-09-23T03:04:40.802Z",
-      "gameHash": "2b236798284b494f"
+      "summary": "capability-plan.md 在档 · ⚠ 缺口 7/10 未裁决（走缺口裁决协议：先查 → 摆 A/B → owner 判）· GAP-112-03[P1·engine] GAP-112-05[P1·engine] GAP-112-06[P1·engine] GAP-112-07[P2·pui] GAP-112-08[P1·engine] GAP-112-09[P2·engine] GAP-112-10[P3·pui]",
+      "at": "2026-09-24T02:25:37.683Z",
+      "gameHash": "d5a7979964d706b6"
     }
   },
   "history": [
@@ -32,6 +32,12 @@
       "stage": "S2",
       "exit": 1,
       "at": "2026-09-23T03:04:40.802Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S2",
+      "exit": 1,
+      "at": "2026-09-24T02:25:37.683Z"
     }
   ]
 }
