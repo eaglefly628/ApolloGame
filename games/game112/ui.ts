@@ -78,6 +78,12 @@ export function buildHome(o: { canExit?: boolean } = {}): LayoutNode {
 }
 
 // ── ② 主厅 S10：猫先于菜单·三个场景热点·轻 HUD ─────────────────────────────
+/** 晶球卡副标 = 心光进度（陪坐的可见回报 + 「心光是什么」的现场解释·八问第 2/6 问）。纯查 view，不算逻辑。 */
+function orbSub(v: HallView): string {
+  const locked = v.chapters.filter((c) => !c.unlocked).map((c) => c.need).sort((a, b) => a - b)[0];
+  if (locked === undefined) return `心光 ${v.relations.heartlight} · 看它的过去`;
+  return `心光 ${v.relations.heartlight} · 还差 ${Math.max(0, locked - v.relations.heartlight)} 就发光`;
+}
 function hotspot(id: string, kind: 'orb' | 'table' | 'basket', label: string, sub: string, action: string): LayoutNode {
   return {
     type: 'Panel', id: `hot-${id}`, props: { bg: 'raised', action },
@@ -130,7 +136,7 @@ export function buildHall(v: HallView): LayoutNode {
       type: 'Panel', id: 'hall-stage', props: { bg: 'sunken', vignette: true },
       layout: { direction: 'column', gap: 8, padding: 16, align: 'center' },
       children: [
-        { type: 'Image', id: 'hall-cat', props: { src: catArt(v.catId, v.relations.mood >= 70 ? 'notice' : 'rest'), fit: 'contain', alt: v.catName }, layout: { width: 420, height: 300 } },
+        { type: 'Image', id: 'hall-cat', props: { src: catArt(v.catId, v.pose === 'lookup' || v.relations.mood >= 70 ? 'notice' : 'rest'), fit: 'contain', alt: v.catName }, layout: { width: 420, height: 300 } },
         subLabel('hall-cat-line', v.catLine),
         ...(v.owned.some((it) => it.placed) ? [{
           type: 'Panel', id: 'hall-placed', props: { bare: true },
@@ -144,7 +150,7 @@ export function buildHall(v: HallView): LayoutNode {
       type: 'Panel', id: 'hall-hotspots', props: { bare: true },
       layout: { direction: 'row', gap: 14, justify: 'center', align: 'stretch' },
       children: [
-        hotspot('orbs', 'orb', '忆光晶球', '遇见猫·看它的过去', 'orbs.open'),
+        hotspot('orbs', 'orb', '忆光晶球', orbSub(v), 'orbs.open'),
         hotspot('table', 'table', '星牌桌', '和它打牌', 'table.open'),
         hotspot('toys', 'basket', '玩具篮', v.owned.length > 0 ? `${v.owned.length} 件` : '还是空的', 'toys.open'),
       ],

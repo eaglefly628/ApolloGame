@@ -11,6 +11,11 @@ export const SEED_DEFAULT = 112;
 /** 宿主 tick 节拍（ms）。sim 只数 tick，不读墙钟。 */
 export const TICK_MS = 200;
 
+/** 猫的当下姿态（j1-state 状态机 `pose.<cat>`·陪伴动作写它·投影读它换台词/画面·不进档）。 */
+export type CatPose = 'rest' | 'lookup' | 'settled';
+export const CAT_POSES: readonly CatPose[] = ['rest', 'lookup', 'settled'];
+export const poseFsm = (cat: string): string => `pose.${cat}`;
+
 // ── 猫档案（GDD §6.1）──────────────────────────────────────────────────────
 export interface CatCard {
   readonly id: string;
@@ -18,8 +23,10 @@ export interface CatCard {
   readonly breed: string;
   /** 牌桌性格（cat-ai.md §1.1·🟡 牌规待定，先留档位）。 */
   readonly cardPersona: 'cautious' | 'competitive' | 'playful' | 'sleepy';
-  /** 主厅一句话（表现层文案·非逻辑）。 */
+  /** 主厅一句话（表现层文案·非逻辑）——姿态 rest 时用。 */
   readonly hallLine: string;
+  /** 陪伴动作后的姿态台词（姿态机 `pose.<cat>`·八问第 2 问「操作要有画面确认」·S4 第 2 轮）。 */
+  readonly poseLines: Readonly<Record<Exclude<CatPose, 'rest'>, string>>;
   /** 兴致档 → 情绪短语（GDD：主厅只显示名字 + 一个情绪短语）。阈值查表不是逻辑。 */
   readonly moodPhrases: readonly { readonly min: number; readonly text: string }[];
 }
@@ -31,6 +38,10 @@ export const CATS: readonly CatCard[] = [
     breed: '布偶',
     cardPersona: 'cautious',
     hallLine: '它趴在旧木桌边，尾巴尖偶尔动一下。',
+    poseLines: {
+      lookup: '它抬起头看了你一眼，耳朵转过来。',
+      settled: '它挪了挪，把身子往你这边靠了一点。',
+    },
     moodPhrases: [
       { min: 70, text: '今天有点想玩' },
       { min: 40, text: '安静地待着' },
@@ -71,14 +82,16 @@ export interface CareAction {
   readonly label: string;
   readonly sub: string;
   readonly effects: readonly { readonly res: string; readonly amount: number }[];
+  /** 动作后猫进入的姿态（Effect set-state → 姿态机）。 */
+  readonly pose: Exclude<CatPose, 'rest'>;
 }
 export const CARE_ACTIONS: readonly CareAction[] = [
   {
-    id: 'greet', key: 'cat.greet', label: '轻声呼唤', sub: '它会抬头看你一眼',
+    id: 'greet', key: 'cat.greet', label: '轻声呼唤', sub: '它会抬头看你一眼', pose: 'lookup',
     effects: [{ res: relId('closeness', ACTIVE_CAT), amount: 2 }, { res: relId('mood', ACTIVE_CAT), amount: 6 }, { res: STARDUST, amount: 1 }],
   },
   {
-    id: 'sit', key: 'cat.sit', label: '陪它坐坐', sub: '什么都不做也可以',
+    id: 'sit', key: 'cat.sit', label: '陪它坐坐', sub: '什么都不做也可以', pose: 'settled',
     effects: [{ res: relId('heartlight', ACTIVE_CAT), amount: 2 }, { res: relId('ease', ACTIVE_CAT), amount: 2 }, { res: STARDUST, amount: 2 }],
   },
 ];

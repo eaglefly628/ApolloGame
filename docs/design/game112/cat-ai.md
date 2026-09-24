@@ -119,6 +119,8 @@ selector
 
 ## 3. 测试红线（S4 点名）
 
+> **延期说明（S4 复查 2026-09-24 点名·GD/PE-112）**：本节四条测试都挂在**牌桌 AI**（§1）与**狩猎链**（§2.1）上，而这两块的前置都在 owner 手里——牌规待对（`REQ-112-GAME-01` 🟡）、逗猫改视频形态重设计中（§2.1 🟡）。**Loop-0 竖切里没有 AI 决策**（陪伴/杂货铺/回忆/离线小事件全是数据表 + 引擎能力，没有一处「猫选了哪条路」），故本节测试**随 GAME-01 落地时一并交**（Loop-1），本文件停在 v0 是刻意的，不是漏做。Loop-0 唯一的"猫行为"= 姿态机 `pose.<cat>`（陪伴动作 → set-state），守卫测试在 `games/game112/review-guards.test.ts`。
+
 - 每个 persona 一条点名测试：同 seed 下 `competitive` 的抢分次数 > `cautious`（撤修验红：把 aggression 两档调成同值 → 该例转红）。
 - 定手窗结构测试：叶的 world 查询白名单不含玩家 `CardPile.hand`。
 - 狩猎链回放：同 seed + 同输入序列 → 同 `StateChanged` 序列。

@@ -40,7 +40,7 @@ const READ = `(() => {
   return {
     screen: document.querySelector('[data-ui-id]')?.getAttribute('data-ui-id') ?? null,
     stardust: num(txt('hall-stardust') ?? txt('shop-stardust')),
-    mood: txt('hall-mood'),
+    mood: txt('hall-mood'), catLine: txt('hall-cat-line'), orbSub: txt('hot-orbs-sub'),
     hasHall: has('hall-cat'), hasShop: has('shop-grid'), hasToys: has('toys-title'), hasMemory: has('memory-list'),
     hasReading: has('reading-dialog'), hasReadingNext: has('reading-next'), hasReadingEnd: has('reading-end'),
     hasChoices: has('reading-choices'), placedFeather: has('hall-placed-paperbag'), offlineAck: has('hall-offline-ack'),
@@ -121,6 +121,7 @@ async function main() {
     await page.waitForTimeout(500);
     s = await state();
     check('陪坐 10 次：星砂 20（数字真的变了）', s.stardust === 20, `stardust=${s.stardust}`);
+    check('陪坐有画面确认：猫台词换成「靠近」姿态 + 晶球卡显示心光 20（八问第 2 问·第 2 轮）', /靠/.test(s.catLine ?? '') && /心光 20/.test(s.orbSub ?? ''), `line=${s.catLine} orb=${s.orbSub}`);
     await shot('hall-after-care');
 
     await clickAction('shop.open');

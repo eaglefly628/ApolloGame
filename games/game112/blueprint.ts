@@ -23,7 +23,7 @@ import {
   ACTIVE_CAT, STARDUST, RELATIONS, MOOD_DRIFT, CARE_ACTIONS, SHOP_ITEMS, CHAPTERS,
   OFFLINE_TIERS, OFFLINE_EVENTS, OFFLINE_TAG, OFFLINE_ACK_KEY, SEED_DEFAULT,
   relId, itemCount, ownFlag, placedFlag, buyKey, placeKey,
-  chapterFlag, chapterFsm, chapterUnlockSignal, offlineKey, offlineSignal,
+  chapterFlag, chapterFsm, chapterUnlockSignal, offlineKey, offlineSignal, poseFsm,
 } from './world-data.js';
 
 /** 局外持久态（`services/save` 信封里的 data·宿主读回后作蓝图初值）。兴致不在里面（当次临时）。 */
@@ -60,14 +60,18 @@ function relationEntities(s: PersistedState): Record<string, EntityBlueprint> {
   return out;
 }
 
-// ── 陪伴动作：具名 action → Signal → 逐项 Effect（同信号多条·order 定序）───────
+// ── 陪伴动作：具名 action → Signal → 逐项 Effect（同信号多条·order 定序）+ 姿态机 ───────
+//   姿态机 pose.<cat>（j1-state·rest/lookup/settled·不进档）：每个动作末尾一条 set-state，
+//   投影按姿态换台词与画面 = 「操作有画面确认」（八问第 2 问·S4 第 2 轮）。
 function careEntities(): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
+  out[`pose-${ACTIVE_CAT}`] = { State: { fsmId: poseFsm(ACTIVE_CAT), current: 'rest', previous: 'rest' } };
   for (const a of CARE_ACTIONS) {
     out[`kb-${a.id}`] = { KeyBinding: { key: a.key, signal: a.key, phase: 'action' } };
     a.effects.forEach((e, i) => {
       out[`fx-${a.id}-${i}`] = { Effect: { onSignal: a.key, kind: 'modify-resource', targetId: e.res, op: 'add', value: e.amount, order: i } };
     });
+    out[`fx-${a.id}-pose`] = { Effect: { onSignal: a.key, kind: 'set-state', targetId: poseFsm(ACTIVE_CAT), value: a.pose, order: a.effects.length } };
   }
   return out;
 }

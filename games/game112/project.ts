@@ -3,8 +3,8 @@ import type { IWorld } from '@zerocraft/engine/engine/core/types.js';
 import type { Resource, State, Flag, Tag, Text, StringVar } from '@zerocraft/engine/engine/protocol/components.js';
 import {
   ACTIVE_CAT, RELATIONS, SHOP_ITEMS, CHAPTERS, OFFLINE_TAG, STARDUST,
-  relId, itemCount, placedFlag, chapterFlag, chapterFsm, catOf, chapterOf,
-  type RelationKey,
+  relId, itemCount, placedFlag, chapterFlag, chapterFsm, catOf, chapterOf, poseFsm, CAT_POSES,
+  type RelationKey, type CatPose,
 } from './world-data.js';
 import type { PersistedState } from './blueprint.js';
 
@@ -62,6 +62,9 @@ export interface ReadingView {
 export interface HallView {
   readonly catId: string;
   readonly catName: string;
+  /** 当下姿态（姿态机·rest/lookup/settled）。 */
+  readonly pose: CatPose;
+  /** 按姿态选的台词（rest=hallLine·其余=poseLines）。 */
   readonly catLine: string;
   readonly moodPhrase: string;
   readonly stardust: number;
@@ -82,10 +85,13 @@ export function buildHallView(world: IWorld): HallView {
   const catId = stringVarOf(world, 'activeCat') || ACTIVE_CAT;
   const cat = catOf(catId);
   const relations = Object.fromEntries(RELATIONS.map((r) => [r.key, resourceOf(world, relId(r.key, catId))])) as Record<RelationKey, number>;
+  const poseRaw = stateOf(world, poseFsm(catId));
+  const pose: CatPose = (CAT_POSES as readonly string[]).includes(poseRaw) ? (poseRaw as CatPose) : 'rest';
   return {
     catId,
     catName: cat?.name ?? catId,
-    catLine: cat?.hallLine ?? '',
+    pose,
+    catLine: pose === 'rest' ? (cat?.hallLine ?? '') : (cat?.poseLines[pose] ?? cat?.hallLine ?? ''),
     moodPhrase: moodPhraseOf(catId, relations.mood),
     stardust: resourceOf(world, STARDUST),
     relations,

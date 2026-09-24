@@ -75,8 +75,8 @@
 | ② | ~~`t3-hand-pattern` DSL 扩~~ | 星盘组合计分 —— **同上，随 ① 进同一模块** | ✅ wontfix（游戏层） |
 | ③ | ~~`t2-pointer-follow`~~ | 逗猫棒跟手 —— **owner 2026-09-24 判：逗猫改视频实现，不做拖羽毛棒 → 撤单** | ✅ wontfix |
 | ④ | ~~Clickable 载荷~~ | 触摸方向/速度/时长 —— **owner 2026-09-24 判：B 先行，撤单** | ✅ wontfix（首版按区判） |
-| ⑤ | `AishePort` 扩展 | 参考图/角色 ID/首尾帧 · poll/cancel/delete —— **引擎能力「AI 视频生成」之一** | ✅ accepted（owner 2026-09-24）· 待主程接单 |
-| ⑥ | `MediaJobPort` + `MediaCachePort` | 上传/质检/身份锚/审核队列/Blob 缓存 —— **「AI 视频生成」之二·先立端口·与供应商解耦** | ✅ accepted · 待主程接单 |
+| ⑤ | `AishePort` 扩展 | 参考图/角色 ID/首尾帧 · poll/cancel/delete —— **引擎能力「AI 视频生成」之一** | ✅ accepted（owner 2026-09-24）· **delivered**（主程 b21d3ad1·引擎池 REQ-112-AIGP·待独立复查） |
+| ⑥ | `MediaJobPort` + `MediaCachePort` | 上传/质检/身份锚/审核队列/Blob 缓存 —— **「AI 视频生成」之二·先立端口·与供应商解耦** | ✅ accepted · **delivered**（主程 b21d3ad1·待独立复查） |
 | ⑦ | `Input.type:'file'`（PUI） | 上传照片控件 | ✅ accepted · 报 PUI |
 | ⑧ | ~~序列帧管线~~ | 折叠进 ⑪（播放能力的内部实现选项） | wontfix |
 | ⑨ ⑩ | ~~VideoActor / Video 事件~~ | 合并进 ⑪ | wontfix |
@@ -101,7 +101,8 @@
 | `HUNT_FLOW` 🟡 | 狩猎链状态闭集/转移/驻留拍/概率（`cat-ai.md` §2.1-2.2）—— **逗猫改视频实现·重设计中（2026-09-24）**；保留为「选玩具 → 按状态播片」的状态表 | `t3-flow` · `t2-effect-apply chance` · 缺口 ⑪ 投影 |
 | `TOY_TABLE` 🟡 | 五种玩具 → 行为修正 —— 随逗猫重设计 | `t2-modifier-stack` |
 | `TOUCH_ZONES` 🟡 | 五分区 + 偏好 —— 随逗猫/陪伴重设计；首版按区判 | `a2-hierarchy` · `c1-shape` · `t2-clickable` · `t2-event-when` · `j1-state` |
-| `OFFLINE_EVENTS` | 分档 key → 每猫权重表 → 模板（纸袋藏牌/叼玩具/睡过位置/打翻杯垫…·**只有装饰模板**） | `t2-keybind` · `t2-weighted-spawn` · `t3-prefab` |
+| `OFFLINE_EVENTS` | 分档 key → **每档一张权重表**（short/long/days·`world-data.ts` OFFLINE_EVENTS.weight[tier]·权重 0 不入表）→ 模板（纸袋藏牌/叼玩具/睡过位置/打翻杯垫…·**只有装饰模板**）· 看过了 → 按 Tag 批量回收 | `t2-keybind` · `t2-weighted-spawn` · `t3-prefab` · `g1-tag` · `t2-effect-apply destroy-tagged` |
+| `CARE_POSE` | 陪伴动作 → 猫姿态机 `pose.<cat>`（rest/lookup/settled·不进档）→ 投影换台词/画面 = 操作的画面确认（S4 八问②） | `j1-state` · `t2-effect-apply set-state` |
 | `SHOP_ITEMS` | 物品/价格/分类（装饰·新互动·牌具外观）/放置点 | `t2-craft-recipe` · `t2-tray`（货架） |
 | `DECOR_SLOTS` | 可布置位 · 收纳筐 DropZone | `t2-drag-place` · `t2-effect-apply destroy` + recipe 回库 |
 | `MEMORY_CHAPTERS` | 官方猫三段式章节 DialogueScript · 解锁阈值 · 敏感标签 · 纪念物 | `t3-dialogue` · `t2-event-when` · `f2-flag` · `t2-craft-recipe`（纪念物） |

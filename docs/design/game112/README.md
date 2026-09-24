@@ -1,6 +1,6 @@
 # Game 112《星尾会客厅》·策划档案索引
 
-> 当前阶段：**S1 立项卡已落板 · S2 机器门绿 + 复查 PASS（S2-reviewer-agent）· S3 机器门绿 + 复查 CONCERNS 已修（等复核）· S4 玩法关施工中（Loop-0 竖切）**（`node scripts/game-pipeline.mjs board game112`）。owner 2026-09-24 判：11 项缺口全裁（游戏专属进游戏层 / 引擎两款能力归 Lead）。
+> 当前阶段：**S1 立项卡已落板 · S2 机器门绿 + 复查 PASS（S2-reviewer-agent）· S3 机器门绿 + 复查 CONCERNS（r2·守卫测试已补）· S4 机器门待跑 + 复查 CONCERNS（r1·四条已修·等 r2）**（`node scripts/game-pipeline.mjs board game112`）。owner 2026-09-24 判：11 项缺口全裁（游戏专属进游戏层 / 引擎两款能力归 Lead）。
 > **S3 施工主体 = GD/PE-112 session**（owner 2026-09-24 令「游戏端你来连续实现」·本行即锁）· 基线 = S2 复查 PASS（S2-reviewer-agent·2026-09-24 03:10）。引擎三单（05/06/11）归 Lead（05/06 主程已交·等独立复查）。
 > **S3 碰过的文件（边界栏·复查范围核查用）**：`games/game112/**`（新建）· `public/games/game112/{pipeline.json,art/**,probe/**}`（CLI/脚本/探针写）· `docs/design/game112/{acceptance,self-check}/**`（S4 剧本与自证）· `scripts/game112-playthrough.mjs`（S4 真浏览器试玩·25 断言·16 图）· `scripts/game112-spec-recursion.mjs`（S4 递归复核·11 条款打坏验红）· `docs/design/game112/**` · `src/launcher.tsx`（+1 条 GAMES 登记）· `src/launcher/game-runner.tsx`（+1 行 loader）· `scripts/game112-art-requirements.mjs`（新建·美术台账推导）· 另 `scripts/scoped-gate.mjs`+test（台账文件归类修复·owner 授权·主程 review 欠）。
 > Claude Design 对齐稿：`claude-design-brief.md`（出稿放 `cloud-design/`）。
