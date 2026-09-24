@@ -205,6 +205,13 @@ desync（`determinism.ts` 对 Camera 的同款理由）。条目进 hash → 注
 ### REQ-112-AIGP · AI 视频生成两件套（`AishePort` 扩展 + `MediaJobPort`/`MediaCachePort` 立端口）· [2026-09-24] · **owner 判 A×2**（game112 ENG-05「要做，毕竟要跟爱诗对接」· ENG-06「先立端口」要求与供应商解耦） · **施工主体 = 主程 = 本 session（2026-09-24 抢锁·本行即锁）** · 复查 = 另派独立 agent（复查人≠施工人·**待派**） · status: **✅ 已交（2026-09-24·门禁全绿·已推送）·等复查** · P1 · 类型: 引擎能力下沉
 全文与实查留痕 = `docs/design/game112/requests.md` ENG-05/ENG-06（**不在池内重抄**·池余量 2811 字符）。边界：`src/services/aigp/**` + `src/services/media-job/**` + 开发期代理脚本；纪律同 `HttpNpcAgentPort` 三条（**绝不抛 · 绝不碰 world · 只归一形状**）。配对单 **ENG-11「内嵌 AI 视频播放」本轮未抢锁**（含 `src/ui/components` = PUI 域·跨域另议）。
 
+### REQ-UI-STAGEMODE · 壳层「沉浸模式」开关（隐藏/显示 UI·只留舞台层）· [2026-09-24] · GD/PE-112 立（game112 menu-flow §1.3 常驻 HUD 五件之一·S4 复查 r2 第 8 条令上引擎池走 A/B）· **报 PUI · 等 owner 判 A/B** · status: open · 优先级: P3 · 类型: UI 基座控件
+- 想实现的行为：主厅右上角一枚眼睛钮，点后整棵 LayoutNode 收起，只留猫画面层（数字宠物 / VN 类通用「只看画面」需求）；再点恢复。
+- 已经试了什么：LayoutNode 闭集里没有「按角色批量隐/显子树」的信号；用 Flag + 条件渲染在游戏层拼 = 每屏手写一遍且壳层 ⚙ 钮盖不住，属手写逃生，不做。
+- 卡在哪：壳层（`src/ui/shell`）右上角保留区只有 ⚙；无「舞台节点」标记与 toggle 信号。
+- **A 补引擎缺口**：LayoutNode `layout.role:'stage'` 标记 + 壳层 toggle（`ui.stage-only` 信号·壳层自持状态）——通用于所有养成/VN 游戏；代价：PUI 一件控件 + 一条 shell 信号 + audit 规则。**B 游戏独有**：game112 自己在 hall 屏加一个「只看它」按钮切到一张只含猫画面的屏——零引擎改动，但是第二个同类游戏就得重写，且壳层 ⚙ 仍在。Lead 推荐 A（P3·不阻塞 game112 S4/S5）。
+- 边界：`src/ui/shell/**` + `src/ui/components/**`（PUI 域）· 游戏侧 `games/game112/ui.ts` 加 `role` 一行。
+
 ### REQ-UIWALK-ENTRY · S4 真界面走查探针缺「入场序列」（可驱动率恒 0%）· [2026-09-24] · GD/PE-112 立（game112 S4 门实证 0/17·同 game108 0/74 同形·`ui-walkthrough-probe.mjs` 头注 1b 已自认）· **指派：主程（scripts/ 探针面）** · status: open · 优先级: P3 · 类型: 门禁接线
 - 想实现的行为：菜单驱动的游戏（标题屏 → 主厅）能让 `ui-walkthrough-probe` 先点几步再开跑剧本，可驱动率真实反映「剧本动作在 UI 上点不点得到」。
 - 已经试了什么：game112 剧本词表 = UI 词表同源（adapter 直走 `routeAction`），逐步 `liveActions` 只有 `home.about/home.enter/home.exit` → 纯粹「探针没入场」（头注 1b 第二种原因），不是词表不同源。

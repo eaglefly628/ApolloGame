@@ -124,10 +124,8 @@
 
 ---
 
-## REQ-112-UI-11 · 主厅「隐藏/显示 UI」壳层钮（menu-flow §1.3 · 报 PUI）
-- **发现**：S4 对齐单第 4 行——常驻 HUD 五件里「隐藏/显示 UI 按钮」是壳层面（`src/ui/shell` 右上角保留区），游戏层 LayoutNode 闭集里没有「把整棵 UI 收起只留猫画面」的控件/信号。
-- **归属**：PUI · status: **open** · P3（Loop-1·不阻塞 S4）
-**建议**：壳层通用「沉浸模式」开关（右上角 ⚙ 旁一枚眼睛钮·toggle 后只渲 `role:'stage'` 标记的节点）——数字宠物/VN 类通用；游戏层只在 LayoutNode 上标哪块是「舞台」。不做游戏专属手写。
+## REQ-112-UI-11 · 主厅「隐藏/显示 UI」壳层钮 → **已移入引擎池** `docs/workflow/requests.md` REQ-UI-STAGEMODE（壳层新能力·走 owner A/B·PUI 可见）
+- 本单只留指针；游戏侧到时只在 LayoutNode 上标「舞台」节点，不写任何逃生代码。
 
 ---
 

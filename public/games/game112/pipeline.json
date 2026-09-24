@@ -212,6 +212,12 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-09-24T04:05:14.168Z"
+    },
+    {
+      "action": "review",
+      "stage": "S4",
+      "verdict": "PASS",
+      "at": "2026-09-24T04:07:05.770Z"
     }
   ],
   "reviews": {
@@ -231,11 +237,11 @@
       "gameHash": "ce92ddd3346516cb"
     },
     "S4": {
-      "verdict": "CONCERNS",
-      "note": "复跑(读退出码):vitest 20/20 exit0;acceptance 5本21检查点PASS exit0;playthrough 25/25 exit0;三者stderr空;playthrough只改shots+S4-play.json已复原。递归复核worktree跑11/11有守·锚点断言在(spec-recursion.mjs:115);自加4处打坏全红:greet亲近→0剧本①step3红;n3第二项next→n4a剧本③step10红;n4b终节点next→n1剧本③step13红;纸袋价→0 vitest红2。范围35文件全在README:5边界内;作者行5本GD-112(GD/PE同session·靠打坏转红缓解);确定性session.ts:44 hashSnapshot·game112.test.ts:142同seed同hash属实;终局出口playthrough.mjs:170真点「回到回忆廊」:172断屏:176断星砂0→1世界真变;UI选型apolloBrocade+buildStarterHome;八问8条含第8问归属时效已答;好玩三问/节奏检查非敷衍",
-      "by": "S4-reviewer-agent",
-      "at": "2026-09-24T03:55:06.009Z",
-      "gameHash": "c301caba640da8f5"
+      "verdict": "PASS",
+      "note": "r2@06bf7439(全部亲跑读退出码):align-count exit0(✅18⚠7❌0/25行);vitest 24/24 exit0;acceptance 5/5 exit0;playthrough 26/26 exit0 stderr空(产物已复原)。原四条:1✓对齐单:21→REQ-112-UI-11·:38→REQ-112-GAME-02均存在(game112/requests.md:127/:134 open);2✓:73改✅·看图03vs02猫台词变「它挪了挪…靠了一点」·晶球卡「心光0·还差10」→「心光20」;图12眼睁大(注意态)+「它抬起头看了你一眼」;临时clone撤修(去set-state/回退orbSub/图忽略pose)各恰红1条八问②;3✓cat-ai.md:122延期说明·blueprint无behavior-tree/t3-flow/chance·唯一随机=WeightedSpawn:129种子抽离线事件非AI决策;4✓:57记S5债·图15导航仍在首屏下。抽样:第6行(纸袋在馆+「1件」)✓·第13行(羽毛杆禁用)✓;范围20文件全在READ",
+      "by": "S4-reviewer-agent-r2",
+      "at": "2026-09-24T04:07:05.770Z",
+      "gameHash": "ce92ddd3346516cb"
     }
   },
   "outOfOrder": [
