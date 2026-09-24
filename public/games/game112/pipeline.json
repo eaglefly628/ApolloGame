@@ -254,6 +254,12 @@
       "stage": "S2",
       "exit": 0,
       "at": "2026-09-24T04:17:54.167Z"
+    },
+    {
+      "action": "review",
+      "stage": "S4",
+      "verdict": "CONCERNS",
+      "at": "2026-09-24T04:22:19.638Z"
     }
   ],
   "reviews": {
@@ -274,10 +280,10 @@
     },
     "S4": {
       "verdict": "CONCERNS",
-      "note": "增量@6d95b236纯文档。四处修改属实:对齐单:33按种子抽(game112.ts:69墙钟派生seed·blueprint.ts:129 WeightedSpawn);:53/:92 lookup姿态(ui.ts:139);:107 2b迭代记录;README:5 26断言=playthrough正常路径check数;requests.md:127指针。CONCERNS:1 REQ-UI-STAGEMODE(docs/workflow/requests.md:208)第①步「先查」漏了现成能力:LayoutNode visibleWhen已能按Flag剔整棵子树(src/ui/components/bindings.ts:83-128)·HUD外壳加visibleWhen:'!…'+写Flag的action大概率重组得出;B路写错(写成另切一屏);无实查原文。2 README:3仍写「S3复查CONCERNS(r2)」实为PASS(r3)。3 GD/PE-112立却写「Lead推荐A」;且引擎池已满10槽。",
-      "by": "docs-delta-reviewer-r4",
-      "at": "2026-09-24T04:11:02.966Z",
-      "gameHash": "a0ac7668be90cee0"
+      "note": "r3@2d77980a:align-count exit0(✅19⚠6❌0);vitest 25/25 exit0;acceptance 5本PASS;试玩28/28 exit0 stderr空已复原。看图:13只剩猫/台词/「显示界面」/纸袋+宿主⚙;12界面完整;满足menu-flow:79;试玩:185-187真点ui.show并断导航动作回来。撤修验红(临时clone·锚点命中):删navbar visibleWhen→ui.test红;删fx-stage-show→红;宿主去resolveBindings→vitest仍绿·试玩26/28红(宿主接线只靠试玩守)。r4三条:1✓池单grep0·requests.md:127-131三件套齐;2✓;3✓(9/10槽)。第7问✓22动作全见。CONCERNS(文档):S4-1对齐单:22/:33引S4-play-15离线图·重编号后15是牌桌应为16;:9写26断言实为28;:108写⚠7工具算6。S5-2 README:5边界栏漏列docs/workflow/requests.md·标题仍「S3」。S5-3 playthroug",
+      "by": "S4-reviewer-agent-r3",
+      "at": "2026-09-24T04:22:19.638Z",
+      "gameHash": "80cbea42969b618c"
     }
   },
   "outOfOrder": [
