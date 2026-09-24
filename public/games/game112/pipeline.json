@@ -11,9 +11,15 @@
   "evidence": {
     "S2": {
       "exit": 0,
-      "summary": "capability-plan.md 在档 · ✓ 缺口 11 条全已裁决 · 未交付 4：GAP-112-05→锁无 GAP-112-06→锁无 GAP-112-07→锁无 GAP-112-11→锁无",
-      "at": "2026-09-24T03:08:37.146Z",
-      "gameHash": "245c73b3b003943a"
+      "summary": "capability-plan.md 在档 · ✓ 缺口 11 条全已裁决 · 未交付 2：GAP-112-07→锁无 GAP-112-11→锁无",
+      "at": "2026-09-24T03:18:16.008Z",
+      "gameHash": "b390a20cc58950bc"
+    },
+    "S3": {
+      "exit": 0,
+      "summary": "编译期游戏免 manifest 校验 · ✓ 渲染探针过（截图 public/games/<slug>/probe/S3-render.png） · ✓ 点击打穿（12 个控件 · 11 个点后 DOM 真的变了 · 零控制台 error）",
+      "at": "2026-09-24T03:20:25.830Z",
+      "gameHash": "b390a20cc58950bc"
     }
   },
   "history": [
@@ -80,16 +86,47 @@
       "stage": "S2",
       "verdict": "PASS",
       "at": "2026-09-24T03:10:05.748Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S2",
+      "exit": 0,
+      "at": "2026-09-24T03:18:16.008Z"
+    },
+    {
+      "action": "review",
+      "stage": "S2",
+      "verdict": "PASS",
+      "at": "2026-09-24T03:19:39.346Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "owner 2026-09-24 原话「游戏端的你来连续实现，引擎端我让 leader 实现」——S1/S2 人门待 owner/Lead 真人签（不代签）；S2 机器门绿 + 复查 PASS（S2-reviewer-agent）在案",
+      "at": "2026-09-24T03:20:06.727Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-09-24T03:20:25.830Z"
     }
   ],
   "reviews": {
     "S2": {
       "verdict": "PASS",
-      "note": "重核:脚本提§2.1 47名/§3 26名对registry 113id逐匹配缺0;§3 18表解释器全注册名/宿主/缺口⑪,🟡4行有原因;§4例外④真存·Lead裁决⬜待人门;§4.5已填;gate S2 exit0·11条零open·非open全带ticket;budget PASS(7767字)。上轮1-8条grep原串零命中(没有第五条/113项/evalCondition/cards.md:26/cat-ai缺口③④/framework§6 11项/ENG-08·09·UI-10 wontfix)全清。范围:越域scripts/scoped-gate.mjs主程review仍欠(owner授权游戏端);README有S3领工锁但无边界栏,在途src/launcher.tsx+game-runner.tsx未声明;README第3行「尚未批准写代码」与第4行矛盾。S3在途:vitest 20/20绿·audit RATCHET PASS·⚠墙钟×2(game112.ts:69/73宿主seed/now)·🟡无美术台账→归S3复查。",
+      "note": "三核(HEAD=origin b49fe369):§2.1 47名/§3 26名对registry 113id缺0;§3 18表解释器全注册名/宿主/缺口⑪;§4例外④真存·Lead裁决⬜待人门;§4.5脚本game112-art-requirements.mjs已落→台账5行·art-ledger-guard game112 0/0/0(全库WARN系game-a/c/101旧账);gate S2 exit0·零open·05/06 delivered(引擎池REQ-112-AIGP存)·07/11锁无;budget PASS。范围:README边界栏与diff --stat origin~2 26文件逐一对上(games/game112·public art+pipeline·docs·launcher×2·art脚本);设计正文5档未动。S3在途:vitest 20/20绿·audit PASS/RATCHET PASS(seed经opts.now注入·:74默认Date.now仍⚠×1)。残留:scoped-gate越域主程review欠;AIGP等复查。",
       "by": "S2-reviewer-agent",
-      "at": "2026-09-24T03:10:05.748Z",
-      "gameHash": "245c73b3b003943a",
+      "at": "2026-09-24T03:19:39.346Z",
+      "gameHash": "b390a20cc58950bc",
       "gapsHash": "438ede8001bb0205"
     }
-  }
+  },
+  "outOfOrder": [
+    {
+      "stage": "S3",
+      "reason": "owner 2026-09-24 原话「游戏端的你来连续实现，引擎端我让 leader 实现」——S1/S2 人门待 owner/Lead 真人签（不代签）；S2 机器门绿 + 复查 PASS（S2-reviewer-agent）在案",
+      "at": "2026-09-24T03:20:06.727Z"
+    }
+  ]
 }

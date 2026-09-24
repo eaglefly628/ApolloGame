@@ -1,0 +1,31 @@
+{
+  "slug": "game112",
+  "at": "2026-09-24T03:20:12.627Z",
+  "gameHash": "b390a20cc58950bc",
+  "ok": true,
+  "form": "compiled",
+  "assertions": {
+    "nonBlank": {
+      "pass": true,
+      "variance": 144.36,
+      "mean": 225.54,
+      "threshold": 15
+    },
+    "consoleErrors": {
+      "pass": true,
+      "count": 0,
+      "messages": []
+    },
+    "noUncaught": {
+      "pass": true,
+      "pageErrors": 0,
+      "overlay": false,
+      "messages": []
+    }
+  },
+  "screenshot": "public/games/game112/probe/S3-render.png",
+  "browser": {
+    "execPath": "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+    "via": "explicit"
+  }
+}

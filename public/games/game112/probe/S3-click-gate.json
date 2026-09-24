@@ -1,0 +1,141 @@
+{
+  "slug": "game112",
+  "exit": 0,
+  "summary": "✓ 点击打穿（12 个控件 · 11 个点后 DOM 真的变了 · 零控制台 error）",
+  "controls": 12,
+  "changed": 11,
+  "hits": [
+    {
+      "id": "starter-act-0",
+      "changed": true,
+      "changedIds": [
+        "starter-home",
+        "starter-home-amb",
+        "starter-title-card",
+        "starter-title",
+        "starter-sub",
+        "starter-actions"
+      ]
+    },
+    {
+      "id": "hot-orbs",
+      "changed": true,
+      "changedIds": [
+        "hall",
+        "hall-inner",
+        "hall-top",
+        "hall-top-left",
+        "hall-cat-name",
+        "hall-mood"
+      ]
+    },
+    {
+      "id": "orb-xuetuan-go",
+      "changed": true,
+      "changedIds": [
+        "orbs",
+        "orbs-inner",
+        "orbs-title",
+        "orbs-sub",
+        "orbs-row",
+        "orb-xuetuan"
+      ]
+    },
+    {
+      "id": "hot-table",
+      "changed": true,
+      "changedIds": [
+        "hall",
+        "hall-inner",
+        "hall-top",
+        "hall-top-left",
+        "hall-cat-name",
+        "hall-mood"
+      ]
+    },
+    {
+      "id": "table-back",
+      "changed": true,
+      "changedIds": [
+        "table",
+        "table-inner",
+        "table-title",
+        "table-stage",
+        "table-cat",
+        "table-note"
+      ]
+    },
+    {
+      "id": "hot-toys",
+      "changed": true,
+      "changedIds": [
+        "hall",
+        "hall-inner",
+        "hall-top",
+        "hall-top-left",
+        "hall-cat-name",
+        "hall-mood"
+      ]
+    },
+    {
+      "id": "toys-shop",
+      "changed": true,
+      "changedIds": [
+        "toys",
+        "toys-inner",
+        "toys-title",
+        "toys-empty",
+        "toys-shop",
+        "toys-back"
+      ]
+    },
+    {
+      "id": "nav-orbs",
+      "changed": true,
+      "changedIds": [
+        "shop",
+        "shop-inner",
+        "shop-top",
+        "shop-title",
+        "shop-stardust",
+        "shop-sub"
+      ]
+    },
+    {
+      "id": "orb-empty-later",
+      "changed": true,
+      "changedIds": [
+        "orbs",
+        "orbs-inner",
+        "orbs-title",
+        "orbs-sub",
+        "orbs-row",
+        "orb-xuetuan"
+      ]
+    },
+    {
+      "id": "care-greet",
+      "changed": true,
+      "changedIds": [
+        "hall-stardust"
+      ]
+    },
+    {
+      "id": "care-sit",
+      "changed": true,
+      "changedIds": [
+        "hall-stardust"
+      ]
+    },
+    {
+      "id": "nav-hall",
+      "changed": false,
+      "changedIds": []
+    }
+  ],
+  "bindWiring": {
+    "ok": true,
+    "detail": "未用 props.bind"
+  },
+  "consoleErrors": []
+}
