@@ -10,10 +10,10 @@
   "signoffs": {},
   "evidence": {
     "S2": {
-      "exit": 1,
-      "summary": "capability-plan.md 在档 · ⚠ 缺口 6/10 未裁决（走缺口裁决协议：先查 → 摆 A/B → owner 判）· GAP-112-05[P1·engine] GAP-112-06[P1·engine] GAP-112-07[P2·pui] GAP-112-08[P2·engine] GAP-112-09[P2·engine] GAP-112-10[P1·pui]",
-      "at": "2026-09-24T02:29:15.385Z",
-      "gameHash": "2de346e14e4f38c6"
+      "exit": 0,
+      "summary": "capability-plan.md 在档 · ✓ 缺口 11 条全已裁决 · 未交付 4：GAP-112-05→锁无 GAP-112-06→锁无 GAP-112-07→锁无 GAP-112-11→锁无",
+      "at": "2026-09-24T02:31:22.704Z",
+      "gameHash": "9fe12e7b6ce5a4e0"
     }
   },
   "history": [
@@ -44,6 +44,12 @@
       "stage": "S2",
       "exit": 1,
       "at": "2026-09-24T02:29:15.385Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S2",
+      "exit": 0,
+      "at": "2026-09-24T02:31:22.704Z"
     }
   ]
 }

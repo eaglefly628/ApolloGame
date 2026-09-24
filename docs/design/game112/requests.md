@@ -43,18 +43,18 @@
 
 ---
 
-## REQ-112-ENG-05 · `AishePort` 扩展（GAP-112-05）
-- **owner 裁决**：⬜ 待判（§6 ⑤·推荐 A）
-- **归属**：🔴 主程面 `src/services/aigp` · status: **open** · P1 · 不锁 S4（Loop-2 前须交）
+## REQ-112-ENG-05 · `AishePort` 扩展（GAP-112-05）——引擎能力「AI 视频生成」之一
+- **owner 裁决**：**A（2026-09-24）**「要做，毕竟要跟爱诗对接」
+- **归属**：🔴 主程面 `src/services/aigp` · status: **accepted · 待晋升引擎池（主程接单抢锁）** · P1
 **想实现的行为**：`AisheGenerateOptions` 加 `referenceImages[]/characterId/firstFrame/lastFrame`；端口加 `poll(id)/cancel(id)/delete(id)`；开发期代理 `scripts/game112-aishe-proxy.mjs`（照 `game111-deepseek-proxy.mjs`：key 只在本进程·`--selftest`）。
 **实查留痕**：`aishe-port.ts` 接口全文（`generate` 唯一方法·零图片字段）；`http-aishe.ts` POST 体；`aishe.test.ts`；全仓 `new HttpAishePort` 零命中、`NullAishePort` 仅 `games/game-i/game-i.ts:136`。
 **边界**：`src/services/aigp/**` + 代理脚本；纪律同 `HttpNpcAgentPort` 三条（绝不抛 · 绝不碰 world · 只归一形状）。
 
 ---
 
-## REQ-112-ENG-06 · 媒体作业链端口（GAP-112-06）
-- **owner 裁决**：⬜ 待判（§6 ⑥·推荐 A 端口先立·真后端 owner 另定）
-- **归属**：🔴 主程面 `src/services/media-job` + 产品后端（本仓外）· status: **open** · P1 · 不锁 S4
+## REQ-112-ENG-06 · 媒体作业链端口（GAP-112-06）——引擎能力「AI 视频生成」之二
+- **owner 裁决**：**A·先立端口（2026-09-24）**「现在暂时可能会接别的组件」→ 端口形状必须与具体供应商解耦（同 NpcAgentPort/AishePort 纪律）
+- **归属**：🔴 主程面 `src/services/media-job` + 产品后端（本仓外·owner 另定）· status: **accepted · 待晋升引擎池** · P1
 **想实现的行为**：`MediaJobPort{submit(kind,inputs),poll,cancel,delete,export}` · `MediaCachePort`（Blob·非 string KV）· 审核队列数据形状 `{jobId,catId,kind,status:'pending'|'approved'|'rejected',reason}` · Null 实现可跑 CI。
 **实查留痕**：`main_entry/server.py` `/api/art/upload` 单图 dataBase64 白名单 png/webp/jpg/jpeg/glb（创作者换槽用）；`/api/assets/{matte,generate,review,autotag}` 开发期件；`services/storage` `IndexedDbKV` 只收 string；全仓无 CacheStorage/Service Worker。
 **边界**：端口薄；不在游戏层写网络胶水。
@@ -63,14 +63,14 @@
 
 ## REQ-112-UI-07 · `Input.type:'file'` 上传控件（GAP-112-07 · 报 PUI）
 - **发现**：2026-09-23 实查 `catalog.ts` Input `type` 只 `'text'|'number'`；`type="file"` 仅 `src/studio` React。
-- **归属**：PUI（`src/ui/components` 域）· status: **open** · P2 · 不锁关
+- **归属**：PUI（`src/ui/components` 域）· status: **accepted（owner 2026-09-24「需要上传」）** · P2
 **建议**：`Input.type:'file'` + `accept/multiple/capture` → action 信号带文件句柄数组（进 UI 层·不进 sim）。
 **当前绕法**：无（手写 DOM 违反铁律·不绕）。
 
 ---
 
-## REQ-112-ENG-08 · 片段→alpha 序列帧转换管线 + `video`/`prerendered-sequence` 桥接（GAP-112-08）
-- **owner 裁决**：⬜ 待判（§6 ⑧·推荐 **A 作 Loop-1 基线**）
+## REQ-112-ENG-08 · 片段→alpha 序列帧转换管线（GAP-112-08）
+- **owner 裁决**：**不单独立（2026-09-24）**——序列帧只是播放能力的内部实现选项，折叠进 REQ-112-ENG-11；下文实查原文保留供主程做 11 时参考
 - **归属**：🟢 资产面扩写（`registerAssetIndex` 桥接 = 主程 review；转换脚本 = PST/资产管线 · 提需方可写）· status: **open** · **P2（2026-09-24 降）**——逗猫改视频后「猫活在画布层」不再是硬需求；若 ⑩ 能做到换片不黑帧，本条可撤
 **想实现的行为**：服务侧作业 `clip → 逐帧 matte → 图集(webp/png) + manifest{fps,count,anchor,hitZones}` 入库为 `prerendered-sequence`；`registerAssetIndex` 桥接该 kind 到 `Sprite.textureKey` 图集；`CLIP_CATALOG` 直接映射 `t2-anim-state` clip 表。
 **实查留痕**：`asset-index.ts:15` AssetType 含 `video`、`:265-296` 只桥 texture/mesh；`asset-types.ts` `prerendered-sequence`；`anim-state.ts` clip `{sheet,from,count,fps,loop}`；`/api/assets/matte` 单张。
@@ -79,13 +79,14 @@
 ---
 
 ## REQ-112-ENG-09 · VideoActor（GAP-112-09）
-- **owner 裁决**：⬜ 待判（§6 ⑨·推荐 **B 延后**）
+- **owner 裁决**：**合并进 REQ-112-ENG-11（2026-09-24）**；实查原文保留
 - **归属**：🔴 主程面（renderer + host + 组件协议 + determinism）· status: **open** · P2 · 不锁关
 **实查留痕**：`mount-host.ts` 分层无视频槽；`canvas-renderer.ts` 无遮罩/视频纹理；`render.ts:1015` `<video>` `background:#000`；`server.ts:850-866` 无 ended。
 
 ---
 
 ## REQ-112-UI-10 · `Video.onEnded/bind/fit` + catalog 补 `muted`（GAP-112-10 · 报 PUI）
+- **owner 裁决**：**合并进 REQ-112-ENG-11（2026-09-24）**——作为该能力的 UI 面由 PUI 协作；实查原文保留
 - **发现**：`types.ts:642` `VideoProps` 无事件/bind；catalog `:173-181` 漏登 `muted`；改 `src` 整元素重建。
 - **归属**：PUI · status: **open** · **P1（2026-09-24 升）**——逗猫改视频后，猫的画面 = `Video` 控件按状态换片，「播完发信号 + src 按状态绑定 + 换片不黑帧」是猫画面的基本件；⑧⑨ 是否还要，取决于本条能做到哪一步
 **建议**：`onEnded: action`（进 UI 层）· `bind`（同 Image）· `fit`；`visibleWhen` 切换时保留 DOM 的可选项。
@@ -98,6 +99,21 @@
 **做什么**：纯函数确定性模块——三星盘公共堆 · 目标堆出牌 · 猫爪动作（换盘/压牌/拨顶）· 组合计分（同色任意/月相循环/成对/三连/爪印）· 胜负；随机只吃传入 seed（`seededShuffle`）；状态经 Resource/Flag 投影给 UI/AI/条件；成对/三连/同色三连仍调 `t3-hand-pattern.matchPattern`。
 **边界**：零 DOM · 零 `Math.random` · 不写 system（由宿主会话驱动在输入点调用）· 测试 ≥30 含撤修锚点。先例 `games/game-c/holdem-eval.ts`。
 **偿还**：第三个游戏出现同形「公共堆」需求再议下沉。
+
+---
+
+## REQ-112-ENG-11 · 引擎能力「内嵌 AI 视频播放」（GAP-112-11 · owner 2026-09-24 立·合并 ⑧⑨⑩）
+- **owner 裁决**：**A（2026-09-24）**「把 AI 生成视频的播放列成引擎缺失的能力补全」——与「AI 视频生成」（05+06）成对的两款引擎能力
+- **归属**：🔴 主程面（renderer / host / 组件协议 / determinism）+ PUI 协作（Video 控件 UI 面）· status: **accepted · 待晋升引擎池（主程接单抢锁）** · P1
+**想实现的行为**（游戏侧只给数据，不写播放器）：
+1. 片段目录 = 数据：`{clipKey, state, ticks, poseIn, poseOut, loop, fallbackClipKey, review}`（`framework.md` §2 `CLIP_CATALOG`）。
+2. 按 sim 的 `State{fsmId}` 选片（同 `t2-anim-state` 的 clip 表口径）；播放进度/结束**不进 sim**，结束信号只进 UI 层。
+3. 预载下一候选片 · 换片不黑帧（首尾中性姿势对齐）· 缓存已就绪片（Blob 级，配合 06 的 MediaCachePort）。
+4. 缺片回退链：个性片 → 通用片 → 基础活照片 → 静态图 + fx 微动；断网时链尾必达。
+5. 叠层：可放在场景背景之上、被前景遮挡；透明/遮罩为可选高级项。
+6. 内部实现（`<video>` 元素 / 序列帧图集 / 两者混合）由主程定，游戏不感知。
+**实查留痕**：`types.ts:642` VideoProps 无事件/bind；`render.ts:1015` 改 src 整元素重建 + `background:#000`；`server.ts:850-866` 无 ended；`mount-host.ts` 无视频层；`canvas-renderer.ts` 无视频纹理/遮罩；`anim-state.ts` clip 表可借形状；`asset-index.ts:15` AssetType 已含 `video` 未桥接。
+**边界**：`src/renderer/**` + `src/engine/host/**` + `src/ui/components/{video,catalog,render,server}` + `determinism.ts` 登记；带断网回退测试与换片不黑帧目击。
 
 ---
 

@@ -37,50 +37,65 @@
   },
   {
     "id": "GAP-112-05",
-    "title": "AishePort 扩展：身份参考图/角色 ID/首尾帧 + poll/cancel/delete。实查：aishe-port.ts 只有 generate(prompt,{aspect,negativePrompt,seconds,seed})，零图片字段，pending 后无法查询；全仓仅 NullAishePort 被实例化。A=扩端口 + 开发期代理（key 不进浏览器）/ B=无参考图 → 身份不稳定，违反 GDD §8.7。推荐 A。全文 framework.md §6 ⑤",
+    "title": "AishePort 扩展：身份参考图/角色 ID/首尾帧 + poll/cancel/delete。实查：aishe-port.ts 只有 generate(prompt,{aspect,negativePrompt,seconds,seed})，零图片字段，pending 后无法查询；全仓仅 NullAishePort 被实例化。A=扩端口 + 开发期代理（key 不进浏览器）/ B=无参考图 → 身份不稳定，违反 GDD §8.7。推荐 A。全文 framework.md §6 ⑤ ‖ owner 2026-09-24 判 A：要做，要跟爱诗对接。与 06 合成引擎能力「AI 视频生成」",
     "priority": "P1",
     "route": "engine",
-    "state": "open",
-    "blocks": []
+    "state": "accepted",
+    "blocks": [],
+    "ticket": "requests.md REQ-112-ENG-05（待晋升引擎池·主程接单抢锁）"
   },
   {
     "id": "GAP-112-06",
-    "title": "媒体作业链：玩家上传端点 / 素材检查 / 身份锚生成 / 主人审核队列 / 媒体 Blob 缓存 / 删除导出。实查：/api/art/upload 是创作者换槽单图；/api/assets/* 全是开发期件；IndexedDbKV 只收 string；无 CacheStorage；现仓无「玩家运行时后端」层。A=立 MediaJobPort/MediaCachePort 薄端口 + Null/Http + 开发期代理，真后端 owner 另定 / B=首版只做官方猫，上传延后。推荐 A 端口先立。全文 framework.md §6 ⑥",
+    "title": "媒体作业链：玩家上传端点 / 素材检查 / 身份锚生成 / 主人审核队列 / 媒体 Blob 缓存 / 删除导出。实查：/api/art/upload 是创作者换槽单图；/api/assets/* 全是开发期件；IndexedDbKV 只收 string；无 CacheStorage；现仓无「玩家运行时后端」层。A=立 MediaJobPort/MediaCachePort 薄端口 + Null/Http + 开发期代理，真后端 owner 另定 / B=首版只做官方猫，上传延后。推荐 A 端口先立。全文 framework.md §6 ⑥ ‖ owner 2026-09-24 判 A：先立端口（暂时可能接别的组件·端口要抽象）。与 05 合成「AI 视频生成」",
     "priority": "P1",
     "route": "engine",
-    "state": "open",
-    "blocks": []
+    "state": "accepted",
+    "blocks": [],
+    "ticket": "requests.md REQ-112-ENG-06（待晋升引擎池·主程接单抢锁）"
   },
   {
     "id": "GAP-112-07",
-    "title": "玩家侧文件/照片上传控件。实查：LayoutNode Input.type 只 text|number；type=file 仅 studio React。A=PUI 扩 Input.type:'file'（accept/multiple/capture → action 带句柄）/ B=宿主自由 DOM（违反 UI 铁律·不接受）。推荐 A。全文 framework.md §6 ⑦",
+    "title": "玩家侧文件/照片上传控件。实查：LayoutNode Input.type 只 text|number；type=file 仅 studio React。A=PUI 扩 Input.type:'file'（accept/multiple/capture → action 带句柄）/ B=宿主自由 DOM（违反 UI 铁律·不接受）。推荐 A。全文 framework.md §6 ⑦ ‖ owner 2026-09-24 判 A：需要上传",
     "priority": "P2",
     "route": "pui",
-    "state": "open",
-    "blocks": []
+    "state": "accepted",
+    "blocks": [],
+    "ticket": "requests.md REQ-112-UI-07（报 PUI）"
   },
   {
     "id": "GAP-112-08",
-    "title": "生成片段 → alpha 序列帧图集转换管线 + video/prerendered-sequence 资产桥接（媒体线关键重组）。实查：AssetType 闭集已含 video 但 registerAssetIndex 只桥 texture/mesh；asset-types 已有 prerendered-sequence；t2-anim-state + l1-sprite + clickable 播放/遮挡/命中/确定性全现成；/api/assets/matte 只单张。A=转换管线（逐帧 matte → 图集 + manifest）+ 桥接（🟢 资产面）/ B=真视频路线（=⑨）。推荐 A 作 Loop-1 基线。全文 framework.md §6 ⑧ ‖ 2026-09-24 降 P2：逗猫改视频后「猫活在画布层」不再是硬需求；是否仍要序列帧取决于⑩/⑨怎么判",
+    "title": "生成片段 → alpha 序列帧图集转换管线 + video/prerendered-sequence 资产桥接（媒体线关键重组）。实查：AssetType 闭集已含 video 但 registerAssetIndex 只桥 texture/mesh；asset-types 已有 prerendered-sequence；t2-anim-state + l1-sprite + clickable 播放/遮挡/命中/确定性全现成；/api/assets/matte 只单张。A=转换管线（逐帧 matte → 图集 + manifest）+ 桥接（🟢 资产面）/ B=真视频路线（=⑨）。推荐 A 作 Loop-1 基线。全文 framework.md §6 ⑧ ‖ 2026-09-24 降 P2：逗猫改视频后「猫活在画布层」不再是硬需求；是否仍要序列帧取决于⑩/⑨怎么判 ‖ owner 2026-09-24 判：不单独立",
     "priority": "P2",
     "route": "engine",
-    "state": "open",
-    "blocks": []
+    "state": "wontfix",
+    "blocks": [],
+    "ticket": "折叠进 GAP-112-11「内嵌 AI 视频播放」——序列帧是播放能力的内部实现选项，不单独立能力"
   },
   {
     "id": "GAP-112-09",
-    "title": "VideoActor 视频角色投影件：宿主视频层 / alpha 合成 / 预载切换 / 结束事件对齐 sim tick。实查：mount-host 分层无视频槽；canvas-renderer 无遮罩/视频纹理；<video> 不透明且改 src 整元素重建；无 ended 监听。A=下沉（主程·1-2 周·浏览器透明视频兼容坑）/ B=延后，用 ⑧ 覆盖。推荐 B。全文 framework.md §6 ⑨",
+    "title": "VideoActor 视频角色投影件：宿主视频层 / alpha 合成 / 预载切换 / 结束事件对齐 sim tick。实查：mount-host 分层无视频槽；canvas-renderer 无遮罩/视频纹理；<video> 不透明且改 src 整元素重建；无 ended 监听。A=下沉（主程·1-2 周·浏览器透明视频兼容坑）/ B=延后，用 ⑧ 覆盖。推荐 B。全文 framework.md §6 ⑨ ‖ owner 2026-09-24 判：与 ⑩ 合并为引擎能力「内嵌 AI 视频播放」",
     "priority": "P2",
     "route": "engine",
-    "state": "open",
-    "blocks": []
+    "state": "wontfix",
+    "blocks": [],
+    "ticket": "合并进 GAP-112-11"
   },
   {
     "id": "GAP-112-10",
-    "title": "Video 控件事件与绑定：onEnded action / bind / fit / catalog 补登 muted。实查：types.ts:642 VideoProps 无事件；server.ts 监听表无 ended/timeupdate；Image 有 bind 而 Video 无。A=PUI 扩 / B=回忆影片播完无信号（不能「先停留不弹奖励」）。推荐 A。全文 framework.md §6 ⑩ ‖ 2026-09-24 升 P1：逗猫改视频后，猫 = Video 控件按状态换片，「播完信号 + src 按状态绑定」成为猫画面的基本件",
+    "title": "Video 控件事件与绑定：onEnded action / bind / fit / catalog 补登 muted。实查：types.ts:642 VideoProps 无事件；server.ts 监听表无 ended/timeupdate；Image 有 bind 而 Video 无。A=PUI 扩 / B=回忆影片播完无信号（不能「先停留不弹奖励」）。推荐 A。全文 framework.md §6 ⑩ ‖ 2026-09-24 升 P1：逗猫改视频后，猫 = Video 控件按状态换片，「播完信号 + src 按状态绑定」成为猫画面的基本件 ‖ owner 2026-09-24 判：与 ⑨ 合并为引擎能力「内嵌 AI 视频播放」",
     "priority": "P1",
     "route": "pui",
-    "state": "open",
+    "state": "wontfix",
+    "blocks": [],
+    "ticket": "合并进 GAP-112-11"
+  },
+  {
+    "id": "GAP-112-11",
+    "title": "引擎能力「内嵌 AI 视频播放」（owner 2026-09-24 立·合并原 ⑧⑨⑩）：用数据描述的片段目录（片段 key·所属状态·片长 tick·首尾姿势·回退片）驱动 AI 生成视频在游戏里播——按 sim 状态选片 · 预载/缓存 · 换片不黑帧 · 播完发信号（进 UI 层·不进 sim）· 缺片回退链（个性片→通用片→基础活照片→静态图微动）· 可叠在场景背景之上并被前景遮挡。内部走 <video> 还是序列帧图集是实现选择。实查：Video 控件无事件/bind/预载、改 src 整元素重建；mount-host 无视频层；渲染器无视频纹理/遮罩（framework.md §6 ⑨⑩）。UI 面 = LayoutNode Video 控件扩展（PUI 协作）。与「AI 视频生成」（05+06）成对。",
+    "priority": "P1",
+    "route": "engine",
+    "state": "accepted",
+    "ticket": "requests.md REQ-112-ENG-11（待晋升引擎池·主程接单抢锁）",
     "blocks": []
   }
 ]

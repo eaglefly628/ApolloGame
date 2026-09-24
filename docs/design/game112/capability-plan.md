@@ -75,12 +75,12 @@
 | ② | ~~`t3-hand-pattern` DSL 扩~~ | 星盘组合计分 —— **同上，随 ① 进同一模块** | ✅ wontfix（游戏层） |
 | ③ | ~~`t2-pointer-follow`~~ | 逗猫棒跟手 —— **owner 2026-09-24 判：逗猫改视频实现，不做拖羽毛棒 → 撤单** | ✅ wontfix |
 | ④ | ~~Clickable 载荷~~ | 触摸方向/速度/时长 —— **owner 2026-09-24 判：B 先行，撤单** | ✅ wontfix（首版按区判） |
-| ⑤ | `AishePort` 扩展 | 参考图/角色 ID/首尾帧 · poll/cancel/delete | ⏳ open |
-| ⑥ | `MediaJobPort` + `MediaCachePort` | 上传/质检/身份锚/审核队列/Blob 缓存/删除导出 | ⏳ open |
-| ⑦ | `Input.type:'file'`（PUI） | 上传照片控件 | ⏳ open |
-| ⑧ | 片段→alpha 序列帧管线 + `video`/`prerendered-sequence` 资产桥接 | 猫的互动片进画布层 —— 逗猫改视频后降 P2 | ⏳ open（P2） |
-| ⑨ | VideoActor | 真视频角色投影（换片无缝·透明叠背景时才需要） | ⏳ open（推荐 B 延后） |
-| ⑩ | `Video.onEnded/bind/fit`（PUI） | **猫的画面基本件**：按状态换片 · 播完发信号 · 换片不黑帧 —— 升 P1 | ⏳ open（P1） |
+| ⑤ | `AishePort` 扩展 | 参考图/角色 ID/首尾帧 · poll/cancel/delete —— **引擎能力「AI 视频生成」之一** | ✅ accepted（owner 2026-09-24）· 待主程接单 |
+| ⑥ | `MediaJobPort` + `MediaCachePort` | 上传/质检/身份锚/审核队列/Blob 缓存 —— **「AI 视频生成」之二·先立端口·与供应商解耦** | ✅ accepted · 待主程接单 |
+| ⑦ | `Input.type:'file'`（PUI） | 上传照片控件 | ✅ accepted · 报 PUI |
+| ⑧ | ~~序列帧管线~~ | 折叠进 ⑪（播放能力的内部实现选项） | wontfix |
+| ⑨ ⑩ | ~~VideoActor / Video 事件~~ | 合并进 ⑪ | wontfix |
+| **⑪** | **引擎能力「内嵌 AI 视频播放」** | 片段目录数据驱动 · 按状态选片 · 预载缓存 · 不黑帧 · 播完信号进 UI · 回退链 · 叠层 | ✅ accepted（owner 2026-09-24 立）· 待主程接单 |
 
 ---
 
@@ -105,7 +105,7 @@
 | `SHOP_ITEMS` | 物品/价格/分类（装饰·新互动·牌具外观）/放置点 | `t2-craft-recipe` · `t2-tray`（货架） |
 | `DECOR_SLOTS` | 可布置位 · 收纳筐 DropZone | `t2-drag-place` · `t2-effect-apply destroy` + recipe 回库 |
 | `MEMORY_CHAPTERS` | 官方猫三段式章节 DialogueScript · 解锁阈值 · 敏感标签 · 纪念物 | `t3-dialogue` · `t2-event-when` · `f2-flag` · `t2-craft-recipe`（纪念物） |
-| `CLIP_CATALOG` | 每猫每态片段规格（`framework.md` §2）· 回退链 | `t2-anim-state`（⑧ A）/ VideoActor（⑨）；宿主媒体库索引 |
+| `CLIP_CATALOG` | 每猫每态片段规格（`framework.md` §2）· 回退链 | **引擎能力「内嵌 AI 视频播放」（⑪）**；宿主媒体库索引 |
 | `UI_SCREENS` | S00-S97 全部页面 LayoutNode（`menu-flow.md` §4）· 动作词表（§13） | `mountUI` · `t2-keybind` |
 | `ACCEPTANCE_SCRIPTS` | GD 验收剧本 ≥3（用 §13 真 UI 动作名） | `scripts/acceptance` harness |
 
@@ -196,9 +196,9 @@
 | 公共星盘 · 猫爪动作 · 牌库余量 · 组合判型 | **L3** 受控 TS（§4 例外④·owner 2026-09-24 判） | 游戏专属规则；成对/三连/同色三连仍调 `hand-pattern` 纯函数 |
 | 猫 AI 着法枚举/估值叶 | **L3** 受控 TS（§4 例外①） | L0-L2 表达不了：候选枚举无引擎件·记债 |
 | 宿主会话驱动 · 装载期拼装 | 宿主胶水（契约明许·§4 例外②③） | 非规则逻辑 |
-| 猫的画面（序列帧） | **L1** `anim-state` + `sprite`；转换管线 → L2 REQ-112-ENG-08 | 缺口 ⑧ |
-| 回忆影片播放 | **L0** `Video` 控件；播完信号 → L2 REQ-112-UI-10（PUI） | 缺口 ⑩ |
-| 上传 / 身份锚 / 生成 / 审核 / 缓存 | **L2** 待裁 → REQ-112-ENG-05/06 · REQ-112-UI-07 | 缺口 ⑤⑥⑦ |
+| 猫的画面（互动片 / 基础活照片） | **L2 已裁 A** → REQ-112-ENG-11「内嵌 AI 视频播放」；裁前占位 = `Image` + fx 微动 | 缺口 ⑪ |
+| 回忆影片播放 | **L0** `Video` 控件（整屏）；播完信号随 ⑪ | — |
+| 上传 / 身份锚 / 生成 / 审核 / 缓存 | **L2 已裁 A** → REQ-112-ENG-05/06「AI 视频生成」· REQ-112-UI-07 | 缺口 ⑤⑥⑦ |
 | **L4** | **零申报** | — |
 
 ---
@@ -243,14 +243,13 @@
 - 提交人 / 日期：GD/PE-112（Game Maker 二·程序策划）· 2026-09-23
 - 前置裁决：`framework.md` §6 十项 + §5 三环 —— **⬜ 待 owner**
 - Lead 裁决：⬜ ✅ 通过 / ⬜ 🔶 有条件通过（条件：…）/ ⬜ ❌ 驳回（理由：…）
-- **owner 2026-09-24 判词（第一批）**：①②④ = 游戏专属 → wontfix（①② 进 §4 例外④ 游戏层规则核，**但牌规本身待 owner 对定**；④ 首版不做）。③ 撤单（逗猫改视频实现）。⑧ 降 P2、⑩ 升 P1（猫画面 = Video 控件按状态换片）。剩余 ⑤⑥⑦⑧⑨⑩ 逐条待判。
+- **owner 2026-09-24 判词（第一批）**：①②④ = 游戏专属 → wontfix（①② 进 §4 例外④ 游戏层规则核，**但牌规本身待 owner 对定**；④ 首版不做）。③ 撤单（逗猫改视频实现）。**第二批（同日）**：⑤⑥⑦ 判 A；⑧⑨⑩ 收成一款引擎能力 ⑪「内嵌 AI 视频播放」（与「AI 视频生成」= ⑤+⑥ 成对）。**十一条零 open → S2 机器门绿。** 引擎三单（05/06/11）待主程接单晋升引擎池；PUI 一单（07）。
 - 待裁项对 S2 门的影响：`capability-gaps.json` 仍有 `open` → 门红是**预期**；owner 判完改 state + ticket 即转绿。
 - 派工与归属（预填·Lead 改）：
 
 | 工件 | 归属 | 理由 |
 |---|---|---|
-| 缺口 ③⑤⑥⑨ | 🔴 主程 | 碰定序 / 共享面 / services |
-| 缺口 ⑧ | 🟢 提需方可写·主程 review | 资产面脚本，spec 写死 |
+| 缺口 ⑤⑥⑪（AI 视频生成 + 内嵌播放） | 🔴 主程 | services / renderer / host / 组件协议 |
 | 星爪牌规则核（原①②） | PE-112 | 游戏层 TS 模块 + 测试（§4 例外④） |
 | 缺口 ⑦ ⑩ | PUI | `src/ui` 域 |
 | `games/game112/**` + `docs/design/game112/**` | PE/GD-112 | 本游戏域 |
