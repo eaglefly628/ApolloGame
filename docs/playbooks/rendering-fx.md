@@ -16,6 +16,7 @@
 | 世界文字 / 数字条 | `l6-text`（组件 `Text`）/`t2-text-binding` | `Text` + `TextBinding{resourceId}` 绑资源实时数字 |
 | 血条/蓝条/读条 | `t2-gauge` | 宿主加子实体 `Hierarchy`+`Shape`+`Color`+`Gauge`（随资源实时变化） |
 | 相机跟随/取景 | `t2-camera-follow`（组件 `Camera`） | 目标挂 `CameraTarget`，相机挂 `Camera`（合作相机取中点+缩放） |
+| **AI 生成视频当角色画面**（按状态换片 · 缺片回退 · 换片不黑帧） | `src/engine/host/video-clips.ts`（纯核：`resolveChain`/`selectClip`/`canCutClean`/`preloadCandidates`/`validateCatalog`） + `Video` 控件的 `bind`/`onEnded`/`fit` | 游戏**只给片段目录数据**（`{clipKey,state,ticks,poseIn,poseOut,subjectId,fallbackClipKey,review}`）；宿主读 `State{fsmId}.current` → `selectClip` → 写 StringVar → `Video.bind` 投影成 src。回退链**个性片→通用片→声明 fallback→基础活照片→静态图**，**静态图永远算就绪 = 断网必达**。`review` 缺省 pending，没审过的生成片不上画面（无自动入库）。**播放进度/结束不进 sim**（`onEnded` 只发 UI 层 action 信号）。透明/遮罩合成未做（owner 单子列为可选高级项） |
 | 动效强调（呼吸/抖/发光/闪） | `VisualEffect`（`EffectKind` 闭集） | 闭集 pulse/float/shake/pop/glow/sheen/flash/fade；`color` 取语义令牌 |
 
 ## ② 样例指针

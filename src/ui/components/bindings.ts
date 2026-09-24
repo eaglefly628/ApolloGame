@@ -8,7 +8,7 @@
 //   · 绑定 = resourceId **字符串**（最弱 LLM 能填），绝不收自由取值表达式；
 //   · 只读世界（显示）；写世界(按钮信号)走 action + HandlerMap(enqueue sim)，两端分明。
 
-import type { LayoutNode, LabelProps, ProgressBarProps, ImageProps, DialogProps, ChoiceListProps, PortraitProps } from './types.js';
+import type { LayoutNode, LabelProps, ProgressBarProps, ImageProps, VideoProps, DialogProps, ChoiceListProps, PortraitProps } from './types.js';
 
 /** 列表项：标量字段表（`{{item.字段}}` 代入源）。`id` 约定为条目唯一键（世界投影时 = 实体 id）。 */
 export type UIListItem = Readonly<Record<string, string | number | boolean>>;
@@ -115,6 +115,15 @@ export function resolveBindings(node: LayoutNode, ds: UIDataSource): LayoutNode 
     }
   } else if (node.type === 'Image') {
     const p = node.props as ImageProps;
+    if (p.bind && ds.value) {
+      const s = ds.value(p.bind);
+      if (s !== undefined) props = { ...p, src: s };
+    }
+  } else if (node.type === 'Video') {
+    // REQ-112-ENG-11：与 Image 同一条路（ds.value → src）。这是「按 sim 的 State 换片」的接法——
+    // 宿主用 video-clips 的 selectClip 算出 clipKey/URL 写进一个 StringVar，这里投影成 src。
+    // **播放进度/结束不反向进 sim**（单子第 2 条），故只有这一条单向绑定。
+    const p = node.props as VideoProps;
     if (p.bind && ds.value) {
       const s = ds.value(p.bind);
       if (s !== undefined) props = { ...p, src: s };

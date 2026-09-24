@@ -8,7 +8,7 @@ import { renderNode, renderVListWindow, formatNumber, particleSimSpec } from './
 import { ART_FONT_CSS } from './art-fonts.js';
 import { ART_FONT_CJK_CSS } from './art-fonts-cjk.js';
 import { SHELL } from '../shell-theme.js';
-import type { LayoutNode, HandlerMap, ActionSink, UITheme, UICursor, ToastProps, VirtualListProps, WebFont } from './types.js';
+import type { LayoutNode, HandlerMap, ActionSink, UITheme, UICursor, ToastProps, VirtualListProps, WebFont, VideoProps } from './types.js';
 
 // ── 主题指针（REQ-STYLESET M0.6·render-only）：把 UITheme.cursor 令牌转成 CSS 光标 + 按下态 scoped 规则 ──
 /** 纯函数（可单测·无 DOM）：算 base 光标 CSS 值、按下态 CSS 值（有 press 才有）、去重键（按图内容哈希）。 */
@@ -104,12 +104,45 @@ function patchFocusedInput(el: HTMLElement, newN: LayoutNode): boolean {
   return true;
 }
 
+/**
+ * REQ-112-ENG-11 · **换片不黑帧的真修处**。
+ *
+ * 病：`uiOwnSame` 按 `JSON.stringify(props)` 比对，`src` 一变整个节点就走 `el.outerHTML = …`
+ * → **新造一个 `<video>` 元素** → 解码器重起、旧帧当场消失 → 玩家看到一下黑。
+ * （原实查记的「改 src 整元素重建」就是这条路径。）
+ *
+ * 药：`Video` 无子节点（catalog `children:'none'`），它的每个 prop 都能就地设——
+ * 于是照本文件既有的 `patchFocusedInput` 同款形状拦一道，**复用元素只改属性**。
+ * 换 src 时浏览器保留元素与布局，上一帧留在画面上直到新片首帧可画。
+ *
+ * 一条纪律：**src 没变就绝不碰 `el.src`**——重设同一个 src 在部分浏览器会重头播。
+ * 故按 `getAttribute('src')`（原始属性串）比，而不是 `el.src`（已被解析成绝对 URL，永远不等）。
+ */
+function patchVideoInPlace(el: HTMLElement, newN: LayoutNode): boolean {
+  if (newN.type !== 'Video' || el.tagName !== 'VIDEO') return false;
+  const v = el as HTMLVideoElement;
+  const p = newN.props as VideoProps;
+  const attr = (name: string, val: string | undefined): void => {
+    if (val === undefined) v.removeAttribute(name);
+    else if (v.getAttribute(name) !== val) v.setAttribute(name, val);
+  };
+  attr('src', p.src);                       // 上面那条纪律靠 attr 的相等判断兑现
+  attr('poster', p.poster);
+  attr('data-video-ended', p.onEnded);
+  v.loop = p.loop === true;
+  v.muted = p.autoplay === true || p.muted === true;   // autoplay 必须 muted（浏览器策略·同 renderVideo）
+  v.controls = p.controls !== false;
+  v.style.objectFit = p.fit ?? '';
+  return true;
+}
+
 /** 把 newN 最小化打补丁到 scope 内 id=newN.id 的元素上（与 oldN 比较）。 */
 function reconcileNode(scope: ParentNode, oldN: LayoutNode, newN: LayoutNode, theme: UITheme): void {
   const el = uiFindById(scope, newN.id);
   if (!el) return; // 上层未变才会递进到此；找不到则跳过（安全）
   if (!uiOwnSame(oldN, newN)) {
     // 节点**自身** props/layout 变了 → 整体替换这棵最浅子树（含焦点保护）。
+    if (patchVideoInPlace(el, newN)) return;   // REQ-112-ENG-11：Video 就地改属性，绝不重建（不黑帧）
     if (patchFocusedInput(el, newN)) return;
     el.outerHTML = renderNode(newN, theme);
     return;
@@ -847,6 +880,23 @@ export function mountUI(
     input?.enqueueAction(action, { arg: payload }); // 无 handler + 有 sink → 落点信号 + 被拖 id 作 arg（带参动作走 Signal.arg）
   };
 
+  // REQ-112-ENG-11 · 视频播完 → 发 action 信号。
+  // ★ 坑：媒体事件 `ended` **不冒泡**（HTML 规范），所以不能像 click 那样挂冒泡委托——
+  //   必须 `capture:true` 在下沉阶段抓。这条写错的症状是「一切正常但信号永远不来」，
+  //   属「什么都没发生」那一类最难查的形状，故钉了测试（video-ended 一例）。
+  // 路由同 dispatch（REQ-UICONTRACT①）：本地 handler 优先·无 handler + 有 sink → 发信号入队。
+  // **只进 UI 层**——播放进度/结束不是世界态（单子第 2 条），这里发的信号由游戏自己决定要不要写世界。
+  const onVideoEnded = (e: Event): void => {
+    const el = e.target as HTMLElement | null;
+    if (!el || el.tagName !== 'VIDEO') return;
+    const action = el.dataset['videoEnded'];
+    if (!action) return;
+    const fn = handlers[action];
+    if (fn) { fn(); return; }
+    input?.enqueueAction(action);
+  };
+  host.addEventListener('ended', onVideoEnded, true);
+
   host.addEventListener('click',       dispatch);
   host.addEventListener('click',       switchTab);
   host.addEventListener('click',       modalClose);
@@ -891,6 +941,7 @@ export function mountUI(
   };
 
   const teardown = (() => {
+    host.removeEventListener('ended', onVideoEnded, true);   // capture 参数须与挂时一致，否则摘不掉
     host.removeEventListener('click',       dispatch);
     host.removeEventListener('click',       switchTab);
     host.removeEventListener('click',       modalClose);

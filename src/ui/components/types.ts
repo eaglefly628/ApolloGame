@@ -642,6 +642,14 @@ export interface VersusProps {
 export interface VideoProps {
   src?: string; poster?: string;
   controls?: boolean; loop?: boolean; autoplay?: boolean; muted?: boolean;
+  // ── REQ-112-ENG-11（owner 2026-09-24 判 A）·三个**全可选**字段·不填=行为逐字节不变 ──
+  /** 世界绑定：同 `Image.bind`，经 `ds.value(bind)` 取字符串当 `src`（**按 sim 状态换片**的接法）。 */
+  bind?: string;
+  /** 播完发这个 action 信号（**只进 UI 层·绝不进 sim**——播放进度不是世界态）。
+   *  注意 `ended` 事件**不冒泡**，故 server.ts 的委托用 capture 挂（见那边注释）。 */
+  onEnded?: string;
+  /** 画面填充方式 → CSS `object-fit`。不填 = 浏览器缺省（零回归）。 */
+  fit?: 'cover' | 'contain' | 'fill';
 }
 
 // ── 剧情 / VN 三件（REQ-DIALOGUE M1·闭集 VN 控件·消费 t3-dialogue 投影·退役 ui/vn React 版）────────────

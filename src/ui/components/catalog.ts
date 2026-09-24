@@ -170,13 +170,17 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
     ],
   },
   {
-    type: 'Video', summary: '视频嵌入', whenToUse: '开场/转场短视频。autoplay 自动补 muted。', children: 'none',
+    type: 'Video', summary: '视频嵌入', whenToUse: '开场/转场短视频；以及**按 sim 状态换片的角色画面**（bind + onEnded·REQ-112-ENG-11）。autoplay 自动补 muted。换 src 时元素就地复用不重建（不黑帧）。', children: 'none',
     props: [
       { name: 'src', type: 'string', describe: '视频 URL' },
       { name: 'poster', type: 'string', describe: '海报 URL' },
       { name: 'controls', type: 'boolean', default: true, describe: '显示控件' },
       { name: 'loop', type: 'boolean', describe: '循环' },
       { name: 'autoplay', type: 'boolean', describe: '自动播（补 muted）' },
+      { name: 'muted', type: 'boolean', describe: '静音（此前漏登·REQ-112-ENG-11 补）' },
+      { name: 'bind', type: 'string', describe: '世界绑定：ds.value(bind) 取字符串当 src（同 Image.bind·按 sim 状态换片）' },
+      { name: 'onEnded', type: 'string', describe: '播完发的 action 信号名（只进 UI 层·播放进度不进 sim）' },
+      { name: 'fit', type: 'enum', values: ['cover', 'contain', 'fill'], describe: 'CSS object-fit；不填=浏览器缺省' },
     ],
     sample: { type: 'Video', id: 's-video', props: { src: '/intro.mp4', controls: true } },
     tags: ['视频', '短片', '开场动画', '过场', '播放', '影片', '预览'],

@@ -94,8 +94,8 @@
     "title": "引擎能力「内嵌 AI 视频播放」（owner 2026-09-24 立·合并原 ⑧⑨⑩）：用数据描述的片段目录（片段 key·所属状态·片长 tick·首尾姿势·回退片）驱动 AI 生成视频在游戏里播——按 sim 状态选片 · 预载/缓存 · 换片不黑帧 · 播完发信号（进 UI 层·不进 sim）· 缺片回退链（个性片→通用片→基础活照片→静态图微动）· 可叠在场景背景之上并被前景遮挡。内部走 <video> 还是序列帧图集是实现选择。实查：Video 控件无事件/bind/预载、改 src 整元素重建；mount-host 无视频层；渲染器无视频纹理/遮罩（framework.md §6 ⑨⑩）。UI 面 = LayoutNode Video 控件扩展（PUI 协作）。与「AI 视频生成」（05+06）成对。",
     "priority": "P1",
     "route": "engine",
-    "state": "accepted",
-    "ticket": "requests.md REQ-112-ENG-11（待晋升引擎池·主程接单抢锁）",
+    "state": "delivered",
+    "ticket": "requests.md REQ-112-ENG-11 · 引擎池 REQ-112-VIDEOPLAY（2026-09-24 已交·等独立复查 + PUI 过目）",
     "blocks": []
   }
 ]

@@ -16,6 +16,13 @@ when_to_use: 做 play-field 表现层——精灵、动画帧、血条、特效�
 ## 基座件（实名·以 `capability-registry` 的 describe/examples 为准）
 `Sprite`（贴图 key）· `Color` · `Frame`（动画帧）· `Gauge`（血条/进度）· **`EffectKind` 闭集**（特效种类）· 主题令牌。
 
+## AI 生成视频当角色画面（REQ-112-ENG-11）
+游戏**只给片段目录数据**，不写播放器。纯核 `src/engine/host/video-clips.ts`：
+`selectClip`（按 `State{fsmId}` 选片）· `resolveChain`（**个性片→通用片→声明 fallback→基础活照片→静态图**·
+**静态图永远算就绪 = 断网必达**）· `canCutClean`（尾姿势==首姿势才可直切）· `preloadCandidates` · `validateCatalog`。
+UI 面 = `Video` 控件的 `bind`（同 `Image.bind`）/ `onEnded` / `fit`。
+**播放进度与结束不进 sim**；`review` 缺省 pending，没审过的生成片不上画面。
+
 ## 本线红线
 - **render-only**：表现层组件**不进 sim / 不进 hash**（须在 `src/net/determinism.ts` 的 `NON_DETERMINISTIC` 名单里）。
 - **sim 只持 key**：贴图/动画在数据里只写**字符串 key**，真实字节在资产层（`/module-assets`）。**绝不塞 URL / 二进制**。

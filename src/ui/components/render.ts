@@ -1017,8 +1017,14 @@ function renderVideo(id: string, p: VideoProps, ls: string, t: UITheme): string 
   const flags = `${p.controls === false ? '' : ' controls'}${p.loop ? ' loop' : ''}${auto} playsinline`;
   const src = p.src ? ` src="${esc(p.src)}"` : '';
   const poster = p.poster ? ` poster="${esc(p.poster)}"` : '';
-  const style = `display:block;max-width:100%;background:#000;border:1px solid ${t.line};border-radius:10px;${ls}`;
-  return `<video id="${esc(id)}"${src}${poster}${flags} style="${style}"></video>`;
+  // REQ-112-ENG-11：onEnded 落成 data 属性，由 server.ts 的 host 委托读（`ended` 不冒泡 → 那边用 capture）。
+  const ended = p.onEnded ? ` data-video-ended="${esc(p.onEnded)}"` : '';
+  // fit 不填就不出 object-fit → 既有屏逐字节不变（零回归）。
+  const fit = p.fit ? `object-fit:${p.fit};` : '';
+  // background:#000 保留：它是视频信箱区底色（换片黑帧的根因是元素被重建，不是这行）——
+  // 真修在 server.ts 的 patchVideoInPlace（就地换 src 不重建元素）。
+  const style = `display:block;max-width:100%;background:#000;${fit}border:1px solid ${t.line};border-radius:10px;${ls}`;
+  return `<video id="${esc(id)}"${src}${poster}${flags}${ended} style="${style}"></video>`;
 }
 
 // ── Particles（UI 层庆祝粒子叠层·render-only）：喷一把 N 个小片，位置/延迟由 index 确定式派生（无 Math.random·可回归）。
