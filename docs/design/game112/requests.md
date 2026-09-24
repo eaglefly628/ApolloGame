@@ -104,7 +104,7 @@
 
 ## REQ-112-ENG-11 · 引擎能力「内嵌 AI 视频播放」（GAP-112-11 · owner 2026-09-24 立·合并 ⑧⑨⑩）
 - **owner 裁决**：**A（2026-09-24）**「把 AI 生成视频的播放列成引擎缺失的能力补全」——与「AI 视频生成」（05+06）成对的两款引擎能力
-- **归属**：🔴 主程面（renderer / host / 组件协议 / determinism）+ PUI 协作（Video 控件 UI 面）· status: **accepted · 待晋升引擎池（主程接单抢锁）** · P1
+- **归属**：🔴 主程面（renderer / host / 组件协议 / determinism）**+ PUI 面一并由主程做**（owner 2026-09-24 当面授权跨域：「你这个当成你作为主程自己去实现吧」+ 追问确认「授权我直接动」·事后由 PUI 复查）· **施工主体 = 主程 = 本 session（2026-09-24 抢锁·本行即锁）** · 复查 = 另派独立 agent（复查人≠施工人·**待派**·UI 面另请 PUI 过目） · status: **in-progress** · P1 · 引擎池指针单 = `REQ-112-VIDEOPLAY`
 **想实现的行为**（游戏侧只给数据，不写播放器）：
 1. 片段目录 = 数据：`{clipKey, state, ticks, poseIn, poseOut, loop, fallbackClipKey, review}`（`framework.md` §2 `CLIP_CATALOG`）。
 2. 按 sim 的 `State{fsmId}` 选片（同 `t2-anim-state` 的 clip 表口径）；播放进度/结束**不进 sim**，结束信号只进 UI 层。

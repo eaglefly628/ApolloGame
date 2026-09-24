@@ -211,6 +211,9 @@ desync（`determinism.ts` 对 Camera 的同款理由）。条目进 hash → 注
 - 卡在哪：探针无任何入场/预热参数；剧本 schema（`acceptance-schema.mjs`）也没有「UI 入场」字段。
 - 建议方案：剧本顶层加可选 `uiEntry: ["home.enter"]`（只探针读·acceptance-run 忽略·纯数据）；探针开跑前按序点这些 `data-action` 并等 `networkidle`。边界：`scripts/ui-walkthrough-probe.mjs` + `scripts/acceptance-schema.mjs` + 其测试；游戏侧只加一行数据。game112 在此之前以 `scripts/game112-playthrough.mjs`（26 断言·真点真按钮·含入场）作为 UI 可驱动的证据。
 
+### REQ-112-VIDEOPLAY · 引擎能力「内嵌 AI 视频播放」（片段目录=数据 · 按 State 选片 · 换片不黑帧 · 缺片回退链）· [2026-09-24] · **owner 判 A**（game112 ENG-11「把 AI 生成视频的播放列成引擎缺失的能力补全」·与 REQ-112-AIGP 成对） · **施工主体 = 主程 = 本 session（2026-09-24 抢锁·本行即锁）** · 复查 = 另派独立 agent（**待派**·UI 面另请 PUI 过目） · status: **in-progress** · P1 · 类型: 引擎能力下沉
+全文与实查留痕 = `docs/design/game112/requests.md` ENG-11（**不在池内重抄**）。合并原 ⑧⑨⑩。**跨域授权在案**：`src/ui/components` 属 PUI 域，owner 2026-09-24 当面授权本单由主程一并做（事后 PUI 复查）。边界：`src/renderer/**` + `src/engine/host/**` + 组件协议 + `src/net/determinism.ts` 登记 + `src/ui/components/{video,catalog,render,server}`；**播放进度/结束不进 sim**（结束信号只进 UI 层）；带断网回退测试与换片不黑帧目击。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
