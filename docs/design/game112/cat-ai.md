@@ -82,6 +82,8 @@ selector
 
 ## 2. 逗猫角 / 陪伴行为 AI
 
+> ⚠ **owner 2026-09-24：逗猫改用视频实现，不做拖羽毛棒；本节狩猎链参数保留为「选玩具 → 按状态播片」的状态表草案，随逗猫重设计更新。**
+
 ### 2.1 狩猎链（`t3-flow` · id `hunt.<catId>`）
 
 状态闭集：`Rest → Notice → Track → Stalk → Pounce → Catch | Miss → Hold | Search | Groom → Rest`，外加 `Ignore`。转移条件读 Flag/Resource/Timer（`after` 做伏击驻留拍）；**随机分支**（Catch/Miss、Search/Groom、"假装不感兴趣"）由 `Effect{kind:'set-flag', chance:{num,den}}` 先落旗、flow 下一拍读旗（握手旗·一级一拍）。

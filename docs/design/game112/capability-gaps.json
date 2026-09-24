@@ -19,11 +19,12 @@
   },
   {
     "id": "GAP-112-03",
-    "title": "指针跟随实体 + 距离/速度条件叶（逗猫驱动量）。实查：PointerInputSource{move:true} 能入队但全仓无 sim 消费方；keybind 不透传 x/y；ConditionExpr 闭集无 distance/speed 叶；t3-caster 是唯一读指针的 sim 件。A=下沉 t2-pointer-follow（写 Transform·派生 speed/dwell Resource）+ distance 叶 / B=逗猫降级为区占用旗+拍数。推荐 A。全文 framework.md §6 ③",
+    "title": "指针跟随实体 + 距离/速度条件叶（逗猫驱动量）。实查：PointerInputSource{move:true} 能入队但全仓无 sim 消费方；keybind 不透传 x/y；ConditionExpr 闭集无 distance/speed 叶；t3-caster 是唯一读指针的 sim 件。A=下沉 t2-pointer-follow（写 Transform·派生 speed/dwell Resource）+ distance 叶 / B=逗猫降级为区占用旗+拍数。推荐 A。全文 framework.md §6 ③ ‖ owner 2026-09-24 判：逗猫改用视频实现，不做拖羽毛棒 → 撤单",
     "priority": "P1",
     "route": "engine",
-    "state": "open",
-    "blocks": []
+    "state": "wontfix",
+    "blocks": [],
+    "ticket": "requests.md REQ-112-ENG-03（owner 2026-09-24：逗猫改视频实现·不做拖羽毛棒·撤单；逗猫重设计后若仍需实时跟手再开）"
   },
   {
     "id": "GAP-112-04",
@@ -60,8 +61,8 @@
   },
   {
     "id": "GAP-112-08",
-    "title": "生成片段 → alpha 序列帧图集转换管线 + video/prerendered-sequence 资产桥接（媒体线关键重组）。实查：AssetType 闭集已含 video 但 registerAssetIndex 只桥 texture/mesh；asset-types 已有 prerendered-sequence；t2-anim-state + l1-sprite + clickable 播放/遮挡/命中/确定性全现成；/api/assets/matte 只单张。A=转换管线（逐帧 matte → 图集 + manifest）+ 桥接（🟢 资产面）/ B=真视频路线（=⑨）。推荐 A 作 Loop-1 基线。全文 framework.md §6 ⑧",
-    "priority": "P1",
+    "title": "生成片段 → alpha 序列帧图集转换管线 + video/prerendered-sequence 资产桥接（媒体线关键重组）。实查：AssetType 闭集已含 video 但 registerAssetIndex 只桥 texture/mesh；asset-types 已有 prerendered-sequence；t2-anim-state + l1-sprite + clickable 播放/遮挡/命中/确定性全现成；/api/assets/matte 只单张。A=转换管线（逐帧 matte → 图集 + manifest）+ 桥接（🟢 资产面）/ B=真视频路线（=⑨）。推荐 A 作 Loop-1 基线。全文 framework.md §6 ⑧ ‖ 2026-09-24 降 P2：逗猫改视频后「猫活在画布层」不再是硬需求；是否仍要序列帧取决于⑩/⑨怎么判",
+    "priority": "P2",
     "route": "engine",
     "state": "open",
     "blocks": []
@@ -76,8 +77,8 @@
   },
   {
     "id": "GAP-112-10",
-    "title": "Video 控件事件与绑定：onEnded action / bind / fit / catalog 补登 muted。实查：types.ts:642 VideoProps 无事件；server.ts 监听表无 ended/timeupdate；Image 有 bind 而 Video 无。A=PUI 扩 / B=回忆影片播完无信号（不能「先停留不弹奖励」）。推荐 A。全文 framework.md §6 ⑩",
-    "priority": "P3",
+    "title": "Video 控件事件与绑定：onEnded action / bind / fit / catalog 补登 muted。实查：types.ts:642 VideoProps 无事件；server.ts 监听表无 ended/timeupdate；Image 有 bind 而 Video 无。A=PUI 扩 / B=回忆影片播完无信号（不能「先停留不弹奖励」）。推荐 A。全文 framework.md §6 ⑩ ‖ 2026-09-24 升 P1：逗猫改视频后，猫 = Video 控件按状态换片，「播完信号 + src 按状态绑定」成为猫画面的基本件",
+    "priority": "P1",
     "route": "pui",
     "state": "open",
     "blocks": []

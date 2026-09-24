@@ -73,14 +73,14 @@
 |---|---|---|---|
 | ① | ~~`t2-shared-pile`~~ | 三个公共星盘 —— **owner 2026-09-24 判：游戏专属规则，不进引擎** → §4 例外④ | ✅ wontfix（游戏层） |
 | ② | ~~`t3-hand-pattern` DSL 扩~~ | 星盘组合计分 —— **同上，随 ① 进同一模块** | ✅ wontfix（游戏层） |
-| ③ | `t2-pointer-follow` + `distance` 条件叶 | 逗猫棒跟手 · 速度/停留 · 狩猎链驱动量 | ⏳ open |
+| ③ | ~~`t2-pointer-follow`~~ | 逗猫棒跟手 —— **owner 2026-09-24 判：逗猫改视频实现，不做拖羽毛棒 → 撤单** | ✅ wontfix |
 | ④ | ~~Clickable 载荷~~ | 触摸方向/速度/时长 —— **owner 2026-09-24 判：B 先行，撤单** | ✅ wontfix（首版按区判） |
 | ⑤ | `AishePort` 扩展 | 参考图/角色 ID/首尾帧 · poll/cancel/delete | ⏳ open |
 | ⑥ | `MediaJobPort` + `MediaCachePort` | 上传/质检/身份锚/审核队列/Blob 缓存/删除导出 | ⏳ open |
 | ⑦ | `Input.type:'file'`（PUI） | 上传照片控件 | ⏳ open |
-| ⑧ | 片段→alpha 序列帧管线 + `video`/`prerendered-sequence` 资产桥接 | 猫的互动片进画布层 | ⏳ open（推荐 A） |
-| ⑨ | VideoActor | 真视频角色投影 | ⏳ open（推荐 B 延后） |
-| ⑩ | `Video.onEnded/bind/fit`（PUI） | 回忆影片播完停留 | ⏳ open |
+| ⑧ | 片段→alpha 序列帧管线 + `video`/`prerendered-sequence` 资产桥接 | 猫的互动片进画布层 —— 逗猫改视频后降 P2 | ⏳ open（P2） |
+| ⑨ | VideoActor | 真视频角色投影（换片无缝·透明叠背景时才需要） | ⏳ open（推荐 B 延后） |
+| ⑩ | `Video.onEnded/bind/fit`（PUI） | **猫的画面基本件**：按状态换片 · 播完发信号 · 换片不黑帧 —— 升 P1 | ⏳ open（P1） |
 
 ---
 
@@ -93,14 +93,14 @@
 | `CAT_CARDS` | 每猫身份/外观/性格/偏好/`cardPersona`/`playPersona`/隐私范围（GDD §6.1） | `f1-resource`（黑板与偏好分初值）· `j1-state`（档案状态）· `x3-string-variable`（名字）· 宿主装载期展开为蓝图实体 |
 | `RELATION_RESOURCES` | `closeness.<cat>` / `ease.<cat>` / `heartlight.<cat>` / `mood.<cat>` 的 min/max/初值/是否持久化 | `f1-resource` · `t2-over-time`（兴致）· `t2-gauge` |
 | `RELATION_EFFECTS` | 事件 → 关系增减（问候/陪坐/牌局结束/触摸接受/章节完成）；**心光只增、亲近只增、安心只由具名事件** | `t2-keybind` → `t2-effect-apply modify-resource` |
-| `STARCLAW_DECK` | 牌码表（星色 × 月相 [× 爪印]）· 手牌上限 · 目标星光 · 猫爪次数 | `t2-card-pile` · `f1-resource` · 缺口 ② 定第三属性编码 |
+| `STARCLAW_DECK` 🟡 | 牌码表（星色 × 月相 [× 爪印]）· 手牌上限 · 目标星光 · 猫爪次数 —— **牌规待 owner 对定（2026-09-24）** | `t2-card-pile` · `f1-resource` · §4 例外④ |
 | `STARCLAW_FAMILIES` | 组合族 → 星光分（pair/run3/suited-run3 现成；suited-set/cycle 待 ②） | `t3-hand-pattern` + `t2-effect-apply` |
 | `STARCLAW_PLATES` | 三个星盘 · 猫爪动作表（swap/pin/pop 各次数/冷却） | 缺口 ① · `t2-cooldown` |
 | `STARCLAW_FLOW` | 牌局相位（准备→出牌→结算→再来/回厅）· 胜负条件 | `t3-flow` · `t2-turn-order` · `t2-event-when` |
 | `CAT_CARD_AI` | 一棵 BT 树 + 四性格黑板值 + 心态机表 + 难度档（`cat-ai.md` §1） | `t2-behavior-tree`（叶 = §4 例外①）· `j1-state` · `t2-modifier-stack` |
-| `HUNT_FLOW` | 狩猎链状态闭集/转移/驻留拍/概率（`cat-ai.md` §2.1-2.2） | `t3-flow` · `t2-effect-apply chance` · `t2-zone-occupancy`（近似）· 缺口 ③（驱动量） |
-| `TOY_TABLE` | 五种玩具 → 行为修正（偏好分子/关注半径/可抓获） | `t2-modifier-stack`（gate 读 `toy` StringVar） |
-| `TOUCH_ZONES` | 五分区子实体形状 + 每猫偏好分 + 接受/拒绝判定 | `a2-hierarchy` · `c1-shape` · `t2-clickable` · `t2-event-when` · `j1-state` |
+| `HUNT_FLOW` 🟡 | 狩猎链状态闭集/转移/驻留拍/概率（`cat-ai.md` §2.1-2.2）—— **逗猫改视频实现·重设计中（2026-09-24）**；保留为「选玩具 → 按状态播片」的状态表 | `t3-flow` · `t2-effect-apply chance` · 缺口 ⑩ 投影 |
+| `TOY_TABLE` 🟡 | 五种玩具 → 行为修正 —— 随逗猫重设计 | `t2-modifier-stack` |
+| `TOUCH_ZONES` 🟡 | 五分区 + 偏好 —— 随逗猫/陪伴重设计；首版按区判 | `a2-hierarchy` · `c1-shape` · `t2-clickable` · `t2-event-when` · `j1-state` |
 | `OFFLINE_EVENTS` | 分档 key → 每猫权重表 → 模板（纸袋藏牌/叼玩具/睡过位置/打翻杯垫…·**只有装饰模板**） | `t2-keybind` · `t2-weighted-spawn` · `t3-prefab` |
 | `SHOP_ITEMS` | 物品/价格/分类（装饰·新互动·牌具外观）/放置点 | `t2-craft-recipe` · `t2-tray`（货架） |
 | `DECOR_SLOTS` | 可布置位 · 收纳筐 DropZone | `t2-drag-place` · `t2-effect-apply destroy` + recipe 回库 |
@@ -190,7 +190,7 @@
 | 布置放置 / 收回 / 恢复进入前 | **L1** `drag-place` + DropZone + 宿主信封 | 单步撤销 ⚪ 不做 |
 | 离线小事件 | **L1** keybind → weighted-spawn → prefab | 时长分档由宿主 |
 | 狩猎链骨架 | **L1** `flow` + `chance` + `zone-occupancy` | 驱动量 → L2 |
-| 逗猫棒跟手 · 速度/停留 · 距离条件 | **L2** capgap 待裁 → `requests.md` REQ-112-ENG-03 | 缺口 ③ |
+| 逗猫棒跟手 · 速度/停留 · 距离条件 | ⚪ 不做（owner 2026-09-24：逗猫改视频） | 撤单 |
 | 触摸方向/速度/时长 | ⚪ 首版不做（owner 2026-09-24 判 B） | 随 ③ 交付再议 |
 | 星爪牌手牌/牌库/轮转 | **L1** `card-pile` + `turn-order` | 无 |
 | 公共星盘 · 猫爪动作 · 牌库余量 · 组合判型 | **L3** 受控 TS（§4 例外④·owner 2026-09-24 判） | 游戏专属规则；成对/三连/同色三连仍调 `hand-pattern` 纯函数 |
@@ -243,7 +243,7 @@
 - 提交人 / 日期：GD/PE-112（Game Maker 二·程序策划）· 2026-09-23
 - 前置裁决：`framework.md` §6 十项 + §5 三环 —— **⬜ 待 owner**
 - Lead 裁决：⬜ ✅ 通过 / ⬜ 🔶 有条件通过（条件：…）/ ⬜ ❌ 驳回（理由：…）
-- **owner 2026-09-24 判词（第一批）**：①②④ = 游戏专属 → wontfix（①② 进 §4 例外④ 游戏层规则核；④ 首版不做）。剩余 ③⑤⑥⑦⑧⑨⑩ 为引擎/PUI 通用缺口，逐条待判。
+- **owner 2026-09-24 判词（第一批）**：①②④ = 游戏专属 → wontfix（①② 进 §4 例外④ 游戏层规则核，**但牌规本身待 owner 对定**；④ 首版不做）。③ 撤单（逗猫改视频实现）。⑧ 降 P2、⑩ 升 P1（猫画面 = Video 控件按状态换片）。剩余 ⑤⑥⑦⑧⑨⑩ 逐条待判。
 - 待裁项对 S2 门的影响：`capability-gaps.json` 仍有 `open` → 门红是**预期**；owner 判完改 state + ticket 即转绿。
 - 派工与归属（预填·Lead 改）：
 

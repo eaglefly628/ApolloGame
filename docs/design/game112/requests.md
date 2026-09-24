@@ -27,8 +27,8 @@
 ---
 
 ## REQ-112-ENG-03 · 指针跟随 + 距离/速度条件叶 `t2-pointer-follow`（GAP-112-03）
-- **owner 裁决**：⬜ 待判（§6 ③·推荐 A）
-- **归属**：🔴 主程面（`InputQueue` 消费定序 + `ConditionExpr` 闭集 `logic.ts` 共享）· status: **open** · P1 · 不锁 S4（Loop-1 前须交）
+- **owner 裁决**：**撤单（2026-09-24）**——「逗猫改用视频实现，不做拖羽毛棒」。逗猫重设计后若仍需实时跟手再开新单。
+- **归属**：— · status: **wontfix** · 原文保留作实查记录
 **想实现的行为**：挂 `PointerFollow{playerId,smoothing}` 的实体每拍取最新 `phase:'move'` 写自身 Transform，派生 `speed.<id>` / `dwell.<id>` Resource；`ConditionExpr` 加 `distance{a,b,cmp,value}` 叶。
 **实查留痕**：`queued-input.ts:96-101` move 可入队；全仓 `phase === 'move'` 仅测试命中；`keybind.ts:98` 只透传 arg；`logic.ts:78-90` 条件闭集无距离/速度；`grid-drag-square.ts:20`「拖拽中…实时流…本引擎尚无先例」。
 **边界**：`src/skills/tier2/pointer-follow.ts` + `src/engine/logic` 条件叶 + 定序测试（warn 为零）+ 确定性双跑。
@@ -71,7 +71,7 @@
 
 ## REQ-112-ENG-08 · 片段→alpha 序列帧转换管线 + `video`/`prerendered-sequence` 桥接（GAP-112-08）
 - **owner 裁决**：⬜ 待判（§6 ⑧·推荐 **A 作 Loop-1 基线**）
-- **归属**：🟢 资产面扩写（`registerAssetIndex` 桥接 = 主程 review；转换脚本 = PST/资产管线 · 提需方可写）· status: **open** · P1 · 不锁 S4
+- **归属**：🟢 资产面扩写（`registerAssetIndex` 桥接 = 主程 review；转换脚本 = PST/资产管线 · 提需方可写）· status: **open** · **P2（2026-09-24 降）**——逗猫改视频后「猫活在画布层」不再是硬需求；若 ⑩ 能做到换片不黑帧，本条可撤
 **想实现的行为**：服务侧作业 `clip → 逐帧 matte → 图集(webp/png) + manifest{fps,count,anchor,hitZones}` 入库为 `prerendered-sequence`；`registerAssetIndex` 桥接该 kind 到 `Sprite.textureKey` 图集；`CLIP_CATALOG` 直接映射 `t2-anim-state` clip 表。
 **实查留痕**：`asset-index.ts:15` AssetType 含 `video`、`:265-296` 只桥 texture/mesh；`asset-types.ts` `prerendered-sequence`；`anim-state.ts` clip `{sheet,from,count,fps,loop}`；`/api/assets/matte` 单张。
 **边界**：`src/assets/**` 桥接 + `scripts/` 转换脚本 + 体积/帧率基准数据（Loop-1 复查用）。
@@ -87,14 +87,14 @@
 
 ## REQ-112-UI-10 · `Video.onEnded/bind/fit` + catalog 补 `muted`（GAP-112-10 · 报 PUI）
 - **发现**：`types.ts:642` `VideoProps` 无事件/bind；catalog `:173-181` 漏登 `muted`；改 `src` 整元素重建。
-- **归属**：PUI · status: **open** · P3
+- **归属**：PUI · status: **open** · **P1（2026-09-24 升）**——逗猫改视频后，猫的画面 = `Video` 控件按状态换片，「播完发信号 + src 按状态绑定 + 换片不黑帧」是猫画面的基本件；⑧⑨ 是否还要，取决于本条能做到哪一步
 **建议**：`onEnded: action`（进 UI 层）· `bind`（同 Image）· `fit`；`visibleWhen` 切换时保留 DOM 的可选项。
 
 ---
 
 ## REQ-112-GAME-01 · 星爪牌规则核（游戏层·原 ENG-01/02 的去向）
 - **owner 裁决**：2026-09-24「游戏专属规则直接在游戏逻辑里实现」
-- **归属**：PE-112 `games/game112/starclaw-rules.ts` · status: **accepted（S3 起做）** · 记债（`capability-plan.md` §4 例外④）
+- **归属**：PE-112 `games/game112/starclaw-rules.ts` · status: **🟡 待 owner 对牌规**（2026-09-24：「星爪牌还没完全设计，要仔细对一下」）· S3 骨架只留牌局接口位，规则核等牌规定稿后做 · 记债（`capability-plan.md` §4 例外④）
 **做什么**：纯函数确定性模块——三星盘公共堆 · 目标堆出牌 · 猫爪动作（换盘/压牌/拨顶）· 组合计分（同色任意/月相循环/成对/三连/爪印）· 胜负；随机只吃传入 seed（`seededShuffle`）；状态经 Resource/Flag 投影给 UI/AI/条件；成对/三连/同色三连仍调 `t3-hand-pattern.matchPattern`。
 **边界**：零 DOM · 零 `Math.random` · 不写 system（由宿主会话驱动在输入点调用）· 测试 ≥30 含撤修锚点。先例 `games/game-c/holdem-eval.ts`。
 **偿还**：第三个游戏出现同形「公共堆」需求再议下沉。
