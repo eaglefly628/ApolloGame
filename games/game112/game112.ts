@@ -65,12 +65,13 @@ export function normalizeState(u: unknown): PersistedState {
   return { stardust: num(o.stardust), relations: rec(o.relations), items: rec(o.items), placed: list(o.placed), chapters: list(o.chapters), cursors: strRec(o.cursors) };
 }
 
-/** 宿主开局种子（新局随机·回放固定）：墙钟只在这里出现一次，进 sim 的是它派生出的整数。 */
-const seedNow = (): number => (Date.now() % 2147483647) | 0;
+/** 宿主开局种子（新局随机·回放固定）：由注入的 `now()` 派生一个整数，进 sim 的只是这个数。 */
+const seedFrom = (now: () => number): number => (now() % 2147483647) | 0;
 
-export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: SavePort; now?: () => number } = {}): () => void {
+export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: SavePort; now?: () => number; seed?: number } = {}): () => void {
   const save: SavePort = opts.save ?? new LocalStorageSavePort();
-  const now = opts.now ?? Date.now;
+  // 墙钟只在宿主这一处出现（audit 「墙钟」告警的合法落点·plan §5.1：seed/savedAt 宿主注入）；测试可注入。
+  const now = opts.now ?? (() => Date.now());
   let disposed = false;
   let handle: MountHandle | undefined;
   let session: HallSession | undefined;
@@ -104,7 +105,7 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
       if (env !== null) { initial = normalizeState(openEnvelope(env, SAVE_CODEC)); savedAt = env.savedAt; }
     } catch { /* 坏档 → 空档；不让技术失败变成「猫失败」 */ }
     if (disposed) return;
-    session = new HallSession(seedNow(), initial);
+    session = new HallSession(opts.seed ?? seedFrom(now), initial);
     // 离线「田螺姑娘」：宿主算离开时长 → 分档 key；sim 只见 Signal，永不见墙钟。
     const tier = savedAt !== undefined ? offlineTierOf(now() - savedAt) : undefined;
     if (tier !== undefined) session.act(offlineKey(tier));

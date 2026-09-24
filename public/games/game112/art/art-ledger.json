@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "game": "game112",
+  "mode": "requirements",
+  "count": 5,
+  "rows": [
+    {
+      "no": "art-01",
+      "skinKey": "game112/cat/xuetuan-rest",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cat/xuetuan",
+        "component": "Image",
+        "field": "src(rest)"
+      },
+      "query": "photoreal ragdoll cat, blue eyes, seal point, long fluffy fur, warm practical light with faint cool starlight rim, lived-in old wooden cafe table, slightly asymmetric, no perfect rim light, isolated subject, transparent background, lying on old wooden table, paws tucked, half-closed eyes, calm",
+      "prompt": null,
+      "spec": {
+        "w": 840,
+        "h": 600,
+        "transparent": true
+      },
+      "desc": "雪团·趴姿待机（主厅/牌桌回退锚图·眼半眯）",
+      "context": "用途=sprite·猫画面层静态锚图（主厅 hall-cat / 牌桌 table-cat 的 Image.src）·消费=cat-art.ts catArt('xuetuan','rest')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-rest']（未填=程序化矢量回退）·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game112/art/placeholder/cat-xuetuan-rest.svg",
+        "current": "现况=程序化矢量占位（cat-art.ts）"
+      }
+    },
+    {
+      "no": "art-02",
+      "skinKey": "game112/cat/xuetuan-notice",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cat/xuetuan",
+        "component": "Image",
+        "field": "src(notice)"
+      },
+      "query": "photoreal ragdoll cat, blue eyes, seal point, long fluffy fur, warm practical light with faint cool starlight rim, lived-in old wooden cafe table, slightly asymmetric, no perfect rim light, isolated subject, transparent background, lying but alert, eyes wide open, ears forward, tail tip lifted",
+      "prompt": null,
+      "spec": {
+        "w": 840,
+        "h": 600,
+        "transparent": true
+      },
+      "desc": "雪团·注意（兴致高时·眼睁大）",
+      "context": "用途=sprite·猫画面层静态锚图（主厅 hall-cat / 牌桌 table-cat 的 Image.src）·消费=cat-art.ts catArt('xuetuan','notice')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-notice']（未填=程序化矢量回退）·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game112/art/placeholder/cat-xuetuan-notice.svg",
+        "current": "现况=程序化矢量占位（cat-art.ts）"
+      }
+    },
+    {
+      "no": "art-03",
+      "skinKey": "game112/icon/orb",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hotspot/orb",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "frosted memory orb with soft inner glow and faint photo ghost, on worn wooden stand, cozy storybook prop, soft warm light, isolated, transparent background",
+      "prompt": null,
+      "spec": {
+        "w": 192,
+        "h": 192,
+        "transparent": true
+      },
+      "desc": "忆光晶球（主厅热点·磨砂晶球内流动微光+照片残影）",
+      "context": "用途=sprite·主厅场景热点图标（hot-orb-img Image.src）·消费=cat-art.ts hotspotArt('orb')·写回=SKIN_OVERRIDES['game112/icon/orb']",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game112/art/placeholder/icon-orb.svg",
+        "current": "现况=程序化矢量占位（cat-art.ts）"
+      }
+    },
+    {
+      "no": "art-04",
+      "skinKey": "game112/icon/table",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hotspot/table",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "small old wooden card table with three slightly crooked worn cards, moon and star motifs, cozy storybook prop, soft warm light, isolated, transparent background",
+      "prompt": null,
+      "spec": {
+        "w": 192,
+        "h": 192,
+        "transparent": true
+      },
+      "desc": "星牌桌（主厅热点·旧木桌+三张歪牌）",
+      "context": "用途=sprite·主厅场景热点图标（hot-table-img Image.src）·消费=cat-art.ts hotspotArt('table')·写回=SKIN_OVERRIDES['game112/icon/table']",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game112/art/placeholder/icon-table.svg",
+        "current": "现况=程序化矢量占位（cat-art.ts）"
+      }
+    },
+    {
+      "no": "art-05",
+      "skinKey": "game112/icon/basket",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hotspot/basket",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "woven cat toy basket with a feather wand and a yarn ball, well used, cozy storybook prop, soft warm light, isolated, transparent background",
+      "prompt": null,
+      "spec": {
+        "w": 192,
+        "h": 192,
+        "transparent": true
+      },
+      "desc": "玩具篮（主厅热点·藤篮+羽毛杆+毛线球）",
+      "context": "用途=sprite·主厅场景热点图标（hot-basket-img Image.src）·消费=cat-art.ts hotspotArt('basket')·写回=SKIN_OVERRIDES['game112/icon/basket']",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game112/art/placeholder/icon-basket.svg",
+        "current": "现况=程序化矢量占位（cat-art.ts）"
+      }
+    }
+  ]
+}

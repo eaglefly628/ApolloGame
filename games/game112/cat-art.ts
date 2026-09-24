@@ -1,11 +1,26 @@
 // game112 —— 程序化矢量占位（S3 最低标准「成形矢量 SVG」·capability-plan §4.5）。
 // 皮肤槽：`cat.<catId>.<state>` / `icon.<hotspot>`。真美术（美术台账）就绪即让位；
 // 引擎能力「内嵌 AI 视频播放」（REQ-112-ENG-11）交付后，猫的画面由它接管，本文件只剩回退链末端。
+/**
+ * 皮肤覆盖表（art-pipeline 口径「有生成图用图·无则回退程序化·兜底不丢」）：
+ * 真美术到位后写进这张表（key = 台账 skinKey·值 = 已解析 URL），下面的程序化 SVG 自动让位。
+ * 台账推导脚本：`scripts/game112-art-requirements.mjs`（行 = 本文件消费的每个 skinKey）。
+ */
+export const SKIN_OVERRIDES: Record<string, string> = {};
+export const SKIN_KEYS = {
+  cat: (catId: string, state: 'rest' | 'notice'): string => `game112/cat/${catId}-${state}`,
+  hotspot: (kind: 'orb' | 'table' | 'basket'): string => `game112/icon/${kind}`,
+} as const;
+const skin = (key: string, fallback: () => string): string => SKIN_OVERRIDES[key] ?? fallback();
+
 const svg = (body: string, w = 320, h = 240): string =>
   `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}">${body}</svg>`)}`;
 
 /** 布偶猫剪影（趴姿·蓝眼·重点色）。 */
-export function catArt(_catId: string, state: 'rest' | 'notice' = 'rest'): string {
+export function catArt(catId: string, state: 'rest' | 'notice' = 'rest'): string {
+  return skin(SKIN_KEYS.cat(catId, state), () => catSvg(state));
+}
+function catSvg(state: 'rest' | 'notice'): string {
   const eyeOpen = state === 'notice' ? 9 : 5;
   return svg(`
     <ellipse cx="160" cy="200" rx="150" ry="22" fill="#d9c9a8" opacity=".55"/>
@@ -24,6 +39,9 @@ export function catArt(_catId: string, state: 'rest' | 'notice' = 'rest'): strin
 
 /** 主厅热点图标（晶球 / 星牌桌 / 玩具篮）。 */
 export function hotspotArt(kind: 'orb' | 'table' | 'basket'): string {
+  return skin(SKIN_KEYS.hotspot(kind), () => hotspotSvg(kind));
+}
+function hotspotSvg(kind: 'orb' | 'table' | 'basket'): string {
   if (kind === 'orb') {
     return svg(`<circle cx="48" cy="48" r="34" fill="#c9d6e6"/><circle cx="48" cy="48" r="34" fill="url(#g)"/>
       <defs><radialGradient id="g" cx=".4" cy=".35"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#7d93b8" stop-opacity=".35"/></radialGradient></defs>
