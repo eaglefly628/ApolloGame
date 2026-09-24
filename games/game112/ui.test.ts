@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { validateLayoutNode } from '@zerocraft/engine/ui/components/index.js';
+import { validateLayoutNode, resolveBindings } from '@zerocraft/engine/ui/components/index.js';
 import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { HallSession } from './session.js';
 import { EMPTY_STATE } from './blueprint.js';
 import { buildScreen, buildHome, buildReading, UI_ACTIONS, type Screen } from './ui.js';
+import { flagOn } from './project.js';
 import { ACTIVE_CAT, CHAPTERS, buyKey, offlineKey, relId } from './world-data.js';
 
 /** 收集树里所有节点（含 children 递归）。 */
@@ -77,6 +78,26 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
     expect(walk(buildScreen({ screen: 'hall', view: s.hall() })).some((n) => n.id === 'hall-offline')).toBe(false);
     s.act('decor.place.feather'); s.step();
     expect(walk(buildScreen({ screen: 'hall', view: s.hall() })).some((n) => n.id === 'hall-placed-feather')).toBe(true);
+  });
+
+  it('沉浸模式「只看它」：Flag 开 → visibleWhen 剔掉顶栏/热点/动作/导航，只剩猫画面 + 「显示界面」；关 → 复原（重组·非缺口）', () => {
+    const s = richSession();
+    const tree = () => resolveBindings(buildScreen({ screen: 'hall', view: s.hall() }), { flag: (id) => flagOn(s.world, id) });
+    const ids = (t: LayoutNode) => new Set(walk(t).map((n) => n.id));
+    let t = ids(tree());
+    expect(s.hall().stageOnly).toBe(false);
+    for (const id of ['hall-top', 'hall-hotspots', 'hall-care', 'navbar', 'hall-stage-hide', 'hall-offline']) expect(t.has(id), id).toBe(true);
+    expect(t.has('hall-stage-show')).toBe(false);
+    s.act('ui.hide'); s.step();
+    expect(s.hall().stageOnly).toBe(true);
+    t = ids(tree());
+    for (const id of ['hall-top', 'hall-hotspots', 'hall-care', 'navbar', 'hall-offline']) expect(t.has(id), id).toBe(false);
+    expect(t.has('hall-cat')).toBe(true);
+    expect(t.has('hall-stage-show')).toBe(true);
+    s.act('ui.show'); s.step();
+    t = ids(tree());
+    expect(t.has('navbar')).toBe(true);
+    expect(t.has('hall-stage-show')).toBe(false);
   });
 
   it('杂货铺：星砂不够的物品按钮禁用（可负担才成交在 UI 上也可见）', () => {

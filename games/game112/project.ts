@@ -3,7 +3,7 @@ import type { IWorld } from '@zerocraft/engine/engine/core/types.js';
 import type { Resource, State, Flag, Tag, Text, StringVar } from '@zerocraft/engine/engine/protocol/components.js';
 import {
   ACTIVE_CAT, RELATIONS, SHOP_ITEMS, CHAPTERS, OFFLINE_TAG, STARDUST,
-  relId, itemCount, placedFlag, chapterFlag, chapterFsm, catOf, chapterOf, poseFsm, CAT_POSES,
+  relId, itemCount, placedFlag, chapterFlag, chapterFsm, catOf, chapterOf, poseFsm, CAT_POSES, STAGE_ONLY_FLAG,
   type RelationKey, type CatPose,
 } from './world-data.js';
 import type { PersistedState } from './blueprint.js';
@@ -72,6 +72,8 @@ export interface HallView {
   readonly owned: readonly OwnedItemView[];
   readonly chapters: readonly ChapterView[];
   readonly offlineEvents: readonly string[];
+  /** 「只看它」沉浸模式开着（UI 用 visibleWhen 剔界面·此处只为投影/测试可读）。 */
+  readonly stageOnly: boolean;
 }
 
 export function moodPhraseOf(catId: string, mood: number): string {
@@ -100,6 +102,7 @@ export function buildHallView(world: IWorld): HallView {
       .filter((x) => x.count > 0),
     chapters: CHAPTERS.map((c) => ({ id: c.id, title: c.title, hint: c.hint, unlocked: flagOn(world, chapterFlag(c.id)), need: c.unlockHeartlight, sensitive: c.sensitive })),
     offlineEvents: offlineEventTexts(world),
+    stageOnly: flagOn(world, STAGE_ONLY_FLAG),
   };
 }
 

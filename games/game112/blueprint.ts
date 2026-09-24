@@ -24,6 +24,7 @@ import {
   OFFLINE_TIERS, OFFLINE_EVENTS, OFFLINE_TAG, OFFLINE_ACK_KEY, SEED_DEFAULT,
   relId, itemCount, ownFlag, placedFlag, buyKey, placeKey,
   chapterFlag, chapterFsm, chapterUnlockSignal, offlineKey, offlineSignal, poseFsm,
+  STAGE_ONLY_FLAG, STAGE_HIDE_KEY, STAGE_SHOW_KEY,
 } from './world-data.js';
 
 /** 局外持久态（`services/save` 信封里的 data·宿主读回后作蓝图初值）。兴致不在里面（当次临时）。 */
@@ -144,6 +145,17 @@ function offlineEntities(): Record<string, EntityBlueprint> {
   return out;
 }
 
+// ── 沉浸模式：Flag + 两把 key → set-flag（UI 侧 visibleWhen 消费·不进档）────────────
+function stageOnlyEntities(): Record<string, EntityBlueprint> {
+  return {
+    'flag-stage-only': { Flag: { id: STAGE_ONLY_FLAG, active: false } },
+    'kb-stage-hide': { KeyBinding: { key: STAGE_HIDE_KEY, signal: STAGE_HIDE_KEY, phase: 'action' } },
+    'fx-stage-hide': { Effect: { onSignal: STAGE_HIDE_KEY, kind: 'set-flag', targetId: STAGE_ONLY_FLAG, value: true } },
+    'kb-stage-show': { KeyBinding: { key: STAGE_SHOW_KEY, signal: STAGE_SHOW_KEY, phase: 'action' } },
+    'fx-stage-show': { Effect: { onSignal: STAGE_SHOW_KEY, kind: 'set-flag', targetId: STAGE_ONLY_FLAG, value: false } },
+  };
+}
+
 export function buildBlueprint(seed = SEED_DEFAULT, s: PersistedState = EMPTY_STATE): WorldBlueprint {
   const entities: Record<string, EntityBlueprint> = {
     world: { RandomSeed: { seed, state: seed >>> 0 }, StringVar: { id: 'activeCat', value: ACTIVE_CAT } },
@@ -153,6 +165,7 @@ export function buildBlueprint(seed = SEED_DEFAULT, s: PersistedState = EMPTY_ST
     ...shopEntities(s),
     ...chapterEntities(s),
     ...offlineEntities(),
+    ...stageOnlyEntities(),
   };
   return {
     capabilities: [

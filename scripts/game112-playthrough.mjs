@@ -44,7 +44,7 @@ const READ = `(() => {
     hasHall: has('hall-cat'), hasShop: has('shop-grid'), hasToys: has('toys-title'), hasMemory: has('memory-list'),
     hasReading: has('reading-dialog'), hasReadingNext: has('reading-next'), hasReadingEnd: has('reading-end'),
     hasChoices: has('reading-choices'), placedFeather: has('hall-placed-paperbag'), offlineAck: has('hall-offline-ack'),
-    hasOrbs: has('orbs-title'), hasTable: has('table-note'), hasSettings: has('settings-title'), hasAbout: has('about-title'),
+    hasNav: has('navbar'), hasStageShow: has('hall-stage-show'), hasOrbs: has('orbs-title'), hasTable: has('table-note'), hasSettings: has('settings-title'), hasAbout: has('about-title'),
     offlineText: txt('hall-offline-0'),
     ownedBadge: txt('shop-paperbag-own'), chapterState: txt('chap-xuetuan-1-state'),
     actions,
@@ -176,6 +176,15 @@ async function main() {
     s = await state();
     check('新一轮还能接着陪：呼唤后星砂 1', s.hasHall && s.stardust === 1, `stardust=${s.stardust}`);
     await shot('hall-again');
+
+    // ── 沉浸模式「只看它」（menu-flow §1.3 隐藏/显示 UI 钮·visibleWhen 重组）──
+    await clickAction('ui.hide', 400);
+    s = await state();
+    check('只看它：界面收起（无导航/动作栏）· 猫画面还在 · 只剩「显示界面」', s.hasHall && !s.hasNav && !s.actions.includes('cat.sit') && s.hasStageShow);
+    await shot('hall-stage-only');
+    await clickAction('ui.show', 400);
+    s = await state();
+    check('显示界面：导航与动作栏回来', s.hasNav && s.actions.includes('cat.sit') && !s.hasStageShow);
 
     // ── 全屏巡游：词表里每个屏都真到一次（第 7 问机读）──
     await clickAction('orbs.open');

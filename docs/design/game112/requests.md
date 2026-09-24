@@ -124,8 +124,11 @@
 
 ---
 
-## REQ-112-UI-11 · 主厅「隐藏/显示 UI」壳层钮 → **已移入引擎池** `docs/workflow/requests.md` REQ-UI-STAGEMODE（壳层新能力·走 owner A/B·PUI 可见）
-- 本单只留指针；游戏侧到时只在 LayoutNode 上标「舞台」节点，不写任何逃生代码。
+## REQ-112-UI-11 · 主厅「隐藏/显示 UI」壳层钮（menu-flow §1.3）· status: **wontfix（重组·2026-09-24）**
+- **理由**：缺口裁决协议第①步实查（复查 r4 指正）——`src/ui/components/bindings.ts:83-128` `visibleWhen` 已能按世界 Flag 剔整棵子树；不是壳层缺口。
+- **等价数据写法**：`world-data.ts` `STAGE_ONLY_FLAG='ui.stageOnly'` + `ui.hide`/`ui.show` 两把 key → `Effect set-flag`；`ui.ts` 主厅各块 `visibleWhen:'!ui.stageOnly'`、猫画面层「显示界面」钮 `visibleWhen:'ui.stageOnly'`；宿主渲染前 `resolveBindings(tree, { flag })`。零新控件。
+- **证明测试**：`games/game112/ui.test.ts`「沉浸模式」（Flag 开/关 → 树里有无导航/动作/显示界面钮）+ `scripts/game112-playthrough.mjs` 真点「只看它」/「显示界面」（`self-check/shots/S4-play-13-hall-stage-only.png`）。
+- 引擎池 `REQ-UI-STAGEMODE` 同日撤回（不占槽）。
 
 ---
 

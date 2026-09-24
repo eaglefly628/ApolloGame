@@ -13,7 +13,7 @@
 import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { buildStarterHome } from '@zerocraft/engine/ui/starters/index.js';
 import { catArt, hotspotArt } from './cat-art.js';
-import { CARE_ACTIONS, SHOP_ITEMS, RELATIONS, CATS, TABLE_PLACEHOLDER, GAME_ID } from './world-data.js';
+import { CARE_ACTIONS, SHOP_ITEMS, RELATIONS, CATS, TABLE_PLACEHOLDER, GAME_ID, STAGE_ONLY_FLAG } from './world-data.js';
 import type { HallView, ReadingView } from './project.js';
 
 export type Screen = 'home' | 'hall' | 'orbs' | 'table' | 'toys' | 'shop' | 'memory' | 'reading' | 'settings' | 'about';
@@ -22,7 +22,7 @@ export type Screen = 'home' | 'hall' | 'orbs' | 'table' | 'toys' | 'shop' | 'mem
 export const UI_ACTIONS = [
   'home.enter', 'home.about', 'home.exit',
   'hall.back', 'orbs.open', 'table.open', 'toys.open', 'shop.open', 'memory.open', 'settings.open', 'later',
-  'cat.greet', 'cat.sit', 'offline.ack',
+  'cat.greet', 'cat.sit', 'offline.ack', 'ui.hide', 'ui.show',
   'shop.buy', 'decor.place',
   'memory.read', 'memory.advance', 'memory.choose', 'memory.back',
 ] as const;
@@ -100,7 +100,7 @@ export function buildHall(v: HallView): LayoutNode {
   return page('hall', [
     // 顶栏：猫名 + 情绪短语（GDD：主厅只显示名字与一个情绪短语）· 星砂 · 生成状态（低调）
     {
-      type: 'Panel', id: 'hall-top', props: { bare: true },
+      type: 'Panel', id: 'hall-top', props: { bare: true }, visibleWhen: `!${STAGE_ONLY_FLAG}`,
       layout: { direction: 'row', gap: 12, align: 'center', justify: 'between' },
       children: [
         {
@@ -117,13 +117,14 @@ export function buildHall(v: HallView): LayoutNode {
           children: [
             { type: 'Tag', id: 'hall-stardust', props: { label: `星砂 ${v.stardust}`, tone: 'accent', size: 'lg' } },
             { type: 'Badge', id: 'hall-gen', props: { text: '离线陪伴', tone: 'dim' } },
+            { type: 'Button', id: 'hall-stage-hide', props: { label: '只看它', kind: 'quiet', action: 'ui.hide' } },
           ],
         },
       ],
     },
     // 刚回馆：猫留下的小变化（一句可展开说明·忽略后不再追弹）
     ...(v.offlineEvents.length > 0 ? [{
-      type: 'Panel', id: 'hall-offline', props: { glass: true },
+      type: 'Panel', id: 'hall-offline', props: { glass: true }, visibleWhen: `!${STAGE_ONLY_FLAG}`,
       layout: { direction: 'column', gap: 6, padding: 12 },
       children: [
         subLabel('hall-offline-cap', '你不在的时候'),
@@ -138,6 +139,8 @@ export function buildHall(v: HallView): LayoutNode {
       children: [
         { type: 'Image', id: 'hall-cat', props: { src: catArt(v.catId, v.pose === 'lookup' || v.relations.mood >= 70 ? 'notice' : 'rest'), fit: 'contain', alt: v.catName }, layout: { width: 420, height: 300 } },
         subLabel('hall-cat-line', v.catLine),
+        // 沉浸模式里唯一的键：显示界面（只在 Flag 开时在树里·由 resolveBindings 剔/留）
+        { type: 'Button', id: 'hall-stage-show', props: { label: '显示界面', kind: 'ghost', action: 'ui.show' }, visibleWhen: STAGE_ONLY_FLAG },
         ...(v.owned.some((it) => it.placed) ? [{
           type: 'Panel', id: 'hall-placed', props: { bare: true },
           layout: { direction: 'row', gap: 6, align: 'center', justify: 'center' },
@@ -147,7 +150,7 @@ export function buildHall(v: HallView): LayoutNode {
     },
     // 三个场景热点 = 活动入口（不做九宫格大厅）
     {
-      type: 'Panel', id: 'hall-hotspots', props: { bare: true },
+      type: 'Panel', id: 'hall-hotspots', props: { bare: true }, visibleWhen: `!${STAGE_ONLY_FLAG}`,
       layout: { direction: 'row', gap: 14, justify: 'center', align: 'stretch' },
       children: [
         hotspot('orbs', 'orb', '忆光晶球', orbSub(v), 'orbs.open'),
@@ -157,11 +160,11 @@ export function buildHall(v: HallView): LayoutNode {
     },
     // 陪伴动作（首版按动作判·触摸分区随逗猫重设计）
     {
-      type: 'Panel', id: 'hall-care', props: { bare: true },
+      type: 'Panel', id: 'hall-care', props: { bare: true }, visibleWhen: `!${STAGE_ONLY_FLAG}`,
       layout: { direction: 'row', gap: 12, justify: 'center', align: 'center' },
       children: CARE_ACTIONS.map((a): LayoutNode => ({ type: 'Button', id: `care-${a.id}`, props: { label: a.label, kind: 'primary', action: a.key, sub: a.sub } })),
     },
-    navBar('hall'),
+    { ...navBar('hall'), visibleWhen: `!${STAGE_ONLY_FLAG}` },
   ]);
 }
 

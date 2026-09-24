@@ -4,13 +4,14 @@
 // UI action 查表转成具名输入动作 · 定拍推 tick · 投影视图 · cleanup。
 // 玩法规则一条都不在这里：全在 `blueprint.ts` 的数据 + 引擎能力里。
 // 猫的画面 = 投影层（现为 Image 占位；REQ-112-ENG-11「内嵌 AI 视频播放」交付后由它接管，本文件不变）。
-import { mountUI, type MountHandle, type HandlerMap } from '@zerocraft/engine/ui/components/index.js';
+import { mountUI, resolveBindings, type MountHandle, type HandlerMap } from '@zerocraft/engine/ui/components/index.js';
 import { apolloBrocade } from '@zerocraft/engine/ui/components/apollo-kit.js';
 import { LocalStorageSavePort, sealEnvelope, openEnvelope, type SaveCodec, type SavePort } from '@zerocraft/engine/services/save/index.js';
 import { DIALOGUE_ACTION_ADVANCE, DIALOGUE_ACTION_CHOOSE } from '@zerocraft/engine/skills/tier3/dialogue.js';
 import { HallSession } from './session.js';
+import { flagOn } from './project.js';
 import { buildScreen, UI_ACTIONS, type Screen, type UiAction } from './ui.js';
-import { GAME_ID, TICK_MS, OFFLINE_ACK_KEY, offlineTierOf, offlineKey, buyKey, placeKey, shopItemOf, chapterOf } from './world-data.js';
+import { GAME_ID, TICK_MS, OFFLINE_ACK_KEY, STAGE_HIDE_KEY, STAGE_SHOW_KEY, offlineTierOf, offlineKey, buyKey, placeKey, shopItemOf, chapterOf } from './world-data.js';
 import { EMPTY_STATE, type PersistedState } from './blueprint.js';
 
 export const SAVE_CODEC: SaveCodec = { gameId: GAME_ID, schema: 1 };
@@ -35,6 +36,8 @@ export function routeAction(action: UiAction | string, arg?: string): Route | un
     case 'settings.open': return { screen: 'settings' };
     case 'cat.greet': case 'cat.sit': return { key: action };
     case 'offline.ack': return { key: OFFLINE_ACK_KEY };
+    case 'ui.hide': return { key: STAGE_HIDE_KEY };
+    case 'ui.show': return { key: STAGE_SHOW_KEY };
     case 'shop.buy': return arg !== undefined && shopItemOf(arg) !== undefined ? { key: buyKey(arg) } : undefined;
     // 购买后优先「放到馆里看看」→ 回主厅目击新物件（menu-flow §10）。
     case 'decor.place': return arg !== undefined && shopItemOf(arg) !== undefined ? { key: placeKey(arg), screen: 'hall' } : undefined;
@@ -82,12 +85,14 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
 
   const render = (): void => {
     if (disposed) return;
-    const node = buildScreen({
+    // visibleWhen 由 resolveBindings 按世界 Flag 剔子树（沉浸模式）——树是数据，显隐也是数据。
+    const world = session?.world;
+    const node = resolveBindings(buildScreen({
       screen,
       view: session?.hall(),
       reading: session !== undefined && reading !== undefined ? session.reading(reading) : undefined,
       canExit: host !== undefined,
-    });
+    }), { flag: (id) => (world !== undefined ? flagOn(world, id) : false) });
     if (handle) handle.update(node);
     else handle = mountUI(container, node, handlers, apolloBrocade);
   };

@@ -102,6 +102,7 @@
 | `TOY_TABLE` 🟡 | 五种玩具 → 行为修正 —— 随逗猫重设计 | `t2-modifier-stack` |
 | `TOUCH_ZONES` 🟡 | 五分区 + 偏好 —— 随逗猫/陪伴重设计；首版按区判 | `a2-hierarchy` · `c1-shape` · `t2-clickable` · `t2-event-when` · `j1-state` |
 | `OFFLINE_EVENTS` | 分档 key → **每档一张权重表**（short/long/days·`world-data.ts` OFFLINE_EVENTS.weight[tier]·权重 0 不入表）→ 模板（纸袋藏牌/叼玩具/睡过位置/打翻杯垫…·**只有装饰模板**）· 看过了 → 按 Tag 批量回收 | `t2-keybind` · `t2-weighted-spawn` · `t3-prefab` · `g1-tag` · `t2-effect-apply destroy-tagged` |
+| `UI_STAGE_ONLY` | 「只看它」沉浸模式：Flag `ui.stageOnly` + 两把 key → set-flag；界面各块 `visibleWhen` 由 `resolveBindings` 剔子树（menu-flow §1.3 隐藏 UI 钮·复查 r4 指正后由「壳层缺口」改判重组） | `f2-flag` · `t2-keybind` · `t2-effect-apply set-flag` · `ui/components visibleWhen` |
 | `CARE_POSE` | 陪伴动作 → 猫姿态机 `pose.<cat>`（rest/lookup/settled·不进档）→ 投影换台词/画面 = 操作的画面确认（S4 八问②） | `j1-state` · `t2-effect-apply set-state` |
 | `SHOP_ITEMS` | 物品/价格/分类（装饰·新互动·牌具外观）/放置点 | `t2-craft-recipe` · `t2-tray`（货架） |
 | `DECOR_SLOTS` | 可布置位 · 收纳筐 DropZone | `t2-drag-place` · `t2-effect-apply destroy` + recipe 回库 |

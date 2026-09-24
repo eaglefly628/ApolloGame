@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-24T03:59:43.003Z",
+  "at": "2026-09-24T04:13:42.650Z",
   "checks": [
     {
       "name": "标题页：主 CTA「回到星尾馆」在",
@@ -12,7 +12,7 @@
     {
       "name": "进主厅：猫画面 + 星砂 0 + 情绪短语",
       "pass": true,
-      "detail": "stardust=0 mood=安静地待着 hasHall=true screen=hot-orbs actions=10"
+      "detail": "stardust=0 mood=安静地待着 hasHall=true screen=hall-stage-hide actions=11"
     },
     {
       "name": "陪坐 10 次：星砂 20（数字真的变了）",
@@ -78,6 +78,14 @@
       "detail": "stardust=1"
     },
     {
+      "name": "只看它：界面收起（无导航/动作栏）· 猫画面还在 · 只剩「显示界面」",
+      "pass": true
+    },
+    {
+      "name": "显示界面：导航与动作栏回来",
+      "pass": true
+    },
+    {
       "name": "晶球厅：当前猫晶球 + 「接回自己的猫」空位",
       "pass": true
     },
@@ -108,7 +116,7 @@
       "pass": true
     },
     {
-      "name": "词表 20 个动作：屏上都出现过（宿主条件键 1 个另注）",
+      "name": "词表 22 个动作：屏上都出现过（宿主条件键 1 个另注）",
       "pass": true,
       "detail": "未见=无"
     },
@@ -118,7 +126,7 @@
       "detail": ""
     }
   ],
-  "shots": 16,
+  "shots": 17,
   "consoleErrors": [],
   "actionsSeen": [
     "cat.greet",
@@ -141,6 +149,8 @@
     "shop.buy",
     "shop.open",
     "table.open",
-    "toys.open"
+    "toys.open",
+    "ui.hide",
+    "ui.show"
   ]
 }

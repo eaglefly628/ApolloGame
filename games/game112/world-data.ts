@@ -160,6 +160,14 @@ export type OfflineTier = (typeof OFFLINE_TIERS)[number];
 export const offlineKey = (t: OfflineTier): string => `offline.${t}`;
 export const offlineSignal = (t: OfflineTier): string => `offline:${t}`;
 export const OFFLINE_ACK_KEY = 'offline.ack';
+
+// ── 「只看它」沉浸模式（menu-flow §1.3 常驻 HUD 的「隐藏/显示 UI」钮）────────────────
+//   重组而非缺口（S4 复查 r4 指正）：一个 Flag + 两个 key（set-flag true/false），
+//   界面各块挂 `visibleWhen:'!ui.stageOnly'`、猫画面层挂一枚 `visibleWhen:'ui.stageOnly'` 的「显示界面」钮，
+//   由 ui/components `resolveBindings` 按 Flag 剔子树——零新控件·零游戏层 if/else 重建树。不进档。
+export const STAGE_ONLY_FLAG = 'ui.stageOnly';
+export const STAGE_HIDE_KEY = 'ui.hide';
+export const STAGE_SHOW_KEY = 'ui.show';
 /** 离线小事件实体的 Tag 位（ack 时 destroy-tagged 批量回收）。 */
 export const OFFLINE_TAG = 1 << 3;
 export interface OfflineEvent { readonly id: string; readonly text: string; readonly weight: Readonly<Record<OfflineTier, number>> }
