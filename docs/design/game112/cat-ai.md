@@ -88,7 +88,7 @@ selector
 
 状态闭集：`Rest → Notice → Track → Stalk → Pounce → Catch | Miss → Hold | Search | Groom → Rest`，外加 `Ignore`。转移条件读 Flag/Resource/Timer（`after` 做伏击驻留拍）；**随机分支**（Catch/Miss、Search/Groom、"假装不感兴趣"）由 `Effect{kind:'set-flag', chance:{num,den}}` 先落旗、flow 下一拍读旗（握手旗·一级一拍）。
 
-> ⚠ 驱动量缺口：转移里的"玩具进入关注区 / 缓慢移动 / 速度合适 / 未及时逃开"需要玩具**实时位置与速度**进 sim 并被条件读到——现有 ConditionExpr 无距离/速度叶、无指针跟随能力。见 `framework.md` §6 缺口 ④。裁决前狩猎链先以「区占用旗」（`t2-zone-occupancy`）近似关注区，做不了速度判定。
+> ⚠ 驱动量缺口：转移里的"玩具进入关注区 / 缓慢移动 / 速度合适 / 未及时逃开"需要玩具**实时位置与速度**进 sim 并被条件读到——现有 ConditionExpr 无距离/速度叶、无指针跟随能力。原 `framework.md` §6 缺口 ③（owner 2026-09-24 撤单·逗猫改视频）。狩猎链先以「区占用旗」（`t2-zone-occupancy`）近似关注区，做不了速度判定。
 
 ### 2.2 玩耍性格（每猫 `playPersona` · 全是数）
 
@@ -109,7 +109,7 @@ selector
 
 每猫每区一条偏好分 `Resource touch-pref.<catId>.<zone>`（zone ∈ head/cheek/chin/back/paw）；命中区信号 → `EventWhen`（and: 偏好 ≥ 阈 · 安心 ≥ 阈）→ `set-state accept | refuse`。**拒绝不扣关系**（GDD §9.1）。
 
-> ⚠ 方向/速度/持续时长读不到（Signal 不带数值）——首版只按"区 + 当前安心/兴致"判，见 `framework.md` §6 缺口 ⑤。
+> ⚠ 方向/速度/持续时长读不到（Signal 不带数值）——首版只按"区 + 当前安心/兴致"判，原 `framework.md` §6 缺口 ④（撤单·首版按区判）。
 
 ### 2.4 离线小事件（"田螺姑娘"）
 

@@ -1,6 +1,8 @@
 # Game 112《星尾会客厅》·策划档案索引
 
 > 当前阶段：**S1 立项卡已落板 · S2 能力计划已交、十项缺口待 owner 判 A/B**（`node scripts/game-pipeline.mjs board game112`）。尚未批准写游戏代码。
+> **S3 施工主体 = GD/PE-112 session**（owner 2026-09-24 令「游戏端你来连续实现」·本行即锁）· 基线 = S2 复查 CONCERNS 落账（S2-reviewer-agent）+ 陈旧引用清账。引擎三单（05/06/11）归 Lead。
+> Claude Design 对齐稿：`claude-design-brief.md`（出稿放 `cloud-design/`）。
 > 引擎侧文档（GD/PE-112 · 2026-09-23）：`framework.md`（骨架 + 缺口 A/B 摆盘）· `capability-plan.md`（能力总览·待 Lead 审）· `capability-gaps.json`（机读缺口台账）· `requests.md`（游戏级需求单）· `cat-ai.md`（猫 AI 设定·必填档）。
 
 ## 建议阅读顺序

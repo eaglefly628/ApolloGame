@@ -171,6 +171,17 @@ export const GAMES: GameEntry[] = [
     status: 'playable',
   },
   {
+    id: 'game112',
+    title: 'Game 112:《星尾会客厅》',
+    subtitle: '喵星陪伴 · 轻卡牌 · 回忆（S3 骨架）',
+    description:
+      '在喵星的星尾会客厅遇见、收养并陪伴拥有往昔记忆的猫；也可以上传爱猫照片，让它成为能陪你打牌、玩耍、继续留下回忆的数字陪伴化身。架构基石=「猫的行为在 sim，猫的画面是投影」：关系四量/星砂经济/杂货铺/回忆章节/离线小事件全是数据 + 引擎能力（resource/over-time/keybind/effect/craft-recipe/event-when/dialogue/weighted-spawn/prefab），零专属系统代码。当前=S3 骨架：主厅陪伴 → 星砂 → 杂货铺 → 放到馆里 → 心光解锁一段回忆闭环可玩；猫画面为矢量占位（引擎「内嵌 AI 视频播放」REQ-112-ENG-11 交付后接管）；星爪牌牌规待 owner 对定、逗猫改视频形态重设计中。',
+    color: '#f3e2dc',
+    accentColor: '#d8607b',
+    icon: '🐈',
+    status: 'playable',
+  },
+  {
     id: 'game-103',
     title: 'Game 103: 幸存者核心',
     subtitle: '俯视割草 Roguelite · 吸血鬼幸存者式',

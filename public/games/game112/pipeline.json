@@ -11,9 +11,9 @@
   "evidence": {
     "S2": {
       "exit": 0,
-      "summary": "capability-plan.md 在档 · ✓ 缺口 11 条全已裁决 · 未交付 2：GAP-112-07→锁无 GAP-112-11→锁无",
-      "at": "2026-09-24T03:00:55.027Z",
-      "gameHash": "9fe12e7b6ce5a4e0"
+      "summary": "capability-plan.md 在档 · ✓ 缺口 11 条全已裁决 · 未交付 4：GAP-112-05→锁无 GAP-112-06→锁无 GAP-112-07→锁无 GAP-112-11→锁无",
+      "at": "2026-09-24T03:08:37.146Z",
+      "gameHash": "245c73b3b003943a"
     }
   },
   "history": [
@@ -55,13 +55,35 @@
       "action": "gate",
       "stage": "S2",
       "exit": 0,
-      "at": "2026-09-24T03:00:25.483Z"
+      "at": "2026-09-24T02:48:22.638Z"
+    },
+    {
+      "action": "review",
+      "stage": "S2",
+      "verdict": "CONCERNS",
+      "at": "2026-09-24T02:52:25.235Z"
+    },
+    {
+      "action": "review",
+      "stage": "S2",
+      "verdict": "CONCERNS",
+      "at": "2026-09-24T02:53:36.628Z"
     },
     {
       "action": "gate",
       "stage": "S2",
       "exit": 0,
-      "at": "2026-09-24T03:00:55.027Z"
+      "at": "2026-09-24T03:08:37.146Z"
     }
-  ]
+  ],
+  "reviews": {
+    "S2": {
+      "verdict": "CONCERNS",
+      "note": "核真:脚本提§2.1 47名/§3 26名对registry(113id)逐匹配缺0;API断言grep实证(effect-apply.ts:47·hand-pattern.ts:28-31·vfx2d/index.ts:38);§3 18表解释器全注册名/宿主/缺口⑪,🟡4行有原因;§4例外④真存;§4.5已填;gate复跑exit0·11条零open·非open全带ticket实存;budget PASS(7896字)。CONCERNS①90a963bc越域改scripts/scoped-gate.mjs+test(已声明·31绿·撤修验红命中)缺主程review/领工声明②裁决后陈旧引用:§2.1缺口②③·§3缺口①/待②/缺口⑩·红线①锁S4·§4.7/§5.1/§5.2#6/§6③§4「没有第四条」实有④④evaluateCondition实名evalCondition⑤cards.md:37实:26⑥cat-ai缺口编号错位⑦framework§6「10项/全open」矛盾⑧requests ENG-08/09/UI-10仍open。Lead裁决⬜待签",
+      "by": "S2-reviewer-agent",
+      "at": "2026-09-24T02:53:36.628Z",
+      "gameHash": "74a87e5427418df4",
+      "gapsHash": "2901bdec4b45691d"
+    }
+  }
 }

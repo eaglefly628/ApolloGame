@@ -71,7 +71,7 @@
 
 ## REQ-112-ENG-08 · 片段→alpha 序列帧转换管线（GAP-112-08）
 - **owner 裁决**：**不单独立（2026-09-24）**——序列帧只是播放能力的内部实现选项，折叠进 REQ-112-ENG-11；下文实查原文保留供主程做 11 时参考
-- **归属**：🟢 资产面扩写（`registerAssetIndex` 桥接 = 主程 review；转换脚本 = PST/资产管线 · 提需方可写）· status: **open** · **P2（2026-09-24 降）**——逗猫改视频后「猫活在画布层」不再是硬需求；若 ⑩ 能做到换片不黑帧，本条可撤
+- **归属**：🟢 资产面扩写（`registerAssetIndex` 桥接 = 主程 review；转换脚本 = PST/资产管线 · 提需方可写）· status: **wontfix（折叠进 REQ-112-ENG-11·2026-09-24）**
 **想实现的行为**：服务侧作业 `clip → 逐帧 matte → 图集(webp/png) + manifest{fps,count,anchor,hitZones}` 入库为 `prerendered-sequence`；`registerAssetIndex` 桥接该 kind 到 `Sprite.textureKey` 图集；`CLIP_CATALOG` 直接映射 `t2-anim-state` clip 表。
 **实查留痕**：`asset-index.ts:15` AssetType 含 `video`、`:265-296` 只桥 texture/mesh；`asset-types.ts` `prerendered-sequence`；`anim-state.ts` clip `{sheet,from,count,fps,loop}`；`/api/assets/matte` 单张。
 **边界**：`src/assets/**` 桥接 + `scripts/` 转换脚本 + 体积/帧率基准数据（Loop-1 复查用）。
@@ -80,7 +80,7 @@
 
 ## REQ-112-ENG-09 · VideoActor（GAP-112-09）
 - **owner 裁决**：**合并进 REQ-112-ENG-11（2026-09-24）**；实查原文保留
-- **归属**：🔴 主程面（renderer + host + 组件协议 + determinism）· status: **open** · P2 · 不锁关
+- **归属**：🔴 主程面 · status: **wontfix（合并进 REQ-112-ENG-11）**
 **实查留痕**：`mount-host.ts` 分层无视频槽；`canvas-renderer.ts` 无遮罩/视频纹理；`render.ts:1015` `<video>` `background:#000`；`server.ts:850-866` 无 ended。
 
 ---
@@ -88,7 +88,7 @@
 ## REQ-112-UI-10 · `Video.onEnded/bind/fit` + catalog 补 `muted`（GAP-112-10 · 报 PUI）
 - **owner 裁决**：**合并进 REQ-112-ENG-11（2026-09-24）**——作为该能力的 UI 面由 PUI 协作；实查原文保留
 - **发现**：`types.ts:642` `VideoProps` 无事件/bind；catalog `:173-181` 漏登 `muted`；改 `src` 整元素重建。
-- **归属**：PUI · status: **open** · **P1（2026-09-24 升）**——逗猫改视频后，猫的画面 = `Video` 控件按状态换片，「播完发信号 + src 按状态绑定 + 换片不黑帧」是猫画面的基本件；⑧⑨ 是否还要，取决于本条能做到哪一步
+- **归属**：PUI 协作 · status: **wontfix（合并进 REQ-112-ENG-11·作为其 UI 面）**
 **建议**：`onEnded: action`（进 UI 层）· `bind`（同 Image）· `fit`；`visibleWhen` 切换时保留 DOM 的可选项。
 
 ---
