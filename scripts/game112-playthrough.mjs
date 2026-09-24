@@ -224,6 +224,7 @@ async function main() {
     await shot('hall-return-acked');
 
     // ── 词表 vs 屏上真控件差集（八问第 7 问）──
+    // home.exit 只在嵌壳层（canExit）时出现；本试玩走 ?game= 壳层页所以通常能见到，列在这里只为独立页形态不误报。
     const HOST_ONLY = { 'home.exit': '仅嵌在游戏库壳层（canExit）时出现·独立页无此键（ui.test 已验 canExit 分支）' };
     const missing = vocab.filter((a) => !seen.has(a));
     const naked = missing.filter((a) => !(a in HOST_ONLY));

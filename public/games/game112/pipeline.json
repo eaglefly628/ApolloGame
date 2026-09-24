@@ -260,23 +260,35 @@
       "stage": "S4",
       "verdict": "CONCERNS",
       "at": "2026-09-24T04:22:19.638Z"
+    },
+    {
+      "action": "review",
+      "stage": "S2",
+      "verdict": "CONCERNS",
+      "at": "2026-09-24T04:24:07.671Z"
+    },
+    {
+      "action": "review",
+      "stage": "S3",
+      "verdict": "PASS",
+      "at": "2026-09-24T04:24:07.746Z"
     }
   ],
   "reviews": {
     "S2": {
-      "verdict": "PASS",
-      "note": "增量@6d95b236(纯文档5文件:docs/design/game112/{README,requests,self-check/S4-alignment}.md·docs/workflow/requests.md·pipeline.json;games/scripts/src未碰)。复跑exit0不经管道:align-count ✅18⚠7❌0;context-budget 10/10槽24346/25000字;vitest 24/24;gate S2(沙盒根)gameHash a0ac7668与已提交一致。引擎池两提交+11行0删未动他人条目。S2面无变化。",
-      "by": "docs-delta-reviewer-r4",
-      "at": "2026-09-24T04:11:02.805Z",
-      "gameHash": "a0ac7668be90cee0",
+      "verdict": "CONCERNS",
+      "note": "r5@2d77980a:范围26文件全在README:5边界栏;引擎池只删REQ-UI-STAGEMODE 7行未动他人。checklist 5条逐核:plan:105四能力名实名(flag/index.ts:7·keybind.ts:23·effect-apply.ts:57·types.ts:719);gate S2 exit0 hash 80cbea42;重组成立:ui.ts只加6处visibleWhen+2 Button·game112.ts只多resolveBindings一层+2 case·零新system零if/else重建树。CONCERNS唯一原因:game-skill-audit被复查人环境权限拦截未跑成·退出码缺失(需下一轮复查人补跑)。",
+      "by": "S23-reviewer-agent-r5",
+      "at": "2026-09-24T04:24:07.671Z",
+      "gameHash": "80cbea42969b618c",
       "gapsHash": "438ede8001bb0205"
     },
     "S3": {
       "verdict": "PASS",
-      "note": "增量@6d95b236纯文档(见S2 r4 note);vitest 24/24 exit0证代码未动;S3面无变化。",
-      "by": "docs-delta-reviewer-r4",
-      "at": "2026-09-24T04:11:02.879Z",
-      "gameHash": "a0ac7668be90cee0"
+      "note": "r5@2d77980a:checklist 6条逐核;vitest 25/25 exit0 stderr零告警;撤修验红(临时worktree·锚点各命中1处·均红在「沉浸模式」用例):删navBar visibleWhen→navbar expected true to be false;fx-stage-hide改false→expected false to be true;复原25/25。在档探针hash ce92ddd3过期·S3 gate被S2复查闸拦→临时worktree直跑探针:render exit0 hash 80cbea42 console 0错;click exit0 12/12打穿;worktree已移除。",
+      "by": "S23-reviewer-agent-r5",
+      "at": "2026-09-24T04:24:07.746Z",
+      "gameHash": "80cbea42969b618c"
     },
     "S4": {
       "verdict": "CONCERNS",
