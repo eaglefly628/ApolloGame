@@ -74,9 +74,34 @@
 > **验收**：5 个测试文件断言从"数量>0"改为"含指定能力 id 列表"；game-i 全量 vitest 零回归。
 > **来源**：REQ-RETRO-引擎大扫除盘点段 B（测试套件健康度）「假信心样本抽查」#2-6，5 处同一弱模式（轻度·非阻断）。
 
-### REQ-I-gallery拆分 · gallery.ts 1620 行按展台分模块（token 优化③·owner 2026-07-15 批）· [2026-07-15] · Lead 转呈 → **指派：PUI（game-i 域·勿由他人代拆）** · status: open · 优先级: P2 · 类型: 结构拆分（零逻辑改）
+### REQ-I-gallery拆分 · gallery.ts 按展台分模块（token 优化③·owner 2026-07-15 批）· [2026-07-15] · Lead 转呈 → **指派：PUI（game-i 域·勿由他人代拆）** · status: **✅ done（PUI 2026-09-25）** · 优先级: P2 · 类型: 结构拆分（零逻辑改）
 > 背景：owner 批「拆大文件」降低 session 读入成本（launcher.tsx 已由 Lead 拆·zerocraft.py 先例）。`games/game-i/gallery.ts` 1620 行=单文件 top1，但 game-i 是 PUI 地盘（CLAUDE.md 边界），Lead 不越界。
 > spec 建议（照 zerocraft.py/launcher 先例）：按展台/页签的自然缝拆 `games/game-i/gallery/*.ts`，gallery.ts 留薄入口 re-export；**逐字节搬运零逻辑改**；tsc+vitest（game-i 测试零改动照绿）+build 全绿直推；拆后单文件 ≤500 行。
+> **✅ 交付（2026-09-25）**：立单时 1620 行，施工时已涨到 **2148 行**（期间加了 emoji/3D 按钮布局等页）——仍是全库单文件 top1。
+> 按「页/模块」自然缝拆成 **10 个文件**，`gallery.ts` 留薄入口 **281 行**（组装 `buildUIModule`/`moduleBody`/`buildGallery` + 公开面 re-export·调用方 import 一行不改）：
+> `gallery/shared.ts`(126·ControlsState/调参台/子编号器/段标题/贴图常量) · `modules.ts`(51·MODULES+MODULE_NO·无依赖·打破 shared↔hub 环) ·
+> `hub.ts`(113) · `page-layout.ts`(80) · `page-display.ts`(348) · `page-input.ts`(318·含模态/抽屉/声音页) ·
+> `page-3dui.ts`(326) · `page-3dbtn.ts`(113) · `page-emoji.ts`(36) · `page-new.ts`(453)。**最大 453 ≤ 500 达标**。
+> **零逻辑改的证据（非"我看了没问题"）**：拆前拆后各跑一遍全展台树快照——**46 条**（Hub + 每模块 + mod-ui 九个子 tab + modal/drawer 叠层态）
+> JSON 序列化后逐条 sha256 **完全相同**。搬运用脚本按「声明 + 紧邻其上注释」切块，非手抄。
+> 顺手修一处文档错位：`buildPage3dButtons` 插入时把原属 `buildPage3dUi` 的「3D UI 表达」段注释挤成了它的头注（我上一轮引入），已归位。
+> 门禁 scope=game:game-i 全绿。
+
+### REQ-I-展台审计债 · tab-3dui 29 处硬对比未清（daylight 照妖镜）· [2026-09-25 立单] · 源：引擎池 REQ-UIFX-2D 结项「存量债归 PUI 主 session 立单」 → **指派：PUI** · status: open · 优先级: P2 · 类型: 审计债（真读不清·非假阳）
+> **立单背景**：引擎池 `REQ-UIFX-2D` 结项时写明「存量债（tab3dui 35 处硬对比·tab-new 未入审计）归 PUI 主 session 立单」——一直没立，今天补上并**实测校正了单子里的数字**。
+> **实测（2026-09-25·`node tools/ui-audit.mjs tools/audits/tab3dui-daylight.audit.ts`）**：
+> - 「tab-new 未入审计」**已不成立**——`tools/audits/tabnew-daylight.audit.ts` 已在档（期间被补上）。本条只剩 tab-3dui 一半。
+> - tab-3dui 硬对比 **35 → 29 处**（重叠 0）。按 ratio 分布：**2.89×12 · 2.83×7 · 2.75/2.42/1.83/1.56 各 1 · 1.32×2**。
+> **根因分档（决定修法·别一刀切）**：
+> ① **2.89 那 12 条 = `Label.color:'dim'` 在 daylight/toon 亮主题上压页底**——**不是本页的问题，是令牌级的**：`dim` 对该主题页底只有 2.89，
+>    低于硬地板 3.0 ⇒ 全库任何游戏在该主题下用 `dim` 都踩。**与本 session 已修的两处同族**（`ProgressBar.showValue` t.dim→t.sub ·
+>    `Button.kind:'quiet'` t.dim→t.sub·均已落）——这是**第三次**同一病根。修法倾向：抬 daylight/toon 主题的 `dim` 令牌值过 3.0，
+>    一处改全库受益；**但它会动所有游戏的次级文字观感**，属跨游戏共享面 → 先出对比截图给 owner 过目再动，别闷头改。
+> ② **1.32/1.56/1.83 那几条 = 真读不清**（3D 倾斜面板/按压瓦片上的说明字压在自定义底色上）——本页自己的数据问题，PUI 直接改颜色即可。
+> ③ **2.83 那 7 条**：介于其间，逐条看底色再定（部分可能是 ① 的同族）。
+> **验收**：tab-3dui daylight 审计硬失败归零（或余下逐条在审计入口头注留证据链·同 game-c/game-a 先例）；不得靠给元素挂 `data-audit-skip-contrast` 掩盖。
+> **注**：`app-engine`（顶栏徽章 `Badge tone:'dim'`）在每个 tab 都报，属 ① 同族，一并处置。
+
 
 ### REQ-I-裸路径收编 · game-i.ts emoji base + ui-assets.ts 人工双份维护 index 镜像 · [2026-08-05] · ARTPIPE2 侦察带出 → **指派：PUI** · status: open · 优先级: P3 · 类型: 美术接线卫生
 > `game-i.ts:151 EMOJI_CFG.base` 直写路径；`ui-assets.ts:31,50-53,63-64` 内联镜像 index.json 的 path 字面量（注释自称同源实为两份人工维护=漂移温床）。修法：统一经 @assets/index 取。
