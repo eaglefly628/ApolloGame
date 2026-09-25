@@ -7,6 +7,7 @@
 // append-only：重跑 mergeLedger 并入现台账——保编号/状态/prompt/history；台账落 public/games/game112/art/。
 import { CATS } from '../games/game112/world-data.ts';
 import { catArt, hotspotArt, SKIN_KEYS } from '../games/game112/cat-art.ts';
+import { hallSceneSvg } from '../games/game112/scene-art.ts';
 import { mergeLedger } from './art-replace.mjs';
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -49,7 +50,24 @@ const iconRows = ICONS.map(([kind, desc, q]) => ({
   status: 'needs-art', gen: null, provenance: null,
 }));
 
-const rows = [...catRows, ...iconRows].map((r, i) => ({ no: 'art-' + String(i + 1).padStart(2, '0'), ...r }));
+// 主厅定调图（hall-framework.md §6.1 art-06）：猫画面层容器 hall-stage 的 Panel.skin·整个美术方向先由它定调。
+const sceneRows = [{
+  skinKey: SKIN_KEYS.scene('hall'),
+  kind: 'scene',
+  slot: { entity: 'room/hall', component: 'Panel', field: 'skin(hall-stage)' },
+  query: 'storybook interior of an old house on Cat Star, main hall, mid shot, warm amber lamplight from the left, faint cool starlight through the window, '
+    + 'worn oak long table with cup rings, plaid blanket on a chair, frosted memory orb glowing softly on a shelf, visible brushwork, slightly loose perspective, '
+    + 'lived-in imperfections, empty cushion left for a cat, clean empty area in the lower middle for compositing a cat, no cat, no text',
+  prompt: null,
+  spec: { w: 1680, h: 1200, transparent: false },
+  desc: '主厅定调图（猫画面层背景·暖灯旧木长桌·窗外雾青星光·下中留白给猫）',
+  context: '用途=scene·主厅猫画面层容器 hall-stage 的 Panel.skin（cover·猫 Image 叠其上）·消费=cat-art.ts sceneSkin(\'hall\')·'
+    + '写回=SKIN_OVERRIDES[\'game112/scene/hall\']（未填=回退主题 sunken 面）·风格包=docs/design/game112/style-pack.starlit-lived-in.json·'
+    + '视觉锚=visual/cat-art-direction-ragdoll-v2-lived-in.png·安全区=hall-framework.md §4（顶 12%·底 18%·右上 ⚙）',
+  status: 'needs-art', gen: null, provenance: null,
+}];
+
+const rows = [...catRows, ...iconRows, ...sceneRows].map((r, i) => ({ no: 'art-' + String(i + 1).padStart(2, '0'), ...r }));
 const fresh = { version: 1, game: 'game112', mode: 'requirements', count: rows.length, rows };
 
 const LEDGER_FILE = join(ROOT, 'public', 'games', 'game112', 'art', 'art-ledger.json');
@@ -63,7 +81,9 @@ for (const r of merged.rows) {
   if (r.gen || r.status === 'replaced' || r.status === 'retired') continue;
   const svg = r.skinKey.startsWith('game112/cat/')
     ? decode(catArt(r.slot.entity.split('/')[1], r.slot.field.includes('notice') ? 'notice' : 'rest'))
-    : decode(hotspotArt(r.slot.entity.split('/')[1]));
+    : r.skinKey.startsWith('game112/scene/')
+      ? hallSceneSvg()
+      : decode(hotspotArt(r.slot.entity.split('/')[1]));
   const base = r.skinKey.split('/').slice(1).join('-') + '.svg';
   writeFileSync(join(PH_DIR, base), svg);
   r.placeholder = { servedPath: `/games/game112/art/placeholder/${base}`, current: '现况=程序化矢量占位（cat-art.ts）' };

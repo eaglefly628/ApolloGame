@@ -10,7 +10,13 @@ export const SKIN_OVERRIDES: Record<string, string> = {};
 export const SKIN_KEYS = {
   cat: (catId: string, state: 'rest' | 'notice'): string => `game112/cat/${catId}-${state}`,
   hotspot: (kind: 'orb' | 'table' | 'basket'): string => `game112/icon/${kind}`,
+  /** 房间场景背景（猫画面层容器 Panel.skin·猫叠其上）——hall-framework.md §6.1 art-06 定调图槽。 */
+  scene: (room: string): string => `game112/scene/${room}`,
 } as const;
+/** 场景皮：有图给 URL（Panel.skin cover），无图返回 undefined → 回退主题 sunken 面（兜底不丢）。 */
+export function sceneSkin(room: string): string | undefined {
+  return SKIN_OVERRIDES[SKIN_KEYS.scene(room)];
+}
 const skin = (key: string, fallback: () => string): string => SKIN_OVERRIDES[key] ?? fallback();
 
 const svg = (body: string, w = 320, h = 240): string =>

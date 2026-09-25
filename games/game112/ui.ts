@@ -12,7 +12,7 @@
 // 设计稿对齐：docs/design/game112/claude-design-brief.md（出稿后 1:1 复刻·本文件是素坯结构）。
 import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { buildStarterHome } from '@zerocraft/engine/ui/starters/index.js';
-import { catArt, hotspotArt } from './cat-art.js';
+import { catArt, hotspotArt, sceneSkin } from './cat-art.js';
 import { CARE_ACTIONS, SHOP_ITEMS, RELATIONS, CATS, TABLE_PLACEHOLDER, GAME_ID, STAGE_ONLY_FLAG } from './world-data.js';
 import type { HallView, ReadingView } from './project.js';
 
@@ -134,7 +134,8 @@ export function buildHall(v: HallView): LayoutNode {
     } as LayoutNode] : []),
     // 猫画面层（Image 占位 → REQ-112-ENG-11 交付后由「内嵌 AI 视频播放」接管·矩形区域·按钮不插进猫里）
     {
-      type: 'Panel', id: 'hall-stage', props: { bg: 'sunken', vignette: true },
+      // 场景皮槽：定调图到位即 cover 铺底（猫 Image 照常叠在皮上）；无图回退 sunken 面。
+      type: 'Panel', id: 'hall-stage', props: { bg: 'sunken', vignette: true, ...(sceneSkin('hall') !== undefined ? { skin: sceneSkin('hall') } : {}) },
       layout: { direction: 'column', gap: 8, padding: 16, align: 'center' },
       children: [
         { type: 'Image', id: 'hall-cat', props: { src: catArt(v.catId, v.pose === 'lookup' || v.relations.mood >= 70 ? 'notice' : 'rest'), fit: 'contain', alt: v.catName }, layout: { width: 420, height: 300 } },

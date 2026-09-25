@@ -1,0 +1,34 @@
+{
+ "packId": "starlit-lived-in",
+ "name": "星尾馆·被猫住过的老房子（game112 场景锚）",
+ "stylePrompt": "storybook interior of an old house on Cat Star, warm amber lamplight, faint cool starlight through windows, worn oak, plaid blanket, frosted memory orb glowing softly, visible brushwork, slightly loose perspective, lived-in imperfections, cozy and quiet, game asset, no text, no watermark",
+ "promptEn": "storybook interior of an old house on Cat Star, warm amber lamplight, faint cool starlight through windows, worn oak, plaid blanket, frosted memory orb glowing softly, visible brushwork, slightly loose perspective, lived-in imperfections, cozy and quiet, game asset, no text, no watermark",
+ "promptZh": "喵星上一栋老房子的绘本风室内：琥珀灯暖光，窗外微弱雾青星光，旧橡木，格纹毛毯，磨砂忆光晶球微亮，笔触可见，透视略松，有人生活过的痕迹，安静温暖，游戏素材，无文字，无水印",
+ "palette": [
+  15326403,
+  9202254,
+  5914674,
+  14723406,
+  5204826,
+  11030591,
+  10466488,
+  7308963,
+  16052714,
+  15718816,
+  12093743,
+  13227750
+ ],
+ "negative": {
+  "zh": "豪华咖啡厅，霓虹，太空酒吧，天堂符号，翅膀光环，完全对称，样板间软装，全景深清晰，完美轮廓光，飞散细毛，红点角标，货币图标，文字，水印，厂牌标识",
+  "en": "luxury cafe, neon, space bar, heaven symbols, wings halo, perfectly symmetric, showroom furniture, everything in sharp focus, perfect rim light, flying fur strands, red badges, currency icons, text, watermark, brand logo"
+ },
+ "post": {
+  "paletteSnap": false
+ },
+ "params": {
+  "provider": "qwen",
+  "model": "wanx2.1-t2i-turbo",
+  "seed": 112
+ },
+ "refImage": "docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png"
+}

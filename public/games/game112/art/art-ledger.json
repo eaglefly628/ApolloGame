@@ -2,7 +2,7 @@
   "version": 1,
   "game": "game112",
   "mode": "requirements",
-  "count": 5,
+  "count": 6,
   "rows": [
     {
       "no": "art-01",
@@ -131,6 +131,32 @@
       "provenance": null,
       "placeholder": {
         "servedPath": "/games/game112/art/placeholder/icon-basket.svg",
+        "current": "现况=程序化矢量占位（cat-art.ts）"
+      }
+    },
+    {
+      "no": "art-06",
+      "skinKey": "game112/scene/hall",
+      "kind": "scene",
+      "slot": {
+        "entity": "room/hall",
+        "component": "Panel",
+        "field": "skin(hall-stage)"
+      },
+      "query": "storybook interior of an old house on Cat Star, main hall, mid shot, warm amber lamplight from the left, faint cool starlight through the window, worn oak long table with cup rings, plaid blanket on a chair, frosted memory orb glowing softly on a shelf, visible brushwork, slightly loose perspective, lived-in imperfections, empty cushion left for a cat, clean empty area in the lower middle for compositing a cat, no cat, no text",
+      "prompt": null,
+      "spec": {
+        "w": 1680,
+        "h": 1200,
+        "transparent": false
+      },
+      "desc": "主厅定调图（猫画面层背景·暖灯旧木长桌·窗外雾青星光·下中留白给猫）",
+      "context": "用途=scene·主厅猫画面层容器 hall-stage 的 Panel.skin（cover·猫 Image 叠其上）·消费=cat-art.ts sceneSkin('hall')·写回=SKIN_OVERRIDES['game112/scene/hall']（未填=回退主题 sunken 面）·风格包=docs/design/game112/style-pack.starlit-lived-in.json·视觉锚=visual/cat-art-direction-ragdoll-v2-lived-in.png·安全区=hall-framework.md §4（顶 12%·底 18%·右上 ⚙）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game112/art/placeholder/scene-hall.svg",
         "current": "现况=程序化矢量占位（cat-art.ts）"
       }
     }

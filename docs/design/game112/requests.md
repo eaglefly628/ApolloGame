@@ -139,6 +139,15 @@
 
 ---
 
+## REQ-112-GAME-03 · 星尾馆多房间 + 馆图 + 扩建（游戏层·纯数据·`hall-framework.md`）
+- **来源**：owner 2026-09-25 直令「营业场所可扩展多房间·要有地图·先把外框形态设定清楚」。
+- **判定**：零引擎缺口（`hall-framework.md` §0 能力映射：房间表 + `x3-string-variable` 当前房 · `t2-craft-recipe` 解锁 · `Screen.image`/`Panel.skin` 场景皮 · 绝对定位热点 · `visibleWhen` 锁态）。GDD §16.2「复杂房间自由装修」延后条不冲突（本单 = 解锁 + 固定位，不做自由拖拽）。
+- **归属**：GD/PE-112 · status: **🟡 等 owner 判 §8 四问（馆图形态 A/B · 房间清单 · 扩建门槛 · 定调图先行）** · Loop-1
+- **施工三步**（判后）：① 房间表 + 解锁配方 + 馆图屏 + `buildRoom`（vitest + 剧本三本）② 台账入房间/馆图/热点行（有槽即入·零孤儿）③ 一键全量出图 → 人审 → 换装。
+- **本次已落**：art-06 主厅定调图槽（`hall-stage` Panel.skin·`sceneSkin('hall')`·无图回退 sunken 面）+ 风格包 JSON（已过 `validateStylePack`）。
+
+---
+
 ## 定项问询（owner 一并判）
 - **§5 竖切三环**：Loop-0（主厅静态 + 星爪牌 + 星砂/杂货铺 + 一段回忆）零媒体缺口先跑 S4 → Loop-1 逗猫 + 序列帧猫 → Loop-2 上传/生成。⬜ 准 ⬜ 按 GDD §16.1 一次到位。
 - **名字**：立项卡暂用工作名《星尾会客厅》（GDD 🟡）。

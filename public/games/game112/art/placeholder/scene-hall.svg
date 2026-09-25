@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1680 1200">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9dcc3"/><stop offset="1" stop-color="#d9c7a6"/></linearGradient>
+    <radialGradient id="lamp" cx=".22" cy=".3" r=".5"><stop offset="0" stop-color="#e0a94e" stop-opacity=".55"/><stop offset="1" stop-color="#e0a94e" stop-opacity="0"/></radialGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6f86a3"/><stop offset="1" stop-color="#9fb4b8"/></linearGradient>
+    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8c6a4e"/><stop offset="1" stop-color="#5a4032"/></linearGradient>
+  </defs>
+  <rect width="1680" height="1200" fill="url(#wall)"/>
+  <rect x="1060" y="120" width="420" height="520" rx="18" fill="url(#sky)"/>
+  <rect x="1060" y="120" width="420" height="520" rx="18" fill="none" stroke="#5a4032" stroke-width="22"/>
+  <line x1="1270" y1="120" x2="1270" y2="640" stroke="#5a4032" stroke-width="16"/>
+  <circle cx="1380" cy="230" r="34" fill="#f4f1ea" opacity=".9"/><circle cx="1396" cy="222" r="30" fill="url(#sky)"/>
+  <g fill="#f4f1ea" opacity=".8"><circle cx="1110" cy="200" r="3"/><circle cx="1180" cy="330" r="2.5"/><circle cx="1230" cy="180" r="2"/><circle cx="1420" cy="420" r="3"/><circle cx="1330" cy="520" r="2"/></g>
+  <rect width="1680" height="1200" fill="url(#lamp)"/>
+  <rect x="200" y="150" width="120" height="180" rx="10" fill="#c9a97a" opacity=".9"/><rect x="214" y="164" width="92" height="150" fill="#d9c7a6"/>
+  <circle cx="470" cy="330" r="62" fill="#c9d6e6" opacity=".9"/><circle cx="452" cy="312" r="30" fill="#f4f1ea" opacity=".6"/>
+  <path d="M0 760 L1680 700 L1680 1200 L0 1200 Z" fill="url(#wood)"/>
+  <path d="M0 760 L1680 700 L1680 730 L0 790 Z" fill="#a8845f" opacity=".8"/>
+  <g fill="none" stroke="#5a4032" stroke-width="3" opacity=".35"><circle cx="360" cy="840" r="46"/><circle cx="380" cy="850" r="40"/></g>
+  <path d="M1250 780 q120 -40 260 10 l0 150 q-130 -30 -260 0z" fill="#4f6b5a"/><path d="M1290 800 l40 120 M1350 790 l30 130 M1410 792 l22 128" stroke="#a8503f" stroke-width="10" opacity=".7"/>
+  <ellipse cx="840" cy="1010" rx="360" ry="70" fill="#5a4032" opacity=".25"/>
+</svg>
