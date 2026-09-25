@@ -5,6 +5,7 @@
 > **真相来源**：产品口径 `gdd.md` · 页面与导航 `menu-flow.md` · 视觉要求 `ui-visual-handoff.md`。本稿只做三件事：① 把引擎约束翻成设计师能用的规格；② 定第一轮画哪些屏、每屏什么状态；③ 定交稿格式。冲突时以 `gdd.md` 为准。
 > **先例**：`docs/design/game-c/ui-brief.md` + `game-c/cloud-design/*.dc.html`。
 > **作者**：GD/PE-112 · 2026-09-24。
+> **v2 逐屏规格已出**：[`claude-design-spec.md`](./claude-design-spec.md)（2026-09-25·基于 Loop-0 真渲染截图·含节点 id 映射、六态主厅、S66 敏感前控制层定稿、观感债清单）。本稿保留为约束闭集与交稿格式；两稿冲突以 v2 为准。
 
 ---
 
