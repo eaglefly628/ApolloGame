@@ -7,6 +7,15 @@
  * 台账推导脚本：`scripts/game112-art-requirements.mjs`（行 = 本文件消费的每个 skinKey）。
  */
 export const SKIN_OVERRIDES: Record<string, string> = {};
+
+/**
+ * 宿主把本游戏本地美术索引解析为皮肤表后，在此一次性换入。
+ * 只影响投影层；拉取失败时传空表，程序化回退仍完整可用。
+ */
+export function setSkinOverrides(next: Readonly<Record<string, string>>): void {
+  for (const key of Object.keys(SKIN_OVERRIDES)) delete SKIN_OVERRIDES[key];
+  Object.assign(SKIN_OVERRIDES, next);
+}
 export const SKIN_KEYS = {
   cat: (catId: string, state: 'rest' | 'notice'): string => `game112/cat/${catId}-${state}`,
   hotspot: (kind: 'orb' | 'table' | 'basket'): string => `game112/icon/${kind}`,

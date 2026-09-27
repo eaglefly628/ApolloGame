@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "game112/scene/hall",
+      "type": "texture",
+      "description": "星尾会客厅主厅背景：旧屋、暖灯、雾青星光与中央猫互动安全区",
+      "status": "filled",
+      "path": "/games/game112/art/scene/star-tail-main-hall-bg-v2.png",
+      "category": "background.scene",
+      "tags": [
+        "game112",
+        "scene",
+        "hall",
+        "background",
+        "skin",
+        "storybook",
+        "lived-in"
+      ],
+      "license": "OpenAI image-generation output (subject to OpenAI terms)",
+      "source": "gen:openai-imagegen",
+      "style": "storybook.painterly",
+      "spec": {
+        "format": "png",
+        "width": 1680,
+        "height": 1200,
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "wrap": "clamp"
+      },
+      "provenance": {
+        "generator": "OpenAI image generation",
+        "model": "OpenAI image generation service",
+        "prompt": "原创喵星老屋主厅的游戏背景：高挑、通透的拱形木屋顶与高窗，猫作为空间主理人；所有家具均为猫尺度，含低矮星牌桌、窝垫、玩具篮、窗台休息位、攀爬踏步和优雅的高处猫步道。旧木、手作弧线、轻微抓痕与猫爪星座雕纹保留有人生活过的痕迹；琥珀暖灯、雾青月夜和忆光晶球令空间明亮轻快而温暖。中央前景为大块无物件、柔光照亮的猫互动安全区。无猫、无动物、无人、无文字、无水印；不要奢华咖啡厅、霓虹、太空酒吧、翅膀光环、对称样板间、货币或 UI。",
+        "mock": false,
+        "generatedAt": "2026-09-27",
+        "review": "approved",
+        "reviewedAt": "2026-09-27",
+        "resampledFrom": "1484x1060"
+      }
+    }
+  ]
+}

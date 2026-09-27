@@ -7,12 +7,14 @@
 import { mountUI, resolveBindings, type MountHandle, type HandlerMap } from '@zerocraft/engine/ui/components/index.js';
 import { apolloBrocade } from '@zerocraft/engine/ui/components/apollo-kit.js';
 import { LocalStorageSavePort, sealEnvelope, openEnvelope, type SaveCodec, type SavePort } from '@zerocraft/engine/services/save/index.js';
+import { loadGameArtOverrides } from '@zerocraft/engine/assets/index.js';
 import { DIALOGUE_ACTION_ADVANCE, DIALOGUE_ACTION_CHOOSE } from '@zerocraft/engine/skills/tier3/dialogue.js';
 import { HallSession } from './session.js';
 import { flagOn } from './project.js';
 import { buildScreen, UI_ACTIONS, type Screen, type UiAction } from './ui.js';
 import { GAME_ID, TICK_MS, OFFLINE_ACK_KEY, STAGE_HIDE_KEY, STAGE_SHOW_KEY, offlineTierOf, offlineKey, buyKey, placeKey, shopItemOf, chapterOf } from './world-data.js';
 import { EMPTY_STATE, type PersistedState } from './blueprint.js';
+import { setSkinOverrides } from './cat-art.js';
 
 export const SAVE_CODEC: SaveCodec = { gameId: GAME_ID, schema: 1 };
 export const SAVE_SLOT = 'main';
@@ -122,6 +124,12 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
       if (v !== lastView) { lastView = v; render(); }
     }, TICK_MS);
     render();
+    // 美术索引是投影层的增量：基座件兜住无索引/非 200/解析失败，空表就继续程序化回退。
+    void loadGameArtOverrides(GAME_ID).then((skins) => {
+      if (disposed || Object.keys(skins).length === 0) return;
+      setSkinOverrides(skins);
+      render(); // 真图异步到位即换装，不重开会话。
+    });
   };
 
   // handler 里不塞自由逻辑：只把 UI 信号查表路由到宿主动作（信号铁律）。
