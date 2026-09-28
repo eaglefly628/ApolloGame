@@ -9,7 +9,10 @@
   "steps": [
     { "tick": 2 },
     { "signal": "tapSupply:blue" },
-    { "tick": 60 },
+    // tick 预算 60 → 300（2026-09-28 主程修·同 01：**只动 tick·expect 未改**）。
+    // v2 环形轨道下一次命中约 60 tick，ammo 3 打完 + 退役入 tray 需 ~200 拍；60 拍连第一发都没落。
+    // 停止条件结构性（ammo 耗尽即入 tray·不再前进），放宽不抖。
+    { "tick": 300 },
     { "expect": [
       { "res": "remain.blue", "eq": 3 },
       { "res": "conveyor.count", "eq": 0 },
@@ -17,7 +20,7 @@
       { "sv": "flow", "eq": "playing" }
     ] },
     { "signal": "tapSlot:0" },
-    { "tick": 60 },
+    { "tick": 300 },   // 同上：复用装满后再清余下 3 格 ≈ 200 拍（victory 是吸收态·放宽不抖）
     { "expect": [
       { "res": "remain.blue", "eq": 0 },
       { "res": "remain.total", "eq": 0 },

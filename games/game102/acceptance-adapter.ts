@@ -8,7 +8,7 @@ import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { applyCommands } from '@zerocraft/engine/net/index.js';
 import { QueuedInputSource } from '@zerocraft/engine/net/host/index.js';
 import type { IWorld } from '@zerocraft/engine/engine/core/types.js';
-import type { Transform, Tag, GameFlow } from '@zerocraft/engine/engine/protocol/components.js';
+import type { Transform, Tag, GameFlow, Caster } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import type { Level } from './levels.js';
 import { TRAY_BIT } from './theme.js';
@@ -51,6 +51,31 @@ function clickEntity(w: AccWorld, id: string): void {
   const t = w.engine.world.getComponent<Transform>(id, 'Transform');
   if (t) w.input.enqueue({ source: 'g102', x: t.x, y: t.y, phase: 'down' });
 }
+/**
+ * 待发弹库里**首个该色**的炮槽实体 id（`pool-<i>`·`Caster.template === 'cannon_<color>'`）。
+ *
+ * 为什么要有这个函数（2026-09-28 修·本 adapter 原先点的是 `supply-<color>`）：
+ * `supply-<color>` 这个实体 id **全仓只出现在本文件原来那一行**——蓝图里从来没有它
+ * （补给口是 `deployQueue()` 生的 `pool-<i>`，见 `blueprint.ts:222`）。于是 `clickEntity` 取不到
+ * Transform 就静默 no-op：**每个剧本第一步就点空、全程什么都没发生**，后面所有断言当然全红。
+ * 这正是「reject/什么都没发生」那一类最难查的形状——报错没有，只是安静地不动。
+ *
+ * 正确写法有现成的、且是绿的：`game102.walkthrough.test.ts:28` 的 `tapSupply` helper。本函数照它。
+ * 差一处**有意加强**：按 `pool-<i>` 的 **i 数值序**取（不是字符串序——`pool-10` 字符串序在 `pool-2` 前，
+ * 而队列语义是「前排=队首」，取错槽就取错了颜色/顺序）。`query` 的迭代序不该被当成稳定契约。
+ */
+function supplyCannonId(w: AccWorld, color: string): string | undefined {
+  const hits: Array<{ i: number; id: string }> = [];
+  for (const [id] of w.engine.world.query('Caster', 'Transform')) {
+    const m = /^pool-(\d+)$/.exec(id);
+    if (!m) continue;
+    const c = w.engine.world.getComponent<Caster>(id, 'Caster');
+    if (c?.template === `cannon_${color}`) hits.push({ i: Number(m[1]), id });
+  }
+  hits.sort((a, b) => a.i - b.i);
+  return hits[0]?.id;
+}
+
 // 第 i 门待命槽炮（Tag 含 TRAY_BIT·按实体 id 稳定序）。
 function trayCannonIds(w: AccWorld): string[] {
   const ids: string[] = [];
@@ -64,8 +89,12 @@ function trayCannonIds(w: AccWorld): string[] {
 export function applySignal(w: AccWorld, signal: string, _args?: Record<string, unknown>, _by?: string): void {
   const [verb, arg] = signal.split(':');
   switch (verb) {
-    case 'tapSupply': {                       // tapSupply:<color> → 点补给该色 → 生成上带色炮
-      clickEntity(w, `supply-${arg}`);        // 特殊炮 rainbow/chain：REQ-G102-SPECIAL 后续接（暂无补给源→无操作）
+    case 'tapSupply': {                       // tapSupply:<color> → 点待发弹库里首个该色炮槽 → 生成上带色炮
+      const id = arg ? supplyCannonId(w, arg) : undefined;
+      // 取不到就**抛**，不再静默 no-op：颜色拼错/该色已取空是剧本或数据的问题，
+      // 安静地什么都不做正是本次 bug 藏了这么久的原因（同 tapSlot 那支仍容忍空槽——那是合法局面）。
+      if (!id) throw new Error(`game102 adapter: 待发弹库里没有可取的 "${arg}" 色炮槽（pool-<i> 的 Caster.template=cannon_${arg}）`);
+      clickEntity(w, id);
       break;
     }
     case 'tapSlot': {                         // tapSlot:<i> → 点第 i 门待命槽炮复用

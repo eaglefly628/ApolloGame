@@ -6,9 +6,10 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { applyCommands } from '@zerocraft/engine/net/index.js';
 import { QueuedInputSource } from '@zerocraft/engine/net/host/index.js';
-import type { Resource, Transform, GameFlow, Caster } from '@zerocraft/engine/engine/protocol/components.js';
+import type { Resource, Transform, GameFlow, Caster, Tag } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import type { Level } from './levels.js';
+import { TRAY, TRAY_BIT, CANNON_BIT } from './theme.js';
 
 const base = { conveyorCap: 6, burstCap: 10, slots: 5, beltSpeed: 95, stars: [0, 0, 0] as [number, number, number] };
 // 同心 8×8：蓝(外·可达) 包 红(2×2 心·深内层·一圈内轨道 sightRadius 够不到) —— 对照「正确色剥外层」vs「深内层一圈剥不到」。
@@ -147,5 +148,34 @@ describe('Game 102 · Pixel Pour（环形轨道 v2 · 机制不变式自验）',
       return e.hash();
     };
     expect(play(3)).toBe(play(0)); // 库空连点=纯 no-op：与不点的对照跑世界逐字节等价
+  });
+
+  // ── 弹尽入槽：炮真的**落到待命槽位**上（2026-09-28 接线补的钉子）──────────────────────────
+  // 为什么单开一条：验收剧本 02 只查 `tray.count`（按 Tag 数）和「点得动」，两者**不需要真落座**——
+  // 实证：把 `Tray` 实体摘掉，剧本 02 照样全绿。那就是「裸防御」：接线在、无人看守，
+  // 将来谁删掉 Tray 组件不会有任何东西变红。故按结构钉死落座这件事本身。
+  it('弹尽入槽：打光的炮落在待命槽位上（Tray 落座·非停在阵亡处）', () => {
+    const g = driven(RING);
+    g.step(2);
+    g.tapSupply('blue');
+    // 跑到 ammo 打光退场（walkthrough 上文实测 560 拍够打光·这里给足）
+    g.step(700);
+
+    // 退场后场上应有一门 TRAY_BIT 炮（弹尽入槽），且它的坐标 == 某个槽位
+    const trayCannons: Array<{ id: string; x: number; y: number }> = [];
+    for (const [id] of g.e.world.query('Tag', 'Transform')) {
+      const tg = g.e.world.getComponent<Tag>(id, 'Tag');
+      if (!tg || (tg.flags & TRAY_BIT) === 0 || (tg.flags & CANNON_BIT) === 0) continue;
+      const t = g.e.world.getComponent<Transform>(id, 'Transform')!;
+      trayCannons.push({ id, x: t.x, y: t.y });
+    }
+    expect(trayCannons.length).toBeGreaterThan(0);          // 真入槽了（不是凭空消失）
+
+    // 槽位闭集 = Tray 几何（theme.ts 的 TRAY·capacity=level.slots）
+    const slotXs = Array.from({ length: RING.slots }, (_, i) => TRAY.originX + i * TRAY.gap);
+    for (const c of trayCannons) {
+      expect(slotXs).toContain(c.x);                         // x 落在某个槽的 x 上
+      expect(c.y).toBe(TRAY.originY);                        // y 落在槽排那一行
+    }
   });
 });

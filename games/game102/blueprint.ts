@@ -19,6 +19,7 @@ import {
 import { motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability } from '@zerocraft/engine/skills/tier1/index.js';
 import {
   clickableCapability, groupCountCapability, effectApplyCapability, pathFollowCapability, pathFollowAt,
+  trayCapability,
   selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability, eventWhenCapability, textBindingCapability,
   faceRotateCapability,
 } from '@zerocraft/engine/skills/tier2/index.js';
@@ -228,6 +229,14 @@ function deployQueue(level: Level): Record<string, EntityBlueprint> {
       Caster: { onSignal: sig, at: 'self', template: `cannon_${name}` },   // 点→在此位生成上带色炮（PathFollow 驾其上轨）
       Effect: { onSignal: sig, kind: 'destroy', targetEntity: '@signal-source', value: true }, // 消费本槽（递进队列取走）
     };
+    // 取炮 = 1 move（gdd §2.2）。**必须挂在 `deploy_${i}` 上**——2026-09-28 修：原先 `meters()` 里
+    // 按颜色挂了 `move-fx-<color>` 监听 `tapSupply_<color>`，而**全仓没有任何东西发那个信号**
+    // （可点槽发的是 `deploy_${i}`）→ 死接线，`moves` 从来不减、限额局永远打不到判负。
+    // 挂在这里而不是 meters()：`deploy_${i}` 这个名字只在本函数产生，两地各算一遍队列长度必然漂移。
+    // 单独一个实体是因为本槽的 Effect 槽位已被「自毁消费」占了（一个实体一个 Effect 组件）。
+    out[`deploy-move-fx-${i}`] = {
+      Effect: { onSignal: sig, kind: 'modify-resource', targetId: 'moves', op: 'add', value: -1 },
+    };
     const parts = eggBeaterParts(`pool-${i}`, pc.tint, level.ammo, false);
     for (const [k, v] of Object.entries(parts)) out[`pool-${i}-${k}`] = v;
   });
@@ -292,7 +301,11 @@ function prefabs(level: Level): Record<string, EntityBlueprint> {
           do: [ { kind: 'spawn', template: `bullet_${name}`, at: 'target' } ], // 命中直邻同色外层格（扣弹由子弹 source 作用域做）
           once: true, armed: false,
         },
-        Mortal: { resource: 'ammo', atOrBelow: 0, dropTemplate: 'vanishfx' }, // 打光(ammo=0)→物理退场（消失特效）
+        // 打光(ammo=0) → 退场并**入待命槽**（gdd「待命槽 5 槽·弹尽色炮入槽·点击复用」）。
+        // 2026-09-28 修：原先 dropTemplate 是 `vanishfx`，炮打光就**凭空消失**——`tray_<color>` 模板在档
+        // 却全仓没人生成它（死模板），于是「弹尽入槽 + 点槽复用」整条机制从来没接通（剧本 02 一直红）。
+        // 现在掉 tray 模板（消失闪光已并进那个模板里，观感不丢），落座由 `t2-tray` 接管（见下方 tray 实体）。
+        Mortal: { resource: 'ammo', atOrBelow: 0, dropTemplate: `tray_${name}` },
       },
       // 面上动态弹数（随 body.ammo 实时·text-binding fromParent）。
       ...eggBeaterParts('@local:body', pc.tint, level.ammo, true),
@@ -319,6 +332,14 @@ function prefabs(level: Level): Record<string, EntityBlueprint> {
         Resource: { id: 'ammo', current: level.ammo, min: -1, max: level.ammo }, // 面上弹数（返回态·静态显示）
         Clickable: { action: 'tapSlot', phase: 'down' },
         Caster: { onSignal: 'tapSlot', at: 'self', template: `cannon_${name}` },
+      },
+      // 退场闪光并进本模板（原先由 Mortal 直接掉 `vanishfx`；Mortal 只有一个 dropTemplate，
+      // 而现在那个位置要留给「入槽」——把闪光做成本模板的兄弟件，观感一行不丢）。
+      vanish: {
+        Transform: XF(0, 0),
+        Shape: circle(22),
+        Color: col(0xffffff, 0.85),
+        Timer: { id: 'life', elapsed: 0, duration: 8, loop: false },
       },
       ...eggBeaterParts('@local:slot', pc.tint, level.ammo, true),
     } };
@@ -355,13 +376,23 @@ function meters(level: Level): Record<string, EntityBlueprint> {
     moves: { Resource: { id: 'moves', current: level.limit.kind === 'moves' ? level.limit.n : 9999, min: 0, max: 9999 } },
     keys: { Resource: { id: 'keys', current: 0, min: 0, max: 999 } },
     doorflag: { Flag: { id: 'doorOpen', active: false } },
+    // 待命槽 = `t2-tray`（2026-09-28 接线补·文件头第 8 行早就这么写了，只是从没挂过 Tray 组件）。
+    // 几何四字段 `theme.ts` 的 TRAY 里现成就有（originX/originY/gap/capacity——当初就是照这个能力设计的）；
+    // capacity 取 `level.slots` 而不是 TRAY.capacity：后者是全局 CONFIG.SLOTS，剧本/关卡能改槽数。
+    // 成员判据 = Tag 含齐 CANNON_BIT|TRAY_BIT 且无 HexPos → 只圈住「退场入槽的炮」
+    // （绕轨道的炮是 CANNON_BIT|BELT_BIT·含齐语义下不会被误圈）。落座与 Transform 由能力写。
+    tray: {
+      Tray: {
+        originX: TRAY.originX, originY: TRAY.originY, gap: TRAY.gap,
+        capacity: level.slots, requiredTag: CANNON_BIT | TRAY_BIT,
+      },
+    },
   };
   // tapSlot → 销毁被点的 tray 炮（@signal-source）；同信号 tray 炮身上的 Caster 已生成满弹上带炮。
   out['redeploy-fx'] = { Effect: { onSignal: 'tapSlot', kind: 'destroy', targetEntity: '@signal-source', value: true } };
-  // 每色 tapSupply → moves-1（gdd：取炮 = 1 move）。
-  for (const name of level.palette) {
-    out[`move-fx-${name}`] = { Effect: { onSignal: `tapSupply_${name}`, kind: 'modify-resource', targetId: 'moves', op: 'add', value: -1 } };
-  }
+  // 取炮 → moves-1 **已移到 deployQueue()** 里挂在 `deploy_${i}` 上（2026-09-28 修死接线）。
+  // 原先这里按颜色挂 `move-fx-<color>` 监听 `tapSupply_<color>`：那个信号**全仓无人发**，
+  // 于是 moves 从来不减。删掉而不是改这里——信号名归它的产生地管，两地各写一份必然漂移。
   // 钥匙集齐 needKeys → 发 open_door 信号 → 置 doorOpen 旗（gdd §2.4·event-when 边沿 + effect-apply）。
   if (needKeys > 0) {
     out['door-when'] = { EventWhen: { signal: 'open_door', when: { kind: 'resource', id: 'keys', cmp: 'gte', value: needKeys }, mode: 'edge' } };
@@ -427,6 +458,11 @@ export function buildBlueprint(level: Level = LEVEL_1): WorldBlueprint {
       clickableCapability, groupCountCapability, effectApplyCapability, pathFollowCapability,
       selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability, eventWhenCapability, textBindingCapability,
       faceRotateCapability,
+      // t2-tray（2026-09-28 接线补）：本文件第 8 行早写着「待命槽 = t2-tray」，theme.ts 的 TRAY 常量也早按
+      // `Tray{originX,originY,gap,capacity}` 形状备好——**唯独能力没装进清单**，于是挂了 Tray 组件也是惰性死数据。
+      // 引擎侧 `conveyor-queue-compose.test.ts:26-28` 早已点名这件事：「game102 当前未接线 trayCapability…
+      // 仅缺 PE 在 blueprint.ts 数据接线，非引擎缺口」。这一行就是那句话指定的接线。
+      trayCapability,
       // tier3（生成 + 索敌 + 流程）
       flowCapability, aggroCapability, prefabCapability, casterCapability,
     ],

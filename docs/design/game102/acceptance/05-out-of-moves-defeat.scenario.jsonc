@@ -9,7 +9,11 @@
   "steps": [
     { "tick": 2 },
     { "signal": "tapSupply:blue" },
-    { "tick": 60 },
+    // tick 预算 60 → 200（2026-09-28 主程修·同 01：**只动 tick·expect 未改**）。
+    // 实测第一发命中落在 62–122 拍之间（炮要先绕到像素那儿），60 拍一发未落。
+    // `remain.blue eq 2` 在宽预算下**仍然精确**：ammo=1 只可能命中一次，多跑不会多清——
+    // 这正是「放宽安全」的判据（停止条件是 ammo 结构耗尽，不是时间卡点）。
+    { "tick": 200 },
     { "expect": [
       { "res": "remain.blue", "eq": 2 },
       { "sv": "flow", "eq": "defeat" }
