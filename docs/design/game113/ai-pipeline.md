@@ -18,7 +18,7 @@
 ## 1. 流水线
 
 ```
- T1 领域骨架 ──▶ T2 藏品清单 ──▶ [人] 找真实照片 ──▶ T3 看图标点 ──▶ [人] 拖准坐标
+ T0 准入审查 ──▶ T1 领域骨架 ──▶ T2 藏品清单 ──▶ [人] 找真实照片 ──▶ T3 看图标点 ──▶ [人] 拖准坐标
                                                               │
       ┌───────────────────────────────────────────────────────┘
       ▼
@@ -31,7 +31,8 @@
 
 | 步 | 输入 | 输出（schema 片段） | 模型 | 失败回路 |
 |---|---|---|---|---|
-| T1 领域骨架 | 爱好名 + 所属大类 + 大类已有字段 | `fields` · `spotTypes` · `knowledge` · `titles` · `zone` | 文本模型（强） | 校验器报错 → 带错误原文重跑 |
+| T0 准入审查 | 爱好名 | 是否有合法可买的市场、流通性 1–5、渠道、品相分级维度草案 | 文本模型 + **人工复核** | 不合格 → 不收录（owner 硬规则） |
+| T1 领域骨架 | 爱好名 + 所属大类 + 大类已有字段 + T0 结论 | `fields`（含 ordered 分级字段）· `grading` · `spotTypes` · `knowledge` · `titles` · `zone` · `market` | 文本模型（强） | 校验器报错 → 带错误原文重跑 |
 | T2 藏品清单 | T1 产出 | 12 件：名称、副标题、`attrs`、开放图库检索词、为什么值得收 | 文本模型 | 人工删掉找不到图的 |
 | 找图 | T2 检索词 | `images[]`（key、宽高、sha256、授权、署名） | 人 / 脚本调开放图库接口 | 找不到 → 换一件 |
 | T3 看图标点 | 照片 + T1 的 `spotTypes` | `spots[]`（优先套用门道模板） | 视觉模型 | 人工校准坐标 |
@@ -54,6 +55,21 @@
 7. review.status 一律写 "draft"。
 ```
 
+### T0 · 准入审查
+
+```
+爱好：{{爱好名}}
+按以下规则判断它能否收录（owner 硬规则：商品流通性）：
+1. 它的收藏物是否存在「合法的、能用钱买到的」真实市场？渠道不限：电商、二手平台、垂类平台、拍卖行、经纪。
+   玩家买不买得起不影响（名种马、老爷车都算）。无合法市场（保护动物、濒危材料）或纯活动没有可收之物 → 不收录。
+2. 这类东西在行内是否有公认的品相 / 等级差异？列出 3–6 个分级维度，每个维度给从低到高的档位。
+输出：{ "admit": true/false, "reason": "<一句话>", "liquidity": 1-5, "channels": [...],
+        "entry": "<入门价位量级>", "ceiling": "<上限价位量级>", "compliance": "<销售合规限制，没有写空>",
+        "gradingDraft": [ { "label": "<维度名>", "options": ["<低>", "…", "<高>"] } ] }
+流通性：5 大众电商可搜可比价 · 4 垂类平台/二手活跃 · 3 专业市场、拍卖行常态成交 · 2 经纪或专场拍卖 · 1 合法但零星。
+价位只写量级，不写具体数字。
+```
+
 ### T1 · 领域骨架
 
 ```
@@ -65,11 +81,14 @@
 {
   "zone": { "name": "<仓库里的分区名，≤8 字，如 酒窖 / 表柜>" },
   "titles": [ 4 档学识称号，minXp 依次为 0 / 30 / 90 / 200，称号 ≤6 字，最后一档要俏皮，如「酒痴」 ],
-  "fields": [ ≤8 个这门爱好特有的规格字段；type 只能是 text/number/year/enum/multi/bool；enum/multi 必须给 options；key 用小写英文连字符 ],
+  "fields": [ ≤8 个这门爱好特有的规格字段；type 只能是 text/number/year/enum/multi/bool；enum/multi 必须给 options；key 用小写英文连字符。
+              T0 的每个分级维度都要落成一个 "type":"enum", "ordered": true 的字段，options 从低到高 ],
+  "grading": { "dims": [ 上面 ordered 字段的 key ], "tiers": [ 3–4 个品级名，从低到高，≤4 字 ] },
+  "market": { 照抄 T0 的 liquidity / channels / entry / ceiling / compliance },
   "spotTypes": [ 4–8 个这门爱好里反复出现的标准看点：{ id, label(≤8字), cardId, hint(≤20字，告诉老人去哪看), key(是否计入收藏) } ],
   "knowledge": [ 与每个 spotType 一一对应的知识卡：{ id, kind(craft/authenticity/story/jargon), title(≤16字), body(20–180字), xp(2–5), sources[{title}], review:{status:"draft"} }，其中 1–2 张可带 quiz { q, options(2–3个), answer, explain } ]
 }
-参考样例：{{贴一份已审校的爱好包里 spotTypes + knowledge 的前两条}}
+参考样例（标准模板）：{{贴 data/examples/walnut.hobby.json 的 fields、grading、spotTypes 与 knowledge 前两条}}
 ```
 
 ### T2 · 藏品清单
@@ -78,7 +97,8 @@
 爱好：{{爱好名}}；领域字段：{{T1 fields}}；门道模板：{{T1 spotTypes 的 id 与 label}}
 请列 12 件适合收进仓库的代表性藏品，从入门到传奇排序，覆盖不同门道。每件输出：
 { "id", "name"(≤16字), "subtitle"(≤24字), "order", "tags"(≤3个),
-  "attrs": { 只能用已声明字段的 key },
+  "attrs": { 只能用已声明字段的 key；分级维度全部要填 },
+  "tier": "<按分级维度判断的品级，须是 grading.tiers 之一；看不出品级的不写>",
   "photoQuery": "<去大都会 / 史密森尼 / Wikimedia 检索真实照片的英文关键词>",
   "whyCollect": "<一句话：为什么老顽童想要它>",
   "expectedSpots": [ 预计能套用的 spotType id ] }
@@ -116,6 +136,18 @@
 只要有一条 low，把该卡标记为需要顾问重点审。不要改写原文。
 ```
 
+## 2.5 关于「抓取电商数据」
+
+owner 转来的方案建议「指导 AI 抓取淘宝或垂类网站的结构化数据（价格区间、属性标签）」。**方向可以用，做法要改**：
+
+| 做法 | 结论 | 理由 |
+|---|---|---|
+| 爬虫抓淘宝、京东、咸鱼页面 | ❌ 不做 | 违反平台协议，国内已有多起「爬取平台数据构成不正当竞争」的判例 |
+| 把电商商品图当游戏里的「真实照片」 | ❌ 不做 | 商品图版权归卖家，不是我们能用的授权来源 |
+| 用电商的**属性标签**归纳分级维度 | ✅ 人工或 AI 读公开页面做归纳，只取「行内怎么分档」的常识 | 这正是 T0 分级草案要的东西，属于公开常识，不搬运数据 |
+| 价格区间 | ✅ 只写量级进内部 `market`，不进玩家界面 | 用于开馆排序；玩家看不看得到价格待 owner 定 |
+| 需要结构化商品数据时 | 🟡 走平台**开放接口**（淘宝联盟、京东联盟等） | 有授权；若将来做「看懂了去买一个」的导购分成，也是这条路（烟草、管制刀具等不能导流的除外） |
+
 ## 3. 人工环节
 
 | 环节 | 谁 | 做什么 | 验收 |
@@ -141,4 +173,4 @@
 
 ## 5. 样例
 
-[`data/examples/wine-bordeaux.hobby.json`](./data/examples/wine-bordeaux.hobby.json) 与 [`data/examples/cigar-cuban.hobby.json`](./data/examples/cigar-cuban.hobby.json) 就是按本流程手工走出来的首批样例：知识卡全部是 `draft`，图片是 `TBD` 占位，所以能过草稿门、过不了上线门，这是预期状态。
+**标准模板 = [`data/examples/walnut.hobby.json`](./data/examples/walnut.hobby.json)（文玩核桃）**：流通性 5、五个分级维度全靠照片能看出来、没有年龄分级与销售限制，作为 T1/T2 的首选参考样例。[`wine-bordeaux`](./data/examples/wine-bordeaux.hobby.json)、[`cigar-cuban`](./data/examples/cigar-cuban.hobby.json) 为另外两份样例。三份都是按本流程手工走出来的：知识卡全部是 `draft`，图片是 `TBD` 占位，所以能过草稿门、过不了上线门，这是预期状态。

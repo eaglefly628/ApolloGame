@@ -5,189 +5,685 @@
   "description": "三层结构：① 核心最小集 item.{id,name,images,spots,cards,collect}（解释器唯一消费面）② 领域扩展 hobby.{fields,spotTypes,knowledge}（只加描述性数据，不加行为）③ 可选模块 hobby.modules（行为开关，引擎通用实现）。跨引用与 attrs 校验由 check.mjs 完成。说明见 collectible-spec.md。坐标 = 相对图片的归一化值（0..1，左上原点，y 向下）。",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "id", "name", "category", "zone", "titles", "items"],
+  "required": [
+    "schema",
+    "id",
+    "name",
+    "category",
+    "zone",
+    "titles",
+    "grading",
+    "market",
+    "items"
+  ],
   "properties": {
-    "schema": { "const": "game113.hobby/1" },
-    "id": { "$ref": "#/$defs/slug" },
-    "name": { "type": "string", "minLength": 1, "maxLength": 16 },
-    "category": { "$ref": "#/$defs/categoryId" },
-    "ageRating": { "enum": ["all", "12+", "17+", "18+"], "default": "all" },
+    "schema": {
+      "const": "game113.hobby/1"
+    },
+    "id": {
+      "$ref": "#/$defs/slug"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16
+    },
+    "category": {
+      "$ref": "#/$defs/categoryId"
+    },
+    "ageRating": {
+      "enum": [
+        "all",
+        "12+",
+        "17+",
+        "18+"
+      ],
+      "default": "all"
+    },
     "zone": {
-      "type": "object", "additionalProperties": false, "required": ["name"],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
       "properties": {
-        "name": { "type": "string", "maxLength": 8, "description": "仓库里的分区名，如 酒窖 / 雪茄柜" },
-        "coverKey": { "$ref": "#/$defs/assetKey" }
+        "name": {
+          "type": "string",
+          "maxLength": 8,
+          "description": "仓库里的分区名，如 酒窖 / 雪茄柜"
+        },
+        "coverKey": {
+          "$ref": "#/$defs/assetKey"
+        }
       }
     },
     "titles": {
-      "type": "array", "minItems": 2, "maxItems": 6,
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 6,
       "description": "学识称号阶梯，minXp 严格升序，第一档必须为 0",
       "items": {
-        "type": "object", "additionalProperties": false, "required": ["minXp", "name"],
-        "properties": { "minXp": { "type": "integer", "minimum": 0 }, "name": { "type": "string", "maxLength": 6 } }
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "minXp",
+          "name"
+        ],
+        "properties": {
+          "minXp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 6
+          }
+        }
       }
     },
     "modules": {
-      "type": "array", "uniqueItems": true, "default": [],
+      "type": "array",
+      "uniqueItems": true,
+      "default": [],
       "description": "③ 可选模块（行为开关·全部爱好共用同一份引擎实现）。首期只开放 quiz；其余为预留：compare 真仿对比 · care 养（时间+环境，岁月沉淀类）· process 工序（拆修/手作类）· breed 繁育（活体类）· grade 品相评级（感官收藏类）。引擎未实现前 check.mjs 拒收",
-      "items": { "enum": ["quiz", "compare", "care", "process", "breed", "grade"] }
+      "items": {
+        "enum": [
+          "quiz",
+          "compare",
+          "care",
+          "process",
+          "breed",
+          "grade"
+        ]
+      }
     },
     "fields": {
-      "type": "array", "maxItems": 8, "default": [],
+      "type": "array",
+      "maxItems": 8,
+      "default": [],
       "description": "② 领域字段字典：在 categories.json 的 全局 + 大类 字段之上追加，不得重定义已有 key",
-      "items": { "$ref": "#/$defs/field" }
+      "items": {
+        "$ref": "#/$defs/field"
+      }
+    },
+    "grading": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dims",
+        "tiers"
+      ],
+      "description": "② 品相分级（owner 2026-09-28 流通性标准：有明确品相分级才适合做带等级的道具）。dims = 参与分级的 ordered enum 字段；tiers = 品级名，从低到高；藏品在 tier 里标自己的品级",
+      "properties": {
+        "dims": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/slug"
+          }
+        },
+        "tiers": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 6,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "maxLength": 4
+          }
+        }
+      }
     },
     "spotTypes": {
-      "type": "array", "maxItems": 12, "default": [],
+      "type": "array",
+      "maxItems": 12,
+      "default": [],
       "description": "② 领域门道模板：这门爱好里反复出现的标准看点（如红酒的 液位 / 酒标分级 / 木塞），指向领域知识卡",
-      "items": { "$ref": "#/$defs/spotType" }
+      "items": {
+        "$ref": "#/$defs/spotType"
+      }
     },
     "knowledge": {
-      "type": "array", "default": [],
+      "type": "array",
+      "default": [],
       "description": "② 领域知识库：可被多件藏品复用的知识卡（同一张卡全局只加一次学识）",
-      "items": { "$ref": "#/$defs/card" }
+      "items": {
+        "$ref": "#/$defs/card"
+      }
     },
-    "items": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/item" } }
+    "market": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "liquidity",
+        "channels"
+      ],
+      "description": "准入门槛（owner 2026-09-28 硬规则）：一门爱好的收藏物必须存在**合法的、能用钱买到的**真实市场（电商、二手、垂类平台、拍卖行、经纪均可；玩家买不买得起不影响）。没有市场的爱好不收录。本块为内部运营元数据，不在玩家界面显示，不写具体价格",
+      "properties": {
+        "liquidity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "流通性（1–5 均为准入合格，数值只决定开馆先后）：5 大众电商可搜可比价 · 4 垂类平台/二手活跃 · 3 专业市场/拍卖行常态成交 · 2 经纪或专场拍卖（名种马、老爷车）· 1 合法但零星成交"
+        },
+        "channels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 12
+          },
+          "minItems": 1
+        },
+        "entry": {
+          "type": "string",
+          "maxLength": 12,
+          "description": "入门价位量级，如「几十元」"
+        },
+        "ceiling": {
+          "type": "string",
+          "maxLength": 12,
+          "description": "上限价位量级"
+        },
+        "compliance": {
+          "type": "string",
+          "maxLength": 60,
+          "description": "流通/销售合规备注"
+        }
+      }
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/item"
+      }
+    }
   },
   "$defs": {
-    "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
     "categoryId": {
-      "enum": ["aging", "mechanics", "craft", "living", "sensory", "pursuits"],
+      "enum": [
+        "aging",
+        "mechanics",
+        "craft",
+        "living",
+        "sensory",
+        "pursuits"
+      ],
       "description": "owner 五大类（按投入的核心资源）+ pursuits 待定补充类；定义见 categories.json"
     },
     "assetKey": {
-      "type": "string", "pattern": "^g113\\.[a-z0-9.-]+$",
+      "type": "string",
+      "pattern": "^g113\\.[a-z0-9.-]+$",
       "description": "资产台账 key（皮肤槽）。禁止写文件路径：图片与坐标强绑定，必须钉死到具体一张图"
     },
     "field": {
-      "type": "object", "additionalProperties": false, "required": ["key", "label", "type"],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "label",
+        "type"
+      ],
       "properties": {
-        "key": { "$ref": "#/$defs/slug" },
-        "label": { "type": "string", "maxLength": 8 },
-        "type": { "enum": ["text", "number", "year", "enum", "multi", "bool"], "description": "闭集：不支持嵌套对象" },
-        "unit": { "type": "string", "maxLength": 6 },
-        "min": { "type": "number" },
-        "max": { "type": "number" },
-        "options": { "type": "array", "minItems": 2, "items": { "type": "string", "maxLength": 12 }, "description": "enum / multi 必填" },
-        "required": { "type": "boolean", "default": false },
-        "filter": { "type": "boolean", "default": false, "description": "在爱好馆里作为筛选项" }
+        "key": {
+          "$ref": "#/$defs/slug"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 8
+        },
+        "type": {
+          "enum": [
+            "text",
+            "number",
+            "year",
+            "enum",
+            "multi",
+            "bool"
+          ],
+          "description": "闭集：不支持嵌套对象"
+        },
+        "unit": {
+          "type": "string",
+          "maxLength": 6
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "string",
+            "maxLength": 12
+          },
+          "description": "enum / multi 必填"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false
+        },
+        "filter": {
+          "type": "boolean",
+          "default": false,
+          "description": "在爱好馆里作为筛选项"
+        },
+        "ordered": {
+          "type": "boolean",
+          "default": false,
+          "description": "仅 enum：options 按从低到高排列，可作为品相分级维度"
+        }
       }
     },
     "spotType": {
-      "type": "object", "additionalProperties": false, "required": ["id", "label", "cardId"],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "cardId"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/slug" },
-        "label": { "type": "string", "maxLength": 8 },
-        "cardId": { "$ref": "#/$defs/slug", "description": "指向 hobby.knowledge 里的卡" },
-        "hint": { "type": "string", "maxLength": 20 },
-        "key": { "type": "boolean", "default": false }
+        "id": {
+          "$ref": "#/$defs/slug"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 8
+        },
+        "cardId": {
+          "$ref": "#/$defs/slug",
+          "description": "指向 hobby.knowledge 里的卡"
+        },
+        "hint": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "key": {
+          "type": "boolean",
+          "default": false
+        }
       }
     },
     "image": {
-      "type": "object", "additionalProperties": false, "required": ["key", "w", "h", "sha256", "source"],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "w",
+        "h",
+        "sha256",
+        "source"
+      ],
       "properties": {
-        "key": { "$ref": "#/$defs/assetKey" },
-        "role": { "enum": ["main", "closeup", "compare"], "default": "main" },
-        "w": { "type": "integer", "minimum": 1 },
-        "h": { "type": "integer", "minimum": 1 },
-        "sha256": { "type": "string", "pattern": "^([0-9a-f]{64}|TBD)$", "description": "换图即换哈希 → 该图上的坐标全部作废、须重标" },
+        "key": {
+          "$ref": "#/$defs/assetKey"
+        },
+        "role": {
+          "enum": [
+            "main",
+            "closeup",
+            "compare"
+          ],
+          "default": "main"
+        },
+        "w": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "h": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^([0-9a-f]{64}|TBD)$",
+          "description": "换图即换哈希 → 该图上的坐标全部作废、须重标"
+        },
         "source": {
-          "type": "object", "additionalProperties": false, "required": ["license", "credit"],
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "license",
+            "credit"
+          ],
           "properties": {
-            "license": { "enum": ["CC0", "CC-BY", "CC-BY-SA", "licensed", "user-upload", "TBD"] },
-            "credit": { "type": "string" },
-            "url": { "type": "string" }
+            "license": {
+              "enum": [
+                "CC0",
+                "CC-BY",
+                "CC-BY-SA",
+                "licensed",
+                "user-upload",
+                "TBD"
+              ]
+            },
+            "credit": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            }
           }
         }
       }
     },
     "circle": {
-      "type": "object", "additionalProperties": false, "required": ["kind", "x", "y", "r"],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "x",
+        "y",
+        "r"
+      ],
       "properties": {
-        "kind": { "const": "circle" },
-        "x": { "type": "number", "minimum": 0, "maximum": 1 },
-        "y": { "type": "number", "minimum": 0, "maximum": 1 },
-        "r": { "type": "number", "exclusiveMinimum": 0, "maximum": 0.25, "description": "半径，相对图片宽度" }
+        "kind": {
+          "const": "circle"
+        },
+        "x": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "y": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "r": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 0.25,
+          "description": "半径，相对图片宽度"
+        }
       }
     },
     "spot": {
-      "type": "object", "additionalProperties": false, "required": ["id", "imageKey", "shape"],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "imageKey",
+        "shape"
+      ],
       "description": "写 type 则继承门道模板的 cardId/hint/key；也可不写 type、直接给 cardId（本件独有的门道）。二者至少其一",
       "properties": {
-        "id": { "$ref": "#/$defs/slug" },
-        "type": { "$ref": "#/$defs/slug" },
-        "imageKey": { "$ref": "#/$defs/assetKey" },
-        "shape": { "$ref": "#/$defs/circle" },
-        "revealZoom": { "type": "number", "minimum": 1, "maximum": 8, "default": 1 },
-        "closeupKey": { "$ref": "#/$defs/assetKey" },
-        "hint": { "type": "string", "maxLength": 20 },
-        "cardId": { "$ref": "#/$defs/slug" },
-        "note": { "type": "string", "maxLength": 60, "description": "本件在通用知识之外的一句补充（叠在领域卡下方显示）" },
-        "key": { "type": "boolean" }
+        "id": {
+          "$ref": "#/$defs/slug"
+        },
+        "type": {
+          "$ref": "#/$defs/slug"
+        },
+        "imageKey": {
+          "$ref": "#/$defs/assetKey"
+        },
+        "shape": {
+          "$ref": "#/$defs/circle"
+        },
+        "revealZoom": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 8,
+          "default": 1
+        },
+        "closeupKey": {
+          "$ref": "#/$defs/assetKey"
+        },
+        "hint": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "cardId": {
+          "$ref": "#/$defs/slug"
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 60,
+          "description": "本件在通用知识之外的一句补充（叠在领域卡下方显示）"
+        },
+        "key": {
+          "type": "boolean"
+        }
       }
     },
     "card": {
-      "type": "object", "additionalProperties": false, "required": ["id", "kind", "title", "body", "xp", "sources", "review"],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "title",
+        "body",
+        "xp",
+        "sources",
+        "review"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/slug" },
-        "kind": { "enum": ["craft", "authenticity", "story", "jargon"], "description": "门道 / 鉴别 / 典故 / 行话" },
-        "title": { "type": "string", "maxLength": 16 },
-        "body": { "type": "string", "minLength": 20, "maxLength": 180 },
-        "imageKey": { "$ref": "#/$defs/assetKey" },
+        "id": {
+          "$ref": "#/$defs/slug"
+        },
+        "kind": {
+          "enum": [
+            "craft",
+            "authenticity",
+            "story",
+            "jargon"
+          ],
+          "description": "门道 / 鉴别 / 典故 / 行话"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "body": {
+          "type": "string",
+          "minLength": 20,
+          "maxLength": 180
+        },
+        "imageKey": {
+          "$ref": "#/$defs/assetKey"
+        },
         "quiz": {
-          "type": "object", "additionalProperties": false, "required": ["q", "options", "answer", "explain"],
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "q",
+            "options",
+            "answer",
+            "explain"
+          ],
           "properties": {
-            "q": { "type": "string", "maxLength": 40 },
-            "options": { "type": "array", "minItems": 2, "maxItems": 3, "items": { "type": "string", "maxLength": 14 } },
-            "answer": { "type": "integer", "minimum": 0, "maximum": 2 },
-            "explain": { "type": "string", "maxLength": 80 }
+            "q": {
+              "type": "string",
+              "maxLength": 40
+            },
+            "options": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 3,
+              "items": {
+                "type": "string",
+                "maxLength": 14
+              }
+            },
+            "answer": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "explain": {
+              "type": "string",
+              "maxLength": 80
+            }
           }
         },
-        "xp": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "xp": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        },
         "sources": {
-          "type": "array", "minItems": 1,
+          "type": "array",
+          "minItems": 1,
           "items": {
-            "type": "object", "additionalProperties": false, "required": ["title"],
-            "properties": { "title": { "type": "string" }, "url": { "type": "string" } }
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "title"
+            ],
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            }
           }
         },
         "review": {
-          "type": "object", "additionalProperties": false, "required": ["status"],
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status"
+          ],
           "properties": {
-            "status": { "enum": ["draft", "ai-checked", "reviewed", "owner-claim"], "description": "上线门：只有 reviewed（官方）/ owner-claim（用户真藏）可上线" },
-            "by": { "type": "string" },
-            "at": { "type": "string" },
-            "notes": { "type": "string" }
+            "status": {
+              "enum": [
+                "draft",
+                "ai-checked",
+                "reviewed",
+                "owner-claim"
+              ],
+              "description": "上线门：只有 reviewed（官方）/ owner-claim（用户真藏）可上线"
+            },
+            "by": {
+              "type": "string"
+            },
+            "at": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            }
           }
         }
       }
     },
     "item": {
-      "type": "object", "additionalProperties": false, "required": ["id", "name", "images", "spots", "collect"],
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "images",
+        "spots",
+        "collect"
+      ],
       "description": "① 核心最小集：id + name + ≥1 张图 + ≥1 个门道点 + collect；cards 可为空（全部门道都引用领域知识时）",
       "properties": {
-        "id": { "$ref": "#/$defs/slug" },
-        "origin": { "enum": ["official", "user"], "default": "official" },
-        "name": { "type": "string", "maxLength": 16 },
-        "subtitle": { "type": "string", "maxLength": 24 },
-        "order": { "type": "integer", "minimum": 0 },
-        "tags": { "type": "array", "items": { "type": "string", "maxLength": 8 } },
-        "attrs": {
-          "type": "object", "description": "② 按 全局+大类+领域 字段字典填写的规格值；校验由 check.mjs 按字典完成",
-          "additionalProperties": { "type": ["string", "number", "boolean", "array"] }
+        "id": {
+          "$ref": "#/$defs/slug"
         },
-        "images": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/image" } },
-        "spots": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "$ref": "#/$defs/spot" } },
-        "cards": { "type": "array", "default": [], "items": { "$ref": "#/$defs/card" } },
+        "origin": {
+          "enum": [
+            "official",
+            "user"
+          ],
+          "default": "official"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "subtitle": {
+          "type": "string",
+          "maxLength": 24
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 8
+          }
+        },
+        "attrs": {
+          "type": "object",
+          "description": "② 按 全局+大类+领域 字段字典填写的规格值；校验由 check.mjs 按字典完成",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "array"
+            ]
+          }
+        },
+        "images": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/image"
+          }
+        },
+        "spots": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/spot"
+          }
+        },
+        "cards": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/card"
+          }
+        },
         "collect": {
-          "type": "object", "additionalProperties": false, "required": ["keySpots"],
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "keySpots"
+          ],
           "properties": {
-            "keySpots": { "oneOf": [{ "const": "all" }, { "type": "integer", "minimum": 1, "maximum": 8 }] }
+            "keySpots": {
+              "oneOf": [
+                {
+                  "const": "all"
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8
+                }
+              ]
+            }
           }
         },
         "care": {
           "type": "object",
           "description": "③ 预留模块 care（养：多状态图层 + 演化时间条件）。需 modules 含 care 且引擎具备『离线天数』能力后才消费；形状待该模块立项时定稿"
+        },
+        "tier": {
+          "type": "string",
+          "maxLength": 4,
+          "description": "品级，须为 hobby.grading.tiers 之一；标了 tier 就必须填全部分级维度的 attrs。未开皮的青皮核桃这类『看不出品级』的藏品可不标"
         }
       }
     }

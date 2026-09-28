@@ -116,7 +116,17 @@ function checkHobby(h, file, release) {
       if (dict.has(f.key)) errs.push(`${P}.fields: 「${f.key}」已在 ${dict.get(f.key).layer} 定义，${layer} 不得重定义`);
       else dict.set(f.key, { ...f, layer });
       if ((f.type === 'enum' || f.type === 'multi') && !(f.options && f.options.length >= 2)) errs.push(`${P}.fields.${f.key}: enum/multi 须给 ≥2 个 options`);
+      if (f.ordered && f.type !== 'enum') errs.push(`${P}.fields.${f.key}: ordered 只能用在 enum 字段上`);
     }
+  }
+
+  // 品相分级：维度必须是 ordered enum 字段
+  const dims = [];
+  for (const k of h.grading.dims) {
+    const f = dict.get(k);
+    if (!f) errs.push(`${P}.grading.dims: 「${k}」不在字段字典里`);
+    else if (!(f.type === 'enum' && f.ordered)) errs.push(`${P}.grading.dims: 「${k}」须是 ordered: true 的 enum 字段（选项从低到高）`);
+    else dims.push(f);
   }
 
   // 领域知识库与门道模板
@@ -161,6 +171,21 @@ function checkHobby(h, file, release) {
     }
     if (origin === 'official') {
       for (const f of dict.values()) if (f.required && !(it.attrs && f.key in it.attrs)) errs.push(`${I}.attrs: 缺必填字段 ${f.key}`);
+    }
+
+    // 品级：标了 tier 就要填全分级维度，并与维度大致一致
+    if (it.tier !== undefined) {
+      const ti = h.grading.tiers.indexOf(it.tier);
+      if (ti < 0) errs.push(`${I}.tier: 「${it.tier}」不在品级 ${h.grading.tiers.join('/')}`);
+      const missing = dims.filter((f) => !(it.attrs && f.key in it.attrs)).map((f) => f.key);
+      if (missing.length) errs.push(`${I}.tier: 标了品级就要填全分级维度，缺 ${missing.join(', ')}`);
+      else if (ti >= 0 && dims.length) {
+        const mean = dims.reduce((a, f) => a + f.options.indexOf(it.attrs[f.key]) / (f.options.length - 1), 0) / dims.length;
+        const expect = Math.round(mean * (h.grading.tiers.length - 1));
+        if (Math.abs(expect - ti) > 1) warns.push(`${I}.tier: 标「${it.tier}」，但按分级维度估算约为「${h.grading.tiers[expect]}」，请复核`);
+      }
+    } else if (origin === 'official') {
+      warns.push(`${I}.tier: 未标品级（仅适用于看不出品级的藏品，如未开皮的青皮核桃）`);
     }
 
     // 图片
