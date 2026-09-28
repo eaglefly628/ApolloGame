@@ -50,8 +50,8 @@ describe('game112 守卫（复查门点名·撤修必红）', () => {
     const flip = (sensitive: boolean) => ({ ...v, chapters: v.chapters.map((c) => ({ ...c, sensitive })) });
     const id = v.chapters[0]!.id;
     const badge = (tree: LayoutNode) => walk(tree).some((n) => n.id === `chap-${id}-sensitive`);
-    expect(badge(buildScreen({ screen: 'memory', view: flip(true) }))).toBe(true);
-    expect(badge(buildScreen({ screen: 'memory', view: flip(false) }))).toBe(false);
+    expect(badge(buildScreen({ screen: 'memory', room: 'hall', view: flip(true) }))).toBe(true);
+    expect(badge(buildScreen({ screen: 'memory', room: 'hall', view: flip(false) }))).toBe(false);
   });
 
   it('八问②：陪伴动作后猫换姿态与台词（姿态机 pose.<cat>·画面确认）', () => {
@@ -67,12 +67,13 @@ describe('game112 守卫（复查门点名·撤修必红）', () => {
     expect(s.hall().catLine).toBe(cat.poseLines.lookup);
     // 主厅 Image 随 lookup 切到「注意」态（画面真变）
     const src = (pose: 'rest' | 'lookup'): string => {
-      const tree = buildScreen({ screen: 'hall', view: { ...s.hall(), pose, relations: { ...s.hall().relations, mood: 0 } } });
+      const tree = buildScreen({ screen: 'scene', room: 'hall', view: { ...s.hall(), pose, relations: { ...s.hall().relations, mood: 0 } } });
       return String((walk(tree).find((n) => n.id === 'hall-cat')!.props as { src: string }).src);
     };
     expect(src('lookup')).not.toBe(src('rest'));
     // 晶球卡副标带心光进度（陪坐的可见回报）
-    const sub = walk(buildScreen({ screen: 'hall', view: s.hall() })).find((n) => n.id === 'hot-orbs-sub')!.props as { text: string };
-    expect(sub.text).toContain(`心光 ${s.hall().relations.heartlight}`);
+    // 晶球物件的副标签带心光进度（陪坐的可见回报·巡游版里是画里晶球下方的 Tag）
+    const sub = walk(buildScreen({ screen: 'scene', room: 'hall', view: s.hall() })).find((n) => n.id === 'hot-orbs-sub')!.props as { label: string };
+    expect(sub.label).toContain(`心光 ${s.hall().relations.heartlight}`);
   });
 });

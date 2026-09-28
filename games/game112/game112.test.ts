@@ -159,12 +159,13 @@ describe('game112 宿主路由（UI action → 具名输入·纯查表）', () =
     expect(routeAction('shop.buy', 'not-an-item')).toBeUndefined();
     expect(routeAction('memory.read', 'nope')).toBeUndefined();
     expect(routeAction('memory.choose', 'x')).toBeUndefined();
-    expect(routeAction('decor.place', 'feather')).toEqual({ key: placeKey('feather'), screen: 'hall', room: 'hall' });
+    expect(routeAction('decor.place', 'feather')).toEqual({ key: placeKey('feather'), screen: 'scene', room: 'hall' });
   });
 
   it('房间导航只接受 ROOMS 闭集；馆图任意快跳，hall 归主厅屏，其他进通用房间屏', () => {
     expect(routeAction('map.open')).toEqual({ screen: 'map' });
-    for (const room of ROOMS) expect(routeAction('room.enter', room.id)).toEqual({ screen: room.id === 'hall' ? 'hall' : 'room', room: room.id });
+    for (const room of ROOMS) expect(routeAction('room.enter', room.id)).toEqual({ screen: 'scene', room: room.id });
+    expect(routeAction('hall.back')).toEqual({ screen: 'scene' }); // 回当前房·不传送回主厅
     expect(routeAction('room.enter')).toBeUndefined();
     expect(routeAction('room.enter', 'secret-basement')).toBeUndefined();
   });

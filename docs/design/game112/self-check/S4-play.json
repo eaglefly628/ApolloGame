@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-28T03:58:43.234Z",
+  "at": "2026-09-28T05:14:05.456Z",
   "checks": [
     {
       "name": "标题页：主 CTA「回到星尾馆」在",
@@ -12,22 +12,27 @@
     {
       "name": "进主厅：猫画面 + 星砂 0 + 情绪短语",
       "pass": true,
-      "detail": "stardust=0 mood=安静地待着 hasHall=true screen=hall-room-label actions=18"
+      "detail": "stardust=0 mood=雪团 · 安静地待着 hasHall=true screen=room-sign actions=12"
     },
     {
-      "name": "00 全馆预览：剖面图内十个热区 + 十个文字快跳都在",
+      "name": "巡游版铁律：主厅所有按钮都在画里——木牌 + 4 扇门 + 4 个物件，没有画面外的导航栏",
       "pass": true,
-      "detail": "image=10 text=10"
+      "detail": "doors=4 objects=4"
     },
     {
-      "name": "00 全馆预览：当前主厅高亮并标出雪团在这里",
+      "name": "00 馆图：剖面图内十个热区都可点·没有文字快跳栏",
+      "pass": true,
+      "detail": "image=10"
+    },
+    {
+      "name": "00 馆图：当前主厅高亮并标出雪团在这里",
       "pass": true,
       "detail": "tag=01 主厅 · 雪团在这里"
     },
     {
-      "name": "文字快跳可用：点 06 月光窗厅文字按钮 → 进入月光窗厅固定镜头",
+      "name": "馆图里的木牌「回到雪团身边」→ 回到当前房间（主厅）",
       "pass": true,
-      "detail": "room=sunroom"
+      "detail": "room=hall"
     },
     {
       "name": "图内热区可跳：直接点 02 晶球厅缩略 → 进入晶球厅固定镜头",
@@ -35,89 +40,89 @@
       "detail": "room=orbs"
     },
     {
-      "name": "相邻门 orbs → gallery",
+      "name": "画里的门 orbs → gallery（猫在猫位·门数=相邻房数）",
       "pass": true,
-      "detail": "room=gallery hall=false"
+      "detail": "room=gallery doors=3"
     },
     {
-      "name": "相邻门 gallery → attic",
+      "name": "画里的门 gallery → attic（猫在猫位·门数=相邻房数）",
       "pass": true,
-      "detail": "room=attic hall=false"
+      "detail": "room=attic doors=1"
     },
     {
-      "name": "相邻门 attic → gallery",
+      "name": "画里的门 attic → gallery（猫在猫位·门数=相邻房数）",
       "pass": true,
-      "detail": "room=gallery hall=false"
+      "detail": "room=gallery doors=3"
     },
     {
-      "name": "相邻门 gallery → sunroom",
+      "name": "画里的门 gallery → sunroom（猫在猫位·门数=相邻房数）",
       "pass": true,
-      "detail": "room=sunroom hall=false"
+      "detail": "room=sunroom doors=1"
     },
     {
-      "name": "相邻门 sunroom → gallery",
+      "name": "画里的门 sunroom → gallery（猫在猫位·门数=相邻房数）",
       "pass": true,
-      "detail": "room=gallery hall=false"
+      "detail": "room=gallery doors=3"
     },
     {
-      "name": "相邻门 gallery → orbs",
+      "name": "画里的门 gallery → orbs（猫在猫位·门数=相邻房数）",
       "pass": true,
-      "detail": "room=orbs hall=false"
+      "detail": "room=orbs doors=2"
     },
     {
-      "name": "相邻门 orbs → hall",
+      "name": "画里的门 orbs → hall（猫在猫位·门数=相邻房数）",
       "pass": true,
-      "detail": "room=null hall=true"
+      "detail": "room=hall doors=4"
     },
     {
-      "name": "相邻门 hall → cardroom",
+      "name": "画里的门 hall → cardroom（猫在猫位·门数=相邻房数）",
       "pass": true,
-      "detail": "room=cardroom hall=false"
+      "detail": "room=cardroom doors=2"
     },
     {
-      "name": "相邻门 cardroom → pantry",
+      "name": "画里的门 cardroom → pantry（猫在猫位·门数=相邻房数）",
       "pass": true,
-      "detail": "room=pantry hall=false"
+      "detail": "room=pantry doors=1"
     },
     {
-      "name": "相邻门 pantry → cardroom",
+      "name": "画里的门 pantry → cardroom（猫在猫位·门数=相邻房数）",
       "pass": true,
-      "detail": "room=cardroom hall=false"
+      "detail": "room=cardroom doors=2"
     },
     {
-      "name": "相邻门 cardroom → hall",
+      "name": "画里的门 cardroom → hall（猫在猫位·门数=相邻房数）",
       "pass": true,
-      "detail": "room=null hall=true"
+      "detail": "room=hall doors=4"
     },
     {
-      "name": "相邻门 hall → playroom",
+      "name": "画里的门 hall → playroom（猫在猫位·门数=相邻房数）",
       "pass": true,
-      "detail": "room=playroom hall=false"
+      "detail": "room=playroom doors=1"
     },
     {
-      "name": "相邻门 playroom → hall",
+      "name": "画里的门 playroom → hall（猫在猫位·门数=相邻房数）",
       "pass": true,
-      "detail": "room=null hall=true"
+      "detail": "room=hall doors=4"
     },
     {
-      "name": "相邻门 hall → garden",
+      "name": "画里的门 hall → garden（猫在猫位·门数=相邻房数）",
       "pass": true,
-      "detail": "room=garden hall=false"
+      "detail": "room=garden doors=2"
     },
     {
-      "name": "相邻门 garden → shopfront",
+      "name": "画里的门 garden → shopfront（猫在猫位·门数=相邻房数）",
       "pass": true,
-      "detail": "room=shopfront hall=false"
+      "detail": "room=shopfront doors=1"
     },
     {
-      "name": "相邻门 shopfront → garden",
+      "name": "画里的门 shopfront → garden（猫在猫位·门数=相邻房数）",
       "pass": true,
-      "detail": "room=garden hall=false"
+      "detail": "room=garden doors=2"
     },
     {
-      "name": "相邻门 garden → hall",
+      "name": "画里的门 garden → hall（猫在猫位·门数=相邻房数）",
       "pass": true,
-      "detail": "room=null hall=true"
+      "detail": "room=hall doors=4"
     },
     {
       "name": "陪坐 10 次：星砂 20（数字真的变了）",
@@ -130,9 +135,19 @@
       "detail": "line=它挪了挪，把身子往你这边靠了一点。 orb=心光 20 · 看它的过去"
     },
     {
-      "name": "星砂铺：物品网格 + 顶栏星砂 20",
+      "name": "画里的门 hall → garden（猫在猫位·门数=相邻房数）",
       "pass": true,
-      "detail": "stardust=20"
+      "detail": "room=garden doors=2"
+    },
+    {
+      "name": "画里的门 garden → shopfront（猫在猫位·门数=相邻房数）",
+      "pass": true,
+      "detail": "room=shopfront doors=1"
+    },
+    {
+      "name": "星砂铺叠在铺子房间上：物品 + 星砂 20",
+      "pass": true,
+      "detail": "stardust=20 room=shopfront"
     },
     {
       "name": "纸袋（20）可买·羽毛杆（30）禁用",
@@ -144,21 +159,46 @@
       "detail": "stardust=0 badge=已拥有 ×1"
     },
     {
+      "name": "收起铺子 → 还在 10 号房（不传送）",
+      "pass": true,
+      "detail": "room=shopfront"
+    },
+    {
+      "name": "画里的门 shopfront → garden（猫在猫位·门数=相邻房数）",
+      "pass": true,
+      "detail": "room=garden doors=2"
+    },
+    {
+      "name": "画里的门 garden → hall（猫在猫位·门数=相邻房数）",
+      "pass": true,
+      "detail": "room=hall doors=4"
+    },
+    {
       "name": "玩具篮：有「放到馆里」",
       "pass": true
     },
     {
-      "name": "放到馆里 → 回主厅 → 纸袋出现在馆里（购买回到共同空间）",
+      "name": "放到馆里 → 回主厅 → 纸袋出现在猫身边（购买回到共同空间）",
       "pass": true,
       "detail": "placed=true"
     },
     {
-      "name": "回忆廊：章节「已发光」",
+      "name": "画里的门 hall → orbs（猫在猫位·门数=相邻房数）",
+      "pass": true,
+      "detail": "room=orbs doors=2"
+    },
+    {
+      "name": "画里的门 orbs → gallery（猫在猫位·门数=相邻房数）",
+      "pass": true,
+      "detail": "room=gallery doors=3"
+    },
+    {
+      "name": "回忆廊叠在 4 号房上：章节「已发光」",
       "pass": true,
       "detail": "state=已发光"
     },
     {
-      "name": "阅读：台词框 + 「继续」",
+      "name": "阅读：底部台词框 + 「继续」",
       "pass": true
     },
     {
@@ -178,28 +218,40 @@
       "pass": true
     },
     {
-      "name": "新一轮还能接着陪：呼唤后星砂 1",
+      "name": "新一轮还能接着陪（点猫 = 呼唤·在 4 号房也行）：星砂 1",
       "pass": true,
-      "detail": "stardust=1"
+      "detail": "stardust=1 room=gallery"
     },
     {
-      "name": "只看它：界面收起（无导航/动作栏）· 猫画面还在 · 只剩「显示界面」",
+      "name": "只看它：木牌/门/物件全收起 · 猫画面还在 · 只剩「显示界面」",
+      "pass": true,
+      "detail": "doors=0"
+    },
+    {
+      "name": "显示界面：木牌与门回来",
+      "pass": true,
+      "detail": "doors=3"
+    },
+    {
+      "name": "画里的门 gallery → orbs（猫在猫位·门数=相邻房数）",
+      "pass": true,
+      "detail": "room=orbs doors=2"
+    },
+    {
+      "name": "晶球厅名册叠在房间上：当前猫晶球 + 「接回自己的猫」空位",
       "pass": true
     },
     {
-      "name": "显示界面：导航与动作栏回来",
-      "pass": true
-    },
-    {
-      "name": "晶球厅：当前猫晶球 + 「接回自己的猫」空位",
-      "pass": true
+      "name": "画里的门 orbs → hall（猫在猫位·门数=相邻房数）",
+      "pass": true,
+      "detail": "room=hall doors=4"
     },
     {
       "name": "星牌桌：接口位（牌规待定说明）",
       "pass": true
     },
     {
-      "name": "设置：可信优先文案",
+      "name": "设置：画里右上木牌打开·可信优先文案",
       "pass": true
     },
     {
@@ -231,7 +283,7 @@
       "detail": ""
     }
   ],
-  "shots": 32,
+  "shots": 38,
   "consoleErrors": [],
   "actionsSeen": [
     "cat.greet",

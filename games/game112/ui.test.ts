@@ -3,9 +3,9 @@ import { validateLayoutNode, resolveBindings } from '@zerocraft/engine/ui/compon
 import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { HallSession } from './session.js';
 import { EMPTY_STATE } from './blueprint.js';
-import { buildScreen, buildHome, buildMap, buildReading, buildRoom, UI_ACTIONS, type Screen } from './ui.js';
+import { buildScreen, buildHome, buildMap, buildReading, buildScene, UI_ACTIONS, type Screen } from './ui.js';
 import { flagOn } from './project.js';
-import { ACTIVE_CAT, CHAPTERS, ROOMS, buyKey, offlineKey, relId, roomOf } from './world-data.js';
+import { ACTIVE_CAT, CHAPTERS, ROOMS, SCENE_W, SCENE_H, buyKey, offlineKey, relId, roomOf } from './world-data.js';
 
 /** 收集树里所有节点（含 children 递归）。 */
 function walk(n: LayoutNode, out: LayoutNode[] = []): LayoutNode[] {
@@ -21,8 +21,9 @@ const actionsIn = (n: LayoutNode): Set<string> => {
   }
   return out;
 };
+const ids = (t: LayoutNode): Set<string> => new Set(walk(t).map((n) => n.id));
 
-const SCREENS: Screen[] = ['hall', 'map', 'room', 'orbs', 'table', 'toys', 'shop', 'memory', 'settings', 'about'];
+const SCREENS: Screen[] = ['scene', 'map', 'orbs', 'table', 'toys', 'shop', 'memory', 'settings', 'about'];
 
 function richSession(): HallSession {
   const s = new HallSession(112, { ...EMPTY_STATE, stardust: 80, relations: { [relId('heartlight', ACTIVE_CAT)]: 20 }, chapters: [CHAPTERS[0]!.id] });
@@ -36,26 +37,34 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
     expect(validateLayoutNode(buildHome({ canExit: true }))).toEqual([]);
   });
 
-  it('全部屏 · 空世界 / 富世界 均零 issue', () => {
+  it('全部屏 × 十个房间 · 空世界 / 富世界 均零 issue', () => {
     const empty = new HallSession(112).hall();
     const rich = richSession().hall();
     for (const screen of SCREENS) {
-      expect(validateLayoutNode(buildScreen({ screen, view: empty })), `${screen}/empty`).toEqual([]);
-      expect(validateLayoutNode(buildScreen({ screen, view: rich })), `${screen}/rich`).toEqual([]);
+      for (const room of ROOMS) {
+        expect(validateLayoutNode(buildScreen({ screen, view: empty, room: room.id })), `${screen}/${room.id}/empty`).toEqual([]);
+        expect(validateLayoutNode(buildScreen({ screen, view: rich, room: room.id })), `${screen}/${room.id}/rich`).toEqual([]);
+      }
     }
   });
 
-  it('十房拓扑是单一、连通、对称的闭集；00 馆图热区全部落在 960×540 内', () => {
+  it('十房拓扑是单一、连通、对称的闭集；门 ⇔ adjacent 一一对应；热区与猫位都落在舞台 1000×714 内；馆图热区落在 960×540 内', () => {
     expect(ROOMS).toHaveLength(10);
     expect(new Set(ROOMS.map((r) => r.id)).size).toBe(10);
     expect(new Set(ROOMS.map((r) => r.number)).size).toBe(10);
+    const inStage = (r: { x: number; y: number; w: number; h: number }): boolean => r.x >= 0 && r.y >= 0 && r.x + r.w <= SCENE_W && r.y + r.h <= SCENE_H;
     for (const room of ROOMS) {
       expect(room.scene, room.id).toBe(room.id);
-      expect(room.mapRect.x, room.id).toBeGreaterThanOrEqual(0);
-      expect(room.mapRect.y, room.id).toBeGreaterThanOrEqual(0);
       expect(room.mapRect.x + room.mapRect.w, room.id).toBeLessThanOrEqual(960);
       expect(room.mapRect.y + room.mapRect.h, room.id).toBeLessThanOrEqual(540);
       for (const next of room.adjacent) expect(roomOf(next)?.adjacent, `${room.id}↔${next}`).toContain(room.id);
+      // 门 ⇔ adjacent（画里每扇门通向一间相邻房·每间相邻房恰有一扇门）
+      expect([...room.doors.map((d) => d.to)].sort(), `${room.id} doors`).toEqual([...room.adjacent].sort());
+      for (const d of room.doors) expect(inStage(d), `${room.id} door→${d.to}`).toBe(true);
+      for (const o of room.objects) expect(inStage(o), `${room.id} object ${o.id}`).toBe(true);
+      expect(room.catSpot.x + room.catSpot.w, `${room.id} cat`).toBeLessThanOrEqual(SCENE_W);
+      expect(room.catSpot.y + Math.round(room.catSpot.w * 0.75), `${room.id} cat`).toBeLessThanOrEqual(SCENE_H);
+      expect(room.objects.length, `${room.id} 至少一个物件入口`).toBeGreaterThan(0);
     }
     const seen = new Set<string>(['hall']);
     const queue = ['hall'];
@@ -63,39 +72,61 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
     expect(seen.size).toBe(ROOMS.length);
   });
 
-  it('00 快速预览图本身十个房间都可点，文字快跳也同表生成；当前房高亮', () => {
+  it('巡游版铁律：房间舞台上没有画面外的菜单——没有 navbar / 顶栏 / 卡片栏；门、物件、猫、木牌都在舞台里', () => {
+    const view = richSession().hall();
+    for (const room of ROOMS) {
+      const tree = buildScene(view, room.id);
+      const t = ids(tree);
+      for (const banned of ['navbar', 'hall-top', 'hall-hotspots', 'hall-care', 'map-quick-jump']) expect(t.has(banned), `${room.id} 不许有 ${banned}`).toBe(false);
+      const stage = walk(tree).find((n) => n.id === 'hall-stage')!;
+      const inside = ids(stage);
+      for (const must of ['room-sign', 'hall-hud', 'hall-stardust', 'hall-stage-hide', 'hall-cat', 'hall-cat-line', 'hall-mood', 'hall-stage-show']) expect(inside.has(must), `${room.id} 舞台里要有 ${must}`).toBe(true);
+      // 门只通向 adjacent
+      const doorArgs = walk(stage).filter((n) => (n.props as { action?: string }).action === 'room.enter').map((n) => (n.props as { actionArg?: string }).actionArg);
+      expect([...doorArgs].sort(), room.id).toEqual([...room.adjacent].sort());
+      // 每个物件都是已接线动作
+      const known = new Set<string>(UI_ACTIONS);
+      for (const o of room.objects) expect(known.has(o.action), `${room.id}:${o.action}`).toBe(true);
+      // 猫在猫位上（绝对坐标 = 表里的猫位）
+      const cat = walk(stage).find((n) => n.id === 'hall-cat-wrap')!;
+      expect(cat.layout?.x).toBe(room.catSpot.x);
+      expect(cat.layout?.y).toBe(room.catSpot.y);
+      expect((cat.props as { action?: string }).action).toBe('cat.greet');
+    }
+  });
+
+  it('00 馆图：十个房间都在画里可点、当前房高亮、画里有回猫身边的木牌；没有文字快跳栏', () => {
     const map = buildMap('garden');
     expect(validateLayoutNode(map)).toEqual([]);
     const nodes = walk(map);
     const imageHits = nodes.filter((n) => n.id.startsWith('map-room-') && !n.id.endsWith('-tag'));
     expect(imageHits).toHaveLength(10);
     expect(imageHits.map((n) => (n.props as { actionArg?: string }).actionArg)).toEqual(ROOMS.map((r) => r.id));
-    expect(nodes.filter((n) => n.id.startsWith('go-room-'))).toHaveLength(10);
     expect((nodes.find((n) => n.id === 'map-room-garden')?.props as { accent?: boolean }).accent).toBe(true);
+    expect(nodes.some((n) => n.id === 'map-back' && (n.props as { action?: string }).action === 'hall.back')).toBe(true);
+    expect(nodes.some((n) => n.id.startsWith('go-room-'))).toBe(false);
   });
 
-  it('通用房间只生成 ROOMS.adjacent 指定的门，不会越拓扑边', () => {
+  it('子功能叠在房间上：Drawer 里是内容，身后还是当前房间的舞台（不换屏）', () => {
     const view = richSession().hall();
-    for (const room of ROOMS.filter((r) => r.id !== 'hall')) {
-      const tree = buildRoom(view, room.id);
-      expect(validateLayoutNode(tree), room.id).toEqual([]);
-      const args = walk(tree)
-        .filter((n) => (n.props as { action?: string }).action === 'room.enter')
-        .map((n) => (n.props as { actionArg?: string }).actionArg);
-      expect(args, room.id).toEqual(room.adjacent);
+    for (const [screen, drawerId] of [['shop', 'shop-drawer'], ['toys', 'toys-drawer'], ['memory', 'memory-drawer'], ['orbs', 'orbs-drawer'], ['settings', 'settings-drawer'], ['table', 'table-drawer']] as const) {
+      const tree = buildScreen({ screen, view, room: 'sunroom' });
+      const t = ids(tree);
+      expect(tree.id, screen).toBe('scene-sunroom');
+      expect(t.has('hall-stage'), screen).toBe(true);
+      expect(t.has(drawerId), screen).toBe(true);
+      const d = walk(tree).find((n) => n.id === drawerId)!;
+      expect(d.type).toBe('Drawer');
+      expect((d.props as { closeAction?: string }).closeAction).toBe('hall.back');
     }
   });
 
-  it('每个房间活动都复用已接线 UI_ACTIONS，不制造空入口', () => {
-    const known = new Set<string>(UI_ACTIONS);
-    for (const room of ROOMS) if (room.activity !== undefined) expect(known.has(room.activity.action), `${room.id}:${room.activity.action}`).toBe(true);
-  });
-
-  it('阅读屏三态（line / choice / ended）零 issue，选项列走 choiceList', () => {
+  it('阅读 = 底部台词框三态（line / choice / ended）零 issue，选项列走 choiceList，关闭回回忆廊', () => {
     const s = richSession();
     const id = CHAPTERS[0]!.id;
     const line = buildReading(s.reading(id)!);
     expect(validateLayoutNode(line)).toEqual([]);
+    expect((line.props as { side?: string; closeAction?: string })).toMatchObject({ side: 'bottom', closeAction: 'memory.back' });
     s.act('dialogue.advance'); s.act('dialogue.advance');
     const choice = buildReading(s.reading(id)!);
     expect(validateLayoutNode(choice)).toEqual([]);
@@ -110,40 +141,39 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
   it('屏上发出的 action ⊆ UI_ACTIONS（宿主接线单一真相·无孤儿信号）', () => {
     const rich = richSession();
     const all = new Set<string>();
-    for (const screen of SCREENS) for (const a of actionsIn(buildScreen({ screen, view: rich.hall() }))) all.add(a);
+    for (const screen of SCREENS) for (const room of ROOMS) for (const a of actionsIn(buildScreen({ screen, view: rich.hall(), room: room.id }))) all.add(a);
     for (const a of actionsIn(buildHome({ canExit: true }))) all.add(a);
-    for (const a of actionsIn(buildReading(rich.reading(CHAPTERS[0]!.id)!))) all.add(a);
+    for (const a of actionsIn(buildScreen({ screen: 'reading', view: rich.hall(), reading: rich.reading(CHAPTERS[0]!.id)! }))) all.add(a);
     const known = new Set<string>(UI_ACTIONS);
     for (const a of all) expect(known.has(a), a).toBe(true);
   });
 
-  it('主厅：离线小事件 → 「看过了」按钮出现；已放置物品 → 主厅可见（购买回到共同空间）', () => {
+  it('主厅：离线小事件 → 画里的纸条 + 「看过了」；已放置物品 → 猫身边可见（购买回到共同空间）', () => {
     const s = richSession();
-    const hall = buildScreen({ screen: 'hall', view: s.hall() });
+    const hall = buildScreen({ screen: 'scene', view: s.hall(), room: 'hall' });
     expect(walk(hall).some((n) => n.id === 'hall-offline-ack')).toBe(true);
     s.act('offline.ack'); s.step(); // Effect（Commit）发 DestroyRequest → 下一拍 destroy-apply 才移除
-    expect(walk(buildScreen({ screen: 'hall', view: s.hall() })).some((n) => n.id === 'hall-offline')).toBe(false);
+    expect(walk(buildScreen({ screen: 'scene', view: s.hall(), room: 'hall' })).some((n) => n.id === 'hall-offline')).toBe(false);
     s.act('decor.place.feather'); s.step();
-    expect(walk(buildScreen({ screen: 'hall', view: s.hall() })).some((n) => n.id === 'hall-placed-feather')).toBe(true);
+    expect(walk(buildScreen({ screen: 'scene', view: s.hall(), room: 'hall' })).some((n) => n.id === 'hall-placed-feather')).toBe(true);
   });
 
-  it('沉浸模式「只看它」：Flag 开 → visibleWhen 剔掉顶栏/热点/动作/导航，只剩猫画面 + 「显示界面」；关 → 复原（重组·非缺口）', () => {
+  it('沉浸模式「只看它」：Flag 开 → visibleWhen 剔掉木牌/星砂/门/物件/纸条，只剩猫 + 「显示界面」；关 → 复原', () => {
     const s = richSession();
-    const tree = () => resolveBindings(buildScreen({ screen: 'hall', view: s.hall() }), { flag: (id) => flagOn(s.world, id) });
-    const ids = (t: LayoutNode) => new Set(walk(t).map((n) => n.id));
+    const tree = () => resolveBindings(buildScreen({ screen: 'scene', view: s.hall(), room: 'hall' }), { flag: (id) => flagOn(s.world, id) });
     let t = ids(tree());
     expect(s.hall().stageOnly).toBe(false);
-    for (const id of ['hall-top', 'hall-hotspots', 'hall-care', 'navbar', 'hall-stage-hide', 'hall-offline']) expect(t.has(id), id).toBe(true);
+    for (const id of ['room-sign', 'hall-hud', 'hall-stage-hide', 'hall-offline', 'door-garden', 'hot-orbs']) expect(t.has(id), id).toBe(true);
     expect(t.has('hall-stage-show')).toBe(false);
     s.act('ui.hide'); s.step();
     expect(s.hall().stageOnly).toBe(true);
     t = ids(tree());
-    for (const id of ['hall-top', 'hall-hotspots', 'hall-care', 'navbar', 'hall-offline']) expect(t.has(id), id).toBe(false);
+    for (const id of ['room-sign', 'hall-hud', 'hall-offline', 'door-garden', 'hot-orbs']) expect(t.has(id), id).toBe(false);
     expect(t.has('hall-cat')).toBe(true);
     expect(t.has('hall-stage-show')).toBe(true);
     s.act('ui.show'); s.step();
     t = ids(tree());
-    expect(t.has('navbar')).toBe(true);
+    expect(t.has('room-sign')).toBe(true);
     expect(t.has('hall-stage-show')).toBe(false);
   });
 

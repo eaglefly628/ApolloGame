@@ -41,14 +41,17 @@ const READ = `(() => {
     screen: document.querySelector('[data-ui-id]')?.getAttribute('data-ui-id') ?? null,
     stardust: num(txt('hall-stardust') ?? txt('shop-stardust')),
     mood: txt('hall-mood'), catLine: txt('hall-cat-line'), orbSub: txt('hot-orbs-sub'),
-    hasHall: has('hall-cat'), hasMap: has('map-cutaway'), hasShop: has('shop-grid'), hasToys: has('toys-title'), hasMemory: has('memory-list'),
-    roomId: Array.from(document.querySelectorAll('[id^="room-"][id$="-stage"]')).map((e) => e.id.slice(5, -6))[0] ?? null,
+    // 巡游版：唯一主屏 = scene-<room>；hasHall = 现在在主厅（每间房都有猫，所以不能再用 hall-cat 判）。
+    roomId: (document.querySelector('[id^="scene-"], [data-ui-id^="scene-"]')?.id || document.querySelector('[data-ui-id^="scene-"]')?.getAttribute('data-ui-id') || '').replace(/^scene-/, '') || null,
+    hasHall: ((document.querySelector('[id^="scene-"], [data-ui-id^="scene-"]')?.id || document.querySelector('[data-ui-id^="scene-"]')?.getAttribute('data-ui-id') || '') === 'scene-hall'),
+    hasMap: has('map-cutaway'), hasShop: has('shop-grid'), hasToys: has('toys-drawer'), hasMemory: has('memory-list'),
     mapImageHits: document.querySelectorAll('#map-cutaway [data-action="room.enter"]').length,
-    mapTextHits: document.querySelectorAll('#map-quick-jump [data-action="room.enter"]').length,
     mapHere: txt('map-room-hall-tag'),
+    hasSign: has('room-sign'), doorCount: document.querySelectorAll('#hall-stage [data-action="room.enter"]').length,
+    objectCount: document.querySelectorAll('#hall-stage [id^="hot-"][data-action]').length,
     hasReading: has('reading-dialog'), hasReadingNext: has('reading-next'), hasReadingEnd: has('reading-end'),
     hasChoices: has('reading-choices'), placedFeather: has('hall-placed-paperbag'), offlineAck: has('hall-offline-ack'),
-    hasNav: has('navbar'), hasStageShow: has('hall-stage-show'), hasOrbs: has('orbs-title'), hasTable: has('table-note'), hasSettings: has('settings-title'), hasAbout: has('about-title'),
+    hasStageShow: has('hall-stage-show'), hasOrbs: has('orbs-drawer'), hasTable: has('table-note'), hasSettings: has('settings-drawer'), hasAbout: has('about-title'),
     offlineText: txt('hall-offline-0'),
     ownedBadge: txt('shop-paperbag-own'), chapterState: txt('chap-xuetuan-1-state'),
     actions,
@@ -105,7 +108,7 @@ async function main() {
   try {
     await page.goto(`http://localhost:${dev.port}/?game=game112`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(600);
-    say('══ game112 S4 试玩走查（真浏览器·全程只点真按钮·Loop-0）══\n');
+    say('══ game112 S4 试玩走查（真浏览器·全程只点真按钮·巡游版 + Loop-0）══\n');
 
     let s;
     await shot('title');
@@ -120,17 +123,18 @@ async function main() {
     await page.waitForTimeout(300);
     s = await state();
     check('进主厅：猫画面 + 星砂 0 + 情绪短语', s.hasHall && s.stardust === 0 && !!s.mood, `stardust=${s.stardust} mood=${s.mood} hasHall=${s.hasHall} screen=${s.screen} actions=${s.actions.length}`);
+    check('巡游版铁律：主厅所有按钮都在画里——木牌 + 4 扇门 + 4 个物件，没有画面外的导航栏', s.hasSign && s.doorCount === 4 && s.objectCount === 4 && !(await page.evaluate(() => !!document.getElementById('navbar'))), `doors=${s.doorCount} objects=${s.objectCount}`);
     await shot('hall-first');
 
     // ── 00 快速预览 + 十房拓扑巡游：第一次跳转必须点图中热区，不点文字兜底 ──
     await clickAction('map.open', 400);
     s = await state();
-    check('00 全馆预览：剖面图内十个热区 + 十个文字快跳都在', s.hasMap && s.mapImageHits === 10 && s.mapTextHits === 10, `image=${s.mapImageHits} text=${s.mapTextHits}`);
-    check('00 全馆预览：当前主厅高亮并标出雪团在这里', /雪团在这里/.test(s.mapHere ?? ''), `tag=${s.mapHere}`);
+    check('00 馆图：剖面图内十个热区都可点·没有文字快跳栏', s.hasMap && s.mapImageHits === 10 && !(await page.evaluate(() => !!document.getElementById('map-quick-jump'))), `image=${s.mapImageHits}`);
+    check('00 馆图：当前主厅高亮并标出雪团在这里', /雪团在这里/.test(s.mapHere ?? ''), `tag=${s.mapHere}`);
     await shot('map-cutaway');
-    const mapTextClicked = await click('#go-room-sunroom[data-action="room.enter"][data-arg="sunroom"]', 500);
+    const mapBack = await click('#map-back[data-action="hall.back"]', 400);
     s = await state();
-    check('文字快跳可用：点 06 月光窗厅文字按钮 → 进入月光窗厅固定镜头', mapTextClicked && s.roomId === 'sunroom', `room=${s.roomId}`);
+    check('馆图里的木牌「回到雪团身边」→ 回到当前房间（主厅）', mapBack && s.hasHall, `room=${s.roomId}`);
     await clickAction('map.open', 300);
     const mapImageClicked = await click('#map-room-orbs[data-action="room.enter"][data-arg="orbs"]', 500);
     s = await state();
@@ -140,7 +144,7 @@ async function main() {
     const roam = async (from, to) => {
       const clicked = await clickAction('room.enter', to, 450);
       const st = await state();
-      check(`相邻门 ${from} → ${to}`, clicked && (to === 'hall' ? st.hasHall : st.roomId === to), `room=${st.roomId} hall=${st.hasHall}`);
+      check(`画里的门 ${from} → ${to}（猫在猫位·门数=相邻房数）`, clicked && st.roomId === to && st.doorCount > 0, `room=${st.roomId} doors=${st.doorCount}`);
       if (to !== 'hall') await shot(`room-${to}`);
     };
     await roam('orbs', 'gallery');
@@ -169,9 +173,12 @@ async function main() {
     check('陪坐有画面确认：猫台词换成「靠近」姿态 + 晶球卡显示心光 20（八问第 2 问·第 2 轮）', /靠/.test(s.catLine ?? '') && /心光 20/.test(s.orbSub ?? ''), `line=${s.catLine} orb=${s.orbSub}`);
     await shot('hall-after-care');
 
+    // ── 星砂铺在 10 号房：走过去（画里的门）再点铺门 ──
+    await roam('hall', 'garden');
+    await roam('garden', 'shopfront');
     await clickAction('shop.open');
     s = await state();
-    check('星砂铺：物品网格 + 顶栏星砂 20', s.hasShop && s.stardust === 20, `stardust=${s.stardust}`);
+    check('星砂铺叠在铺子房间上：物品 + 星砂 20', s.hasShop && s.stardust === 20 && s.roomId === 'shopfront', `stardust=${s.stardust} room=${s.roomId}`);
     await shot('shop');
     check('纸袋（20）可买·羽毛杆（30）禁用', await page.evaluate(() => {
       const bag = document.querySelector('[data-action="shop.buy"][data-arg="paperbag"]');
@@ -183,24 +190,32 @@ async function main() {
     s = await state();
     check('买纸袋：星砂 0 · 「已拥有 ×1」', s.stardust === 0 && /已拥有/.test(s.ownedBadge ?? ''), `stardust=${s.stardust} badge=${s.ownedBadge}`);
     await shot('shop-bought');
-
     await clickAction('hall.back');
+    s = await state();
+    check('收起铺子 → 还在 10 号房（不传送）', !s.hasShop && s.roomId === 'shopfront', `room=${s.roomId}`);
+
+    // ── 玩具篮在主厅：走回去，点画里的篮子 ──
+    await roam('shopfront', 'garden');
+    await roam('garden', 'hall');
     await clickAction('toys.open');
     s = await state();
     check('玩具篮：有「放到馆里」', s.hasToys && s.actions.includes('decor.place'));
     await shot('toys');
     await clickAction('decor.place', 'paperbag', 500);
     s = await state();
-    check('放到馆里 → 回主厅 → 纸袋出现在馆里（购买回到共同空间）', s.hasHall && s.placedFeather, `placed=${s.placedFeather}`);
+    check('放到馆里 → 回主厅 → 纸袋出现在猫身边（购买回到共同空间）', s.hasHall && s.placedFeather, `placed=${s.placedFeather}`);
     await shot('hall-placed');
 
+    // ── 回忆在 4 号房：画里的画框 ──
+    await roam('hall', 'orbs');
+    await roam('orbs', 'gallery');
     await clickAction('memory.open');
     s = await state();
-    check('回忆廊：章节「已发光」', s.hasMemory && /已发光/.test(s.chapterState ?? ''), `state=${s.chapterState}`);
+    check('回忆廊叠在 4 号房上：章节「已发光」', s.hasMemory && /已发光/.test(s.chapterState ?? '') && s.roomId === 'gallery', `state=${s.chapterState}`);
     await shot('memory');
     await clickAction('memory.read', 'xuetuan-1', 500);
     s = await state();
-    check('阅读：台词框 + 「继续」', s.hasReading && s.hasReadingNext);
+    check('阅读：底部台词框 + 「继续」', s.hasReading && s.hasReadingNext);
     await shot('reading-1');
     await clickAction('memory.advance', 500);
     await clickAction('memory.advance', 500);
@@ -211,7 +226,7 @@ async function main() {
     s = await state();
     check('选后到终节点：显示「到这里」且「继续」消失', s.hasReadingEnd && !s.hasReadingNext);
     await shot('reading-end');
-    // 终局出口必点（self-check.md）：阅读屏唯一出口 = 回到回忆廊，点完世界/屏要真变
+    // 终局出口必点（self-check.md）：阅读框唯一出口 = 回到回忆廊，点完世界/屏要真变
     check('终局出口在：「回到回忆廊」', s.actions.includes('memory.back'));
     await clickAction('memory.back');
     s = await state();
@@ -219,24 +234,26 @@ async function main() {
     await clickAction('hall.back');
     await clickAction('cat.greet', 400);
     s = await state();
-    check('新一轮还能接着陪：呼唤后星砂 1', s.hasHall && s.stardust === 1, `stardust=${s.stardust}`);
-    await shot('hall-again');
+    check('新一轮还能接着陪（点猫 = 呼唤·在 4 号房也行）：星砂 1', s.roomId === 'gallery' && s.stardust === 1, `stardust=${s.stardust} room=${s.roomId}`);
+    await shot('gallery-again');
 
-    // ── 沉浸模式「只看它」（menu-flow §1.3 隐藏/显示 UI 钮·visibleWhen 重组）──
+    // ── 沉浸模式「只看它」（visibleWhen 重组·任何房间都有效）──
     await clickAction('ui.hide', 400);
     s = await state();
-    check('只看它：界面收起（无导航/动作栏）· 猫画面还在 · 只剩「显示界面」', s.hasHall && !s.hasNav && !s.actions.includes('cat.sit') && s.hasStageShow);
-    await shot('hall-stage-only');
+    check('只看它：木牌/门/物件全收起 · 猫画面还在 · 只剩「显示界面」', !s.hasSign && s.doorCount === 0 && !s.actions.includes('cat.sit') && s.hasStageShow, `doors=${s.doorCount}`);
+    await shot('gallery-stage-only');
     await clickAction('ui.show', 400);
     s = await state();
-    check('显示界面：导航与动作栏回来', s.hasNav && s.actions.includes('cat.sit') && !s.hasStageShow);
+    check('显示界面：木牌与门回来', s.hasSign && s.doorCount === 3 && s.actions.includes('cat.sit') && !s.hasStageShow, `doors=${s.doorCount}`);
 
-    // ── 全屏巡游：词表里每个屏都真到一次（第 7 问机读）──
+    // ── 其余入口都在画里：晶球（2 号房）· 牌桌（主厅）· 设置（右上木牌）──
+    await roam('gallery', 'orbs');
     await clickAction('orbs.open');
     s = await state();
-    check('晶球厅：当前猫晶球 + 「接回自己的猫」空位', s.hasOrbs && s.actions.includes('later'));
+    check('晶球厅名册叠在房间上：当前猫晶球 + 「接回自己的猫」空位', s.hasOrbs && s.actions.includes('later'));
     await shot('orbs');
     await clickAction('later');
+    await roam('orbs', 'hall');
     await clickAction('table.open');
     s = await state();
     check('星牌桌：接口位（牌规待定说明）', s.hasTable);
@@ -244,7 +261,7 @@ async function main() {
     await clickAction('hall.back');
     await clickAction('settings.open');
     s = await state();
-    check('设置：可信优先文案', s.hasSettings);
+    check('设置：画里右上木牌打开·可信优先文案', s.hasSettings);
     await clickAction('hall.back');
 
     // ── 回馆：模拟离开 3 小时（拨宿主墙钟 Date.now·不碰档不碰世界）→ 重载 → 小事件 → 看过了 ──

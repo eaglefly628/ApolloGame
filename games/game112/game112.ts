@@ -26,14 +26,15 @@ export interface HostHooks { exit: () => void }
 export interface Route { screen?: Screen; room?: RoomId; key?: string; x?: number; readChapter?: string }
 export function routeAction(action: UiAction | string, arg?: string): Route | undefined {
   switch (action) {
-    case 'home.enter': return { screen: 'hall', room: 'hall' };
+    case 'home.enter': return { screen: 'scene', room: 'hall' };
     case 'home.about': return { screen: 'about' };
     case 'home.exit': return {};
-    case 'hall.back': case 'later': return { screen: 'hall', room: 'hall' };
+    // 回到猫身边 = 回**当前**房间的舞台（Drawer 收起）；猫在哪间房，玩家就在哪间房。
+    case 'hall.back': case 'later': return { screen: 'scene' };
     case 'map.open': return { screen: 'map' };
     case 'room.enter': {
       const room = arg !== undefined ? roomOf(arg) : undefined;
-      return room !== undefined ? { screen: room.id === 'hall' ? 'hall' : 'room', room: room.id } : undefined;
+      return room !== undefined ? { screen: 'scene', room: room.id } : undefined;
     }
     case 'orbs.open': return { screen: 'orbs' };
     case 'table.open': return { screen: 'table' };
@@ -47,7 +48,7 @@ export function routeAction(action: UiAction | string, arg?: string): Route | un
     case 'ui.show': return { key: STAGE_SHOW_KEY };
     case 'shop.buy': return arg !== undefined && shopItemOf(arg) !== undefined ? { key: buyKey(arg) } : undefined;
     // 购买后优先「放到馆里看看」→ 回主厅目击新物件（menu-flow §10）。
-    case 'decor.place': return arg !== undefined && shopItemOf(arg) !== undefined ? { key: placeKey(arg), screen: 'hall', room: 'hall' } : undefined;
+    case 'decor.place': return arg !== undefined && shopItemOf(arg) !== undefined ? { key: placeKey(arg), screen: 'scene', room: 'hall' } : undefined;
     case 'memory.read': return arg !== undefined && chapterOf(arg) !== undefined ? { screen: 'reading', readChapter: arg } : undefined;
     case 'memory.advance': return { key: DIALOGUE_ACTION_ADVANCE };
     case 'memory.choose': {
@@ -123,7 +124,7 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
     // 离线「田螺姑娘」：宿主算离开时长 → 分档 key；sim 只见 Signal，永不见墙钟。
     const tier = savedAt !== undefined ? offlineTierOf(now() - savedAt) : undefined;
     if (tier !== undefined) session.act(offlineKey(tier));
-    screen = 'hall';
+    screen = 'scene';
     room = 'hall';
     timer = setInterval(() => {
       if (session === undefined || disposed) return;

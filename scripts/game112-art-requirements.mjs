@@ -29,9 +29,11 @@ const catRows = CATS.flatMap((c) => [
   prompt: null,
   spec: { w: 840, h: 600, transparent: true },
   desc,
-  context: `用途=sprite·猫画面层静态锚图（主厅 hall-cat / 牌桌 table-cat 的 Image.src）·消费=cat-art.ts catArt('${c.id}','${state}')·`
-    + `写回=SKIN_OVERRIDES['${SKIN_KEYS.cat(c.id, state)}']（未填=程序化矢量回退）·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png`,
-  status: 'retired', gen: null, provenance: null,
+  context: `用途=sprite·猫画面层静态锚图（十房猫位 hall-cat 的 Image.src·名册 Avatar）·消费=cat-art.ts catArt('${c.id}','${state}')·`
+    + `写回=SKIN_OVERRIDES['${SKIN_KEYS.cat(c.id, state)}']（未填=程序化矢量回退）·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png·`
+    + `S7 主角面 1 分的病根就是这两行还是矢量占位——最高优先出图`,
+  // 2026-09-28 GD/PE-112 复核：Codex 上一版把这两行标 retired，但槽仍被每间房消费（ui.ts catLayer）——有槽的行不许退役，改回 needs-art。
+  status: 'needs-art', gen: null, provenance: null,
 })));
 
 const ICONS = [
@@ -47,7 +49,7 @@ const iconRows = ICONS.map(([kind, desc, q]) => ({
   prompt: null,
   spec: { w: 192, h: 192, transparent: true },
   desc,
-  context: `用途=sprite·主厅场景热点图标（hot-${kind}-img Image.src）·消费=cat-art.ts hotspotArt('${kind}')·写回=SKIN_OVERRIDES['${SKIN_KEYS.hotspot(kind)}']`,
+  context: `用途=sprite·旧版主厅白卡热点图标（巡游版 v3 起物件直接用画里的东西·hotspotArt 已无消费点·保号退役）`,
   status: 'retired', gen: null, provenance: null,
 }));
 

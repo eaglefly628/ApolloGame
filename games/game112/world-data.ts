@@ -16,8 +16,17 @@ export type CatPose = 'rest' | 'lookup' | 'settled';
 export const CAT_POSES: readonly CatPose[] = ['rest', 'lookup', 'settled'];
 export const poseFsm = (cat: string): string => `pose.${cat}`;
 
-// ── 星尾馆十房（hall-framework v2·导航/馆图/房间页单一真相）───────────────
+// ── 星尾馆十房（hall-framework v3·巡游版·导航/馆图/房间页单一真相）───────────────
+//   owner 2026-09-28：巡游版本 · 所有按钮内嵌在画面里（门 = 去相邻房·物件 = 活动入口·猫 = 呼唤）· 猫有固定「猫位」。
+//   坐标系 = 舞台 SCENE_W×SCENE_H（房间画 1680×1200 等比缩到 1000×714·px 左上角 + 宽高）。
+export const SCENE_W = 1000;
+export const SCENE_H = 714;
 export type RoomId = 'hall' | 'orbs' | 'cardroom' | 'gallery' | 'playroom' | 'sunroom' | 'pantry' | 'attic' | 'garden' | 'shopfront';
+export interface SceneRect { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
+/** 画里的门/通道：去相邻房。与 `adjacent` 一一对应（测试钉死）。 */
+export interface RoomDoor extends SceneRect { readonly to: RoomId; readonly label: string }
+/** 画里可点的物件 = 活动入口（只复用已接线的 UI 动作·不造空入口）。 */
+export interface RoomObject extends SceneRect { readonly id: string; readonly label: string; readonly action: string; readonly arg?: string }
 export interface RoomSpec {
   readonly id: RoomId;
   readonly number: number;
@@ -26,22 +35,122 @@ export interface RoomSpec {
   readonly scene: string;
   readonly adjacent: readonly RoomId[];
   /** 00 馆图上的像素热区（馆图在 UI 中固定渲为 960×540）。 */
-  readonly mapRect: Readonly<{ x: number; y: number; w: number; h: number }>;
-  /** 只复用已经接线的活动；本轮不提前制造未来玩法空动作。 */
-  readonly activity?: Readonly<{ label: string; sub: string; action: string }>;
+  readonly mapRect: SceneRect;
+  /** 猫在这间房的固定位置（舞台坐标·左上角 + 宽·高按锚图 3:4 比例算）。 */
+  readonly catSpot: Readonly<{ x: number; y: number; w: number }>;
+  readonly doors: readonly RoomDoor[];
+  readonly objects: readonly RoomObject[];
 }
 
 export const ROOMS: readonly RoomSpec[] = [
-  { id: 'hall', number: 1, name: '主厅', subtitle: '暖灯下，雪团在旧木地板中央等你。', scene: 'hall', adjacent: ['orbs', 'cardroom', 'playroom', 'garden'], mapRect: { x: 395, y: 268, w: 170, h: 123 }, activity: { label: '陪它坐坐', sub: '什么都不做也可以', action: 'cat.sit' } },
-  { id: 'orbs', number: 2, name: '晶球厅', subtitle: '记忆在珠光蓝与烟紫之间缓慢发亮。', scene: 'orbs', adjacent: ['hall', 'gallery'], mapRect: { x: 148, y: 137, w: 168, h: 122 }, activity: { label: '看看晶球', sub: '遇见这里的猫', action: 'orbs.open' } },
-  { id: 'cardroom', number: 3, name: '星牌室', subtitle: '低矮的牌桌正合猫爪，牌规仍在慢慢推敲。', scene: 'cardroom', adjacent: ['hall', 'pantry'], mapRect: { x: 583, y: 268, w: 168, h: 123 }, activity: { label: '坐上牌桌', sub: '先看看星爪牌的位置', action: 'table.open' } },
-  { id: 'gallery', number: 4, name: '回忆廊', subtitle: '墙上的片段不会催你，想看时再靠近。', scene: 'gallery', adjacent: ['orbs', 'sunroom', 'attic'], mapRect: { x: 395, y: 137, w: 170, h: 122 }, activity: { label: '翻开回忆', sub: '看看已经发亮的章节', action: 'memory.open' } },
-  { id: 'playroom', number: 5, name: '玩具间', subtitle: '纸箱、抓柱和空中步道都按猫的尺度搭好。', scene: 'playroom', adjacent: ['hall'], mapRect: { x: 395, y: 400, w: 170, h: 123 }, activity: { label: '打开玩具篮', sub: '看看留在馆里的玩具', action: 'toys.open' } },
-  { id: 'sunroom', number: 6, name: '月光窗厅', subtitle: '月光落在低窗软垫上，适合安静待一会儿。', scene: 'sunroom', adjacent: ['gallery'], mapRect: { x: 643, y: 137, w: 169, h: 122 }, activity: { label: '陪它看月亮', sub: '在窗边坐一会儿', action: 'cat.sit' } },
-  { id: 'pantry', number: 7, name: '茶水间', subtitle: '猫爪能拉开的抽屉里，藏着杯印与旧日气味。', scene: 'pantry', adjacent: ['cardroom'], mapRect: { x: 768, y: 268, w: 167, h: 123 }, activity: { label: '轻声叫它', sub: '看看它会不会从柜顶回头', action: 'cat.greet' } },
-  { id: 'attic', number: 8, name: '回忆阁楼', subtitle: '旧箱和睡窝安静收着尚未讲完的故事。', scene: 'attic', adjacent: ['gallery'], mapRect: { x: 395, y: 20, w: 170, h: 118 }, activity: { label: '看看旧回忆', sub: '回到已经发亮的章节', action: 'memory.open' } },
-  { id: 'garden', number: 9, name: '月庭', subtitle: '花径接着馆门，琥珀灯链沿猫步道伸向夜色。', scene: 'garden', adjacent: ['shopfront', 'hall'], mapRect: { x: 209, y: 268, w: 167, h: 123 }, activity: { label: '在月庭坐坐', sub: '听一会儿夜里的声音', action: 'cat.sit' } },
-  { id: 'shopfront', number: 10, name: '星砂铺', subtitle: '猫主理人的小铺子，抽屉和货架都在爪高。', scene: 'shopfront', adjacent: ['garden'], mapRect: { x: 24, y: 268, w: 167, h: 121 }, activity: { label: '看看小铺', sub: '交换会留在馆里的东西', action: 'shop.open' } },
+  {
+    id: 'hall', number: 1, name: '主厅', subtitle: '暖灯下，雪团在旧木桌边等你。', scene: 'hall',
+    adjacent: ['orbs', 'cardroom', 'playroom', 'garden'], mapRect: { x: 395, y: 268, w: 170, h: 123 },
+    catSpot: { x: 290, y: 318, w: 160 },
+    doors: [
+      { to: 'garden', label: '月庭', x: 70, y: 250, w: 150, h: 240 },
+      { to: 'orbs', label: '晶球厅', x: 80, y: 36, w: 120, h: 86 },
+      { to: 'playroom', label: '玩具间', x: 272, y: 228, w: 70, h: 74 },
+      { to: 'cardroom', label: '星牌室', x: 906, y: 300, w: 88, h: 220 },
+    ],
+    objects: [
+      { id: 'orbs', label: '忆光晶球', action: 'orbs.open', x: 768, y: 200, w: 84, h: 80 },
+      { id: 'table', label: '星牌桌', action: 'table.open', x: 690, y: 424, w: 176, h: 72 },
+      { id: 'toys', label: '玩具篮', action: 'toys.open', x: 862, y: 452, w: 116, h: 86 },
+      { id: 'seat', label: '陪它坐坐', action: 'cat.sit', x: 468, y: 330, w: 176, h: 66 },
+    ],
+  },
+  {
+    id: 'orbs', number: 2, name: '晶球厅', subtitle: '记忆在珠光蓝与烟紫之间缓慢发亮。', scene: 'orbs',
+    adjacent: ['hall', 'gallery'], mapRect: { x: 148, y: 137, w: 168, h: 122 },
+    catSpot: { x: 80, y: 452, w: 150 },
+    doors: [
+      { to: 'hall', label: '主厅', x: 845, y: 200, w: 142, h: 290 },
+      { to: 'gallery', label: '回忆廊', x: 6, y: 250, w: 86, h: 200 },
+    ],
+    objects: [
+      { id: 'orbs', label: '看看晶球', action: 'orbs.open', x: 224, y: 260, w: 66, h: 76 },
+      { id: 'seat', label: '陪它坐坐', action: 'cat.sit', x: 358, y: 370, w: 240, h: 62 },
+    ],
+  },
+  {
+    id: 'cardroom', number: 3, name: '星牌室', subtitle: '低矮的牌桌正合猫爪，牌规仍在慢慢推敲。', scene: 'cardroom',
+    adjacent: ['hall', 'pantry'], mapRect: { x: 583, y: 268, w: 168, h: 123 },
+    catSpot: { x: 380, y: 398, w: 140 },
+    doors: [
+      { to: 'hall', label: '主厅', x: 40, y: 150, w: 176, h: 278 },
+      { to: 'pantry', label: '茶水间', x: 906, y: 300, w: 88, h: 220 },
+    ],
+    objects: [
+      { id: 'table', label: '星牌桌', action: 'table.open', x: 540, y: 358, w: 316, h: 120 },
+      { id: 'seat', label: '陪它坐坐', action: 'cat.sit', x: 690, y: 494, w: 146, h: 60 },
+    ],
+  },
+  {
+    id: 'gallery', number: 4, name: '回忆廊', subtitle: '墙上的片段不会催你，想看时再靠近。', scene: 'gallery',
+    adjacent: ['orbs', 'sunroom', 'attic'], mapRect: { x: 395, y: 137, w: 170, h: 122 },
+    catSpot: { x: 190, y: 468, w: 150 },
+    doors: [
+      { to: 'orbs', label: '晶球厅', x: 54, y: 190, w: 142, h: 298 },
+      { to: 'sunroom', label: '月光窗厅', x: 576, y: 278, w: 98, h: 92 },
+      { to: 'attic', label: '回忆阁楼', x: 824, y: 190, w: 166, h: 288 },
+    ],
+    objects: [
+      { id: 'picture', label: '翻开回忆', action: 'memory.open', x: 378, y: 165, w: 88, h: 110 },
+      { id: 'seat', label: '陪它坐坐', action: 'cat.sit', x: 414, y: 414, w: 122, h: 52 },
+    ],
+  },
+  {
+    id: 'playroom', number: 5, name: '玩具间', subtitle: '纸箱、抓柱和空中步道都按猫的尺度搭好。', scene: 'playroom',
+    adjacent: ['hall'], mapRect: { x: 395, y: 400, w: 170, h: 123 },
+    catSpot: { x: 690, y: 402, w: 140 },
+    doors: [{ to: 'hall', label: '主厅', x: 0, y: 226, w: 172, h: 204 }],
+    objects: [
+      { id: 'toys', label: '玩具篮', action: 'toys.open', x: 380, y: 368, w: 146, h: 86 },
+      { id: 'seat', label: '陪它坐坐', action: 'cat.sit', x: 538, y: 296, w: 252, h: 74 },
+    ],
+  },
+  {
+    id: 'sunroom', number: 6, name: '月光窗厅', subtitle: '月光落在低窗软垫上，适合安静待一会儿。', scene: 'sunroom',
+    adjacent: ['gallery'], mapRect: { x: 643, y: 137, w: 169, h: 122 },
+    catSpot: { x: 600, y: 298, w: 150 },
+    doors: [{ to: 'gallery', label: '回忆廊', x: 54, y: 196, w: 136, h: 280 }],
+    objects: [{ id: 'seat', label: '陪它看月亮', action: 'cat.sit', x: 524, y: 412, w: 296, h: 60 }],
+  },
+  {
+    id: 'pantry', number: 7, name: '茶水间', subtitle: '猫爪能拉开的抽屉里，藏着杯印与旧日气味。', scene: 'pantry',
+    adjacent: ['cardroom'], mapRect: { x: 768, y: 268, w: 167, h: 123 },
+    catSpot: { x: 620, y: 352, w: 140 },
+    doors: [{ to: 'cardroom', label: '星牌室', x: 48, y: 131, w: 166, h: 308 }],
+    objects: [{ id: 'counter', label: '轻声叫它', action: 'cat.greet', x: 280, y: 296, w: 196, h: 130 }],
+  },
+  {
+    id: 'attic', number: 8, name: '回忆阁楼', subtitle: '旧箱和睡窝安静收着尚未讲完的故事。', scene: 'attic',
+    adjacent: ['gallery'], mapRect: { x: 395, y: 20, w: 170, h: 118 },
+    catSpot: { x: 110, y: 462, w: 150 },
+    doors: [{ to: 'gallery', label: '回忆廊', x: 744, y: 300, w: 250, h: 234 }],
+    objects: [
+      { id: 'orb', label: '看看旧回忆', action: 'memory.open', x: 492, y: 190, w: 50, h: 50 },
+      { id: 'seat', label: '陪它坐坐', action: 'cat.sit', x: 408, y: 296, w: 94, h: 74 },
+    ],
+  },
+  {
+    id: 'garden', number: 9, name: '月庭', subtitle: '花径接着馆门，琥珀灯链沿猫步道伸向夜色。', scene: 'garden',
+    adjacent: ['shopfront', 'hall'], mapRect: { x: 209, y: 268, w: 167, h: 123 },
+    catSpot: { x: 560, y: 498, w: 140 },
+    doors: [
+      { to: 'hall', label: '主厅', x: 678, y: 131, w: 120, h: 226 },
+      { to: 'shopfront', label: '星砂铺', x: 354, y: 148, w: 102, h: 92 },
+    ],
+    objects: [{ id: 'seat', label: '在月庭坐坐', action: 'cat.sit', x: 808, y: 522, w: 156, h: 72 }],
+  },
+  {
+    id: 'shopfront', number: 10, name: '星砂铺', subtitle: '猫主理人的小铺子，抽屉和货架都在爪高。', scene: 'shopfront',
+    adjacent: ['garden'], mapRect: { x: 24, y: 268, w: 167, h: 121 },
+    catSpot: { x: 560, y: 378, w: 130 },
+    doors: [{ to: 'garden', label: '月庭', x: 60, y: 296, w: 180, h: 122 }],
+    objects: [{ id: 'shopdoor', label: '看看小铺', action: 'shop.open', x: 684, y: 226, w: 90, h: 240 }],
+  },
 ];
 export const ROOM_IDS: readonly RoomId[] = ROOMS.map((r) => r.id);
 export const roomOf = (id: string): RoomSpec | undefined => ROOMS.find((r) => r.id === id);

@@ -25,8 +25,8 @@
         "transparent": true
       },
       "desc": "雪团·趴姿待机（主厅/牌桌回退锚图·眼半眯）",
-      "context": "用途=sprite·猫画面层静态锚图（主厅 hall-cat / 牌桌 table-cat 的 Image.src）·消费=cat-art.ts catArt('xuetuan','rest')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-rest']（未填=程序化矢量回退）·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png",
-      "status": "retired",
+      "context": "用途=sprite·猫画面层静态锚图（十房猫位 hall-cat 的 Image.src·名册 Avatar）·消费=cat-art.ts catArt('xuetuan','rest')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-rest']（未填=程序化矢量回退）·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png·S7 主角面 1 分的病根就是这两行还是矢量占位——最高优先出图",
+      "status": "needs-art",
       "gen": null,
       "provenance": null,
       "placeholder": {
@@ -51,8 +51,8 @@
         "transparent": true
       },
       "desc": "雪团·注意（兴致高时·眼睁大）",
-      "context": "用途=sprite·猫画面层静态锚图（主厅 hall-cat / 牌桌 table-cat 的 Image.src）·消费=cat-art.ts catArt('xuetuan','notice')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-notice']（未填=程序化矢量回退）·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png",
-      "status": "retired",
+      "context": "用途=sprite·猫画面层静态锚图（十房猫位 hall-cat 的 Image.src·名册 Avatar）·消费=cat-art.ts catArt('xuetuan','notice')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-notice']（未填=程序化矢量回退）·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png·S7 主角面 1 分的病根就是这两行还是矢量占位——最高优先出图",
+      "status": "needs-art",
       "gen": null,
       "provenance": null,
       "placeholder": {
@@ -77,14 +77,10 @@
         "transparent": true
       },
       "desc": "忆光晶球（主厅热点·磨砂晶球内流动微光+照片残影）",
-      "context": "用途=sprite·主厅场景热点图标（hot-orb-img Image.src）·消费=cat-art.ts hotspotArt('orb')·写回=SKIN_OVERRIDES['game112/icon/orb']",
+      "context": "用途=sprite·旧版主厅白卡热点图标（巡游版 v3 起物件直接用画里的东西·hotspotArt 已无消费点·保号退役）",
       "status": "retired",
       "gen": null,
-      "provenance": null,
-      "placeholder": {
-        "servedPath": "/games/game112/art/placeholder/icon-orb.svg",
-        "current": "现况=程序化矢量占位（cat-art.ts）"
-      }
+      "provenance": null
     },
     {
       "no": "art-04",
@@ -103,14 +99,10 @@
         "transparent": true
       },
       "desc": "星牌桌（主厅热点·旧木桌+三张歪牌）",
-      "context": "用途=sprite·主厅场景热点图标（hot-table-img Image.src）·消费=cat-art.ts hotspotArt('table')·写回=SKIN_OVERRIDES['game112/icon/table']",
+      "context": "用途=sprite·旧版主厅白卡热点图标（巡游版 v3 起物件直接用画里的东西·hotspotArt 已无消费点·保号退役）",
       "status": "retired",
       "gen": null,
-      "provenance": null,
-      "placeholder": {
-        "servedPath": "/games/game112/art/placeholder/icon-table.svg",
-        "current": "现况=程序化矢量占位（cat-art.ts）"
-      }
+      "provenance": null
     },
     {
       "no": "art-05",
@@ -129,14 +121,10 @@
         "transparent": true
       },
       "desc": "玩具篮（主厅热点·藤篮+羽毛杆+毛线球）",
-      "context": "用途=sprite·主厅场景热点图标（hot-basket-img Image.src）·消费=cat-art.ts hotspotArt('basket')·写回=SKIN_OVERRIDES['game112/icon/basket']",
+      "context": "用途=sprite·旧版主厅白卡热点图标（巡游版 v3 起物件直接用画里的东西·hotspotArt 已无消费点·保号退役）",
       "status": "retired",
       "gen": null,
-      "provenance": null,
-      "placeholder": {
-        "servedPath": "/games/game112/art/placeholder/icon-basket.svg",
-        "current": "现况=程序化矢量占位（cat-art.ts）"
-      }
+      "provenance": null
     },
     {
       "no": "art-06",

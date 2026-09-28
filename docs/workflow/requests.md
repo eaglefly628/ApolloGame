@@ -205,14 +205,10 @@ desync（`determinism.ts` 对 Camera 的同款理由）。条目进 hash → 注
 ### REQ-112-AIGP · AI 视频生成两件套（`AishePort` 扩展 + `MediaJobPort`/`MediaCachePort` 立端口）· [2026-09-24] · **owner 判 A×2**（game112 ENG-05「要做，毕竟要跟爱诗对接」· ENG-06「先立端口」要求与供应商解耦） · **施工主体 = 主程 = 本 session（2026-09-24 抢锁·本行即锁）** · 复查 = 另派独立 agent（复查人≠施工人·**待派**） · status: **✅ 已交（2026-09-24·门禁全绿·已推送）·等复查** · P1 · 类型: 引擎能力下沉
 全文与实查留痕 = `docs/design/game112/requests.md` ENG-05/ENG-06（**不在池内重抄**·池余量 2811 字符）。边界：`src/services/aigp/**` + `src/services/media-job/**` + 开发期代理脚本；纪律同 `HttpNpcAgentPort` 三条（**绝不抛 · 绝不碰 world · 只归一形状**）。配对单 **ENG-11「内嵌 AI 视频播放」本轮未抢锁**（含 `src/ui/components` = PUI 域·跨域另议）。
 
-### REQ-UIWALK-ENTRY · S4 真界面走查探针缺「入场序列」（可驱动率恒 0%）· [2026-09-24] · GD/PE-112 立（game112 S4 门实证 0/17·同 game108 0/74 同形·`ui-walkthrough-probe.mjs` 头注 1b 已自认）· **指派：主程（scripts/ 探针面）** · status: open · 优先级: P3 · 类型: 门禁接线
-- 想实现的行为：菜单驱动的游戏（标题屏 → 主厅）能让 `ui-walkthrough-probe` 先点几步再开跑剧本，可驱动率真实反映「剧本动作在 UI 上点不点得到」。
-- 已经试了什么：game112 剧本词表 = UI 词表同源（adapter 直走 `routeAction`），逐步 `liveActions` 只有 `home.about/home.enter/home.exit` → 纯粹「探针没入场」（头注 1b 第二种原因），不是词表不同源。
-- 卡在哪：探针无任何入场/预热参数；剧本 schema（`acceptance-schema.mjs`）也没有「UI 入场」字段。
-- 建议方案：剧本顶层加可选 `uiEntry: ["home.enter"]`（只探针读·acceptance-run 忽略·纯数据）；探针开跑前按序点这些 `data-action` 并等 `networkidle`。边界：`scripts/ui-walkthrough-probe.mjs` + `scripts/acceptance-schema.mjs` + 其测试；游戏侧只加一行数据。game112 在此之前以 `scripts/game112-playthrough.mjs`（26 断言·真点真按钮·含入场）作为 UI 可驱动的证据。
-
-### REQ-112-VIDEOPLAY · 引擎能力「内嵌 AI 视频播放」（片段目录=数据 · 按 State 选片 · 换片不黑帧 · 缺片回退链）· [2026-09-24] · **owner 判 A**（game112 ENG-11「把 AI 生成视频的播放列成引擎缺失的能力补全」·与 REQ-112-AIGP 成对） · **施工主体 = 主程 = 本 session（2026-09-24 抢锁·本行即锁）** · 复查 = 另派独立 agent（**待派**·UI 面另请 PUI 过目） · status: **✅ 已交（2026-09-24·门禁全绿·已推送）·等复查** · P1 · 类型: 引擎能力下沉
-全文与实查留痕 = `docs/design/game112/requests.md` ENG-11（**不在池内重抄**）。合并原 ⑧⑨⑩。**跨域授权在案**：`src/ui/components` 属 PUI 域，owner 2026-09-24 当面授权本单由主程一并做（事后 PUI 复查）。边界：`src/renderer/**` + `src/engine/host/**` + 组件协议 + `src/net/determinism.ts` 登记 + `src/ui/components/{video,catalog,render,server}`；**播放进度/结束不进 sim**（结束信号只进 UI 层）；带断网回退测试与换片不黑帧目击。
+### REQ-PIPELINE-GUARDS · 流程板三条「只写在文档里」的规则加机器牙齿 + 走查探针入场序列 · [2026-09-28] · GD/PE-112 立（game112 Codex 巡游提交复盘 `docs/design/game112/review/codex-roaming-review.md`：人门被 agent 以「Lead-Codex」自签 S2–S8；五关复查同一 agent 两分钟落账；S8 自陈全量门 5 红仍推送）· **指派：主程** · status: open · 优先级: **P1** · 类型: 流程门
+- 要做：① `signoff --by` 只收真人白名单（`docs/roles/humans.json`·agent 名拒）；② `review --by` ≠ 该关施工锁主体，同一 `--by` 10 分钟内落 ≥2 关拒并要附复跑日志；③ `scoped-gate` 红 → 推送钩子拦，「与本单无关」只能主程 `--waive` 落账；④ 台账 `approved` 只由创作台人审/`art-review --by <真人>` 写；⑤ 台账 `retired` 前 grep 消费点，有消费即拒；⑥ 剧本顶层可选 `uiEntry:["home.enter"]`，`ui-walkthrough-probe` 开跑前先点它（菜单驱动游戏现恒 0%·game112 0/17·game108 0/74·探针头注 1b 自认）。
+- 为什么：owner 问「其他模型能不能 follow 我们的 ruler」——有脚本判红的规则 Codex 全守，没牙齿的全破；病根在围栏不在模型。
+- 边界：`scripts/{game-pipeline,scoped-gate,ledger-audit,ui-walkthrough-probe,acceptance-schema}.mjs` + 测试 + 白名单文件；不碰游戏层。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
