@@ -65,6 +65,7 @@
 2. 这类东西在行内是否有公认的品相 / 等级差异？列出 3–6 个分级维度，每个维度给从低到高的档位。
 输出：{ "admit": true/false, "reason": "<一句话>", "liquidity": 1-5, "channels": [...],
         "entry": "<入门价位量级>", "ceiling": "<上限价位量级>", "compliance": "<销售合规限制，没有写空>",
+        "priceBand": "<最高品级的价位带：b1 百元级 / b2 千元级 / b3 万元级 / b4 十万级 / b5 百万级以上>",
         "gradingDraft": [ { "label": "<维度名>", "options": ["<低>", "…", "<高>"] } ] }
 流通性：5 大众电商可搜可比价 · 4 垂类平台/二手活跃 · 3 专业市场、拍卖行常态成交 · 2 经纪或专场拍卖 · 1 合法但零星。
 价位只写量级，不写具体数字。
@@ -83,8 +84,10 @@
   "titles": [ 4 档学识称号，minXp 依次为 0 / 30 / 90 / 200，称号 ≤6 字，最后一档要俏皮，如「酒痴」 ],
   "fields": [ ≤8 个这门爱好特有的规格字段；type 只能是 text/number/year/enum/multi/bool；enum/multi 必须给 options；key 用小写英文连字符。
               T0 的每个分级维度都要落成一个 "type":"enum", "ordered": true 的字段，options 从低到高 ],
-  "grading": { "dims": [ 上面 ordered 字段的 key ], "tiers": [ 3–4 个品级名，从低到高，≤4 字 ] },
-  "market": { 照抄 T0 的 liquidity / channels / entry / ceiling / compliance },
+  "grading": { "dims": [ 上面 ordered 字段的 key ], "tiers": [ 3–4 个品级名，从低到高，≤4 字 ],
+               "values": [ 每档折合多少雅钱，整数，严格递增；最高档必须落在 priceBand 的区间：
+                           b1 50–150 · b2 100–300 · b3 200–600 · b4 400–1200 · b5 800–2500 ] },
+  "market": { 照抄 T0 的 liquidity / priceBand / channels / entry / ceiling / compliance },
   "spotTypes": [ 4–8 个这门爱好里反复出现的标准看点：{ id, label(≤8字), cardId, hint(≤20字，告诉老人去哪看), key(是否计入收藏) } ],
   "knowledge": [ 与每个 spotType 一一对应的知识卡：{ id, kind(craft/authenticity/story/jargon), title(≤16字), body(20–180字), xp(2–5), sources[{title}], review:{status:"draft"} }，其中 1–2 张可带 quiz { q, options(2–3个), answer, explain } ]
 }

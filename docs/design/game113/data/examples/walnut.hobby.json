@@ -4,72 +4,337 @@
   "name": "文玩核桃",
   "category": "aging",
   "ageRating": "all",
-  "zone": { "name": "核桃匣", "coverKey": "g113.walnut.zone-cover" },
+  "zone": {
+    "name": "核桃匣",
+    "coverKey": "g113.walnut.zone-cover"
+  },
   "titles": [
-    { "minXp": 0, "name": "入门" },
-    { "minXp": 30, "name": "懂行" },
-    { "minXp": 90, "name": "行家" },
-    { "minXp": 200, "name": "核痴" }
+    {
+      "minXp": 0,
+      "name": "入门"
+    },
+    {
+      "minXp": 30,
+      "name": "懂行"
+    },
+    {
+      "minXp": 90,
+      "name": "行家"
+    },
+    {
+      "minXp": 200,
+      "name": "核痴"
+    }
   ],
-  "modules": ["quiz"],
+  "modules": [
+    "quiz"
+  ],
   "fields": [
-    { "key": "variety", "label": "品种", "type": "enum", "filter": true,
-      "options": ["狮子头", "官帽", "公子帽", "鸡心", "虎头", "灯笼"] },
-    { "key": "sub-variety", "label": "细分品种", "type": "text", "filter": true },
-    { "key": "edge-mm", "label": "尺寸", "type": "number", "unit": "mm", "min": 20, "max": 70 },
-    { "key": "pairing", "label": "配对", "type": "enum", "ordered": true, "options": ["不配对", "基本配对", "天生配对"] },
-    { "key": "skin", "label": "皮质", "type": "enum", "ordered": true, "options": ["松", "一般", "密实"] },
-    { "key": "edge-shape", "label": "边", "type": "enum", "ordered": true, "options": ["窄薄", "中等", "宽厚"] },
-    { "key": "flaws", "label": "瑕疵", "type": "enum", "ordered": true, "options": ["明显", "轻微", "无"] },
-    { "key": "patina", "label": "包浆", "type": "enum", "ordered": true, "options": ["生核", "初上色", "红润", "包浆厚"] }
+    {
+      "key": "variety",
+      "label": "品种",
+      "type": "enum",
+      "filter": true,
+      "options": [
+        "狮子头",
+        "官帽",
+        "公子帽",
+        "鸡心",
+        "虎头",
+        "灯笼"
+      ]
+    },
+    {
+      "key": "sub-variety",
+      "label": "细分品种",
+      "type": "text",
+      "filter": true
+    },
+    {
+      "key": "edge-mm",
+      "label": "尺寸",
+      "type": "number",
+      "unit": "mm",
+      "min": 20,
+      "max": 70
+    },
+    {
+      "key": "pairing",
+      "label": "配对",
+      "type": "enum",
+      "ordered": true,
+      "options": [
+        "不配对",
+        "基本配对",
+        "天生配对"
+      ]
+    },
+    {
+      "key": "skin",
+      "label": "皮质",
+      "type": "enum",
+      "ordered": true,
+      "options": [
+        "松",
+        "一般",
+        "密实"
+      ]
+    },
+    {
+      "key": "edge-shape",
+      "label": "边",
+      "type": "enum",
+      "ordered": true,
+      "options": [
+        "窄薄",
+        "中等",
+        "宽厚"
+      ]
+    },
+    {
+      "key": "flaws",
+      "label": "瑕疵",
+      "type": "enum",
+      "ordered": true,
+      "options": [
+        "明显",
+        "轻微",
+        "无"
+      ]
+    },
+    {
+      "key": "patina",
+      "label": "包浆",
+      "type": "enum",
+      "ordered": true,
+      "options": [
+        "生核",
+        "初上色",
+        "红润",
+        "包浆厚"
+      ]
+    }
   ],
   "grading": {
-    "dims": ["pairing", "skin", "edge-shape", "flaws", "patina"],
-    "tiers": ["入门", "普品", "精品", "珍品"]
+    "dims": [
+      "pairing",
+      "skin",
+      "edge-shape",
+      "flaws",
+      "patina"
+    ],
+    "tiers": [
+      "入门",
+      "普品",
+      "精品",
+      "珍品"
+    ],
+    "values": [
+      10,
+      40,
+      150,
+      400
+    ]
   },
   "spotTypes": [
-    { "id": "edge", "label": "边", "cardId": "k-edge", "hint": "两半合缝处凸起的一圈", "key": true },
-    { "id": "base", "label": "底", "cardId": "k-base", "hint": "核桃屁股，能不能立住", "key": true },
-    { "id": "tip", "label": "尖", "cardId": "k-tip", "hint": "核桃最顶上那一点" },
-    { "id": "pattern", "label": "纹路", "cardId": "k-pattern", "hint": "表面的沟壑", "key": true },
-    { "id": "pairing", "label": "配对", "cardId": "k-pairing", "hint": "两颗并排比一比", "key": true },
-    { "id": "yinpi", "label": "阴皮", "cardId": "k-yinpi", "hint": "表面发黑发暗的那块" },
-    { "id": "patina", "label": "包浆", "cardId": "k-patina", "hint": "纹路凸起处的光泽" }
+    {
+      "id": "edge",
+      "label": "边",
+      "cardId": "k-edge",
+      "hint": "两半合缝处凸起的一圈",
+      "key": true
+    },
+    {
+      "id": "base",
+      "label": "底",
+      "cardId": "k-base",
+      "hint": "核桃屁股，能不能立住",
+      "key": true
+    },
+    {
+      "id": "tip",
+      "label": "尖",
+      "cardId": "k-tip",
+      "hint": "核桃最顶上那一点"
+    },
+    {
+      "id": "pattern",
+      "label": "纹路",
+      "cardId": "k-pattern",
+      "hint": "表面的沟壑",
+      "key": true
+    },
+    {
+      "id": "pairing",
+      "label": "配对",
+      "cardId": "k-pairing",
+      "hint": "两颗并排比一比",
+      "key": true
+    },
+    {
+      "id": "yinpi",
+      "label": "阴皮",
+      "cardId": "k-yinpi",
+      "hint": "表面发黑发暗的那块"
+    },
+    {
+      "id": "patina",
+      "label": "包浆",
+      "cardId": "k-patina",
+      "hint": "纹路凸起处的光泽"
+    }
   ],
   "knowledge": [
-    { "id": "k-edge", "kind": "craft", "title": "看边",
+    {
+      "id": "k-edge",
+      "kind": "craft",
+      "title": "看边",
       "body": "边是核桃两半合缝的地方凸起的一圈。边宽、边厚、过渡自然，桩型就显得饱满大气。行里说的核桃尺寸，一般就是拿核桃卡尺量边的横径，单位毫米。",
-      "quiz": { "q": "行里说核桃「多少毫米」，一般量的是哪儿？", "options": ["边的横径", "从尖到底的高度", "一圈的周长"], "answer": 0,
-                "explain": "尺寸一般指边的横径，用核桃卡尺量。" },
-      "xp": 4, "sources": [{ "title": "文玩核桃选购常识（行业通行说法）" }],
-      "review": { "status": "draft", "notes": "待文玩顾问审校" } },
-    { "id": "k-base", "kind": "craft", "title": "底要坐得住",
+      "quiz": {
+        "q": "行里说核桃「多少毫米」，一般量的是哪儿？",
+        "options": [
+          "边的横径",
+          "从尖到底的高度",
+          "一圈的周长"
+        ],
+        "answer": 0,
+        "explain": "尺寸一般指边的横径，用核桃卡尺量。"
+      },
+      "xp": 4,
+      "sources": [
+        {
+          "title": "文玩核桃选购常识（行业通行说法）"
+        }
+      ],
+      "review": {
+        "status": "draft",
+        "notes": "待文玩顾问审校"
+      }
+    },
+    {
+      "id": "k-base",
+      "kind": "craft",
+      "title": "底要坐得住",
       "body": "把核桃底朝下放在桌上，能稳稳立住，行里叫「坐得住」。底平、底大，说明桩型端正，狮子头尤其看重这一点。底歪的，盘起来手感也差一截。",
-      "xp": 3, "sources": [{ "title": "文玩核桃选购常识（行业通行说法）" }], "review": { "status": "draft" } },
-    { "id": "k-tip", "kind": "craft", "title": "尖",
+      "xp": 3,
+      "sources": [
+        {
+          "title": "文玩核桃选购常识（行业通行说法）"
+        }
+      ],
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "k-tip",
+      "kind": "craft",
+      "title": "尖",
       "body": "尖在核桃最顶上。狮子头讲究「闷尖」，尖短而圆钝，不扎手；官帽的尖就要突出一些，像官帽上的顶子。同一个品种，尖的样子也是配对要看的一项。",
-      "xp": 3, "sources": [{ "title": "文玩核桃品种特征" }], "review": { "status": "draft" } },
-    { "id": "k-pattern", "kind": "craft", "title": "纹路",
+      "xp": 3,
+      "sources": [
+        {
+          "title": "文玩核桃品种特征"
+        }
+      ],
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "k-pattern",
+      "kind": "craft",
+      "title": "纹路",
       "body": "核桃表面的沟壑叫纹路。纹路深、走向清楚、疏密有致，看起来就有精神；纹路浅乱的，盘出来也显得糊。盘玩以后，纹路凸起的地方会先红亮起来，层次就出来了。",
-      "xp": 3, "sources": [{ "title": "文玩核桃鉴赏要点" }], "review": { "status": "draft" } },
-    { "id": "k-pairing", "kind": "jargon", "title": "配对：形纹个色质",
+      "xp": 3,
+      "sources": [
+        {
+          "title": "文玩核桃鉴赏要点"
+        }
+      ],
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "k-pairing",
+      "kind": "jargon",
+      "title": "配对：形纹个色质",
       "body": "文玩核桃讲究成对玩。行话说要配「形、纹、个、色、质」：形状、纹路、个头、颜色、皮质五样都要像。两颗越像越难得，真正天生就这么像的，一树上也挑不出几对。",
-      "quiz": { "q": "行话配对讲「形、纹、个、色」，还有一样是？", "options": ["质", "重", "香"], "answer": 0,
-                "explain": "形、纹、个、色、质，质指皮质。" },
-      "xp": 5, "sources": [{ "title": "文玩核桃配对行话" }], "review": { "status": "draft" } },
-    { "id": "k-yinpi", "kind": "authenticity", "title": "阴皮",
+      "quiz": {
+        "q": "行话配对讲「形、纹、个、色」，还有一样是？",
+        "options": [
+          "质",
+          "重",
+          "香"
+        ],
+        "answer": 0,
+        "explain": "形、纹、个、色、质，质指皮质。"
+      },
+      "xp": 5,
+      "sources": [
+        {
+          "title": "文玩核桃配对行话"
+        }
+      ],
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "k-yinpi",
+      "kind": "authenticity",
+      "title": "阴皮",
       "body": "核桃表面发黑、发暗的一块，叫阴皮。多是脱青皮时处理不当，青皮的汁液渗进去留下的，一般盘不掉，算瑕疵。挑核桃要翻过来掉过去看一圈，别只看好看的那一面。",
-      "xp": 4, "sources": [{ "title": "文玩核桃瑕疵识别" }], "review": { "status": "draft" } },
-    { "id": "k-patina", "kind": "story", "title": "包浆是养出来的",
+      "xp": 4,
+      "sources": [
+        {
+          "title": "文玩核桃瑕疵识别"
+        }
+      ],
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "k-patina",
+      "kind": "story",
+      "title": "包浆是养出来的",
       "body": "生核桃是浅黄色的。天天在手里盘、用刷子刷、放着自然氧化，颜色会慢慢变成枣红、红褐，表面生出一层温润的光，这就是包浆。这层光是时间和手养出来的，急不得，也买不来快的。",
-      "xp": 3, "sources": [{ "title": "文玩核桃盘玩常识" }], "review": { "status": "draft" } },
-    { "id": "k-qingpi", "kind": "jargon", "title": "赌青皮",
+      "xp": 3,
+      "sources": [
+        {
+          "title": "文玩核桃盘玩常识"
+        }
+      ],
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "k-qingpi",
+      "kind": "jargon",
+      "title": "赌青皮",
       "body": "秋天核桃刚下树，外面还裹着一层绿色的青皮。市场上有人专卖这种青皮核桃，买家当场开皮，里面个头大小、纹路好坏全凭运气，行里叫「赌青皮」。图个开皮那一下的乐呵，别当真。",
-      "xp": 3, "sources": [{ "title": "文玩核桃市场常见交易方式" }], "review": { "status": "draft" } }
+      "xp": 3,
+      "sources": [
+        {
+          "title": "文玩核桃市场常见交易方式"
+        }
+      ],
+      "review": {
+        "status": "draft"
+      }
+    }
   ],
   "market": {
     "liquidity": 5,
-    "channels": ["淘宝直播", "咸鱼", "文玩市场"],
+    "priceBand": "b3",
+    "channels": [
+      "淘宝直播",
+      "咸鱼",
+      "文玩市场"
+    ],
     "entry": "几十元",
     "ceiling": "数万元级",
     "compliance": "无特殊限制；知识卡不写健身、活血等功效"
@@ -81,7 +346,10 @@
       "name": "四座楼狮子头 一对",
       "subtitle": "狮子头里的名门 · 盘了两年",
       "order": 1,
-      "tags": ["狮子头", "配对"],
+      "tags": [
+        "狮子头",
+        "配对"
+      ],
       "tier": "精品",
       "attrs": {
         "variety": "狮子头",
@@ -95,29 +363,108 @@
         "aged-years": 2
       },
       "images": [
-        { "key": "g113.walnut.sizuolou-pair.main", "role": "main", "w": 4000, "h": 3000, "sha256": "TBD",
-          "source": { "license": "TBD", "credit": "待授权实拍（占位）" } },
-        { "key": "g113.walnut.sizuolou-pair.base", "role": "closeup", "w": 3000, "h": 3000, "sha256": "TBD",
-          "source": { "license": "TBD", "credit": "待授权实拍（占位）" } }
+        {
+          "key": "g113.walnut.sizuolou-pair.main",
+          "role": "main",
+          "w": 4000,
+          "h": 3000,
+          "sha256": "TBD",
+          "source": {
+            "license": "TBD",
+            "credit": "待授权实拍（占位）"
+          }
+        },
+        {
+          "key": "g113.walnut.sizuolou-pair.base",
+          "role": "closeup",
+          "w": 3000,
+          "h": 3000,
+          "sha256": "TBD",
+          "source": {
+            "license": "TBD",
+            "credit": "待授权实拍（占位）"
+          }
+        }
       ],
       "spots": [
-        { "id": "edge-l", "type": "edge", "imageKey": "g113.walnut.sizuolou-pair.main",
-          "shape": { "kind": "circle", "x": 0.3, "y": 0.5, "r": 0.06 }, "revealZoom": 1.5,
-          "note": "这对的边又宽又厚，一看就是好桩。" },
-        { "id": "base", "type": "base", "imageKey": "g113.walnut.sizuolou-pair.main",
-          "shape": { "kind": "circle", "x": 0.3, "y": 0.8, "r": 0.06 }, "revealZoom": 2,
-          "closeupKey": "g113.walnut.sizuolou-pair.base" },
-        { "id": "tip", "type": "tip", "imageKey": "g113.walnut.sizuolou-pair.main",
-          "shape": { "kind": "circle", "x": 0.3, "y": 0.2, "r": 0.05 }, "revealZoom": 2 },
-        { "id": "pattern", "type": "pattern", "imageKey": "g113.walnut.sizuolou-pair.main",
-          "shape": { "kind": "circle", "x": 0.7, "y": 0.45, "r": 0.08 }, "revealZoom": 2.5 },
-        { "id": "pair", "type": "pairing", "imageKey": "g113.walnut.sizuolou-pair.main",
-          "shape": { "kind": "circle", "x": 0.5, "y": 0.5, "r": 0.1 } },
-        { "id": "shine", "type": "patina", "imageKey": "g113.walnut.sizuolou-pair.main",
-          "shape": { "kind": "circle", "x": 0.72, "y": 0.3, "r": 0.05 }, "revealZoom": 3,
-          "note": "盘了两年刚上色，纹路尖上已经开始发红。" }
+        {
+          "id": "edge-l",
+          "type": "edge",
+          "imageKey": "g113.walnut.sizuolou-pair.main",
+          "shape": {
+            "kind": "circle",
+            "x": 0.3,
+            "y": 0.5,
+            "r": 0.06
+          },
+          "revealZoom": 1.5,
+          "note": "这对的边又宽又厚，一看就是好桩。"
+        },
+        {
+          "id": "base",
+          "type": "base",
+          "imageKey": "g113.walnut.sizuolou-pair.main",
+          "shape": {
+            "kind": "circle",
+            "x": 0.3,
+            "y": 0.8,
+            "r": 0.06
+          },
+          "revealZoom": 2,
+          "closeupKey": "g113.walnut.sizuolou-pair.base"
+        },
+        {
+          "id": "tip",
+          "type": "tip",
+          "imageKey": "g113.walnut.sizuolou-pair.main",
+          "shape": {
+            "kind": "circle",
+            "x": 0.3,
+            "y": 0.2,
+            "r": 0.05
+          },
+          "revealZoom": 2
+        },
+        {
+          "id": "pattern",
+          "type": "pattern",
+          "imageKey": "g113.walnut.sizuolou-pair.main",
+          "shape": {
+            "kind": "circle",
+            "x": 0.7,
+            "y": 0.45,
+            "r": 0.08
+          },
+          "revealZoom": 2.5
+        },
+        {
+          "id": "pair",
+          "type": "pairing",
+          "imageKey": "g113.walnut.sizuolou-pair.main",
+          "shape": {
+            "kind": "circle",
+            "x": 0.5,
+            "y": 0.5,
+            "r": 0.1
+          }
+        },
+        {
+          "id": "shine",
+          "type": "patina",
+          "imageKey": "g113.walnut.sizuolou-pair.main",
+          "shape": {
+            "kind": "circle",
+            "x": 0.72,
+            "y": 0.3,
+            "r": 0.05
+          },
+          "revealZoom": 3,
+          "note": "盘了两年刚上色，纹路尖上已经开始发红。"
+        }
       ],
-      "collect": { "keySpots": "all" }
+      "collect": {
+        "keySpots": "all"
+      }
     },
     {
       "id": "guanmao-raw",
@@ -125,7 +472,11 @@
       "name": "生官帽 一对",
       "subtitle": "还没盘过 · 有一处阴皮",
       "order": 2,
-      "tags": ["官帽", "生核", "瑕疵"],
+      "tags": [
+        "官帽",
+        "生核",
+        "瑕疵"
+      ],
       "tier": "普品",
       "attrs": {
         "variety": "官帽",
@@ -137,20 +488,63 @@
         "patina": "生核"
       },
       "images": [
-        { "key": "g113.walnut.guanmao-raw.main", "role": "main", "w": 4000, "h": 3000, "sha256": "TBD",
-          "source": { "license": "TBD", "credit": "待授权实拍（占位）" } }
+        {
+          "key": "g113.walnut.guanmao-raw.main",
+          "role": "main",
+          "w": 4000,
+          "h": 3000,
+          "sha256": "TBD",
+          "source": {
+            "license": "TBD",
+            "credit": "待授权实拍（占位）"
+          }
+        }
       ],
       "spots": [
-        { "id": "tip", "type": "tip", "imageKey": "g113.walnut.guanmao-raw.main",
-          "shape": { "kind": "circle", "x": 0.3, "y": 0.18, "r": 0.05 }, "revealZoom": 1.5, "key": true,
-          "note": "官帽的尖就要这样挺出来，像帽顶子。" },
-        { "id": "pattern", "type": "pattern", "imageKey": "g113.walnut.guanmao-raw.main",
-          "shape": { "kind": "circle", "x": 0.3, "y": 0.5, "r": 0.08 }, "revealZoom": 2 },
-        { "id": "dark", "type": "yinpi", "imageKey": "g113.walnut.guanmao-raw.main",
-          "shape": { "kind": "circle", "x": 0.72, "y": 0.6, "r": 0.06 }, "revealZoom": 2.5, "key": true,
-          "note": "右边这颗侧面有块阴皮，这就是它只算普品的原因。" }
+        {
+          "id": "tip",
+          "type": "tip",
+          "imageKey": "g113.walnut.guanmao-raw.main",
+          "shape": {
+            "kind": "circle",
+            "x": 0.3,
+            "y": 0.18,
+            "r": 0.05
+          },
+          "revealZoom": 1.5,
+          "key": true,
+          "note": "官帽的尖就要这样挺出来，像帽顶子。"
+        },
+        {
+          "id": "pattern",
+          "type": "pattern",
+          "imageKey": "g113.walnut.guanmao-raw.main",
+          "shape": {
+            "kind": "circle",
+            "x": 0.3,
+            "y": 0.5,
+            "r": 0.08
+          },
+          "revealZoom": 2
+        },
+        {
+          "id": "dark",
+          "type": "yinpi",
+          "imageKey": "g113.walnut.guanmao-raw.main",
+          "shape": {
+            "kind": "circle",
+            "x": 0.72,
+            "y": 0.6,
+            "r": 0.06
+          },
+          "revealZoom": 2.5,
+          "key": true,
+          "note": "右边这颗侧面有块阴皮，这就是它只算普品的原因。"
+        }
       ],
-      "collect": { "keySpots": "all" }
+      "collect": {
+        "keySpots": "all"
+      }
     },
     {
       "id": "qingpi",
@@ -158,17 +552,43 @@
       "name": "一兜青皮核桃",
       "subtitle": "没开皮 · 品级全凭运气",
       "order": 3,
-      "tags": ["青皮", "行话"],
-      "attrs": { "variety": "狮子头" },
+      "tags": [
+        "青皮",
+        "行话"
+      ],
+      "attrs": {
+        "variety": "狮子头"
+      },
       "images": [
-        { "key": "g113.walnut.qingpi.main", "role": "main", "w": 4000, "h": 3000, "sha256": "TBD",
-          "source": { "license": "TBD", "credit": "待授权实拍（占位）" } }
+        {
+          "key": "g113.walnut.qingpi.main",
+          "role": "main",
+          "w": 4000,
+          "h": 3000,
+          "sha256": "TBD",
+          "source": {
+            "license": "TBD",
+            "credit": "待授权实拍（占位）"
+          }
+        }
       ],
       "spots": [
-        { "id": "husk", "cardId": "k-qingpi", "imageKey": "g113.walnut.qingpi.main",
-          "shape": { "kind": "circle", "x": 0.5, "y": 0.5, "r": 0.12 }, "key": true }
+        {
+          "id": "husk",
+          "cardId": "k-qingpi",
+          "imageKey": "g113.walnut.qingpi.main",
+          "shape": {
+            "kind": "circle",
+            "x": 0.5,
+            "y": 0.5,
+            "r": 0.12
+          },
+          "key": true
+        }
       ],
-      "collect": { "keySpots": "all" }
+      "collect": {
+        "keySpots": "all"
+      }
     }
   ]
 }

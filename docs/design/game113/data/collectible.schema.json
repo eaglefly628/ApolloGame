@@ -111,9 +111,10 @@
       "additionalProperties": false,
       "required": [
         "dims",
-        "tiers"
+        "tiers",
+        "values"
       ],
-      "description": "② 品相分级（owner 2026-09-28 流通性标准：有明确品相分级才适合做带等级的道具）。dims = 参与分级的 ordered enum 字段；tiers = 品级名，从低到高；藏品在 tier 里标自己的品级",
+      "description": "② 品相分级（owner 2026-09-28 流通性标准：有明确品相分级才适合做带等级的道具）。dims = 参与分级的 ordered enum 字段；tiers = 品级名，从低到高；藏品在 tier 里标自己的品级；values = 每档折合雅钱",
       "properties": {
         "dims": {
           "type": "array",
@@ -133,6 +134,16 @@
             "type": "string",
             "maxLength": 4
           }
+        },
+        "values": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 6,
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "description": "每个品级折合多少雅钱（与 tiers 一一对应、严格递增）；最高档须落在本爱好 market.priceBand 对应的 topValue 区间内（categories.json）。藏品的雅钱 = values[tier 的序号]"
         }
       }
     },
@@ -158,7 +169,8 @@
       "additionalProperties": false,
       "required": [
         "liquidity",
-        "channels"
+        "channels",
+        "priceBand"
       ],
       "description": "准入门槛（owner 2026-09-28 硬规则）：一门爱好的收藏物必须存在**合法的、能用钱买到的**真实市场（电商、二手、垂类平台、拍卖行、经纪均可；玩家买不买得起不影响）。没有市场的爱好不收录。本块为内部运营元数据，不在玩家界面显示，不写具体价格",
       "properties": {
@@ -190,6 +202,16 @@
           "type": "string",
           "maxLength": 60,
           "description": "流通/销售合规备注"
+        },
+        "priceBand": {
+          "enum": [
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5"
+          ],
+          "description": "本爱好最高品级的真实价位量级：b1 百元级 · b2 千元级 · b3 万元级 · b4 十万级 · b5 百万级以上（categories.json priceBands）"
         }
       }
     },

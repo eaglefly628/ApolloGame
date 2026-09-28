@@ -120,6 +120,17 @@ function checkHobby(h, file, release) {
     }
   }
 
+  // 雅钱：每档折合值须与品级一一对应、严格递增，最高档落在价位带区间内
+  const vals = h.grading.values;
+  if (vals.length !== h.grading.tiers.length) errs.push(`${P}.grading.values: 有 ${vals.length} 个值，但品级有 ${h.grading.tiers.length} 档，须一一对应`);
+  vals.forEach((v, i) => { if (i > 0 && v <= vals[i - 1]) errs.push(`${P}.grading.values: 须严格递增（第 ${i + 1} 档 ${v} ≤ 前一档 ${vals[i - 1]}）`); });
+  const band = CATS.priceBands.find((b) => b.id === h.market.priceBand);
+  if (band) {
+    const top = vals[vals.length - 1];
+    const [lo, hi] = band.topValue;
+    if (top < lo || top > hi) errs.push(`${P}.grading.values: 最高档 ${top} ${CATS.currency.name}不在价位带「${band.name}」的区间 ${lo}–${hi}`);
+  }
+
   // 品相分级：维度必须是 ordered enum 字段
   const dims = [];
   for (const k of h.grading.dims) {
