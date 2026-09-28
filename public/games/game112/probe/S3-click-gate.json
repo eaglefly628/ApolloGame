@@ -18,15 +18,39 @@
       ]
     },
     {
+      "id": "hall-room-label",
+      "changed": true,
+      "changedIds": [
+        "hall",
+        "hall-inner",
+        "hall-top",
+        "hall-top-left",
+        "hall-room-label",
+        "hall-cat-name"
+      ]
+    },
+    {
+      "id": "map-room-hall",
+      "changed": true,
+      "changedIds": [
+        "map",
+        "map-inner",
+        "map-top",
+        "map-title",
+        "map-hint",
+        "map-cutaway"
+      ]
+    },
+    {
       "id": "hall-stage-hide",
       "changed": true,
       "changedIds": [
         "hall-top",
         "hall-top-left",
+        "hall-room-label",
         "hall-cat-name",
         "hall-mood",
-        "hall-top-right",
-        "hall-stardust"
+        "hall-top-right"
       ]
     },
     {
@@ -34,11 +58,11 @@
       "changed": true,
       "changedIds": [
         "hall-stage-show",
+        "hall-stage-show-label",
+        "hall-stage-show-sub",
         "hall-top",
         "hall-top-left",
-        "hall-cat-name",
-        "hall-mood",
-        "hall-top-right"
+        "hall-room-label"
       ]
     },
     {
@@ -49,8 +73,8 @@
         "hall-inner",
         "hall-top",
         "hall-top-left",
-        "hall-cat-name",
-        "hall-mood"
+        "hall-room-label",
+        "hall-cat-name"
       ]
     },
     {
@@ -73,8 +97,8 @@
         "hall-inner",
         "hall-top",
         "hall-top-left",
-        "hall-cat-name",
-        "hall-mood"
+        "hall-room-label",
+        "hall-cat-name"
       ]
     },
     {
@@ -97,8 +121,8 @@
         "hall-inner",
         "hall-top",
         "hall-top-left",
-        "hall-cat-name",
-        "hall-mood"
+        "hall-room-label",
+        "hall-cat-name"
       ]
     },
     {
@@ -114,7 +138,7 @@
       ]
     },
     {
-      "id": "nav-orbs",
+      "id": "nav-map",
       "changed": true,
       "changedIds": [
         "shop",
@@ -123,26 +147,6 @@
         "shop-title",
         "shop-stardust",
         "shop-sub"
-      ]
-    },
-    {
-      "id": "orb-empty-later",
-      "changed": true,
-      "changedIds": [
-        "orbs",
-        "orbs-inner",
-        "orbs-title",
-        "orbs-sub",
-        "orbs-row",
-        "orb-xuetuan"
-      ]
-    },
-    {
-      "id": "care-greet",
-      "changed": true,
-      "changedIds": [
-        "hall-stardust",
-        "hall-cat-line"
       ]
     }
   ],

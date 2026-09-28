@@ -1,6 +1,8 @@
 # 星尾馆 · 房间美术待审目录 v2
 
 > 审核口径：后续直接用编号反馈，例如“06 的蓝光太冷”或“00 里 04→08 的连接不自然”。
+>
+> **版本状态（owner 2026-09-27）**：本套房间与设定已写入 Game112 正式文档，供 Claude 继续编排页面与表现；它是**当前视觉基线，不是不可修改的锁稿**。微调时保留编号、生成新版本并同步本目录，旧版由 Git 历史保留。
 
 ## 一致性原则
 
@@ -40,7 +42,7 @@ flowchart TB
 
 ## 00 · 全馆剖面审核总览
 
-![00 全馆剖面](../../../../public/games/game112/art/ai/pending/00-star-tail-house-cutaway-v2.png)
+![00 全馆剖面](../../../../public/games/game112/art/ai/openai-imagegen/00-star-tail-house-cutaway-v2.png)
 
 ## 01 · 主厅（已通过锚点）
 
@@ -48,36 +50,36 @@ flowchart TB
 
 ## 02 · 晶球厅
 
-![02 晶球厅](../../../../public/games/game112/art/ai/pending/02-star-tail-orbs-bg-v2.png)
+![02 晶球厅](../../../../public/games/game112/art/ai/openai-imagegen/02-star-tail-orbs-bg-v2.png)
 
 ## 03 · 星牌室
 
-![03 星牌室](../../../../public/games/game112/art/ai/pending/03-star-tail-cardroom-bg-v2.png)
+![03 星牌室](../../../../public/games/game112/art/ai/openai-imagegen/03-star-tail-cardroom-bg-v2.png)
 
 ## 04 · 回忆廊
 
-![04 回忆廊](../../../../public/games/game112/art/ai/pending/04-star-tail-gallery-bg-v2.png)
+![04 回忆廊](../../../../public/games/game112/art/ai/openai-imagegen/04-star-tail-gallery-bg-v2.png)
 
 ## 05 · 玩具间
 
-![05 玩具间](../../../../public/games/game112/art/ai/pending/05-star-tail-playroom-bg-v2.png)
+![05 玩具间](../../../../public/games/game112/art/ai/openai-imagegen/05-star-tail-playroom-bg-v2.png)
 
 ## 06 · 月光窗厅
 
-![06 月光窗厅](../../../../public/games/game112/art/ai/pending/06-star-tail-sunroom-bg-v2.png)
+![06 月光窗厅](../../../../public/games/game112/art/ai/openai-imagegen/06-star-tail-sunroom-bg-v2.png)
 
 ## 07 · 茶水间
 
-![07 茶水间](../../../../public/games/game112/art/ai/pending/07-star-tail-pantry-bg-v2.png)
+![07 茶水间](../../../../public/games/game112/art/ai/openai-imagegen/07-star-tail-pantry-bg-v2.png)
 
 ## 08 · 回忆阁楼
 
-![08 回忆阁楼](../../../../public/games/game112/art/ai/pending/08-star-tail-attic-bg-v2.png)
+![08 回忆阁楼](../../../../public/games/game112/art/ai/openai-imagegen/08-star-tail-attic-bg-v2.png)
 
 ## 09 · 月庭
 
-![09 月庭](../../../../public/games/game112/art/ai/pending/09-star-tail-garden-bg-v2.png)
+![09 月庭](../../../../public/games/game112/art/ai/openai-imagegen/09-star-tail-garden-bg-v2.png)
 
 ## 10 · 星砂铺
 
-![10 星砂铺](../../../../public/games/game112/art/ai/pending/10-star-tail-shopfront-bg-v2.png)
+![10 星砂铺](../../../../public/games/game112/art/ai/openai-imagegen/10-star-tail-shopfront-bg-v2.png)

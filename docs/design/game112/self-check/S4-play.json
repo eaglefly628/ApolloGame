@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-24T04:13:42.650Z",
+  "at": "2026-09-28T03:58:43.234Z",
   "checks": [
     {
       "name": "标题页：主 CTA「回到星尾馆」在",
@@ -12,7 +12,112 @@
     {
       "name": "进主厅：猫画面 + 星砂 0 + 情绪短语",
       "pass": true,
-      "detail": "stardust=0 mood=安静地待着 hasHall=true screen=hall-stage-hide actions=11"
+      "detail": "stardust=0 mood=安静地待着 hasHall=true screen=hall-room-label actions=18"
+    },
+    {
+      "name": "00 全馆预览：剖面图内十个热区 + 十个文字快跳都在",
+      "pass": true,
+      "detail": "image=10 text=10"
+    },
+    {
+      "name": "00 全馆预览：当前主厅高亮并标出雪团在这里",
+      "pass": true,
+      "detail": "tag=01 主厅 · 雪团在这里"
+    },
+    {
+      "name": "文字快跳可用：点 06 月光窗厅文字按钮 → 进入月光窗厅固定镜头",
+      "pass": true,
+      "detail": "room=sunroom"
+    },
+    {
+      "name": "图内热区可跳：直接点 02 晶球厅缩略 → 进入晶球厅固定镜头",
+      "pass": true,
+      "detail": "room=orbs"
+    },
+    {
+      "name": "相邻门 orbs → gallery",
+      "pass": true,
+      "detail": "room=gallery hall=false"
+    },
+    {
+      "name": "相邻门 gallery → attic",
+      "pass": true,
+      "detail": "room=attic hall=false"
+    },
+    {
+      "name": "相邻门 attic → gallery",
+      "pass": true,
+      "detail": "room=gallery hall=false"
+    },
+    {
+      "name": "相邻门 gallery → sunroom",
+      "pass": true,
+      "detail": "room=sunroom hall=false"
+    },
+    {
+      "name": "相邻门 sunroom → gallery",
+      "pass": true,
+      "detail": "room=gallery hall=false"
+    },
+    {
+      "name": "相邻门 gallery → orbs",
+      "pass": true,
+      "detail": "room=orbs hall=false"
+    },
+    {
+      "name": "相邻门 orbs → hall",
+      "pass": true,
+      "detail": "room=null hall=true"
+    },
+    {
+      "name": "相邻门 hall → cardroom",
+      "pass": true,
+      "detail": "room=cardroom hall=false"
+    },
+    {
+      "name": "相邻门 cardroom → pantry",
+      "pass": true,
+      "detail": "room=pantry hall=false"
+    },
+    {
+      "name": "相邻门 pantry → cardroom",
+      "pass": true,
+      "detail": "room=cardroom hall=false"
+    },
+    {
+      "name": "相邻门 cardroom → hall",
+      "pass": true,
+      "detail": "room=null hall=true"
+    },
+    {
+      "name": "相邻门 hall → playroom",
+      "pass": true,
+      "detail": "room=playroom hall=false"
+    },
+    {
+      "name": "相邻门 playroom → hall",
+      "pass": true,
+      "detail": "room=null hall=true"
+    },
+    {
+      "name": "相邻门 hall → garden",
+      "pass": true,
+      "detail": "room=garden hall=false"
+    },
+    {
+      "name": "相邻门 garden → shopfront",
+      "pass": true,
+      "detail": "room=shopfront hall=false"
+    },
+    {
+      "name": "相邻门 shopfront → garden",
+      "pass": true,
+      "detail": "room=garden hall=false"
+    },
+    {
+      "name": "相邻门 garden → hall",
+      "pass": true,
+      "detail": "room=null hall=true"
     },
     {
       "name": "陪坐 10 次：星砂 20（数字真的变了）",
@@ -104,7 +209,7 @@
     {
       "name": "回馆：「你不在的时候」小事件展开一条 + 「看过了」",
       "pass": true,
-      "detail": "text=玩具被叼到了桌边，歪着。"
+      "detail": "text=它趁你不在，把三张牌藏进了纸袋。"
     },
     {
       "name": "回馆：进度随存档带回（星砂 1·纸袋仍在馆里）",
@@ -116,7 +221,7 @@
       "pass": true
     },
     {
-      "name": "词表 22 个动作：屏上都出现过（宿主条件键 1 个另注）",
+      "name": "词表 24 个动作：屏上都出现过（宿主条件键 1 个另注）",
       "pass": true,
       "detail": "未见=无"
     },
@@ -126,7 +231,7 @@
       "detail": ""
     }
   ],
-  "shots": 17,
+  "shots": 32,
   "consoleErrors": [],
   "actionsSeen": [
     "cat.greet",
@@ -138,6 +243,7 @@
     "home.enter",
     "home.exit",
     "later",
+    "map.open",
     "memory.advance",
     "memory.back",
     "memory.choose",
@@ -145,6 +251,7 @@
     "memory.read",
     "offline.ack",
     "orbs.open",
+    "room.enter",
     "settings.open",
     "shop.buy",
     "shop.open",

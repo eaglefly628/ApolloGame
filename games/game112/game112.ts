@@ -12,7 +12,7 @@ import { DIALOGUE_ACTION_ADVANCE, DIALOGUE_ACTION_CHOOSE } from '@zerocraft/engi
 import { HallSession } from './session.js';
 import { flagOn } from './project.js';
 import { buildScreen, UI_ACTIONS, type Screen, type UiAction } from './ui.js';
-import { GAME_ID, TICK_MS, OFFLINE_ACK_KEY, STAGE_HIDE_KEY, STAGE_SHOW_KEY, offlineTierOf, offlineKey, buyKey, placeKey, shopItemOf, chapterOf } from './world-data.js';
+import { GAME_ID, TICK_MS, OFFLINE_ACK_KEY, STAGE_HIDE_KEY, STAGE_SHOW_KEY, offlineTierOf, offlineKey, buyKey, placeKey, shopItemOf, chapterOf, roomOf, type RoomId } from './world-data.js';
 import { EMPTY_STATE, type PersistedState } from './blueprint.js';
 import { setSkinOverrides } from './cat-art.js';
 
@@ -23,13 +23,18 @@ export const SAVE_SLOT = 'main';
 export interface HostHooks { exit: () => void }
 
 /** UI action → 宿主动作（**纯查表·可测·零玩法判定**）。key = 进 sim 的具名动作；screen = 切屏。 */
-export interface Route { screen?: Screen; key?: string; x?: number; readChapter?: string }
+export interface Route { screen?: Screen; room?: RoomId; key?: string; x?: number; readChapter?: string }
 export function routeAction(action: UiAction | string, arg?: string): Route | undefined {
   switch (action) {
-    case 'home.enter': return { screen: 'hall' };
+    case 'home.enter': return { screen: 'hall', room: 'hall' };
     case 'home.about': return { screen: 'about' };
     case 'home.exit': return {};
-    case 'hall.back': case 'later': return { screen: 'hall' };
+    case 'hall.back': case 'later': return { screen: 'hall', room: 'hall' };
+    case 'map.open': return { screen: 'map' };
+    case 'room.enter': {
+      const room = arg !== undefined ? roomOf(arg) : undefined;
+      return room !== undefined ? { screen: room.id === 'hall' ? 'hall' : 'room', room: room.id } : undefined;
+    }
     case 'orbs.open': return { screen: 'orbs' };
     case 'table.open': return { screen: 'table' };
     case 'toys.open': return { screen: 'toys' };
@@ -42,7 +47,7 @@ export function routeAction(action: UiAction | string, arg?: string): Route | un
     case 'ui.show': return { key: STAGE_SHOW_KEY };
     case 'shop.buy': return arg !== undefined && shopItemOf(arg) !== undefined ? { key: buyKey(arg) } : undefined;
     // 购买后优先「放到馆里看看」→ 回主厅目击新物件（menu-flow §10）。
-    case 'decor.place': return arg !== undefined && shopItemOf(arg) !== undefined ? { key: placeKey(arg), screen: 'hall' } : undefined;
+    case 'decor.place': return arg !== undefined && shopItemOf(arg) !== undefined ? { key: placeKey(arg), screen: 'hall', room: 'hall' } : undefined;
     case 'memory.read': return arg !== undefined && chapterOf(arg) !== undefined ? { screen: 'reading', readChapter: arg } : undefined;
     case 'memory.advance': return { key: DIALOGUE_ACTION_ADVANCE };
     case 'memory.choose': {
@@ -81,6 +86,7 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
   let handle: MountHandle | undefined;
   let session: HallSession | undefined;
   let screen: Screen = 'home';
+  let room: RoomId = 'hall';
   let reading: string | undefined;
   let timer: ReturnType<typeof setInterval> | undefined;
   let lastView = '';
@@ -93,6 +99,7 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
       screen,
       view: session?.hall(),
       reading: session !== undefined && reading !== undefined ? session.reading(reading) : undefined,
+      room,
       canExit: host !== undefined,
     }), { flag: (id) => (world !== undefined ? flagOn(world, id) : false) });
     if (handle) handle.update(node);
@@ -117,6 +124,7 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
     const tier = savedAt !== undefined ? offlineTierOf(now() - savedAt) : undefined;
     if (tier !== undefined) session.act(offlineKey(tier));
     screen = 'hall';
+    room = 'hall';
     timer = setInterval(() => {
       if (session === undefined || disposed) return;
       session.step();
@@ -140,6 +148,7 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
     if (r === undefined) return;
     if (r.key !== undefined && session !== undefined) { session.act(r.key, r.x !== undefined ? { x: r.x } : undefined); persist(); }
     if (r.readChapter !== undefined) reading = r.readChapter;
+    if (r.room !== undefined) room = r.room;
     if (r.screen !== undefined) screen = r.screen;
     render();
   }]));

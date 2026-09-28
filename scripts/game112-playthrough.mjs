@@ -3,7 +3,7 @@
 //
 //  验收剧本驱动的是引擎（adapter 直接喂 world），DOM 那一半从不参与；S3 点击门只验最小项。
 //  本脚本：真起 vite → 真 Chromium → **全程只点真按钮**（不碰世界、不注入）→
-//  标题 → 主厅 → 陪坐攒星砂/心光 → 星砂铺买纸袋 → 玩具篮放到馆里 → 主厅目击新物件 →
+//  标题 → 主厅 → 00 全馆预览图内点房 → 沿既定拓扑走遍十房 → 陪坐攒星砂/心光 → 星砂铺买纸袋 → 玩具篮放到馆里 → 主厅目击新物件 →
 //  回忆廊 → 读完一段回忆（含选择）→ **终局出口必点**（「回到回忆廊」是阅读屏唯一出口）→ 回主厅再陪一次。
 //  每个节点截图 + 把 DOM 读回来断言（数字真的变了，不只是屏刷新了）。
 //  尾段：① 全屏巡游（关于/晶球厅/星牌桌/设置——把每个屏上出现过的 data-action 全收集起来，
@@ -15,7 +15,7 @@
 //  退出码：0 = 走完且断言全过 · 1 = 断言未过 · 3 = 本机无浏览器（跳过·同 R1 语义）
 //  产物：docs/design/game112/self-check/shots/S4-play-*.png（自证截图序列·S4 门查 ≥5）+ S4-play.{log,json}
 // ═══════════════════════════════════════════════════════════════
-import { writeFileSync, readFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, readFileSync, mkdirSync, readdirSync, unlinkSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { detectBrowserRuntime, startDevServer, stopDevServer } from './lib/render-harness.mjs';
@@ -41,7 +41,11 @@ const READ = `(() => {
     screen: document.querySelector('[data-ui-id]')?.getAttribute('data-ui-id') ?? null,
     stardust: num(txt('hall-stardust') ?? txt('shop-stardust')),
     mood: txt('hall-mood'), catLine: txt('hall-cat-line'), orbSub: txt('hot-orbs-sub'),
-    hasHall: has('hall-cat'), hasShop: has('shop-grid'), hasToys: has('toys-title'), hasMemory: has('memory-list'),
+    hasHall: has('hall-cat'), hasMap: has('map-cutaway'), hasShop: has('shop-grid'), hasToys: has('toys-title'), hasMemory: has('memory-list'),
+    roomId: Array.from(document.querySelectorAll('[id^="room-"][id$="-stage"]')).map((e) => e.id.slice(5, -6))[0] ?? null,
+    mapImageHits: document.querySelectorAll('#map-cutaway [data-action="room.enter"]').length,
+    mapTextHits: document.querySelectorAll('#map-quick-jump [data-action="room.enter"]').length,
+    mapHere: txt('map-room-hall-tag'),
     hasReading: has('reading-dialog'), hasReadingNext: has('reading-next'), hasReadingEnd: has('reading-end'),
     hasChoices: has('reading-choices'), placedFeather: has('hall-placed-paperbag'), offlineAck: has('hall-offline-ack'),
     hasNav: has('navbar'), hasStageShow: has('hall-stage-show'), hasOrbs: has('orbs-title'), hasTable: has('table-note'), hasSettings: has('settings-title'), hasAbout: has('about-title'),
@@ -76,6 +80,8 @@ async function main() {
   });
 
   mkdirSync(OUT, { recursive: true });
+  // 每轮证据只保留本轮截图，避免旧文件与新编号混在一起造成假证据。
+  for (const name of readdirSync(OUT)) if (/^S4-play-.*\.png$/.test(name)) unlinkSync(join(OUT, name));
   // 词表真相 = ui.ts UI_ACTIONS 字面量（抽不出来就报错，绝不猜空表假绿）。
   const uiSrc = readFileSync(join(ROOT, 'games', 'game112', 'ui.ts'), 'utf8');
   const vocabM = uiSrc.match(/export const UI_ACTIONS = \[([\s\S]*?)\] as const;/);
@@ -115,6 +121,45 @@ async function main() {
     s = await state();
     check('进主厅：猫画面 + 星砂 0 + 情绪短语', s.hasHall && s.stardust === 0 && !!s.mood, `stardust=${s.stardust} mood=${s.mood} hasHall=${s.hasHall} screen=${s.screen} actions=${s.actions.length}`);
     await shot('hall-first');
+
+    // ── 00 快速预览 + 十房拓扑巡游：第一次跳转必须点图中热区，不点文字兜底 ──
+    await clickAction('map.open', 400);
+    s = await state();
+    check('00 全馆预览：剖面图内十个热区 + 十个文字快跳都在', s.hasMap && s.mapImageHits === 10 && s.mapTextHits === 10, `image=${s.mapImageHits} text=${s.mapTextHits}`);
+    check('00 全馆预览：当前主厅高亮并标出雪团在这里', /雪团在这里/.test(s.mapHere ?? ''), `tag=${s.mapHere}`);
+    await shot('map-cutaway');
+    const mapTextClicked = await click('#go-room-sunroom[data-action="room.enter"][data-arg="sunroom"]', 500);
+    s = await state();
+    check('文字快跳可用：点 06 月光窗厅文字按钮 → 进入月光窗厅固定镜头', mapTextClicked && s.roomId === 'sunroom', `room=${s.roomId}`);
+    await clickAction('map.open', 300);
+    const mapImageClicked = await click('#map-room-orbs[data-action="room.enter"][data-arg="orbs"]', 500);
+    s = await state();
+    check('图内热区可跳：直接点 02 晶球厅缩略 → 进入晶球厅固定镜头', mapImageClicked && s.roomId === 'orbs', `room=${s.roomId}`);
+    await shot('room-orbs');
+
+    const roam = async (from, to) => {
+      const clicked = await clickAction('room.enter', to, 450);
+      const st = await state();
+      check(`相邻门 ${from} → ${to}`, clicked && (to === 'hall' ? st.hasHall : st.roomId === to), `room=${st.roomId} hall=${st.hasHall}`);
+      if (to !== 'hall') await shot(`room-${to}`);
+    };
+    await roam('orbs', 'gallery');
+    await roam('gallery', 'attic');
+    await roam('attic', 'gallery');
+    await roam('gallery', 'sunroom');
+    await roam('sunroom', 'gallery');
+    await roam('gallery', 'orbs');
+    await roam('orbs', 'hall');
+    await roam('hall', 'cardroom');
+    await roam('cardroom', 'pantry');
+    await roam('pantry', 'cardroom');
+    await roam('cardroom', 'hall');
+    await roam('hall', 'playroom');
+    await roam('playroom', 'hall');
+    await roam('hall', 'garden');
+    await roam('garden', 'shopfront');
+    await roam('shopfront', 'garden');
+    await roam('garden', 'hall');
 
     // 陪坐 ×10：星砂 +2×10=20 · 心光 +2×10=20（≥10 解锁章节）。每次点完等一拍以上。
     for (let i = 0; i < 10; i++) await clickAction('cat.sit', 260);

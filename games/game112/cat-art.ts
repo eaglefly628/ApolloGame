@@ -21,10 +21,15 @@ export const SKIN_KEYS = {
   hotspot: (kind: 'orb' | 'table' | 'basket'): string => `game112/icon/${kind}`,
   /** 房间场景背景（猫画面层容器 Panel.skin·猫叠其上）——hall-framework.md §6.1 art-06 定调图槽。 */
   scene: (room: string): string => `game112/scene/${room}`,
+  /** 00 全馆剖面；由 01–10 成图确定性拼合，馆图热区叠在其上。 */
+  map: 'game112/map/hall',
 } as const;
 /** 场景皮：有图给 URL（Panel.skin cover），无图返回 undefined → 回退主题 sunken 面（兜底不丢）。 */
 export function sceneSkin(room: string): string | undefined {
   return SKIN_OVERRIDES[SKIN_KEYS.scene(room)];
+}
+export function mapSkin(): string | undefined {
+  return SKIN_OVERRIDES[SKIN_KEYS.map];
 }
 const skin = (key: string, fallback: () => string): string => SKIN_OVERRIDES[key] ?? fallback();
 

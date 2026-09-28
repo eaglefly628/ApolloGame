@@ -16,6 +16,36 @@ export type CatPose = 'rest' | 'lookup' | 'settled';
 export const CAT_POSES: readonly CatPose[] = ['rest', 'lookup', 'settled'];
 export const poseFsm = (cat: string): string => `pose.${cat}`;
 
+// ── 星尾馆十房（hall-framework v2·导航/馆图/房间页单一真相）───────────────
+export type RoomId = 'hall' | 'orbs' | 'cardroom' | 'gallery' | 'playroom' | 'sunroom' | 'pantry' | 'attic' | 'garden' | 'shopfront';
+export interface RoomSpec {
+  readonly id: RoomId;
+  readonly number: number;
+  readonly name: string;
+  readonly subtitle: string;
+  readonly scene: string;
+  readonly adjacent: readonly RoomId[];
+  /** 00 馆图上的像素热区（馆图在 UI 中固定渲为 960×540）。 */
+  readonly mapRect: Readonly<{ x: number; y: number; w: number; h: number }>;
+  /** 只复用已经接线的活动；本轮不提前制造未来玩法空动作。 */
+  readonly activity?: Readonly<{ label: string; sub: string; action: string }>;
+}
+
+export const ROOMS: readonly RoomSpec[] = [
+  { id: 'hall', number: 1, name: '主厅', subtitle: '暖灯下，雪团在旧木地板中央等你。', scene: 'hall', adjacent: ['orbs', 'cardroom', 'playroom', 'garden'], mapRect: { x: 395, y: 268, w: 170, h: 123 }, activity: { label: '陪它坐坐', sub: '什么都不做也可以', action: 'cat.sit' } },
+  { id: 'orbs', number: 2, name: '晶球厅', subtitle: '记忆在珠光蓝与烟紫之间缓慢发亮。', scene: 'orbs', adjacent: ['hall', 'gallery'], mapRect: { x: 148, y: 137, w: 168, h: 122 }, activity: { label: '看看晶球', sub: '遇见这里的猫', action: 'orbs.open' } },
+  { id: 'cardroom', number: 3, name: '星牌室', subtitle: '低矮的牌桌正合猫爪，牌规仍在慢慢推敲。', scene: 'cardroom', adjacent: ['hall', 'pantry'], mapRect: { x: 583, y: 268, w: 168, h: 123 }, activity: { label: '坐上牌桌', sub: '先看看星爪牌的位置', action: 'table.open' } },
+  { id: 'gallery', number: 4, name: '回忆廊', subtitle: '墙上的片段不会催你，想看时再靠近。', scene: 'gallery', adjacent: ['orbs', 'sunroom', 'attic'], mapRect: { x: 395, y: 137, w: 170, h: 122 }, activity: { label: '翻开回忆', sub: '看看已经发亮的章节', action: 'memory.open' } },
+  { id: 'playroom', number: 5, name: '玩具间', subtitle: '纸箱、抓柱和空中步道都按猫的尺度搭好。', scene: 'playroom', adjacent: ['hall'], mapRect: { x: 395, y: 400, w: 170, h: 123 }, activity: { label: '打开玩具篮', sub: '看看留在馆里的玩具', action: 'toys.open' } },
+  { id: 'sunroom', number: 6, name: '月光窗厅', subtitle: '月光落在低窗软垫上，适合安静待一会儿。', scene: 'sunroom', adjacent: ['gallery'], mapRect: { x: 643, y: 137, w: 169, h: 122 }, activity: { label: '陪它看月亮', sub: '在窗边坐一会儿', action: 'cat.sit' } },
+  { id: 'pantry', number: 7, name: '茶水间', subtitle: '猫爪能拉开的抽屉里，藏着杯印与旧日气味。', scene: 'pantry', adjacent: ['cardroom'], mapRect: { x: 768, y: 268, w: 167, h: 123 }, activity: { label: '轻声叫它', sub: '看看它会不会从柜顶回头', action: 'cat.greet' } },
+  { id: 'attic', number: 8, name: '回忆阁楼', subtitle: '旧箱和睡窝安静收着尚未讲完的故事。', scene: 'attic', adjacent: ['gallery'], mapRect: { x: 395, y: 20, w: 170, h: 118 }, activity: { label: '看看旧回忆', sub: '回到已经发亮的章节', action: 'memory.open' } },
+  { id: 'garden', number: 9, name: '月庭', subtitle: '花径接着馆门，琥珀灯链沿猫步道伸向夜色。', scene: 'garden', adjacent: ['shopfront', 'hall'], mapRect: { x: 209, y: 268, w: 167, h: 123 }, activity: { label: '在月庭坐坐', sub: '听一会儿夜里的声音', action: 'cat.sit' } },
+  { id: 'shopfront', number: 10, name: '星砂铺', subtitle: '猫主理人的小铺子，抽屉和货架都在爪高。', scene: 'shopfront', adjacent: ['garden'], mapRect: { x: 24, y: 268, w: 167, h: 121 }, activity: { label: '看看小铺', sub: '交换会留在馆里的东西', action: 'shop.open' } },
+];
+export const ROOM_IDS: readonly RoomId[] = ROOMS.map((r) => r.id);
+export const roomOf = (id: string): RoomSpec | undefined => ROOMS.find((r) => r.id === id);
+
 // ── 猫档案（GDD §6.1）──────────────────────────────────────────────────────
 export interface CatCard {
   readonly id: string;

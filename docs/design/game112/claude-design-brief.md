@@ -2,7 +2,7 @@
 
 > **给谁**：Claude Design。**要什么**：按本稿出每屏 `.dc.html` 设计稿，放 `docs/design/game112/cloud-design/`。
 > **它在本仓的地位**：`.dc.html` 在档 = **1:1 复刻基准**（CLAUDE.md UI 铁律）——工程侧开工前真渲染目击、视觉规格全消费、差异逐条报 PUI 裁决。所以稿子**必须落在引擎能画出来的范围内**（§3 硬约束），否则复刻不了。
-> **真相来源**：产品口径 `gdd.md` · 页面与导航 `menu-flow.md` · 视觉要求 `ui-visual-handoff.md`。本稿只做三件事：① 把引擎约束翻成设计师能用的规格；② 定第一轮画哪些屏、每屏什么状态；③ 定交稿格式。冲突时以 `gdd.md` 为准。
+> **真相来源**：产品口径 `gdd.md` · 页面与导航 `menu-flow.md` · 空间设定 `hall-framework.md` · **00–10 编号视觉基线 `visual/room-art-review-v2.md`** · 视觉要求 `ui-visual-handoff.md`。本稿只做三件事：① 把引擎约束翻成设计师能用的规格；② 定第一轮画哪些屏、每屏什么状态；③ 定交稿格式。冲突时以 `gdd.md` 为准。
 > **先例**：`docs/design/game-c/ui-brief.md` + `game-c/cloud-design/*.dc.html`。
 > **作者**：GD/PE-112 · 2026-09-24。
 > **v2 逐屏规格已出**：[`claude-design-spec.md`](./claude-design-spec.md)（2026-09-25·基于 Loop-0 真渲染截图·含节点 id 映射、六态主厅、S66 敏感前控制层定稿、观感债清单）。本稿保留为约束闭集与交稿格式；两稿冲突以 v2 为准。
@@ -25,6 +25,10 @@
 |---|---|---|
 | 猫与世界质感（当前风格基线） | `visual/cat-art-direction-ragdoll-v2-lived-in.png` | 猫高保真、空间轻绘本、有人生活过的痕迹 |
 | 固定低机位逗猫场景 | `visual/scene-cat-play-ragdoll-v1.png` | 逗猫角构图起点 |
+| 01 主厅 | `public/games/game112/art/scene/star-tail-main-hall-bg-v2.png` | 全馆旧橡木、灰泥、猫尺度与暖光锚点 |
+| 00–10 房间图册 | `visual/room-art-review-v2.md` | **Claude 编排房间、馆图和 UI 的当前视觉真相**；不得另画一套不一致建筑 |
+
+00 馆图中的房间必须继续使用对应 01–10 单图本身；需要调整时按编号提修并升版本。Claude 可以编排 UI、热点、安全区与状态，但不得把空间改成人类咖啡厅、重新发明房间邻接或用另一张 AI 总览替代 00。
 
 关键词（`ui-visual-handoff` §2）：**安静、亲密、有生活痕迹；喵星但不廉价科幻；允许歪斜、磨损、不成套、遮挡**。反面：AI 豪华咖啡厅、粉色霓虹猫爪模板、每屏五种货币红点、墓园天堂符号、付费压迫、猫做成表情包主播。
 

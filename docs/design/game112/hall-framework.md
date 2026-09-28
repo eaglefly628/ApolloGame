@@ -1,9 +1,10 @@
-# 星尾馆 · 空间框架与美术设定（hall-framework v1）
+# 星尾馆 · 空间框架与美术设定（hall-framework v2）
 
 > **owner 2026-09-25 口述**：「最需要改进的是我的营业场所——喵星馆。它本身的美术设定、馆里的互动按钮；可以设成**可扩展的多房间**，很多房间去扩建；所以要有**地图**；先把外面的框架形态设定清楚。」另：「需要一个非常强的美术设计风格，接纳这些喵星宝宝，需要美术出图。」
 > **本稿三件事**：① 馆的**形态框架**（房间 · 地图 · 热点 · 扩建循环 · 能力映射）② 馆的**美术设定**（art bible + 风格包 + 提示词模板）③ **出图清单**（有槽即入台账，无槽的按框架落地顺序排队）。
-> **上位文档**：`gdd.md`（世界观 §3 · 场景 §13）· `menu-flow.md` · `ui-visual-handoff.md` · `claude-design-spec.md`（逐屏规格）。GDD §16.2 把「复杂房间自由装修」列为延后项——本框架**不是自由装修**，是「房间解锁 + 固定位摆放」，与 GDD 不冲突；多房间本身是 owner 2026-09-25 直令，压过 §13.1「首版六场景」的单厅假设。
+> **上位文档**：`gdd.md`（世界观 §3 · 场景 §13）· `menu-flow.md` · `ui-visual-handoff.md` · `claude-design-spec.md`（逐屏规格）。GDD §16.2 把「复杂房间自由装修」列为延后项；本轮只做十房巡游，解锁、扩建与自由装修全部延后。多房间本身是 owner 2026-09-25 直令，压过 §13.1「首版六场景」的单厅假设。
 > **作者**：GD/PE-112 · 2026-09-25。
+> **当前判词（owner 2026-09-27）**：采用 A 型剖面馆图；01–10 房间与猫原生设定写入正式文档；第一步玩法先完成“主厅进入 → 相邻房间巡游 → 馆图/菜单快跳”。视觉真相 = [`visual/room-art-review-v2.md`](./visual/room-art-review-v2.md)，可按编号继续微调，不是不可修改的锁稿。
 
 ---
 
@@ -11,8 +12,8 @@
 
 | 需求 | 判定 | 怎么表达（对 registry 实名） |
 |---|---|---|
-| 多房间 | ✅ 做·纯数据 | 房间 = `world-data.ts` 一张表（id/镜头/热点/解锁条件）；每房一屏（`buildRoom(roomId)` 查表出 LayoutNode）；当前房间 = `x3-string-variable`（同 `activeCat`） |
-| 房间解锁/扩建 | ✅ 做·纯数据 | `t2-craft-recipe`（costs 星砂 → grantsFlag `room.<id>.open`）+ `t2-event-when`（心光/前置房间门槛·edge）——**与杂货铺同一条路** |
+| 多房间 | ✅ 做·纯数据 | 房间 = `world-data.ts` 一张表（id/镜头/热点/相邻边/馆图热区）；每房一屏（`buildRoom(roomId)` 查表出 LayoutNode）；**首轮当前房间只在宿主保存展示状态，不进 sim** |
+| 房间解锁/扩建 | ⏸ 后续 | 首轮十房全开放。待 owner 定经济数值后才用 `t2-craft-recipe` + `t2-event-when`；本竖切不写配方、不写门槛 |
 | 地图 | ✅ 做·纯数据 | 一屏：`Screen.image`（手绘馆图）+ 每房一块 `Panel{skin, action:'room.enter', x,y}` 绝对定位热点；锁态 = `visibleWhen` 切轮廓皮 |
 | 房间里的互动按钮（热点物件） | ✅ 做·纯数据 | 现有 `hotspot()` 升级：`Panel{skin:<物件图>, action, x,y}` 叠在 `Screen.image` 房间背景上；「物件即入口」 |
 | 房间美术可换 | ✅ 有槽 | `Screen.image` / `Panel.skin` 走 `SKIN_OVERRIDES[skinKey]`（art-pipeline「皮肤槽」铁律） |
@@ -40,26 +41,25 @@
 **导航形态**
 - 主厅仍是首页（menu-flow §0.2）；底栏五入口不变。
 - **馆图入口**放在左上角「猫名」旁的**房间名标签**（`room-label`「星尾馆 · 主厅 ▾」·`map.open`）——点它开馆图；不占底栏、不占右上 ⚙ 区。
-- 房间之间**只经馆图**切换（一次只做一件事·固定镜头不做平移）；例外：主厅三热点直达晶球厅/牌桌/玩具篮（沿用）。
+- 房间之间有两条数据同源的路：**相邻门**只能沿 `ROOMS.adjacent` 一步移动；**馆图**点击 00 剖面里的房间热区可任意快跳。固定镜头之间直接切换，不做镜头平移。
 - 「只看它」在每个房间都有效（同一 Flag）。
 
 ---
 
 ## 2. 馆图（S15）
 
-**形态建议 A · 手绘剖面图**（推荐）：像绘本的房子剖面——两三层楼、房间并排、能看到每间房里的一点点摆设和猫的剪影；未解锁的房间是**铅笔轮廓 + 一句线索**（「这里以前是……」）。
-**形态 B · 平面图**：俯视格子图。信息效率高但没有「家」的感觉。**推荐 A**，等 owner 判。
+**采用形态 A · 手绘剖面图**：像绘本的房子剖面——两三层楼、房间并排、能看到每间房里的真实场景。00 总览由 01–10 单房成图确定性拼合，禁止另调 AI 重画一栋相似但不一致的房子。首轮巡游十房全开放；锁态与扩建门槛留给后续经济循环。
 
 **屏结构**（LayoutNode）
 ```
-Screen{image: game112/map/hall}                      ← 手绘剖面（1920×1080 cover）
+Screen{image: game112/map/hall}                      ← 00 全馆剖面（1920×1080 cover）
   Panel(bare, 绝对坐标层)
-    Panel{skin: game112/map/room-<id>, action:'room.enter', actionArg:<id>, x,y,w,h}  ×N  ← 开放房：亮
-    Panel{skin: game112/map/room-<id>-locked, action:'room.peek', x,y}                ×M  ← 锁房：轮廓 + 线索
+    Button{action:'room.enter', actionArg:<id>, x,y,w,h}  ×N  ← 热区直接叠在 00 图中对应房间上；当前房高亮
+    Panel{direction:grid} + Button{action:'room.enter'}                              ← 同表生成的文字快跳兜底（触屏/可读性）
     Float{anchorTo: 当前房} → Tag「雪团在这里」                                          ← 猫的位置
   navbar
 ```
-**房间三态**
+**房间三态（后续扩建竖切；本轮全部按 `open` 渲染）**
 | 态 | 画面 | 点了发生什么 |
 |---|---|---|
 | `locked` | 铅笔轮廓 + 一句线索 + 「星砂 N · 心光 M」 | `room.peek` → dialog 一段介绍 + 「收拾出来」（`room.unlock`·可负担才成交） |
@@ -76,24 +76,41 @@ Screen{image: game112/map/hall}                      ← 手绘剖面（1920×10
 | 2 | `orbs` | 晶球厅 | 遇见猫 · 相认 · 进记忆 | 缓慢展示镜头（不可自由转） | 每颗晶球→`orb.pick` · 空晶球→`upload.start` | 开局即开 | 蹭晶球底座 · 看着某颗晶球发呆 |
 | 3 | `cardroom` | 星牌室 | 星爪牌 | 桌面略俯视 | 牌桌→`table.open` · 牌背架→`shop.open`(牌具) | 开局即开（牌规待 owner） | 压牌 · 把牌推乱 · 趴在牌堆上 |
 | 4 | `gallery` | 回忆廊 | 章节 · 相册 | 稍暗·一条光带 | 每颗记忆晶球→`memory.read` · 相册→`album.open` | 开局即开 | 在光带下打盹 |
-| 5 | `playroom` | 玩具间 | 逗猫（视频形态）· 玩具收纳 | 低机位（`scene-cat-play` 锚） | 玩具篮→`toys.open` · 纸袋/羽毛杆/纸箱→`play.start`+玩具 | 星砂 40 · 心光 4 | 伏击 · 钻纸袋 · 把毛线球滚到门口 |
-| 6 | `sunroom` | 窗台 | 安静陪伴 · 观星 · 睡 | 侧光·大窗·软垫 | 软垫→`cat.sit`(变体「陪它晒一会儿」) · 窗→`sky.watch` | 星砂 60 · 心光 10 | 睡出一圈压平的毛 · 盯窗外的星轨 |
-| 7 | `pantry` | 茶水间 | 主人的痕迹（杯印故事线）· 布置 | 近景·橱柜 | 杯子→`memory.read`(杯印章) · 橱柜→`decor.place` | 星砂 60 · 首章读完 | 把杯垫叼走 · 蹲在橱柜顶 |
-| 8 | `attic` | 阁楼 | 旧物 · 记忆线索 · 未解锁章节的「轮廓」 | 仰视·斜顶·灰尘光 | 旧箱→`memory.clue` · 旧照片→`album.open` | 星砂 80 · 心光 20 | 从阁楼带回一枚无价值小物件 |
-| 9 | `garden` | 星庭 | 室外 · 夜 · 多猫将来同场 | 远景·星轨·月相 | 石凳→`cat.sit` · 猫爪星座刻纹→`sky.watch` | 星砂 100 · 心光 30 | 在星轨下追影子 |
+| 5 | `playroom` | 玩具间 | 逗猫（视频形态）· 玩具收纳 | 低机位（`scene-cat-play` 锚） | 玩具篮→`toys.open` · 纸袋/羽毛杆/纸箱→`play.start`+玩具 | 首轮开放；后续待定 | 伏击 · 钻纸袋 · 把毛线球滚到门口 |
+| 6 | `sunroom` | 窗台 | 安静陪伴 · 观星 · 睡 | 侧光·大窗·软垫 | 软垫→`cat.sit`(变体「陪它晒一会儿」) · 窗→`sky.watch` | 首轮开放；后续待定 | 睡出一圈压平的毛 · 盯窗外的星轨 |
+| 7 | `pantry` | 茶水间 | 主人的痕迹（杯印故事线）· 布置 | 近景·橱柜 | 杯子→`memory.read`(杯印章) · 橱柜→`decor.place` | 首轮开放；后续待定 | 把杯垫叼走 · 蹲在橱柜顶 |
+| 8 | `attic` | 阁楼 | 旧物 · 记忆线索 · 未解锁章节的「轮廓」 | 仰视·斜顶·灰尘光 | 旧箱→`memory.clue` · 旧照片→`album.open` | 首轮开放；后续待定 | 从阁楼带回一枚无价值小物件 |
+| 9 | `garden` | 星庭 | 室外 · 夜 · 多猫将来同场 | 远景·星轨·月相 | 石凳→`cat.sit` · 猫爪星座刻纹→`sky.watch` | 首轮开放；后续待定 | 在星轨下追影子 |
 | 10 | `shopfront` | 星砂杂货铺 | 交换玩具/家具/牌具 | 场景化货架 | 货架→`shop.open` | 开局即开（馆门外） | —（店主是另一只猫·将来） |
 
 **扩建循环**：陪伴 → 星砂 + 心光 → 收拾一间房 → 新热点 / 新互动 / 新离线事件 / 新章节入口 → 猫有更多地方可以待 → 回到陪伴。**永不**：房间退化、灰尘惩罚、过期。
+
+### 3.1 当前连通与色彩脚本（01–10 单一真相）
+
+连通：`10 ↔ 09 ↔ 01 ↔ 03 ↔ 07`，`01 ↔ 02 ↔ 04 ↔ 06`，`04 ↔ 08`，`01 ↔ 05`。馆图快跳可以到任意房间，相邻按钮只能沿这些边移动。
+
+| # | 房间 | 色彩身份 | 相邻过渡 |
+|---|---|---|---|
+| 01 | 主厅 | 蜂蜜橡木、雾青、琥珀 | 全馆材质与暖光锚点 |
+| 02 | 晶球厅 | 珠光蓝、烟紫、浅水绿 | 琥珀门洞接 01；珠光蓝延到 04 |
+| 03 | 星牌室 | 森林绿、旧铜、酒红、靛蓝 | 左门接 01；绿毯与铜灯延到 07 |
+| 04 | 回忆廊 | 羊皮纸金、灰玫瑰、旧梅紫 | 左承 02；坡道去 06/08 |
+| 05 | 玩具间 | 杏色、旧青绿、芥末黄、珊瑚 | 低门洞回 01 |
+| 06 | 月光窗厅 | 月光蓝、暖奶油、淡薰衣草 | 门洞保留 04 的灰玫瑰和金色 |
+| 07 | 茶水间 | 鼠尾草绿、奶油陶、陶土红、旧铜 | 左门承接 03 森林绿 |
+| 08 | 回忆阁楼 | 烟褐、靛蓝、旧梅紫、银月光 | 活板门与坡道回 04 |
+| 09 | 月庭 | 深钴蓝、蓝绿色、薰衣草、琥珀灯链 | 门内见 01 暖光；花径通 10 |
+| 10 | 星砂铺 | 褪色蓝、暖奶油、梅紫、星砂金 | 花径和灯链承接 09 |
 
 **数据形状（`world-data.ts` 预演·纯数据）**
 ```ts
 interface Room {
   id: string; name: string; camera: 'mid' | 'low' | 'top' | 'wide';
-  unlock: { stardust: number; heartlight: number; after?: string } | 'start';
+  adjacent: string[];         // 相邻门唯一真相；首轮十房全开放
+  mapRect: { x: number; y: number; w: number; h: number }; // 00 图内可点热区
   hotspots: { id: string; label: string; action: string; arg?: string; x: number; y: number; w: number; h: number }[];
-  clue: string;               // 锁态一句线索
   offlinePool: string[];      // 离线事件 id
-  skin: { scene: string; mapThumb: string; mapLocked: string };   // skinKey ×3
+  skin: { scene: string };    // 房间背景；00 馆图单独用 game112/map/hall
 }
 ```
 
@@ -102,9 +119,9 @@ interface Room {
 ## 4. 热点与交互按钮的语言
 
 - **物件即入口**：不做悬浮大按钮；热点 = 房间里本来就有的东西（晶球、牌桌、篮子、杯子、窗）。悬停/聚焦时物件**微亮 + 抬起 3px**（`press3d` + `sheen-hover`），不加描边框。
-- **三态**：可点（正常）· 待解锁（物件在但蒙一层薄灰纱 + 一句「还差 N」）· 有新内容（角落一枚柔和星光·`Particles(sparkle)` 极低密度）。
+- **本轮**：所有房间和既有活动入口均可点；锁态与新内容提示不实现。
 - **安全区**：每房背景插画在出图时**留出**——上 12% 顶栏带、下 18% 导航与陪伴键带、右上 120×56 壳层 ⚙ 区；猫画面层矩形位置每房固定（表里给 x,y,w,h）。
-- **动作词表新增**（工程扩表时标「新增」）：`map.open` · `room.enter`+id · `room.peek`+id · `room.unlock`+id · `orb.pick`+cat · `sky.watch` · `play.start`+toy · `memory.clue`+id · `album.open`。
+- **本轮动作词表新增**：`map.open` · `room.enter`+id。其余 `room.peek` / `room.unlock` / 新热点动作随对应玩法竖切再申请，不提前造空动作。
 
 ---
 
@@ -112,12 +129,12 @@ interface Room {
 
 ### 5.1 一句话
 
-**「被很多猫住过的老房子，窗外是喵星的夜。」** 高保真的猫 + 轻绘本的空间；暖实用灯光 × 雾青星光；每一处都有磨损、歪斜、遮挡、不成套。
+**「一栋由猫建造、被很多猫住过的老房子，窗外是喵星的夜。」** 高保真的猫 + 轻绘本的空间；暖实用灯光 × 雾青星光；家具、通道、操作高度全部以猫为尺度，每一处都有磨损、歪斜、遮挡、不成套。
 
 ### 5.2 五条支柱
 
 1. **猫是真的，房子是画的**：猫走高保真（毛、眼、鼻、肉垫可信），空间走轻度风格化（笔触可见、透视略松、边缘不精确）。两者靠**同一套光**缝合。
-2. **有人生活过**：杯印、划痕、卷角的牌、陷下去的软垫、贴歪的照片、磨白的门槛。反对：全新、成套、对称、样板间。
+2. **有猫生活过**：抓痕、卷角的牌、陷下去的软垫、歪斜的纪念物、磨白的猫门门槛。反对：人类尺度家具、全新、成套、对称、样板间。
 3. **暖冷两种光，不是蓝橙滤镜**：室内是琥珀灯与旧木的暖；窗外与晶球是雾青月白的冷。冷光**只从窗和晶球来**，不铺满。
 4. **喵星只做刻纹**：猫爪星座是刻在门楣/杯底/牌背上的稀疏纹样；月相与星轨在窗外和牌面；磨砂晶球内有流动微光和照片残影。**不做霓虹、不做太空酒吧、不做天堂符号。**
 5. **接纳**：每间房都有「给猫留的位置」——软垫、窗台、纸箱、椅子上的毯子。空的位置也画出来（它随时可以来）。
@@ -144,7 +161,7 @@ interface Room {
 - 材质：粗纹旧木、亚麻与格纹毛毯、无涂层厚纸、磨砂晶体、黄铜小件、藤篮、旧照片（边缘发黄）。
 - 光：主光 = 桌灯/壁灯（暖·3200K 感），辅光 = 窗外星光（冷·低强度），**无标准电影轮廓光**；允许一角过曝、一角黑。
 - 镜头：每房**一个固定机位**（表 §3）；透视略松（绘本感）；地平线偏低使家具有体量；猫画面层区域**留白干净**（猫是另一层贴上去的）。
-- 尺寸：房间背景 **1920×1080**（`Screen.image` cover · 安全区见 §4）；馆图 1920×1080；热点物件 **512×512 透明底**；馆图房间缩略 **480×320**；猫锚图 **840×600 透明底**。
+- 尺寸：房间背景 **1680×1200（7:5）**（`Panel.skin` cover · 安全区见 §4）；馆图 **1920×1080**；热点物件 **512×512 透明底**；馆图房间缩略 **480×320**；猫锚图 **840×600 透明底**。
 
 ### 5.5 反面清单（提示词 negative 直接用）
 
@@ -160,7 +177,7 @@ node -e "import('./scripts/style-packs.mjs').then(m=>console.log(m.saveLocalStyl
 
 ### 5.7 提示词模板（四类·中英各一·platform 拼装：`prompt` > `query+desc`）
 
-**A · 房间背景**（1920×1080·cover·留安全区）
+**A · 房间背景**（1680×1200·7:5·cover·留安全区）
 > EN: `storybook interior of an old house on Cat Star, {room}, {camera}, warm amber lamplight from the left, faint cool starlight through the window, worn oak table with cup rings, plaid blanket, frosted memory orb glowing softly, visible brushwork, slightly loose perspective, lived-in imperfections, empty cushion left for a cat, clean empty rectangle at {cat-area} for compositing, no cat, no text`
 > ZH: `喵星上一栋老房子的绘本风室内，{房间}，{镜头}，左侧琥珀灯暖光，窗外透进微弱雾青星光，旧橡木桌带杯印，格纹毛毯，磨砂忆光晶球微亮，笔触可见，透视略松，有人生活过的痕迹，给猫留的空软垫，{猫区}留白干净供合成，无猫，无文字`
 
@@ -168,9 +185,8 @@ node -e "import('./scripts/style-packs.mjs').then(m=>console.log(m.saveLocalStyl
 > EN: `single {object}, well used, slightly crooked, warm lamplight, storybook painterly, cozy old house prop, isolated on transparent background, no text`
 > ZH: `单个{物件}，用旧了，略歪，暖灯光，绘本笔触，老房子里的旧物，透明底，无文字`
 
-**C · 馆图**（1920×1080·手绘剖面）
-> EN: `hand-drawn cutaway illustration of a two-story old house on Cat Star at night, rooms side by side each with a tiny scene and a cat silhouette, some rooms only pencil outlines, warm windows against a misty teal starry sky, moon phases and a faint paw-print constellation, storybook map, no text`
-> ZH: `喵星夜里一栋两层老房子的手绘剖面图，房间并排各有一个小场景和猫的剪影，部分房间只有铅笔轮廓，暖窗对着雾青星空，月相与淡淡的猫爪星座，绘本地图，无文字`
+**C · 馆图**（1920×1080·确定性拼合）
+> 不再单独调用 AI 重画。将通过审核的 01–10 房间成图缩放嵌入固定剖面壳，连通关系取 §3.1；因此馆图与单房永远一一对应。
 
 **D · 猫锚图**（840×600·透明底·身份稳定）
 > EN: `photoreal {breed} cat, {markings}, {eye color}, {pose}, warm practical light with faint cool starlight rim, slightly asymmetric face, calm, isolated subject, transparent background`（保留现台账 art-01/02 的写法）
@@ -203,7 +219,7 @@ node -e "import('./scripts/style-packs.mjs').then(m=>console.log(m.saveLocalStyl
 1. art-06 主厅定调图 → 人审 → 上画面（同时验证 Panel.skin 叠猫的层关系）。
 2. 馆图剖面（形态 A/B owner 先判）。
 3. 主厅 → 玩具间 → 窗台（前三间新房）背景 + 各自热点。
-4. 其余房间按解锁顺序。
+4. 其余房间按编号审查与替换；解锁顺序留待下一竖切。
 
 ---
 
@@ -213,16 +229,16 @@ node -e "import('./scripts/style-packs.mjs').then(m=>console.log(m.saveLocalStyl
 |---|---|---|
 | ① | owner 审本框架（§8 四问）| — |
 | ② | art-06 定调图出图 + 人审（创作台）| 台账 approved |
-| ③ | `world-data.ts` 房间表 + `blueprint.ts` 解锁配方 + `ui.ts` 馆图屏与 `buildRoom` + 离线事件加 `room` | vitest + 剧本（房间解锁整单不动 / 进房换镜头 / 锁房 peek 不扣钱）|
+| ③ | `world-data.ts` 房间表 + `ui.ts` 图内可点馆图与 `buildRoom` + 宿主展示态路由 | vitest（拓扑连通/对称/非法 id 拒收/按钮不越边）+ 真浏览器逐房巡游与截图 |
 | ④ | 台账入 §6.2 行（有槽即入）· `ledger-audit --strict` 零孤儿 | S6 |
 | ⑤ | 一键全量出图 → 人审 → 换装 | S6 |
 | ⑥ | Claude Design 按 `claude-design-spec.md` + 本稿出馆图与房间屏 `.dc.html` | S5 |
 
 ---
 
-## 8. 待 owner 判（四问·一次答完）
+## 8. Owner 判词与仍待后续的问题
 
-1. **馆图形态**：A 手绘剖面（推荐）还是 B 平面图？
-2. **房间清单**：十间里砍谁、加谁？（茶水间/阁楼/星庭是我按「主人的痕迹 / 旧物线索 / 室外多猫」补的三条叙事线）
-3. **扩建门槛**：只用星砂 + 心光门槛（现稿），还是再加「修缮需要陪伴时长」这种时间门？（时间门能表达但会像欠账，我倾向不加）
-4. **定调图先行**：是否同意先只出 art-06 主厅定调图、人审定风格后再批量？
+1. ✅ 馆图采用 A 剖面；00 必须由 01–10 成图拼合。
+2. ✅ 十间房与猫原生设定进入正式文档，当前编号不漂移。
+3. ✅ 第一竖切先做十房全开放的巡游与快跳，先验证“这是一栋能走进去的房子”。
+4. ⏳ 扩建门槛与锁态经济放在下一竖切再定；不得在本轮擅加时间门或欠账感。

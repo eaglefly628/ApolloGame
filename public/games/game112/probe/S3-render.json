@@ -1,14 +1,14 @@
 {
   "slug": "game112",
-  "at": "2026-09-24T04:29:39.462Z",
-  "gameHash": "187143607d4e4b42",
+  "at": "2026-09-28T04:11:03.474Z",
+  "gameHash": "04b9410772971a04",
   "ok": true,
   "form": "compiled",
   "assertions": {
     "nonBlank": {
       "pass": true,
-      "variance": 144.36,
-      "mean": 225.54,
+      "variance": 143.5,
+      "mean": 225.55,
       "threshold": 15
     },
     "consoleErrors": {
@@ -25,7 +25,7 @@
   },
   "screenshot": "public/games/game112/probe/S3-render.png",
   "browser": {
-    "execPath": "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+    "execPath": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "via": "explicit"
   }
 }

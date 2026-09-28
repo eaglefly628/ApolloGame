@@ -2,7 +2,11 @@
   "version": 1,
   "game": "game112",
   "mode": "requirements",
-  "count": 6,
+  "artStyle": {
+    "stylePrompt": "猫原生绘本老屋：猫尺度家具、旧木与手作灰泥、琥珀暖光衔接雾青月色；笔触可见、透视略松、生活痕迹真实；各房保留独特色相但以木色自然过渡。",
+    "negativePrompt": "人类尺度家具、人物、豪华咖啡厅、霓虹太空酒吧、天堂符号、完全对称样板间、文字、水印、货币 UI"
+  },
+  "count": 16,
   "rows": [
     {
       "no": "art-01",
@@ -22,7 +26,7 @@
       },
       "desc": "雪团·趴姿待机（主厅/牌桌回退锚图·眼半眯）",
       "context": "用途=sprite·猫画面层静态锚图（主厅 hall-cat / 牌桌 table-cat 的 Image.src）·消费=cat-art.ts catArt('xuetuan','rest')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-rest']（未填=程序化矢量回退）·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png",
-      "status": "needs-art",
+      "status": "retired",
       "gen": null,
       "provenance": null,
       "placeholder": {
@@ -48,7 +52,7 @@
       },
       "desc": "雪团·注意（兴致高时·眼睁大）",
       "context": "用途=sprite·猫画面层静态锚图（主厅 hall-cat / 牌桌 table-cat 的 Image.src）·消费=cat-art.ts catArt('xuetuan','notice')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-notice']（未填=程序化矢量回退）·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png",
-      "status": "needs-art",
+      "status": "retired",
       "gen": null,
       "provenance": null,
       "placeholder": {
@@ -74,7 +78,7 @@
       },
       "desc": "忆光晶球（主厅热点·磨砂晶球内流动微光+照片残影）",
       "context": "用途=sprite·主厅场景热点图标（hot-orb-img Image.src）·消费=cat-art.ts hotspotArt('orb')·写回=SKIN_OVERRIDES['game112/icon/orb']",
-      "status": "needs-art",
+      "status": "retired",
       "gen": null,
       "provenance": null,
       "placeholder": {
@@ -100,7 +104,7 @@
       },
       "desc": "星牌桌（主厅热点·旧木桌+三张歪牌）",
       "context": "用途=sprite·主厅场景热点图标（hot-table-img Image.src）·消费=cat-art.ts hotspotArt('table')·写回=SKIN_OVERRIDES['game112/icon/table']",
-      "status": "needs-art",
+      "status": "retired",
       "gen": null,
       "provenance": null,
       "placeholder": {
@@ -126,7 +130,7 @@
       },
       "desc": "玩具篮（主厅热点·藤篮+羽毛杆+毛线球）",
       "context": "用途=sprite·主厅场景热点图标（hot-basket-img Image.src）·消费=cat-art.ts hotspotArt('basket')·写回=SKIN_OVERRIDES['game112/icon/basket']",
-      "status": "needs-art",
+      "status": "retired",
       "gen": null,
       "provenance": null,
       "placeholder": {
@@ -152,7 +156,7 @@
       },
       "desc": "主厅定调图（猫画面层背景·暖灯旧木长桌·窗外雾青星光·下中留白给猫）",
       "context": "用途=scene·主厅猫画面层容器 hall-stage 的 Panel.skin（cover·猫 Image 叠其上）·消费=cat-art.ts sceneSkin('hall')·写回=SKIN_OVERRIDES['game112/scene/hall']（未填=回退主题 sunken 面）·风格包=docs/design/game112/style-pack.starlit-lived-in.json·视觉锚=visual/cat-art-direction-ragdoll-v2-lived-in.png·安全区=hall-framework.md §4（顶 12%·底 18%·右上 ⚙）",
-      "status": "filled",
+      "status": "approved",
       "gen": {
         "servedPath": "/games/game112/art/scene/star-tail-main-hall-bg-v2.png",
         "width": 1680,
@@ -165,10 +169,336 @@
         "model": "OpenAI image generation service",
         "mock": false,
         "generatedAt": "2026-09-27"
+      }
+    },
+    {
+      "no": "art-07",
+      "skinKey": "game112/map/hall",
+      "kind": "scene",
+      "slot": {
+        "entity": "map/hall",
+        "component": "Panel",
+        "field": "skin(map-cutaway)"
       },
-      "placeholder": {
-        "servedPath": "/games/game112/art/placeholder/scene-hall.svg",
-        "current": "现况=程序化矢量占位（cat-art.ts）"
+      "query": "deterministic house cutaway composed from the exact approved room images 01 through 10",
+      "prompt": null,
+      "spec": {
+        "w": 1920,
+        "h": 1080,
+        "transparent": false
+      },
+      "desc": "00 星尾馆全馆剖面（十房逐槽拼合·图内热区直接跳转）",
+      "context": "用途=scene·全馆预览 map-cutaway 的 Panel.skin·消费=cat-art.ts mapSkin()·写回=SKIN_OVERRIDES['game112/map/hall']·热区坐标=world-data.ts ROOMS.mapRect",
+      "status": "approved",
+      "gen": {
+        "servedPath": "/games/game112/art/ai/openai-imagegen/00-star-tail-house-cutaway-v2.png",
+        "width": 1920,
+        "height": 1080,
+        "review": "approved",
+        "reviewedAt": "2026-09-27"
+      },
+      "provenance": {
+        "generator": "deterministic-composite",
+        "model": "Pillow exact-room composite",
+        "mock": false,
+        "generatedAt": "2026-09-27"
+      }
+    },
+    {
+      "no": "art-08",
+      "skinKey": "game112/scene/orbs",
+      "kind": "scene",
+      "slot": {
+        "entity": "room/orbs",
+        "component": "Panel",
+        "field": "skin(room-orbs-stage)"
+      },
+      "query": "approved cat-native storybook room 02 晶球厅, connected to hall, gallery",
+      "prompt": null,
+      "spec": {
+        "w": 1680,
+        "h": 1200,
+        "transparent": false
+      },
+      "desc": "02 晶球厅背景（固定镜头·猫尺度空间）",
+      "context": "用途=scene·晶球厅固定镜头背景·消费=cat-art.ts sceneSkin('orbs')·写回=SKIN_OVERRIDES['game112/scene/orbs']·拓扑邻接=hall/gallery",
+      "status": "approved",
+      "gen": {
+        "servedPath": "/games/game112/art/ai/openai-imagegen/02-star-tail-orbs-bg-v2.png",
+        "width": 1680,
+        "height": 1200,
+        "review": "approved",
+        "reviewedAt": "2026-09-27"
+      },
+      "provenance": {
+        "generator": "openai-imagegen",
+        "model": "OpenAI built-in image generation",
+        "mock": false,
+        "generatedAt": "2026-09-27"
+      }
+    },
+    {
+      "no": "art-09",
+      "skinKey": "game112/scene/cardroom",
+      "kind": "scene",
+      "slot": {
+        "entity": "room/cardroom",
+        "component": "Panel",
+        "field": "skin(room-cardroom-stage)"
+      },
+      "query": "approved cat-native storybook room 03 星牌室, connected to hall, pantry",
+      "prompt": null,
+      "spec": {
+        "w": 1680,
+        "h": 1200,
+        "transparent": false
+      },
+      "desc": "03 星牌室背景（固定镜头·猫尺度空间）",
+      "context": "用途=scene·星牌室固定镜头背景·消费=cat-art.ts sceneSkin('cardroom')·写回=SKIN_OVERRIDES['game112/scene/cardroom']·拓扑邻接=hall/pantry",
+      "status": "approved",
+      "gen": {
+        "servedPath": "/games/game112/art/ai/openai-imagegen/03-star-tail-cardroom-bg-v2.png",
+        "width": 1680,
+        "height": 1200,
+        "review": "approved",
+        "reviewedAt": "2026-09-27"
+      },
+      "provenance": {
+        "generator": "openai-imagegen",
+        "model": "OpenAI built-in image generation",
+        "mock": false,
+        "generatedAt": "2026-09-27"
+      }
+    },
+    {
+      "no": "art-10",
+      "skinKey": "game112/scene/gallery",
+      "kind": "scene",
+      "slot": {
+        "entity": "room/gallery",
+        "component": "Panel",
+        "field": "skin(room-gallery-stage)"
+      },
+      "query": "approved cat-native storybook room 04 回忆廊, connected to orbs, sunroom, attic",
+      "prompt": null,
+      "spec": {
+        "w": 1680,
+        "h": 1200,
+        "transparent": false
+      },
+      "desc": "04 回忆廊背景（固定镜头·猫尺度空间）",
+      "context": "用途=scene·回忆廊固定镜头背景·消费=cat-art.ts sceneSkin('gallery')·写回=SKIN_OVERRIDES['game112/scene/gallery']·拓扑邻接=orbs/sunroom/attic",
+      "status": "approved",
+      "gen": {
+        "servedPath": "/games/game112/art/ai/openai-imagegen/04-star-tail-gallery-bg-v2.png",
+        "width": 1680,
+        "height": 1200,
+        "review": "approved",
+        "reviewedAt": "2026-09-27"
+      },
+      "provenance": {
+        "generator": "openai-imagegen",
+        "model": "OpenAI built-in image generation",
+        "mock": false,
+        "generatedAt": "2026-09-27"
+      }
+    },
+    {
+      "no": "art-11",
+      "skinKey": "game112/scene/playroom",
+      "kind": "scene",
+      "slot": {
+        "entity": "room/playroom",
+        "component": "Panel",
+        "field": "skin(room-playroom-stage)"
+      },
+      "query": "approved cat-native storybook room 05 玩具间, connected to hall",
+      "prompt": null,
+      "spec": {
+        "w": 1680,
+        "h": 1200,
+        "transparent": false
+      },
+      "desc": "05 玩具间背景（固定镜头·猫尺度空间）",
+      "context": "用途=scene·玩具间固定镜头背景·消费=cat-art.ts sceneSkin('playroom')·写回=SKIN_OVERRIDES['game112/scene/playroom']·拓扑邻接=hall",
+      "status": "approved",
+      "gen": {
+        "servedPath": "/games/game112/art/ai/openai-imagegen/05-star-tail-playroom-bg-v2.png",
+        "width": 1680,
+        "height": 1200,
+        "review": "approved",
+        "reviewedAt": "2026-09-27"
+      },
+      "provenance": {
+        "generator": "openai-imagegen",
+        "model": "OpenAI built-in image generation",
+        "mock": false,
+        "generatedAt": "2026-09-27"
+      }
+    },
+    {
+      "no": "art-12",
+      "skinKey": "game112/scene/sunroom",
+      "kind": "scene",
+      "slot": {
+        "entity": "room/sunroom",
+        "component": "Panel",
+        "field": "skin(room-sunroom-stage)"
+      },
+      "query": "approved cat-native storybook room 06 月光窗厅, connected to gallery",
+      "prompt": null,
+      "spec": {
+        "w": 1680,
+        "h": 1200,
+        "transparent": false
+      },
+      "desc": "06 月光窗厅背景（固定镜头·猫尺度空间）",
+      "context": "用途=scene·月光窗厅固定镜头背景·消费=cat-art.ts sceneSkin('sunroom')·写回=SKIN_OVERRIDES['game112/scene/sunroom']·拓扑邻接=gallery",
+      "status": "approved",
+      "gen": {
+        "servedPath": "/games/game112/art/ai/openai-imagegen/06-star-tail-sunroom-bg-v2.png",
+        "width": 1680,
+        "height": 1200,
+        "review": "approved",
+        "reviewedAt": "2026-09-27"
+      },
+      "provenance": {
+        "generator": "openai-imagegen",
+        "model": "OpenAI built-in image generation",
+        "mock": false,
+        "generatedAt": "2026-09-27"
+      }
+    },
+    {
+      "no": "art-13",
+      "skinKey": "game112/scene/pantry",
+      "kind": "scene",
+      "slot": {
+        "entity": "room/pantry",
+        "component": "Panel",
+        "field": "skin(room-pantry-stage)"
+      },
+      "query": "approved cat-native storybook room 07 茶水间, connected to cardroom",
+      "prompt": null,
+      "spec": {
+        "w": 1680,
+        "h": 1200,
+        "transparent": false
+      },
+      "desc": "07 茶水间背景（固定镜头·猫尺度空间）",
+      "context": "用途=scene·茶水间固定镜头背景·消费=cat-art.ts sceneSkin('pantry')·写回=SKIN_OVERRIDES['game112/scene/pantry']·拓扑邻接=cardroom",
+      "status": "approved",
+      "gen": {
+        "servedPath": "/games/game112/art/ai/openai-imagegen/07-star-tail-pantry-bg-v2.png",
+        "width": 1680,
+        "height": 1200,
+        "review": "approved",
+        "reviewedAt": "2026-09-27"
+      },
+      "provenance": {
+        "generator": "openai-imagegen",
+        "model": "OpenAI built-in image generation",
+        "mock": false,
+        "generatedAt": "2026-09-27"
+      }
+    },
+    {
+      "no": "art-14",
+      "skinKey": "game112/scene/attic",
+      "kind": "scene",
+      "slot": {
+        "entity": "room/attic",
+        "component": "Panel",
+        "field": "skin(room-attic-stage)"
+      },
+      "query": "approved cat-native storybook room 08 回忆阁楼, connected to gallery",
+      "prompt": null,
+      "spec": {
+        "w": 1680,
+        "h": 1200,
+        "transparent": false
+      },
+      "desc": "08 回忆阁楼背景（固定镜头·猫尺度空间）",
+      "context": "用途=scene·回忆阁楼固定镜头背景·消费=cat-art.ts sceneSkin('attic')·写回=SKIN_OVERRIDES['game112/scene/attic']·拓扑邻接=gallery",
+      "status": "approved",
+      "gen": {
+        "servedPath": "/games/game112/art/ai/openai-imagegen/08-star-tail-attic-bg-v2.png",
+        "width": 1680,
+        "height": 1200,
+        "review": "approved",
+        "reviewedAt": "2026-09-27"
+      },
+      "provenance": {
+        "generator": "openai-imagegen",
+        "model": "OpenAI built-in image generation",
+        "mock": false,
+        "generatedAt": "2026-09-27"
+      }
+    },
+    {
+      "no": "art-15",
+      "skinKey": "game112/scene/garden",
+      "kind": "scene",
+      "slot": {
+        "entity": "room/garden",
+        "component": "Panel",
+        "field": "skin(room-garden-stage)"
+      },
+      "query": "approved cat-native storybook room 09 月庭, connected to shopfront, hall",
+      "prompt": null,
+      "spec": {
+        "w": 1680,
+        "h": 1200,
+        "transparent": false
+      },
+      "desc": "09 月庭背景（固定镜头·猫尺度空间）",
+      "context": "用途=scene·月庭固定镜头背景·消费=cat-art.ts sceneSkin('garden')·写回=SKIN_OVERRIDES['game112/scene/garden']·拓扑邻接=shopfront/hall",
+      "status": "approved",
+      "gen": {
+        "servedPath": "/games/game112/art/ai/openai-imagegen/09-star-tail-garden-bg-v2.png",
+        "width": 1680,
+        "height": 1200,
+        "review": "approved",
+        "reviewedAt": "2026-09-27"
+      },
+      "provenance": {
+        "generator": "openai-imagegen",
+        "model": "OpenAI built-in image generation",
+        "mock": false,
+        "generatedAt": "2026-09-27"
+      }
+    },
+    {
+      "no": "art-16",
+      "skinKey": "game112/scene/shopfront",
+      "kind": "scene",
+      "slot": {
+        "entity": "room/shopfront",
+        "component": "Panel",
+        "field": "skin(room-shopfront-stage)"
+      },
+      "query": "approved cat-native storybook room 10 星砂铺, connected to garden",
+      "prompt": null,
+      "spec": {
+        "w": 1680,
+        "h": 1200,
+        "transparent": false
+      },
+      "desc": "10 星砂铺背景（固定镜头·猫尺度空间）",
+      "context": "用途=scene·星砂铺固定镜头背景·消费=cat-art.ts sceneSkin('shopfront')·写回=SKIN_OVERRIDES['game112/scene/shopfront']·拓扑邻接=garden",
+      "status": "approved",
+      "gen": {
+        "servedPath": "/games/game112/art/ai/openai-imagegen/10-star-tail-shopfront-bg-v2.png",
+        "width": 1680,
+        "height": 1200,
+        "review": "approved",
+        "reviewedAt": "2026-09-27"
+      },
+      "provenance": {
+        "generator": "openai-imagegen",
+        "model": "OpenAI built-in image generation",
+        "mock": false,
+        "generatedAt": "2026-09-27"
       }
     }
   ]

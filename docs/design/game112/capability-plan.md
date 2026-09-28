@@ -1,9 +1,9 @@
 # game112《星尾会客厅》· 能力总览 Capability Plan
 
 > **模板**：`docs/design/capability-plan-template.md`（代码游戏·必须过审才动工）
-> **前置**：`framework.md` §6 十项缺口 + §5 竖切三环 **待 owner 裁决**；本 plan 按「推荐路线」编写，裁决改判则同步改 §2/§3/§4.7 并重审。
-> **状态**：🔶 **待 owner 判缺口 → 待 Lead 审**。裁决前不写游戏层代码。
-> **实查口径**：§2 每个能力名均已对 `src/assembly/capability-registry.gen.ts` 逐条核对存在（2026-09-23·113 项 registry 快照）；describe 原文出处见 `framework.md` §4/§6。未注册的共享模块单列 §2.2，不冒充 capability。
+> **前置**：`framework.md` §6 十一项缺口均已有 owner 裁决；当前增量为星尾馆十房巡游。
+> **状态**：✅ 缺口已裁；2026-09-27 owner 明确首个新增闭环为“主厅进入 → 相邻房间漫游 → 馆图/菜单快跳”。本增量只重组现有 UI、资产与宿主路由能力，零新增引擎缺口。
+> **实查口径**：§2 每个能力名均已对当前 `src/assembly/capability-registry.gen.ts` 逐条核对存在；describe 原文出处见 `framework.md` §4/§6。未注册的共享模块单列 §2.2，不冒充 capability。
 
 ---
 
@@ -66,6 +66,7 @@
 | `engine/host`（`mountHost`/`createRunLoop`） | `src/engine/host/` | 宿主骨架 |
 | `debug-trace` | `src/skills/debug-trace.ts` | §5.3 落点 |
 | `@ui/starters` · `apollo-kit` · `catalog`（41 控件） | `src/ui/` | §4.6 |
+| `ui/components` 的 `Screen` · `Panel.skin` · 绝对定位 `Button.actionArg` · `visibleWhen` | `src/ui/components/` | 十房固定镜头、相邻门洞、00 馆图热区快跳与菜单；房间只是一张数据表，由通用 `buildRoom` / `buildMap` 投影 |
 
 ### 2.3 待裁缺口（⏳ · 全文 `framework.md` §6 · 机读 `capability-gaps.json`）
 
@@ -103,6 +104,7 @@
 | `TOUCH_ZONES` 🟡 | 五分区 + 偏好 —— 随逗猫/陪伴重设计；首版按区判 | `a2-hierarchy` · `c1-shape` · `t2-clickable` · `t2-event-when` · `j1-state` |
 | `OFFLINE_EVENTS` | 分档 key → **每档一张权重表**（short/long/days·`world-data.ts` OFFLINE_EVENTS.weight[tier]·权重 0 不入表）→ 模板（纸袋藏牌/叼玩具/睡过位置/打翻杯垫…·**只有装饰模板**）· 看过了 → 按 Tag 批量回收 | `t2-keybind` · `t2-weighted-spawn` · `t3-prefab` · `g1-tag` · `t2-effect-apply destroy-tagged` |
 | `UI_STAGE_ONLY` | 「只看它」沉浸模式：Flag `ui.stageOnly` + 两把 key → set-flag；界面各块 `visibleWhen` 由 `resolveBindings` 剔子树（menu-flow §1.3 隐藏 UI 钮·复查 r4 指正后由「壳层缺口」改判重组） | `f2-flag` · `t2-keybind` · `t2-effect-apply set-flag` · `ui/components visibleWhen` |
+| `ROOMS` | 01–10 的 id/编号/名称/说明/背景 skinKey/相邻房间/活动入口/馆图热区矩形；00 全馆预览、房间页和文字快跳共用同表，禁止双份连通关系或坐标表 | `ui/components` 的 `Panel.skin` + 绝对定位 `Button` 热区 + `Button.action/actionArg`；宿主 `routeAction` 只做合法 id 查表和屏切换 |
 | `CARE_POSE` | 陪伴动作 → 猫姿态机 `pose.<cat>`（rest/lookup/settled·不进档）→ 投影换台词/画面 = 操作的画面确认（S4 八问②） | `j1-state` · `t2-effect-apply set-state` |
 | `SHOP_ITEMS` | 物品/价格/分类（装饰·新互动·牌具外观）/放置点 | `t2-craft-recipe` · `t2-tray`（货架） |
 | `DECOR_SLOTS` | 可布置位 · 收纳筐 DropZone | `t2-drag-place` · `t2-effect-apply destroy` + recipe 回库 |
@@ -122,6 +124,8 @@
 
 ## 4. 申请的游戏层代码例外（逐条过审）
 
+> **2026-09-27 十房巡游增量裁决（Lead）**：本增量**零新增游戏层例外**。`ROOMS`、`buildRoom`、`buildMap` 全属 L0 数据与 LayoutNode 投影；当前房间仅为宿主展示状态，不写 sim。`routeAction` 只校验闭集 id 与切屏，复用已经在运行的宿主胶水契约。下表是后续牌桌/上传/媒体等全案预留，不在本增量施工范围，未裁项不得借本次巡游偷渡实现。
+
 | 例外 | 为什么现有能力表达不了 | 预计行数 | Lead 裁决 | 偿还计划 |
 |---|---|---|---|---|
 | ① BT 叶注册：`enumerate-moves` / `take-best-score` / `use-claw` / `hold-and-place-low` / `place-by-tempo`（`cat-ai.md` §1.2） | `t2-behavior-tree` 叶 = 消费方注册表（describe 原文）；着法枚举/估值无引擎级件（`hand-pattern.legalResponses` 是压制语义） | ~90 | ⬜ | 记债；同形叶在第三个牌游戏出现即下沉「候选枚举」纯函数核 |
@@ -138,7 +142,8 @@
 | 视觉实体 | 槽 | 载体 |
 |---|---|---|
 | 猫（每猫每态锚图；序列帧就绪即盖过） | `cat.<catId>.<state>` | `Sprite.textureKey` / anim-state `sheet` |
-| 场景（主厅/牌桌/逗猫角/晶球厅/回忆廊/杂货铺） | `scene.<name>` | `mountHost.sceneBgSkin` + 装饰 Sprite |
+| 场景（01 主厅 + 02–10 房间） | `game112/scene/<roomId>` | `Panel.skin` + `loadGameArtOverrides` |
+| 全馆剖面 | `game112/map/hall` | 馆图 `Panel.skin`；00 由 01–10 成图确定性拼合 |
 | 星盘 ×3 · 牌背 · 牌面 | `plate.<n>` · `cardback.<theme>` · `card.<code>` | `PlayingCard.faceArt` / Sprite |
 | 玩具 ×5 | `toy.<kind>` | Sprite |
 | 忆光晶球（每猫） | `orb.<catId>` | `Avatar`/Image |
@@ -186,6 +191,7 @@
 | 规则 | 落级 | 说明 |
 |---|---|---|
 | 猫档案 / 关系量 / 经济表 / 商店 / 布置位 / 章节 / 片段目录 / 页面 | **L0** 纯数据 | 无 |
+| 十房巡游 / 相邻门 / **00 剖面图内可点热区** / 文字快跳 / 房间活动入口 | **L0** `ROOMS` + LayoutNode + 宿主屏路由 | 全房首轮开放用于验证巡游；当前房热区高亮；扩建门槛另属后续经济循环，不阻塞本闭环 |
 | 关系增减 · 章节解锁 · 触摸判定 · 胜负 · 心态切换 | **L1** `event-when` + `effect-apply` + `modifier-stack` | 无 |
 | 兴致自然变化 · 玩累 | **L1** `over-time` | 无 |
 | 杂货铺 / 仓库 / 纪念物 / 收回 | **L1** `craft-recipe` + Resource 计数（重组·不用 inventory） | 无 |
@@ -243,8 +249,8 @@
 ## 6. 评审记录
 
 - 提交人 / 日期：GD/PE-112（Game Maker 二·程序策划）· 2026-09-23
-- 前置裁决：`framework.md` §6 十项 + §5 三环 —— **⬜ 待 owner**
-- Lead 裁决：⬜ ✅ 通过 / ⬜ 🔶 有条件通过（条件：…）/ ⬜ ❌ 驳回（理由：…）
+- 前置裁决：本增量只做十房巡游；牌桌/上传/媒体等后续全案预留继续按各自裁决推进，不作为巡游增量准入项。
+- **Lead 增量裁决（2026-09-27）**：✅ 通过——只允许 `ROOMS` 单一表 + LayoutNode + 既有宿主屏路由；当前房间不进 sim；非法 room id 拒收；相邻按钮不得越边；00 馆图可任意快跳；不得落扩建数值或游戏层 system。
 - **owner 2026-09-24 判词（第一批）**：①②④ = 游戏专属 → wontfix（①② 进 §4 例外④ 游戏层规则核，**但牌规本身待 owner 对定**；④ 首版不做）。③ 撤单（逗猫改视频实现）。**第二批（同日）**：⑤⑥⑦ 判 A；⑧⑨⑩ 收成一款引擎能力 ⑪「内嵌 AI 视频播放」（与「AI 视频生成」= ⑤+⑥ 成对）。**十一条零 open → S2 机器门绿。** 引擎三单（05/06/11）待主程接单晋升引擎池；PUI 一单（07）。
 - S2 机器门：`capability-gaps.json` 11 条零 open → **绿**（2026-09-24）。S2 复查门：CONCERNS（by S2-reviewer-agent·陈旧引用已清·越域改 scoped-gate 待主程 review）。
 - 派工与归属（预填·Lead 改）：

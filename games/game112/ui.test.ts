@@ -3,9 +3,9 @@ import { validateLayoutNode, resolveBindings } from '@zerocraft/engine/ui/compon
 import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { HallSession } from './session.js';
 import { EMPTY_STATE } from './blueprint.js';
-import { buildScreen, buildHome, buildReading, UI_ACTIONS, type Screen } from './ui.js';
+import { buildScreen, buildHome, buildMap, buildReading, buildRoom, UI_ACTIONS, type Screen } from './ui.js';
 import { flagOn } from './project.js';
-import { ACTIVE_CAT, CHAPTERS, buyKey, offlineKey, relId } from './world-data.js';
+import { ACTIVE_CAT, CHAPTERS, ROOMS, buyKey, offlineKey, relId, roomOf } from './world-data.js';
 
 /** 收集树里所有节点（含 children 递归）。 */
 function walk(n: LayoutNode, out: LayoutNode[] = []): LayoutNode[] {
@@ -22,7 +22,7 @@ const actionsIn = (n: LayoutNode): Set<string> => {
   return out;
 };
 
-const SCREENS: Screen[] = ['hall', 'orbs', 'table', 'toys', 'shop', 'memory', 'settings', 'about'];
+const SCREENS: Screen[] = ['hall', 'map', 'room', 'orbs', 'table', 'toys', 'shop', 'memory', 'settings', 'about'];
 
 function richSession(): HallSession {
   const s = new HallSession(112, { ...EMPTY_STATE, stardust: 80, relations: { [relId('heartlight', ACTIVE_CAT)]: 20 }, chapters: [CHAPTERS[0]!.id] });
@@ -45,6 +45,52 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
     }
   });
 
+  it('十房拓扑是单一、连通、对称的闭集；00 馆图热区全部落在 960×540 内', () => {
+    expect(ROOMS).toHaveLength(10);
+    expect(new Set(ROOMS.map((r) => r.id)).size).toBe(10);
+    expect(new Set(ROOMS.map((r) => r.number)).size).toBe(10);
+    for (const room of ROOMS) {
+      expect(room.scene, room.id).toBe(room.id);
+      expect(room.mapRect.x, room.id).toBeGreaterThanOrEqual(0);
+      expect(room.mapRect.y, room.id).toBeGreaterThanOrEqual(0);
+      expect(room.mapRect.x + room.mapRect.w, room.id).toBeLessThanOrEqual(960);
+      expect(room.mapRect.y + room.mapRect.h, room.id).toBeLessThanOrEqual(540);
+      for (const next of room.adjacent) expect(roomOf(next)?.adjacent, `${room.id}↔${next}`).toContain(room.id);
+    }
+    const seen = new Set<string>(['hall']);
+    const queue = ['hall'];
+    while (queue.length > 0) for (const next of roomOf(queue.shift()!)!.adjacent) if (!seen.has(next)) { seen.add(next); queue.push(next); }
+    expect(seen.size).toBe(ROOMS.length);
+  });
+
+  it('00 快速预览图本身十个房间都可点，文字快跳也同表生成；当前房高亮', () => {
+    const map = buildMap('garden');
+    expect(validateLayoutNode(map)).toEqual([]);
+    const nodes = walk(map);
+    const imageHits = nodes.filter((n) => n.id.startsWith('map-room-') && !n.id.endsWith('-tag'));
+    expect(imageHits).toHaveLength(10);
+    expect(imageHits.map((n) => (n.props as { actionArg?: string }).actionArg)).toEqual(ROOMS.map((r) => r.id));
+    expect(nodes.filter((n) => n.id.startsWith('go-room-'))).toHaveLength(10);
+    expect((nodes.find((n) => n.id === 'map-room-garden')?.props as { accent?: boolean }).accent).toBe(true);
+  });
+
+  it('通用房间只生成 ROOMS.adjacent 指定的门，不会越拓扑边', () => {
+    const view = richSession().hall();
+    for (const room of ROOMS.filter((r) => r.id !== 'hall')) {
+      const tree = buildRoom(view, room.id);
+      expect(validateLayoutNode(tree), room.id).toEqual([]);
+      const args = walk(tree)
+        .filter((n) => (n.props as { action?: string }).action === 'room.enter')
+        .map((n) => (n.props as { actionArg?: string }).actionArg);
+      expect(args, room.id).toEqual(room.adjacent);
+    }
+  });
+
+  it('每个房间活动都复用已接线 UI_ACTIONS，不制造空入口', () => {
+    const known = new Set<string>(UI_ACTIONS);
+    for (const room of ROOMS) if (room.activity !== undefined) expect(known.has(room.activity.action), `${room.id}:${room.activity.action}`).toBe(true);
+  });
+
   it('阅读屏三态（line / choice / ended）零 issue，选项列走 choiceList', () => {
     const s = richSession();
     const id = CHAPTERS[0]!.id;
@@ -58,6 +104,7 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
     const ended = buildReading(s.reading(id)!);
     expect(validateLayoutNode(ended)).toEqual([]);
     expect(walk(ended).some((n) => n.id === 'reading-next')).toBe(false);
+    expect((walk(ended).find((n) => n.id === 'reading-dialog')?.props as { kind?: string }).kind).toBe('choice');
   });
 
   it('屏上发出的 action ⊆ UI_ACTIONS（宿主接线单一真相·无孤儿信号）', () => {

@@ -6,7 +6,7 @@ import { routeAction, normalizeState } from './game112.js';
 import { UI_ACTIONS } from './ui.js';
 import {
   ACTIVE_CAT, STARDUST, RELATIONS, MOOD_DRIFT, CARE_ACTIONS, SHOP_ITEMS, CHAPTERS, OFFLINE_EVENTS, OFFLINE_ACK_KEY,
-  relId, buyKey, placeKey, offlineKey, offlineTierOf, chapterFlag,
+  relId, buyKey, placeKey, offlineKey, offlineTierOf, chapterFlag, ROOMS,
 } from './world-data.js';
 import { resourceOf, flagOn } from './project.js';
 
@@ -153,13 +153,20 @@ describe('game112 确定性', () => {
 describe('game112 宿主路由（UI action → 具名输入·纯查表）', () => {
   it('UI_ACTIONS 每个动作都有路由（无孤儿按钮）；带参动作闭集外 → 什么都不发生', () => {
     for (const a of UI_ACTIONS) {
-      const arg = a === 'shop.buy' || a === 'decor.place' ? 'feather' : a === 'memory.read' ? CHAPTERS[0]!.id : a === 'memory.choose' ? '0' : undefined;
+      const arg = a === 'shop.buy' || a === 'decor.place' ? 'feather' : a === 'memory.read' ? CHAPTERS[0]!.id : a === 'memory.choose' ? '0' : a === 'room.enter' ? 'garden' : undefined;
       expect(routeAction(a, arg), a).toBeDefined();
     }
     expect(routeAction('shop.buy', 'not-an-item')).toBeUndefined();
     expect(routeAction('memory.read', 'nope')).toBeUndefined();
     expect(routeAction('memory.choose', 'x')).toBeUndefined();
-    expect(routeAction('decor.place', 'feather')).toEqual({ key: placeKey('feather'), screen: 'hall' });
+    expect(routeAction('decor.place', 'feather')).toEqual({ key: placeKey('feather'), screen: 'hall', room: 'hall' });
+  });
+
+  it('房间导航只接受 ROOMS 闭集；馆图任意快跳，hall 归主厅屏，其他进通用房间屏', () => {
+    expect(routeAction('map.open')).toEqual({ screen: 'map' });
+    for (const room of ROOMS) expect(routeAction('room.enter', room.id)).toEqual({ screen: room.id === 'hall' ? 'hall' : 'room', room: room.id });
+    expect(routeAction('room.enter')).toBeUndefined();
+    expect(routeAction('room.enter', 'secret-basement')).toBeUndefined();
   });
 
   it('坏档守卫：非对象/坏字段回空档，不让坏数据进蓝图', () => {
