@@ -206,6 +206,15 @@ export function planFor(c, auditGames = [], faces = {}) {
   const AUDIT = auditGames.length
     ? [{ name: `audit:${auditGames.join('+')}`, cmd: ['node', ['scripts/game-skill-audit.mjs', ...auditGames]] }]
     : [];
+  // 惰性组件守卫进推送门（owner 2026-09-28 令「引擎的问题需要改」）：与 audit **同一个触发**
+  // （改了哪个游戏就查哪个·复用已单测的 auditGamesOf），但**另列一步**——audit 是纯 regex 静态扫描
+  // （从不 import 游戏代码），本守卫必须真求值蓝图（走 vite-node 调 buildBlueprint），形态不同。
+  // 治的病：蓝图挂了组件而它的能力没装进该游戏 capabilities 清单 → 组件静静地什么都不做、零告警
+  //（2026-09-28 game102 `Tray` 实撞·「弹尽入槽」整条机制从没接通而所有门全绿）。
+  // 为什么不只挂夜跑：这一轮的教训正是「慢车道红了三周没人知」——新守卫必须站在推送门上。
+  const INERT = auditGames.length
+    ? [{ name: `inert-comp:${auditGames.join('+')}`, cmd: ['npx', ['vite-node', 'scripts/inert-component-guard.mjs', ...auditGames]] }]
+    : [];
   // 面触发守卫（REQ-GUARDGATE·见文件头）：按 facesOf 旗点名进计划、红=拦（无 allowExit 放行档）。
   // 放 AUDIT 后、TSC 前——①②是秒级静态扫描先咬省大头；③冒烟稍重但美术面改动本就该先过它
   //（漏检一整天的病根就是它不在门前）。docs-only/none 时面文件（scripts//src//main_entry/）
@@ -231,10 +240,10 @@ export function planFor(c, auditGames = [], faces = {}) {
   if (c.scope === 'none') return [];
   if (c.scope === 'docs-only') return GUARDS;
   if (c.scope === 'game') {
-    return [...AUDIT, ...CODE_FENCES, ...FACE_GUARDS, TSC, { name: `vitest:${c.game}`, cmd: ['npx', ['vitest', 'run', `games/${c.game}`]] }, BUILD, ...GUARDS];
+    return [...AUDIT, ...INERT, ...CODE_FENCES, ...FACE_GUARDS, TSC, { name: `vitest:${c.game}`, cmd: ['npx', ['vitest', 'run', `games/${c.game}`]] }, BUILD, ...GUARDS];
   }
   // full
-  return [...AUDIT, ...CODE_FENCES, ...FACE_GUARDS, TSC, { name: 'vitest:full', cmd: ['npx', ['vitest', 'run']] }, BUILD, ...GUARDS];
+  return [...AUDIT, ...INERT, ...CODE_FENCES, ...FACE_GUARDS, TSC, { name: 'vitest:full', cmd: ['npx', ['vitest', 'run']] }, BUILD, ...GUARDS];
 }
 
 function main() {

@@ -7,7 +7,7 @@
 | 要测什么 | 基座件 | 判定 |
 |---|---|---|
 | 纯逻辑 / capability 语义 | vitest（`src/**/*.test.ts`）· 夹具 `src/test-fixtures/test-kit.ts`（`worldWith/button/press/tickN` + **契约三件套** `expectDeterministic/expectRestoreContinues/expectQuiescent`·带运行态的能力必过·样板 `tier2/contracts.test.ts`·不变量样板 `tier2/invariants.test.ts`·评审 `docs/design/test-strategy-review-2026-09-10.md`） | 退出码 0 |
-| capability 注册完整性 | `src/assembly/registry-guard.test.ts`（漏注册即红·计数下限防空 glob 假绿） | vitest 内 |
+| capability 注册完整性 · **装载完整性** | `src/assembly/registry-guard.test.ts`（漏注册即红·计数下限防空 glob 假绿） + `npx vite-node scripts/inert-component-guard.mjs [game…]`（**惰性组件**：蓝图挂了组件却没把它的能力装进该游戏 `capabilities` 清单 → 组件静静地什么都不做且零告警·2026-09-28 game102 `Tray` 实撞·随 audit 同触发进推送门） | vitest 内 · `INERT-COMPONENT: PASS` |
 | 确定性 / 回放 / 性能 | ZeroCraftBench（`src/bench/`·双跑同 hash）·单 manifest 走 `scripts/bench-manifest.mjs` | hash 一致 |
 | 数值平衡 | `scripts/game-d-balance-sim.mjs` · `games/game-g/simulate-balance.ts`（N=500 胜率扫描） | 胜率∈目标带 |
 | UI 卫生 | `/check-ui` 技能 + validateLayoutNode | issue 归零 |

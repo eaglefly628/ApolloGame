@@ -99,6 +99,31 @@ describe('scoped-gate × game-skill-audit（audit 进推送门·只扫改动游�
     expect(audit.cmd[1]).toEqual(['scripts/game-skill-audit.mjs', 'game-a', 'game-b']); // 点名传参·缺省(全库)绝不出现
   });
 
+  // 惰性组件守卫接线（owner 2026-09-28「引擎的问题需要改」）：与 audit 同触发、另列一步。
+  // 钉它是因为「接线在、无人看守」正是本轮要治的病——不钉，将来谁把 ...INERT 从计划里删掉不会有东西变红。
+  it('★ game scope：计划含 inert-comp 步·紧跟 audit·参数=改动游戏·红=拦', () => {
+    const files = ['games/game-a/rules.ts'];
+    const plan = planFor(classify(files), auditGamesOf(files));
+    const i = plan.findIndex((s) => s.name.startsWith('inert-comp:'));
+    expect(i).toBe(1);                                        // 紧跟 audit（audit 在 [0]）
+    expect(plan[i].name).toBe('inert-comp:game-a');
+    expect(plan[i].cmd).toEqual(['npx', ['vite-node', 'scripts/inert-component-guard.mjs', 'game-a']]);
+    expect(plan[i].allowExit).toBeUndefined();                // 无放行档：非 0 即拦
+  });
+
+  it('★ full scope（引擎+游戏混改）：inert-comp 也只点名改动游戏（不全库扫）', () => {
+    const files = ['games/game-a/rules.ts', 'games/game-b/y.ts', 'src/engine/x.ts'];
+    const step = planFor(classify(files), auditGamesOf(files)).find((s) => s.name.startsWith('inert-comp:'));
+    expect(step).toBeDefined();
+    expect(step.cmd[1]).toEqual(['vite-node', 'scripts/inert-component-guard.mjs', 'game-a', 'game-b']);
+  });
+
+  it('★ 引擎单改 / 纯文档：计划无 inert-comp 步（与 audit 同口径·不为无关改动加门）', () => {
+    for (const files of [['src/engine/x.ts'], ['docs/design/game-a/gdd.md']]) {
+      expect(planFor(classify(files), auditGamesOf(files)).some((s) => s.name.startsWith('inert-comp:'))).toBe(false);
+    }
+  });
+
   it('引擎单改（full）/纯文档（docs-only）：计划无 audit 步', () => {
     const engine = ['src/engine/x.ts'];
     expect(planFor(classify(engine), auditGamesOf(engine)).some((s) => s.name.startsWith('audit:'))).toBe(false);

@@ -76,7 +76,10 @@ describe('收敛判据：❌ 归零 ∧ 每条 ⚠ 有裁决去向', () => {
 describe('真文件 + CLI 退出码（不采信纯函数绿·端到端再量一次）', () => {
   const run = (args) => {
     try {
-      return { code: 0, out: execFileSync('node', [join(ROOT, 'scripts/align-count.mjs'), ...args], { encoding: 'utf8' }) };
+      // stdio 显式给全：execFileSync 默认透传子进程 stderr 给父进程 → 失败态输出会漏进门禁日志
+      // （同 inert-component-guard.test.mjs 的复盘）。
+      return { code: 0, out: execFileSync('node', [join(ROOT, 'scripts/align-count.mjs'), ...args],
+        { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }) };
     } catch (e) { return { code: e.status, out: (e.stdout || '') + (e.stderr || '') }; }
   };
 

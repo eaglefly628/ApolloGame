@@ -87,6 +87,7 @@ jobs:
           node scripts/build-component-map.mjs --check
           node scripts/component-manifest-guard.mjs
           npx vite-node scripts/system-graph-audit.mjs
+          npx vite-node scripts/inert-component-guard.mjs
           node scripts/docs-ref-guard.mjs
           node scripts/context-budget-guard.mjs
           node scripts/game-skill-audit.mjs

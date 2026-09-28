@@ -11,6 +11,7 @@ import { join } from 'node:path';
 import {
   resolvePythonBin, findFreePort, killBackend,
 } from './platform-launch.cjs';
+import net from 'node:net';
 
 describe('resolvePythonBin · 内置 python 路径解析', () => {
   it('未打包（resourcesPath=null）→ 回退系统 python3', () => {
@@ -55,10 +56,34 @@ describe('findFreePort · 端口分配', () => {
     expect(port).toBeLessThan(65536);
   });
 
-  it('连续调用两次拿到的端口彼此不冲突（各自 listen 完即释放）', async () => {
-    const a = await findFreePort();
-    const b = await findFreePort();
-    expect(a).not.toBe(b); // 释放顺序下几乎不会撞号；万一撞号说明端口没被正确关闭，值得追查
+  // ── 2026-09-28 换机制（原断言 `a !== b` 在全量并发下实测翻红·单跑 5/5 绿）──────────────────
+  // 原注释写「万一撞号说明端口没被正确关闭，值得追查」——**因果反了**：`findFreePort` 就是
+  // listen(0) 拿号后立刻 close 释放；号被正确释放之后，内核**完全可以**把同一个号再发一次。
+  // 撞号是「关闭成功」的证据，不是 bug。所以那条断言在测它自己声称的反面，且天生随机翻红
+  // （并发跑时别的测试在抢端口，撞号概率更高）——正是 CLAUDE.md 说的「给 CI 埋雷」。
+  //
+  // 真正要守的不变量只有两条，两条都确定、都不靠运气：
+  //   ① 拿回来的号**真能 bind**（这才是调用方唯一在乎的事）；
+  //   ② 某个号**正被占用**时，不会把它发给你（否则后端起不来）。
+  //      ②要在「第一个还开着」的时候问第二个——原测试把第一个关掉了，所以它连②也没测到。
+  it('拿回来的端口真能 bind（这才是调用方在乎的事）', async () => {
+    const port = await findFreePort();
+    const srv = net.createServer();
+    await new Promise((res, rej) => { srv.on('error', rej); srv.listen(port, '127.0.0.1', res); });
+    expect(srv.address().port).toBe(port);
+    await new Promise((res) => srv.close(res));
+  });
+
+  it('★ 端口正被占用时不会再发同一个号（后端才起得来）', async () => {
+    const held = net.createServer();
+    const first = await findFreePort();
+    await new Promise((res, rej) => { held.on('error', rej); held.listen(first, '127.0.0.1', res); });
+    try {
+      // 第一个**还开着**时连问 5 次：一次都不该给出那个被占用的号（确定性·非概率断言）
+      for (let i = 0; i < 5; i++) expect(await findFreePort()).not.toBe(first);
+    } finally {
+      await new Promise((res) => held.close(res));
+    }
   });
 });
 
