@@ -8,11 +8,11 @@
 1. [`concept-source.md`](./concept-source.md) — owner 原始设定 + 2026-09-28 修正口述（以修正为准）。
 2. [`brief.md`](./brief.md) — 立项卡 v2：小众爱好大集合 · 老顽童 · 爱好广场 → 仓库 · 收藏 + 看细节学知识 · 社交底座；Lead 评判（社交后端 A/B 待判）。
 3. [`hobby-catalog.md`](./hobby-catalog.md) — 全球小众爱好全景图谱：按 owner 五大类（投入的核心资源）归档，含合规备注与首屏六门。
-4. [`collectible-spec.md`](./collectible-spec.md) — **万物组件数据规范**：三层结构（核心最小集 / 领域扩展 / 可选模块）、品相分级与流通性准入、开一门新爱好的步骤、校验器；机读 `data/`（schema、五大类字典、`check.mjs`；样例：**文玩核桃 = 标准模板**、红酒、雪茄、老爷车）。
+4. [`collectible-spec.md`](./collectible-spec.md) — **藏品卡片规范 v1.0**（版本与兼容规则、卡片全貌、档案、养护、行情板块与每日指数、品级计算、校验器）；机读 `data/`（schema、五大类字典、`economy.json`、`check.mjs`；样例：**文玩核桃 = 标准模板**、红酒、雪茄、老爷车）。
 5. [`gameplay.md`](./gameplay.md) — **游戏元素与经济循环 v2**：学（找门道 / 找瑕疵 / 找不同）→ 考（考级换雅钱）→ 买（市集）→ 养（三消擦擦亮产保养品 → 升品级）→ 看行情（日更指数 + 走势图）；雅钱来源含学识兑换与看广告。
 6. [`social.md`](./social.md) — 社交设计（⏸ owner：往后放）：七根支柱、掌眼（众人估品）、眼力声望、雅钱角色、老年人安全红线、后端 A/B 白话说明。
 7. [`ai-pipeline.md`](./ai-pipeline.md) — AI 量产工作流：T1–T5 固定提示词、人工环节、产能估算。
-8. [`ui-brief.md`](./ui-brief.md) — **给 Claude Design 的 UI 需求单 v3.1**（21 屏：挣雅钱 / 爱好广场 / 仓库 / 细看 / 持仓走势 / 市集 / 考级 / 擦擦亮三消 / 养护…；社交后置）。
+8. [`ui-brief.md`](./ui-brief.md) — **给 Claude Design 的 UI 需求单 v3.2**（21 屏，藏品详情含档案：挣雅钱 / 爱好广场 / 仓库 / 细看 / 持仓走势 / 市集 / 考级 / 擦擦亮三消 / 养护…；社交后置）。
 
 ## 待 owner 定
 

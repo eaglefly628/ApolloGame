@@ -2,11 +2,12 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "game113.hobby/1",
   "title": "Game113 爱好包（一门爱好 = 一个文件）",
-  "description": "三层结构：① 核心最小集 item.{id,name,images,spots,cards,collect}（解释器唯一消费面）② 领域扩展 hobby.{fields,spotTypes,knowledge}（只加描述性数据，不加行为）③ 可选模块 hobby.modules（行为开关，引擎通用实现）。跨引用与 attrs 校验由 check.mjs 完成。说明见 collectible-spec.md。坐标 = 相对图片的归一化值（0..1，左上原点，y 向下）。",
+  "description": "三层结构：① 核心最小集 item.{id,name,images,spots,cards,collect}（解释器唯一消费面）② 领域扩展 hobby.{fields,spotTypes,knowledge}（只加描述性数据，不加行为）③ 可选模块 hobby.modules（行为开关，引擎通用实现）。跨引用与 attrs 校验由 check.mjs 完成。说明见 collectible-spec.md。坐标 = 相对图片的归一化值（0..1，左上原点，y 向下）。 版本：卡片规范 v1.0（specVersion，规则见 collectible-spec.md §0.5）。",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema",
+    "specVersion",
     "id",
     "name",
     "category",
@@ -19,6 +20,11 @@
   "properties": {
     "schema": {
       "const": "game113.hobby/1"
+    },
+    "specVersion": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+$",
+      "description": "卡片规范版本。1.x 内只做加法：老文件永远有效；主版本号变化需迁移脚本"
     },
     "id": {
       "$ref": "#/$defs/slug"
@@ -85,12 +91,11 @@
       "type": "array",
       "uniqueItems": true,
       "default": [],
-      "description": "③ 可选模块（行为开关·全部爱好共用同一份引擎实现）。首期只开放 quiz；其余为预留：compare 真仿对比 · care 养（时间+环境，岁月沉淀类）· process 工序（拆修/手作类）· breed 繁育（活体类）· grade 品相评级（感官收藏类）。引擎未实现前 check.mjs 拒收",
+      "description": "③ 行为模块开关（全部爱好共用同一份引擎实现）。v1.0 只开放 quiz；compare 真仿对比 · process 工序 · breed 繁育 · grade 估品 为预留，引擎实现前 check.mjs 拒收。养护不是模块：由 careable 维度 + careItems 数据驱动",
       "items": {
         "enum": [
           "quiz",
           "compare",
-          "care",
           "process",
           "breed",
           "grade"
@@ -144,6 +149,48 @@
             "minimum": 1
           },
           "description": "每个品级折合多少雅钱（与 tiers 一一对应、严格递增）；最高档须落在本爱好 market.priceBand 对应的 topValue 区间内（categories.json）。藏品的雅钱 = values[tier 的序号]"
+        }
+      }
+    },
+    "careItems": {
+      "type": "array",
+      "maxItems": 3,
+      "default": [],
+      "description": "本爱好的保养品（三消产出、用于养护）。没有可养维度的爱好（如红酒）可以为空：它的藏品不进三消棋盘",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "raises",
+          "perStep"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/slug"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 8
+          },
+          "iconKey": {
+            "$ref": "#/$defs/assetKey"
+          },
+          "raises": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/slug"
+            },
+            "description": "能提升的 careable 维度"
+          },
+          "perStep": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "提升一档要用几个"
+          }
         }
       }
     },
@@ -212,6 +259,10 @@
             "b5"
           ],
           "description": "本爱好最高品级的真实价位量级：b1 百元级 · b2 千元级 · b3 万元级 · b4 十万级 · b5 百万级以上（categories.json priceBands）"
+        },
+        "segmentBy": {
+          "$ref": "#/$defs/slug",
+          "description": "行情板块再按哪个 enum 字段细分（如核桃按品种）。板块 id = 爱好/字段值/品级；不写则 = 爱好/品级"
         }
       }
     },
@@ -303,6 +354,11 @@
           "type": "boolean",
           "default": false,
           "description": "仅 enum：options 按从低到高排列，可作为品相分级维度"
+        },
+        "careable": {
+          "type": "boolean",
+          "default": false,
+          "description": "可养：保养品能把这个品相维度提升一档（仅限 grading.dims 里的 ordered enum 字段）"
         }
       }
     },
@@ -475,6 +531,11 @@
         },
         "key": {
           "type": "boolean"
+        },
+        "flaw": {
+          "type": "boolean",
+          "default": false,
+          "description": "这是一处瑕疵（阴皮、锈、霉斑、冲线）。有瑕疵点的藏品会出现「找瑕疵」模式"
         }
       }
     },
@@ -705,9 +766,175 @@
         "tier": {
           "type": "string",
           "maxLength": 4,
-          "description": "品级，须为 hobby.grading.tiers 之一；标了 tier 就必须填全部分级维度的 attrs。未开皮的青皮核桃这类『看不出品级』的藏品可不标"
+          "description": "品级 = 按品相维度规则计算：各维度档位归一化后取平均 × (品级数−1)，四舍五入取档。这里填写的值必须与计算结果一致（校验器强制），养护改变维度后运行时同样按此规则重算"
+        },
+        "profile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "summary",
+            "sections",
+            "review"
+          ],
+          "description": "档案卡（owner 2026-09-28）：每件藏品像一张卡片，除了照片与门道点，还有简介、来历、类比、对比、冷知识、挑法等。官方藏品必填",
+          "properties": {
+            "summary": {
+              "type": "string",
+              "minLength": 20,
+              "maxLength": 120
+            },
+            "sections": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 10,
+              "items": {
+                "$ref": "#/$defs/profileSection"
+              }
+            },
+            "review": {
+              "$ref": "#/$defs/card/properties/review"
+            }
+          }
+        },
+        "listed": {
+          "type": "boolean",
+          "default": true,
+          "description": "能否出现在市集在售列表"
+        },
+        "acquire": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "market",
+              "newbie",
+              "exam"
+            ]
+          },
+          "default": [
+            "market"
+          ],
+          "description": "获得途径：market 市集购买 · newbie 新手礼 · exam 考级奖品"
+        }
+      }
+    },
+    "profileSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "title"
+      ],
+      "description": "档案段落。kind 闭集，每种 kind 需要的字段由 check.mjs 按类型校验",
+      "properties": {
+        "kind": {
+          "enum": [
+            "history",
+            "analogy",
+            "compare",
+            "trivia",
+            "story",
+            "pick",
+            "care-tip",
+            "related"
+          ],
+          "description": "history 来历（body 或 timeline）· analogy 类比 · compare 对比（with + points）· trivia 冷知识 · story 轶事 · pick 挑法 · care-tip 养护小窍门 · related 相关（refs）"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "body": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 240
+        },
+        "timeline": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "when",
+              "text"
+            ],
+            "properties": {
+              "when": {
+                "type": "string",
+                "maxLength": 12,
+                "description": "年份或年代，如 1855 / 1950 年代 / 清代"
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 60
+              }
+            }
+          }
+        },
+        "with": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)?$",
+          "description": "对比对象：同爱好藏品 id，或跨爱好「爱好id/藏品id」"
+        },
+        "points": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 6,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "aspect",
+              "self",
+              "other"
+            ],
+            "properties": {
+              "aspect": {
+                "type": "string",
+                "maxLength": 8
+              },
+              "self": {
+                "type": "string",
+                "maxLength": 30
+              },
+              "other": {
+                "type": "string",
+                "maxLength": 30
+              }
+            }
+          }
+        },
+        "refs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)?$"
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "title"
+            ],
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            }
+          }
         }
       }
     }
-  }
+  },
+  "x-specVersion": "1.0"
 }

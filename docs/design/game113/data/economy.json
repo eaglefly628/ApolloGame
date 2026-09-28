@@ -1,0 +1,65 @@
+{
+  "schema": "game113.economy/1",
+  "specVersion": "1.0",
+  "description": "全局经济与玩法参数（owner 2026-09-28 定：雅钱不可用人民币购买，来源为考级、学识兑换、看广告、读卡、卖出；行情日更）。数值为初版，调参只改本文件。雅钱定义与价位带见 categories.json。",
+  "market": {
+    "sellFeeRate": 0.05,
+    "dailyChangeCap": 0.03,
+    "stallItemsPerDay": 8
+  },
+  "knowledge": {
+    "firstReadReward": 5,
+    "firstReadDailyCap": 5
+  },
+  "exchange": {
+    "xpToYaqian": 2,
+    "dailyXpCap": 100
+  },
+  "ads": {
+    "reward": 50,
+    "dailyCap": 5,
+    "blockedCategories": [
+      "保健品",
+      "理财投资",
+      "贷款",
+      "收藏品回收"
+    ]
+  },
+  "exam": {
+    "questions": 10,
+    "pass": 8,
+    "retryAfterDays": 1,
+    "levels": [
+      {
+        "id": "junior",
+        "name": "初级",
+        "requireTitleIndex": 1,
+        "reward": 200
+      },
+      {
+        "id": "middle",
+        "name": "中级",
+        "requireTitleIndex": 2,
+        "reward": 500
+      },
+      {
+        "id": "senior",
+        "name": "高级",
+        "requireTitleIndex": 3,
+        "reward": 1200
+      }
+    ]
+  },
+  "care": {
+    "perItemPerDay": 1
+  },
+  "polish": {
+    "freeRoundsPerDay": 5,
+    "movesPerRound": 18,
+    "boardSize": 7
+  },
+  "newbie": {
+    "gift": 1000,
+    "pickHobbies": 3
+  }
+}

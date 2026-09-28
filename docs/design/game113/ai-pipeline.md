@@ -22,7 +22,7 @@
                                                               │
       ┌───────────────────────────────────────────────────────┘
       ▼
- T4 本件知识 ──▶ 合并成 <hobby>.hobby.json ──▶ check.mjs 草稿门 ──▶ T5 自审
+ T4 本件知识 ──▶ T4b 档案卡 ──▶ 合并成 <hobby>.hobby.json ──▶ check.mjs 草稿门 ──▶ T5 自审
                                                                    │
       ┌────────────────────────────────────────────────────────────┘
       ▼
@@ -37,6 +37,7 @@
 | 找图 | T2 检索词 | `images[]`（key、宽高、sha256、授权、署名） | 人 / 脚本调开放图库接口 | 找不到 → 换一件 |
 | T3 看图标点 | 照片 + T1 的 `spotTypes` | `spots[]`（优先套用门道模板） | 视觉模型 | 人工校准坐标 |
 | T4 本件知识 | 藏品 + 照片 + 已套模板 | 0–2 张本件卡 + 模板门道的 `note` | 文本模型 | —— |
+| T4b 档案卡 | 藏品 + 同爱好其他藏品清单 | `profile`（简介 + 3–6 段：来历 / 类比 / 对比 / 冷知识 / 轶事 / 挑法 / 养护 / 相关） | 文本模型 | 校验器查引用与段落字段 |
 | T5 自审 | 整个爱好包 | 每张卡的「可疑论断清单」 | **另一个**模型或另一次独立调用 | 可疑项进顾问审校单 |
 
 ## 2. 固定提示词模板
@@ -83,15 +84,20 @@
   "zone": { "name": "<仓库里的分区名，≤8 字，如 酒窖 / 表柜>" },
   "titles": [ 4 档学识称号，minXp 依次为 0 / 30 / 90 / 200，称号 ≤6 字，最后一档要俏皮，如「酒痴」 ],
   "fields": [ ≤8 个这门爱好特有的规格字段；type 只能是 text/number/year/enum/multi/bool；enum/multi 必须给 options；key 用小写英文连字符。
-              T0 的每个分级维度都要落成一个 "type":"enum", "ordered": true 的字段，options 从低到高 ],
+              T0 的每个分级维度都要落成一个 "type":"enum", "ordered": true 的字段，options 从低到高；
+              能靠日常保养变好的维度（包浆、成色、茄衣状态）再加 "careable": true，养不回来的（分级、液位、年份）不要加 ],
+  "careItems": [ 有 careable 维度才写，1–3 种保养品：{ id, name(≤8字), raises:[可养维度 key], perStep(提升一档用几个，2–5) } ],
   "grading": { "dims": [ 上面 ordered 字段的 key ], "tiers": [ 3–4 个品级名，从低到高，≤4 字 ],
                "values": [ 每档折合多少雅钱，整数，严格递增；最高档必须落在 priceBand 的区间：
                            b1 50–150 · b2 100–300 · b3 200–600 · b4 400–1200 · b5 800–2500 ] },
-  "market": { 照抄 T0 的 liquidity / priceBand / channels / entry / ceiling / compliance },
+  "market": { 照抄 T0 的 liquidity / priceBand / channels / entry / ceiling / compliance；
+              行情要按某个非品相的 enum 字段细分时（如核桃按品种）写 "segmentBy": "<字段 key>" },
   "spotTypes": [ 4–8 个这门爱好里反复出现的标准看点：{ id, label(≤8字), cardId, hint(≤20字，告诉老人去哪看), key(是否计入收藏) } ],
-  "knowledge": [ 与每个 spotType 一一对应的知识卡：{ id, kind(craft/authenticity/story/jargon), title(≤16字), body(20–180字), xp(2–5), sources[{title}], review:{status:"draft"} }，其中 1–2 张可带 quiz { q, options(2–3个), answer, explain } ]
+  "knowledge": [ 与每个 spotType 一一对应的知识卡：{ id, kind(craft/authenticity/story/jargon), title(≤16字), body(20–180字), xp(2–5), sources[{title}], review:{status:"draft"} }；
+                 **每张都尽量带 quiz** { q, options(2–3个), answer, explain }——考级每级要抽 10 题，题库要攒够 ]
 }
-参考样例（标准模板）：{{贴 data/examples/walnut.hobby.json 的 fields、grading、spotTypes 与 knowledge 前两条}}
+另外写 "schema": "game113.hobby/1", "specVersion": "1.0"。
+参考样例（标准模板）：{{贴 data/examples/walnut.hobby.json 的 fields、grading、careItems、spotTypes 与 knowledge 前两条}}
 ```
 
 ### T2 · 藏品清单
@@ -118,7 +124,8 @@
 请在照片上找出 3–6 个门道点，优先套用标准门道；照片里看不到的门道不要硬标。
 每个输出：{ "id", "type"(套用时写) 或 "cardId"(独有门道时写 "c-<id>"), "imageKey": "{{key}}",
   "shape": { "kind": "circle", "x": <圆心横向 0..1>, "y": <圆心纵向 0..1>, "r": <半径，相对宽度 0.03–0.1> },
-  "revealZoom": <1–4，越小越显眼的地方越小> }
+  "revealZoom": <1–4，越小越显眼的地方越小>,
+  "flaw": <这一处是瑕疵（阴皮、锈、霉斑、冲线、磕碰）时写 true，否则不写> }
 坐标以图片左上角为原点。整个圆必须在图片内。
 ```
 
@@ -131,11 +138,30 @@
 没把握的事实不要写。
 ```
 
+### T4b · 档案卡
+
+```
+藏品：{{name}}（{{attrs}}，品级 {{tier}}）；同一门爱好的其他藏品：{{其他藏品 id 与 name}}
+为这件藏品写一份档案卡：
+{ "summary": "<20–120 字：它是什么、为什么值得看>",
+  "sections": [ 3–6 段，从下面的类型里挑最合适的，至少有一段 history：
+    { "kind": "history",  "title": "≤16字", "body": "≤240字" }  或  { "kind": "history", "title": "…", "timeline": [ { "when": "年份或年代", "text": "≤60字" } ×2–8 ] }
+    { "kind": "analogy",  "title": "…", "body": "用老人熟悉的东西打个比方" }
+    { "kind": "compare",  "title": "和 X 比一比", "with": "<同爱好另一件藏品的 id>", "points": [ { "aspect": "≤8字", "self": "≤30字", "other": "≤30字" } ×2–6 ] }
+    { "kind": "trivia",   "title": "…", "body": "冷知识" }
+    { "kind": "story",    "title": "…", "body": "行里的故事、人物" }
+    { "kind": "pick",     "title": "…", "body": "怎么看、怎么挑（不写价格、不写投资建议）" }
+    { "kind": "care-tip", "title": "…", "body": "怎么养护" }
+    { "kind": "related",  "title": "…", "refs": [ 同爱好其他藏品 id ×1–6 ] } ],
+  "review": { "status": "draft" } }
+compare 和 related 只能引用上面列出的藏品 id。年份、人名、数字没把握就不写，或写进 review.notes 「uncertain: …」。
+```
+
 ### T5 · 自审（换一个模型，或全新的独立调用）
 
 ```
-下面是一份爱好包里的知识卡。逐张列出其中所有「可核查的事实论断」（年份、数字、人名、机构、工艺描述），
-对每条给出：{ "cardId", "claim", "confidence": "high/medium/low", "why" }。
+下面是一份爱好包里的知识卡与档案卡。逐张（逐段）列出其中所有「可核查的事实论断」（年份、数字、人名、机构、工艺描述），
+对每条给出：{ "cardId 或 itemId.profile", "claim", "confidence": "high/medium/low", "why" }。
 只要有一条 low，把该卡标记为需要顾问重点审。不要改写原文。
 ```
 

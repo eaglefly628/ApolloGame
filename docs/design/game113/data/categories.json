@@ -1,5 +1,6 @@
 {
   "schema": "game113.categories/2",
+  "specVersion": "1.0",
   "description": "顶层分类 = owner 2026-09-28 定的「按玩家投入的核心资源」五大类（+1 个待定补充类）。每类带：① 基础字段（字段字典第二层，在 global 之上）② futureModule：该类未来通用玩法模块（首期全部不开，只做「看细节 + 收藏」）。爱好包的 fields 在此之上追加，不得重定义同名 key。",
   "currency": {
     "id": "yaqian",

@@ -1,67 +1,290 @@
 {
   "schema": "game113.hobby/1",
+  "specVersion": "1.0",
   "id": "classic-car",
   "name": "复古老爷车",
   "category": "mechanics",
   "ageRating": "all",
-  "zone": { "name": "车库", "coverKey": "g113.classic-car.zone-cover" },
+  "zone": {
+    "name": "车库",
+    "coverKey": "g113.classic-car.zone-cover"
+  },
   "titles": [
-    { "minXp": 0, "name": "入门" },
-    { "minXp": 30, "name": "懂行" },
-    { "minXp": 90, "name": "行家" },
-    { "minXp": 200, "name": "车痴" }
+    {
+      "minXp": 0,
+      "name": "入门"
+    },
+    {
+      "minXp": 30,
+      "name": "懂行"
+    },
+    {
+      "minXp": 90,
+      "name": "行家"
+    },
+    {
+      "minXp": 200,
+      "name": "车痴"
+    }
   ],
-  "modules": ["quiz"],
+  "modules": [
+    "quiz"
+  ],
   "fields": [
-    { "key": "year", "label": "出厂年", "type": "year", "min": 1880, "max": 2000, "filter": true },
-    { "key": "body", "label": "车身", "type": "enum", "options": ["硬顶", "敞篷", "旅行车", "皮卡"], "filter": true },
-    { "key": "grade-condition", "label": "车况等级", "type": "enum", "ordered": true,
-      "options": ["4 级 一般", "3 级 良好", "2 级 优秀", "1 级 展车"] },
-    { "key": "matching", "label": "号码匹配", "type": "enum", "ordered": true, "options": ["不匹配", "部分匹配", "全部匹配"] },
-    { "key": "originality", "label": "原厂度", "type": "enum", "ordered": true, "options": ["大量改装", "部分替换", "基本原厂"] },
-    { "key": "papers", "label": "档案", "type": "enum", "ordered": true, "options": ["无", "部分", "完整出厂档案"] }
+    {
+      "key": "year",
+      "label": "出厂年",
+      "type": "year",
+      "min": 1880,
+      "max": 2000,
+      "filter": true
+    },
+    {
+      "key": "body",
+      "label": "车身",
+      "type": "enum",
+      "options": [
+        "硬顶",
+        "敞篷",
+        "旅行车",
+        "皮卡"
+      ],
+      "filter": true
+    },
+    {
+      "key": "grade-condition",
+      "label": "车况等级",
+      "type": "enum",
+      "ordered": true,
+      "options": [
+        "4 级 一般",
+        "3 级 良好",
+        "2 级 优秀",
+        "1 级 展车"
+      ],
+      "careable": true
+    },
+    {
+      "key": "matching",
+      "label": "号码匹配",
+      "type": "enum",
+      "ordered": true,
+      "options": [
+        "不匹配",
+        "部分匹配",
+        "全部匹配"
+      ]
+    },
+    {
+      "key": "originality",
+      "label": "原厂度",
+      "type": "enum",
+      "ordered": true,
+      "options": [
+        "大量改装",
+        "部分替换",
+        "基本原厂"
+      ]
+    },
+    {
+      "key": "papers",
+      "label": "档案",
+      "type": "enum",
+      "ordered": true,
+      "options": [
+        "无",
+        "部分",
+        "完整出厂档案"
+      ]
+    }
   ],
   "grading": {
-    "dims": ["grade-condition", "matching", "originality", "papers"],
-    "tiers": ["入门", "好车", "名车", "传奇"],
-    "values": [50, 200, 700, 2000]
+    "dims": [
+      "grade-condition",
+      "matching",
+      "originality",
+      "papers"
+    ],
+    "tiers": [
+      "入门",
+      "好车",
+      "名车",
+      "传奇"
+    ],
+    "values": [
+      50,
+      200,
+      700,
+      2000
+    ]
   },
+  "careItems": [
+    {
+      "id": "restore-kit",
+      "name": "修缮工具箱",
+      "iconKey": "g113.classic-car.care.kit",
+      "raises": [
+        "grade-condition"
+      ],
+      "perStep": 5
+    }
+  ],
   "spotTypes": [
-    { "id": "vin-plate", "label": "车架号铭牌", "cardId": "k-matching", "hint": "车身上一块刻着编号的小铭牌", "key": true },
-    { "id": "rust", "label": "锈蚀", "cardId": "k-rust", "hint": "门槛、轮拱这些积水的地方", "key": true },
-    { "id": "tire-date", "label": "轮胎日期", "cardId": "k-tire-date", "hint": "轮胎侧面一串字母数字的最后四位" },
-    { "id": "paint", "label": "原厂漆", "cardId": "k-paint", "hint": "漆面和铭牌上的色号" },
-    { "id": "original-part", "label": "原厂件", "cardId": "k-original-part", "hint": "仪表、方向盘、轮毂这些零件", "key": true }
+    {
+      "id": "vin-plate",
+      "label": "车架号铭牌",
+      "cardId": "k-matching",
+      "hint": "车身上一块刻着编号的小铭牌",
+      "key": true
+    },
+    {
+      "id": "rust",
+      "label": "锈蚀",
+      "cardId": "k-rust",
+      "hint": "门槛、轮拱这些积水的地方",
+      "key": true
+    },
+    {
+      "id": "tire-date",
+      "label": "轮胎日期",
+      "cardId": "k-tire-date",
+      "hint": "轮胎侧面一串字母数字的最后四位"
+    },
+    {
+      "id": "paint",
+      "label": "原厂漆",
+      "cardId": "k-paint",
+      "hint": "漆面和铭牌上的色号"
+    },
+    {
+      "id": "original-part",
+      "label": "原厂件",
+      "cardId": "k-original-part",
+      "hint": "仪表、方向盘、轮毂这些零件",
+      "key": true
+    }
   ],
   "knowledge": [
-    { "id": "k-matching", "kind": "authenticity", "title": "号码匹配",
+    {
+      "id": "k-matching",
+      "kind": "authenticity",
+      "title": "号码匹配",
       "body": "老爷车的车架号、发动机号、变速箱号要是和出厂记录都对得上，行里叫「号码匹配」（matching numbers），是原厂原装的铁证。换过发动机的车，在藏家眼里就差了一大截。",
-      "quiz": { "q": "「号码匹配」说的是哪几样对得上出厂记录？", "options": ["车架、发动机、变速箱号", "车牌和行驶证", "轮胎和轮毂"], "answer": 0,
-                "explain": "车架号、发动机号、变速箱号与出厂记录一致，才叫号码匹配。" },
-      "xp": 5, "sources": [{ "title": "收藏车评估通行标准（matching numbers）" }],
-      "review": { "status": "draft", "notes": "待老爷车顾问审校" } },
-    { "id": "k-condition", "kind": "jargon", "title": "车况四级",
+      "quiz": {
+        "q": "「号码匹配」说的是哪几样对得上出厂记录？",
+        "options": [
+          "车架、发动机、变速箱号",
+          "车牌和行驶证",
+          "轮胎和轮毂"
+        ],
+        "answer": 0,
+        "explain": "车架号、发动机号、变速箱号与出厂记录一致，才叫号码匹配。"
+      },
+      "xp": 5,
+      "sources": [
+        {
+          "title": "收藏车评估通行标准（matching numbers）"
+        }
+      ],
+      "review": {
+        "status": "draft",
+        "notes": "待老爷车顾问审校"
+      }
+    },
+    {
+      "id": "k-condition",
+      "kind": "jargon",
+      "title": "车况四级",
       "body": "国际收藏车圈常把车况分四级：1 级是能参加展评的展车，比新车还讲究；2 级优秀；3 级良好，能日常开；4 级一般，能开但毛病不少。买卖、估值都先报这个级别。",
-      "xp": 3, "sources": [{ "title": "收藏车车况分级（1–4 级通行口径）" }], "review": { "status": "draft" } },
-    { "id": "k-rust", "kind": "authenticity", "title": "先看锈",
+      "xp": 3,
+      "sources": [
+        {
+          "title": "收藏车车况分级（1–4 级通行口径）"
+        }
+      ],
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "k-rust",
+      "kind": "authenticity",
+      "title": "先看锈",
       "body": "看老车别先看漆，先蹲下看门槛、底板、轮拱这些容易积水的地方有没有锈穿。漆面再漂亮，锈在底下就是大工程，行家看车第一眼往往是看车底。",
-      "xp": 4, "sources": [{ "title": "老爷车验车要点" }], "review": { "status": "draft" } },
-    { "id": "k-tire-date", "kind": "craft", "title": "轮胎的生日",
+      "xp": 4,
+      "sources": [
+        {
+          "title": "老爷车验车要点"
+        }
+      ],
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "k-tire-date",
+      "kind": "craft",
+      "title": "轮胎的生日",
       "body": "轮胎侧面有一串 DOT 码，最后四位是生产的周和年，比如 2319 就是 2019 年第 23 周。老车常年开得少，轮胎看着新其实早老化了，看这四位就知道该不该换。",
-      "quiz": { "q": "DOT 码最后四位是 0518，是哪年生产的？", "options": ["2018 年", "2005 年", "1805 年"], "answer": 0,
-                "explain": "前两位是第几周，后两位是年份：2018 年第 5 周。" },
-      "xp": 4, "sources": [{ "title": "轮胎 DOT 码标识规则" }], "review": { "status": "draft" } },
-    { "id": "k-paint", "kind": "craft", "title": "原厂漆色",
+      "quiz": {
+        "q": "DOT 码最后四位是 0518，是哪年生产的？",
+        "options": [
+          "2018 年",
+          "2005 年",
+          "1805 年"
+        ],
+        "answer": 0,
+        "explain": "前两位是第几周，后两位是年份：2018 年第 5 周。"
+      },
+      "xp": 4,
+      "sources": [
+        {
+          "title": "轮胎 DOT 码标识规则"
+        }
+      ],
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "k-paint",
+      "kind": "craft",
+      "title": "原厂漆色",
       "body": "很多老车在车身铭牌或出厂档案里记着原厂漆色号。修复时按原色号重喷的，比随意改色更受藏家看重；原厂老漆保存下来的，哪怕有些斑驳，也有人专门追。",
-      "xp": 3, "sources": [{ "title": "老爷车修复惯例" }], "review": { "status": "draft" } },
-    { "id": "k-original-part", "kind": "authenticity", "title": "原厂件和复刻件",
+      "xp": 3,
+      "sources": [
+        {
+          "title": "老爷车修复惯例"
+        }
+      ],
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "k-original-part",
+      "kind": "authenticity",
+      "title": "原厂件和复刻件",
       "body": "仪表、方向盘、轮毂、车标这些零件，原厂老件和后来的复刻件价钱差得远。行家会看零件上的厂标、编号和做工，满世界找原厂件，是玩老爷车最费功夫的地方。",
-      "xp": 3, "sources": [{ "title": "老爷车零件寻访常识" }], "review": { "status": "draft" } }
+      "xp": 3,
+      "sources": [
+        {
+          "title": "老爷车零件寻访常识"
+        }
+      ],
+      "review": {
+        "status": "draft"
+      }
+    }
   ],
   "market": {
     "liquidity": 2,
     "priceBand": "b5",
-    "channels": ["经典车拍卖会", "经典车经纪", "车友会"],
+    "channels": [
+      "经典车拍卖会",
+      "经典车经纪",
+      "车友会"
+    ],
     "entry": "数万元级",
     "ceiling": "数百万元以上",
     "compliance": "只做鉴赏，不做交易撮合；国内进口老车上牌另有政策"
@@ -73,7 +296,10 @@
       "name": "保时捷 356 A",
       "subtitle": "1957 · 硬顶 · 号码全匹配",
       "order": 1,
-      "tags": ["保时捷", "五十年代"],
+      "tags": [
+        "保时捷",
+        "五十年代"
+      ],
       "tier": "名车",
       "attrs": {
         "maker": "保时捷 Porsche",
@@ -84,29 +310,136 @@
         "grade-condition": "2 级 优秀",
         "matching": "全部匹配",
         "originality": "基本原厂",
-        "papers": "完整出厂档案"
+        "papers": "部分"
       },
       "images": [
-        { "key": "g113.classic-car.porsche-356a.main", "role": "main", "w": 4000, "h": 2667, "sha256": "TBD",
-          "source": { "license": "TBD", "credit": "待授权实拍 / 公有领域图（占位）" } },
-        { "key": "g113.classic-car.porsche-356a.dash", "role": "closeup", "w": 3000, "h": 2000, "sha256": "TBD",
-          "source": { "license": "TBD", "credit": "待授权实拍（占位）" } }
+        {
+          "key": "g113.classic-car.porsche-356a.main",
+          "role": "main",
+          "w": 4000,
+          "h": 2667,
+          "sha256": "TBD",
+          "source": {
+            "license": "TBD",
+            "credit": "待授权实拍 / 公有领域图（占位）"
+          }
+        },
+        {
+          "key": "g113.classic-car.porsche-356a.dash",
+          "role": "closeup",
+          "w": 3000,
+          "h": 2000,
+          "sha256": "TBD",
+          "source": {
+            "license": "TBD",
+            "credit": "待授权实拍（占位）"
+          }
+        }
       ],
       "spots": [
-        { "id": "plate", "type": "vin-plate", "imageKey": "g113.classic-car.porsche-356a.main",
-          "shape": { "kind": "circle", "x": 0.3, "y": 0.45, "r": 0.04 }, "revealZoom": 3 },
-        { "id": "sill", "type": "rust", "imageKey": "g113.classic-car.porsche-356a.main",
-          "shape": { "kind": "circle", "x": 0.5, "y": 0.78, "r": 0.06 }, "revealZoom": 2,
-          "note": "这台门槛干干净净，没有补过的痕迹，是 2 级车况的底气。" },
-        { "id": "tire", "type": "tire-date", "imageKey": "g113.classic-car.porsche-356a.main",
-          "shape": { "kind": "circle", "x": 0.22, "y": 0.75, "r": 0.05 }, "revealZoom": 4 },
-        { "id": "paint", "type": "paint", "imageKey": "g113.classic-car.porsche-356a.main",
-          "shape": { "kind": "circle", "x": 0.6, "y": 0.4, "r": 0.08 }, "revealZoom": 1.5 },
-        { "id": "gauges", "type": "original-part", "imageKey": "g113.classic-car.porsche-356a.main",
-          "shape": { "kind": "circle", "x": 0.45, "y": 0.35, "r": 0.05 }, "revealZoom": 2.5,
-          "closeupKey": "g113.classic-car.porsche-356a.dash" }
+        {
+          "id": "plate",
+          "type": "vin-plate",
+          "imageKey": "g113.classic-car.porsche-356a.main",
+          "shape": {
+            "kind": "circle",
+            "x": 0.3,
+            "y": 0.45,
+            "r": 0.04
+          },
+          "revealZoom": 3
+        },
+        {
+          "id": "sill",
+          "type": "rust",
+          "imageKey": "g113.classic-car.porsche-356a.main",
+          "shape": {
+            "kind": "circle",
+            "x": 0.5,
+            "y": 0.78,
+            "r": 0.06
+          },
+          "revealZoom": 2,
+          "note": "这台门槛干干净净，没有补过的痕迹，是 2 级车况的底气。"
+        },
+        {
+          "id": "tire",
+          "type": "tire-date",
+          "imageKey": "g113.classic-car.porsche-356a.main",
+          "shape": {
+            "kind": "circle",
+            "x": 0.22,
+            "y": 0.75,
+            "r": 0.05
+          },
+          "revealZoom": 4
+        },
+        {
+          "id": "paint",
+          "type": "paint",
+          "imageKey": "g113.classic-car.porsche-356a.main",
+          "shape": {
+            "kind": "circle",
+            "x": 0.6,
+            "y": 0.4,
+            "r": 0.08
+          },
+          "revealZoom": 1.5
+        },
+        {
+          "id": "gauges",
+          "type": "original-part",
+          "imageKey": "g113.classic-car.porsche-356a.main",
+          "shape": {
+            "kind": "circle",
+            "x": 0.45,
+            "y": 0.35,
+            "r": 0.05
+          },
+          "revealZoom": 2.5,
+          "closeupKey": "g113.classic-car.porsche-356a.dash"
+        }
       ],
-      "collect": { "keySpots": "all" }
+      "collect": {
+        "keySpots": "all"
+      },
+      "profile": {
+        "summary": "保时捷 356 是保时捷的第一款量产车，356 A 是它 1955 年起的改款。后来的 911 都是从它这里长出来的。",
+        "sections": [
+          {
+            "kind": "history",
+            "title": "356 这一路",
+            "timeline": [
+              {
+                "when": "1948",
+                "text": "第一台保时捷 356 造出来"
+              },
+              {
+                "when": "1955",
+                "text": "推出 356 A 改款"
+              },
+              {
+                "when": "1965",
+                "text": "356 停产，接力棒交给 911"
+              }
+            ]
+          },
+          {
+            "kind": "analogy",
+            "title": "像一个家族的老宅",
+            "body": "356 之于保时捷，好比一个大家族最早的那座老宅：后来盖了多少新楼，大家说起根，还是指着它。"
+          },
+          {
+            "kind": "trivia",
+            "title": "发动机在后面",
+            "body": "356 用的是后置风冷四缸发动机，打开车头是行李舱，打开车尾才是发动机，这个布局一直影响到后来的 911。"
+          }
+        ],
+        "review": {
+          "status": "draft",
+          "notes": "待顾问审校"
+        }
+      }
     }
   ]
 }

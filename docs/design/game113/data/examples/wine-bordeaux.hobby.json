@@ -1,5 +1,6 @@
 {
   "schema": "game113.hobby/1",
+  "specVersion": "1.0",
   "id": "wine-bordeaux",
   "name": "红酒 · 波尔多",
   "category": "aging",
@@ -275,6 +276,7 @@
         "一级庄",
         "老年份"
       ],
+      "tier": "传奇",
       "attrs": {
         "maker": "拉菲古堡 Château Lafite Rothschild",
         "origin": "法国 · 波尔多",
@@ -376,7 +378,43 @@
       "collect": {
         "keySpots": "all"
       },
-      "tier": "传奇"
+      "profile": {
+        "summary": "拉菲古堡位于波尔多左岸的波雅克村，是 1855 年定下的一级庄之一。1996 年份放到今天，正好看液位、看酒标、看木塞。",
+        "sections": [
+          {
+            "kind": "history",
+            "title": "拉菲的几个年份",
+            "timeline": [
+              {
+                "when": "1855",
+                "text": "巴黎世博会前的波尔多分级中列为一级庄"
+              },
+              {
+                "when": "1868",
+                "text": "罗斯柴尔德家族买下酒庄，名字里从此带上 Rothschild"
+              },
+              {
+                "when": "1996",
+                "text": "本瓶采收年份"
+              }
+            ]
+          },
+          {
+            "kind": "analogy",
+            "title": "1855 分级像老名校榜",
+            "body": "一百多年前定下的名单，几乎没怎么改过，到今天还是大家认的出身。好比一份老名校的录取榜，后来者再努力也很难挤进去。"
+          },
+          {
+            "kind": "pick",
+            "title": "看一瓶老酒先看三样",
+            "body": "液位降到哪儿、酒标完不完整、木塞上的烙印和年份对不对得上。三样都对，才谈得上好不好喝。"
+          }
+        ],
+        "review": {
+          "status": "draft",
+          "notes": "待顾问审校"
+        }
+      }
     },
     {
       "id": "u-laowang-cellar-01",

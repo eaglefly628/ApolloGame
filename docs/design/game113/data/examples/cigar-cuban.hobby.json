@@ -1,5 +1,6 @@
 {
   "schema": "game113.hobby/1",
+  "specVersion": "1.0",
   "id": "cigar-cuban",
   "name": "古巴雪茄",
   "category": "aging",
@@ -79,7 +80,8 @@
         "开裂发霉",
         "轻微瑕疵",
         "完好"
-      ]
+      ],
+      "careable": true
     },
     {
       "key": "completeness",
@@ -110,6 +112,17 @@
       300
     ]
   },
+  "careItems": [
+    {
+      "id": "humidipak",
+      "name": "保湿包",
+      "iconKey": "g113.cigar-cuban.care.humidipak",
+      "raises": [
+        "wrapper-state"
+      ],
+      "perStep": 2
+    }
+  ],
   "spotTypes": [
     {
       "id": "warranty-seal",
@@ -266,6 +279,7 @@
         "鉴别",
         "入门必看"
       ],
+      "tier": "好茄",
       "attrs": {
         "origin": "古巴",
         "maker": "高希霸 Cohiba",
@@ -362,7 +376,30 @@
       "collect": {
         "keySpots": "all"
       },
-      "tier": "好茄"
+      "profile": {
+        "summary": "一盒整盒原封的古巴雪茄。盒子本身就是门道：封条、烫印、日期码，看懂了这三样，买盒装雪茄就不容易吃亏。",
+        "sections": [
+          {
+            "kind": "history",
+            "title": "古巴雪茄的统一出口",
+            "body": "1994 年古巴成立 Habanos S.A.，统一负责古巴雪茄在全世界的销售。所以今天正规渠道的古巴雪茄，盒上都有它的标识。"
+          },
+          {
+            "kind": "analogy",
+            "title": "日期码像罐头的生产日期",
+            "body": "看一眼就知道什么时候装的盒。雪茄和普洱一样讲究放，日期码就是它的出生证。"
+          },
+          {
+            "kind": "trivia",
+            "title": "高希霸原本不对外",
+            "body": "高希霸最早是专供古巴政要的雪茄，1982 年才开始对外公开发售。"
+          }
+        ],
+        "review": {
+          "status": "draft",
+          "notes": "待顾问审校"
+        }
+      }
     }
   ]
 }

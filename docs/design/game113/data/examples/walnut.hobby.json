@@ -1,5 +1,6 @@
 {
   "schema": "game113.hobby/1",
+  "specVersion": "1.0",
   "id": "walnut",
   "name": "文玩核桃",
   "category": "aging",
@@ -112,7 +113,8 @@
         "初上色",
         "红润",
         "包浆厚"
-      ]
+      ],
+      "careable": true
     }
   ],
   "grading": {
@@ -136,6 +138,17 @@
       400
     ]
   },
+  "careItems": [
+    {
+      "id": "walnut-brush",
+      "name": "核桃刷",
+      "iconKey": "g113.walnut.care.brush",
+      "raises": [
+        "patina"
+      ],
+      "perStep": 3
+    }
+  ],
   "spotTypes": [
     {
       "id": "edge",
@@ -337,7 +350,8 @@
     ],
     "entry": "几十元",
     "ceiling": "数万元级",
-    "compliance": "无特殊限制；知识卡不写健身、活血等功效"
+    "compliance": "无特殊限制；知识卡不写健身、活血等功效",
+    "segmentBy": "variety"
   },
   "items": [
     {
@@ -351,6 +365,10 @@
         "配对"
       ],
       "tier": "精品",
+      "acquire": [
+        "market",
+        "newbie"
+      ],
       "attrs": {
         "variety": "狮子头",
         "sub-variety": "四座楼",
@@ -464,6 +482,70 @@
       ],
       "collect": {
         "keySpots": "all"
+      },
+      "profile": {
+        "summary": "四座楼是狮子头里的名品种，讲究桩型端正、底大、边厚。这一对盘了两年，纹路尖上刚开始发红，正是越盘越好看的时候。",
+        "sections": [
+          {
+            "kind": "history",
+            "title": "狮子头的来历",
+            "body": "狮子头核桃在京津冀一带靠嫁接栽培，各个品种多半以最早那棵母树所在的地名来叫，四座楼这个名字也是这么来的。揉手核桃的玩法相传明清时已在宫里和文人中流行。"
+          },
+          {
+            "kind": "analogy",
+            "title": "挑核桃像挑双胞胎",
+            "body": "两颗长得像只是入门；形状、纹路、个头、颜色、皮质五样都像，连「脾气」都一样，才算真配对。"
+          },
+          {
+            "kind": "compare",
+            "title": "和生官帽比一比",
+            "with": "guanmao-raw",
+            "points": [
+              {
+                "aspect": "尖",
+                "self": "闷尖，短而圆钝",
+                "other": "尖挺出来，像帽顶子"
+              },
+              {
+                "aspect": "包浆",
+                "self": "初上色，纹路尖发红",
+                "other": "生核，浅黄色"
+              },
+              {
+                "aspect": "瑕疵",
+                "self": "无",
+                "other": "一颗侧面有阴皮"
+              },
+              {
+                "aspect": "品级",
+                "self": "精品",
+                "other": "普品"
+              }
+            ]
+          },
+          {
+            "kind": "pick",
+            "title": "挑狮子头看四样",
+            "body": "边厚不厚、底平不平、尖闷不闷、两颗配不配。个头大当然好，但桩型不正的大个子，不如端正的小个子。"
+          },
+          {
+            "kind": "care-tip",
+            "title": "先刷后盘",
+            "body": "新核桃先用鬃刷把纹路里的灰刷干净再上手，不然脏东西会盘进纹路里。刚上手别急着上油，手汗慢慢养出来的颜色最自然。"
+          },
+          {
+            "kind": "related",
+            "title": "同一匣里的",
+            "refs": [
+              "guanmao-raw",
+              "qingpi"
+            ]
+          }
+        ],
+        "review": {
+          "status": "draft",
+          "notes": "待顾问审校"
+        }
       }
     },
     {
@@ -539,11 +621,58 @@
           },
           "revealZoom": 2.5,
           "key": true,
-          "note": "右边这颗侧面有块阴皮，这就是它只算普品的原因。"
+          "note": "右边这颗侧面有块阴皮，这就是它只算普品的原因。",
+          "flaw": true
         }
       ],
       "collect": {
         "keySpots": "all"
+      },
+      "profile": {
+        "summary": "官帽因为尖挺、形似旧时官帽而得名。这一对还没盘过，其中一颗侧面有块阴皮，所以只算普品，但拿来学挑核桃正合适。",
+        "sections": [
+          {
+            "kind": "history",
+            "title": "名字的由来",
+            "body": "官帽核桃顶上的尖挺出来，两边的边又宽，整体看像旧时的官帽，行里就这么叫开了。"
+          },
+          {
+            "kind": "analogy",
+            "title": "阴皮像衬衫上的酱油渍",
+            "body": "洗不掉、盘不掉，东西本身没坏，但人一眼就看见了。所以挑核桃一定要翻过来掉过去看一圈。"
+          },
+          {
+            "kind": "compare",
+            "title": "和四座楼比一比",
+            "with": "sizuolou-pair",
+            "points": [
+              {
+                "aspect": "尖",
+                "self": "尖挺",
+                "other": "闷尖"
+              },
+              {
+                "aspect": "瑕疵",
+                "self": "一处阴皮",
+                "other": "无"
+              },
+              {
+                "aspect": "品级",
+                "self": "普品",
+                "other": "精品"
+              }
+            ]
+          },
+          {
+            "kind": "trivia",
+            "title": "生核桃为什么浅",
+            "body": "刚脱了青皮的核桃是浅黄色，颜色都是后来盘、刷、氧化慢慢变深的。所以同一品种，颜色越红润，一般说明玩的时间越长。"
+          }
+        ],
+        "review": {
+          "status": "draft",
+          "notes": "待顾问审校"
+        }
       }
     },
     {
@@ -588,6 +717,33 @@
       ],
       "collect": {
         "keySpots": "all"
+      },
+      "profile": {
+        "summary": "秋天刚下树、还裹着绿色外皮的核桃。里面个头大小、纹路好坏全凭运气，行里叫「赌青皮」。",
+        "sections": [
+          {
+            "kind": "story",
+            "title": "开皮那一下",
+            "body": "老玩家秋天逛市场，就图开皮那一下：刀一划，青皮剥开，是大是小、配不配对，当场揭晓。开出好的一桌人叫好，开出一般的也就一笑。"
+          },
+          {
+            "kind": "trivia",
+            "title": "青皮染手",
+            "body": "青皮的汁液会把手和指甲染成褐色，好几天洗不掉，所以开皮的人都戴手套。"
+          },
+          {
+            "kind": "related",
+            "title": "开出来可能是",
+            "refs": [
+              "sizuolou-pair",
+              "guanmao-raw"
+            ]
+          }
+        ],
+        "review": {
+          "status": "draft",
+          "notes": "待顾问审校"
+        }
       }
     }
   ]
