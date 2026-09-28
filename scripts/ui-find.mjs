@@ -25,7 +25,7 @@
 //  纯 node（Node22 `--experimental-strip-types` 直接 import 真 catalog.ts·无正则刮取·无漂移面）。
 // ═══════════════════════════════════════════════════════════════
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
@@ -42,6 +42,12 @@ if (!process.execArgv.includes('--experimental-strip-types')) {
 
 const { UI_CATALOG } = await import('../src/ui/components/catalog.ts');
 const GALLERY = resolve(ROOT, 'games/game-i/gallery.ts');
+// 2026-09-25 REQ-I-gallery拆分后段 id 散在 gallery.ts + gallery/*.ts（薄入口 + 十件）——两处都是真相源，一起读。
+const GALLERY_DIR = resolve(ROOT, 'games/game-i/gallery');
+export function readGallerySources() {
+  const files = [GALLERY, ...(existsSync(GALLERY_DIR) ? readdirSync(GALLERY_DIR).filter((f) => f.endsWith('.ts')).sort().map((f) => resolve(GALLERY_DIR, f)) : [])];
+  return files.filter((f) => existsSync(f)).map((f) => readFileSync(f, 'utf8')).join('\n');
+}
 
 const argv = process.argv.slice(2);
 const flag = (n) => argv.includes(`--${n}`);
@@ -119,7 +125,7 @@ function printSpec(spec, full) {
 
 // ── --check：demo 段 id 必须真存在于 gallery/屏文件（防索引烂掉）──
 function check() {
-  const g = readFileSync(GALLERY, 'utf8');
+  const g = readGallerySources();
   const known = new Set([...g.matchAll(/sectionTitle\('([^']+)'/g)].map((m) => m[1]));
   const bad = [], noTag = [], noDemo = [];
   for (const s of UI_CATALOG) {

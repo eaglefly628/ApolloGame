@@ -31,7 +31,7 @@ const catRows = CATS.flatMap((c) => [
   desc,
   context: `用途=sprite·猫画面层静态锚图（十房猫位 hall-cat 的 Image.src·名册 Avatar）·消费=cat-art.ts catArt('${c.id}','${state}')·`
     + `写回=SKIN_OVERRIDES['${SKIN_KEYS.cat(c.id, state)}']（未填=程序化矢量回退）·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png·`
-    + `S7 主角面 1 分的病根就是这两行还是矢量占位——最高优先出图`,
+    + `S7 主角面 1 分的病根就是这两行还是矢量占位；owner 2026-09-28：猫系统（品种/引入/选猫/动画）重写中·本行暂缓出图等新设定`,
   // 2026-09-28 GD/PE-112 复核：Codex 上一版把这两行标 retired，但槽仍被每间房消费（ui.ts catLayer）——有槽的行不许退役，改回 needs-art。
   status: 'needs-art', gen: null, provenance: null,
 })));

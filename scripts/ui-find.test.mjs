@@ -4,13 +4,16 @@
 // 谁删/改了展台段而没同步 catalog，这里当场亮红并点名。
 import { describe, it, expect } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const catalogSrc = readFileSync(resolve(ROOT, 'src/ui/components/catalog.ts'), 'utf8');
-const gallerySrc = readFileSync(resolve(ROOT, 'games/game-i/gallery.ts'), 'utf8');
+// 段 id 真相源 = gallery.ts + gallery/*.ts（2026-09-25 拆分后·与 scripts/ui-find.mjs readGallerySources 同口径）
+const galleryDir = resolve(ROOT, 'games/game-i/gallery');
+const gallerySrc = [resolve(ROOT, 'games/game-i/gallery.ts'), ...(existsSync(galleryDir) ? readdirSync(galleryDir).filter((f) => f.endsWith('.ts')).sort().map((f) => resolve(galleryDir, f)) : [])]
+  .filter((f) => existsSync(f)).map((f) => readFileSync(f, 'utf8')).join('\n');
 
 /** 直接读真 catalog（Node22 类型擦除·不正则刮取）。 */
 const loadCatalog = () => {

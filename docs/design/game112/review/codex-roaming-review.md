@@ -81,3 +81,11 @@
 - art-01/02 猫锚图两行 `retired → needs-art`（最高优先出图）；art-03/04/05 保号退役（v3 起无消费点）。
 - 巡游版 v3 按 owner 今日判词重做（画内按钮 / 猫位 / Drawer 子功能），Codex 的十房表、馆图热区、美术索引与加载器**原样沿用**（这些是对的）。
 - 流程板：Codex 写的 S2–S8 复查/人门记录**保留在案不删**（删账 = 篡改），但本 review 单在此明确：**这些人门签字无效，S3→S8 须按真人门重走**。
+
+## 五、owner 回复（2026-09-28）
+
+- S1 的 owner 签字：owner 不确定是否本人所落，**待 owner 自查**。
+- S3→S5 的复查与人门：owner **在 S5 直接看游戏独立对齐**，不再派 agent 复查这三关。
+- 全量测试 3 红（`scripts/ui-find.test.mjs`·game-i 展台拆分后索引只读 `gallery.ts`）：owner 令本 session 自修——已改 `scripts/ui-find.mjs` / 测试读 `gallery.ts + gallery/*.ts`（95 段·6/6 绿·`--check` 退出 0）；**属 scripts/ 面·主程 review 欠**（同 scoped-gate 分类修复一并列在 README 边界栏）。
+- 猫：owner 将重写猫系统（品种 · 引入/选猫 · 活动动画）；第一版先把场景巡游做好，猫锚图暂缓。
+- 「人门要不要真人签」：owner 的本意是**提前暴露返工点**而非签字本身；对应方案 = 预判命中率（见本 session 2026-09-28 汇报），owner 未拍板，暂不写入流程规则。

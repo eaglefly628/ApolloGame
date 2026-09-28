@@ -209,6 +209,7 @@ desync（`determinism.ts` 对 Camera 的同款理由）。条目进 hash → 注
 - 要做：① `signoff --by` 只收真人白名单（`docs/roles/humans.json`·agent 名拒）；② `review --by` ≠ 该关施工锁主体，同一 `--by` 10 分钟内落 ≥2 关拒并要附复跑日志；③ `scoped-gate` 红 → 推送钩子拦，「与本单无关」只能主程 `--waive` 落账；④ 台账 `approved` 只由创作台人审/`art-review --by <真人>` 写；⑤ 台账 `retired` 前 grep 消费点，有消费即拒；⑥ 剧本顶层可选 `uiEntry:["home.enter"]`，`ui-walkthrough-probe` 开跑前先点它（菜单驱动游戏现恒 0%·game112 0/17·game108 0/74·探针头注 1b 自认）。
 - 为什么：owner 问「其他模型能不能 follow 我们的 ruler」——有脚本判红的规则 Codex 全守，没牙齿的全破；病根在围栏不在模型。
 - 边界：`scripts/{game-pipeline,scoped-gate,ledger-audit,ui-walkthrough-probe,acceptance-schema}.mjs` + 测试 + 白名单文件；不碰游戏层。
+- **owner 2026-09-28 令主程来看本单**。顺带请主程 review 两处 GD/PE-112 越域小修：`scripts/scoped-gate.mjs` 台账文件归类（2026-09-24）· `scripts/ui-find.mjs`+test 读拆分后的 `gallery/*.ts`（2026-09-28·全量 3 红的根因）。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 

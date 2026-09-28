@@ -25,7 +25,7 @@
         "transparent": true
       },
       "desc": "雪团·趴姿待机（主厅/牌桌回退锚图·眼半眯）",
-      "context": "用途=sprite·猫画面层静态锚图（十房猫位 hall-cat 的 Image.src·名册 Avatar）·消费=cat-art.ts catArt('xuetuan','rest')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-rest']（未填=程序化矢量回退）·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png·S7 主角面 1 分的病根就是这两行还是矢量占位——最高优先出图",
+      "context": "用途=sprite·猫画面层静态锚图（十房猫位 hall-cat 的 Image.src·名册 Avatar）·消费=cat-art.ts catArt('xuetuan','rest')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-rest']（未填=程序化矢量回退）·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png·S7 主角面 1 分的病根就是这两行还是矢量占位；owner 2026-09-28：猫系统（品种/引入/选猫/动画）重写中·本行暂缓出图等新设定",
       "status": "needs-art",
       "gen": null,
       "provenance": null,
@@ -51,7 +51,7 @@
         "transparent": true
       },
       "desc": "雪团·注意（兴致高时·眼睁大）",
-      "context": "用途=sprite·猫画面层静态锚图（十房猫位 hall-cat 的 Image.src·名册 Avatar）·消费=cat-art.ts catArt('xuetuan','notice')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-notice']（未填=程序化矢量回退）·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png·S7 主角面 1 分的病根就是这两行还是矢量占位——最高优先出图",
+      "context": "用途=sprite·猫画面层静态锚图（十房猫位 hall-cat 的 Image.src·名册 Avatar）·消费=cat-art.ts catArt('xuetuan','notice')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-notice']（未填=程序化矢量回退）·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png·S7 主角面 1 分的病根就是这两行还是矢量占位；owner 2026-09-28：猫系统（品种/引入/选猫/动画）重写中·本行暂缓出图等新设定",
       "status": "needs-art",
       "gen": null,
       "provenance": null,
