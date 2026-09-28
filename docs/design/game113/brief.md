@@ -1,7 +1,7 @@
 # Game 113《雅趣：第二人生》·立项卡（S1 · v2）
 
 > 状态：**S1 设定对齐中 · v2**（2026-09-28，按 owner 修正口述重写；v1「博古斋」方向已废弃，见 git 历史）。
-> owner 原文与修正口述见 [`concept-source.md`](./concept-source.md)；爱好全表见 [`hobby-catalog.md`](./hobby-catalog.md)；UI 需求单见 [`ui-brief.md`](./ui-brief.md)。
+> owner 原文与修正口述见 [`concept-source.md`](./concept-source.md)；爱好图谱（五大类）见 [`hobby-catalog.md`](./hobby-catalog.md)；数据规范见 [`collectible-spec.md`](./collectible-spec.md)；AI 量产见 [`ai-pipeline.md`](./ai-pipeline.md)；UI 需求单见 [`ui-brief.md`](./ui-brief.md)。
 > 平台：🟢 手机竖屏。S2 过审前不写游戏层代码。
 
 标记：🟢 owner 已明确 · 🟡 本方推荐、待 owner 确认 · ⚪ 未讨论

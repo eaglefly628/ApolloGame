@@ -1,0 +1,114 @@
+{
+  "schema": "game113.hobby/1",
+  "id": "wine-bordeaux",
+  "name": "红酒 · 波尔多",
+  "category": "aging",
+  "ageRating": "18+",
+  "zone": { "name": "酒窖", "coverKey": "g113.wine-bordeaux.zone-cover" },
+  "titles": [
+    { "minXp": 0, "name": "入门" },
+    { "minXp": 30, "name": "懂行" },
+    { "minXp": 90, "name": "行家" },
+    { "minXp": 200, "name": "酒痴" }
+  ],
+  "modules": ["quiz"],
+  "fields": [
+    { "key": "appellation", "label": "产区", "type": "text", "filter": true },
+    { "key": "classification", "label": "分级", "type": "enum", "filter": true,
+      "options": ["一级庄", "二级庄", "三级庄", "四级庄", "五级庄", "中级庄", "未列级"] },
+    { "key": "grapes", "label": "葡萄", "type": "multi",
+      "options": ["赤霞珠", "梅洛", "品丽珠", "小维多", "马尔贝克"] },
+    { "key": "volume", "label": "容量", "type": "number", "unit": "ml", "min": 50, "max": 30000 }
+  ],
+  "spotTypes": [
+    { "id": "classification", "label": "分级字样", "cardId": "k-1855", "hint": "酒标上写着等级的小字", "key": true },
+    { "id": "chateau-bottled", "label": "酒庄装瓶", "cardId": "k-mis-en-bouteille", "hint": "酒标下方一行法文", "key": true },
+    { "id": "ullage", "label": "液位", "cardId": "k-ullage", "hint": "看瓶肩的酒液", "key": true },
+    { "id": "vintage", "label": "年份", "cardId": "k-vintage", "hint": "酒标上的四位数" },
+    { "id": "cork", "label": "木塞烙印", "cardId": "k-cork", "hint": "瓶口里面" }
+  ],
+  "knowledge": [
+    { "id": "k-1855", "kind": "craft", "title": "1855 分级",
+      "body": "1855 年巴黎世博会前，波尔多按酒价给梅多克的酒庄排了五个等级。一级庄起初只有四家，1973 年木桐升上来凑成五家。这份名单一百多年几乎没动过，是波尔多最硬的出身证明。",
+      "quiz": { "q": "1855 分级后，哪家酒庄是唯一升进一级庄的？", "options": ["木桐", "玛歌", "拉图"], "answer": 0,
+                "explain": "木桐 1973 年升为一级庄，是这份名单唯一的一次升级。" },
+      "xp": 4, "sources": [{ "title": "1855 波尔多列级酒庄分级（官方名单）" }],
+      "review": { "status": "draft", "notes": "待侍酒师顾问审校" } },
+    { "id": "k-mis-en-bouteille", "kind": "jargon", "title": "酒庄装瓶",
+      "body": "「Mis en bouteille au château」意思是在酒庄里装瓶。有这行字，说明从葡萄到装瓶都在酒庄自己手里，不是运出去让酒商装的。看不到这行字的名庄酒，要多留个心眼。",
+      "xp": 3, "sources": [{ "title": "法国葡萄酒酒标标注规定" }], "review": { "status": "draft" } },
+    { "id": "k-ullage", "kind": "authenticity", "title": "瓶肩的酒液高度",
+      "body": "老酒要看酒液降到哪儿。拍卖行分成瓶颈、瓶颈底、瓶肩上沿、高瓶肩、中瓶肩、低瓶肩几档。二十多年的酒到瓶肩上沿算正常；降到中瓶肩，说明它在谁家柜子里躺得不太舒服。",
+      "quiz": { "q": "一瓶 20 多年的老酒，哪种液位最让人放心？", "options": ["瓶肩上沿", "中瓶肩", "低瓶肩"], "answer": 0,
+                "explain": "年头长了液位略降正常，到中瓶肩以下说明密封或储存可能有问题。" },
+      "xp": 5, "sources": [{ "title": "拍卖行葡萄酒液位（ullage）描述标准" }], "review": { "status": "draft" } },
+    { "id": "k-vintage", "kind": "story", "title": "年份就是那年的天气",
+      "body": "酒标上的年份是葡萄采收的那一年。波尔多靠天吃饭，同一个酒庄，好年份和差年份能差出好几倍的身价。行家点酒先问年份，再问酒庄。",
+      "xp": 2, "sources": [{ "title": "波尔多年份概述" }], "review": { "status": "draft" } },
+    { "id": "k-cork", "kind": "authenticity", "title": "木塞上的烙印",
+      "body": "名庄的软木塞上会烙酒庄名和年份。开瓶后看木塞：字迹清楚、和酒标年份一致是好兆头；木塞上什么都没有，或者年份对不上，就得多问一句了。",
+      "xp": 3, "sources": [{ "title": "名庄软木塞烙印惯例" }], "review": { "status": "draft" } }
+  ],
+  "items": [
+    {
+      "id": "lafite-1996",
+      "origin": "official",
+      "name": "拉菲古堡 1996",
+      "subtitle": "波雅克 · 1855 一级庄",
+      "order": 1,
+      "tags": ["一级庄", "老年份"],
+      "attrs": {
+        "maker": "拉菲古堡 Château Lafite Rothschild",
+        "origin": "法国 · 波尔多",
+        "appellation": "波雅克 Pauillac",
+        "classification": "一级庄",
+        "vintage": 1996,
+        "volume": 750
+      },
+      "images": [
+        { "key": "g113.wine-bordeaux.lafite-1996.main", "role": "main", "w": 3000, "h": 4000, "sha256": "TBD",
+          "source": { "license": "TBD", "credit": "待授权实拍（占位）" } },
+        { "key": "g113.wine-bordeaux.lafite-1996.cork", "role": "closeup", "w": 2400, "h": 2400, "sha256": "TBD",
+          "source": { "license": "TBD", "credit": "待授权实拍（占位）" } }
+      ],
+      "spots": [
+        { "id": "grand-cru", "type": "classification", "imageKey": "g113.wine-bordeaux.lafite-1996.main",
+          "shape": { "kind": "circle", "x": 0.5, "y": 0.62, "r": 0.06 }, "revealZoom": 2,
+          "note": "拉菲就是 1855 年最早那四家一级庄之一。" },
+        { "id": "bottled", "type": "chateau-bottled", "imageKey": "g113.wine-bordeaux.lafite-1996.main",
+          "shape": { "kind": "circle", "x": 0.5, "y": 0.74, "r": 0.05 }, "revealZoom": 2.5 },
+        { "id": "level", "type": "ullage", "imageKey": "g113.wine-bordeaux.lafite-1996.main",
+          "shape": { "kind": "circle", "x": 0.5, "y": 0.3, "r": 0.07 }, "revealZoom": 1.5 },
+        { "id": "year", "type": "vintage", "imageKey": "g113.wine-bordeaux.lafite-1996.main",
+          "shape": { "kind": "circle", "x": 0.5, "y": 0.55, "r": 0.05 }, "revealZoom": 1.5 },
+        { "id": "cork-brand", "type": "cork", "imageKey": "g113.wine-bordeaux.lafite-1996.main",
+          "shape": { "kind": "circle", "x": 0.5, "y": 0.05, "r": 0.05 }, "revealZoom": 3,
+          "closeupKey": "g113.wine-bordeaux.lafite-1996.cork" }
+      ],
+      "collect": { "keySpots": "all" }
+    },
+    {
+      "id": "u-laowang-cellar-01",
+      "origin": "user",
+      "name": "老王酒柜里那瓶",
+      "subtitle": "藏家自述",
+      "attrs": { "classification": "中级庄", "vintage": 2010 },
+      "images": [
+        { "key": "g113.user.laowang.cellar-01", "role": "main", "w": 3024, "h": 4032, "sha256": "TBD",
+          "source": { "license": "user-upload", "credit": "老王" } }
+      ],
+      "spots": [
+        { "id": "level", "type": "ullage", "imageKey": "g113.user.laowang.cellar-01",
+          "shape": { "kind": "circle", "x": 0.48, "y": 0.28, "r": 0.08 } },
+        { "id": "memory", "cardId": "u-wedding", "imageKey": "g113.user.laowang.cellar-01",
+          "shape": { "kind": "circle", "x": 0.5, "y": 0.6, "r": 0.1 }, "key": true }
+      ],
+      "cards": [
+        { "id": "u-wedding", "kind": "story", "title": "闺女结婚那年买的",
+          "body": "2010 年闺女结婚，我在波尔多出差顺手扛回来一箱，就剩这一瓶了。说好等外孙考上大学再开，老伙计们到时候都来。",
+          "xp": 1, "sources": [{ "title": "藏家自述" }], "review": { "status": "owner-claim", "by": "老王" } }
+      ],
+      "collect": { "keySpots": 1 }
+    }
+  ]
+}

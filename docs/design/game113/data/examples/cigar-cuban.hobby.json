@@ -1,0 +1,80 @@
+{
+  "schema": "game113.hobby/1",
+  "id": "cigar-cuban",
+  "name": "古巴雪茄",
+  "category": "aging",
+  "ageRating": "18+",
+  "zone": { "name": "雪茄柜", "coverKey": "g113.cigar-cuban.zone-cover" },
+  "titles": [
+    { "minXp": 0, "name": "入门" },
+    { "minXp": 30, "name": "懂行" },
+    { "minXp": 90, "name": "行家" },
+    { "minXp": 200, "name": "茄痴" }
+  ],
+  "modules": ["quiz"],
+  "fields": [
+    { "key": "vitola", "label": "茄型", "type": "text", "filter": true },
+    { "key": "ring-gauge", "label": "环径", "type": "number", "min": 20, "max": 80 },
+    { "key": "length", "label": "长度", "type": "number", "unit": "mm", "min": 50, "max": 300 },
+    { "key": "count", "label": "盒装支数", "type": "number", "min": 1, "max": 100 }
+  ],
+  "spotTypes": [
+    { "id": "warranty-seal", "label": "保真封条", "cardId": "k-warranty-seal", "hint": "盒子侧面那条绿白封条", "key": true },
+    { "id": "hecho-en-cuba", "label": "盒底烫印", "cardId": "k-totalmente-a-mano", "hint": "盒底的烫印字", "key": true },
+    { "id": "box-code", "label": "日期码", "cardId": "k-box-code", "hint": "盒底一串字母和数字", "key": true },
+    { "id": "wrapper", "label": "茄衣", "cardId": "k-wrapper-color", "hint": "雪茄最外面那层叶子" },
+    { "id": "triple-cap", "label": "三层茄帽", "cardId": "k-triple-cap", "hint": "雪茄的头" }
+  ],
+  "knowledge": [
+    { "id": "k-warranty-seal", "kind": "authenticity", "title": "绿白保真封条",
+      "body": "正品古巴雪茄盒上贴着一条绿白相间的古巴政府保证封条，从盒盖一直封到盒身。封条完整、没被撕开重贴，是买盒装雪茄先看的第一眼。",
+      "quiz": { "q": "古巴政府保证封条是什么颜色？", "options": ["绿白相间", "红黑相间", "纯金色"], "answer": 0,
+                "explain": "古巴政府保证封条是绿白相间的。" },
+      "xp": 4, "sources": [{ "title": "Habanos S.A. 正品识别说明" }],
+      "review": { "status": "draft", "notes": "待雪茄顾问审校；补充 Habanos 防伪贴标的启用年代" } },
+    { "id": "k-totalmente-a-mano", "kind": "jargon", "title": "全手工",
+      "body": "盒底烫印「Hecho en Cuba」是古巴制造，「Totalmente a mano」是全手工卷制。古巴雪茄的讲究就在这两行，看到别的说法，工序就不一样了，得问清楚。",
+      "xp": 3, "sources": [{ "title": "Habanos S.A. 包装标识说明" }], "review": { "status": "draft" } },
+    { "id": "k-box-code", "kind": "craft", "title": "盒底的日期码",
+      "body": "盒底有一串码：前面几个字母代表哪家工厂，后面是西班牙语月份缩写加年份，比如 ENE 24 就是 2024 年 1 月装盒。老茄客看这串码判断雪茄放了多久、醇化到什么程度。",
+      "quiz": { "q": "日期码里的「ENE」是几月？", "options": ["一月", "六月", "十二月"], "answer": 0,
+                "explain": "ENE 是西班牙语 enero（一月）的缩写。" },
+      "xp": 5, "sources": [{ "title": "古巴雪茄盒码（box code）说明" }], "review": { "status": "draft" } },
+    { "id": "k-wrapper-color", "kind": "craft", "title": "茄衣的颜色",
+      "body": "雪茄最外面那层叶子叫茄衣，颜色从浅到深有 Claro、Colorado、Maduro 等说法。浅的一般口感清淡，深的更浓更甜。同一盒里颜色整齐，说明挑叶子的师傅下了功夫。",
+      "xp": 3, "sources": [{ "title": "雪茄茄衣颜色分级" }], "review": { "status": "draft" } },
+    { "id": "k-triple-cap", "kind": "authenticity", "title": "三层茄帽",
+      "body": "凑近看雪茄的头，古巴手卷雪茄通常用三小片叶子封顶，叫三层茄帽，能看到一圈一圈的层次。这是手工卷制的招牌细节，机器卷的很难做出来。",
+      "xp": 3, "sources": [{ "title": "古巴手卷雪茄工艺" }], "review": { "status": "draft" } }
+  ],
+  "items": [
+    {
+      "id": "habanos-box",
+      "origin": "official",
+      "name": "一盒古巴雪茄",
+      "subtitle": "25 支装木盒 · 盒底看门道",
+      "order": 1,
+      "tags": ["鉴别", "入门必看"],
+      "attrs": { "origin": "古巴", "maker": "高希霸 Cohiba", "count": 25 },
+      "images": [
+        { "key": "g113.cigar-cuban.habanos-box.main", "role": "main", "w": 4000, "h": 3000, "sha256": "TBD",
+          "source": { "license": "TBD", "credit": "待授权实拍（占位）" } },
+        { "key": "g113.cigar-cuban.habanos-box.bottom", "role": "closeup", "w": 3000, "h": 2000, "sha256": "TBD",
+          "source": { "license": "TBD", "credit": "待授权实拍（占位）" } }
+      ],
+      "spots": [
+        { "id": "seal", "type": "warranty-seal", "imageKey": "g113.cigar-cuban.habanos-box.main",
+          "shape": { "kind": "circle", "x": 0.15, "y": 0.5, "r": 0.06 }, "revealZoom": 1.5 },
+        { "id": "stamp", "type": "hecho-en-cuba", "imageKey": "g113.cigar-cuban.habanos-box.bottom",
+          "shape": { "kind": "circle", "x": 0.5, "y": 0.4, "r": 0.08 } },
+        { "id": "code", "type": "box-code", "imageKey": "g113.cigar-cuban.habanos-box.bottom",
+          "shape": { "kind": "circle", "x": 0.5, "y": 0.7, "r": 0.06 }, "revealZoom": 2 },
+        { "id": "leaf", "type": "wrapper", "imageKey": "g113.cigar-cuban.habanos-box.main",
+          "shape": { "kind": "circle", "x": 0.6, "y": 0.45, "r": 0.08 }, "revealZoom": 2 },
+        { "id": "cap", "type": "triple-cap", "imageKey": "g113.cigar-cuban.habanos-box.main",
+          "shape": { "kind": "circle", "x": 0.85, "y": 0.45, "r": 0.04 }, "revealZoom": 4 }
+      ],
+      "collect": { "keySpots": "all" }
+    }
+  ]
+}

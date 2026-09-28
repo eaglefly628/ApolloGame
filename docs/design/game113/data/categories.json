@@ -1,0 +1,67 @@
+{
+  "schema": "game113.categories/2",
+  "description": "顶层分类 = owner 2026-09-28 定的「按玩家投入的核心资源」五大类（+1 个待定补充类）。每类带：① 基础字段（字段字典第二层，在 global 之上）② futureModule：该类未来通用玩法模块（首期全部不开，只做「看细节 + 收藏」）。爱好包的 fields 在此之上追加，不得重定义同名 key。",
+  "global": [
+    { "key": "maker", "label": "出品", "type": "text", "filter": true },
+    { "key": "origin", "label": "产地", "type": "text", "filter": true },
+    { "key": "era", "label": "年代", "type": "text" }
+  ],
+  "categories": {
+    "aging": {
+      "name": "岁月沉淀与高阶消耗", "en": "Organic & Consumable",
+      "resource": "时间", "core": "时间的复利 + 环境参数控制，品鉴最终风味",
+      "futureModule": "care",
+      "fields": [
+        { "key": "vintage", "label": "年份", "type": "year", "min": 1800, "max": 2100, "filter": true },
+        { "key": "aged-years", "label": "陈化", "type": "number", "unit": "年", "min": 0, "max": 200 },
+        { "key": "storage", "label": "仓储", "type": "text" }
+      ]
+    },
+    "mechanics": {
+      "name": "精密机械与岁月修复", "en": "Precision & Restoration",
+      "resource": "技艺", "core": "极客精神与秩序感：拆解、清洁、重构精密系统",
+      "futureModule": "process",
+      "fields": [
+        { "key": "model", "label": "型号", "type": "text", "filter": true },
+        { "key": "serial", "label": "编号", "type": "text" },
+        { "key": "condition", "label": "状态", "type": "enum", "options": ["原厂", "修复", "改装", "待修"], "filter": true }
+      ]
+    },
+    "craft": {
+      "name": "极致手作与器物延龄", "en": "Craftsmanship & Antiquities",
+      "resource": "技艺", "core": "传统手工艺与残缺美：重复劳作与几何逻辑，赋予物品第二次生命",
+      "futureModule": "process",
+      "fields": [
+        { "key": "material", "label": "材质", "type": "text", "filter": true },
+        { "key": "technique", "label": "工艺", "type": "text" }
+      ]
+    },
+    "living": {
+      "name": "微观生态与活体繁育", "en": "Micro-Ecosystems & Fauna",
+      "resource": "时间", "core": "扮演造物主：长周期筛选基因、搭建生态闭环",
+      "futureModule": "breed",
+      "fields": [
+        { "key": "species", "label": "品种", "type": "text", "filter": true },
+        { "key": "lineage", "label": "血统", "type": "text" }
+      ]
+    },
+    "sensory": {
+      "name": "视听玄学与异类收藏", "en": "Sensory & Archival",
+      "resource": "审美", "core": "极敏锐的感官辨识力，对小众历史碎片的极致追求",
+      "futureModule": "grade",
+      "fields": [
+        { "key": "edition", "label": "版别", "type": "text", "filter": true },
+        { "key": "grade", "label": "品相", "type": "text" }
+      ]
+    },
+    "pursuits": {
+      "name": "身手与博弈（待 owner 定）", "en": "Sport & Mind Games",
+      "resource": "财力 + 体力", "core": "装备与身手、棋局与博弈；五大类装不下的高尔夫、钓鱼、马术、帆船、围棋、桥牌等",
+      "proposed": true,
+      "futureModule": null,
+      "fields": [
+        { "key": "gear", "label": "器材", "type": "text", "filter": true }
+      ]
+    }
+  }
+}
