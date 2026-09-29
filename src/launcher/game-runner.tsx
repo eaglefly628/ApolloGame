@@ -93,6 +93,7 @@ export function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => v
       'game211': () => import('@games/game211/game211.js'),
       'game111': () => import('@games/game111/game111.js'),
       'game112': () => import('@games/game112/game112.js'),
+      'game113': () => import('@games/game113/game113.js'),
     };
     const loader = loaders[gameId];
     if (!loader) return;
@@ -113,7 +114,7 @@ export function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => v
     <div style={{ position: 'absolute', inset: 0, background: SHELL.bg0 }}>
       {/* 全游戏统一的壳层菜单（齿轮 → 收纳「返回主界面」等全局动作；游戏代码不掺和）—— 视觉基调见 ui/shell-theme.ts。
           game-g 已把退出收进自己的设置菜单（owner 2026-06-21「去掉右上角返回·收进设置」，经 mount(el,{exit}) 接走）→ 壳层不再为它叠这颗。 */}
-      {gameId !== 'game-g' && (
+      {gameId !== 'game-g' && gameId !== 'game113' && (
         <GameOverlayMenu items={[{ label: '⟵ 返回主界面', onClick: onBack }]} />
       )}
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />

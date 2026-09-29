@@ -182,6 +182,16 @@ export const GAMES: GameEntry[] = [
     status: 'playable',
   },
   {
+    id: 'game113',
+    title: 'Game 113:《雅趣：第二人生》',
+    subtitle: '兴趣收藏 · 同好交流 · 应用流程演示',
+    description: '面向中老年兴趣探索者的收藏与交流应用原型。可体验发现兴趣、认识藏品、演示市集、仓库、同好圈、个人档案等页面；当前图片均为 AI 示意，数据只存在本机，游戏玩法与真实交易、社交服务尚未接入。',
+    color: '#f7f4ee',
+    accentColor: '#a5844d',
+    icon: '🍃',
+    status: 'playable',
+  },
+  {
     id: 'game-103',
     title: 'Game 103: 幸存者核心',
     subtitle: '俯视割草 Roguelite · 吸血鬼幸存者式',
