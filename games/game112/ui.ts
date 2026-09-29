@@ -56,7 +56,7 @@ function sign(id: string, text: string, action: string, o: { x: number; y: numbe
     ...(o.visibleWhen !== undefined ? { visibleWhen: o.visibleWhen } : {}),
     children: [
       { type: 'Label', id: `${id}-label`, props: { text, size: 'sm', bold: true, color: 'text' } },
-      ...(o.tag !== undefined ? [{ type: 'Tag', id: `${id}-tag`, props: { label: o.tag, tone: 'accent' } } as LayoutNode] : []),
+      ...(o.tag !== undefined ? [{ type: 'Label', id: `${id}-tag`, props: { text: o.tag, size: 'xs', bold: true, color: 'text' } } as LayoutNode] : []),
     ],
   };
 }
@@ -65,9 +65,9 @@ function sign(id: string, text: string, action: string, o: { x: number; y: numbe
 export function buildHome(o: { canExit?: boolean } = {}): LayoutNode {
   return buildStarterHome({
     title: '星尾会客厅',
-    subtitle: '在记忆发亮的地方，再陪它坐一会儿',
+    subtitle: '十房巡游版 · 沿画里的门，在星尾馆里陪它慢慢走',
     actions: [
-      { label: '回到星尾馆', action: 'home.enter', kind: 'hero', sub: '雪团在旧木桌边等你' },
+      { label: '走进星尾馆', action: 'home.enter', kind: 'hero', sub: '十间猫房已开放 · 雪团在主厅等你' },
       { label: '关于星尾馆', action: 'home.about', kind: 'ghost' },
       ...(o.canExit === true ? [{ label: '回游戏库', action: 'home.exit', kind: 'quiet' as const }] : []),
     ],
@@ -82,15 +82,32 @@ function orbSub(v: HallView): string {
   return `心光 ${v.relations.heartlight} · 还差 ${Math.max(0, locked - v.relations.heartlight)} 就发光`;
 }
 
-/** 画里的热区（门 / 物件）：透明面 + 底部一枚标签；悬停流光。 */
+/** 热区标签：实底小木牌兜住复杂场景，避免文字直接压在亮灯、木纹或花丛上。 */
+function readableChip(id: string, label: string, emphasized = false): LayoutNode {
+  return {
+    type: 'Panel', id, props: { bg: 'raised', edge: 'gold', accent: emphasized },
+    layout: { padding: 5, radius: 10, ...(emphasized ? { fx: [{ kind: 'glow' as const, color: 'gold' as const }] } : {}) },
+    children: [{
+      type: 'Label', id: `${id}-label`,
+      props: { text: label, size: 'sm', bold: true, color: 'text' },
+    }],
+  };
+}
+
+/** 画里的热区（门 / 物件）：透明命中面 + 实底小木牌；悬停流光、按下反馈。 */
 function hotzone(id: string, label: string, action: string, r: { x: number; y: number; w: number; h: number }, o: { arg?: string; sub?: string; tone?: 'accent' | 'normal' | 'dim' } = {}): LayoutNode {
   return {
     type: 'Panel', id, props: { bg: 'transparent', action, ...(o.arg !== undefined ? { actionArg: o.arg } : {}) },
-    layout: { x: r.x, y: r.y, width: r.w, height: r.h, direction: 'column', gap: 4, align: 'center', justify: 'end', padding: 4, allowOverlap: true, radius: 14 },
+    layout: {
+      x: r.x, y: r.y, width: r.w, height: r.h,
+      direction: 'column', gap: 4, align: 'center', justify: 'end', padding: 4,
+      allowOverlap: true, radius: 14, press3d: true,
+      fx: [{ kind: 'sheen-hover' }],
+    },
     visibleWhen: NOT_STAGE_ONLY,
     children: [
-      ...(o.sub !== undefined ? [{ type: 'Tag', id: `${id}-sub`, props: { label: o.sub, tone: 'normal', size: 'sm' } } as LayoutNode] : []),
-      { type: 'Tag', id: `${id}-lbl`, props: { label, tone: o.tone ?? 'accent' } },
+      ...(o.sub !== undefined ? [readableChip(`${id}-sub`, o.sub)] : []),
+      readableChip(`${id}-chip`, label, (o.tone ?? 'accent') === 'accent'),
     ],
   };
 }
@@ -109,7 +126,7 @@ function catLayer(v: HallView, room: RoomSpec): LayoutNode {
         layout: { direction: 'column', gap: 3, padding: 6, align: 'center' },
         children: [
           { type: 'Label', id: 'hall-cat-line', props: { text: v.catLine, size: 'xs', color: 'text' } },
-          { type: 'Tag', id: 'hall-mood', props: { label: `${v.catName} · ${v.moodPhrase}`, tone: 'accent', size: 'sm' } },
+          { type: 'Label', id: 'hall-mood', props: { text: `${v.catName} · ${v.moodPhrase}`, size: 'xs', bold: true, color: 'text' } },
         ],
       },
       ...(room.id === 'hall' && v.owned.some((it) => it.placed) ? [{
@@ -128,12 +145,12 @@ function stageChildren(v: HallView, room: RoomSpec): LayoutNode[] {
     sign('room-sign', `${two(room.number)} · ${room.name}`, 'map.open', { x: 16, y: 14, tag: '馆图', visibleWhen: NOT_STAGE_ONLY }),
     // 右上：星砂罐 + 生成状态 + 只看它（都在画里·右上角壳层 ⚙ 在舞台之外）
     {
-      type: 'Panel', id: 'hall-hud', props: { bare: true },
-      layout: { x: 560, y: 14, width: 424, direction: 'row', gap: 8, align: 'center', justify: 'end', allowOverlap: true },
+      type: 'Panel', id: 'hall-hud', props: { bg: 'raised', edge: 'gold' },
+      layout: { x: 560, y: 14, width: 424, direction: 'row', gap: 8, padding: 6, align: 'center', justify: 'end', allowOverlap: true },
       visibleWhen: NOT_STAGE_ONLY,
       children: [
-        { type: 'Tag', id: 'hall-stardust', props: { label: `星砂 ${v.stardust}`, tone: 'accent', size: 'lg' } },
-        { type: 'Badge', id: 'hall-gen', props: { text: '离线陪伴', tone: 'dim' } },
+        { type: 'Label', id: 'hall-stardust', props: { text: `星砂 ${v.stardust}`, size: 'md', bold: true, color: 'text' } },
+        { type: 'Label', id: 'hall-gen', props: { text: '离线陪伴', size: 'xs', color: 'text' } },
         {
           type: 'Panel', id: 'hall-stage-hide', props: { bg: 'raised', edge: 'gold', action: 'ui.hide' },
           layout: { padding: 6, press3d: true, allowOverlap: true },
@@ -218,10 +235,17 @@ export function buildMap(activeRoom: RoomId): LayoutNode {
             type: 'Panel', id: `map-room-${room.id}`,
             props: { bg: 'transparent', action: 'room.enter', actionArg: room.id, accent: room.id === activeRoom },
             layout: { x: room.mapRect.x, y: room.mapRect.y, width: room.mapRect.w, height: room.mapRect.h, direction: 'column', align: 'center', justify: 'end', padding: 8, press3d: true, allowOverlap: true, ...(room.id === activeRoom ? { fx: [{ kind: 'glow', color: 'gold' as const }] } : {}) },
-            children: [{ type: 'Tag', id: `map-room-${room.id}-tag`, props: { label: `${two(room.number)} ${room.name}${room.id === activeRoom ? ' · 雪团在这里' : ''}`, tone: room.id === activeRoom ? 'accent' : 'dim' } }],
+            children: [readableChip(
+              `map-room-${room.id}-tag`,
+              `${two(room.number)} ${room.name}${room.id === activeRoom ? ' · 雪团在这里' : ''}`,
+              room.id === activeRoom,
+            )],
           })),
           sign('map-back', '回到雪团身边', 'hall.back', { x: 16, y: 14 }),
-          { type: 'Tag', id: 'map-hint', props: { label: '直接点图里的房间', tone: 'accent' }, layout: { x: 780, y: 18, allowOverlap: true } },
+          {
+            ...readableChip('map-hint', '直接点图里的房间', true),
+            layout: { x: 780, y: 18, padding: 5, radius: 10, allowOverlap: true, fx: [{ kind: 'glow', color: 'gold' }] },
+          },
         ],
       }],
     }],

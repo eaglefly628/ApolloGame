@@ -84,6 +84,16 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
       // 门只通向 adjacent
       const doorArgs = walk(stage).filter((n) => (n.props as { action?: string }).action === 'room.enter').map((n) => (n.props as { actionArg?: string }).actionArg);
       expect([...doorArgs].sort(), room.id).toEqual([...room.adjacent].sort());
+      // 画内热区必须有明确的悬停/按下反馈与实底标签，不能只靠透明矩形猜哪里可点。
+      const hotzones = walk(stage).filter((n) => {
+        const action = (n.props as { action?: string }).action;
+        return action !== undefined && (n.id.startsWith('door-') || n.id.startsWith('hot-'));
+      });
+      for (const hot of hotzones) {
+        expect(hot.layout?.press3d, `${room.id}:${hot.id} press3d`).toBe(true);
+        expect(hot.layout?.fx?.some((fx) => fx.kind === 'sheen-hover'), `${room.id}:${hot.id} sheen-hover`).toBe(true);
+        expect(walk(hot).some((n) => n.id === `${hot.id}-chip` && (n.props as { edge?: string }).edge === 'gold'), `${room.id}:${hot.id} 实底标签`).toBe(true);
+      }
       // 每个物件都是已接线动作
       const known = new Set<string>(UI_ACTIONS);
       for (const o of room.objects) expect(known.has(o.action), `${room.id}:${o.action}`).toBe(true);
@@ -99,7 +109,7 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
     const map = buildMap('garden');
     expect(validateLayoutNode(map)).toEqual([]);
     const nodes = walk(map);
-    const imageHits = nodes.filter((n) => n.id.startsWith('map-room-') && !n.id.endsWith('-tag'));
+    const imageHits = nodes.filter((n) => n.id.startsWith('map-room-') && (n.props as { action?: string }).action === 'room.enter');
     expect(imageHits).toHaveLength(10);
     expect(imageHits.map((n) => (n.props as { actionArg?: string }).actionArg)).toEqual(ROOMS.map((r) => r.id));
     expect((nodes.find((n) => n.id === 'map-room-garden')?.props as { accent?: boolean }).accent).toBe(true);

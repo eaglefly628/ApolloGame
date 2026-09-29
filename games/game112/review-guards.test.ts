@@ -71,9 +71,8 @@ describe('game112 守卫（复查门点名·撤修必红）', () => {
       return String((walk(tree).find((n) => n.id === 'hall-cat')!.props as { src: string }).src);
     };
     expect(src('lookup')).not.toBe(src('rest'));
-    // 晶球卡副标带心光进度（陪坐的可见回报）
-    // 晶球物件的副标签带心光进度（陪坐的可见回报·巡游版里是画里晶球下方的 Tag）
-    const sub = walk(buildScreen({ screen: 'scene', room: 'hall', view: s.hall() })).find((n) => n.id === 'hot-orbs-sub')!.props as { label: string };
-    expect(sub.label).toContain(`心光 ${s.hall().relations.heartlight}`);
+    // 晶球物件的实底副标签带心光进度（陪坐的可见回报·文字不直接压在场景图上）。
+    const sub = walk(buildScreen({ screen: 'scene', room: 'hall', view: s.hall() })).find((n) => n.id === 'hot-orbs-sub-label')!.props as { text: string };
+    expect(sub.text).toContain(`心光 ${s.hall().relations.heartlight}`);
   });
 });
