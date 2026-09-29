@@ -1,7 +1,7 @@
 // scripts/game112-art-requirements.mjs —— game112《星尾会客厅》美术需求台账（capability-plan §4.5 承诺·S3 落地）。
 // 台账 = 手工枚举视觉面（照 game-g 先例·行带 skinKey）：**只列有消费槽的行**（art-pipeline 红线·孤儿行禁入册）。
-//   · 猫锚图 ×2 态（rest/notice）——消费点 `games/game112/cat-art.ts` catArt() → `SKIN_OVERRIDES[skinKey]` 优先
-//     （REQ-112-ENG-11「内嵌 AI 视频播放」交付后，猫画面由它接管；本行退为回退链末端「静态锚图」）
+//   · 猫图 ×3 态（rest/notice/walk）——消费点 `games/game112/cat-art.ts` catArt() → `SKIN_OVERRIDES[skinKey]` 优先
+//     （REQ-112-ENG-11「内嵌 AI 视频播放」交付后，猫画面由它接管；这些猫图退为本地透明回退链）
 //   · 主厅热点图标 ×3（晶球/星牌桌/玩具篮）——消费点 hotspotArt()
 //   · 00 全馆剖面 + 01–10 十房背景——消费点 mapSkin()/sceneSkin()；批准图必须逐槽入账，禁孤儿图
 // 用法：npx vite-node scripts/game112-art-requirements.mjs
@@ -23,13 +23,22 @@ const CAT_ART = {
     desc: '安静坐姿（十房静态陪伴锚图）',
     pose: 'relaxed full-body seated pose, calm companion expression',
     path: '/games/game112/art/cat/xuetuan-rest-v1.png',
+    w: 1312, h: 1199,
     prompt: 'Transparent full-body sprite of Xuetuan, preserving the approved lived-in ragdoll concept: blue eyes, seal-bicolor mask, warm cream-and-white long fur, pink nose and natural asymmetry; relaxed seated resting pose; neutral multi-room lighting; no background or props.',
   },
   notice: {
     desc: '注意玩耍姿态（呼唤后或兴致高时）',
     pose: 'gentle low play crouch, chest down, paws ahead, tail raised, ears attentive',
     path: '/games/game112/art/cat/xuetuan-notice-v1.png',
+    w: 1312, h: 1199,
     prompt: 'Transparent full-body sprite of the same approved Xuetuan identity in a gentle low play crouch, chest down, paws ahead and tail raised; preserve the rest sprite proportions, palette and neutral lighting; clean alpha with no haze, background or props.',
+  },
+  walk: {
+    desc: '四帧透明行走循环（十房巡游·Live2D 风格二维动态样机）',
+    pose: 'four-frame calm side three-quarter walk cycle, equal cells and common baseline',
+    path: '/games/game112/art/cat/xuetuan-walk-cycle-v1.png',
+    w: 2172, h: 724,
+    prompt: 'Identity-preserving four-frame transparent walk-cycle strip of Xuetuan: the same fluffy seal-bicolor ragdoll cat walks calmly toward screen-right in four chronological key poses; exact face, coat markings, blue eyes and body proportions; high-fidelity hand-painted storybook realism; equal cells, common baseline and scale; no room, floor, shadow, dividers, text or watermark.',
   },
 };
 const catRows = CATS.flatMap((c) => Object.entries(CAT_ART).map(([state, art]) => ({
@@ -38,12 +47,12 @@ const catRows = CATS.flatMap((c) => Object.entries(CAT_ART).map(([state, art]) =
   slot: { entity: `cat/${c.id}`, component: 'Image', field: `src(${state})` },
   query: `${STYLE}, ${art.pose}`,
   prompt: art.prompt,
-  spec: { w: 1312, h: 1199, transparent: true },
+  spec: { w: art.w, h: art.h, transparent: true },
   desc: `${c.name}·${art.desc}`,
-  context: `用途=sprite·猫画面层静态锚图（十房猫位 hall-cat 的 Image.src·名册 Avatar）·消费=cat-art.ts catArt('${c.id}','${state}')·`
+  context: `用途=sprite·猫画面层（十房猫位 hall-cat 的 Image.src${state === 'walk' ? '·Image.sprite 横向序列帧' : '·静态互动锚图'}）·消费=cat-art.ts catArt('${c.id}','${state}')·`
     + `写回=SKIN_OVERRIDES['${SKIN_KEYS.cat(c.id, state)}']·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png`,
   status: 'approved',
-  gen: { servedPath: art.path, width: 1312, height: 1199, review: 'approved', reviewedAt: '2026-09-30' },
+  gen: { servedPath: art.path, width: art.w, height: art.h, review: 'approved', reviewedAt: '2026-09-30' },
   provenance: { generator: 'OpenAI image generation', model: 'OpenAI built-in image generation', mock: false, generatedAt: '2026-09-30' },
 })));
 

@@ -115,11 +115,14 @@ function hotzone(id: string, label: string, action: string, r: { x: number; y: n
 /** 猫：固定猫位上的一块画面层 + 台词纸条；点猫 = 轻声呼唤。 */
 function catLayer(v: HallView, room: RoomSpec): LayoutNode {
   const { w, h } = room.catSpot;
+  const noticesYou = v.pose === 'lookup' || v.relations.mood >= 70;
   return {
     type: 'Panel', id: 'hall-cat-wrap', props: { bg: 'transparent', action: 'cat.greet' },
     layout: { x: room.catSpot.x, y: room.catSpot.y, width: w, direction: 'column', gap: 4, align: 'center', allowOverlap: true },
     children: [
-      { type: 'Image', id: 'hall-cat', props: { src: catArt(v.catId, v.pose === 'lookup' || v.relations.mood >= 70 ? 'notice' : 'rest'), fit: 'contain', alt: v.catName }, layout: { width: w, height: h, fx: [{ kind: 'float', ms: 4200 }] } },
+      noticesYou
+        ? { type: 'Image', id: 'hall-cat', props: { src: catArt(v.catId, 'notice'), fit: 'contain', alt: v.catName }, layout: { width: w, height: h, fx: [{ kind: 'float', ms: 4200 }] } }
+        : { type: 'Image', id: 'hall-cat', props: { src: catArt(v.catId, 'walk'), fit: 'contain', alt: `${v.catName}正在房间里散步`, sprite: { frames: 4, fps: 5, frameAspect: 0.75 } }, layout: { width: w, height: h, anim: 'patrol', animDist: room.catPatrol.dx, animMs: room.catPatrol.ms } },
       {
         type: 'Panel', id: 'hall-cat-caption', props: { bg: 'raised', edge: 'gold' },
         layout: { direction: 'column', gap: 3, padding: 6, align: 'center' },

@@ -237,6 +237,8 @@ const APOLLO_KEYFRAMES = `
 @keyframes apollo-liq-slosh{0%,100%{transform:rotate(-1.6deg)}50%{transform:rotate(1.6deg)}}
 @keyframes apollo-liq-bub{0%{transform:translateY(0);opacity:0}12%{opacity:.8}85%{opacity:.55}100%{transform:translateY(-210px);opacity:0}}
 @keyframes apollo-tick{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+@keyframes apollo-patrol{0%,8%{transform:translateX(0) scaleX(1)}42%{transform:translateX(var(--anim-dist,96px)) scaleX(1)}46%,50%{transform:translateX(var(--anim-dist,96px)) scaleX(-1)}84%{transform:translateX(0) scaleX(-1)}88%,100%{transform:translateX(0) scaleX(1)}}
+@keyframes apollo-sprite-strip{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 [data-flipcard]{perspective:1000px;transition:transform .35s ease}
 [data-flipcard]:hover{transform:scale(1.06)}
 [data-flipcard] [data-flip-front],[data-flipcard] [data-flip-back]{transition:transform .55s cubic-bezier(.2,.75,.25,1);backface-visibility:hidden;-webkit-backface-visibility:hidden;transform-origin:50% 50%;will-change:transform}

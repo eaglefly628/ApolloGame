@@ -64,6 +64,7 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
       for (const o of room.objects) expect(inStage(o), `${room.id} object ${o.id}`).toBe(true);
       expect(room.catSpot.x + room.catSpot.w, `${room.id} cat`).toBeLessThanOrEqual(SCENE_W);
       expect(room.catSpot.y + room.catSpot.h, `${room.id} cat`).toBeLessThanOrEqual(SCENE_H);
+      expect(room.catSpot.x + room.catSpot.w + room.catPatrol.dx, `${room.id} cat patrol`).toBeLessThanOrEqual(SCENE_W);
       expect(room.objects.length, `${room.id} 至少一个物件入口`).toBeGreaterThan(0);
     }
     const seen = new Set<string>(['hall']);
@@ -104,6 +105,10 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
       expect(cat.layout?.y).toBe(room.catSpot.y);
       expect(walk(cat).find((n) => n.id === 'hall-cat')?.layout?.width).toBe(room.catSpot.w);
       expect(walk(cat).find((n) => n.id === 'hall-cat')?.layout?.height).toBe(room.catSpot.h);
+      const movingCat = walk(cat).find((n) => n.id === 'hall-cat')!;
+      expect((movingCat.props as { sprite?: { frames?: number } }).sprite?.frames, `${room.id} walk strip`).toBe(4);
+      expect(movingCat.layout?.anim, `${room.id} patrol`).toBe('patrol');
+      expect(movingCat.layout?.animDist, `${room.id} patrol dx`).toBe(room.catPatrol.dx);
       expect((cat.props as { action?: string }).action).toBe('cat.greet');
     }
   });

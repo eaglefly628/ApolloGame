@@ -28,7 +28,7 @@ const escT = (s: string, t: UITheme): string => emojifyHtml(esc(s), t.emoji);
 const num = (v: unknown, d = 0): number => { const n = Number(v); return Number.isFinite(n) ? n : d; };
 // anim 预设白名单（mountUI 注入的关键帧名）：拒绝任意字符串插入 animation。
 const ANIM_PRESETS = new Set(['fadeIn', 'slideUp', 'pop', 'shake', 'dealIn', 'flyIn', 'fadeOut', 'popOut']); // 一次性入场/退场
-const LOOP_PRESETS = new Set(['float', 'glow', 'pulse', 'spin', 'floatUp', 'marquee', 'tick']);   // 持续循环（浮动/发光/脉冲/自旋/升冒/跑马灯/steps 节拍·环境动效·infinite）
+const LOOP_PRESETS = new Set(['float', 'glow', 'pulse', 'spin', 'floatUp', 'marquee', 'tick', 'patrol']);   // 持续循环（浮动/发光/脉冲/自旋/升冒/跑马灯/steps 节拍/往返巡游·环境动效·infinite）
 // CSS 色净化（REQ-UIFX·Particles.color / ProgressBar.fillColor 等自由色串）：只留 hex/函数色/具名色合法字符，
 // 剥掉能逃出 style 声明或属性的 ; : " ' < > 等（同 safeUrl 思路·净化后再插样式）。空/全非法 → ''。
 const safeColor = (c: unknown): string => String(c ?? '').replace(/[^#a-zA-Z0-9(),.%\s-]/g, '');
@@ -174,14 +174,16 @@ function layoutStyle(c?: LayoutConstraints, t?: UITheme): string {
     const dy = c.animFrom === 'bottom' ? dist : c.animFrom === 'top' ? -dist : 0;
     p.push(`--anim-dx:${dx}px`, `--anim-dy:${dy}px`);
   }
+  // 往返巡游：复用 animDist 作为水平行程；关键帧在端点自动翻面，游戏只填数据。
+  if (c.anim === 'patrol') p.push(`--anim-dist:${num(c.animDist, 96)}px`);
   // 动画：一次性入场（both ease-out）或持续循环（infinite·环境动效）。仅白名单预设；时长/延迟强制数字。
   if (c.anim && ANIM_PRESETS.has(c.anim)) {
     p.push(`animation:apollo-${c.anim} ${num(c.animMs, 360)}ms ${c.animDelay ? `${num(c.animDelay)}ms ` : ''}both ease-out`);
   } else if (c.anim && LOOP_PRESETS.has(c.anim)) {
     // spin/marquee=匀速 linear（自旋/滚动不该忽快忽慢）；tick=steps(1,end) 硬跳节拍（印章每秒跳一下·REQ-UIFX ⑤）；
     // 其余环境动效 ease-in-out 呼吸。
-    const timing = (c.anim === 'spin' || c.anim === 'marquee') ? 'linear' : c.anim === 'tick' ? 'steps(1,end)' : 'ease-in-out';
-    const dur = c.anim === 'spin' ? 3600 : c.anim === 'marquee' ? 9000 : c.anim === 'tick' ? 1000 : 2400;
+    const timing = (c.anim === 'spin' || c.anim === 'marquee' || c.anim === 'patrol') ? 'linear' : c.anim === 'tick' ? 'steps(1,end)' : 'ease-in-out';
+    const dur = c.anim === 'spin' ? 3600 : c.anim === 'marquee' ? 9000 : c.anim === 'tick' ? 1000 : c.anim === 'patrol' ? 12000 : 2400;
     p.push(`animation:apollo-${c.anim} ${num(c.animMs, dur)}ms ${c.animDelay ? `${num(c.animDelay)}ms ` : ''}${timing} infinite`);
   }
   if (c.draggable) p.push('cursor:grab');
@@ -550,6 +552,13 @@ function renderRadioGroup(id: string, p: RadioGroupProps, ls: string, t: UITheme
 function renderImage(id: string, p: ImageProps, ls: string): string {
   const fit    = p.fit ?? 'contain';
   const radius = p.radius ?? 0;
+  if (p.sprite) {
+    const frames = Math.max(2, Math.min(24, Math.round(num(p.sprite.frames, 2))));
+    const fps = Math.max(1, Math.min(30, num(p.sprite.fps, 6)));
+    const aspect = Math.max(0.1, Math.min(4, num(p.sprite.frameAspect, 1)));
+    const duration = Math.round((frames / fps) * 1000);
+    return `<span id="${esc(id)}" role="img" aria-label="${esc(p.alt ?? '')}" data-sprite-strip="${frames}" style="display:block;position:relative;border-radius:${radius}px;${ls}"><span aria-hidden="true" style="position:absolute;left:50%;top:50%;height:100%;aspect-ratio:${aspect};overflow:hidden;transform:translate(-50%,-50%);border-radius:inherit"><img src="${esc(p.src)}" alt="" style="display:block;height:100%;width:${frames * 100}%;max-width:none;animation:apollo-sprite-strip ${duration}ms steps(${frames},end) infinite"></span></span>`;
+  }
   return `<img id="${esc(id)}" src="${esc(p.src)}" alt="${esc(p.alt ?? '')}" style="object-fit:${fit};border-radius:${radius}px;display:block;max-width:100%;${ls}">`;
 }
 

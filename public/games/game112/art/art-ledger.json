@@ -6,7 +6,7 @@
     "stylePrompt": "猫原生绘本老屋：猫尺度家具、旧木与手作灰泥、琥珀暖光衔接雾青月色；笔触可见、透视略松、生活痕迹真实；各房保留独特色相但以木色自然过渡。",
     "negativePrompt": "人类尺度家具、人物、豪华咖啡厅、霓虹太空酒吧、天堂符号、完全对称样板间、文字、水印、货币 UI"
   },
-  "count": 16,
+  "count": 17,
   "rows": [
     {
       "no": "art-01",
@@ -25,7 +25,7 @@
         "transparent": true
       },
       "desc": "雪团·安静坐姿（十房静态陪伴锚图）",
-      "context": "用途=sprite·猫画面层静态锚图（十房猫位 hall-cat 的 Image.src·名册 Avatar）·消费=cat-art.ts catArt('xuetuan','rest')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-rest']·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png",
+      "context": "用途=sprite·猫画面层（十房猫位 hall-cat 的 Image.src·静态互动锚图）·消费=cat-art.ts catArt('xuetuan','rest')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-rest']·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png",
       "status": "approved",
       "gen": {
         "servedPath": "/games/game112/art/cat/xuetuan-rest-v1.png",
@@ -58,7 +58,7 @@
         "transparent": true
       },
       "desc": "雪团·注意玩耍姿态（呼唤后或兴致高时）",
-      "context": "用途=sprite·猫画面层静态锚图（十房猫位 hall-cat 的 Image.src·名册 Avatar）·消费=cat-art.ts catArt('xuetuan','notice')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-notice']·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png",
+      "context": "用途=sprite·猫画面层（十房猫位 hall-cat 的 Image.src·静态互动锚图）·消费=cat-art.ts catArt('xuetuan','notice')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-notice']·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png",
       "status": "approved",
       "gen": {
         "servedPath": "/games/game112/art/cat/xuetuan-notice-v1.png",
@@ -501,6 +501,39 @@
         "model": "OpenAI built-in image generation",
         "mock": false,
         "generatedAt": "2026-09-27"
+      }
+    },
+    {
+      "no": "art-17",
+      "skinKey": "game112/cat/xuetuan-walk",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cat/xuetuan",
+        "component": "Image",
+        "field": "src(walk)"
+      },
+      "query": "photoreal ragdoll cat, blue eyes, seal point, long fluffy fur, warm practical light with faint cool starlight rim, lived-in old wooden cafe table, slightly asymmetric, no perfect rim light, isolated subject, transparent background, four-frame calm side three-quarter walk cycle, equal cells and common baseline",
+      "prompt": "Identity-preserving four-frame transparent walk-cycle strip of Xuetuan: the same fluffy seal-bicolor ragdoll cat walks calmly toward screen-right in four chronological key poses; exact face, coat markings, blue eyes and body proportions; high-fidelity hand-painted storybook realism; equal cells, common baseline and scale; no room, floor, shadow, dividers, text or watermark.",
+      "spec": {
+        "w": 2172,
+        "h": 724,
+        "transparent": true
+      },
+      "desc": "雪团·四帧透明行走循环（十房巡游·Live2D 风格二维动态样机）",
+      "context": "用途=sprite·猫画面层（十房猫位 hall-cat 的 Image.src·Image.sprite 横向序列帧）·消费=cat-art.ts catArt('xuetuan','walk')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-walk']·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png",
+      "status": "approved",
+      "gen": {
+        "servedPath": "/games/game112/art/cat/xuetuan-walk-cycle-v1.png",
+        "width": 2172,
+        "height": 724,
+        "review": "approved",
+        "reviewedAt": "2026-09-30"
+      },
+      "provenance": {
+        "generator": "OpenAI image generation",
+        "model": "OpenAI built-in image generation",
+        "mock": false,
+        "generatedAt": "2026-09-30"
       }
     }
   ]

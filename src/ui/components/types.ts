@@ -320,12 +320,24 @@ export interface RadioGroupProps {
   action?: string;
 }
 
-/** 图片/图标。fit 控制 object-fit；radius 为圆角 px。 */
+/** 横向序列帧图片（单行 sprite strip）。数据只声明帧数/帧率/单帧宽高比，渲染器负责裁切与循环。 */
+export interface SpriteStripProps {
+  /** 单行总帧数（运行时收敛到 2..24）。 */
+  frames: number;
+  /** 播放帧率（运行时收敛到 1..30；缺省 6）。 */
+  fps?: number;
+  /** 单帧宽/高；用于在任意外框里保持角色比例（缺省 1）。 */
+  frameAspect?: number;
+}
+
+/** 图片/图标。fit 控制 object-fit；radius 为圆角 px；sprite 把同一张横向序列条解释成循环角色动画。 */
 export interface ImageProps {
   src: string;
   alt?: string;
   fit?: 'cover' | 'contain' | 'fill';
   radius?: number;
+  /** 横向单行序列帧；纯表现、render-only，不进 sim hash。 */
+  sprite?: SpriteStripProps;
   /** 世界绑定(收编 GameShell image bind)：StringVar id·resolveBindings 时 src 取自其 value。 */
   bind?: string;
 }

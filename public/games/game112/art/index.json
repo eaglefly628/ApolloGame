@@ -76,6 +76,50 @@
       }
     },
     {
+      "id": "game112/cat/xuetuan-walk",
+      "type": "texture",
+      "status": "filled",
+      "description": "雪团高保真二维动态样机：四帧透明往返行走循环",
+      "path": "/games/game112/art/cat/xuetuan-walk-cycle-v1.png",
+      "category": "character.cat",
+      "tags": [
+        "game112",
+        "cat",
+        "xuetuan",
+        "ragdoll",
+        "walk-cycle",
+        "sprite-sheet",
+        "transparent",
+        "skin"
+      ],
+      "license": "OpenAI image-generation output (subject to OpenAI terms)",
+      "source": "gen:openai-imagegen",
+      "style": "storybook.high-fidelity-2d",
+      "spec": {
+        "format": "png",
+        "width": 2172,
+        "height": 724,
+        "transparent": true,
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "wrap": "clamp",
+        "sheet": {
+          "frameWidth": 543,
+          "frameHeight": 724,
+          "columns": 4,
+          "count": 4
+        }
+      },
+      "provenance": {
+        "generator": "OpenAI image generation",
+        "model": "OpenAI built-in image generation",
+        "prompt": "Identity-preserving four-frame transparent walk-cycle strip of Xuetuan: the same fluffy seal-bicolor ragdoll cat walks calmly toward screen-right in four chronological key poses; exact face, coat markings, blue eyes and body proportions; high-fidelity hand-painted storybook realism; equal cells, common baseline and scale; no room, floor, shadow, dividers, text or watermark.",
+        "reference": "public/games/game112/art/cat/xuetuan-rest-v1.png",
+        "mock": false,
+        "generatedAt": "2026-09-30"
+      }
+    },
+    {
       "id": "game112/map/hall",
       "type": "texture",
       "status": "filled",
