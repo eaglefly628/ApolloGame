@@ -6,6 +6,8 @@ import { setSkinOverrides } from '../../games/game112/cat-art.js';
 
 setSkinOverrides({
   'game112/scene/hall': '/games/game112/art/scene/star-tail-main-hall-bg-v2.png',
+  'game112/cat/xuetuan-rest': '/games/game112/art/cat/xuetuan-rest-v1.png',
+  'game112/cat/xuetuan-notice': '/games/game112/art/cat/xuetuan-notice-v1.png',
 });
 
 mountUI(

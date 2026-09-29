@@ -63,13 +63,14 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
       for (const d of room.doors) expect(inStage(d), `${room.id} door→${d.to}`).toBe(true);
       for (const o of room.objects) expect(inStage(o), `${room.id} object ${o.id}`).toBe(true);
       expect(room.catSpot.x + room.catSpot.w, `${room.id} cat`).toBeLessThanOrEqual(SCENE_W);
-      expect(room.catSpot.y + Math.round(room.catSpot.w * 0.75), `${room.id} cat`).toBeLessThanOrEqual(SCENE_H);
+      expect(room.catSpot.y + room.catSpot.h, `${room.id} cat`).toBeLessThanOrEqual(SCENE_H);
       expect(room.objects.length, `${room.id} 至少一个物件入口`).toBeGreaterThan(0);
     }
     const seen = new Set<string>(['hall']);
     const queue = ['hall'];
     while (queue.length > 0) for (const next of roomOf(queue.shift()!)!.adjacent) if (!seen.has(next)) { seen.add(next); queue.push(next); }
     expect(seen.size).toBe(ROOMS.length);
+    expect(new Set(ROOMS.map((room) => `${room.catSpot.w}x${room.catSpot.h}`)).size).toBeGreaterThanOrEqual(6);
   });
 
   it('巡游版铁律：房间舞台上没有画面外的菜单——没有 navbar / 顶栏 / 卡片栏；门、物件、猫、木牌都在舞台里', () => {
@@ -101,6 +102,8 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
       const cat = walk(stage).find((n) => n.id === 'hall-cat-wrap')!;
       expect(cat.layout?.x).toBe(room.catSpot.x);
       expect(cat.layout?.y).toBe(room.catSpot.y);
+      expect(walk(cat).find((n) => n.id === 'hall-cat')?.layout?.width).toBe(room.catSpot.w);
+      expect(walk(cat).find((n) => n.id === 'hall-cat')?.layout?.height).toBe(room.catSpot.h);
       expect((cat.props as { action?: string }).action).toBe('cat.greet');
     }
   });

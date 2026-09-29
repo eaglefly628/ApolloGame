@@ -18,22 +18,33 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const STYLE = 'photoreal ragdoll cat, blue eyes, seal point, long fluffy fur, warm practical light with faint cool starlight rim, '
   + 'lived-in old wooden cafe table, slightly asymmetric, no perfect rim light, isolated subject, transparent background';
 
-const catRows = CATS.flatMap((c) => [
-  ['rest', `${c.name}·趴姿待机（主厅/牌桌回退锚图·眼半眯）`, 'lying on old wooden table, paws tucked, half-closed eyes, calm'],
-  ['notice', `${c.name}·注意（兴致高时·眼睁大）`, 'lying but alert, eyes wide open, ears forward, tail tip lifted'],
-].map(([state, desc, pose]) => ({
+const CAT_ART = {
+  rest: {
+    desc: '安静坐姿（十房静态陪伴锚图）',
+    pose: 'relaxed full-body seated pose, calm companion expression',
+    path: '/games/game112/art/cat/xuetuan-rest-v1.png',
+    prompt: 'Transparent full-body sprite of Xuetuan, preserving the approved lived-in ragdoll concept: blue eyes, seal-bicolor mask, warm cream-and-white long fur, pink nose and natural asymmetry; relaxed seated resting pose; neutral multi-room lighting; no background or props.',
+  },
+  notice: {
+    desc: '注意玩耍姿态（呼唤后或兴致高时）',
+    pose: 'gentle low play crouch, chest down, paws ahead, tail raised, ears attentive',
+    path: '/games/game112/art/cat/xuetuan-notice-v1.png',
+    prompt: 'Transparent full-body sprite of the same approved Xuetuan identity in a gentle low play crouch, chest down, paws ahead and tail raised; preserve the rest sprite proportions, palette and neutral lighting; clean alpha with no haze, background or props.',
+  },
+};
+const catRows = CATS.flatMap((c) => Object.entries(CAT_ART).map(([state, art]) => ({
   skinKey: SKIN_KEYS.cat(c.id, state),
   kind: 'sprite',
   slot: { entity: `cat/${c.id}`, component: 'Image', field: `src(${state})` },
-  query: `${STYLE}, ${pose}`,
-  prompt: null,
-  spec: { w: 840, h: 600, transparent: true },
-  desc,
+  query: `${STYLE}, ${art.pose}`,
+  prompt: art.prompt,
+  spec: { w: 1312, h: 1199, transparent: true },
+  desc: `${c.name}·${art.desc}`,
   context: `用途=sprite·猫画面层静态锚图（十房猫位 hall-cat 的 Image.src·名册 Avatar）·消费=cat-art.ts catArt('${c.id}','${state}')·`
-    + `写回=SKIN_OVERRIDES['${SKIN_KEYS.cat(c.id, state)}']（未填=程序化矢量回退）·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png·`
-    + `S7 主角面 1 分的病根就是这两行还是矢量占位；owner 2026-09-28：猫系统（品种/引入/选猫/动画）重写中·本行暂缓出图等新设定`,
-  // 2026-09-28 GD/PE-112 复核：Codex 上一版把这两行标 retired，但槽仍被每间房消费（ui.ts catLayer）——有槽的行不许退役，改回 needs-art。
-  status: 'needs-art', gen: null, provenance: null,
+    + `写回=SKIN_OVERRIDES['${SKIN_KEYS.cat(c.id, state)}']·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png`,
+  status: 'approved',
+  gen: { servedPath: art.path, width: 1312, height: 1199, review: 'approved', reviewedAt: '2026-09-30' },
+  provenance: { generator: 'OpenAI image generation', model: 'OpenAI built-in image generation', mock: false, generatedAt: '2026-09-30' },
 })));
 
 const ICONS = [

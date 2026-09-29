@@ -1,6 +1,6 @@
 # Game 112《星尾会客厅》·策划档案索引
 
-> 当前阶段：**巡游版 v3（owner 2026-09-28 直令）**：旧菜单概念全部清除；所有按钮内嵌画面（门 / 物件 / 猫 / 木牌）；每房固定猫位；子功能以 Drawer 叠在当前房间上。真实 Chrome 走遍十房 + 全部 Loop-0 动作（59/59 断言·38 图·零控制台错误）。2026-09-29 主程复查补齐画内热点的悬停/按下反馈与不透明实底标签，主场景和馆图 `ui-audit` 均归零；sim 零变。
+> 当前阶段：**巡游版 v3（owner 2026-09-28 直令）**：旧菜单概念全部清除；所有按钮内嵌画面（门 / 物件 / 猫 / 木牌）；每房固定猫位；子功能以 Drawer 叠在当前房间上。真实 Chrome 走遍十房 + 全部 Loop-0 动作（59/59 断言·38 图·零控制台错误）。2026-09-29 主程复查补齐画内热点的悬停/按下反馈与不透明实底标签，主场景和馆图 `ui-audit` 均归零；2026-09-30 以已定布偶猫概念板生成雪团透明坐姿/玩耍姿态，替换程序化占位，并将十房猫位改为按景深独立标定宽高；sim 零变。
 > **S3 施工主体 = GD/PE-112 session**（owner 2026-09-24 令「游戏端你来连续实现」·本行即锁）· 基线 = S2 复查 PASS（S2-reviewer-agent·2026-09-24 03:10）。引擎三单（05/06/11）归 Lead（05/06 主程已交·等独立复查）。
 > **S3/S4 碰过的文件（边界栏·复查范围核查用）**：`games/game112/**` · `public/games/game112/{pipeline.json,art/**,probe/**}` · `docs/design/game112/{acceptance,self-check}/**` · `scripts/game112-playthrough.mjs`（S4 真浏览器试玩·49 断言·32 图）· `scripts/game112-spec-recursion.mjs`（S4 递归复核·11 条款打坏验红）· `scripts/game112-art-requirements.mjs`（美术台账推导）· `docs/design/game112/**`。十房巡游增量没有改 `src/engine/**`、`src/ui/**` 或共享 capability。 另两处越域小修待主程 review：`scripts/scoped-gate.mjs`+test（台账归类·2026-09-24）· `scripts/ui-find.mjs`+test（读拆分后 `gallery/*.ts`·owner 2026-09-28 令自修）。
 > Claude Design：任务书 `claude-design-brief.md`（v1·约束与交稿格式）+ **逐屏规格 `claude-design-spec.md`（v2·2026-09-25·S5 起点）**；出稿放 `cloud-design/`。

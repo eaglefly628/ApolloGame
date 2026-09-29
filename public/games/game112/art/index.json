@@ -2,6 +2,80 @@
   "version": 1,
   "assets": [
     {
+      "id": "game112/cat/xuetuan-rest",
+      "type": "texture",
+      "status": "filled",
+      "description": "雪团基础形象：布偶猫安静坐姿透明立绘",
+      "path": "/games/game112/art/cat/xuetuan-rest-v1.png",
+      "category": "character.cat",
+      "tags": [
+        "game112",
+        "cat",
+        "xuetuan",
+        "ragdoll",
+        "rest",
+        "transparent",
+        "skin"
+      ],
+      "license": "OpenAI image-generation output (subject to OpenAI terms)",
+      "source": "gen:openai-imagegen",
+      "style": "storybook.painterly-stylized-3d",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "transparent": true,
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "wrap": "clamp"
+      },
+      "provenance": {
+        "generator": "OpenAI image generation",
+        "model": "OpenAI built-in image generation",
+        "prompt": "Transparent full-body sprite of Xuetuan, preserving the approved lived-in ragdoll concept: blue eyes, seal-bicolor mask, warm cream-and-white long fur, pink nose and natural asymmetry; relaxed seated resting pose; neutral multi-room lighting; no background or props.",
+        "reference": "docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png",
+        "mock": false,
+        "generatedAt": "2026-09-30"
+      }
+    },
+    {
+      "id": "game112/cat/xuetuan-notice",
+      "type": "texture",
+      "status": "filled",
+      "description": "雪团基础形象：注意到玩具后的低身玩耍姿态透明立绘",
+      "path": "/games/game112/art/cat/xuetuan-notice-v1.png",
+      "category": "character.cat",
+      "tags": [
+        "game112",
+        "cat",
+        "xuetuan",
+        "ragdoll",
+        "notice",
+        "transparent",
+        "skin"
+      ],
+      "license": "OpenAI image-generation output (subject to OpenAI terms)",
+      "source": "gen:openai-imagegen",
+      "style": "storybook.painterly-stylized-3d",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "transparent": true,
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "wrap": "clamp"
+      },
+      "provenance": {
+        "generator": "OpenAI image generation",
+        "model": "OpenAI built-in image generation",
+        "prompt": "Transparent full-body sprite of the same approved Xuetuan identity in a gentle low play crouch, chest down, paws ahead and tail raised; preserve the rest sprite proportions, palette and neutral lighting; clean alpha with no haze, background or props.",
+        "reference": "docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png + xuetuan-rest-v1.png",
+        "mock": false,
+        "generatedAt": "2026-09-30"
+      }
+    },
+    {
       "id": "game112/map/hall",
       "type": "texture",
       "status": "filled",

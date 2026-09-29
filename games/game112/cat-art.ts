@@ -1,6 +1,6 @@
-// game112 —— 程序化矢量占位（S3 最低标准「成形矢量 SVG」·capability-plan §4.5）。
-// 皮肤槽：`cat.<catId>.<state>` / `icon.<hotspot>`。真美术（美术台账）就绪即让位；
-// 引擎能力「内嵌 AI 视频播放」（REQ-112-ENG-11）交付后，猫的画面由它接管，本文件只剩回退链末端。
+// game112 —— 猫/场景的 render-only 皮肤槽与程序化回退。
+// 皮肤槽：`game112/cat/<catId>-<state>` / `game112/icon/<hotspot>`。雪团已有透明 PNG 基础姿态；
+// 索引缺失或加载失败时才退回下方 SVG。未来「内嵌 AI 视频播放」接管动态表现时，本文件仍是静态海报与失败兜底。
 /**
  * 皮肤覆盖表（art-pipeline 口径「有生成图用图·无则回退程序化·兜底不丢」）：
  * 真美术到位后写进这张表（key = 台账 skinKey·值 = 已解析 URL），下面的程序化 SVG 自动让位。
@@ -36,7 +36,7 @@ const skin = (key: string, fallback: () => string): string => SKIN_OVERRIDES[key
 const svg = (body: string, w = 320, h = 240): string =>
   `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}">${body}</svg>`)}`;
 
-/** 布偶猫剪影（趴姿·蓝眼·重点色）。 */
+/** 布偶猫投影：优先本地索引里的透明 PNG；无真图才回退蓝眼重点色 SVG。 */
 export function catArt(catId: string, state: 'rest' | 'notice' = 'rest'): string {
   return skin(SKIN_KEYS.cat(catId, state), () => catSvg(state));
 }

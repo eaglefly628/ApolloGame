@@ -17,21 +17,28 @@
         "component": "Image",
         "field": "src(rest)"
       },
-      "query": "photoreal ragdoll cat, blue eyes, seal point, long fluffy fur, warm practical light with faint cool starlight rim, lived-in old wooden cafe table, slightly asymmetric, no perfect rim light, isolated subject, transparent background, lying on old wooden table, paws tucked, half-closed eyes, calm",
-      "prompt": null,
+      "query": "photoreal ragdoll cat, blue eyes, seal point, long fluffy fur, warm practical light with faint cool starlight rim, lived-in old wooden cafe table, slightly asymmetric, no perfect rim light, isolated subject, transparent background, relaxed full-body seated pose, calm companion expression",
+      "prompt": "Transparent full-body sprite of Xuetuan, preserving the approved lived-in ragdoll concept: blue eyes, seal-bicolor mask, warm cream-and-white long fur, pink nose and natural asymmetry; relaxed seated resting pose; neutral multi-room lighting; no background or props.",
       "spec": {
-        "w": 840,
-        "h": 600,
+        "w": 1312,
+        "h": 1199,
         "transparent": true
       },
-      "desc": "雪团·趴姿待机（主厅/牌桌回退锚图·眼半眯）",
-      "context": "用途=sprite·猫画面层静态锚图（十房猫位 hall-cat 的 Image.src·名册 Avatar）·消费=cat-art.ts catArt('xuetuan','rest')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-rest']（未填=程序化矢量回退）·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png·S7 主角面 1 分的病根就是这两行还是矢量占位；owner 2026-09-28：猫系统（品种/引入/选猫/动画）重写中·本行暂缓出图等新设定",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null,
-      "placeholder": {
-        "servedPath": "/games/game112/art/placeholder/cat-xuetuan-rest.svg",
-        "current": "现况=程序化矢量占位（cat-art.ts）"
+      "desc": "雪团·安静坐姿（十房静态陪伴锚图）",
+      "context": "用途=sprite·猫画面层静态锚图（十房猫位 hall-cat 的 Image.src·名册 Avatar）·消费=cat-art.ts catArt('xuetuan','rest')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-rest']·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png",
+      "status": "approved",
+      "gen": {
+        "servedPath": "/games/game112/art/cat/xuetuan-rest-v1.png",
+        "width": 1312,
+        "height": 1199,
+        "review": "approved",
+        "reviewedAt": "2026-09-30"
+      },
+      "provenance": {
+        "generator": "OpenAI image generation",
+        "model": "OpenAI built-in image generation",
+        "mock": false,
+        "generatedAt": "2026-09-30"
       }
     },
     {
@@ -43,21 +50,28 @@
         "component": "Image",
         "field": "src(notice)"
       },
-      "query": "photoreal ragdoll cat, blue eyes, seal point, long fluffy fur, warm practical light with faint cool starlight rim, lived-in old wooden cafe table, slightly asymmetric, no perfect rim light, isolated subject, transparent background, lying but alert, eyes wide open, ears forward, tail tip lifted",
-      "prompt": null,
+      "query": "photoreal ragdoll cat, blue eyes, seal point, long fluffy fur, warm practical light with faint cool starlight rim, lived-in old wooden cafe table, slightly asymmetric, no perfect rim light, isolated subject, transparent background, gentle low play crouch, chest down, paws ahead, tail raised, ears attentive",
+      "prompt": "Transparent full-body sprite of the same approved Xuetuan identity in a gentle low play crouch, chest down, paws ahead and tail raised; preserve the rest sprite proportions, palette and neutral lighting; clean alpha with no haze, background or props.",
       "spec": {
-        "w": 840,
-        "h": 600,
+        "w": 1312,
+        "h": 1199,
         "transparent": true
       },
-      "desc": "雪团·注意（兴致高时·眼睁大）",
-      "context": "用途=sprite·猫画面层静态锚图（十房猫位 hall-cat 的 Image.src·名册 Avatar）·消费=cat-art.ts catArt('xuetuan','notice')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-notice']（未填=程序化矢量回退）·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png·S7 主角面 1 分的病根就是这两行还是矢量占位；owner 2026-09-28：猫系统（品种/引入/选猫/动画）重写中·本行暂缓出图等新设定",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null,
-      "placeholder": {
-        "servedPath": "/games/game112/art/placeholder/cat-xuetuan-notice.svg",
-        "current": "现况=程序化矢量占位（cat-art.ts）"
+      "desc": "雪团·注意玩耍姿态（呼唤后或兴致高时）",
+      "context": "用途=sprite·猫画面层静态锚图（十房猫位 hall-cat 的 Image.src·名册 Avatar）·消费=cat-art.ts catArt('xuetuan','notice')·写回=SKIN_OVERRIDES['game112/cat/xuetuan-notice']·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png",
+      "status": "approved",
+      "gen": {
+        "servedPath": "/games/game112/art/cat/xuetuan-notice-v1.png",
+        "width": 1312,
+        "height": 1199,
+        "review": "approved",
+        "reviewedAt": "2026-09-30"
+      },
+      "provenance": {
+        "generator": "OpenAI image generation",
+        "model": "OpenAI built-in image generation",
+        "mock": false,
+        "generatedAt": "2026-09-30"
       }
     },
     {

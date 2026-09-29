@@ -114,8 +114,7 @@ function hotzone(id: string, label: string, action: string, r: { x: number; y: n
 
 /** 猫：固定猫位上的一块画面层 + 台词纸条；点猫 = 轻声呼唤。 */
 function catLayer(v: HallView, room: RoomSpec): LayoutNode {
-  const w = room.catSpot.w;
-  const h = Math.round(w * 0.75);
+  const { w, h } = room.catSpot;
   return {
     type: 'Panel', id: 'hall-cat-wrap', props: { bg: 'transparent', action: 'cat.greet' },
     layout: { x: room.catSpot.x, y: room.catSpot.y, width: w, direction: 'column', gap: 4, align: 'center', allowOverlap: true },
