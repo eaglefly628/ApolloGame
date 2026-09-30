@@ -131,10 +131,10 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'alt', type: 'string', describe: '替代文本' },
       { name: 'fit', type: 'enum', values: ['cover', 'contain', 'fill'], describe: 'object-fit' },
       { name: 'radius', type: 'number', describe: '圆角 px' },
-      { name: 'sprite', type: 'object', describe: '横向单行序列帧 {frames,fps?,frameAspect?}；frames 2..24，fps 1..30，frameAspect=单帧宽/高' },
+      { name: 'sprite', type: 'object', describe: '横向单行序列帧 {frames,fps?,frameAspect?,directedPatrol?}；directedPatrol={backwardSrc,turnSrc} 用独立左右行走与真实转身条，禁止镜像纸片翻转' },
       { name: 'bind', type: 'string', describe: '绑 StringVar id 取动态 src' },
     ],
-    sample: { type: 'Image', id: 's-image', props: { src: '/hero-walk-strip.png', fit: 'contain', radius: 8, sprite: { frames: 4, fps: 6, frameAspect: 0.75 } } },
+    sample: { type: 'Image', id: 's-image', props: { src: '/hero-walk-right.png', fit: 'contain', radius: 8, sprite: { frames: 4, fps: 5, frameAspect: 0.75, directedPatrol: { backwardSrc: '/hero-walk-left.png', turnSrc: '/hero-turn.png' } } } },
     tags: ['图片', '图标', '插画', '贴图', '物品图', '头图', '美术图', '序列帧', '角色动画', '走路循环'],
     demo: [
       { tab: 'tab-display', section: 't-image', note: '三种缩放与圆角' },

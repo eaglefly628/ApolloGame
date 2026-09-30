@@ -6,7 +6,7 @@ import type { LayoutNode } from './index.js';
 describe('Image.sprite 横向序列帧 + layout.anim:patrol', () => {
   const node: LayoutNode = {
     type: 'Image', id: 'cat-walk',
-    props: { src: '/cat-walk.png', alt: '猫散步', sprite: { frames: 4, fps: 5, frameAspect: 0.75 } },
+    props: { src: '/cat-walk-right.png', alt: '猫散步', sprite: { frames: 4, fps: 5, frameAspect: 0.75, directedPatrol: { backwardSrc: '/cat-walk-left.png', turnSrc: '/cat-turn.png' } } },
     layout: { width: 180, height: 160, anim: 'patrol', animDist: 96, animMs: 12000 },
   };
 
@@ -16,6 +16,11 @@ describe('Image.sprite 横向序列帧 + layout.anim:patrol', () => {
     expect(html).toContain('aspect-ratio:0.75');
     expect(html).toContain('width:400%');
     expect(html).toContain('apollo-sprite-strip 800ms steps(4,end) infinite');
+    expect(html).toContain('data-sprite-directed="patrol"');
+    expect(html).toContain('/cat-walk-left.png');
+    expect(html).toContain('/cat-turn.png');
+    expect(html).toContain('data-sprite-phase="turn-out"');
+    expect(html).toContain('data-sprite-phase="turn-home"');
   });
 
   it('patrol 复用 animDist 作行程并按数据周期往返', () => {
@@ -30,6 +35,9 @@ describe('Image.sprite 横向序列帧 + layout.anim:patrol', () => {
     const css = document.getElementById('apollo-ui-keyframes')?.textContent ?? '';
     expect(css).toContain('apollo-sprite-strip');
     expect(css).toContain('apollo-patrol');
+    expect(css).toContain('apollo-sprite-turn-out');
+    expect(css).toContain('apollo-sprite-turn-home');
+    expect(css).not.toContain('scaleX(-1)');
     teardown(); host.remove();
   });
 

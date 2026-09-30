@@ -328,6 +328,11 @@ export interface SpriteStripProps {
   fps?: number;
   /** 单帧宽/高；用于在任意外框里保持角色比例（缺省 1）。 */
   frameAspect?: number;
+  /**
+   * 有方向的往返巡游：src 是向右行走条，backwardSrc 是独立绘制的向左行走条，turnSrc 是向右→向左的真实转身条。
+   * turnSrc 会倒序用于返程转身；不允许用 scaleX/rotateY 镜像角色。
+   */
+  directedPatrol?: { backwardSrc: string; turnSrc: string };
 }
 
 /** 图片/图标。fit 控制 object-fit；radius 为圆角 px；sprite 把同一张横向序列条解释成循环角色动画。 */

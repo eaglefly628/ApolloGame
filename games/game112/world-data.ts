@@ -27,7 +27,7 @@ export interface SceneRect { readonly x: number; readonly y: number; readonly w:
 export interface RoomDoor extends SceneRect { readonly to: RoomId; readonly label: string }
 /** 画里可点的物件 = 活动入口（只复用已接线的 UI 动作·不造空入口）。 */
 export interface RoomObject extends SceneRect { readonly id: string; readonly label: string; readonly action: string; readonly arg?: string }
-/** 猫在房间里的 render-only 往返路线；位移与周期都由房间数据标定，不写进投影逻辑。 */
+/** 猫在房间里的 render-only 往返路线；行程由房间标定，周期统一 12 秒以同步方向行走、真实转身和停留。 */
 export interface CatPatrol { readonly dx: number; readonly ms: number }
 export interface RoomSpec {
   readonly id: RoomId;
@@ -51,7 +51,7 @@ export const ROOMS: readonly RoomSpec[] = [
     id: 'hall', number: 1, name: '主厅', subtitle: '暖灯下，雪团在旧木桌边等你。', scene: 'hall',
     adjacent: ['orbs', 'cardroom', 'playroom', 'garden'], mapRect: { x: 395, y: 268, w: 170, h: 123 },
     catSpot: { x: 300, y: 302, w: 210, h: 192 },
-    catPatrol: { dx: 118, ms: 13200 },
+    catPatrol: { dx: 118, ms: 12000 },
     doors: [
       { to: 'garden', label: '月庭', x: 70, y: 250, w: 150, h: 240 },
       { to: 'orbs', label: '晶球厅', x: 80, y: 36, w: 120, h: 86 },
@@ -69,7 +69,7 @@ export const ROOMS: readonly RoomSpec[] = [
     id: 'orbs', number: 2, name: '晶球厅', subtitle: '记忆在珠光蓝与烟紫之间缓慢发亮。', scene: 'orbs',
     adjacent: ['hall', 'gallery'], mapRect: { x: 148, y: 137, w: 168, h: 122 },
     catSpot: { x: 72, y: 420, w: 168, h: 154 },
-    catPatrol: { dx: 112, ms: 12800 },
+    catPatrol: { dx: 112, ms: 12000 },
     doors: [
       { to: 'hall', label: '主厅', x: 845, y: 200, w: 142, h: 290 },
       { to: 'gallery', label: '回忆廊', x: 6, y: 250, w: 86, h: 200 },
@@ -83,7 +83,7 @@ export const ROOMS: readonly RoomSpec[] = [
     id: 'cardroom', number: 3, name: '星牌室', subtitle: '低矮的牌桌正合猫爪，牌规仍在慢慢推敲。', scene: 'cardroom',
     adjacent: ['hall', 'pantry'], mapRect: { x: 583, y: 268, w: 168, h: 123 },
     catSpot: { x: 352, y: 354, w: 194, h: 177 },
-    catPatrol: { dx: 104, ms: 12600 },
+    catPatrol: { dx: 104, ms: 12000 },
     doors: [
       { to: 'hall', label: '主厅', x: 40, y: 150, w: 176, h: 278 },
       { to: 'pantry', label: '茶水间', x: 906, y: 300, w: 88, h: 220 },
@@ -97,7 +97,7 @@ export const ROOMS: readonly RoomSpec[] = [
     id: 'gallery', number: 4, name: '回忆廊', subtitle: '墙上的片段不会催你，想看时再靠近。', scene: 'gallery',
     adjacent: ['orbs', 'sunroom', 'attic'], mapRect: { x: 395, y: 137, w: 170, h: 122 },
     catSpot: { x: 176, y: 438, w: 162, h: 148 },
-    catPatrol: { dx: 86, ms: 13600 },
+    catPatrol: { dx: 86, ms: 12000 },
     doors: [
       { to: 'orbs', label: '晶球厅', x: 54, y: 190, w: 142, h: 298 },
       { to: 'sunroom', label: '月光窗厅', x: 576, y: 278, w: 98, h: 92 },
@@ -112,7 +112,7 @@ export const ROOMS: readonly RoomSpec[] = [
     id: 'playroom', number: 5, name: '玩具间', subtitle: '纸箱、抓柱和空中步道都按猫的尺度搭好。', scene: 'playroom',
     adjacent: ['hall'], mapRect: { x: 395, y: 400, w: 170, h: 123 },
     catSpot: { x: 668, y: 336, w: 224, h: 205 },
-    catPatrol: { dx: 76, ms: 11800 },
+    catPatrol: { dx: 76, ms: 12000 },
     doors: [{ to: 'hall', label: '主厅', x: 0, y: 226, w: 172, h: 204 }],
     objects: [
       { id: 'toys', label: '玩具篮', action: 'toys.open', x: 380, y: 368, w: 146, h: 86 },
@@ -123,7 +123,7 @@ export const ROOMS: readonly RoomSpec[] = [
     id: 'sunroom', number: 6, name: '月光窗厅', subtitle: '月光落在低窗软垫上，适合安静待一会儿。', scene: 'sunroom',
     adjacent: ['gallery'], mapRect: { x: 643, y: 137, w: 169, h: 122 },
     catSpot: { x: 604, y: 302, w: 158, h: 145 },
-    catPatrol: { dx: 92, ms: 14200 },
+    catPatrol: { dx: 92, ms: 12000 },
     doors: [{ to: 'gallery', label: '回忆廊', x: 54, y: 196, w: 136, h: 280 }],
     objects: [{ id: 'seat', label: '陪它看月亮', action: 'cat.sit', x: 524, y: 412, w: 296, h: 60 }],
   },
@@ -131,7 +131,7 @@ export const ROOMS: readonly RoomSpec[] = [
     id: 'pantry', number: 7, name: '茶水间', subtitle: '猫爪能拉开的抽屉里，藏着杯印与旧日气味。', scene: 'pantry',
     adjacent: ['cardroom'], mapRect: { x: 768, y: 268, w: 167, h: 123 },
     catSpot: { x: 602, y: 340, w: 184, h: 168 },
-    catPatrol: { dx: 84, ms: 12400 },
+    catPatrol: { dx: 84, ms: 12000 },
     doors: [{ to: 'cardroom', label: '星牌室', x: 48, y: 131, w: 166, h: 308 }],
     objects: [{ id: 'counter', label: '轻声叫它', action: 'cat.greet', x: 280, y: 296, w: 196, h: 130 }],
   },
@@ -139,7 +139,7 @@ export const ROOMS: readonly RoomSpec[] = [
     id: 'attic', number: 8, name: '回忆阁楼', subtitle: '旧箱和睡窝安静收着尚未讲完的故事。', scene: 'attic',
     adjacent: ['gallery'], mapRect: { x: 395, y: 20, w: 170, h: 118 },
     catSpot: { x: 108, y: 452, w: 146, h: 134 },
-    catPatrol: { dx: 72, ms: 14800 },
+    catPatrol: { dx: 72, ms: 12000 },
     doors: [{ to: 'gallery', label: '回忆廊', x: 744, y: 300, w: 250, h: 234 }],
     objects: [
       { id: 'orb', label: '看看旧回忆', action: 'memory.open', x: 492, y: 190, w: 50, h: 50 },
@@ -150,7 +150,7 @@ export const ROOMS: readonly RoomSpec[] = [
     id: 'garden', number: 9, name: '月庭', subtitle: '花径接着馆门，琥珀灯链沿猫步道伸向夜色。', scene: 'garden',
     adjacent: ['shopfront', 'hall'], mapRect: { x: 209, y: 268, w: 167, h: 123 },
     catSpot: { x: 548, y: 460, w: 154, h: 141 },
-    catPatrol: { dx: 126, ms: 11600 },
+    catPatrol: { dx: 126, ms: 12000 },
     doors: [
       { to: 'hall', label: '主厅', x: 678, y: 131, w: 120, h: 226 },
       { to: 'shopfront', label: '星砂铺', x: 354, y: 148, w: 102, h: 92 },
@@ -161,7 +161,7 @@ export const ROOMS: readonly RoomSpec[] = [
     id: 'shopfront', number: 10, name: '星砂铺', subtitle: '猫主理人的小铺子，抽屉和货架都在爪高。', scene: 'shopfront',
     adjacent: ['garden'], mapRect: { x: 24, y: 268, w: 167, h: 121 },
     catSpot: { x: 548, y: 366, w: 176, h: 161 },
-    catPatrol: { dx: 96, ms: 13000 },
+    catPatrol: { dx: 96, ms: 12000 },
     doors: [{ to: 'garden', label: '月庭', x: 60, y: 296, w: 180, h: 122 }],
     objects: [{ id: 'shopdoor', label: '看看小铺', action: 'shop.open', x: 684, y: 226, w: 90, h: 240 }],
   },

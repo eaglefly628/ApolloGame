@@ -549,7 +549,7 @@ function renderRadioGroup(id: string, p: RadioGroupProps, ls: string, t: UITheme
   return `<div id="${esc(id)}" style="display:flex;flex-direction:column;gap:8px;${ls}">${items}</div>`;
 }
 
-function renderImage(id: string, p: ImageProps, ls: string): string {
+function renderImage(id: string, p: ImageProps, ls: string, layout?: LayoutConstraints): string {
   const fit    = p.fit ?? 'contain';
   const radius = p.radius ?? 0;
   if (p.sprite) {
@@ -557,6 +557,18 @@ function renderImage(id: string, p: ImageProps, ls: string): string {
     const fps = Math.max(1, Math.min(30, num(p.sprite.fps, 6)));
     const aspect = Math.max(0.1, Math.min(4, num(p.sprite.frameAspect, 1)));
     const duration = Math.round((frames / fps) * 1000);
+    if (p.sprite.directedPatrol) {
+      const cycleMs = Math.max(4000, num(layout?.animMs, 12000));
+      const returnDelay = Math.round(cycleMs * 5 / 12);
+      const viewport = (phase: string, content: string): string => `<span data-sprite-phase="${phase}" style="position:absolute;inset:0;opacity:0;animation:apollo-phase-${phase} ${cycleMs}ms steps(1,end) infinite">${content}</span>`;
+      const strip = (src: string, extra = ''): string => `<img src="${esc(src)}" alt="" style="display:block;height:100%;width:${frames * 100}%;max-width:none;${extra}">`;
+      const forward = viewport('forward', strip(p.src, `animation:apollo-sprite-strip ${duration}ms steps(${frames},end) infinite`));
+      const turnOut = viewport('turn-out', strip(p.sprite.directedPatrol.turnSrc, `animation:apollo-sprite-turn-out ${cycleMs}ms steps(1,end) infinite`));
+      const backward = viewport('backward', strip(p.sprite.directedPatrol.backwardSrc, `animation:apollo-sprite-strip ${duration}ms steps(${frames},end) ${returnDelay}ms infinite`));
+      const turnHome = viewport('turn-home', strip(p.sprite.directedPatrol.turnSrc, `animation:apollo-sprite-turn-home ${cycleMs}ms steps(1,end) infinite`));
+      const idle = viewport('idle', strip(p.src, 'transform:translateX(0)'));
+      return `<span id="${esc(id)}" role="img" aria-label="${esc(p.alt ?? '')}" data-sprite-strip="${frames}" data-sprite-directed="patrol" style="display:block;position:relative;border-radius:${radius}px;${ls}"><span aria-hidden="true" style="position:absolute;left:50%;top:50%;height:100%;aspect-ratio:${aspect};overflow:hidden;transform:translate(-50%,-50%);border-radius:inherit">${forward}${turnOut}${backward}${turnHome}${idle}</span></span>`;
+    }
     return `<span id="${esc(id)}" role="img" aria-label="${esc(p.alt ?? '')}" data-sprite-strip="${frames}" style="display:block;position:relative;border-radius:${radius}px;${ls}"><span aria-hidden="true" style="position:absolute;left:50%;top:50%;height:100%;aspect-ratio:${aspect};overflow:hidden;transform:translate(-50%,-50%);border-radius:inherit"><img src="${esc(p.src)}" alt="" style="display:block;height:100%;width:${frames * 100}%;max-width:none;animation:apollo-sprite-strip ${duration}ms steps(${frames},end) infinite"></span></span>`;
   }
   return `<img id="${esc(id)}" src="${esc(p.src)}" alt="${esc(p.alt ?? '')}" style="object-fit:${fit};border-radius:${radius}px;display:block;max-width:100%;${ls}">`;
@@ -1326,7 +1338,7 @@ function renderDispatch(node: LayoutNode, theme: UITheme = SHELL): string {
     case 'Checkbox':   return renderCheckbox(node.id, node.props as CheckboxProps, ls, t);
     case 'Toggle':     return renderToggle(node.id, node.props as ToggleProps, ls, t);
     case 'RadioGroup': return renderRadioGroup(node.id, node.props as RadioGroupProps, ls, t);
-    case 'Image':      return renderImage(node.id, node.props as ImageProps, ls);
+    case 'Image':      return renderImage(node.id, node.props as ImageProps, ls, node.layout);
     case 'Screen':     return renderScreen(node.id, node.props as ScreenProps, node.children ?? [], t);
     case 'Slider':     return renderSlider(node.id, node.props as SliderProps, ls, t);
     case 'Table':      return renderTable(node.id, node.props as TableProps, ls, t);

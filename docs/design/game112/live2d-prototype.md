@@ -1,7 +1,7 @@
 # Game112 · 高保真二维动态猫样机
 
 日期：2026-09-30
-状态：第一版已接入运行时
+状态：第二版方向动画已接入运行时
 
 ## 当前结论
 
@@ -9,24 +9,26 @@
 
 ## 已落地
 
-- 雪团四帧透明行走条：`game112/cat/xuetuan-walk`。
-- 通用 `Image.sprite`：输入 `{frames,fps,frameAspect}`，解释横向单行序列帧；游戏不写 CSS 或 DOM。
-- 通用 `layout.anim:'patrol'`：复用 `animDist/animMs`，缓慢走出、端点翻面、走回猫位。
-- 十个房间分别用 `RoomSpec.catSpot + catPatrol` 标定尺寸、起点、行程和周期。
+- 雪团使用三条独立四帧透明动画：向右走 `game112/cat/xuetuan-walk`、独立绘制的向左走 `game112/cat/xuetuan-walk-left`、真实落爪转身 `game112/cat/xuetuan-turn`。
+- 通用 `Image.sprite`：输入 `{frames,fps,frameAspect,directedPatrol}`，解释横向单行序列帧；游戏不写 CSS 或 DOM。
+- 通用 `layout.anim:'patrol'` 不再对整张猫做 `scaleX(-1)` 或 Z/Y 轴纸片翻转。12 秒固定时间线为：向右走 4 秒 → 原地真实转身 1 秒 → 向左走 4 秒 → 倒序真实转回 1 秒 → 原地停留 2 秒。
+- 首尾都落在同一个向右接触姿态；四帧步态本身也是接触—经过—反侧接触—经过的闭环，返程使用独立左侧造型，避免花色与体积被镜像。
+- 十个房间分别用 `RoomSpec.catSpot + catPatrol.dx` 标定尺寸、起点和行程；周期统一为 12000ms 保证步态、转身、位移相位锁定。
 - 玩家呼唤猫时，行走循环停下并切换到 `notice` 姿态；sim 仍只负责姿态状态，动画只做投影。
 
 ## 视觉回退
 
-`walk` 序列条 → `notice/rest` 透明锚图 → 程序化 SVG。资源缺失时不影响游戏进入与交互。
+`walk / walk-left / turn` 方向序列条 → `notice/rest` 透明锚图 → 程序化 SVG。资源缺失时不影响游戏进入与交互。旧 `xuetuan-walk-cycle-v1.png` 保留作回滚依据，但已不再被资源索引和运行时消费。
 
 ## 与真正 Live2D 的差别
 
 真正 Cubism 方案还需要一套分层源文件与绑定数据：头、耳、眼睑、瞳孔、嘴、躯干、前后腿、尾巴、毛发遮罩，以及呼吸/眨眼/耳动/尾摆参数。当前 AI 生成的扁平 PNG 不能无损地自动变成可信的骨骼模型。
 
-下一阶段应先补 `idle` 微动作条（呼吸、眨眼、耳动、尾尖摆动）和 `turn/settle` 过渡，再决定是否把用户上传猫照片送进“分层重建 → 自动绑点 → Cubism 导出”的生成管线。房间巡游这条运行时接口不需要推倒重写。
+下一阶段应补 `idle` 微动作条（呼吸、眨眼、耳动、尾尖摆动）、更密的八至十二帧步态和 `settle` 过渡，再决定是否把用户上传猫照片送进“分层重建 → 自动绑点 → Cubism 导出”的生成管线。房间巡游这条运行时接口不需要推倒重写。
 
 ## 资产生成说明
 
 - 模式：OpenAI 内置图像生成。
-- 参考：`public/games/game112/art/cat/xuetuan-rest-v1.png`，只锁定雪团身份、花色、比例与蓝眼特征。
-- 最终提示词已随资产写入 `public/games/game112/art/index.json` 的 provenance。
+- 参考：`public/games/game112/art/cat/xuetuan-rest-v1.png` 锁定雪团身份、花色、比例与蓝眼特征；旧 V1 行走条只提供尺度与风格参考。
+- 模式：身份保持；三张序列条分别生成，不用镜像派生。
+- 最终完整提示词已随三项资产写入 `public/games/game112/art/index.json` 的 provenance。

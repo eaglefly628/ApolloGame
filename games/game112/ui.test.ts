@@ -106,9 +106,13 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
       expect(walk(cat).find((n) => n.id === 'hall-cat')?.layout?.width).toBe(room.catSpot.w);
       expect(walk(cat).find((n) => n.id === 'hall-cat')?.layout?.height).toBe(room.catSpot.h);
       const movingCat = walk(cat).find((n) => n.id === 'hall-cat')!;
-      expect((movingCat.props as { sprite?: { frames?: number } }).sprite?.frames, `${room.id} walk strip`).toBe(4);
+      const sprite = (movingCat.props as { sprite?: { frames?: number; directedPatrol?: { backwardSrc?: string; turnSrc?: string } } }).sprite;
+      expect(sprite?.frames, `${room.id} walk strip`).toBe(4);
+      expect(sprite?.directedPatrol?.backwardSrc, `${room.id} left walk strip`).toBeTruthy();
+      expect(sprite?.directedPatrol?.turnSrc, `${room.id} true turn strip`).toBeTruthy();
       expect(movingCat.layout?.anim, `${room.id} patrol`).toBe('patrol');
       expect(movingCat.layout?.animDist, `${room.id} patrol dx`).toBe(room.catPatrol.dx);
+      expect(movingCat.layout?.animMs, `${room.id} synchronized cycle`).toBe(12000);
       expect((cat.props as { action?: string }).action).toBe('cat.greet');
     }
   });

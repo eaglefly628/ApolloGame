@@ -237,8 +237,15 @@ const APOLLO_KEYFRAMES = `
 @keyframes apollo-liq-slosh{0%,100%{transform:rotate(-1.6deg)}50%{transform:rotate(1.6deg)}}
 @keyframes apollo-liq-bub{0%{transform:translateY(0);opacity:0}12%{opacity:.8}85%{opacity:.55}100%{transform:translateY(-210px);opacity:0}}
 @keyframes apollo-tick{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
-@keyframes apollo-patrol{0%,8%{transform:translateX(0) scaleX(1)}42%{transform:translateX(var(--anim-dist,96px)) scaleX(1)}46%,50%{transform:translateX(var(--anim-dist,96px)) scaleX(-1)}84%{transform:translateX(0) scaleX(-1)}88%,100%{transform:translateX(0) scaleX(1)}}
+@keyframes apollo-patrol{0%{transform:translateX(0)}33.333%,41.666%{transform:translateX(var(--anim-dist,96px))}75%,100%{transform:translateX(0)}}
 @keyframes apollo-sprite-strip{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+@keyframes apollo-phase-forward{0%,33.332%{opacity:1}33.333%,100%{opacity:0}}
+@keyframes apollo-phase-turn-out{0%,33.332%{opacity:0}33.333%,41.666%{opacity:1}41.667%,100%{opacity:0}}
+@keyframes apollo-phase-backward{0%,41.666%{opacity:0}41.667%,74.999%{opacity:1}75%,100%{opacity:0}}
+@keyframes apollo-phase-turn-home{0%,74.999%{opacity:0}75%,83.332%{opacity:1}83.333%,100%{opacity:0}}
+@keyframes apollo-phase-idle{0%,83.332%{opacity:0}83.333%,100%{opacity:1}}
+@keyframes apollo-sprite-turn-out{0%,33.332%{transform:translateX(0)}35.416%{transform:translateX(-25%)}37.5%{transform:translateX(-50%)}39.583%,100%{transform:translateX(-75%)}}
+@keyframes apollo-sprite-turn-home{0%,74.999%{transform:translateX(-75%)}77.083%{transform:translateX(-50%)}79.166%{transform:translateX(-25%)}81.25%,100%{transform:translateX(0)}}
 [data-flipcard]{perspective:1000px;transition:transform .35s ease}
 [data-flipcard]:hover{transform:scale(1.06)}
 [data-flipcard] [data-flip-front],[data-flipcard] [data-flip-back]{transition:transform .55s cubic-bezier(.2,.75,.25,1);backface-visibility:hidden;-webkit-backface-visibility:hidden;transform-origin:50% 50%;will-change:transform}

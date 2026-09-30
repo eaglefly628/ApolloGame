@@ -17,7 +17,7 @@ export function setSkinOverrides(next: Readonly<Record<string, string>>): void {
   Object.assign(SKIN_OVERRIDES, next);
 }
 export const SKIN_KEYS = {
-  cat: (catId: string, state: 'rest' | 'notice' | 'walk'): string => `game112/cat/${catId}-${state}`,
+  cat: (catId: string, state: CatArtState): string => `game112/cat/${catId}-${state}`,
   hotspot: (kind: 'orb' | 'table' | 'basket'): string => `game112/icon/${kind}`,
   /** 房间场景背景（猫画面层容器 Panel.skin·猫叠其上）——hall-framework.md §6.1 art-06 定调图槽。 */
   scene: (room: string): string => `game112/scene/${room}`,
@@ -37,8 +37,9 @@ const svg = (body: string, w = 320, h = 240): string =>
   `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}">${body}</svg>`)}`;
 
 /** 布偶猫投影：优先本地索引里的透明 PNG；无真图才回退蓝眼重点色 SVG。 */
-export function catArt(catId: string, state: 'rest' | 'notice' | 'walk' = 'rest'): string {
-  return skin(SKIN_KEYS.cat(catId, state), () => catSvg(state === 'walk' ? 'rest' : state));
+export type CatArtState = 'rest' | 'notice' | 'walk' | 'walk-left' | 'turn';
+export function catArt(catId: string, state: CatArtState = 'rest'): string {
+  return skin(SKIN_KEYS.cat(catId, state), () => catSvg(state === 'notice' ? 'notice' : 'rest'));
 }
 function catSvg(state: 'rest' | 'notice'): string {
   const eyeOpen = state === 'notice' ? 9 : 5;

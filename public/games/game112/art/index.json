@@ -79,15 +79,16 @@
       "id": "game112/cat/xuetuan-walk",
       "type": "texture",
       "status": "filled",
-      "description": "雪团高保真二维动态样机：四帧透明往返行走循环",
-      "path": "/games/game112/art/cat/xuetuan-walk-cycle-v1.png",
+      "description": "雪团高保真二维动态样机：四帧向右行走循环",
+      "path": "/games/game112/art/cat/xuetuan-walk-right-v2.png",
       "category": "character.cat",
       "tags": [
         "game112",
         "cat",
         "xuetuan",
         "ragdoll",
-        "walk-cycle",
+        "walk-right",
+        "directional-cycle",
         "sprite-sheet",
         "transparent",
         "skin"
@@ -113,8 +114,98 @@
       "provenance": {
         "generator": "OpenAI image generation",
         "model": "OpenAI built-in image generation",
-        "prompt": "Identity-preserving four-frame transparent walk-cycle strip of Xuetuan: the same fluffy seal-bicolor ragdoll cat walks calmly toward screen-right in four chronological key poses; exact face, coat markings, blue eyes and body proportions; high-fidelity hand-painted storybook realism; equal cells, common baseline and scale; no room, floor, shadow, dividers, text or watermark.",
-        "reference": "public/games/game112/art/cat/xuetuan-rest-v1.png",
+        "prompt": "Use case: identity-preserve. Asset type: production animation sprite strip for Apollo Game112. Input images: Image 1 is the exact Xuetuan identity reference; Image 2 is the previous prototype and only a scale/style reference. Subject invariant: the exact same fluffy seal-bicolor ragdoll cat, vivid blue eyes, pink nose, cream-white chest, warm taupe-brown mask and saddle, broad paws and full tail. Lock facial identity, coat markings, body proportions, fur style, camera height, scale and baseline across all frames. Style: high-fidelity hand-painted storybook realism, soft natural fur detail, slightly imperfect painterly edges, not glossy 3D and not anime. Composition: exactly four equal-width cells in one horizontal row on a single actual transparent canvas; one complete full-body cat centered in each quarter; identical scale and ground baseline; no overlap, no borders, no dividers, no labels. Lighting: soft neutral warm indoor light suitable for compositing into all rooms. Constraints: true transparent alpha; no baked floor or cast shadow; clean complete silhouette; no text, watermark, props or room. Avoid: duplicated or malformed limbs, identity drift, cropped paws or tail, motion blur, paper cutout look, mirrored copy, checkerboard or matte background. Primary request: a mathematically readable four-pose cyclic walk toward screen-right. Frame 1 right-front-paw contact, frame 2 passing pose, frame 3 opposite-paw contact, frame 4 passing pose that leads naturally back into frame 1. Keep head height and body mass stable. The transition frame 4 -> frame 1 must be smooth and loop-ready; do not make frame 4 a duplicate freeze.",
+        "reference": "public/games/game112/art/cat/xuetuan-rest-v1.png + xuetuan-walk-cycle-v1.png",
+        "mock": false,
+        "generatedAt": "2026-09-30"
+      }
+    },
+    {
+      "id": "game112/cat/xuetuan-walk-left",
+      "type": "texture",
+      "status": "filled",
+      "description": "雪团高保真二维动态样机：独立绘制的四帧向左行走循环",
+      "path": "/games/game112/art/cat/xuetuan-walk-left-v2.png",
+      "category": "character.cat",
+      "tags": [
+        "game112",
+        "cat",
+        "xuetuan",
+        "ragdoll",
+        "walk-left",
+        "directional-cycle",
+        "sprite-sheet",
+        "transparent",
+        "skin"
+      ],
+      "license": "OpenAI image-generation output (subject to OpenAI terms)",
+      "source": "gen:openai-imagegen",
+      "style": "storybook.high-fidelity-2d",
+      "spec": {
+        "format": "png",
+        "width": 2172,
+        "height": 724,
+        "transparent": true,
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "wrap": "clamp",
+        "sheet": {
+          "frameWidth": 543,
+          "frameHeight": 724,
+          "columns": 4,
+          "count": 4
+        }
+      },
+      "provenance": {
+        "generator": "OpenAI image generation",
+        "model": "OpenAI built-in image generation",
+        "prompt": "Use case: identity-preserve. Asset type: production animation sprite strip for Apollo Game112. Input images: Image 1 is the exact Xuetuan identity reference; Image 2 is the previous prototype and only a scale/style reference. Subject invariant: the exact same fluffy seal-bicolor ragdoll cat, vivid blue eyes, pink nose, cream-white chest, warm taupe-brown mask and saddle, broad paws and full tail. Lock facial identity, coat markings, body proportions, fur style, camera height, scale and baseline across all frames. Style: high-fidelity hand-painted storybook realism, soft natural fur detail, slightly imperfect painterly edges, not glossy 3D and not anime. Composition: exactly four equal-width cells in one horizontal row on a single actual transparent canvas; one complete full-body cat centered in each quarter; identical scale and ground baseline; no overlap, no borders, no dividers, no labels. Lighting: soft neutral warm indoor light suitable for compositing into all rooms. Constraints: true transparent alpha; no baked floor or cast shadow; clean complete silhouette; no text, watermark, props or room. Avoid: duplicated or malformed limbs, identity drift, cropped paws or tail, motion blur, paper cutout look, mirrored copy, checkerboard or matte background. Primary request: a mathematically readable four-pose cyclic walk toward screen-left, drawn as genuine left-facing poses rather than a mirrored copy. Frame 1 leftward front-paw contact, frame 2 passing pose, frame 3 opposite-paw contact, frame 4 passing pose that leads naturally back into frame 1. Preserve the cat's real asymmetric coat markings as seen from this side. Keep head height and body mass stable; frame 4 -> frame 1 must be smooth and loop-ready.",
+        "reference": "public/games/game112/art/cat/xuetuan-rest-v1.png + xuetuan-walk-cycle-v1.png",
+        "mock": false,
+        "generatedAt": "2026-09-30"
+      }
+    },
+    {
+      "id": "game112/cat/xuetuan-turn",
+      "type": "texture",
+      "status": "filled",
+      "description": "雪团高保真二维动态样机：四帧真实落爪转身（向右到向左，可倒序返回）",
+      "path": "/games/game112/art/cat/xuetuan-turn-v2.png",
+      "category": "character.cat",
+      "tags": [
+        "game112",
+        "cat",
+        "xuetuan",
+        "ragdoll",
+        "turn",
+        "directional-transition",
+        "sprite-sheet",
+        "transparent",
+        "skin"
+      ],
+      "license": "OpenAI image-generation output (subject to OpenAI terms)",
+      "source": "gen:openai-imagegen",
+      "style": "storybook.high-fidelity-2d",
+      "spec": {
+        "format": "png",
+        "width": 2172,
+        "height": 724,
+        "transparent": true,
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "wrap": "clamp",
+        "sheet": {
+          "frameWidth": 543,
+          "frameHeight": 724,
+          "columns": 4,
+          "count": 4
+        }
+      },
+      "provenance": {
+        "generator": "OpenAI image generation",
+        "model": "OpenAI built-in image generation",
+        "prompt": "Use case: identity-preserve. Asset type: production animation sprite strip for Apollo Game112. Input images: Image 1 is the exact Xuetuan identity reference; Image 2 is the previous prototype and only a scale/style reference. Subject invariant: the exact same fluffy seal-bicolor ragdoll cat, vivid blue eyes, pink nose, cream-white chest, warm taupe-brown mask and saddle, broad paws and full tail. Lock facial identity, coat markings, body proportions, fur style, camera height, scale and baseline across all frames. Style: high-fidelity hand-painted storybook realism, soft natural fur detail, slightly imperfect painterly edges, not glossy 3D and not anime. Composition: exactly four equal-width cells in one horizontal row on a single actual transparent canvas; one complete full-body cat centered in each quarter; identical scale and ground baseline; no overlap, no borders, no dividers, no labels. Lighting: soft neutral warm indoor light suitable for compositing into all rooms. Constraints: true transparent alpha; no baked floor or cast shadow; clean complete silhouette; no text, watermark, props or room. Avoid: duplicated or malformed limbs, identity drift, cropped paws or tail, motion blur, paper cutout look, mirrored copy, checkerboard or matte background. Primary request: an explicit four-frame physical turn from facing screen-right to facing screen-left, with all four paws staying grounded. Frame 1 is the same right-facing standing/contact pose that can follow the right-walk loop; frame 2 turns the head and shoulders toward camera; frame 3 shows a compact near-front three-quarter body pivot with paws stepping under the body; frame 4 completes a genuine left-facing standing/contact pose that can lead into the left-walk loop. Show real foreshortening and paw repositioning. Never mirror or flatten the whole cat. The same four frames must also read naturally in reverse for the return turn.",
+        "reference": "public/games/game112/art/cat/xuetuan-rest-v1.png + xuetuan-walk-cycle-v1.png",
         "mock": false,
         "generatedAt": "2026-09-30"
       }

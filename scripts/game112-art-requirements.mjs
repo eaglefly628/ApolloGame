@@ -1,6 +1,6 @@
 // scripts/game112-art-requirements.mjs —— game112《星尾会客厅》美术需求台账（capability-plan §4.5 承诺·S3 落地）。
 // 台账 = 手工枚举视觉面（照 game-g 先例·行带 skinKey）：**只列有消费槽的行**（art-pipeline 红线·孤儿行禁入册）。
-//   · 猫图 ×3 态（rest/notice/walk）——消费点 `games/game112/cat-art.ts` catArt() → `SKIN_OVERRIDES[skinKey]` 优先
+//   · 猫图 ×5 态（rest/notice/向右走/向左走/真实转身）——消费点 `games/game112/cat-art.ts` catArt() → `SKIN_OVERRIDES[skinKey]` 优先
 //     （REQ-112-ENG-11「内嵌 AI 视频播放」交付后，猫画面由它接管；这些猫图退为本地透明回退链）
 //   · 主厅热点图标 ×3（晶球/星牌桌/玩具篮）——消费点 hotspotArt()
 //   · 00 全馆剖面 + 01–10 十房背景——消费点 mapSkin()/sceneSkin()；批准图必须逐槽入账，禁孤儿图
@@ -34,13 +34,28 @@ const CAT_ART = {
     prompt: 'Transparent full-body sprite of the same approved Xuetuan identity in a gentle low play crouch, chest down, paws ahead and tail raised; preserve the rest sprite proportions, palette and neutral lighting; clean alpha with no haze, background or props.',
   },
   walk: {
-    desc: '四帧透明行走循环（十房巡游·Live2D 风格二维动态样机）',
+    desc: '四帧透明向右行走循环（十房巡游·Live2D 风格二维动态样机）',
     pose: 'four-frame calm side three-quarter walk cycle, equal cells and common baseline',
-    path: '/games/game112/art/cat/xuetuan-walk-cycle-v1.png',
+    path: '/games/game112/art/cat/xuetuan-walk-right-v2.png',
     w: 2172, h: 724,
-    prompt: 'Identity-preserving four-frame transparent walk-cycle strip of Xuetuan: the same fluffy seal-bicolor ragdoll cat walks calmly toward screen-right in four chronological key poses; exact face, coat markings, blue eyes and body proportions; high-fidelity hand-painted storybook realism; equal cells, common baseline and scale; no room, floor, shadow, dividers, text or watermark.',
+    prompt: 'Identity-preserving four-frame transparent right-walk strip of Xuetuan with contact, passing, opposite contact and passing poses; same face, coat markings, scale and baseline; loop-ready frame 4 to frame 1; never mirrored or flattened.',
+  },
+  'walk-left': {
+    desc: '独立绘制的四帧透明向左行走循环（禁止镜像右行条）',
+    pose: 'four-frame genuine screen-left walk cycle, equal cells and common baseline',
+    path: '/games/game112/art/cat/xuetuan-walk-left-v2.png',
+    w: 2172, h: 724,
+    prompt: 'Identity-preserving four-frame transparent left-walk strip of Xuetuan, genuinely redrawn from the left side with preserved asymmetric markings; contact, passing, opposite contact and passing poses; loop-ready frame 4 to frame 1; never a mirrored copy.',
+  },
+  turn: {
+    desc: '四帧真实落爪转身（向右到向左，可倒序返回）',
+    pose: 'four-frame grounded physical turn from screen-right through front three-quarter to screen-left',
+    path: '/games/game112/art/cat/xuetuan-turn-v2.png',
+    w: 2172, h: 724,
+    prompt: 'Identity-preserving four-frame transparent physical turn of Xuetuan from facing screen-right to screen-left: head and shoulders turn, paws step under the body, real foreshortening, all paws grounded; readable in reverse; never mirror or flatten the whole cat.',
   },
 };
+const MOTION_STATES = new Set(['walk', 'walk-left', 'turn']);
 const catRows = CATS.flatMap((c) => Object.entries(CAT_ART).map(([state, art]) => ({
   skinKey: SKIN_KEYS.cat(c.id, state),
   kind: 'sprite',
@@ -49,7 +64,7 @@ const catRows = CATS.flatMap((c) => Object.entries(CAT_ART).map(([state, art]) =
   prompt: art.prompt,
   spec: { w: art.w, h: art.h, transparent: true },
   desc: `${c.name}·${art.desc}`,
-  context: `用途=sprite·猫画面层（十房猫位 hall-cat 的 Image.src${state === 'walk' ? '·Image.sprite 横向序列帧' : '·静态互动锚图'}）·消费=cat-art.ts catArt('${c.id}','${state}')·`
+  context: `用途=sprite·猫画面层（十房猫位 hall-cat 的 Image.src${MOTION_STATES.has(state) ? '·Image.sprite 有方向巡游序列帧' : '·静态互动锚图'}）·消费=cat-art.ts catArt('${c.id}','${state}')·`
     + `写回=SKIN_OVERRIDES['${SKIN_KEYS.cat(c.id, state)}']·视觉锚=docs/design/game112/visual/cat-art-direction-ragdoll-v2-lived-in.png`,
   status: 'approved',
   gen: { servedPath: art.path, width: art.w, height: art.h, review: 'approved', reviewedAt: '2026-09-30' },
@@ -149,6 +164,11 @@ const LEDGER_FILE = join(ROOT, 'public', 'games', 'game112', 'art', 'art-ledger.
 const PH_DIR = join(ROOT, 'public', 'games', 'game112', 'art', 'placeholder');
 const prev = existsSync(LEDGER_FILE) ? JSON.parse(readFileSync(LEDGER_FILE, 'utf8')) : null;
 const merged = mergeLedger(prev, fresh, null);
+// 已批准猫图发生定向动画升级时，同一 skinKey 必须指向当前运行时资产；编号/history 仍由 mergeLedger 保留。
+for (const current of catRows) {
+  const row = merged.rows.find((candidate) => candidate.skinKey === current.skinKey);
+  if (row) Object.assign(row, { ...current, no: row.no, ...(row.history ? { history: row.history } : {}) });
+}
 mkdirSync(PH_DIR, { recursive: true });
 const decode = (dataUri) => decodeURIComponent(dataUri.replace(/^data:image\/svg\+xml;utf8,/, ''));
 let phN = 0;
