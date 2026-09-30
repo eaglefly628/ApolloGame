@@ -571,6 +571,9 @@ function renderImage(id: string, p: ImageProps, ls: string, layout?: LayoutConst
     }
     return `<span id="${esc(id)}" role="img" aria-label="${esc(p.alt ?? '')}" data-sprite-strip="${frames}" style="display:block;position:relative;border-radius:${radius}px;${ls}"><span aria-hidden="true" style="position:absolute;left:50%;top:50%;height:100%;aspect-ratio:${aspect};overflow:hidden;transform:translate(-50%,-50%);border-radius:inherit"><img src="${esc(p.src)}" alt="" style="display:block;height:100%;width:${frames * 100}%;max-width:none;animation:apollo-sprite-strip ${duration}ms steps(${frames},end) infinite"></span></span>`;
   }
+  if (p.meshMotion && fit === 'contain') {
+    return `<span id="${esc(id)}" role="img" aria-label="${esc(p.alt ?? '')}" data-image-mesh="${esc(JSON.stringify(p.meshMotion))}" style="display:block;position:relative;border-radius:${radius}px;${ls}"><img data-mesh-poster src="${esc(p.src)}" alt="" style="display:block;width:100%;height:100%;object-fit:contain;border-radius:inherit"><canvas data-mesh-canvas aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;border-radius:inherit"></canvas></span>`;
+  }
   return `<img id="${esc(id)}" src="${esc(p.src)}" alt="${esc(p.alt ?? '')}" style="object-fit:${fit};border-radius:${radius}px;display:block;max-width:100%;${ls}">`;
 }
 

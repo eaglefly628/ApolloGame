@@ -125,13 +125,14 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
     ],
   },
   {
-    type: 'Image', summary: '图片/图标/序列帧角色', whenToUse: '展示图片；动态图源用 bind（StringVar id → src）；透明角色行走循环用 sprite 横向序列条。', children: 'none',
+    type: 'Image', summary: '图片/图标/序列帧角色', whenToUse: '展示图片；动态图源用 bind（StringVar id → src）；透明角色待机可用 meshMotion 局部网格变形。', children: 'none',
     props: [
       { name: 'src', type: 'string', required: true, describe: '图片 URL' },
       { name: 'alt', type: 'string', describe: '替代文本' },
       { name: 'fit', type: 'enum', values: ['cover', 'contain', 'fill'], describe: 'object-fit' },
       { name: 'radius', type: 'number', describe: '圆角 px' },
       { name: 'sprite', type: 'object', describe: '横向单行序列帧 {frames,fps?,frameAspect?,directedPatrol?}；directedPatrol={backwardSrc,turnSrc} 用独立左右行走与真实转身条，禁止镜像纸片翻转' },
+      { name: 'meshMotion', type: 'object', describe: '透明单图的局部柔性循环：{cycleMs,regions:[{center,radius,move,scale?,harmonic?}]}，适合呼吸、尾尖和耳朵；WebGL 不可用时自动保留原图' },
       { name: 'bind', type: 'string', describe: '绑 StringVar id 取动态 src' },
     ],
     sample: { type: 'Image', id: 's-image', props: { src: '/hero-walk-right.png', fit: 'contain', radius: 8, sprite: { frames: 4, fps: 5, frameAspect: 0.75, directedPatrol: { backwardSrc: '/hero-walk-left.png', turnSrc: '/hero-turn.png' } } } },

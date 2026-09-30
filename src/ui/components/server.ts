@@ -9,6 +9,7 @@ import { ART_FONT_CSS } from './art-fonts.js';
 import { ART_FONT_CJK_CSS } from './art-fonts-cjk.js';
 import { SHELL } from '../shell-theme.js';
 import type { LayoutNode, HandlerMap, ActionSink, UITheme, UICursor, ToastProps, VirtualListProps, WebFont, VideoProps } from './types.js';
+import { mountImageMeshMotions } from './image-mesh-motion.js';
 
 // ── 主题指针（REQ-STYLESET M0.6·render-only）：把 UITheme.cursor 令牌转成 CSS 光标 + 按下态 scoped 规则 ──
 /** 纯函数（可单测·无 DOM）：算 base 光标 CSS 值、按下态 CSS 值（有 press 才有）、去重键（按图内容哈希）。 */
@@ -438,6 +439,8 @@ export function mountUI(
     });
   }
   initDynamics(host);
+  const imageMeshes = mountImageMeshMotions(host);
+  imageMeshes.sync();
 
   // 锚定浮层/连线（REQ-UI-锚定层①·render-only·不进 sim/hash）：每帧读目标 live rect → 把 Float 摆到锚点、Connector 连两端。
   //   目标消失/隐藏(rect 0)→自隐（不悬空）。entity=渲染器盖 `data-entity-anchor` 的实体节点·node=同树 LayoutNode id。
@@ -947,6 +950,7 @@ export function mountUI(
     ensureParticleFollowLoop(); // update 引入 Particles follow:'cursor' → 启动光标微尘 rAF（幂等）
     ensureParticleSimLoop(); // update 引入物理弹道 Particles（REQ-UIFX）→ 启动积分 rAF（幂等）
     initDynamics(host); // REQ-UICONTRACT③：reconcile 换/插进来的新动效元素（typewriter/tween/flyto/bgscroll）也初始化（幂等·标记去重）
+    imageMeshes.sync();
   };
 
   const teardown = (() => {
@@ -976,6 +980,7 @@ export function mountUI(
     host.removeEventListener('pointerleave', onFollowLeave);
     if (followRaf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(followRaf);
     if (psRaf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(psRaf); // 停物理弹道 rAF（REQ-UIFX）
+    imageMeshes.dispose();
     host.innerHTML = '';
   }) as MountHandle;
   teardown.update = update;

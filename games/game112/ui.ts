@@ -7,6 +7,7 @@
 import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { buildStarterHome } from '@zerocraft/engine/ui/starters/index.js';
 import { catArt, mapSkin, sceneSkin } from './cat-art.js';
+import { xuetuanMotion } from './cat-motion.js';
 import {
   SHOP_ITEMS, RELATIONS, CATS, TABLE_PLACEHOLDER, GAME_ID, STAGE_ONLY_FLAG,
   ROOMS, roomOf, SCENE_W, SCENE_H, type RoomId, type RoomSpec,
@@ -116,13 +117,12 @@ function hotzone(id: string, label: string, action: string, r: { x: number; y: n
 function catLayer(v: HallView, room: RoomSpec): LayoutNode {
   const { w, h } = room.catSpot;
   const noticesYou = v.pose === 'lookup' || v.relations.mood >= 70;
+  const catSrc = catArt(v.catId, noticesYou ? 'notice' : 'rest');
   return {
     type: 'Panel', id: 'hall-cat-wrap', props: { bg: 'transparent', action: 'cat.greet' },
     layout: { x: room.catSpot.x, y: room.catSpot.y, width: w, direction: 'column', gap: 4, align: 'center', allowOverlap: true },
     children: [
-      noticesYou
-        ? { type: 'Image', id: 'hall-cat', props: { src: catArt(v.catId, 'notice'), fit: 'contain', alt: `${v.catName}注意到了你` }, layout: { width: w, height: h } }
-        : { type: 'Image', id: 'hall-cat', props: { src: catArt(v.catId, 'rest'), fit: 'contain', alt: `${v.catName}安静地陪在房间里` }, layout: { width: w, height: h } },
+      { type: 'Image', id: 'hall-cat', props: { src: catSrc, fit: 'contain', alt: noticesYou ? `${v.catName}注意到了你` : `${v.catName}安静地陪在房间里`, meshMotion: xuetuanMotion(catSrc) }, layout: { width: w, height: h } },
       {
         type: 'Panel', id: 'hall-cat-caption', props: { bg: 'raised', edge: 'gold' },
         layout: { direction: 'column', gap: 3, padding: 6, align: 'center' },

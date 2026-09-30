@@ -335,6 +335,18 @@ export interface SpriteStripProps {
   directedPatrol?: { backwardSrc: string; turnSrc: string };
 }
 
+/** 单图局部网格变形。坐标和位移均为图片宽高的 0..1 比例；周期整数倍保证首尾连续。 */
+export interface ImageMeshMotion {
+  cycleMs: number;
+  regions: ReadonlyArray<{
+    center: readonly [number, number];
+    radius: readonly [number, number];
+    move: readonly [number, number];
+    scale?: readonly [number, number];
+    harmonic?: number;
+  }>;
+}
+
 /** 图片/图标。fit 控制 object-fit；radius 为圆角 px；sprite 把同一张横向序列条解释成循环角色动画。 */
 export interface ImageProps {
   src: string;
@@ -343,6 +355,8 @@ export interface ImageProps {
   radius?: number;
   /** 横向单行序列帧；纯表现、render-only，不进 sim hash。 */
   sprite?: SpriteStripProps;
+  /** 同一张透明图片上的柔性局部运动；由引擎绘制，失败时保留原图。 */
+  meshMotion?: ImageMeshMotion;
   /** 世界绑定(收编 GameShell image bind)：StringVar id·resolveBindings 时 src 取自其 value。 */
   bind?: string;
 }
