@@ -121,18 +121,8 @@ function catLayer(v: HallView, room: RoomSpec): LayoutNode {
     layout: { x: room.catSpot.x, y: room.catSpot.y, width: w, direction: 'column', gap: 4, align: 'center', allowOverlap: true },
     children: [
       noticesYou
-        ? { type: 'Image', id: 'hall-cat', props: { src: catArt(v.catId, 'notice'), fit: 'contain', alt: v.catName }, layout: { width: w, height: h, fx: [{ kind: 'float', ms: 4200 }] } }
-        : {
-          type: 'Image', id: 'hall-cat',
-          props: {
-            src: catArt(v.catId, 'walk'), fit: 'contain', alt: `${v.catName}正在房间里散步`,
-            sprite: {
-              frames: 4, fps: 5, frameAspect: 0.75,
-              directedPatrol: { backwardSrc: catArt(v.catId, 'walk-left'), turnSrc: catArt(v.catId, 'turn') },
-            },
-          },
-          layout: { width: w, height: h, anim: 'patrol', animDist: room.catPatrol.dx, animMs: room.catPatrol.ms },
-        },
+        ? { type: 'Image', id: 'hall-cat', props: { src: catArt(v.catId, 'notice'), fit: 'contain', alt: `${v.catName}注意到了你` }, layout: { width: w, height: h } }
+        : { type: 'Image', id: 'hall-cat', props: { src: catArt(v.catId, 'rest'), fit: 'contain', alt: `${v.catName}安静地陪在房间里` }, layout: { width: w, height: h } },
       {
         type: 'Panel', id: 'hall-cat-caption', props: { bg: 'raised', edge: 'gold' },
         layout: { direction: 'column', gap: 3, padding: 6, align: 'center' },
