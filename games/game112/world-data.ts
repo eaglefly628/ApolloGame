@@ -192,8 +192,8 @@ export const CATS: readonly CatCard[] = [
     cardPersona: 'cautious',
     hallLine: '它趴在旧木桌边，尾巴尖偶尔动一下。',
     poseLines: {
-      lookup: '它抬起头看了你一眼，耳朵转过来。',
-      settled: '它挪了挪，把身子往你这边靠了一点。',
+      lookup: '它听见了你，尾巴尖轻轻晃了一下。',
+      settled: '它安静地陪着你，胸前的毛轻轻起伏。',
     },
     moodPhrases: [
       { min: 70, text: '今天有点想玩' },
@@ -240,7 +240,7 @@ export interface CareAction {
 }
 export const CARE_ACTIONS: readonly CareAction[] = [
   {
-    id: 'greet', key: 'cat.greet', label: '轻声呼唤', sub: '它会抬头看你一眼', pose: 'lookup',
+    id: 'greet', key: 'cat.greet', label: '轻声呼唤', sub: '它会轻轻晃一下尾巴', pose: 'lookup',
     effects: [{ res: relId('closeness', ACTIVE_CAT), amount: 2 }, { res: relId('mood', ACTIVE_CAT), amount: 6 }, { res: STARDUST, amount: 1 }],
   },
   {

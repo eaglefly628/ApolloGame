@@ -65,12 +65,12 @@ describe('game112 守卫（复查门点名·撤修必红）', () => {
     s.act('cat.greet'); s.step();
     expect(s.hall().pose).toBe('lookup');
     expect(s.hall().catLine).toBe(cat.poseLines.lookup);
-    // 主厅 Image 随 lookup 切到「注意」态（画面真变）
+    // 没有过渡帧前，摸猫不能把坐姿瞬间替换成另一张全身姿态。
     const src = (pose: 'rest' | 'lookup'): string => {
       const tree = buildScreen({ screen: 'scene', room: 'hall', view: { ...s.hall(), pose, relations: { ...s.hall().relations, mood: 0 } } });
       return String((walk(tree).find((n) => n.id === 'hall-cat')!.props as { src: string }).src);
     };
-    expect(src('lookup')).not.toBe(src('rest'));
+    expect(src('lookup')).toBe(src('rest'));
     // 晶球物件的实底副标签带心光进度（陪坐的可见回报·文字不直接压在场景图上）。
     const sub = walk(buildScreen({ screen: 'scene', room: 'hall', view: s.hall() })).find((n) => n.id === 'hot-orbs-sub-label')!.props as { text: string };
     expect(sub.text).toContain(`心光 ${s.hall().relations.heartlight}`);

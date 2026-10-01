@@ -116,13 +116,14 @@ function hotzone(id: string, label: string, action: string, r: { x: number; y: n
 /** 猫：固定猫位上的一块画面层 + 台词纸条；点猫 = 轻声呼唤。 */
 function catLayer(v: HallView, room: RoomSpec): LayoutNode {
   const { w, h } = room.catSpot;
-  const noticesYou = v.pose === 'lookup' || v.relations.mood >= 70;
-  const catSrc = catArt(v.catId, noticesYou ? 'notice' : 'rest');
+  // 另一张「注意」图是完全不同的全身姿态；没有过渡帧时不能拿它做摸猫反馈。
+  // 陪伴动作只更新文字/数值，坐姿图保持稳定，局部动效只动胸毛与尾尖。
+  const catSrc = catArt(v.catId, 'rest');
   return {
     type: 'Panel', id: 'hall-cat-wrap', props: { bg: 'transparent', action: 'cat.greet' },
     layout: { x: room.catSpot.x, y: room.catSpot.y, width: w, direction: 'column', gap: 4, align: 'center', allowOverlap: true },
     children: [
-      { type: 'Image', id: 'hall-cat', props: { src: catSrc, fit: 'contain', alt: noticesYou ? `${v.catName}注意到了你` : `${v.catName}安静地陪在房间里`, meshMotion: xuetuanMotion(catSrc) }, layout: { width: w, height: h } },
+      { type: 'Image', id: 'hall-cat', props: { src: catSrc, fit: 'contain', alt: `${v.catName}安静地陪在房间里`, meshMotion: xuetuanMotion(catSrc) }, layout: { width: w, height: h } },
       {
         type: 'Panel', id: 'hall-cat-caption', props: { bg: 'raised', edge: 'gold' },
         layout: { direction: 'column', gap: 3, padding: 6, align: 'center' },
