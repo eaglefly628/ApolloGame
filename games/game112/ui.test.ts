@@ -23,7 +23,7 @@ const actionsIn = (n: LayoutNode): Set<string> => {
 };
 const ids = (t: LayoutNode): Set<string> => new Set(walk(t).map((n) => n.id));
 
-const SCREENS: Screen[] = ['scene', 'map', 'orbs', 'table', 'toys', 'shop', 'memory', 'settings', 'about'];
+const SCREENS: Screen[] = ['reception', 'scene', 'map', 'orbs', 'table', 'toys', 'shop', 'memory', 'settings', 'about'];
 
 function richSession(): HallSession {
   const s = new HallSession(112, { ...EMPTY_STATE, stardust: 80, relations: { [relId('heartlight', ACTIVE_CAT)]: 20 }, chapters: [CHAPTERS[0]!.id] });

@@ -6,7 +6,7 @@
     "stylePrompt": "猫原生绘本老屋：猫尺度家具、旧木与手作灰泥、琥珀暖光衔接雾青月色；笔触可见、透视略松、生活痕迹真实；各房保留独特色相但以木色自然过渡。",
     "negativePrompt": "人类尺度家具、人物、豪华咖啡厅、霓虹太空酒吧、天堂符号、完全对称样板间、文字、水印、货币 UI"
   },
-  "count": 19,
+  "count": 20,
   "rows": [
     {
       "no": "art-01",
@@ -601,6 +601,20 @@
         "mock": false,
         "generatedAt": "2026-09-30"
       }
+    },
+    {
+      "no": "art-20",
+      "skinKey": "game112/scene/reception",
+      "kind": "scene",
+      "slot": { "entity": "hall/reception-closeup", "component": "Panel", "field": "skin" },
+      "query": "Star-Tail House main hall registration alcove at the garden doorway, cat-scale worn oak counter, blank ledger, paw stamp, memory orb, amber and teal painterly light",
+      "prompt": "Same Star-Tail House main hall, close-up inside the left garden doorway; cat-height worn oak reception counter, blank hand-bound ledger, brass paw stamp, glowing frosted orb, rounded timber and cream plaster, warm amber lanterns and misty teal moonlight, painterly lived-in storybook, open lower-left floor for cat sprite, no cat, person, text, UI, wings or halo.",
+      "spec": { "w": 1484, "h": 1060, "transparent": false },
+      "desc": "主厅内猫原生前台登记近景（非第十一房）",
+      "context": "用途=scene·首次入馆前台登记的 Panel.skin；与 01 主厅左侧月庭门、木构和灯色连续；消费=cat-art.ts sceneSkin('reception')；00 剖面拓扑不变",
+      "status": "filled",
+      "gen": { "servedPath": "/games/game112/art/scene/star-tail-reception-closeup-v1.png", "width": 1484, "height": 1060, "review": "pending" },
+      "provenance": { "generator": "OpenAI image generation", "model": "OpenAI built-in image generation", "mock": false, "generatedAt": "2026-10-03" }
     }
   ]
 }

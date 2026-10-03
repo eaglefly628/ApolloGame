@@ -15,9 +15,11 @@ import { buildScreen, UI_ACTIONS, type Screen, type UiAction } from './ui.js';
 import { GAME_ID, TICK_MS, OFFLINE_ACK_KEY, STAGE_HIDE_KEY, STAGE_SHOW_KEY, offlineTierOf, offlineKey, buyKey, placeKey, shopItemOf, chapterOf, roomOf, type RoomId } from './world-data.js';
 import { EMPTY_STATE, type PersistedState } from './blueprint.js';
 import { setSkinOverrides } from './cat-art.js';
+import { addEntry, EMPTY_DRAFT, EMPTY_REGISTRY, normalizeRegistry, removeEntry, WHEREABOUTS, type CatRegistry, type RegistrationDraft } from './registration.js';
 
 export const SAVE_CODEC: SaveCodec = { gameId: GAME_ID, schema: 1 };
 export const SAVE_SLOT = 'main';
+export const REGISTRY_SLOT = 'registry';
 
 /** 壳层钩子（launcher 契约的 mount 第二参·可选）。 */
 export interface HostHooks { exit: () => void }
@@ -37,6 +39,9 @@ export function routeAction(action: UiAction | string, arg?: string): Route | un
       return room !== undefined ? { screen: 'scene', room: room.id } : undefined;
     }
     case 'orbs.open': return { screen: 'orbs' };
+    case 'registration.open': return { screen: 'reception' };
+    case 'registration.skip': return { screen: 'scene', room: 'hall' };
+    case 'registration.name': case 'registration.note': case 'registration.whereabouts': case 'registration.save': case 'registration.remove': return {};
     case 'table.open': return { screen: 'table' };
     case 'toys.open': return { screen: 'toys' };
     case 'shop.open': return { screen: 'shop' };
@@ -89,6 +94,8 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
   let screen: Screen = 'home';
   let room: RoomId = 'hall';
   let reading: string | undefined;
+  let registry: CatRegistry = EMPTY_REGISTRY;
+  let draft: RegistrationDraft = EMPTY_DRAFT;
   let timer: ReturnType<typeof setInterval> | undefined;
   let lastView = '';
 
@@ -102,6 +109,8 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
       reading: session !== undefined && reading !== undefined ? session.reading(reading) : undefined,
       room,
       canExit: host !== undefined,
+      registry,
+      draft,
     }), { flag: (id) => (world !== undefined ? flagOn(world, id) : false) });
     if (handle) handle.update(node);
     else handle = mountUI(container, node, handlers, apolloBrocade);
@@ -111,6 +120,9 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
     if (session === undefined) return;
     void save.write(SAVE_SLOT, sealEnvelope(session.persisted(), SAVE_CODEC, now())).catch(() => { /* 存不进去不打断陪伴 */ });
   };
+  const persistRegistry = (): void => {
+    void save.write(REGISTRY_SLOT, sealEnvelope(registry, SAVE_CODEC, now())).catch(() => { /* 私人草稿保存失败不打断游戏 */ });
+  };
 
   const start = async (): Promise<void> => {
     let initial = EMPTY_STATE;
@@ -119,12 +131,16 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
       const env = await save.read(SAVE_SLOT);
       if (env !== null) { initial = normalizeState(openEnvelope(env, SAVE_CODEC)); savedAt = env.savedAt; }
     } catch { /* 坏档 → 空档；不让技术失败变成「猫失败」 */ }
+    try {
+      const env = await save.read(REGISTRY_SLOT);
+      if (env !== null) registry = normalizeRegistry(openEnvelope(env, SAVE_CODEC));
+    } catch { /* 名册坏档不阻止进入主厅 */ }
     if (disposed) return;
     session = new HallSession(opts.seed ?? seedFrom(now), initial);
     // 离线「田螺姑娘」：宿主算离开时长 → 分档 key；sim 只见 Signal，永不见墙钟。
     const tier = savedAt !== undefined ? offlineTierOf(now() - savedAt) : undefined;
     if (tier !== undefined) session.act(offlineKey(tier));
-    screen = 'scene';
+    screen = registry.visited ? 'scene' : 'reception';
     room = 'hall';
     timer = setInterval(() => {
       if (session === undefined || disposed) return;
@@ -145,6 +161,19 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
   const handlers: HandlerMap = Object.fromEntries(UI_ACTIONS.map((a) => [a, (arg?: string): void => {
     if (a === 'home.exit') { host?.exit(); return; }
     if (a === 'home.enter' && session === undefined) { void start(); return; }
+    if (a === 'registration.name') { draft = { ...draft, name: (arg ?? '').slice(0, 24) }; render(); return; }
+    if (a === 'registration.note') { draft = { ...draft, note: (arg ?? '').slice(0, 120) }; render(); return; }
+    if (a === 'registration.whereabouts') {
+      if (WHEREABOUTS.some((s) => s.id === arg)) draft = { ...draft, whereabouts: arg as RegistrationDraft['whereabouts'] };
+      render(); return;
+    }
+    if (a === 'registration.save') {
+      const next = addEntry(registry, draft);
+      if (next !== undefined) { registry = next; draft = EMPTY_DRAFT; persistRegistry(); screen = 'scene'; room = 'hall'; }
+      render(); return;
+    }
+    if (a === 'registration.skip') { registry = { ...registry, visited: true }; persistRegistry(); }
+    if (a === 'registration.remove') { registry = removeEntry(registry, arg ?? ''); persistRegistry(); render(); return; }
     const r = routeAction(a, arg);
     if (r === undefined) return;
     if (r.key !== undefined && session !== undefined) { session.act(r.key, r.x !== undefined ? { x: r.x } : undefined); persist(); }
@@ -159,6 +188,7 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
     disposed = true;
     if (timer !== undefined) clearInterval(timer);
     persist();
+    if (registry.visited) persistRegistry();
     handle?.();
   };
 }

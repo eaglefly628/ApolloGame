@@ -2,6 +2,67 @@
   "version": 1,
   "assets": [
     {
+      "id": "game112/legacy/xuetuan-walk-cycle-v1",
+      "type": "texture",
+      "status": "filled",
+      "description": "旧版雪团行走序列帧，已由独立左右行走与转身图替代；仅留档",
+      "path": "/games/game112/art/cat/xuetuan-walk-cycle-v1.png",
+      "category": "archive.character.cat",
+      "tags": ["game112", "legacy", "not-runtime"],
+      "license": "Project-owned legacy asset; original generation terms should be rechecked before reuse",
+      "source": "repo:2e5c88507",
+      "spec": { "format": "png", "width": 2172, "height": 724, "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "provenance": { "generator": "legacy repository artifact", "gitCommit": "2e5c88507", "notes": "Source image retained for comparison; not a current catArt skin key." }
+    },
+    {
+      "id": "game112/legacy/xuetuan-rest-placeholder",
+      "type": "texture",
+      "status": "filled",
+      "description": "早期手绘 SVG 雪团占位图，仅留档",
+      "path": "/games/game112/art/placeholder/cat-xuetuan-rest.svg",
+      "category": "archive.placeholder",
+      "tags": ["game112", "legacy", "not-runtime"],
+      "license": "Project source artifact",
+      "source": "repo:b49fe3695",
+      "spec": { "format": "svg", "width": 320, "height": 240, "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "provenance": { "generator": "repository SVG illustration", "gitCommit": "b49fe3695", "notes": "Not a current catArt skin key." }
+    },
+    {
+      "id": "game112/legacy/xuetuan-notice-placeholder",
+      "type": "texture",
+      "status": "filled",
+      "description": "早期手绘 SVG 雪团注意姿占位图，仅留档",
+      "path": "/games/game112/art/placeholder/cat-xuetuan-notice.svg",
+      "category": "archive.placeholder",
+      "tags": ["game112", "legacy", "not-runtime"],
+      "license": "Project source artifact",
+      "source": "repo:b49fe3695",
+      "spec": { "format": "svg", "width": 320, "height": 240, "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "provenance": { "generator": "repository SVG illustration", "gitCommit": "b49fe3695", "notes": "Not a current catArt skin key." }
+    },
+    {
+      "id": "game112/scene/reception",
+      "type": "texture",
+      "status": "filled",
+      "description": "主厅月庭门内的猫尺度前台近景，不新增馆图房间",
+      "path": "/games/game112/art/scene/star-tail-reception-closeup-v1.png",
+      "category": "background.scene",
+      "tags": ["game112", "scene", "reception", "hall", "storybook", "cat-native", "skin"],
+      "license": "OpenAI image-generation output (subject to OpenAI terms)",
+      "source": "gen:openai-imagegen",
+      "style": "storybook.painterly.connected-v2",
+      "spec": { "format": "png", "width": 1484, "height": 1060, "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "provenance": {
+        "generator": "openai-imagegen",
+        "model": "OpenAI built-in image generation",
+        "prompt": "Same Star-Tail House main hall, close-up inside the left garden doorway; cat-height worn oak reception counter, blank hand-bound ledger, brass paw stamp, glowing frosted orb, rounded timber and cream plaster, warm amber lanterns and misty teal moonlight, painterly lived-in storybook, open lower-left floor for cat sprite, no cat, person, text, UI, wings or halo.",
+        "reference": "public/games/game112/art/scene/star-tail-main-hall-bg-v2.png",
+        "mock": false,
+        "generatedAt": "2026-10-03",
+        "notes": "主厅同空间近景；首次登记入口。1484x1060 原生输出，运行时 cover。"
+      }
+    },
+    {
       "id": "game112/cat/xuetuan-rest",
       "type": "texture",
       "status": "filled",

@@ -59,6 +59,7 @@ export const ROOMS: readonly RoomSpec[] = [
       { to: 'cardroom', label: '星牌室', x: 906, y: 300, w: 88, h: 220 },
     ],
     objects: [
+      { id: 'reception', label: '前台登记', action: 'registration.open', x: 18, y: 512, w: 160, h: 74 },
       { id: 'orbs', label: '忆光晶球', action: 'orbs.open', x: 768, y: 200, w: 84, h: 80 },
       { id: 'table', label: '星牌桌', action: 'table.open', x: 690, y: 424, w: 176, h: 72 },
       { id: 'toys', label: '玩具篮', action: 'toys.open', x: 862, y: 452, w: 116, h: 86 },

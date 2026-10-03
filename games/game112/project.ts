@@ -49,7 +49,7 @@ export function offlineEventTexts(world: IWorld): string[] {
 
 // ── 视图 POD ────────────────────────────────────────────────────────────
 export interface OwnedItemView { readonly id: string; readonly name: string; readonly kind: string; readonly count: number; readonly placed: boolean }
-export interface ChapterView { readonly id: string; readonly title: string; readonly hint: string; readonly unlocked: boolean; readonly need: number; readonly sensitive: boolean }
+export interface ChapterView { readonly id: string; readonly title: string; readonly hint: string; readonly unlocked: boolean; readonly read: boolean; readonly need: number; readonly sensitive: boolean }
 export interface ReadingView {
   readonly chapterId: string;
   readonly title: string;
@@ -100,7 +100,10 @@ export function buildHallView(world: IWorld): HallView {
     owned: SHOP_ITEMS
       .map((it) => ({ id: it.id, name: it.name, kind: it.kind, count: resourceOf(world, itemCount(it.id)), placed: flagOn(world, placedFlag(it.id)) }))
       .filter((x) => x.count > 0),
-    chapters: CHAPTERS.map((c) => ({ id: c.id, title: c.title, hint: c.hint, unlocked: flagOn(world, chapterFlag(c.id)), need: c.unlockHeartlight, sensitive: c.sensitive })),
+    chapters: CHAPTERS.map((c) => {
+      const node = c.nodes[stateOf(world, chapterFsm(c.id))];
+      return { id: c.id, title: c.title, hint: c.hint, unlocked: flagOn(world, chapterFlag(c.id)), read: node?.kind === 'line' && node.next === null, need: c.unlockHeartlight, sensitive: c.sensitive };
+    }),
     offlineEvents: offlineEventTexts(world),
     stageOnly: flagOn(world, STAGE_ONLY_FLAG),
   };

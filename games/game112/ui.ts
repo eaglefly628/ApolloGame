@@ -13,9 +13,10 @@ import {
   ROOMS, roomOf, SCENE_W, SCENE_H, type RoomId, type RoomSpec,
 } from './world-data.js';
 import type { HallView, ReadingView } from './project.js';
+import { WHEREABOUTS, type CatRegistry, type RegistrationDraft } from './registration.js';
 
 /** 屏：scene = 当前房间（唯一的「主屏」）；map = 馆图；其余 = 叠在房间上的 Drawer。 */
-export type Screen = 'home' | 'scene' | 'map' | 'orbs' | 'table' | 'toys' | 'shop' | 'memory' | 'reading' | 'settings' | 'about';
+export type Screen = 'home' | 'reception' | 'scene' | 'map' | 'orbs' | 'table' | 'toys' | 'shop' | 'memory' | 'reading' | 'settings' | 'about';
 
 /** 本游戏 UI 发出的全部 action 信号（宿主接线的单一真相·测试对账用）。 */
 export const UI_ACTIONS = [
@@ -24,6 +25,7 @@ export const UI_ACTIONS = [
   'cat.greet', 'cat.sit', 'offline.ack', 'ui.hide', 'ui.show',
   'shop.buy', 'decor.place',
   'memory.read', 'memory.advance', 'memory.choose', 'memory.back',
+  'registration.open', 'registration.name', 'registration.note', 'registration.whereabouts', 'registration.save', 'registration.skip', 'registration.remove',
 ] as const;
 export type UiAction = (typeof UI_ACTIONS)[number];
 
@@ -75,12 +77,72 @@ export function buildHome(o: { canExit?: boolean } = {}): LayoutNode {
   });
 }
 
+/** 前台是主厅月庭门内的同一角落，不占馆图新房间。名册是本机私有草稿，不等于猫已到达喵星。 */
+export function buildReception(registry: CatRegistry, draft: RegistrationDraft): LayoutNode {
+  const scene = sceneSkin('reception');
+  const caption = draft.whereabouts === 'missing'
+    ? '寻猫灯会一直留着；这里不会说它已经离开。'
+    : '只记下你亲手写的内容，不替它编造经历。';
+  return {
+    type: 'Screen', id: 'reception-screen', props: { bg: 'ink' },
+    children: [{
+      type: 'Panel', id: 'reception-frame', props: { bare: true },
+      layout: { direction: 'column', align: 'center', padding: 10 },
+      children: [{
+        type: 'Panel', id: 'reception-stage', props: { bg: 'sunken', vignette: true, ...(scene !== undefined ? { skin: scene } : {}) },
+        layout: { width: SCENE_W, height: SCENE_H, radius: 18 },
+        children: [
+          sign('reception-title', '星尾馆 · 前台登记', 'registration.skip', { x: 18, y: 16, tag: '主厅入口' }),
+          {
+            type: 'Panel', id: 'reception-cat', props: { bg: 'transparent' },
+            layout: { x: 140, y: 490, width: 126, direction: 'column', align: 'center', allowOverlap: true },
+            children: [
+              { type: 'Image', id: 'reception-xuetuan', props: { src: catArt('xuetuan', 'rest'), fit: 'contain', alt: '雪团在前台旁边安静等你' }, layout: { width: 126, height: 116 } },
+              readableChip('reception-cat-chip', '雪团 · 星尾馆的迎客猫'),
+            ],
+          },
+          {
+            type: 'Panel', id: 'reception-ledger', props: { bg: 'raised', edge: 'gold' },
+            layout: { x: 580, y: 116, width: 392, direction: 'column', gap: 8, padding: 16, radius: 16, allowOverlap: true },
+            children: [
+              heading('reception-heading', '先为它留一页'),
+              subLabel('reception-intro', '离开的、仍在寻找的、还在身边的猫，都可以登记。也可以先逛逛。'),
+              { type: 'Input', id: 'reception-name', props: { placeholder: '猫咪的名字（最多 24 字）', value: draft.name, action: 'registration.name' } },
+              { type: 'Panel', id: 'reception-statuses', props: { bare: true }, layout: { direction: 'row', gap: 5 },
+                children: WHEREABOUTS.map((s): LayoutNode => ({ type: 'Button', id: `reception-status-${s.id}`, props: { label: s.label, kind: draft.whereabouts === s.id ? 'primary' : 'ghost', action: 'registration.whereabouts', actionArg: s.id } })) },
+              subLabel('reception-status-explanation', WHEREABOUTS.find((s) => s.id === draft.whereabouts)?.explanation ?? ''),
+              { type: 'Input', id: 'reception-note', props: { placeholder: '想记住的一句话（可不填，最多 120 字）', value: draft.note, action: 'registration.note' } },
+              subLabel('reception-caption', caption),
+              { type: 'Panel', id: 'reception-actions', props: { bare: true }, layout: { direction: 'row', gap: 8, align: 'center' },
+                children: [
+                  { type: 'Button', id: 'reception-save', props: { label: '记在这台设备上', kind: 'primary', action: 'registration.save', disabled: draft.name.trim().length === 0 || registry.entries.length >= 32 } },
+                  { type: 'Button', id: 'reception-skip', props: { label: '先去看看', kind: 'ghost', action: 'registration.skip' } },
+                ] },
+              subLabel('reception-private', '目前不上传照片，也不会生成这只猫的形象；登记信息只保存在本机。'),
+            ],
+          },
+        ],
+      }],
+    }],
+  };
+}
+
 // ── ② 房间舞台（巡游版主屏·全部按钮在画里）────────────────────────────────
 /** 晶球物件副标 = 心光进度（陪坐的可见回报 + 「心光是什么」的现场解释·八问第 2/6 问）。纯查 view。 */
 function orbSub(v: HallView): string {
   const locked = v.chapters.filter((c) => !c.unlocked).map((c) => c.need).sort((a, b) => a - b)[0];
   if (locked === undefined) return `心光 ${v.relations.heartlight} · 看它的过去`;
   return `心光 ${v.relations.heartlight} · 还差 ${Math.max(0, locked - v.relations.heartlight)} 就发光`;
+}
+
+/** 初版闭环的下一步提示：不加奖励惩罚，只把已存在的动作与回忆线串起来。 */
+export function loopPrompt(v: HallView): { label: string; detail: string; action: string } {
+  const first = v.chapters[0];
+  if (first !== undefined && !first.unlocked) return { label: '陪它坐坐', detail: `心光 ${v.relations.heartlight}/${first.need} · 慢慢听见它的故事`, action: 'cat.sit' };
+  if (first !== undefined && !first.read) return { label: '看看回忆', detail: '忆光已亮 · 可以随时退出', action: 'memory.open' };
+  if (v.owned.length === 0) return { label: '逛星砂铺', detail: `星砂 ${v.stardust} · 换一件留在馆里的小东西`, action: 'shop.open' };
+  if (v.owned.some((o) => !o.placed)) return { label: '布置新物件', detail: '把刚带回来的东西放进主厅', action: 'toys.open' };
+  return { label: '继续陪它', detail: '巡游十间猫房，想回来时再回来', action: 'cat.sit' };
 }
 
 /** 热区标签：实底小木牌兜住复杂场景，避免文字直接压在亮灯、木纹或花丛上。 */
@@ -143,6 +205,7 @@ function catLayer(v: HallView, room: RoomSpec): LayoutNode {
 
 /** 舞台上的全部东西（房间画 + 木牌 + 星砂罐 + 门 + 物件 + 猫 + 回馆纸条 + 沉浸出口）。 */
 function stageChildren(v: HallView, room: RoomSpec): LayoutNode[] {
+  const next = loopPrompt(v);
   return [
     // 左上：房名木牌 = 馆图入口（画里的东西·不是菜单）
     sign('room-sign', `${two(room.number)} · ${room.name}`, 'map.open', { x: 16, y: 14, tag: '馆图', visibleWhen: NOT_STAGE_ONLY }),
@@ -189,6 +252,7 @@ function stageChildren(v: HallView, room: RoomSpec): LayoutNode[] {
       ...(o.action === 'orbs.open' ? { sub: orbSub(v) } : {}),
       tone: 'normal',
     })),
+    ...(room.id === 'hall' ? [hotzone('hall-loop-next', next.label, next.action, { x: 346, y: 616, w: 306, h: 78 }, { sub: next.detail, tone: 'normal' })] : []),
     // 猫（固定猫位·点猫 = 呼唤）
     catLayer(v, room),
     // 沉浸模式里唯一的键（只在 Flag 开时在树里·由 resolveBindings 剔/留）
@@ -260,7 +324,7 @@ function drawer(id: string, title: string, children: LayoutNode[], side: 'right'
   return { type: 'Drawer', id, props: { side, title, closeAction }, children };
 }
 
-export function buildOrbs(v: HallView): LayoutNode {
+export function buildOrbs(v: HallView, registry: CatRegistry): LayoutNode {
   const cat = CATS.find((c) => c.id === v.catId);
   return drawer('orbs-drawer', '晶球厅 · 猫咪名册', [
     subLabel('orbs-sub', '每一颗晶球都是一个记忆入口，不是囚禁灵魂。'),
@@ -299,9 +363,19 @@ export function buildOrbs(v: HallView): LayoutNode {
           type: 'Panel', id: 'orb-empty', props: { bg: 'sunken', dashed: true },
           layout: { direction: 'column', gap: 8, padding: 14, align: 'center', justify: 'center' },
           children: [
-            { type: 'Label', id: 'orb-empty-title', props: { text: '接回自己的猫', size: 'lg', bold: true, color: 'text' } },
-            subLabel('orb-empty-sub', '上传照片的功能等引擎的「AI 视频生成」能力就绪后开放。'),
-            { type: 'Button', id: 'orb-empty-later', props: { label: '稍后再说', kind: 'quiet', action: 'later' } },
+            { type: 'Label', id: 'orb-empty-title', props: { text: '我的猫咪登记簿', size: 'lg', bold: true, color: 'text' } },
+            subLabel('orb-empty-sub', '这只是本机保存的名字与回忆；上传照片和数字形象尚未开放。'),
+            ...registry.entries.map((e): LayoutNode => ({
+              type: 'Panel', id: `registered-${e.id}`, props: { bg: 'raised' },
+              layout: { direction: 'column', gap: 5, padding: 10 },
+              children: [
+                { type: 'Label', id: `registered-${e.id}-name`, props: { text: e.name, size: 'md', bold: true, color: 'text' } },
+                subLabel(`registered-${e.id}-state`, WHEREABOUTS.find((s) => s.id === e.whereabouts)?.label ?? ''),
+                ...(e.note ? [subLabel(`registered-${e.id}-note`, e.note)] : []),
+                { type: 'Button', id: `registered-${e.id}-remove`, props: { label: '删除这页', kind: 'ghost', action: 'registration.remove', actionArg: e.id } },
+              ],
+            })),
+            { type: 'Button', id: 'orb-registration-open', props: { label: '去前台登记', kind: 'primary', action: 'registration.open' } },
           ],
         },
       ],
@@ -478,19 +552,20 @@ export function buildAbout(): LayoutNode {
 }
 
 /** 屏 → 树（宿主唯一入口·纯查表）。子功能 = 当前房间舞台 + 叠层。 */
-export function buildScreen(o: { screen: Screen; view?: HallView; reading?: ReadingView; room?: RoomId; canExit?: boolean }): LayoutNode {
+export function buildScreen(o: { screen: Screen; view?: HallView; reading?: ReadingView; room?: RoomId; canExit?: boolean; registry?: CatRegistry; draft?: RegistrationDraft }): LayoutNode {
   const v = o.view;
   const room: RoomId = o.room ?? 'hall';
   switch (o.screen) {
     case 'home': return buildHome({ canExit: o.canExit });
     case 'about': return buildAbout();
+    case 'reception': return buildReception(o.registry ?? { visited: false, entries: [] }, o.draft ?? { name: '', whereabouts: 'undisclosed', note: '' });
     default: break;
   }
   if (v === undefined) return buildHome({ canExit: o.canExit });
   switch (o.screen) {
     case 'scene': return buildScene(v, room);
     case 'map': return buildMap(room);
-    case 'orbs': return buildScene(v, room, buildOrbs(v));
+    case 'orbs': return buildScene(v, room, buildOrbs(v, o.registry ?? { visited: false, entries: [] }));
     case 'table': return buildScene(v, room, buildTable(v));
     case 'toys': return buildScene(v, room, buildToys(v));
     case 'shop': return buildScene(v, room, buildShop(v));
