@@ -13,6 +13,7 @@
 1. [`brief.md`](./brief.md) — 一页立项卡，快速确认方向。
 2. [`gdd.md`](./gdd.md) — 完整策划总纲，玩法、叙事、经济、照片上传和视频技术方案。
 3. [`menu-flow.md`](./menu-flow.md) — 全部菜单、页面、导航与异常流程，交给产品/UI 设计使用。
+   [`cat-gallery-text-database-v1.md`](./cat-gallery-text-database-v1.md) — Gallery 第八功能位的猫咪文字库审核说明；完整条目与轴数据见 [`cat-gallery.v1.json`](../../../games/game112/cat-gallery.v1.json)，图片库尚未生成。
 4. [`ui-visual-handoff.md`](./ui-visual-handoff.md) — 交给 Crow Code 或 UI 设计人员的页面表现要求。
 5. [`hall-framework.md`](./hall-framework.md) — 星尾馆十间房、空间连通、房间用途和正式美术设定。
 6. [`visual/room-art-review-v2.md`](./visual/room-art-review-v2.md) — **00–10 编号图册**；给 Claude 的当前视觉真相与后续反馈入口。

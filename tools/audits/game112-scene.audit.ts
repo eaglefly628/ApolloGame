@@ -1,5 +1,5 @@
 import { mountUI } from '../../src/ui/components/index.js';
-import { apolloBrocade } from '../../src/ui/components/apollo-kit.js';
+import { STAR_TAIL_THEME } from '../../games/game112/ui-theme.js';
 import { HallSession } from '../../games/game112/session.js';
 import { buildScene } from '../../games/game112/ui.js';
 import { setSkinOverrides } from '../../games/game112/cat-art.js';
@@ -17,5 +17,5 @@ mountUI(
   document.getElementById('root')!,
   buildScene(new HallSession(112).hall(), 'hall'),
   {},
-  apolloBrocade,
+  STAR_TAIL_THEME,
 );

@@ -14,14 +14,16 @@ import {
 } from './world-data.js';
 import type { HallView, ReadingView } from './project.js';
 import { WHEREABOUTS, type CatRegistry, type RegistrationDraft } from './registration.js';
+import { CAT_BREEDS, CAT_GALLERY, catalogPage, EMPTY_CATALOG_BROWSE, type CatalogBrowse, type CatalogSource } from './cat-gallery.js';
 
 /** 屏：scene = 当前房间（唯一的「主屏」）；map = 馆图；其余 = 叠在房间上的 Drawer。 */
-export type Screen = 'home' | 'reception' | 'scene' | 'map' | 'orbs' | 'table' | 'toys' | 'shop' | 'memory' | 'reading' | 'settings' | 'about';
+export type Screen = 'home' | 'reception' | 'scene' | 'map' | 'orbs' | 'catalog' | 'table' | 'toys' | 'shop' | 'memory' | 'reading' | 'settings' | 'about';
 
 /** 本游戏 UI 发出的全部 action 信号（宿主接线的单一真相·测试对账用）。 */
 export const UI_ACTIONS = [
   'home.enter', 'home.about', 'home.exit',
   'hall.back', 'map.open', 'room.enter', 'orbs.open', 'table.open', 'toys.open', 'shop.open', 'memory.open', 'settings.open', 'later',
+  'catalog.open', 'catalog.search', 'catalog.source', 'catalog.page',
   'cat.greet', 'cat.sit', 'offline.ack', 'ui.hide', 'ui.show',
   'shop.buy', 'decor.place',
   'memory.read', 'memory.advance', 'memory.choose', 'memory.back',
@@ -212,11 +214,16 @@ function stageChildren(v: HallView, room: RoomSpec): LayoutNode[] {
     // 右上：星砂罐 + 生成状态 + 只看它（都在画里·右上角壳层 ⚙ 在舞台之外）
     {
       type: 'Panel', id: 'hall-hud', props: { bg: 'raised', edge: 'gold' },
-      layout: { x: 560, y: 14, width: 424, direction: 'row', gap: 8, padding: 6, align: 'center', justify: 'end', allowOverlap: true },
+      layout: { x: 490, y: 14, width: 494, direction: 'row', gap: 8, padding: 6, align: 'center', justify: 'end', allowOverlap: true },
       visibleWhen: NOT_STAGE_ONLY,
       children: [
         { type: 'Label', id: 'hall-stardust', props: { text: `星砂 ${v.stardust}`, size: 'md', bold: true, color: 'text' } },
         { type: 'Label', id: 'hall-gen', props: { text: '离线陪伴', size: 'xs', color: 'text' } },
+        {
+          type: 'Panel', id: 'hall-catalog', props: { bg: 'raised', edge: 'gold', action: 'catalog.open' },
+          layout: { padding: 6, press3d: true, allowOverlap: true },
+          children: [{ type: 'Label', id: 'hall-catalog-label', props: { text: 'Gallery 图鉴', size: 'sm', bold: true, color: 'text' } }],
+        },
         {
           type: 'Panel', id: 'hall-stage-hide', props: { bg: 'raised', edge: 'gold', action: 'ui.hide' },
           layout: { padding: 6, press3d: true, allowOverlap: true },
@@ -328,6 +335,7 @@ export function buildOrbs(v: HallView, registry: CatRegistry): LayoutNode {
   const cat = CATS.find((c) => c.id === v.catId);
   return drawer('orbs-drawer', '晶球厅 · 猫咪名册', [
     subLabel('orbs-sub', '每一颗晶球都是一个记忆入口，不是囚禁灵魂。'),
+    { type: 'Button', id: 'orbs-catalog', props: { label: '打开 Gallery · 猫咪图鉴', kind: 'ghost', action: 'catalog.open' } },
     {
       type: 'Panel', id: 'orbs-row', props: { bare: true },
       layout: { direction: 'column', gap: 14 },
@@ -380,6 +388,55 @@ export function buildOrbs(v: HallView, registry: CatRegistry): LayoutNode {
         },
       ],
     },
+  ]);
+}
+
+/** 第八个功能入口：文本图鉴。图片素材尚未生成，条目只陈述登记机构目录与可组合外观轴。 */
+export function buildCatalog(browse: CatalogBrowse = EMPTY_CATALOG_BROWSE): LayoutNode {
+  const result = catalogPage(browse);
+  const sources: readonly { id: CatalogSource; label: string }[] = [
+    { id: 'all', label: '全部' }, { id: 'TICA', label: 'TICA' }, { id: 'CFA', label: 'CFA 补充' }, { id: 'FIFe', label: 'FIFe 补充' },
+  ];
+  return drawer('catalog-drawer', 'Gallery · 猫咪图鉴', [
+    { type: 'Panel', id: 'catalog-intro', props: { bare: true }, layout: { direction: 'column', gap: 5 },
+      children: [
+        heading('catalog-heading', '先看文字库'),
+        subLabel('catalog-scope', `${CAT_BREEDS.length} 个目录条目 · 图片 ${CAT_GALLERY.imageRecords.length} 张 · 机构口径不完全相同`),
+        subLabel('catalog-note', '品相指毛色、花纹、耳尾等中性外观，不评“好坏”或“纯不纯”。家猫也有自己的位置。'),
+      ] },
+    {
+      type: 'Panel', id: 'catalog-axes', props: { bg: 'raised', edge: 'gold' },
+      layout: { direction: 'column', gap: 5, padding: 10 },
+      children: [
+        { type: 'Label', id: 'catalog-axes-title', props: { text: '未来图片矩阵的分类轴', size: 'md', bold: true, color: 'text' } },
+        subLabel('catalog-age', `年龄：${CAT_GALLERY.dimensions.ageStage.join(' / ')}`),
+        subLabel('catalog-size', `体型：${CAT_GALLERY.dimensions.bodySize.join(' / ')}`),
+        subLabel('catalog-sex', `性别：${CAT_GALLERY.dimensions.sex.join(' / ')}`),
+        subLabel('catalog-appearance', '外观：毛长 / 底色 / 花纹 / 白斑 / 耳形 / 尾形 / 眼色'),
+      ],
+    },
+    { type: 'Input', id: 'catalog-query', props: { placeholder: '搜索中文名或英文名', value: browse.query, action: 'catalog.search' } },
+    { type: 'Panel', id: 'catalog-sources', props: { bare: true }, layout: { direction: 'row', gap: 5 },
+      children: sources.map((s): LayoutNode => ({ type: 'Button', id: `catalog-source-${s.id}`, props: { label: s.label, kind: browse.source === s.id ? 'primary' : 'ghost', action: 'catalog.source', actionArg: s.id } })) },
+    subLabel('catalog-count', `找到 ${result.total} 项 · 第 ${result.page + 1}/${result.pages} 页`),
+    ...(result.entries.length === 0 ? [subLabel('catalog-empty', '没有匹配条目，可以清空搜索词。')] : result.entries.map((b): LayoutNode => ({
+      type: 'Panel', id: `catalog-breed-${b.id}`, props: { bg: 'raised', edge: b.nonPedigree ? 'jade' : 'gold' },
+      layout: { direction: 'column', gap: 3, padding: 8 },
+      children: [
+        { type: 'Label', id: `catalog-breed-${b.id}-zh`, props: { text: b.zh, size: 'md', bold: true, color: 'text' } },
+        subLabel(`catalog-breed-${b.id}-en`, `${b.en} · ${b.source}${b.variantOf ? ' · 变体' : ''}${b.nonPedigree ? ' · 非纯种分类' : ''}`),
+      ],
+    }))),
+    { type: 'Panel', id: 'catalog-pages', props: { bare: true }, layout: { direction: 'row', gap: 8 },
+      children: [
+        { type: 'Button', id: 'catalog-prev', props: { label: '上一页', kind: 'ghost', action: 'catalog.page', actionArg: String(result.page - 1), disabled: result.page === 0 } },
+        { type: 'Button', id: 'catalog-next', props: { label: '下一页', kind: 'ghost', action: 'catalog.page', actionArg: String(result.page + 1), disabled: result.page >= result.pages - 1 } },
+      ] },
+    { type: 'Panel', id: 'catalog-outro', props: { bare: true }, layout: { direction: 'column', gap: 8 },
+      children: [
+        subLabel('catalog-image-notice', '图片库待你确认文字分类后再开始生成；现在不会显示或伪造猫图。'),
+        backBtn('catalog-back'),
+      ] },
   ]);
 }
 
@@ -552,7 +609,7 @@ export function buildAbout(): LayoutNode {
 }
 
 /** 屏 → 树（宿主唯一入口·纯查表）。子功能 = 当前房间舞台 + 叠层。 */
-export function buildScreen(o: { screen: Screen; view?: HallView; reading?: ReadingView; room?: RoomId; canExit?: boolean; registry?: CatRegistry; draft?: RegistrationDraft }): LayoutNode {
+export function buildScreen(o: { screen: Screen; view?: HallView; reading?: ReadingView; room?: RoomId; canExit?: boolean; registry?: CatRegistry; draft?: RegistrationDraft; catalog?: CatalogBrowse }): LayoutNode {
   const v = o.view;
   const room: RoomId = o.room ?? 'hall';
   switch (o.screen) {
@@ -566,6 +623,7 @@ export function buildScreen(o: { screen: Screen; view?: HallView; reading?: Read
     case 'scene': return buildScene(v, room);
     case 'map': return buildMap(room);
     case 'orbs': return buildScene(v, room, buildOrbs(v, o.registry ?? { visited: false, entries: [] }));
+    case 'catalog': return buildScene(v, room, buildCatalog(o.catalog));
     case 'table': return buildScene(v, room, buildTable(v));
     case 'toys': return buildScene(v, room, buildToys(v));
     case 'shop': return buildScene(v, room, buildShop(v));

@@ -5,7 +5,6 @@
 // 玩法规则一条都不在这里：全在 `blueprint.ts` 的数据 + 引擎能力里。
 // 猫的画面 = 投影层（现为 Image 占位；REQ-112-ENG-11「内嵌 AI 视频播放」交付后由它接管，本文件不变）。
 import { mountUI, resolveBindings, type MountHandle, type HandlerMap } from '@zerocraft/engine/ui/components/index.js';
-import { apolloBrocade } from '@zerocraft/engine/ui/components/apollo-kit.js';
 import { LocalStorageSavePort, sealEnvelope, openEnvelope, type SaveCodec, type SavePort } from '@zerocraft/engine/services/save/index.js';
 import { loadGameArtOverrides } from '@zerocraft/engine/assets/index.js';
 import { DIALOGUE_ACTION_ADVANCE, DIALOGUE_ACTION_CHOOSE } from '@zerocraft/engine/skills/tier3/dialogue.js';
@@ -16,6 +15,8 @@ import { GAME_ID, TICK_MS, OFFLINE_ACK_KEY, STAGE_HIDE_KEY, STAGE_SHOW_KEY, offl
 import { EMPTY_STATE, type PersistedState } from './blueprint.js';
 import { setSkinOverrides } from './cat-art.js';
 import { addEntry, EMPTY_DRAFT, EMPTY_REGISTRY, normalizeRegistry, removeEntry, WHEREABOUTS, type CatRegistry, type RegistrationDraft } from './registration.js';
+import { EMPTY_CATALOG_BROWSE, sourceOf, type CatalogBrowse } from './cat-gallery.js';
+import { STAR_TAIL_THEME } from './ui-theme.js';
 
 export const SAVE_CODEC: SaveCodec = { gameId: GAME_ID, schema: 1 };
 export const SAVE_SLOT = 'main';
@@ -39,6 +40,8 @@ export function routeAction(action: UiAction | string, arg?: string): Route | un
       return room !== undefined ? { screen: 'scene', room: room.id } : undefined;
     }
     case 'orbs.open': return { screen: 'orbs' };
+    case 'catalog.open': return { screen: 'catalog' };
+    case 'catalog.search': case 'catalog.source': case 'catalog.page': return {};
     case 'registration.open': return { screen: 'reception' };
     case 'registration.skip': return { screen: 'scene', room: 'hall' };
     case 'registration.name': case 'registration.note': case 'registration.whereabouts': case 'registration.save': case 'registration.remove': return {};
@@ -96,6 +99,7 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
   let reading: string | undefined;
   let registry: CatRegistry = EMPTY_REGISTRY;
   let draft: RegistrationDraft = EMPTY_DRAFT;
+  let catalog: CatalogBrowse = EMPTY_CATALOG_BROWSE;
   let timer: ReturnType<typeof setInterval> | undefined;
   let lastView = '';
 
@@ -111,9 +115,10 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
       canExit: host !== undefined,
       registry,
       draft,
+      catalog,
     }), { flag: (id) => (world !== undefined ? flagOn(world, id) : false) });
     if (handle) handle.update(node);
-    else handle = mountUI(container, node, handlers, apolloBrocade);
+    else handle = mountUI(container, node, handlers, STAR_TAIL_THEME);
   };
 
   const persist = (): void => {
@@ -174,6 +179,17 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
     }
     if (a === 'registration.skip') { registry = { ...registry, visited: true }; persistRegistry(); }
     if (a === 'registration.remove') { registry = removeEntry(registry, arg ?? ''); persistRegistry(); render(); return; }
+    if (a === 'catalog.search') { catalog = { ...catalog, query: (arg ?? '').slice(0, 80), page: 0 }; render(); return; }
+    if (a === 'catalog.source') {
+      const source = sourceOf(arg);
+      if (source !== undefined) catalog = { ...catalog, source, page: 0 };
+      render(); return;
+    }
+    if (a === 'catalog.page') {
+      const page = Number(arg);
+      if (Number.isInteger(page) && page >= 0) catalog = { ...catalog, page };
+      render(); return;
+    }
     const r = routeAction(a, arg);
     if (r === undefined) return;
     if (r.key !== undefined && session !== undefined) { session.act(r.key, r.x !== undefined ? { x: r.x } : undefined); persist(); }

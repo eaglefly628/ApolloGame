@@ -23,7 +23,7 @@ const actionsIn = (n: LayoutNode): Set<string> => {
 };
 const ids = (t: LayoutNode): Set<string> => new Set(walk(t).map((n) => n.id));
 
-const SCREENS: Screen[] = ['reception', 'scene', 'map', 'orbs', 'table', 'toys', 'shop', 'memory', 'settings', 'about'];
+const SCREENS: Screen[] = ['reception', 'scene', 'map', 'orbs', 'catalog', 'table', 'toys', 'shop', 'memory', 'settings', 'about'];
 
 function richSession(): HallSession {
   const s = new HallSession(112, { ...EMPTY_STATE, stardust: 80, relations: { [relId('heartlight', ACTIVE_CAT)]: 20 }, chapters: [CHAPTERS[0]!.id] });
@@ -126,7 +126,7 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
 
   it('子功能叠在房间上：Drawer 里是内容，身后还是当前房间的舞台（不换屏）', () => {
     const view = richSession().hall();
-    for (const [screen, drawerId] of [['shop', 'shop-drawer'], ['toys', 'toys-drawer'], ['memory', 'memory-drawer'], ['orbs', 'orbs-drawer'], ['settings', 'settings-drawer'], ['table', 'table-drawer']] as const) {
+    for (const [screen, drawerId] of [['shop', 'shop-drawer'], ['toys', 'toys-drawer'], ['memory', 'memory-drawer'], ['orbs', 'orbs-drawer'], ['catalog', 'catalog-drawer'], ['settings', 'settings-drawer'], ['table', 'table-drawer']] as const) {
       const tree = buildScreen({ screen, view, room: 'sunroom' });
       const t = ids(tree);
       expect(tree.id, screen).toBe('scene-sunroom');
