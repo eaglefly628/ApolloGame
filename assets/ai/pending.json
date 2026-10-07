@@ -1,0 +1,355 @@
+{
+  "version": 1,
+  "pending": [
+    {
+      "id": "ai/openai-built-in/game112-cat-toy-001",
+      "type": "texture",
+      "status": "filled",
+      "description": "星蛾短杆 · 星尾馆猫用物件 · AI 生成，待审",
+      "path": "ai/openai-built-in/game112-cat-toy-001.png",
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "wand",
+        "T001"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: reusable Apollo Game 112 cat-toy inventory cutout, item 001. Subject: one small handmade cat teaser wand, a short warm-brown carved wooden rod with a secure braided cord and a single soft teal-and-amber felt moth at the end. The whole physical toy, from handle to moth, is visible and centered; loosely curved cord stays inside the frame. Style: high-quality hand-painted storybook game prop, cozy cat-native star-house aesthetic, tactile worn edges, subtle imperfect brushwork, natural materials; gentle warm light with restrained teal accent. Clean isolated transparent background, no cast floor/background, no cat, no human, no other objects, no letters, no watermark, no logo. Distinct silhouette readable at 96px.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07"
+      },
+      "previewPath": "/assets/ai/pending/openai-built-in-game112-cat-toy-001.png",
+      "pendingFile": "openai-built-in-game112-cat-toy-001.png",
+      "finalRel": "ai/openai-built-in/game112-cat-toy-001.png",
+      "scope": "shelf"
+    },
+    {
+      "id": "ai/openai-built-in/game112-cat-toy-002",
+      "type": "texture",
+      "status": "filled",
+      "description": "拼布弯月抱踢枕 · 星尾馆猫用物件 · AI 生成，待审",
+      "path": "ai/openai-built-in/game112-cat-toy-002.png",
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "kicker",
+        "T002"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: stylized-concept. Reusable inventory cutout for a cozy cat-native star-house game. One handmade soft felt crescent-moon kicker pillow for cats, small cat-scale, plump stitched shape, faded butter yellow and muted teal fabric patches, visible hand-sewn seam and gentle wear. Whole object centered in a clear isolated silhouette. Painterly children's storybook illustration, slightly imperfect hand brushwork, tactile fabric, warm ambient light. Genuinely transparent background with clean alpha, no floor, no vignette, no dark colored backdrop, no cast scene, no text, no cat, no human, no logo or watermark.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07"
+      },
+      "previewPath": "/assets/ai/pending/openai-built-in-game112-cat-toy-002.png",
+      "pendingFile": "openai-built-in-game112-cat-toy-002.png",
+      "finalRel": "ai/openai-built-in/game112-cat-toy-002.png",
+      "scope": "shelf"
+    },
+    {
+      "id": "ai/openai-built-in/game112-cat-toy-003",
+      "type": "texture",
+      "status": "filled",
+      "description": "藤编铃星球 · 星尾馆猫用物件 · AI 生成，待审",
+      "path": "ai/openai-built-in/game112-cat-toy-003.png",
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "ball",
+        "T003"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: reusable Apollo cat-toy art-library inventory cutout. Exactly one complete handmade cat toy, centered with clear silhouette and generous transparent margin. Style: cozy cat-native star-house game, tactile painterly children's storybook illustration matching handmade wood and fabric props, visible subtle brushwork, imperfect wear, warm natural light, muted amber, cream, teal and coral as appropriate. Transparent PNG alpha only; no floor, no vignette, no scene/background, no cat, no human, no text, no logo, no watermark. Subject: a palm-sized cat chase ball made from woven rattan, a securely enclosed tiny brass bell visible through the weave, a small teal felt star sewn on one side",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07"
+      },
+      "previewPath": "/assets/ai/pending/openai-built-in-game112-cat-toy-003.png",
+      "pendingFile": "openai-built-in-game112-cat-toy-003.png",
+      "finalRel": "ai/openai-built-in/game112-cat-toy-003.png",
+      "scope": "shelf"
+    },
+    {
+      "id": "ai/openai-built-in/game112-cat-toy-004",
+      "type": "texture",
+      "status": "filled",
+      "description": "珊瑚布鼠 · 星尾馆猫用物件 · AI 生成，待审",
+      "path": "ai/openai-built-in/game112-cat-toy-004.png",
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "prey",
+        "T004"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: reusable Apollo cat-toy art-library inventory cutout. Exactly one complete handmade cat toy, centered with clear silhouette and generous transparent margin. Style: cozy cat-native star-house game, tactile painterly children's storybook illustration matching handmade wood and fabric props, visible subtle brushwork, imperfect wear, warm natural light, muted amber, cream, teal and coral as appropriate. Transparent PNG alpha only; no floor, no vignette, no scene/background, no cat, no human, no text, no logo, no watermark. Subject: a handmade stuffed cloth mouse toy for cats, dusty coral linen body, stitched sleepy eyes, short thick braided tail and two small felt ears",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07"
+      },
+      "previewPath": "/assets/ai/pending/openai-built-in-game112-cat-toy-004.png",
+      "pendingFile": "openai-built-in-game112-cat-toy-004.png",
+      "finalRel": "ai/openai-built-in/game112-cat-toy-004.png",
+      "scope": "shelf"
+    },
+    {
+      "id": "ai/openai-built-in/game112-cat-toy-005",
+      "type": "texture",
+      "status": "filled",
+      "description": "双星滚木环 · 星尾馆猫用物件 · AI 生成，待审",
+      "path": "ai/openai-built-in/game112-cat-toy-005.png",
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "chase",
+        "T005"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "spec": {
+        "format": "png",
+        "width": 1291,
+        "height": 1218,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: reusable Apollo cat-toy art-library inventory cutout. Exactly one complete handmade cat toy, centered with clear silhouette and generous transparent margin. Style: cozy cat-native star-house game, tactile painterly children's storybook illustration matching handmade wood and fabric props, visible subtle brushwork, imperfect wear, warm natural light, muted amber, cream, teal and coral as appropriate. Transparent PNG alpha only; no floor, no vignette, no scene/background, no cat, no human, no text, no logo, no watermark. Subject: a little rolling wooden ring toy for cats, warm oak hoop with two inset soft felt star shapes, worn edges, cat-scale",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07"
+      },
+      "previewPath": "/assets/ai/pending/openai-built-in-game112-cat-toy-005.png",
+      "pendingFile": "openai-built-in-game112-cat-toy-005.png",
+      "finalRel": "ai/openai-built-in/game112-cat-toy-005.png",
+      "scope": "shelf"
+    },
+    {
+      "id": "ai/openai-built-in/game112-cat-toy-006",
+      "type": "texture",
+      "status": "filled",
+      "description": "布彗星 · 星尾馆猫用物件 · AI 生成，待审",
+      "path": "ai/openai-built-in/game112-cat-toy-006.png",
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "kicker",
+        "T006"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: reusable Apollo cat-toy art-library inventory cutout. Exactly one complete handmade cat toy, centered with clear silhouette and generous transparent margin. Style: cozy cat-native star-house game, tactile painterly children's storybook illustration matching handmade wood and fabric props, visible subtle brushwork, imperfect wear, warm natural light, muted amber, cream, teal and coral as appropriate. Transparent PNG alpha only; no floor, no vignette, no scene/background, no cat, no human, no text, no logo, no watermark. Subject: a small plump cloth comet cat toy with a muted amber round head and three short stitched teal fabric tails, no loose threads",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07"
+      },
+      "previewPath": "/assets/ai/pending/openai-built-in-game112-cat-toy-006.png",
+      "pendingFile": "openai-built-in-game112-cat-toy-006.png",
+      "finalRel": "ai/openai-built-in/game112-cat-toy-006.png",
+      "scope": "shelf"
+    },
+    {
+      "id": "ai/openai-built-in/game112-cat-toy-007",
+      "type": "texture",
+      "status": "filled",
+      "description": "流星短杆 · 星尾馆猫用物件 · AI 生成，待审",
+      "path": "ai/openai-built-in/game112-cat-toy-007.png",
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "wand",
+        "T007"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "spec": {
+        "format": "png",
+        "width": 1024,
+        "height": 1536,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: reusable Apollo cat-toy art-library inventory cutout. Exactly one complete handmade cat toy, centered with clear silhouette and generous transparent margin. Style: cozy cat-native star-house game, tactile painterly children's storybook illustration matching handmade wood and fabric props, visible subtle brushwork, imperfect wear, warm natural light, muted amber, cream, teal, coral and sage as appropriate. Transparent PNG alpha only; no floor, no vignette, no scene/background, no cat, no human, no text, no logo, no watermark. Subject: a cat teaser wand with a short carved birch handle and a single soft coral felt shooting star tied on a short secure braided cord",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07"
+      },
+      "previewPath": "/assets/ai/pending/openai-built-in-game112-cat-toy-007.png",
+      "pendingFile": "openai-built-in-game112-cat-toy-007.png",
+      "finalRel": "ai/openai-built-in/game112-cat-toy-007.png",
+      "scope": "shelf"
+    },
+    {
+      "id": "ai/openai-built-in/game112-cat-toy-008",
+      "type": "texture",
+      "status": "filled",
+      "description": "雾青布鱼 · 星尾馆猫用物件 · AI 生成，待审",
+      "path": "ai/openai-built-in/game112-cat-toy-008.png",
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "kicker",
+        "T008"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: reusable Apollo cat-toy art-library inventory cutout. Exactly one complete handmade cat toy, centered with clear silhouette and generous transparent margin. Style: cozy cat-native star-house game, tactile painterly children's storybook illustration matching handmade wood and fabric props, visible subtle brushwork, imperfect wear, warm natural light, muted amber, cream, teal, coral and sage as appropriate. Transparent PNG alpha only; no floor, no vignette, no scene/background, no cat, no human, no text, no logo, no watermark. Subject: a squat stitched felt fish kicker toy for a cat, muted teal body, cream belly, coral embroidered fins, rounded safe plush silhouette",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07"
+      },
+      "previewPath": "/assets/ai/pending/openai-built-in-game112-cat-toy-008.png",
+      "pendingFile": "openai-built-in-game112-cat-toy-008.png",
+      "finalRel": "ai/openai-built-in/game112-cat-toy-008.png",
+      "scope": "shelf"
+    },
+    {
+      "id": "ai/openai-built-in/game112-cat-toy-009",
+      "type": "texture",
+      "status": "filled",
+      "description": "鼠尾草响叶 · 星尾馆猫用物件 · AI 生成，待审",
+      "path": "ai/openai-built-in/game112-cat-toy-009.png",
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "crinkle",
+        "T009"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "spec": {
+        "format": "png",
+        "width": 1374,
+        "height": 1145,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: reusable Apollo cat-toy art-library inventory cutout. Exactly one complete handmade cat toy, centered with clear silhouette and generous transparent margin. Style: cozy cat-native star-house game, tactile painterly children's storybook illustration matching handmade wood and fabric props, visible subtle brushwork, imperfect wear, warm natural light, muted amber, cream, teal, coral and sage as appropriate. Transparent PNG alpha only; no floor, no vignette, no scene/background, no cat, no human, no text, no logo, no watermark. Subject: a small crinkly leaf toy for cats, two layered faded sage linen leaves with visible stitching and a softly folded shape",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07"
+      },
+      "previewPath": "/assets/ai/pending/openai-built-in-game112-cat-toy-009.png",
+      "pendingFile": "openai-built-in-game112-cat-toy-009.png",
+      "finalRel": "ai/openai-built-in/game112-cat-toy-009.png",
+      "scope": "shelf"
+    },
+    {
+      "id": "ai/openai-built-in/game112-cat-toy-010",
+      "type": "texture",
+      "status": "filled",
+      "description": "月纹纸隧道 · 星尾馆猫用物件 · AI 生成，待审",
+      "path": "ai/openai-built-in/game112-cat-toy-010.png",
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "hide",
+        "T010"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: reusable Apollo cat-toy art-library inventory cutout. Exactly one complete handmade cat toy, centered with clear silhouette and generous transparent margin. Style: cozy cat-native star-house game, tactile painterly children's storybook illustration matching handmade wood and fabric props, visible subtle brushwork, imperfect wear, warm natural light, muted amber, cream, teal, coral and sage as appropriate. Transparent PNG alpha only; no floor, no vignette, no scene/background, no cat, no human, no text, no logo, no watermark. Subject: a compact cardboard hideaway tunnel for one cat, cat-scale arch with two round openings, decorated only with tiny hand-painted crescent marks, worn edges",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07"
+      },
+      "previewPath": "/assets/ai/pending/openai-built-in-game112-cat-toy-010.png",
+      "pendingFile": "openai-built-in-game112-cat-toy-010.png",
+      "finalRel": "ai/openai-built-in/game112-cat-toy-010.png",
+      "scope": "shelf"
+    }
+  ]
+}

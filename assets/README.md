@@ -20,6 +20,15 @@ assets/
 └── FreeArtLib/    ← 素材货架（DCSS CC0，自带 index.json，脚本生成，只读）
 ```
 
+## 星尾馆猫用物件百件库（Game112 美术候选）
+
+- `curated/game112-cat-toys.v1.json`：T001–T100 的稳定编号、品类与外观方向。**100 件是设计目录，不等于 100 张成图。**
+- `curated/game112-cat-toys-preview.png`：首批 T001–T010 透明物件图的审图拼页，左上到右下依编号排列。
+- `ai/pending.json` 与 `ai/pending/openai-built-in-game112-cat-toy-*.png`：首批 10 张原图及提示词、生成日期、授权说明，处于共享美术库的**待审区**。未通过审图前不进 `assets/index.json`，也不自动进入 Game112 商店。
+- 其余 T011–T100 目前仅有文字设定，尚无图片。接入游戏时再按 `scripts/vendor-asset.mjs` 把已审核的共享图复制进游戏本地库，并逐件补玩法、摆位与价格。
+
+这一批不使用网上图集原图；外部图片的商用与二次加工许可必须逐张核对。待审图片中部分有透明边缘像素警告，发行前还需逐张复查并修图。
+
 类型集合可扩展，但保持「按类型分的叶子目录」这一约定。
 
 ## 索引条目（`index.json`）
