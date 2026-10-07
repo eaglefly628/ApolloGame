@@ -12,24 +12,29 @@
 import type { WorldBlueprint, EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
 import {
   resourceCapability, flagCapability, stringVariableCapability, randomCapability, textCapability,
-  tagCapability, transformCapability, spawnCapability, destroyCapability,
+  tagCapability, transformCapability, spawnCapability, destroyCapability, timerCapability,
 } from '@zerocraft/engine/atom-skills/index.js';
 import {
   eventWhenCapability, effectApplyCapability, overTimeCapability, keybindCapability,
   craftRecipeCapability, weightedSpawnCapability,
 } from '@zerocraft/engine/skills/tier2/index.js';
 import { dialogueCapability, prefabCapability } from '@zerocraft/engine/skills/tier3/index.js';
+import type { ConditionExpr, Effect } from '@zerocraft/engine/engine/protocol/components.js';
+import { ITEM_EXPERIENCES, ITEM_REQUEST, ITEM_ACTIVITY, ITEM_ROOM, ITEM_CANCEL, useKey, respondKey, removeKey, usesId } from './item-data.js';
 import {
-  ACTIVE_CAT, STARDUST, RELATIONS, MOOD_DRIFT, CARE_ACTIONS, SHOP_ITEMS, CHAPTERS,
+  ACTIVE_CAT, STARDUST, STARDUST_MAX, STARDUST_GRANTS, RELATIONS, MOOD_DRIFT, CARE_ACTIONS, SHOP_ITEMS, CHAPTERS,
   OFFLINE_TIERS, OFFLINE_EVENTS, OFFLINE_TAG, OFFLINE_ACK_KEY, SEED_DEFAULT,
   relId, itemCount, ownFlag, placedFlag, buyKey, placeKey,
   chapterFlag, chapterFsm, chapterUnlockSignal, offlineKey, offlineSignal, poseFsm,
-  STAGE_ONLY_FLAG, STAGE_HIDE_KEY, STAGE_SHOW_KEY,
+  STAGE_ONLY_FLAG, STAGE_HIDE_KEY, STAGE_SHOW_KEY, ROOM_IDS,
+  grantKey, grantClaimedFlag, grantStock,
 } from './world-data.js';
 
 /** 局外持久态（`services/save` 信封里的 data·宿主读回后作蓝图初值）。兴致不在里面（当次临时）。 */
 export interface PersistedState {
   readonly stardust: number;
+  /** 每个一次性来源的已领 id；旧档缺省为空。 */
+  readonly claimedGrants?: readonly string[];
   /** `<key>.<cat>` → 值（只含 persist:true 的量）。 */
   readonly relations: Readonly<Record<string, number>>;
   /** 物品 id → 数量。 */
@@ -39,8 +44,10 @@ export interface PersistedState {
   readonly chapters: readonly string[];
   /** 章节 id → 对话游标（节点 id）。 */
   readonly cursors: Readonly<Record<string, string>>;
+  /** 旧档缺省为空；陪伴过的物件会留下痕迹。 */
+  readonly itemUses?: Readonly<Record<string, number>>;
 }
-export const EMPTY_STATE: PersistedState = { stardust: 0, relations: {}, items: {}, placed: [], chapters: [], cursors: {} };
+export const EMPTY_STATE: PersistedState = { stardust: 0, claimedGrants: [], relations: {}, items: {}, placed: [], chapters: [], cursors: {} };
 
 const TEXT_BASE = { fontSize: 14, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 1.2 } as const;
 const AT_ORIGIN = { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 } as const;
@@ -84,14 +91,92 @@ function shopEntities(s: PersistedState): Record<string, EntityBlueprint> {
     const n = s.items[it.id] ?? 0;
     out[`res-item-${it.id}`] = { Resource: { id: itemCount(it.id), current: n, min: 0, max: 99 } };
     out[`flag-own-${it.id}`] = { Flag: { id: ownFlag(it.id), active: n > 0 } };
-    out[`flag-placed-${it.id}`] = { Flag: { id: placedFlag(it.id), active: s.placed.includes(it.id) } };
+    out[`flag-placed-${it.id}`] = { Flag: { id: placedFlag(it.id), active: n > 0 && s.placed.includes(it.id) } };
+    out[`stock-${it.id}`] = { Resource: { id: `stock.${it.id}`, current: n > 0 ? 0 : 1, min: 0, max: 1 } };
     out[`kb-buy-${it.id}`] = { KeyBinding: { key: buyKey(it.id), signal: buyKey(it.id), phase: 'action' } };
     // 可负担才成交，否则整单不动（craft-recipe 口径）——心光永不进 costs（GDD §12.2）。
     out[`recipe-${it.id}`] = {
-      CraftRecipe: { onSignal: buyKey(it.id), costs: [{ id: STARDUST, amount: it.price }], gains: [{ id: itemCount(it.id), amount: 1 }], grantsFlag: ownFlag(it.id) },
+      CraftRecipe: { onSignal: buyKey(it.id), costs: [{ id: STARDUST, amount: it.price }, { id: `stock.${it.id}`, amount: 1 }], gains: [{ id: itemCount(it.id), amount: 1 }], grantsFlag: ownFlag(it.id) },
     };
     out[`kb-place-${it.id}`] = { KeyBinding: { key: placeKey(it.id), signal: placeKey(it.id), phase: 'action' } };
-    out[`fx-place-${it.id}`] = { Effect: { onSignal: placeKey(it.id), kind: 'set-flag', targetId: placedFlag(it.id), value: true } };
+    // 非消耗式拥有门：同一配方扣 1 再还 1，只有真正拥有时才能摆放。
+    out[`recipe-place-${it.id}`] = { CraftRecipe: { onSignal: placeKey(it.id), costs: [{ id: itemCount(it.id), amount: 1 }], gains: [{ id: itemCount(it.id), amount: 1 }], grantsFlag: placedFlag(it.id) } };
+    out[`kb-remove-${it.id}`] = { KeyBinding: { key: removeKey(it.id), signal: removeKey(it.id), phase: 'action' } };
+    out[`fx-remove-${it.id}`] = { Effect: { onSignal: removeKey(it.id), kind: 'set-flag', targetId: placedFlag(it.id), value: false } };
+  }
+  return out;
+}
+
+/** 一次性星砂来源：KeyBinding → 消耗唯一 stock 的 CraftRecipe → 星砂 + 已领 Flag。 */
+function currencyGrantEntities(s: PersistedState): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  for (const grant of STARDUST_GRANTS) {
+    const claimed = s.claimedGrants?.includes(grant.id) ?? false;
+    out[`res-grant-${grant.id}`] = { Resource: { id: grantStock(grant.id), current: claimed ? 0 : 1, min: 0, max: 1 } };
+    out[`flag-grant-${grant.id}`] = { Flag: { id: grantClaimedFlag(grant.id), active: claimed } };
+    out[`kb-grant-${grant.id}`] = { KeyBinding: { key: grantKey(grant.id), signal: grantKey(grant.id), phase: 'action' } };
+    out[`recipe-grant-${grant.id}`] = { CraftRecipe: {
+      onSignal: grantKey(grant.id), costs: [{ id: grantStock(grant.id), amount: 1 }],
+      gains: [{ id: STARDUST, amount: grant.amount }], grantsFlag: grantClaimedFlag(grant.id),
+    } };
+  }
+  return out;
+}
+
+/** 轻量互动：State + EventWhen + Effect + Timer，无专用 system。 */
+function itemInteractionEntities(s: PersistedState): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {
+    'item-request': { State: { fsmId: ITEM_REQUEST, current: 'none', previous: 'none' } },
+    'item-activity': { State: { fsmId: ITEM_ACTIVITY, current: 'none', previous: 'none' } },
+    'item-room': { State: { fsmId: ITEM_ROOM, current: 'hall', previous: 'hall' } },
+    'item-clock': { Timer: { id: 'item-clock', elapsed: 0, duration: 150, loop: false } },
+    // 先清消费完的上拍请求，再写本拍输入：不会吞连续输入，也不会把无效点击排队到以后。
+    'item-clear-request': { EventWhen: { signal: 'items.clear-request', when: { kind: 'always' }, mode: 'level', armed: false } },
+    'item-clear-request-fx': { Effect: { onSignal: 'items.clear-request', kind: 'set-state', targetId: ITEM_REQUEST, value: 'none', order: -100 } },
+  };
+  const state = (fsmId: string, equals: string): ConditionExpr => ({ kind: 'state', fsmId, equals });
+  const inHall = state(ITEM_ROOM, 'hall');
+  const idle = state(ITEM_ACTIVITY, 'none');
+  const cancelled: ConditionExpr = { kind: 'or', of: [state(ITEM_REQUEST, ITEM_CANCEL), { kind: 'not', of: inHall }] };
+  // 仅展开 EventWhen/Effect 数据；运行时条件仍由引擎解释。
+  const rule = (signal: string, when: ConditionExpr, effects: Omit<Effect, 'type' | 'onSignal'>[]): void => {
+    out[`gate-${signal}`] = { EventWhen: { signal, when, mode: 'level', armed: false } };
+    effects.forEach((effect, i) => { out[`fx-${signal}-${i}`] = { Effect: { ...effect, onSignal: signal, order: i } }; });
+  };
+  const activity = (value: string): Omit<Effect, 'type' | 'onSignal'> => ({ kind: 'set-state', targetId: ITEM_ACTIVITY, value });
+  const clock = (value: number): Omit<Effect, 'type' | 'onSignal'> => ({ kind: 'reset-timer', targetEntity: 'item-clock', targetId: '', value });
+  rule('items.cancelled', cancelled, [activity('none')]);
+  for (const room of ROOM_IDS) {
+    const key = `room.visit.${room}`;
+    out[`kb-visit-${room}`] = { KeyBinding: { key, signal: key, phase: 'action' } };
+    out[`fx-visit-${room}`] = { Effect: { onSignal: key, kind: 'set-state', targetId: ITEM_ROOM, value: room } };
+  }
+  for (const key of [ITEM_CANCEL, ...ITEM_EXPERIENCES.flatMap((it) => [useKey(it.id), respondKey(it.id)])]) {
+    out[`kb-${key}`] = { KeyBinding: { key, signal: key, phase: 'action' } };
+    out[`fx-${key}`] = { Effect: { onSignal: key, kind: 'set-state', targetId: ITEM_REQUEST, value: key } };
+  }
+  for (const it of ITEM_EXPERIENCES) {
+    out[`uses-${it.id}`] = { Resource: { id: usesId(it.id), current: s.itemUses?.[it.id] ?? 0, min: 0, max: 9999 } };
+    const placed: ConditionExpr = { kind: 'flag', id: placedFlag(it.id) };
+    const invite = state(ITEM_ACTIVITY, `${it.id}:invite`);
+    const done = state(ITEM_ACTIVITY, `${it.id}:done`);
+    rule(`items.start.${it.id}`, { kind: 'and', of: [inHall, idle, placed,
+      state(ITEM_REQUEST, useKey(it.id)), { kind: 'resource', id: itemCount(it.id), cmp: 'gte', value: 1 },
+    ] }, [activity(`${it.id}:invite`), clock(150)]);
+    rule(`items.finish.${it.id}`, { kind: 'and', of: [inHall, invite, placed,
+      state(ITEM_REQUEST, respondKey(it.id)), { kind: 'timer', id: 'item-clock', cmp: 'lt', value: 150 },
+    ] }, [activity(`${it.id}:done`), clock(24),
+      { kind: 'modify-resource', targetId: relId(it.benefit, ACTIVE_CAT), op: 'add', value: 2 },
+      { kind: 'modify-resource', targetId: usesId(it.id), op: 'add', value: 1 },
+    ]);
+    rule(`items.end.${it.id}`, { kind: 'and', of: [
+      { kind: 'or', of: [invite, done] },
+      { kind: 'or', of: [
+        { kind: 'not', of: placed },
+        { kind: 'and', of: [invite, { kind: 'timer', id: 'item-clock', cmp: 'gte', value: 150 }] },
+        { kind: 'and', of: [done, { kind: 'timer', id: 'item-clock', cmp: 'gte', value: 24 }] },
+      ] },
+    ] }, [activity('none')]);
   }
   return out;
 }
@@ -159,10 +244,12 @@ function stageOnlyEntities(): Record<string, EntityBlueprint> {
 export function buildBlueprint(seed = SEED_DEFAULT, s: PersistedState = EMPTY_STATE): WorldBlueprint {
   const entities: Record<string, EntityBlueprint> = {
     world: { RandomSeed: { seed, state: seed >>> 0 }, StringVar: { id: 'activeCat', value: ACTIVE_CAT } },
-    'res-stardust': { Resource: { id: STARDUST, current: s.stardust, min: 0, max: 9999 } },
+    'res-stardust': { Resource: { id: STARDUST, current: s.stardust, min: 0, max: STARDUST_MAX } },
     ...relationEntities(s),
     ...careEntities(),
     ...shopEntities(s),
+    ...currencyGrantEntities(s),
+    ...itemInteractionEntities(s),
     ...chapterEntities(s),
     ...offlineEntities(),
     ...stageOnlyEntities(),
@@ -173,7 +260,7 @@ export function buildBlueprint(seed = SEED_DEFAULT, s: PersistedState = EMPTY_ST
       tagCapability, transformCapability, spawnCapability, destroyCapability,
       eventWhenCapability, effectApplyCapability, overTimeCapability, keybindCapability,
       craftRecipeCapability, weightedSpawnCapability,
-      dialogueCapability, prefabCapability,
+      dialogueCapability, prefabCapability, timerCapability,
     ],
     entities,
     meta: { tickRate: 5 },

@@ -1,7 +1,7 @@
 {
-  "version": "1.0-draft",
-  "reviewedAt": "2026-10-04",
-  "scope": "TICA 公开目录条目为主，补入 CFA/FIFe 的部分独立目录名；不是全球唯一权威或穷尽清单。图片记录暂为空。",
+  "version": "1.1-draft",
+  "reviewedAt": "2026-10-06",
+  "scope": "TICA 公开目录条目为主，补入 CFA/FIFe 的部分独立目录名；不是全球唯一权威或穷尽清单。布偶猫六格均有待修订概念稿，不代表其他品种已有图片。",
   "sources": {
     "TICA": "https://tica.org/ticas-breeds/browse-all-breeds/",
     "CFA": "https://cfa.org/breeds/",
@@ -13,6 +13,7 @@
     "ageStage": ["幼猫", "少年猫", "成年猫", "年长猫", "未记录"],
     "bodySize": ["娇小", "中等", "高大", "未记录"],
     "sex": ["母", "公", "未记录"],
+    "temperament": ["好奇", "谨慎", "黏人", "独立", "好胜", "贪玩", "耐心"],
     "appearance": {
       "coatLength": ["无毛或极短", "短毛", "半长毛", "长毛", "未记录"],
       "baseColor": ["黑", "蓝灰", "白", "红橘", "奶油", "巧克力", "淡紫", "肉桂", "浅褐", "其他或未记录"],
@@ -23,7 +24,63 @@
       "eyeColor": ["蓝", "绿", "金或铜", "异色", "其他或未记录"]
     }
   },
-  "imageRecords": [],
+  "ragdollCharacters": [
+    {
+      "id": "ragdoll-seal-bicolor-male-a",
+      "sex": "公",
+      "look": "海豹双色；白色倒 V 略不对称，右眼外侧有深色小斑，深尾有浅色尾尖",
+      "personality": { "好奇": 78, "谨慎": 57, "黏人": 58, "独立": 42, "好胜": 35, "贪玩": 65, "耐心": 72 },
+      "playCue": "先观察新玩具，确认安全后才伸爪；被打断时会停一下再继续。"
+    },
+    {
+      "id": "ragdoll-blue-mitted-female-b",
+      "sex": "母",
+      "look": "蓝手套重点色；右眼上方有浅色小缺口，蓝灰尾巴里有一缕浅毛",
+      "personality": { "好奇": 82, "谨慎": 35, "黏人": 43, "独立": 76, "好胜": 62, "贪玩": 84, "耐心": 44 },
+      "playCue": "喜欢自己决定接近的距离；追逐玩具很投入，停下来时愿意坐在旁边。"
+    }
+  ],
+  "ragdollConceptBoard": { "assetKey": "game112/gallery/ragdoll-life-stages-board-v1", "path": "/games/game112/art/gallery/ragdoll/ragdoll-life-stages-board-v1.png", "reviewStatus": "direction-draft", "description": "绘本手绘方向板，按公/母两行、幼/成年/年长三列对照；不是六张可运行立绘。" },
+  "ragdollLifeStages": [
+    { "characterId": "ragdoll-seal-bicolor-male-a", "ageStage": "幼猫", "visualCue": "身体紧凑、颈毛尚未丰满、重点色较淡；仍保留同一倒 V 与尾尖。", "imageId": "ragdoll-male-kitten-v1" },
+    { "characterId": "ragdoll-seal-bicolor-male-a", "ageStage": "成年猫", "visualCue": "长躯干与成熟颈毛，海豹色点清楚；是这只猫的身份母图。", "imageId": "ragdoll-male-adult-v1" },
+    { "characterId": "ragdoll-seal-bicolor-male-a", "ageStage": "年长猫", "visualCue": "仍健康有精神；色点可稍深，姿态更从容，不用疾病或消瘦代替年龄。", "imageId": "ragdoll-male-senior-v1" },
+    { "characterId": "ragdoll-blue-mitted-female-b", "ageStage": "幼猫", "visualCue": "小而结实、蓝灰色点较淡、颈毛未长全；保留右眼小缺口。", "imageId": "ragdoll-female-kitten-v1" },
+    { "characterId": "ragdoll-blue-mitted-female-b", "ageStage": "成年猫", "visualCue": "蓝手套与白下巴清楚，毛量成熟；是这只猫的身份母图。", "imageId": "ragdoll-female-adult-v1" },
+    { "characterId": "ragdoll-blue-mitted-female-b", "ageStage": "年长猫", "visualCue": "动作更从容、可能有轻微深色变化；不强加灰白眉或病弱表情。", "imageId": "ragdoll-female-senior-v1" }
+  ],
+  "imageRecords": [
+    {
+      "imageId": "ragdoll-male-kitten-v1", "breedId": "ragdoll", "characterId": "ragdoll-seal-bicolor-male-a", "ageStage": "幼猫", "sex": "公", "bodySize": "娇小",
+      "appearance": { "coatLength": "半长毛", "baseColor": "奶油", "pattern": "重点色", "whiteMarking": "双色", "earShape": "直耳", "tailShape": "常规", "eyeColor": "蓝" },
+      "pose": "三分之四正面坐姿", "styleVersion": "star-tail-storybook-v1", "assetKey": "game112/gallery/ragdoll-male-kitten-v1", "path": "/games/game112/art/gallery/ragdoll/seal-bicolor-male-kitten-v1.png", "reviewStatus": "needs-revision", "reviewNote": "幼年体态与成年稿差异仍不足；透明边缘有彩色毛边。仅供方向评审。"
+    },
+    {
+      "imageId": "ragdoll-male-adult-v1", "breedId": "ragdoll", "characterId": "ragdoll-seal-bicolor-male-a", "ageStage": "成年猫", "sex": "公", "bodySize": "高大",
+      "appearance": { "coatLength": "半长毛", "baseColor": "奶油", "pattern": "重点色", "whiteMarking": "双色", "earShape": "直耳", "tailShape": "常规", "eyeColor": "蓝" },
+      "pose": "三分之四正面坐姿", "styleVersion": "star-tail-storybook-v1", "assetKey": "game112/gallery/ragdoll-male-adult-v1", "path": "/games/game112/art/gallery/ragdoll/seal-bicolor-male-adult-v1.png", "reviewStatus": "needs-revision", "reviewNote": "身份标记可用，但透明边缘有红黄毛边；不能直接作运行时猫。"
+    },
+    {
+      "imageId": "ragdoll-male-senior-v1", "breedId": "ragdoll", "characterId": "ragdoll-seal-bicolor-male-a", "ageStage": "年长猫", "sex": "公", "bodySize": "高大",
+      "appearance": { "coatLength": "半长毛", "baseColor": "奶油", "pattern": "重点色", "whiteMarking": "双色", "earShape": "直耳", "tailShape": "常规", "eyeColor": "蓝" },
+      "pose": "三分之四正面坐姿", "styleVersion": "star-tail-storybook-v1", "assetKey": "game112/gallery/ragdoll-male-senior-v1", "path": "/games/game112/art/gallery/ragdoll/seal-bicolor-male-senior-v1.png", "reviewStatus": "needs-revision", "reviewNote": "与成年图几乎同姿同龄，年长特征不足；透明边缘有彩色毛边。"
+    },
+    {
+      "imageId": "ragdoll-female-kitten-v1", "breedId": "ragdoll", "characterId": "ragdoll-blue-mitted-female-b", "ageStage": "幼猫", "sex": "母", "bodySize": "娇小",
+      "appearance": { "coatLength": "半长毛", "baseColor": "奶油", "pattern": "重点色", "whiteMarking": "少量白", "earShape": "直耳", "tailShape": "常规", "eyeColor": "蓝" },
+      "pose": "三分之四正面抬爪", "styleVersion": "star-tail-storybook-v1", "assetKey": "game112/gallery/ragdoll-female-kitten-v1", "path": "/games/game112/art/gallery/ragdoll/blue-mitted-female-kitten-v1.png", "reviewStatus": "needs-revision", "reviewNote": "幼猫动作可辨，但毛量仍过于成熟，透明边缘有明显彩色毛边。"
+    },
+    {
+      "imageId": "ragdoll-female-adult-v1", "breedId": "ragdoll", "characterId": "ragdoll-blue-mitted-female-b", "ageStage": "成年猫", "sex": "母", "bodySize": "中等",
+      "appearance": { "coatLength": "半长毛", "baseColor": "奶油", "pattern": "重点色", "whiteMarking": "少量白", "earShape": "直耳", "tailShape": "常规", "eyeColor": "蓝" },
+      "pose": "三分之四正面坐姿", "styleVersion": "star-tail-storybook-v1", "assetKey": "game112/gallery/ragdoll-female-adult-v1", "path": "/games/game112/art/gallery/ragdoll/blue-mitted-female-adult-v1.png", "reviewStatus": "needs-revision", "reviewNote": "蓝手套形象可辨；背景光晕烘进透明层，需重新去背或重生。仅供方向评审。"
+    },
+    {
+      "imageId": "ragdoll-female-senior-v1", "breedId": "ragdoll", "characterId": "ragdoll-blue-mitted-female-b", "ageStage": "年长猫", "sex": "母", "bodySize": "中等",
+      "appearance": { "coatLength": "半长毛", "baseColor": "奶油", "pattern": "重点色", "whiteMarking": "少量白", "earShape": "直耳", "tailShape": "常规", "eyeColor": "蓝" },
+      "pose": "三分之四正面坐姿", "styleVersion": "star-tail-storybook-v1", "assetKey": "game112/gallery/ragdoll-female-senior-v1", "path": "/games/game112/art/gallery/ragdoll/blue-mitted-female-senior-v1.png", "reviewStatus": "needs-revision", "reviewNote": "与成年图年龄差异不足，且沿袭了背景光晕；不能直接用于场景。"
+    }
+  ],
   "breeds": [
     { "id": "abyssinian", "zh": "阿比西尼亚猫", "en": "Abyssinian", "source": "TICA" },
     { "id": "american-bobtail", "zh": "美国短尾猫", "en": "American Bobtail", "source": "TICA" },

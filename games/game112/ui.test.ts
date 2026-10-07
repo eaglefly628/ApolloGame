@@ -5,7 +5,7 @@ import { HallSession } from './session.js';
 import { EMPTY_STATE } from './blueprint.js';
 import { buildScreen, buildHome, buildMap, buildReading, buildScene, UI_ACTIONS, type Screen } from './ui.js';
 import { flagOn } from './project.js';
-import { ACTIVE_CAT, CHAPTERS, ROOMS, SCENE_W, SCENE_H, buyKey, offlineKey, relId, roomOf } from './world-data.js';
+import { ACTIVE_CAT, CHAPTERS, ROOMS, SCENE_W, SCENE_H, SHOP_ITEMS, buyKey, offlineKey, relId, roomOf } from './world-data.js';
 
 /** 收集树里所有节点（含 children 递归）。 */
 function walk(n: LayoutNode, out: LayoutNode[] = []): LayoutNode[] {
@@ -92,8 +92,8 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
         return action !== undefined && (n.id.startsWith('door-') || n.id.startsWith('hot-'));
       });
       for (const hot of hotzones) {
-        expect(hot.layout?.press3d, `${room.id}:${hot.id} press3d`).toBe(true);
-        expect(hot.layout?.fx?.some((fx) => fx.kind === 'sheen-hover'), `${room.id}:${hot.id} sheen-hover`).toBe(true);
+        expect(hot.children?.some((child) => child.layout?.press3d), `${room.id}:${hot.id} press3d only on visible chip`).toBe(true);
+        expect(hot.children?.some((child) => child.layout?.fx?.some((fx) => fx.kind === 'sheen-hover')), `${room.id}:${hot.id} sheen-hover on child (preserve absolute anchor)`).toBe(true);
         expect(walk(hot).some((n) => n.id === `${hot.id}-chip` && (n.props as { edge?: string }).edge === 'gold'), `${room.id}:${hot.id} 实底标签`).toBe(true);
       }
       // 每个物件都是已接线动作
@@ -124,7 +124,7 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
     expect(nodes.some((n) => n.id.startsWith('go-room-'))).toBe(false);
   });
 
-  it('子功能叠在房间上：Drawer 里是内容，身后还是当前房间的舞台（不换屏）', () => {
+  it('子功能属于房间舞台：没有 viewport Drawer / Modal，合册回当前房间', () => {
     const view = richSession().hall();
     for (const [screen, drawerId] of [['shop', 'shop-drawer'], ['toys', 'toys-drawer'], ['memory', 'memory-drawer'], ['orbs', 'orbs-drawer'], ['catalog', 'catalog-drawer'], ['settings', 'settings-drawer'], ['table', 'table-drawer']] as const) {
       const tree = buildScreen({ screen, view, room: 'sunroom' });
@@ -133,9 +133,51 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
       expect(t.has('hall-stage'), screen).toBe(true);
       expect(t.has(drawerId), screen).toBe(true);
       const d = walk(tree).find((n) => n.id === drawerId)!;
-      expect(d.type).toBe('Drawer');
-      expect((d.props as { closeAction?: string }).closeAction).toBe('hall.back');
+      expect(d.type).toBe('Panel');
+      expect(ids(walk(tree).find((n) => n.id === 'hall-stage')!).has(drawerId)).toBe(true);
+      expect(walk(tree).some((n) => n.type === 'Drawer' || n.type === 'Modal')).toBe(false);
+      expect(actionsIn(d).has('hall.back')).toBe(true);
+      expect(ids(tree).has('hall-cat')).toBe(false); // 无隐藏背景按钮 / 猫抢占点按
     }
+  });
+
+  it('星砂铺有画内掌柜，商品操作和账页不被立绘遮挡', () => {
+    const shop = buildScreen({ screen: 'shop', view: richSession().hall(), room: 'hall' });
+    const nodes = walk(shop);
+    const cat = nodes.find((n) => n.id === 'shopkeeper-cat')!;
+    const ledger = nodes.find((n) => n.id === 'shop-ledger')!;
+    expect(cat.type).toBe('Image');
+    expect((cat.props as { src?: string }).src).toContain('shopkeeper-tortoiseshell-v1.png');
+    expect((cat.layout!.x! + cat.layout!.width!)).toBeLessThan(ledger.layout!.x!);
+    for (const item of nodes.filter((n) => n.id.startsWith('shop-') && SHOP_ITEMS.some((it) => n.id === `shop-${it.id}`))) {
+      expect(cat.layout!.y!).toBeGreaterThan(item.layout!.y! + item.layout!.height!);
+    }
+    expect(validateLayoutNode(shop)).toEqual([]);
+  });
+
+  it('货架四件都能查看详情；交换只从账页确认，见面星砂领取状态有明确反馈', () => {
+    const empty = new HallSession(112).hall();
+    for (const item of SHOP_ITEMS) {
+      const tree = buildScreen({ screen: 'shop', view: empty, shopItem: item.id });
+      const nodes = walk(tree);
+      expect((nodes.find((n) => n.id === 'shop-title')?.props as { text?: string }).text).toContain(item.name);
+      expect((nodes.find((n) => n.id === 'shop-sub')?.props as { text?: string }).text).toBe(item.blurb);
+      expect(nodes.filter((n) => (n.props as { action?: string }).action === 'shop.inspect')).toHaveLength(SHOP_ITEMS.length);
+      expect(nodes.filter((n) => (n.props as { action?: string }).action === 'shop.buy')).toHaveLength(0);
+      expect(ids(tree).has('shop-selected-shortfall')).toBe(true);
+      expect(ids(tree).has('shop-welcome-claim')).toBe(true);
+      expect(validateLayoutNode(tree)).toEqual([]);
+    }
+    const s = new HallSession(112);
+    s.act('currency.grant.welcome'); s.step();
+    const claimed = buildScreen({ screen: 'shop', view: s.hall(), shopItem: 'paperbag' });
+    expect(ids(claimed).has('shop-welcome-claim')).toBe(false);
+    expect(ids(claimed).has('shop-welcome-claimed')).toBe(true);
+    expect((walk(claimed).find((n) => n.id === 'shop-selected-buy')?.props as { action?: string }).action).toBe('shop.buy');
+    const short = buildScreen({ screen: 'shop', view: s.hall(), shopItem: 'feather' });
+    expect(ids(short).has('shop-earn')).toBe(true);
+    expect(ids(short).has('shop-selected-shortfall')).toBe(true);
+    expect(ids(short).has('shop-selected-buy')).toBe(false);
   });
 
   it('阅读 = 底部台词框三态（line / choice / ended）零 issue，选项列走 choiceList，关闭回回忆廊', () => {
@@ -143,7 +185,8 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
     const id = CHAPTERS[0]!.id;
     const line = buildReading(s.reading(id)!);
     expect(validateLayoutNode(line)).toEqual([]);
-    expect((line.props as { side?: string; closeAction?: string })).toMatchObject({ side: 'bottom', closeAction: 'memory.back' });
+    expect(line.type).toBe('Panel');
+    expect(actionsIn(line).has('memory.back')).toBe(true);
     s.act('dialogue.advance'); s.act('dialogue.advance');
     const choice = buildReading(s.reading(id)!);
     expect(validateLayoutNode(choice)).toEqual([]);
@@ -194,11 +237,12 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
     expect(t.has('hall-stage-show')).toBe(false);
   });
 
-  it('杂货铺：星砂不够的物品按钮禁用（可负担才成交在 UI 上也可见）', () => {
+  it('杂货铺：星砂不够时只显示差额，不开放购买动作', () => {
     const poor = new HallSession(112).hall();
     const shop = buildScreen({ screen: 'shop', view: poor });
     const buyBtns = walk(shop).filter((n) => n.type === 'Button' && (n.props as { action?: string }).action === 'shop.buy');
-    expect(buyBtns.length).toBeGreaterThan(0);
-    for (const b of buyBtns) expect((b.props as { disabled?: boolean }).disabled).toBe(true);
+    expect(buyBtns).toHaveLength(0);
+    expect(ids(shop).has('shop-selected-shortfall')).toBe(true);
+    expect(ids(shop).has('shop-welcome-claim')).toBe(true);
   });
 });

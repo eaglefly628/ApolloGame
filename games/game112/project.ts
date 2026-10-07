@@ -2,11 +2,12 @@
 import type { IWorld } from '@zerocraft/engine/engine/core/types.js';
 import type { Resource, State, Flag, Tag, Text, StringVar } from '@zerocraft/engine/engine/protocol/components.js';
 import {
-  ACTIVE_CAT, RELATIONS, SHOP_ITEMS, CHAPTERS, OFFLINE_TAG, STARDUST,
-  relId, itemCount, placedFlag, chapterFlag, chapterFsm, catOf, chapterOf, poseFsm, CAT_POSES, STAGE_ONLY_FLAG,
+  ACTIVE_CAT, RELATIONS, SHOP_ITEMS, CHAPTERS, OFFLINE_TAG, STARDUST, STARDUST_GRANTS,
+  relId, itemCount, placedFlag, chapterFlag, chapterFsm, catOf, chapterOf, poseFsm, CAT_POSES, STAGE_ONLY_FLAG, grantClaimedFlag,
   type RelationKey, type CatPose,
 } from './world-data.js';
 import type { PersistedState } from './blueprint.js';
+import { ITEM_ACTIVITY, usesId } from './item-data.js';
 
 export function resourceOf(world: IWorld, id: string): number {
   for (const [eid] of world.query('Resource')) {
@@ -60,6 +61,8 @@ export interface ReadingView {
   readonly ended: boolean;
 }
 export interface HallView {
+  readonly itemActivity: string;
+  readonly itemUses: Readonly<Record<string, number>>;
   readonly catId: string;
   readonly catName: string;
   /** 当下姿态（姿态机·rest/lookup/settled）。 */
@@ -68,6 +71,7 @@ export interface HallView {
   readonly catLine: string;
   readonly moodPhrase: string;
   readonly stardust: number;
+  readonly claimedGrants: readonly string[];
   readonly relations: Readonly<Record<RelationKey, number>>;
   readonly owned: readonly OwnedItemView[];
   readonly chapters: readonly ChapterView[];
@@ -90,12 +94,15 @@ export function buildHallView(world: IWorld): HallView {
   const poseRaw = stateOf(world, poseFsm(catId));
   const pose: CatPose = (CAT_POSES as readonly string[]).includes(poseRaw) ? (poseRaw as CatPose) : 'rest';
   return {
+    itemActivity: stateOf(world, ITEM_ACTIVITY),
+    itemUses: Object.fromEntries(SHOP_ITEMS.map((it) => [it.id, resourceOf(world, usesId(it.id))])),
     catId,
     catName: cat?.name ?? catId,
     pose,
     catLine: pose === 'rest' ? (cat?.hallLine ?? '') : (cat?.poseLines[pose] ?? cat?.hallLine ?? ''),
     moodPhrase: moodPhraseOf(catId, relations.mood),
     stardust: resourceOf(world, STARDUST),
+    claimedGrants: STARDUST_GRANTS.filter((grant) => flagOn(world, grantClaimedFlag(grant.id))).map((grant) => grant.id),
     relations,
     owned: SHOP_ITEMS
       .map((it) => ({ id: it.id, name: it.name, kind: it.kind, count: resourceOf(world, itemCount(it.id)), placed: flagOn(world, placedFlag(it.id)) }))
@@ -131,6 +138,8 @@ export function toPersisted(world: IWorld): PersistedState {
   for (const c of CHAPTERS) cursors[c.id] = stateOf(world, chapterFsm(c.id));
   return {
     stardust: resourceOf(world, STARDUST),
+    claimedGrants: STARDUST_GRANTS.filter((grant) => flagOn(world, grantClaimedFlag(grant.id))).map((grant) => grant.id),
+    itemUses: Object.fromEntries(SHOP_ITEMS.map((it) => [it.id, resourceOf(world, usesId(it.id))])),
     relations,
     items,
     placed: SHOP_ITEMS.filter((it) => flagOn(world, placedFlag(it.id))).map((it) => it.id),

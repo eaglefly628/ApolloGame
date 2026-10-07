@@ -1,12 +1,14 @@
-// 锦霞底色沿用引擎 house 主题，仅把 Game112 文字/按钮色调到亮背景可读的深色档。
+// house 锦霞基座；owner 明确要求猫馆木作 / 旧纸 / 苔绿，移除外置应用的粉色纹样。
 import { apolloBrocade } from '@zerocraft/engine/ui/components/apollo-kit.js';
 import type { UITheme } from '@zerocraft/engine/ui/components/index.js';
 
 export const STAR_TAIL_THEME: UITheme = {
   ...apolloBrocade,
-  sub: '#70545a',
-  dim: '#70545a',
+  bg0: '#e0cfaf', bg1: '#e8d7b5', bg2: '#f1e2c5', bg3: '#faf0da',
+  pageBg: '#292b25', texture: 'none', wash: 'none',
+  text: '#392e22', sub: '#63533e', dim: '#63533e',
+  line: '#b39a6c', ink: '#30271d',
   gold: '#795016',
-  jade: '#8f3150',
-  jadeLine: 'rgba(143,49,80,.48)',
+  jade: '#38594d', jadeWash: '#e1e6d6', jadeLine: '#819481',
+  ok: '#386046', okWash: '#dce5cc', warn: '#795016', warnWash: '#f0dfb6', danger: '#9c3930',
 };

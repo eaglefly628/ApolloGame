@@ -1,4 +1,4 @@
-// Game112 Gallery：猫种与形象维度的纯数据投影。图片记录在 owner 审核文字库前保持为空。
+// Game112 Gallery：猫种、外观与性格维度的纯数据投影。布偶猫试作图片均未通过美术审核。
 import catalog from './cat-gallery.v1.json';
 
 export interface CatalogBreed {
@@ -12,6 +12,7 @@ export interface CatalogBreed {
 
 export const CAT_GALLERY = catalog;
 export const CAT_BREEDS: readonly CatalogBreed[] = catalog.breeds as readonly CatalogBreed[];
+export const RAGDOLL_IMAGES = catalog.imageRecords.filter((image) => image.breedId === 'ragdoll');
 export type CatalogSource = 'all' | CatalogBreed['source'];
 export interface CatalogBrowse {
   readonly query: string;

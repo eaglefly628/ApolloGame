@@ -28,6 +28,7 @@
 | `f2-flag` | 拥有物品 · 章节解锁/确认态 · 敏感跳过 · 握手旗（AI 一级一拍）· 星盘压牌旗 | ✅ 现有 |
 | `x3-string-variable` | 当前陪伴猫 id · 当前玩具 · 章节游标 · 猫名字/称呼 | ✅ 现有 |
 | `j1-state` | 心态机（牌桌 `mood-card.<cat>`）· 触摸接受/拒绝态 · 上传猫档案状态（草稿/处理中/待确认/可用） | ✅ 现有 |
+| `e1-timer` | 物件邀请超时与收尾驻留；由 `t2-effect-apply reset-timer` 重置，`t2-event-when` 按 elapsed 转状态（2026-10-07 增量） | ✅ 现有 |
 | `t3-flow` | 狩猎链 FSM（`hunt.<cat>`·`after` 驻留拍）· 牌局相位（准备→对局→结算） | ✅ 现有 |
 | `t2-turn-order` | 星牌桌座位轮转（玩家/猫·`advanceSignal:"endTurn"`） | ✅ 现有 |
 | `t2-event-when` | 心光阈值解锁章节（edge）· 心态切换 · 触摸判定 · 胜负判定（`resource gte` / `vsResource`） | ✅ 现有 |

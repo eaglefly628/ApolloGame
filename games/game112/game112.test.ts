@@ -5,8 +5,8 @@ import { buildBlueprint, EMPTY_STATE, type PersistedState } from './blueprint.js
 import { routeAction, normalizeState } from './game112.js';
 import { UI_ACTIONS } from './ui.js';
 import {
-  ACTIVE_CAT, STARDUST, RELATIONS, MOOD_DRIFT, CARE_ACTIONS, SHOP_ITEMS, CHAPTERS, OFFLINE_EVENTS, OFFLINE_ACK_KEY,
-  relId, buyKey, placeKey, offlineKey, offlineTierOf, chapterFlag, ROOMS,
+  ACTIVE_CAT, STARDUST, STARDUST_MAX, STARDUST_GRANTS, RELATIONS, MOOD_DRIFT, CARE_ACTIONS, SHOP_ITEMS, CHAPTERS, OFFLINE_EVENTS, OFFLINE_ACK_KEY,
+  relId, buyKey, placeKey, offlineKey, offlineTierOf, chapterFlag, ROOMS, grantKey,
 } from './world-data.js';
 import { resourceOf, flagOn } from './project.js';
 
@@ -62,6 +62,29 @@ describe('game112 陪伴动作（具名 action → keybind → Effect·零解释
 });
 
 describe('game112 星砂杂货铺（craft-recipe：可负担才成交，否则整单不动）', () => {
+  it('见面星砂由白名单来源发放，一份存档只能领取一次，读档后也不能重复领', () => {
+    const grant = STARDUST_GRANTS[0];
+    const s = new HallSession(112);
+    s.claimStardustGrant(grant.id); s.step();
+    expect(s.hall().stardust).toBe(grant.amount);
+    expect(s.hall().claimedGrants).toEqual([grant.id]);
+    s.act(grantKey(grant.id)); s.step();
+    expect(s.hall().stardust).toBe(grant.amount);
+    const restored = new HallSession(112, s.persisted());
+    restored.act(grantKey(grant.id)); restored.step();
+    expect(restored.hall().stardust).toBe(grant.amount);
+    expect(restored.hall().claimedGrants).toEqual([grant.id]);
+  });
+
+  it('发放贴近资源上限时不会溢出，也不影响物品交换的原子性', () => {
+    const s = new HallSession(112, withState({ stardust: STARDUST_MAX - 5 }));
+    s.act(grantKey('welcome')); s.step();
+    expect(s.hall().stardust).toBe(STARDUST_MAX);
+    s.act(buyKey('paperbag')); s.step();
+    expect(s.hall().stardust).toBe(STARDUST_MAX - 20);
+    expect(s.hall().owned.map((it) => it.id)).toEqual(['paperbag']);
+  });
+
   it('星砂不够 → 不扣不给不置旗', () => {
     const s = new HallSession(112, withState({ stardust: 10 }));
     s.act(buyKey('feather')); s.step();
@@ -153,10 +176,11 @@ describe('game112 确定性', () => {
 describe('game112 宿主路由（UI action → 具名输入·纯查表）', () => {
   it('UI_ACTIONS 每个动作都有路由（无孤儿按钮）；带参动作闭集外 → 什么都不发生', () => {
     for (const a of UI_ACTIONS) {
-      const arg = a === 'shop.buy' || a === 'decor.place' ? 'feather' : a === 'memory.read' ? CHAPTERS[0]!.id : a === 'memory.choose' ? '0' : a === 'room.enter' ? 'garden' : undefined;
+      const arg = ['shop.inspect', 'shop.buy', 'decor.place', 'decor.remove', 'item.use', 'item.respond'].includes(a) ? 'feather' : a === 'memory.read' ? CHAPTERS[0]!.id : a === 'memory.choose' ? '0' : a === 'room.enter' ? 'garden' : undefined;
       expect(routeAction(a, arg), a).toBeDefined();
     }
     expect(routeAction('shop.buy', 'not-an-item')).toBeUndefined();
+    expect(routeAction('shop.inspect', 'not-an-item')).toBeUndefined();
     expect(routeAction('memory.read', 'nope')).toBeUndefined();
     expect(routeAction('memory.choose', 'x')).toBeUndefined();
     expect(routeAction('decor.place', 'feather')).toEqual({ key: placeKey('feather'), screen: 'scene', room: 'hall' });
@@ -173,6 +197,8 @@ describe('game112 宿主路由（UI action → 具名输入·纯查表）', () =
   it('坏档守卫：非对象/坏字段回空档，不让坏数据进蓝图', () => {
     expect(normalizeState(null)).toEqual(EMPTY_STATE);
     expect(normalizeState({ stardust: 'x', relations: { a: 'b', c: 3 }, items: 5, placed: [1, 'feather'], chapters: 'no', cursors: { k: 1, j: 'n2' } }))
-      .toEqual({ stardust: 0, relations: { c: 3 }, items: {}, placed: ['feather'], chapters: [], cursors: { j: 'n2' } });
+      .toEqual({ stardust: 0, claimedGrants: [], relations: { c: 3 }, items: {}, placed: ['feather'], chapters: [], cursors: { j: 'n2' }, itemUses: {} });
+    expect(normalizeState({ stardust: -9, claimedGrants: ['welcome', 'welcome', 'fake'] }).stardust).toBe(0);
+    expect(normalizeState({ stardust: 100000, claimedGrants: ['welcome', 'welcome', 'fake'] }).claimedGrants).toEqual(['welcome']);
   });
 });

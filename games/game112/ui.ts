@@ -6,15 +6,16 @@
 // 设计稿对齐：docs/design/game112/claude-design-spec.md · hall-framework.md v3。
 import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { buildStarterHome } from '@zerocraft/engine/ui/starters/index.js';
-import { catArt, mapSkin, sceneSkin } from './cat-art.js';
-import { xuetuanMotion } from './cat-motion.js';
+import { catArt, mapSkin, sceneSkin, propArt, shopkeeperArt } from './cat-art.js';
+import { ITEM_EXPERIENCES, experienceOf } from './item-data.js';
+import { shopkeeperMotion, xuetuanMotion } from './cat-motion.js';
 import {
-  SHOP_ITEMS, RELATIONS, CATS, TABLE_PLACEHOLDER, GAME_ID, STAGE_ONLY_FLAG,
+  SHOP_ITEMS, STARDUST_GRANTS, STARDUST_MAX, RELATIONS, CATS, TABLE_PLACEHOLDER, GAME_ID, STAGE_ONLY_FLAG, shopItemOf,
   ROOMS, roomOf, SCENE_W, SCENE_H, type RoomId, type RoomSpec,
 } from './world-data.js';
 import type { HallView, ReadingView } from './project.js';
 import { WHEREABOUTS, type CatRegistry, type RegistrationDraft } from './registration.js';
-import { CAT_BREEDS, CAT_GALLERY, catalogPage, EMPTY_CATALOG_BROWSE, type CatalogBrowse, type CatalogSource } from './cat-gallery.js';
+import { CAT_BREEDS, CAT_GALLERY, RAGDOLL_IMAGES, catalogPage, EMPTY_CATALOG_BROWSE, type CatalogBrowse, type CatalogSource } from './cat-gallery.js';
 
 /** 屏：scene = 当前房间（唯一的「主屏」）；map = 馆图；其余 = 叠在房间上的 Drawer。 */
 export type Screen = 'home' | 'reception' | 'scene' | 'map' | 'orbs' | 'catalog' | 'table' | 'toys' | 'shop' | 'memory' | 'reading' | 'settings' | 'about';
@@ -25,7 +26,7 @@ export const UI_ACTIONS = [
   'hall.back', 'map.open', 'room.enter', 'orbs.open', 'table.open', 'toys.open', 'shop.open', 'memory.open', 'settings.open', 'later',
   'catalog.open', 'catalog.search', 'catalog.source', 'catalog.page',
   'cat.greet', 'cat.sit', 'offline.ack', 'ui.hide', 'ui.show',
-  'shop.buy', 'decor.place',
+  'shop.inspect', 'shop.buy', 'shop.claimWelcome', 'decor.place', 'decor.remove', 'item.use', 'item.respond', 'item.cancel',
   'memory.read', 'memory.advance', 'memory.choose', 'memory.back',
   'registration.open', 'registration.name', 'registration.note', 'registration.whereabouts', 'registration.save', 'registration.skip', 'registration.remove',
 ] as const;
@@ -57,7 +58,7 @@ const backBtn = (id: string, label = '回到猫身边', action = 'hall.back'): L
 function sign(id: string, text: string, action: string, o: { x: number; y: number; arg?: string; tag?: string; visibleWhen?: string } ): LayoutNode {
   return {
     type: 'Panel', id, props: { bg: 'raised', edge: 'gold', action, ...(o.arg !== undefined ? { actionArg: o.arg } : {}) },
-    layout: { x: o.x, y: o.y, direction: 'row', gap: 8, padding: 8, align: 'center', press3d: true, allowOverlap: true, fx: [{ kind: 'sheen-hover' }] },
+    layout: { x: o.x, y: o.y, direction: 'row', gap: 8, padding: 8, align: 'center', press3d: true },
     ...(o.visibleWhen !== undefined ? { visibleWhen: o.visibleWhen } : {}),
     children: [
       { type: 'Label', id: `${id}-label`, props: { text, size: 'sm', bold: true, color: 'text' } },
@@ -92,12 +93,12 @@ export function buildReception(registry: CatRegistry, draft: RegistrationDraft):
       layout: { direction: 'column', align: 'center', padding: 10 },
       children: [{
         type: 'Panel', id: 'reception-stage', props: { bg: 'sunken', vignette: true, ...(scene !== undefined ? { skin: scene } : {}) },
-        layout: { width: SCENE_W, height: SCENE_H, radius: 18 },
+        layout: { width: SCENE_W, height: SCENE_H, radius: 18, padding: 0 },
         children: [
           sign('reception-title', '星尾馆 · 前台登记', 'registration.skip', { x: 18, y: 16, tag: '主厅入口' }),
           {
             type: 'Panel', id: 'reception-cat', props: { bg: 'transparent' },
-            layout: { x: 140, y: 490, width: 126, direction: 'column', align: 'center', allowOverlap: true },
+            layout: { x: 140, y: 490, width: 126, direction: 'column', align: 'center', padding: 0 },
             children: [
               { type: 'Image', id: 'reception-xuetuan', props: { src: catArt('xuetuan', 'rest'), fit: 'contain', alt: '雪团在前台旁边安静等你' }, layout: { width: 126, height: 116 } },
               readableChip('reception-cat-chip', '雪团 · 星尾馆的迎客猫'),
@@ -105,7 +106,7 @@ export function buildReception(registry: CatRegistry, draft: RegistrationDraft):
           },
           {
             type: 'Panel', id: 'reception-ledger', props: { bg: 'raised', edge: 'gold' },
-            layout: { x: 580, y: 116, width: 392, direction: 'column', gap: 8, padding: 16, radius: 16, allowOverlap: true },
+            layout: { x: 580, y: 116, width: 392, direction: 'column', gap: 8, padding: 16, radius: 16 },
             children: [
               heading('reception-heading', '先为它留一页'),
               subLabel('reception-intro', '离开的、仍在寻找的、还在身边的猫，都可以登记。也可以先逛逛。'),
@@ -130,13 +131,6 @@ export function buildReception(registry: CatRegistry, draft: RegistrationDraft):
 }
 
 // ── ② 房间舞台（巡游版主屏·全部按钮在画里）────────────────────────────────
-/** 晶球物件副标 = 心光进度（陪坐的可见回报 + 「心光是什么」的现场解释·八问第 2/6 问）。纯查 view。 */
-function orbSub(v: HallView): string {
-  const locked = v.chapters.filter((c) => !c.unlocked).map((c) => c.need).sort((a, b) => a - b)[0];
-  if (locked === undefined) return `心光 ${v.relations.heartlight} · 看它的过去`;
-  return `心光 ${v.relations.heartlight} · 还差 ${Math.max(0, locked - v.relations.heartlight)} 就发光`;
-}
-
 /** 初版闭环的下一步提示：不加奖励惩罚，只把已存在的动作与回忆线串起来。 */
 export function loopPrompt(v: HallView): { label: string; detail: string; action: string } {
   const first = v.chapters[0];
@@ -162,17 +156,16 @@ function readableChip(id: string, label: string, emphasized = false): LayoutNode
 /** 画里的热区（门 / 物件）：透明命中面 + 实底小木牌；悬停流光、按下反馈。 */
 function hotzone(id: string, label: string, action: string, r: { x: number; y: number; w: number; h: number }, o: { arg?: string; sub?: string; tone?: 'accent' | 'normal' | 'dim' } = {}): LayoutNode {
   return {
-    type: 'Panel', id, props: { bg: 'transparent', action, ...(o.arg !== undefined ? { actionArg: o.arg } : {}) },
+    type: 'Panel', id, props: { bare: true, action, ...(o.arg !== undefined ? { actionArg: o.arg } : {}) },
     layout: {
       x: r.x, y: r.y, width: r.w, height: r.h,
-      direction: 'column', gap: 4, align: 'center', justify: 'end', padding: 4,
-      allowOverlap: true, radius: 14, press3d: true,
-      fx: [{ kind: 'sheen-hover' }],
+      direction: 'column', gap: 4, align: 'center', justify: 'end', padding: 0,
+      radius: 14,
     },
     visibleWhen: NOT_STAGE_ONLY,
     children: [
       ...(o.sub !== undefined ? [readableChip(`${id}-sub`, o.sub)] : []),
-      readableChip(`${id}-chip`, label, (o.tone ?? 'accent') === 'accent'),
+      { ...readableChip(`${id}-chip`, label, (o.tone ?? 'accent') === 'accent'), layout: { padding: 5, radius: 10, press3d: true, fx: [{ kind: 'sheen-hover' }] } },
     ],
   };
 }
@@ -184,25 +177,50 @@ function catLayer(v: HallView, room: RoomSpec): LayoutNode {
   // 陪伴动作只更新文字/数值，坐姿图保持稳定，局部动效只动胸毛与尾尖。
   const catSrc = catArt(v.catId, 'rest');
   return {
-    type: 'Panel', id: 'hall-cat-wrap', props: { bg: 'transparent', action: 'cat.greet' },
-    layout: { x: room.catSpot.x, y: room.catSpot.y, width: w, direction: 'column', gap: 4, align: 'center', allowOverlap: true },
+    type: 'Panel', id: 'hall-cat-wrap', props: { bare: true, action: 'cat.greet' },
+    layout: { x: room.catSpot.x, y: room.catSpot.y, width: w, height: h, direction: 'column', align: 'center', padding: 0 },
     children: [
-      { type: 'Image', id: 'hall-cat', props: { src: catSrc, fit: 'contain', alt: `${v.catName}安静地陪在房间里`, meshMotion: xuetuanMotion(catSrc) }, layout: { width: w, height: h } },
-      {
-        type: 'Panel', id: 'hall-cat-caption', props: { bg: 'raised', edge: 'gold' },
-        layout: { direction: 'column', gap: 3, padding: 6, align: 'center' },
-        children: [
-          { type: 'Label', id: 'hall-cat-line', props: { text: v.catLine, size: 'xs', color: 'text' } },
-          { type: 'Label', id: 'hall-mood', props: { text: `${v.catName} · ${v.moodPhrase}`, size: 'xs', bold: true, color: 'text' } },
-        ],
-      },
-      ...(room.id === 'hall' && v.owned.some((it) => it.placed) ? [{
-        type: 'Panel', id: 'hall-placed', props: { bare: true },
-        layout: { direction: 'row', gap: 4, align: 'center', justify: 'center' },
-        children: v.owned.filter((it) => it.placed).map((it): LayoutNode => ({ type: 'Tag', id: `hall-placed-${it.id}`, props: { label: it.name, tone: 'normal', size: 'sm' } })),
-      } as LayoutNode] : []),
+      { type: 'Image', id: 'hall-cat', props: { src: catSrc, fit: 'contain', alt: `${v.catName}安静地陪在房间里`, meshMotion: xuetuanMotion(catSrc, room.id === 'hall' && v.itemActivity !== 'none') }, layout: { width: w, height: h } },
     ],
   };
+}
+
+/** 道具是场景实体图层；唯一的意图叠层是猫压在软垫上。命中标签独立，不借豁免掩盖冲突。 */
+function placedProps(v: HallView, room: RoomSpec): LayoutNode[] {
+  if (room.id !== 'hall') return [];
+  return ITEM_EXPERIENCES.filter((it) => v.owned.some((o) => o.id === it.id && o.placed)).flatMap((it): LayoutNode[] => {
+    const active = v.itemActivity.startsWith(`${it.id}:`);
+    const done = v.itemActivity === `${it.id}:done`;
+    const revealed = it.id === 'cardback-moon' && (done || (!active && (v.itemUses[it.id] ?? 0) > 0));
+    const r = it.spot;
+    return [
+      { type: 'Panel', id: `hall-placed-${it.id}`, props: { bare: true, action: 'item.use', actionArg: it.id },
+        layout: { x: r.x, y: r.y, width: r.w, height: r.h, padding: 0, ...(it.id === 'cushion' ? { allowOverlap: true } : {}) },
+        children: revealed ? [{ type: 'PlayingCard', id: 'prop-moon-revealed', props: { rank: '', suit: '☾', face: 'light', size: 'sm', faceUp: true }, layout: { width: 50, height: 44, rotate: -9, rotateX: 42 } }] : [{ type: 'Image', id: `prop-art-${it.id}`, props: { src: propArt(it.id), fit: 'contain', alt: it.place },
+          layout: { width: r.w, height: r.h,
+            ...(active && !done && it.id === 'feather' ? { fx: [{ kind: 'wobble' as const, intensity: 0.22, ms: 2100 }] } : {}),
+            ...(done && it.id === 'feather' ? { rotate: 16 } : {}),
+            ...(active && it.id === 'paperbag' ? { fx: [{ kind: 'wobble' as const, intensity: done ? 0.1 : 0.04, ms: 1600 }] } : {}),
+          } }],
+      },
+      hotzone(`prop-label-${it.id}`, active ? '正在陪伴' : it.invite, 'item.use', it.labelSpot, { arg: it.id, tone: 'normal' }),
+    ];
+  });
+}
+
+function catCaption(v: HallView, room: RoomSpec): LayoutNode {
+  const active = room.id === 'hall' ? ITEM_EXPERIENCES.find((it) => v.itemActivity.startsWith(`${it.id}:`)) : undefined;
+  const done = active !== undefined && v.itemActivity === `${active.id}:done`;
+  return { type: 'Panel', id: 'hall-cat-caption', props: { bg: 'raised', edge: 'gold' },
+    layout: { x: 276, y: 612, width: 448, direction: 'column', gap: 3, padding: 8, align: 'center' }, visibleWhen: NOT_STAGE_ONLY,
+    children: [
+      { type: 'Label', id: 'hall-mood', props: { text: `${v.catName} · ${active ? (done ? '一起留下了小回忆' : active.invite) : v.moodPhrase}`, size: 'sm', bold: true, color: 'text' } },
+      { type: 'Label', id: 'hall-cat-line', props: { text: active ? (done ? active.finished : active.waiting) : v.catLine, size: 'xs', color: 'text' } },
+      ...(active ? [{ type: 'Panel', id: 'item-response-row', props: { bare: true }, layout: { direction: 'row', gap: 8, align: 'center' }, children: [
+        ...(!done ? [{ type: 'Button', id: 'item-respond', props: { label: active.response, kind: 'primary', action: 'item.respond', actionArg: active.id } } as LayoutNode] : []),
+        { type: 'Button', id: 'item-cancel', props: { label: done ? '记住这一刻' : '让它歇一会儿', kind: 'ghost', action: 'item.cancel' } } as LayoutNode,
+      ] } as LayoutNode] : []),
+    ] };
 }
 
 /** 舞台上的全部东西（房间画 + 木牌 + 星砂罐 + 门 + 物件 + 猫 + 回馆纸条 + 沉浸出口）。 */
@@ -214,24 +232,24 @@ function stageChildren(v: HallView, room: RoomSpec): LayoutNode[] {
     // 右上：星砂罐 + 生成状态 + 只看它（都在画里·右上角壳层 ⚙ 在舞台之外）
     {
       type: 'Panel', id: 'hall-hud', props: { bg: 'raised', edge: 'gold' },
-      layout: { x: 490, y: 14, width: 494, direction: 'row', gap: 8, padding: 6, align: 'center', justify: 'end', allowOverlap: true },
+      layout: { x: 490, y: 14, width: 494, direction: 'row', gap: 8, padding: 6, align: 'center', justify: 'end' },
       visibleWhen: NOT_STAGE_ONLY,
       children: [
         { type: 'Label', id: 'hall-stardust', props: { text: `星砂 ${v.stardust}`, size: 'md', bold: true, color: 'text' } },
-        { type: 'Label', id: 'hall-gen', props: { text: '离线陪伴', size: 'xs', color: 'text' } },
+        { type: 'Label', id: 'hall-heartlight', props: { text: `心光 ${v.relations.heartlight}`, size: 'sm', color: 'text' } },
         {
           type: 'Panel', id: 'hall-catalog', props: { bg: 'raised', edge: 'gold', action: 'catalog.open' },
-          layout: { padding: 6, press3d: true, allowOverlap: true },
+          layout: { padding: 6, press3d: true },
           children: [{ type: 'Label', id: 'hall-catalog-label', props: { text: 'Gallery 图鉴', size: 'sm', bold: true, color: 'text' } }],
         },
         {
           type: 'Panel', id: 'hall-stage-hide', props: { bg: 'raised', edge: 'gold', action: 'ui.hide' },
-          layout: { padding: 6, press3d: true, allowOverlap: true },
+          layout: { padding: 6, press3d: true },
           children: [{ type: 'Label', id: 'hall-stage-hide-label', props: { text: '只看它', size: 'sm', bold: true, color: 'text' } }],
         },
         {
           type: 'Panel', id: 'hall-settings', props: { bg: 'raised', edge: 'gold', action: 'settings.open' },
-          layout: { padding: 6, press3d: true, allowOverlap: true },
+          layout: { padding: 6, press3d: true },
           children: [{ type: 'Label', id: 'hall-settings-label', props: { text: '设置', size: 'sm', bold: true, color: 'text' } }],
         },
       ],
@@ -239,7 +257,7 @@ function stageChildren(v: HallView, room: RoomSpec): LayoutNode[] {
     // 回馆纸条（有离线小事件才在树里·一句可展开说明·看过即收）
     ...(v.offlineEvents.length > 0 ? [{
       type: 'Panel', id: 'hall-offline', props: { bg: 'raised', edge: 'gold' },
-      layout: { x: 300, y: 64, width: 400, direction: 'column', gap: 6, padding: 12, allowOverlap: true },
+      layout: { x: 300, y: 74, width: 400, direction: 'column', gap: 6, padding: 12 },
       visibleWhen: NOT_STAGE_ONLY,
       children: [
         { type: 'Label', id: 'hall-offline-cap', props: { text: '你不在的时候', size: 'sm', bold: true, color: 'gold' } },
@@ -256,28 +274,29 @@ function stageChildren(v: HallView, room: RoomSpec): LayoutNode[] {
     // 物件：活动入口
     ...room.objects.map((o) => hotzone(`hot-${o.id}`, o.label, o.action, o, {
       ...(o.arg !== undefined ? { arg: o.arg } : {}),
-      ...(o.action === 'orbs.open' ? { sub: orbSub(v) } : {}),
       tone: 'normal',
     })),
-    ...(room.id === 'hall' ? [hotzone('hall-loop-next', next.label, next.action, { x: 346, y: 616, w: 306, h: 78 }, { sub: next.detail, tone: 'normal' })] : []),
+    ...(room.id === 'hall' ? [hotzone('hall-loop-next', next.label, next.action, { x: 762, y: 641, w: 204, h: 46 }, { tone: 'normal' })] : []),
+    ...placedProps(v, room),
     // 猫（固定猫位·点猫 = 呼唤）
     catLayer(v, room),
+    catCaption(v, room),
     // 沉浸模式里唯一的键（只在 Flag 开时在树里·由 resolveBindings 剔/留）
     sign('hall-stage-show', '显示界面', 'ui.show', { x: 440, y: SCENE_H - 54, visibleWhen: STAGE_ONLY_FLAG }),
   ];
 }
 
 /** 房间舞台 = 一张房间画（Panel.skin cover）+ 画里的一切；无图回退主题 sunken 面（兜底不丢）。 */
-function stageNode(v: HallView, room: RoomSpec): LayoutNode {
+function stageNode(v: HallView, room: RoomSpec, overlay?: LayoutNode): LayoutNode {
   const skin = sceneSkin(room.scene);
   return {
     type: 'Panel', id: 'hall-stage', props: { bg: 'sunken', vignette: true, ...(skin !== undefined ? { skin } : {}) },
-    layout: { width: SCENE_W, height: SCENE_H, radius: 18 },
-    children: stageChildren(v, room),
+    layout: { width: SCENE_W, height: SCENE_H, radius: 18, padding: 0 },
+    children: overlay ? [overlay] : stageChildren(v, room),
   };
 }
 
-/** 房间屏（唯一主屏）；overlay = 叠在房间上的 Drawer（子功能）。 */
+/** 子功能也属于舞台：书页 / 货架使用同一坐标系，不挂窗口外 Drawer。 */
 export function buildScene(v: HallView, roomId: RoomId, overlay?: LayoutNode): LayoutNode {
   const room = roomOf(roomId) ?? roomOf('hall')!;
   return {
@@ -286,9 +305,8 @@ export function buildScene(v: HallView, roomId: RoomId, overlay?: LayoutNode): L
       {
         type: 'Panel', id: 'stage-frame', props: { bare: true },
         layout: { direction: 'column', align: 'center', padding: 10 },
-        children: [stageNode(v, room)],
+        children: [stageNode(v, room, overlay)],
       },
-      ...(overlay !== undefined ? [overlay] : []),
     ],
   };
 }
@@ -303,12 +321,12 @@ export function buildMap(activeRoom: RoomId): LayoutNode {
       layout: { direction: 'column', align: 'center', padding: 10 },
       children: [{
         type: 'Panel', id: 'map-cutaway', props: { bg: 'sunken', vignette: true, ...(skin !== undefined ? { skin } : {}) },
-        layout: { width: 960, height: 540, radius: 16 },
+        layout: { width: 960, height: 540, radius: 16, padding: 0 },
         children: [
           ...ROOMS.map((room): LayoutNode => ({
             type: 'Panel', id: `map-room-${room.id}`,
             props: { bg: 'transparent', action: 'room.enter', actionArg: room.id, accent: room.id === activeRoom },
-            layout: { x: room.mapRect.x, y: room.mapRect.y, width: room.mapRect.w, height: room.mapRect.h, direction: 'column', align: 'center', justify: 'end', padding: 8, press3d: true, allowOverlap: true, ...(room.id === activeRoom ? { fx: [{ kind: 'glow', color: 'gold' as const }] } : {}) },
+            layout: { x: room.mapRect.x + 3, y: room.mapRect.y + 3, width: room.mapRect.w - 8, height: room.mapRect.h - 8, direction: 'column', align: 'center', justify: 'end', padding: 0, press3d: true },
             children: [readableChip(
               `map-room-${room.id}-tag`,
               `${two(room.number)} ${room.name}${room.id === activeRoom ? ' · 雪团在这里' : ''}`,
@@ -318,7 +336,7 @@ export function buildMap(activeRoom: RoomId): LayoutNode {
           sign('map-back', '回到雪团身边', 'hall.back', { x: 16, y: 14 }),
           {
             ...readableChip('map-hint', '直接点图里的房间', true),
-            layout: { x: 780, y: 18, padding: 5, radius: 10, allowOverlap: true, fx: [{ kind: 'glow', color: 'gold' }] },
+            layout: { x: 780, y: 18, padding: 5, radius: 10 },
           },
         ],
       }],
@@ -326,9 +344,20 @@ export function buildMap(activeRoom: RoomId): LayoutNode {
   };
 }
 
-// ── ④ 叠在房间上的子功能（Drawer·房间仍可见·点暗处 = 回房）──────────────────
-function drawer(id: string, title: string, children: LayoutNode[], side: 'right' | 'bottom' = 'right', closeAction = 'hall.back'): LayoutNode {
-  return { type: 'Drawer', id, props: { side, title, closeAction }, children };
+// ── ④ 馆里的册页：画内实物近景；内容独立滚动，合册始终可见 ──────────────────
+function drawer(id: string, title: string, children: LayoutNode[], _side: 'right' | 'bottom' = 'right', closeAction = 'hall.back'): LayoutNode {
+  return {
+    type: 'Panel', id, props: { bg: 'raised', edge: 'gold' },
+    layout: { x: 90, y: 48, width: 820, height: 618, padding: 0, radius: 8 },
+    children: [{ type: 'Panel', id: `${id}-cover`, props: { skin: sceneSkin('folio'), bg: 'raised' },
+      layout: { x: 0, y: 0, width: 820, height: 618, padding: 0, radius: 8 }, children: [
+      { type: 'Panel', id: `${id}-header`, props: { bare: true },
+        layout: { x: 54, y: 36, width: 714, height: 46, direction: 'row', align: 'center', justify: 'between', padding: 0 },
+        children: [heading(`${id}-title`, title), backBtn(`${id}-close`, closeAction === 'memory.back' ? '合上这一页' : '合上册子', closeAction)] },
+      { type: 'Panel', id: `${id}-pages`, props: { bare: true, scroll: true },
+        layout: { x: 54, y: 106, width: 714, height: 456, direction: 'column', gap: 14, padding: 4 }, children },
+    ] }],
+  };
 }
 
 export function buildOrbs(v: HallView, registry: CatRegistry): LayoutNode {
@@ -391,7 +420,7 @@ export function buildOrbs(v: HallView, registry: CatRegistry): LayoutNode {
   ]);
 }
 
-/** 第八个功能入口：文本图鉴。图片素材尚未生成，条目只陈述登记机构目录与可组合外观轴。 */
+/** 第八个功能入口：文字目录 + 布偶猫待审样本；其余品种不伪造图。 */
 export function buildCatalog(browse: CatalogBrowse = EMPTY_CATALOG_BROWSE): LayoutNode {
   const result = catalogPage(browse);
   const sources: readonly { id: CatalogSource; label: string }[] = [
@@ -400,10 +429,32 @@ export function buildCatalog(browse: CatalogBrowse = EMPTY_CATALOG_BROWSE): Layo
   return drawer('catalog-drawer', 'Gallery · 猫咪图鉴', [
     { type: 'Panel', id: 'catalog-intro', props: { bare: true }, layout: { direction: 'column', gap: 5 },
       children: [
-        heading('catalog-heading', '先看文字库'),
-        subLabel('catalog-scope', `${CAT_BREEDS.length} 个目录条目 · 图片 ${CAT_GALLERY.imageRecords.length} 张 · 机构口径不完全相同`),
+        heading('catalog-heading', '猫咪文字库与试作'),
+        subLabel('catalog-scope', `${CAT_BREEDS.length} 个目录条目 · 布偶猫待审试作 ${CAT_GALLERY.imageRecords.length} 张`),
         subLabel('catalog-note', '品相指毛色、花纹、耳尾等中性外观，不评“好坏”或“纯不纯”。家猫也有自己的位置。'),
       ] },
+    {
+      type: 'Panel', id: 'catalog-ragdoll-study', props: { bg: 'raised', edge: 'gold' },
+      layout: { direction: 'column', gap: 6, padding: 10 },
+      children: [
+        { type: 'Label', id: 'catalog-ragdoll-title', props: { text: '布偶猫 · 2 只角色 / 6 个年龄格', size: 'md', bold: true, color: 'text' } },
+        { type: 'Image', id: 'catalog-ragdoll-board', props: { src: CAT_GALLERY.ragdollConceptBoard.path, fit: 'contain', alt: '公猫和母猫各有幼猫、成年猫、年长猫三个阶段的绘本风格对照板' }, layout: { width: 300, height: 200 } },
+        subLabel('catalog-ragdoll-board-note', '上图是绘本风格方向板；下方是逐只透明技术试作。'),
+        subLabel('catalog-ragdoll-status', '六格均有方向稿，但全部需修订，尚未通过美术审核。'),
+        { type: 'Panel', id: 'catalog-ragdoll-images', props: { bare: true }, layout: { direction: 'grid', minCol: 96, gap: 4 },
+          children: RAGDOLL_IMAGES.map((image): LayoutNode => ({
+            type: 'Panel', id: `catalog-image-card-${image.imageId}`, props: { bare: true },
+            layout: { direction: 'column', gap: 2, width: 96, align: 'center' },
+            children: [
+              { type: 'Image', id: `catalog-image-${image.imageId}`, props: { src: image.path, fit: 'contain', alt: `布偶猫${image.sex}猫${image.ageStage}待审图` }, layout: { width: 88, height: 98 } },
+              { type: 'Label', id: `catalog-image-label-${image.imageId}`, props: { text: `${image.sex} · ${image.ageStage}`, size: 'xs', color: 'text' } },
+            ],
+          })) },
+        subLabel('catalog-ragdoll-personality', '性格独立于性别和品种：好奇 / 谨慎 / 黏人 / 独立 / 好胜 / 贪玩 / 耐心。'),
+        ...CAT_GALLERY.ragdollCharacters.map((cat, index): LayoutNode =>
+          subLabel(`catalog-ragdoll-character-${index}`, `${index === 0 ? 'A' : 'B'} · ${cat.playCue}`)),
+      ],
+    },
     {
       type: 'Panel', id: 'catalog-axes', props: { bg: 'raised', edge: 'gold' },
       layout: { direction: 'column', gap: 5, padding: 10 },
@@ -412,6 +463,7 @@ export function buildCatalog(browse: CatalogBrowse = EMPTY_CATALOG_BROWSE): Layo
         subLabel('catalog-age', `年龄：${CAT_GALLERY.dimensions.ageStage.join(' / ')}`),
         subLabel('catalog-size', `体型：${CAT_GALLERY.dimensions.bodySize.join(' / ')}`),
         subLabel('catalog-sex', `性别：${CAT_GALLERY.dimensions.sex.join(' / ')}`),
+        subLabel('catalog-temperament', `性格：${CAT_GALLERY.dimensions.temperament.join(' / ')}`),
         subLabel('catalog-appearance', '外观：毛长 / 底色 / 花纹 / 白斑 / 耳形 / 尾形 / 眼色'),
       ],
     },
@@ -434,7 +486,7 @@ export function buildCatalog(browse: CatalogBrowse = EMPTY_CATALOG_BROWSE): Layo
       ] },
     { type: 'Panel', id: 'catalog-outro', props: { bare: true }, layout: { direction: 'column', gap: 8 },
       children: [
-        subLabel('catalog-image-notice', '图片库待你确认文字分类后再开始生成；现在不会显示或伪造猫图。'),
+        subLabel('catalog-image-notice', '当前仅有布偶猫待审试作，其余品种无图；试作不会替换房间里的雪团。'),
         backBtn('catalog-back'),
       ] },
   ]);
@@ -447,6 +499,10 @@ export function buildTable(v: HallView): LayoutNode {
       type: 'Panel', id: 'table-stage', props: { bg: 'raised', edge: 'gold' },
       layout: { direction: 'column', gap: 8, padding: 16, align: 'center' },
       children: [
+        ...(v.owned.some((it) => it.id === 'cardback-moon' && it.placed) ? [
+          { type: 'Image', id: 'table-moon-deck', props: { src: propArt('cardback-moon'), fit: 'contain', alt: '已换上的月相牌背' }, layout: { width: 160, height: 104 } } as LayoutNode,
+          { type: 'Button', id: 'table-moon-use', props: { label: '和雪团翻一张月亮', kind: 'primary', action: 'item.use', actionArg: 'cardback-moon' } } as LayoutNode,
+        ] : []),
         { type: 'Label', id: 'table-note', props: { text: TABLE_PLACEHOLDER, size: 'md', color: 'text' } },
         subLabel('table-sub', `规则定稿后这里是：${v.catName} → 三个星盘 → 你的手牌 → 双方星光。`),
       ],
@@ -456,72 +512,98 @@ export function buildTable(v: HallView): LayoutNode {
 }
 
 export function buildToys(v: HallView): LayoutNode {
-  return drawer('toys-drawer', '玩具篮', [
+  return drawer('toys-drawer', '收纳篮 · 带回来的小东西', [
+    subLabel('toys-intro', '摆进主厅以后，可以直接点物件陪雪团玩。收回不会丢失。'),
     ...(v.owned.length === 0
       ? [
           subLabel('toys-empty', '还没有玩具。星砂铺里有羽毛杆和纸袋。'),
           { type: 'Button', id: 'toys-shop', props: { label: '去星砂铺', kind: 'primary', action: 'shop.open' } } as LayoutNode,
         ]
       : v.owned.map((it): LayoutNode => ({
-          type: 'Panel', id: `toy-${it.id}`, props: { bg: 'raised' },
-          layout: { direction: 'row', gap: 12, padding: 12, align: 'center', justify: 'between' },
+          type: 'Panel', id: `toy-${it.id}`, props: { bare: true },
+          layout: { direction: 'column', gap: 8, padding: 12 },
           children: [
             {
               type: 'Panel', id: `toy-${it.id}-l`, props: { bare: true },
               layout: { direction: 'row', gap: 8, align: 'center' },
               children: [
+                { type: 'Image', id: `toy-${it.id}-art`, props: { src: propArt(it.id), fit: 'contain', alt: it.name }, layout: { width: 90, height: 78 } },
                 { type: 'Label', id: `toy-${it.id}-name`, props: { text: it.name, size: 'lg', bold: true, color: 'text' } },
-                { type: 'Tag', id: `toy-${it.id}-kind`, props: { label: it.kind === 'toy' ? '新互动' : it.kind === 'decor' ? '装饰' : '牌具外观', tone: 'dim' } },
-                { type: 'Badge', id: `toy-${it.id}-n`, props: { text: `×${it.count}`, tone: 'accent' } },
               ],
             },
-            it.placed
-              ? { type: 'Badge', id: `toy-${it.id}-placed`, props: { text: '已在馆里', tone: 'ok' } }
-              : { type: 'Button', id: `toy-${it.id}-place`, props: { label: '放到馆里', kind: 'primary', action: 'decor.place', actionArg: it.id } },
+            subLabel(`toy-${it.id}-spot`, `${it.placed ? '已安放' : '可安放'}：${experienceOf(it.id)?.place ?? '主厅'}`),
+            ...((v.itemUses[it.id] ?? 0) > 0 ? [subLabel(`toy-${it.id}-trace`, experienceOf(it.id)?.trace ?? '')] : []),
+            { type: 'Panel', id: `toy-${it.id}-actions`, props: { bare: true }, layout: { direction: 'row', gap: 8 }, children: it.placed ? [
+              { type: 'Button', id: `toy-${it.id}-use`, props: { label: experienceOf(it.id)?.invite ?? '一起玩', kind: 'primary', action: 'item.use', actionArg: it.id } },
+              { type: 'Button', id: `toy-${it.id}-remove`, props: { label: '收回篮里', kind: 'ghost', action: 'decor.remove', actionArg: it.id } },
+            ] : [{ type: 'Button', id: `toy-${it.id}-place`, props: { label: '放到馆里', kind: 'primary', action: 'decor.place', actionArg: it.id } }] },
           ],
         }))),
     backBtn('toys-back'),
+    { type: 'Button', id: 'toys-more', props: { label: '去星砂铺看看', kind: 'ghost', action: 'shop.open' } },
   ]);
 }
 
-export function buildShop(v: HallView): LayoutNode {
-  const countOf = (id: string): number => v.owned.find((o) => o.id === id)?.count ?? 0;
-  return drawer('shop-drawer', '星砂杂货铺', [
-    {
-      type: 'Panel', id: 'shop-top', props: { bare: true },
-      layout: { direction: 'row', gap: 12, align: 'center', justify: 'between' },
-      children: [
-        subLabel('shop-sub', '不卖关系，不卖回忆。换来的东西会留在馆里。'),
-        { type: 'Tag', id: 'shop-stardust', props: { label: `星砂 ${v.stardust}`, tone: 'accent', size: 'lg' } },
-      ],
-    },
-    {
-      type: 'Panel', id: 'shop-grid', props: { bare: true },
-      layout: { direction: 'column', gap: 12 },
-      children: SHOP_ITEMS.map((it): LayoutNode => {
-        const n = countOf(it.id);
-        const afford = v.stardust >= it.price;
+export function buildShop(v: HallView, selectedItemId = 'paperbag'): LayoutNode {
+  const merchantSrc = shopkeeperArt();
+  const selected = shopItemOf(selectedItemId) ?? SHOP_ITEMS[0]!;
+  const selectedOwned = v.owned.find((o) => o.id === selected.id);
+  const affordable = v.stardust >= selected.price;
+  const welcome = STARDUST_GRANTS[0];
+  const welcomeClaimed = v.claimedGrants.includes(welcome.id);
+  const welcomeAmount = Math.min(welcome.amount, STARDUST_MAX - v.stardust);
+  const kindName = { toy: '新互动', decor: '猫用摆设', cardskin: '牌具外观' }[selected.kind];
+  return {
+    type: 'Panel', id: 'shop-drawer', props: { bg: 'raised' },
+    layout: { x: 0, y: 0, width: SCENE_W, height: SCENE_H, padding: 0, radius: 18 },
+    children: [{ type: 'Panel', id: 'shop-counter-art', props: { skin: sceneSkin('shop-counter'), bg: 'raised' },
+      layout: { x: 0, y: 0, width: SCENE_W, height: SCENE_H, padding: 0, radius: 18 }, children: [
+      sign('shop-back', '收起货单 · 回馆里', 'hall.back', { x: 26, y: 25 }),
+      { ...readableChip('shop-stardust', `钱袋里 · 星砂 ${v.stardust}`), layout: { x: 748, y: 25, padding: 8, radius: 4 } },
+      ...SHOP_ITEMS.map((it, i): LayoutNode => {
+        const owned = v.owned.find((o) => o.id === it.id);
         return {
-          type: 'Panel', id: `shop-${it.id}`, props: { bg: 'raised' },
-          layout: { direction: 'column', gap: 8, padding: 12, press3d: true },
+          type: 'Panel', id: `shop-${it.id}`, props: { bare: true },
+          layout: { x: 132 + i * 186, y: 202, width: 172, height: 242, padding: 0, direction: 'column', align: 'center', gap: 8 },
           children: [
-            { type: 'Label', id: `shop-${it.id}-name`, props: { text: it.name, size: 'lg', bold: true, font: 'cnround', color: 'text' } },
-            { type: 'Label', id: `shop-${it.id}-blurb`, props: { text: it.blurb, size: 'sm', color: 'sub' } },
-            {
-              type: 'Panel', id: `shop-${it.id}-row`, props: { bare: true },
-              layout: { direction: 'row', gap: 8, align: 'center', justify: 'between' },
-              children: [
-                { type: 'Tag', id: `shop-${it.id}-price`, props: { label: `星砂 ${it.price}`, tone: 'accent' } },
-                ...(n > 0 ? [{ type: 'Badge', id: `shop-${it.id}-own`, props: { text: `已拥有 ×${n}`, tone: 'ok' } } as LayoutNode] : []),
-              ],
-            },
-            { type: 'Button', id: `shop-${it.id}-buy`, props: { label: afford ? '用星砂交换' : '星砂不够', kind: afford ? 'primary' : 'ghost', action: 'shop.buy', actionArg: it.id, disabled: !afford } },
+            { type: 'Panel', id: `shop-${it.id}-support`, props: { bare: true }, layout: { width: 164, height: 150, padding: 0, justify: 'end', align: 'center' }, children: [
+              { type: 'Image', id: `shop-${it.id}-art`, props: { src: propArt(it.id), fit: 'contain', alt: it.name }, layout: { width: 164, height: it.id === 'cushion' ? 64 : 150 } },
+            ] },
+            readableChip(`shop-${it.id}-price`, `${it.name} · ${owned ? (owned.placed ? '已摆好' : '已带回') : `${it.price} 星砂`}`),
+            { type: 'Button', id: `shop-${it.id}-inspect`, props: { label: it.id === selected.id ? '正在看' : '看看详情', kind: it.id === selected.id ? 'hero' : 'primary', action: 'shop.inspect', actionArg: it.id } },
           ],
         };
       }),
-    },
-    backBtn('shop-back'),
-  ]);
+      { type: 'Image', id: 'shopkeeper-cat', props: { src: merchantSrc, fit: 'contain', alt: '坐在柜台边、眯着琥珀色眼睛的玳瑁猫掌柜', meshMotion: shopkeeperMotion(merchantSrc) },
+        layout: { x: 25, y: 446, width: 165, height: 198 } },
+      { ...readableChip('shopkeeper-name', '玳瑁掌柜'), layout: { x: 72, y: 646, padding: 6, radius: 4 } },
+      { type: 'Panel', id: 'shop-ledger', props: { bare: true },
+        layout: { x: 198, y: 496, width: 620, height: 145, padding: 0, direction: 'column', gap: 6 },
+        children: [heading('shop-title', `星砂铺 · ${selected.name}`),
+          subLabel('shop-sub', selected.blurb),
+          subLabel('shop-detail', `${kindName} · ${experienceOf(selected.id)?.place ?? '主厅'} · ${selectedOwned ? (selectedOwned.placed ? '已摆好' : '已带回') : `${selected.price} 星砂`}`),
+          { type: 'Panel', id: 'shop-ledger-actions', props: { bare: true }, layout: { direction: 'row', gap: 10, align: 'center' }, children: [
+            selectedOwned
+              ? { type: 'Button', id: 'shop-selected-place', props: { label: selectedOwned.placed ? '回主厅一起用' : '放进馆里看看', kind: 'primary', action: selectedOwned.placed ? 'item.use' : 'decor.place', actionArg: selected.id } }
+              : affordable
+                ? { type: 'Button', id: 'shop-selected-buy', props: { label: `用 ${selected.price} 星砂交换`, kind: 'primary', action: 'shop.buy', actionArg: selected.id } }
+                : readableChip('shop-selected-shortfall', `还差 ${selected.price - v.stardust} 星砂`),
+            welcomeClaimed
+              ? (affordable || selectedOwned
+                ? subLabel('shop-welcome-claimed', '见面星砂已领')
+                : { type: 'Button', id: 'shop-earn', props: { label: '回主厅陪它', kind: 'primary', action: 'room.enter', actionArg: 'hall' } })
+              : welcomeAmount > 0
+                ? { type: 'Button', id: 'shop-welcome-claim', props: { label: `领见面星砂 +${welcomeAmount}`, kind: 'primary', action: 'shop.claimWelcome' } }
+                : subLabel('shop-welcome-full', '星砂罐满了，稍后再领'),
+          ] },
+          subLabel('shop-promise', selectedOwned
+            ? '掌柜：账记下了。好不好玩，还得问雪团。'
+            : !affordable
+              ? (welcomeClaimed ? '掌柜：星砂不够也没关系，陪雪团坐坐会慢慢攒起来。' : '掌柜：先领见面星砂，也可以陪雪团坐坐。')
+              : '掌柜：不卖心光，也不卖回忆。喜欢，再交换。'),
+        ] },
+    ] }],
+  };
 }
 
 export function buildMemory(v: HallView): LayoutNode {
@@ -609,7 +691,7 @@ export function buildAbout(): LayoutNode {
 }
 
 /** 屏 → 树（宿主唯一入口·纯查表）。子功能 = 当前房间舞台 + 叠层。 */
-export function buildScreen(o: { screen: Screen; view?: HallView; reading?: ReadingView; room?: RoomId; canExit?: boolean; registry?: CatRegistry; draft?: RegistrationDraft; catalog?: CatalogBrowse }): LayoutNode {
+export function buildScreen(o: { screen: Screen; view?: HallView; reading?: ReadingView; room?: RoomId; canExit?: boolean; registry?: CatRegistry; draft?: RegistrationDraft; catalog?: CatalogBrowse; shopItem?: string }): LayoutNode {
   const v = o.view;
   const room: RoomId = o.room ?? 'hall';
   switch (o.screen) {
@@ -626,7 +708,7 @@ export function buildScreen(o: { screen: Screen; view?: HallView; reading?: Read
     case 'catalog': return buildScene(v, room, buildCatalog(o.catalog));
     case 'table': return buildScene(v, room, buildTable(v));
     case 'toys': return buildScene(v, room, buildToys(v));
-    case 'shop': return buildScene(v, room, buildShop(v));
+    case 'shop': return buildScene(v, room, buildShop(v, o.shopItem));
     case 'memory': return buildScene(v, room, buildMemory(v));
     case 'reading': return buildScene(v, room, o.reading !== undefined ? buildReading(o.reading) : buildMemory(v));
     case 'settings': return buildScene(v, room, buildSettings());

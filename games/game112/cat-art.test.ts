@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { catArt, mapSkin, sceneSkin, setSkinOverrides } from './cat-art.js';
+import { catArt, mapSkin, sceneSkin, setSkinOverrides, shopkeeperArt } from './cat-art.js';
 
 describe('game112 主厅皮肤槽', () => {
   it('本地美术索引注入主厅与馆图真图，清空时回退', () => {
@@ -11,6 +11,7 @@ describe('game112 主厅皮肤槽', () => {
       'game112/cat/xuetuan-walk': '/games/game112/art/cat/xuetuan-walk-right-v2.png',
       'game112/cat/xuetuan-walk-left': '/games/game112/art/cat/xuetuan-walk-left-v2.png',
       'game112/cat/xuetuan-turn': '/games/game112/art/cat/xuetuan-turn-v2.png',
+      'game112/character/shopkeeper': '/games/game112/art/cat/shopkeeper-tortoiseshell-v1.png',
     });
     expect(sceneSkin('hall')).toBe('/games/game112/art/scene/star-tail-main-hall-bg-v2.png');
     expect(mapSkin()).toBe('/games/game112/art/map.png');
@@ -19,8 +20,10 @@ describe('game112 主厅皮肤槽', () => {
     expect(catArt('xuetuan', 'walk')).toBe('/games/game112/art/cat/xuetuan-walk-right-v2.png');
     expect(catArt('xuetuan', 'walk-left')).toBe('/games/game112/art/cat/xuetuan-walk-left-v2.png');
     expect(catArt('xuetuan', 'turn')).toBe('/games/game112/art/cat/xuetuan-turn-v2.png');
+    expect(shopkeeperArt()).toBe('/games/game112/art/cat/shopkeeper-tortoiseshell-v1.png');
     setSkinOverrides({});
     expect(sceneSkin('hall')).toBeUndefined();
     expect(mapSkin()).toBeUndefined();
+    expect(shopkeeperArt()).toBe('/games/game112/art/cat/shopkeeper-tortoiseshell-v1.png');
   });
 });

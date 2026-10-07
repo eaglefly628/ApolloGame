@@ -71,8 +71,8 @@ describe('game112 守卫（复查门点名·撤修必红）', () => {
       return String((walk(tree).find((n) => n.id === 'hall-cat')!.props as { src: string }).src);
     };
     expect(src('lookup')).toBe(src('rest'));
-    // 晶球物件的实底副标签带心光进度（陪坐的可见回报·文字不直接压在场景图上）。
-    const sub = walk(buildScreen({ screen: 'scene', room: 'hall', view: s.hall() })).find((n) => n.id === 'hot-orbs-sub-label')!.props as { text: string };
+    // 心光进度移到实底 HUD，避免晶球热区副标签盖住房内装饰。
+    const sub = walk(buildScreen({ screen: 'scene', room: 'hall', view: s.hall() })).find((n) => n.id === 'hall-heartlight')!.props as { text: string };
     expect(sub.text).toContain(`心光 ${s.hall().relations.heartlight}`);
   });
 });

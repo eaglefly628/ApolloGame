@@ -18,6 +18,7 @@ export function setSkinOverrides(next: Readonly<Record<string, string>>): void {
 }
 export const SKIN_KEYS = {
   cat: (catId: string, state: CatArtState): string => `game112/cat/${catId}-${state}`,
+  shopkeeper: 'game112/character/shopkeeper',
   hotspot: (kind: 'orb' | 'table' | 'basket'): string => `game112/icon/${kind}`,
   /** 房间场景背景（猫画面层容器 Panel.skin·猫叠其上）——hall-framework.md §6.1 art-06 定调图槽。 */
   scene: (room: string): string => `game112/scene/${room}`,
@@ -30,6 +31,14 @@ export function sceneSkin(room: string): string | undefined {
 }
 export function mapSkin(): string | undefined {
   return SKIN_OVERRIDES[SKIN_KEYS.map];
+}
+/** 商品与场景复用同一份本地资产；无异步索引时也能加载明确的本地路径。 */
+export function propArt(id: string): string {
+  return SKIN_OVERRIDES[`game112/prop/${id}`] ?? `/games/game112/art/props/${id}-v1.png`;
+}
+/** 掌柜是商店画面层，不进入猫咪收养/关系数值；本地索引未加载时仍可见。 */
+export function shopkeeperArt(): string {
+  return SKIN_OVERRIDES[SKIN_KEYS.shopkeeper] ?? '/games/game112/art/cat/shopkeeper-tortoiseshell-v1.png';
 }
 const skin = (key: string, fallback: () => string): string => SKIN_OVERRIDES[key] ?? fallback();
 

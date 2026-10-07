@@ -11,12 +11,13 @@ import { DIALOGUE_ACTION_ADVANCE, DIALOGUE_ACTION_CHOOSE } from '@zerocraft/engi
 import { HallSession } from './session.js';
 import { flagOn } from './project.js';
 import { buildScreen, UI_ACTIONS, type Screen, type UiAction } from './ui.js';
-import { GAME_ID, TICK_MS, OFFLINE_ACK_KEY, STAGE_HIDE_KEY, STAGE_SHOW_KEY, offlineTierOf, offlineKey, buyKey, placeKey, shopItemOf, chapterOf, roomOf, type RoomId } from './world-data.js';
+import { GAME_ID, TICK_MS, OFFLINE_ACK_KEY, STAGE_HIDE_KEY, STAGE_SHOW_KEY, STARDUST_MAX, STARDUST_GRANTS, offlineTierOf, offlineKey, buyKey, placeKey, shopItemOf, chapterOf, roomOf, grantKey, type RoomId } from './world-data.js';
 import { EMPTY_STATE, type PersistedState } from './blueprint.js';
 import { setSkinOverrides } from './cat-art.js';
 import { addEntry, EMPTY_DRAFT, EMPTY_REGISTRY, normalizeRegistry, removeEntry, WHEREABOUTS, type CatRegistry, type RegistrationDraft } from './registration.js';
 import { EMPTY_CATALOG_BROWSE, sourceOf, type CatalogBrowse } from './cat-gallery.js';
 import { STAR_TAIL_THEME } from './ui-theme.js';
+import { useKey, respondKey, removeKey, ITEM_CANCEL } from './item-data.js';
 
 export const SAVE_CODEC: SaveCodec = { gameId: GAME_ID, schema: 1 };
 export const SAVE_SLOT = 'main';
@@ -32,7 +33,7 @@ export function routeAction(action: UiAction | string, arg?: string): Route | un
     case 'home.enter': return { screen: 'scene', room: 'hall' };
     case 'home.about': return { screen: 'about' };
     case 'home.exit': return {};
-    // 回到猫身边 = 回**当前**房间的舞台（Drawer 收起）；猫在哪间房，玩家就在哪间房。
+    // 回到猫身边 = 收起画内册页 / 货架近景，回当前房间。
     case 'hall.back': case 'later': return { screen: 'scene' };
     case 'map.open': return { screen: 'map' };
     case 'room.enter': {
@@ -48,6 +49,8 @@ export function routeAction(action: UiAction | string, arg?: string): Route | un
     case 'table.open': return { screen: 'table' };
     case 'toys.open': return { screen: 'toys' };
     case 'shop.open': return { screen: 'shop' };
+    case 'shop.inspect': return arg !== undefined && shopItemOf(arg) !== undefined ? {} : undefined;
+    case 'shop.claimWelcome': return { key: grantKey('welcome') };
     case 'memory.open': case 'memory.back': return { screen: 'memory' };
     case 'settings.open': return { screen: 'settings' };
     case 'cat.greet': case 'cat.sit': return { key: action };
@@ -55,6 +58,10 @@ export function routeAction(action: UiAction | string, arg?: string): Route | un
     case 'ui.hide': return { key: STAGE_HIDE_KEY };
     case 'ui.show': return { key: STAGE_SHOW_KEY };
     case 'shop.buy': return arg !== undefined && shopItemOf(arg) !== undefined ? { key: buyKey(arg) } : undefined;
+    case 'item.use': return arg !== undefined && shopItemOf(arg) !== undefined ? { key: useKey(arg), screen: 'scene', room: 'hall' } : undefined;
+    case 'item.respond': return arg !== undefined && shopItemOf(arg) !== undefined ? { key: respondKey(arg) } : undefined;
+    case 'item.cancel': return { key: ITEM_CANCEL };
+    case 'decor.remove': return arg !== undefined && shopItemOf(arg) !== undefined ? { key: removeKey(arg) } : undefined;
     // 购买后优先「放到馆里看看」→ 回主厅目击新物件（menu-flow §10）。
     case 'decor.place': return arg !== undefined && shopItemOf(arg) !== undefined ? { key: placeKey(arg), screen: 'scene', room: 'hall' } : undefined;
     case 'memory.read': return arg !== undefined && chapterOf(arg) !== undefined ? { screen: 'reading', readChapter: arg } : undefined;
@@ -81,7 +88,12 @@ export function normalizeState(u: unknown): PersistedState {
     return Object.fromEntries(Object.entries(x as Record<string, unknown>).filter(([, v]) => typeof v === 'string').map(([k, v]) => [k, v as string]));
   };
   const list = (x: unknown): string[] => (Array.isArray(x) ? x.filter((s): s is string => typeof s === 'string') : []);
-  return { stardust: num(o.stardust), relations: rec(o.relations), items: rec(o.items), placed: list(o.placed), chapters: list(o.chapters), cursors: strRec(o.cursors) };
+  const knownGrantIds = new Set<string>(STARDUST_GRANTS.map((grant) => grant.id));
+  return {
+    stardust: Math.min(STARDUST_MAX, Math.max(0, Math.trunc(num(o.stardust)))),
+    claimedGrants: [...new Set(list(o.claimedGrants).filter((id) => knownGrantIds.has(id)))],
+    relations: rec(o.relations), items: rec(o.items), placed: list(o.placed), chapters: list(o.chapters), cursors: strRec(o.cursors), itemUses: rec(o.itemUses),
+  };
 }
 
 /** 宿主开局种子（新局随机·回放固定）：由注入的 `now()` 派生一个整数，进 sim 的只是这个数。 */
@@ -100,6 +112,7 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
   let registry: CatRegistry = EMPTY_REGISTRY;
   let draft: RegistrationDraft = EMPTY_DRAFT;
   let catalog: CatalogBrowse = EMPTY_CATALOG_BROWSE;
+  let shopItem = 'paperbag';
   let timer: ReturnType<typeof setInterval> | undefined;
   let lastView = '';
 
@@ -116,6 +129,7 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
       registry,
       draft,
       catalog,
+      shopItem,
     }), { flag: (id) => (world !== undefined ? flagOn(world, id) : false) });
     if (handle) handle.update(node);
     else handle = mountUI(container, node, handlers, STAR_TAIL_THEME);
@@ -151,7 +165,7 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
       if (session === undefined || disposed) return;
       session.step();
       const v = JSON.stringify(session.hall());
-      if (v !== lastView) { lastView = v; render(); }
+      if (v !== lastView) { lastView = v; render(); persist(); }
     }, TICK_MS);
     render();
     // 美术索引是投影层的增量：基座件兜住无索引/非 200/解析失败，空表就继续程序化回退。
@@ -190,8 +204,13 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
       if (Number.isInteger(page) && page >= 0) catalog = { ...catalog, page };
       render(); return;
     }
+    if (a === 'shop.inspect') {
+      if (arg !== undefined && shopItemOf(arg) !== undefined) shopItem = arg;
+      render(); return;
+    }
     const r = routeAction(a, arg);
     if (r === undefined) return;
+    if (r.room !== undefined && session !== undefined) session.act(`room.visit.${r.room}`);
     if (r.key !== undefined && session !== undefined) { session.act(r.key, r.x !== undefined ? { x: r.x } : undefined); persist(); }
     if (r.readChapter !== undefined) reading = r.readChapter;
     if (r.room !== undefined) room = r.room;

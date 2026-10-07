@@ -50,20 +50,20 @@ export const ROOMS: readonly RoomSpec[] = [
   {
     id: 'hall', number: 1, name: '主厅', subtitle: '暖灯下，雪团在旧木桌边等你。', scene: 'hall',
     adjacent: ['orbs', 'cardroom', 'playroom', 'garden'], mapRect: { x: 395, y: 268, w: 170, h: 123 },
-    catSpot: { x: 328, y: 353, w: 154, h: 141 },
+    catSpot: { x: 367, y: 411, w: 154, h: 141 },
     catPatrol: { dx: 118, ms: 12000 },
     doors: [
-      { to: 'garden', label: '月庭', x: 70, y: 250, w: 150, h: 240 },
-      { to: 'orbs', label: '晶球厅', x: 80, y: 36, w: 120, h: 86 },
-      { to: 'playroom', label: '玩具间', x: 272, y: 228, w: 70, h: 74 },
-      { to: 'cardroom', label: '星牌室', x: 906, y: 300, w: 88, h: 220 },
+      { to: 'garden', label: '月庭', x: 94, y: 437, w: 94, h: 38 },
+      { to: 'orbs', label: '晶球厅', x: 86, y: 106, w: 110, h: 38 },
+      { to: 'playroom', label: '玩具间', x: 250, y: 264, w: 108, h: 38 },
+      { to: 'cardroom', label: '星牌室', x: 882, y: 362, w: 110, h: 38 },
     ],
     objects: [
-      { id: 'reception', label: '前台登记', action: 'registration.open', x: 18, y: 512, w: 160, h: 74 },
-      { id: 'orbs', label: '忆光晶球', action: 'orbs.open', x: 768, y: 200, w: 84, h: 80 },
-      { id: 'table', label: '星牌桌', action: 'table.open', x: 690, y: 424, w: 176, h: 72 },
-      { id: 'toys', label: '玩具篮', action: 'toys.open', x: 862, y: 452, w: 116, h: 86 },
-      { id: 'seat', label: '陪它坐坐', action: 'cat.sit', x: 468, y: 330, w: 176, h: 66 },
+      { id: 'reception', label: '前台登记', action: 'registration.open', x: 32, y: 500, w: 112, h: 38 },
+      { id: 'orbs', label: '忆光晶球', action: 'orbs.open', x: 750, y: 263, w: 112, h: 38 },
+      { id: 'table', label: '星牌桌', action: 'table.open', x: 672, y: 477, w: 80, h: 34 },
+      { id: 'toys', label: '收纳篮', action: 'toys.open', x: 864, y: 512, w: 104, h: 38 },
+      { id: 'seat', label: '陪它坐坐', action: 'cat.sit', x: 480, y: 360, w: 118, h: 38 },
     ],
   },
   {
@@ -72,12 +72,12 @@ export const ROOMS: readonly RoomSpec[] = [
     catSpot: { x: 93, y: 458, w: 126, h: 116 },
     catPatrol: { dx: 112, ms: 12000 },
     doors: [
-      { to: 'hall', label: '主厅', x: 845, y: 200, w: 142, h: 290 },
-      { to: 'gallery', label: '回忆廊', x: 6, y: 250, w: 86, h: 200 },
+      { to: 'hall', label: '主厅', x: 874, y: 452, w: 100, h: 38 },
+      { to: 'gallery', label: '回忆廊', x: 8, y: 390, w: 108, h: 38 },
     ],
     objects: [
-      { id: 'orbs', label: '看看晶球', action: 'orbs.open', x: 224, y: 260, w: 66, h: 76 },
-      { id: 'seat', label: '陪它坐坐', action: 'cat.sit', x: 358, y: 370, w: 240, h: 62 },
+      { id: 'orbs', label: '看看晶球', action: 'orbs.open', x: 186, y: 330, w: 112, h: 38 },
+      { id: 'seat', label: '陪它坐坐', action: 'cat.sit', x: 402, y: 401, w: 118, h: 38 },
     ],
   },
   {
@@ -86,12 +86,12 @@ export const ROOMS: readonly RoomSpec[] = [
     catSpot: { x: 376, y: 398, w: 146, h: 133 },
     catPatrol: { dx: 104, ms: 12000 },
     doors: [
-      { to: 'hall', label: '主厅', x: 40, y: 150, w: 176, h: 278 },
-      { to: 'pantry', label: '茶水间', x: 906, y: 300, w: 88, h: 220 },
+      { to: 'hall', label: '主厅', x: 65, y: 392, w: 102, h: 38 },
+      { to: 'pantry', label: '茶水间', x: 880, y: 367, w: 112, h: 38 },
     ],
     objects: [
-      { id: 'table', label: '星牌桌', action: 'table.open', x: 540, y: 358, w: 316, h: 120 },
-      { id: 'seat', label: '陪它坐坐', action: 'cat.sit', x: 690, y: 494, w: 146, h: 60 },
+      { id: 'table', label: '星牌桌', action: 'table.open', x: 610, y: 425, w: 108, h: 38 },
+      { id: 'seat', label: '陪它坐坐', action: 'cat.sit', x: 690, y: 531, w: 120, h: 38 },
     ],
   },
   {
@@ -100,51 +100,51 @@ export const ROOMS: readonly RoomSpec[] = [
     catSpot: { x: 196, y: 475, w: 122, h: 111 },
     catPatrol: { dx: 86, ms: 12000 },
     doors: [
-      { to: 'orbs', label: '晶球厅', x: 54, y: 190, w: 142, h: 298 },
-      { to: 'sunroom', label: '月光窗厅', x: 576, y: 278, w: 98, h: 92 },
-      { to: 'attic', label: '回忆阁楼', x: 824, y: 190, w: 166, h: 288 },
+      { to: 'orbs', label: '晶球厅', x: 60, y: 440, w: 110, h: 38 },
+      { to: 'sunroom', label: '月光窗厅', x: 852, y: 172, w: 122, h: 38 },
+      { to: 'attic', label: '回忆阁楼', x: 842, y: 425, w: 126, h: 38 },
     ],
     objects: [
-      { id: 'picture', label: '翻开回忆', action: 'memory.open', x: 378, y: 165, w: 88, h: 110 },
-      { id: 'seat', label: '陪它坐坐', action: 'cat.sit', x: 414, y: 414, w: 122, h: 52 },
+      { id: 'picture', label: '翻开回忆', action: 'memory.open', x: 372, y: 265, w: 118, h: 38 },
+      { id: 'seat', label: '陪它坐坐', action: 'cat.sit', x: 414, y: 432, w: 122, h: 38 },
     ],
   },
   {
     id: 'playroom', number: 5, name: '玩具间', subtitle: '纸箱、抓柱和空中步道都按猫的尺度搭好。', scene: 'playroom',
     adjacent: ['hall'], mapRect: { x: 395, y: 400, w: 170, h: 123 },
-    catSpot: { x: 700, y: 395, w: 160, h: 146 },
+    catSpot: { x: 548, y: 415, w: 160, h: 146 },
     catPatrol: { dx: 76, ms: 12000 },
-    doors: [{ to: 'hall', label: '主厅', x: 0, y: 226, w: 172, h: 204 }],
+    doors: [{ to: 'hall', label: '主厅', x: 30, y: 402, w: 104, h: 38 }],
     objects: [
-      { id: 'toys', label: '玩具篮', action: 'toys.open', x: 380, y: 368, w: 146, h: 86 },
-      { id: 'seat', label: '陪它坐坐', action: 'cat.sit', x: 538, y: 296, w: 252, h: 74 },
+      { id: 'toys', label: '收纳篮', action: 'toys.open', x: 405, y: 418, w: 110, h: 38 },
+      { id: 'seat', label: '陪它坐坐', action: 'cat.sit', x: 616, y: 362, w: 120, h: 38 },
     ],
   },
   {
     id: 'sunroom', number: 6, name: '月光窗厅', subtitle: '月光落在低窗软垫上，适合安静待一会儿。', scene: 'sunroom',
     adjacent: ['gallery'], mapRect: { x: 643, y: 137, w: 169, h: 122 },
-    catSpot: { x: 624, y: 338, w: 119, h: 109 },
+    catSpot: { x: 624, y: 418, w: 119, h: 109 },
     catPatrol: { dx: 92, ms: 12000 },
-    doors: [{ to: 'gallery', label: '回忆廊', x: 54, y: 196, w: 136, h: 280 }],
-    objects: [{ id: 'seat', label: '陪它看月亮', action: 'cat.sit', x: 524, y: 412, w: 296, h: 60 }],
+    doors: [{ to: 'gallery', label: '回忆廊', x: 64, y: 438, w: 112, h: 38 }],
+    objects: [{ id: 'seat', label: '陪它看月亮', action: 'cat.sit', x: 570, y: 367, w: 144, h: 38 }],
   },
   {
     id: 'pantry', number: 7, name: '茶水间', subtitle: '猫爪能拉开的抽屉里，藏着杯印与旧日气味。', scene: 'pantry',
     adjacent: ['cardroom'], mapRect: { x: 768, y: 268, w: 167, h: 123 },
     catSpot: { x: 625, y: 382, w: 138, h: 126 },
     catPatrol: { dx: 84, ms: 12000 },
-    doors: [{ to: 'cardroom', label: '星牌室', x: 48, y: 131, w: 166, h: 308 }],
-    objects: [{ id: 'counter', label: '轻声叫它', action: 'cat.greet', x: 280, y: 296, w: 196, h: 130 }],
+    doors: [{ to: 'cardroom', label: '星牌室', x: 65, y: 412, w: 112, h: 38 }],
+    objects: [{ id: 'counter', label: '轻声叫它', action: 'cat.greet', x: 298, y: 350, w: 118, h: 38 }],
   },
   {
     id: 'attic', number: 8, name: '回忆阁楼', subtitle: '旧箱和睡窝安静收着尚未讲完的故事。', scene: 'attic',
     adjacent: ['gallery'], mapRect: { x: 395, y: 20, w: 170, h: 118 },
     catSpot: { x: 126, y: 485, w: 110, h: 101 },
     catPatrol: { dx: 72, ms: 12000 },
-    doors: [{ to: 'gallery', label: '回忆廊', x: 744, y: 300, w: 250, h: 234 }],
+    doors: [{ to: 'gallery', label: '回忆廊', x: 840, y: 466, w: 118, h: 38 }],
     objects: [
-      { id: 'orb', label: '看看旧回忆', action: 'memory.open', x: 492, y: 190, w: 50, h: 50 },
-      { id: 'seat', label: '陪它坐坐', action: 'cat.sit', x: 408, y: 296, w: 94, h: 74 },
+      { id: 'orb', label: '看看旧回忆', action: 'memory.open', x: 460, y: 230, w: 136, h: 38 },
+      { id: 'seat', label: '陪它坐坐', action: 'cat.sit', x: 408, y: 350, w: 122, h: 38 },
     ],
   },
   {
@@ -153,18 +153,18 @@ export const ROOMS: readonly RoomSpec[] = [
     catSpot: { x: 567, y: 495, w: 116, h: 106 },
     catPatrol: { dx: 126, ms: 12000 },
     doors: [
-      { to: 'hall', label: '主厅', x: 678, y: 131, w: 120, h: 226 },
-      { to: 'shopfront', label: '星砂铺', x: 354, y: 148, w: 102, h: 92 },
+      { to: 'hall', label: '主厅', x: 686, y: 333, w: 106, h: 38 },
+      { to: 'shopfront', label: '星砂铺', x: 339, y: 218, w: 114, h: 38 },
     ],
-    objects: [{ id: 'seat', label: '在月庭坐坐', action: 'cat.sit', x: 808, y: 522, w: 156, h: 72 }],
+    objects: [{ id: 'seat', label: '在月庭坐坐', action: 'cat.sit', x: 808, y: 557, w: 146, h: 38 }],
   },
   {
     id: 'shopfront', number: 10, name: '星砂铺', subtitle: '猫主理人的小铺子，抽屉和货架都在爪高。', scene: 'shopfront',
     adjacent: ['garden'], mapRect: { x: 24, y: 268, w: 167, h: 121 },
     catSpot: { x: 570, y: 406, w: 132, h: 121 },
     catPatrol: { dx: 96, ms: 12000 },
-    doors: [{ to: 'garden', label: '月庭', x: 60, y: 296, w: 180, h: 122 }],
-    objects: [{ id: 'shopdoor', label: '看看小铺', action: 'shop.open', x: 684, y: 226, w: 90, h: 240 }],
+    doors: [{ to: 'garden', label: '月庭', x: 62, y: 397, w: 106, h: 38 }],
+    objects: [{ id: 'shopdoor', label: '看看小铺', action: 'shop.open', x: 631, y: 355, w: 120, h: 38 }],
   },
 ];
 export const ROOM_IDS: readonly RoomId[] = ROOMS.map((r) => r.id);
@@ -208,6 +208,16 @@ export const catOf = (id: string): CatCard | undefined => CATS.find((c) => c.id 
 
 // ── 资源 id（一实体一 Resource）────────────────────────────────────────────
 export const STARDUST = 'stardust';
+export const STARDUST_MAX = 9999;
+/** 星砂发放来源由数据白名单定义；不接任意金额的客户端按钮。 */
+export const STARDUST_GRANTS = [
+  { id: 'welcome', label: '掌柜见面星砂', amount: 20 },
+] as const;
+export type StardustGrantId = (typeof STARDUST_GRANTS)[number]['id'];
+export const stardustGrantOf = (id: string) => STARDUST_GRANTS.find((grant) => grant.id === id);
+export const grantKey = (id: StardustGrantId): string => `currency.grant.${id}`;
+export const grantClaimedFlag = (id: StardustGrantId): string => `currency.claimed.${id}`;
+export const grantStock = (id: StardustGrantId): string => `currency.stock.${id}`;
 export type RelationKey = 'closeness' | 'ease' | 'heartlight' | 'mood';
 export interface RelationSpec {
   readonly key: RelationKey;
@@ -260,10 +270,10 @@ export interface ShopItem {
   readonly blurb: string;
 }
 export const SHOP_ITEMS: readonly ShopItem[] = [
-  { id: 'feather', name: '羽毛杆', price: 30, kind: 'toy', blurb: '空中与地面混合，它会追、伏击、扑。' },
-  { id: 'paperbag', name: '纸袋', price: 20, kind: 'toy', blurb: '它会把这里当伏击点，也会把牌藏进去。' },
-  { id: 'cushion', name: '软垫', price: 40, kind: 'decor', blurb: '被很多猫睡过的那种，它会陷进去。' },
-  { id: 'cardback-moon', name: '月相牌背', price: 50, kind: 'cardskin', blurb: '星牌桌的牌背换成月相。' },
+  { id: 'feather', name: '羽毛杆', price: 30, kind: 'toy', blurb: '轻晃羽毛，再放低一点，和雪团玩一小会儿。' },
+  { id: 'paperbag', name: '纸袋', price: 20, kind: 'toy', blurb: '撑开袋口，轻轻敲一下，让它熟悉沙沙声。' },
+  { id: 'cushion', name: '软垫', price: 40, kind: 'decor', blurb: '给雪团铺一个柔软的坐处，陪它歇一会儿。' },
+  { id: 'cardback-moon', name: '月相牌背', price: 50, kind: 'cardskin', blurb: '换上月相牌背，一起翻开今晚的月亮。' },
 ];
 export const itemCount = (id: string): string => `item.${id}`;
 export const ownFlag = (id: string): string => `own.${id}`;

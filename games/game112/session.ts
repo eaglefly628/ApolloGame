@@ -8,7 +8,7 @@ import { QueuedInputSource } from '@zerocraft/engine/net/host/index.js';
 import { hashSnapshot } from '@zerocraft/engine/net/determinism.js';
 import { buildBlueprint, EMPTY_STATE, type PersistedState } from './blueprint.js';
 import { buildHallView, buildReadingView, toPersisted, type HallView, type ReadingView } from './project.js';
-import { SEED_DEFAULT } from './world-data.js';
+import { SEED_DEFAULT, grantKey, type StardustGrantId } from './world-data.js';
 
 export class HallSession {
   readonly engine: Engine;
@@ -28,6 +28,9 @@ export class HallSession {
     this.q.enqueueAction(key, value);
     this.step();
   }
+
+  /** 供已授权的游戏事件调用；额度、一次性库存和上限均由蓝图数据结算。 */
+  claimStardustGrant(source: StardustGrantId): void { this.act(grantKey(source)); }
 
   /** 空推 n 拍（兴致自然变化等靠它）。 */
   step(n = 1): void {
