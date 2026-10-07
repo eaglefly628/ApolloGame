@@ -6,6 +6,7 @@ import { EMPTY_STATE } from './blueprint.js';
 import { buildScreen, buildHome, buildMap, buildReading, buildScene, UI_ACTIONS, type Screen } from './ui.js';
 import { flagOn } from './project.js';
 import { ACTIVE_CAT, CHAPTERS, ROOMS, SCENE_W, SCENE_H, SHOP_ITEMS, buyKey, offlineKey, relId, roomOf } from './world-data.js';
+import { SHOP_PAGE_SIZE } from './shop-browse.js';
 
 /** 收集树里所有节点（含 children 递归）。 */
 function walk(n: LayoutNode, out: LayoutNode[] = []): LayoutNode[] {
@@ -149,20 +150,19 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
     expect(cat.type).toBe('Image');
     expect((cat.props as { src?: string }).src).toContain('shopkeeper-tortoiseshell-v1.png');
     expect((cat.layout!.x! + cat.layout!.width!)).toBeLessThan(ledger.layout!.x!);
-    for (const item of nodes.filter((n) => n.id.startsWith('shop-') && SHOP_ITEMS.some((it) => n.id === `shop-${it.id}`))) {
-      expect(cat.layout!.y!).toBeGreaterThan(item.layout!.y! + item.layout!.height!);
-    }
+    expect(nodes.filter((n) => SHOP_ITEMS.some((it) => n.id === `shop-${it.id}`))).toHaveLength(SHOP_PAGE_SIZE);
     expect(validateLayoutNode(shop)).toEqual([]);
   });
 
-  it('货架四件都能查看详情；交换只从账页确认，见面星砂领取状态有明确反馈', () => {
+  it('百件与原有四件都可按编号检索查看；交换只从详情确认，见面星砂有明确反馈', () => {
     const empty = new HallSession(112).hall();
     for (const item of SHOP_ITEMS) {
-      const tree = buildScreen({ screen: 'shop', view: empty, shopItem: item.id });
+      const tree = buildScreen({ screen: 'shop', view: empty, shopItem: item.id,
+        shopBrowse: { category: 'all', value: 'all', sort: 'featured', query: item.id, page: 0 } });
       const nodes = walk(tree);
       expect((nodes.find((n) => n.id === 'shop-title')?.props as { text?: string }).text).toContain(item.name);
       expect((nodes.find((n) => n.id === 'shop-sub')?.props as { text?: string }).text).toBe(item.blurb);
-      expect(nodes.filter((n) => (n.props as { action?: string }).action === 'shop.inspect')).toHaveLength(SHOP_ITEMS.length);
+      expect(nodes.filter((n) => (n.props as { action?: string }).action === 'shop.inspect')).toHaveLength(1);
       expect(nodes.filter((n) => (n.props as { action?: string }).action === 'shop.buy')).toHaveLength(0);
       expect(ids(tree).has('shop-selected-shortfall')).toBe(true);
       expect(ids(tree).has('shop-welcome-claim')).toBe(true);
@@ -175,7 +175,7 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
     expect(ids(claimed).has('shop-welcome-claimed')).toBe(true);
     expect((walk(claimed).find((n) => n.id === 'shop-selected-buy')?.props as { action?: string }).action).toBe('shop.buy');
     const short = buildScreen({ screen: 'shop', view: s.hall(), shopItem: 'feather' });
-    expect(ids(short).has('shop-earn')).toBe(true);
+    expect(ids(short).has('shop-welcome-claimed')).toBe(true);
     expect(ids(short).has('shop-selected-shortfall')).toBe(true);
     expect(ids(short).has('shop-selected-buy')).toBe(false);
   });

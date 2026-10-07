@@ -1,0 +1,164 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "sake.sugidama.kiku",
+      "type": "texture",
+      "description": "盛冈菊之司酒造门前杉玉实拍；酒造建筑与具体酒款无关",
+      "status": "filled",
+      "path": "sugidama-kiku-cc0.jpg",
+      "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "category": "documentary.sake",
+      "tags": ["sake", "sugidama", "real-photo"],
+      "source": "Wikimedia Commons",
+      "license": "CC0 1.0",
+      "provenance": { "author": "Daderot", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sugidama_-_Kiku_no_Tsukasa_Sake_Brewery_-_Morioka,_Iwate_-_DSC04109.jpg", "importedAt": "2026-10-04", "method": "Commons resized JPEG; no content edits" }
+    },
+    {
+      "id": "sake.koji.rice",
+      "type": "texture",
+      "description": "米粒上生长的麹菌实拍；非特定酒藏或产品",
+      "status": "filled",
+      "path": "koji-rice-cc-by-sa.jpg",
+      "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "category": "documentary.sake",
+      "tags": ["sake", "koji", "real-photo"],
+      "source": "Wikimedia Commons",
+      "license": "CC BY-SA 4.0",
+      "provenance": { "author": "Zenyrgarden", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Koji_Mold_Rice.jpg", "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/", "importedAt": "2026-10-04", "method": "Commons resized JPEG; no content edits" }
+    },
+    {
+      "id": "sake.dassai.2011",
+      "type": "texture",
+      "description": "2011 年獺祭 39 酒标实拍；不能代表现售酒款、批次或美国版",
+      "status": "filled",
+      "path": "dassai-2011-cc-by.jpg",
+      "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "category": "documentary.sake",
+      "tags": ["sake", "dassai", "label", "real-photo"],
+      "source": "Wikimedia Commons / Flickr",
+      "license": "CC BY 2.0",
+      "provenance": { "author": "t-mizo", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Dassai_(Brand_of_sake).jpg", "licenseUrl": "https://creativecommons.org/licenses/by/2.0/", "importedAt": "2026-10-04", "method": "Commons resized JPEG; no content edits" }
+    },
+    {
+      "id": "sake.brewery.hakutsuru",
+      "type": "texture",
+      "description": "白鹤酒造建筑实拍；不是獺祭酒藏",
+      "status": "filled",
+      "path": "hakutsuru-brewery-cc0.jpg",
+      "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "category": "documentary.sake",
+      "tags": ["sake", "brewery", "real-photo"],
+      "source": "Wikimedia Commons",
+      "license": "CC0 1.0",
+      "provenance": { "author": "岩佐 栄三", "sourceUrl": "https://commons.wikimedia.org/wiki/File:HAKUTSURU_SAKE_BREWING.jpg", "importedAt": "2026-10-02", "method": "Commons resized JPEG; no content edits" }
+    },
+    {
+      "id": "sake.bottle.museum",
+      "type": "texture",
+      "description": "东京食与农业博物馆陈列酒瓶；原页没有注明年代和窑口",
+      "status": "filled",
+      "path": "museum-sake-bottle-cc0.jpg",
+      "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "category": "documentary.sake",
+      "tags": ["sake", "museum", "vessel", "real-photo"],
+      "source": "Wikimedia Commons",
+      "license": "CC0 1.0",
+      "provenance": { "author": "Daderot", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sake_bottle_-_Food_and_Agriculture_Museum_-_Setagaya,_Tokyo,_Japan_-_DSC09789.jpg", "importedAt": "2026-10-02", "method": "Commons resized JPEG; no content edits" }
+    },
+    {
+      "id": "sake.cup.rengetsu",
+      "type": "texture",
+      "description": "大田垣莲月和歌铭酒盏，檀香山艺术博物馆 13224.1a",
+      "status": "filled",
+      "path": "rengetsu-sake-cup-cc0.jpg",
+      "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "category": "documentary.sake",
+      "tags": ["sake", "museum", "cup", "real-photo"],
+      "source": "Wikimedia Commons",
+      "license": "CC0 1.0",
+      "provenance": { "author": "Hiart", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sake_cup_inscribed_with_waka_poem_by_Otagaki_Rengetsu,_Honolulu_Museum_of_Art,_13224.1a.JPG", "importedAt": "2026-10-02", "method": "Commons resized JPEG; no content edits" }
+    },
+    {
+      "id": "sake.sugidama.shushinkan", "type": "texture", "status": "filled", "path": "sugidama-shushinkan-cc0.jpg",
+      "description": "酒心馆正门悬挂的褐色杉玉；不能推断任何一瓶酒的年份", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "category": "documentary.sake", "tags": ["sake", "sugidama", "real-photo"], "source": "Wikimedia Commons", "license": "CC0 1.0",
+      "provenance": { "author": "Mandm", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Shushinkan_sugitama.JPG", "importedAt": "2026-10-07", "method": "Commons 640px JPEG thumbnail; no content edits" }
+    },
+    {
+      "id": "sake.history.ema1669", "type": "texture", "status": "filled", "path": "sake-ema-1669-cc-by-sa.jpg",
+      "description": "1669 年酒造绘马中洗米场面的照片；是历史图像旁证，不是现代酒藏工序照", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "category": "documentary.sake", "tags": ["sake", "history", "real-photo"], "source": "Wikimedia Commons", "license": "CC BY-SA 4.0",
+      "provenance": { "author": "漱石の猫", "sourceUrl": "https://commons.wikimedia.org/wiki/File:1669年（寛文9年）の酒造り絵馬（米洗い部分）.jpg", "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/", "importedAt": "2026-10-07", "method": "Commons 640px JPEG thumbnail; no content edits" }
+    },
+    {
+      "id": "sake.brewing.ricewash", "type": "texture", "status": "filled", "path": "sake-rice-washing-cc-by-sa.jpg",
+      "description": "东广岛酒造现场的洗米照片；不是蒸米过程", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "category": "documentary.sake", "tags": ["sake", "rice-washing", "real-photo"], "source": "Wikimedia Commons", "license": "CC BY-SA 4.0",
+      "provenance": { "author": "東広島市", "sourceUrl": "https://commons.wikimedia.org/wiki/File:酒造り_1c8f7239-4880-4036-b09b-01eefdf98d16.jpg", "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/", "importedAt": "2026-10-07", "method": "Commons 640px JPEG thumbnail; no content edits" }
+    },
+    {
+      "id": "sake.brewing.moromi", "type": "texture", "status": "filled", "path": "sake-moromi-cc-by-sa.jpg",
+      "description": "伏见月桂冠酒造的醪与搅拌现场；不代表其他酒藏的具体工序", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "category": "documentary.sake", "tags": ["sake", "moromi", "real-photo"], "source": "Wikimedia Commons", "license": "CC BY-SA 3.0",
+      "provenance": { "author": "Gekkeikan / Sake-simon", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Moromi.JPG", "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/", "importedAt": "2026-10-07", "method": "Commons 640px JPEG thumbnail; no content edits" }
+    },
+    {
+      "id": "sake.brewing.ricepolish", "type": "texture", "status": "filled", "path": "sake-rice-milling-cc-by-sa.jpg",
+      "description": "月桂冠酒造的精米设备；只展示工序环境，不显示某粒米的精米步合", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "category": "documentary.sake", "tags": ["sake", "rice-polishing", "real-photo"], "source": "Wikimedia Commons", "license": "CC BY-SA 3.0",
+      "provenance": { "author": "Gekkeikan / Sake-simon", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Rice_milling.JPG", "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/", "importedAt": "2026-10-07", "method": "Commons 640px JPEG thumbnail; no content edits" }
+    },
+    {
+      "id": "sake.bottle.bon", "type": "texture", "status": "filled", "path": "sake-bon-bottle-cc-by-sa.jpg",
+      "description": "约 2006 年梵酒瓶正面；不是本章 45% 示例或现售版本", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "category": "documentary.sake", "tags": ["sake", "label", "real-photo"], "source": "Wikimedia Commons", "license": "CC BY-SA 3.0",
+      "provenance": { "author": "Sake-simon", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sake_bottle.JPG", "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/", "importedAt": "2026-10-07", "method": "Commons 640px JPEG thumbnail; no content edits" }
+    },
+    {
+      "id": "sake.bottle.shibata", "type": "texture", "status": "filled", "path": "shibata-sake-display-cc0.jpg",
+      "description": "爱知柴田酒造场作品陈列；示范同藏多件，不是 Brooklyn Kura 产品", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "category": "documentary.sake", "tags": ["sake", "brewery-display", "real-photo"], "source": "Wikimedia Commons", "license": "CC0 1.0",
+      "provenance": { "author": "Evelyn-rose", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Shibata-Shuzojo-5.jpg", "importedAt": "2026-10-07", "method": "Commons 640px JPEG thumbnail; no content edits" }
+    },
+    {
+      "id": "sake.brewery.daishichi", "type": "texture", "status": "filled", "path": "daishichi-brewery-cc0.jpg",
+      "description": "福岛二本松大七酒造建筑；不是纽约酒藏", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "category": "documentary.sake", "tags": ["sake", "brewery", "real-photo"], "source": "Wikimedia Commons", "license": "CC0 1.0",
+      "provenance": { "author": "妖精書士", "sourceUrl": "https://commons.wikimedia.org/wiki/File:DAISHICHI_SAKE_BREWERY.JPG", "importedAt": "2026-10-07", "method": "Commons 640px JPEG thumbnail; no content edits" }
+    },
+    {
+      "id": "sake.rice.field.hyogo", "type": "texture", "status": "filled", "path": "hyogo-rice-field-cc-by-sa.jpg",
+      "description": "兵库县神户市北区山田锦稻田；不代表任何具体纽约酒款用米来源", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "category": "documentary.sake", "tags": ["sake", "rice-field", "real-photo"], "source": "Wikimedia Commons", "license": "CC BY-SA 3.0",
+      "provenance": { "author": "Akiyoshi's Room", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Rice_field_on_Kita-ku,_Kobe_city,_Hyogo,_Japan.jpg", "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/", "importedAt": "2026-10-07", "method": "Commons 640px JPEG thumbnail; no content edits" }
+    },
+    {
+      "id": "sake.brewing.tanks", "type": "texture", "status": "filled", "path": "akurei-brewing-tanks-cc-by-sa.jpg",
+      "description": "京都由良 Akurei 酒藏标号的酿造桶；桶号不能当作瓶身批次", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "category": "documentary.sake", "tags": ["sake", "brewing-tanks", "real-photo"], "source": "Wikimedia Commons", "license": "CC BY-SA 4.0",
+      "provenance": { "author": "Ujigis", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Akurei_sake_brewery_in_Yura,miyazu_city,kyoto_pref08.jpg", "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/", "importedAt": "2026-10-07", "method": "Commons 640px JPEG thumbnail; no content edits" }
+    },
+    {
+      "id": "sake.bottle.minakuchi", "type": "texture", "status": "filled", "path": "minakuchi-sake-display-cc-by-sa.jpg",
+      "description": "爱媛水口酒造作品陈列；用于讨论同藏不同作品，不对应纽约品牌", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "category": "documentary.sake", "tags": ["sake", "brewery-display", "real-photo"], "source": "Wikimedia Commons", "license": "CC BY-SA 3.0",
+      "provenance": { "author": "Kanatam", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Inside_Minakuchi_shuzo.jpg", "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/", "importedAt": "2026-10-07", "method": "Commons 640px JPEG thumbnail; no content edits" }
+    },
+    {
+      "id": "sake.brewing.starterroom", "type": "texture", "status": "filled", "path": "sake-starter-room-cc-by-sa.jpg",
+      "description": "酒母室门口实拍；不展示内部微生物过程", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" },
+      "category": "documentary.sake", "tags": ["sake", "starter-room", "real-photo"], "source": "Wikimedia Commons", "license": "CC BY-SA 2.0",
+      "provenance": { "author": "Takuya Oikawa", "sourceUrl": "https://commons.wikimedia.org/wiki/File:酒母室_(16483320083).jpg", "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/", "importedAt": "2026-10-07", "method": "Commons 640px JPEG thumbnail; no content edits" }
+    },
+    { "id": "cigar.section.toscano", "type": "texture", "status": "filled", "path": "cigar-section-cc-by.jpg", "description": "托斯卡纳式雪茄的切面；不能借此证明所有雪茄的配方或品质", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" }, "category": "documentary.cigar", "tags": ["cigar", "section", "real-photo"], "source": "Wikimedia Commons", "license": "CC BY 3.0", "provenance": { "author": "Velq1958", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Toscano_sezione.jpg", "licenseUrl": "https://creativecommons.org/licenses/by/3.0/", "importedAt": "2026-10-07", "method": "Commons thumbnail; no content edits" } },
+    { "id": "cigar.field.pennsylvania", "type": "texture", "status": "filled", "path": "tobacco-field-cc-by-sa.jpg", "description": "宾夕法尼亚州烟草田；不代表古巴产地或任何具体雪茄所用烟叶", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" }, "category": "documentary.cigar", "tags": ["tobacco", "field", "real-photo"], "source": "Wikimedia Commons", "license": "CC BY-SA 4.0", "provenance": { "author": "Derek Ramsey", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Patch_of_Tobacco_(Nicotiana_tabacum_)_in_a_field_in_Intercourse,_Pennsylvania..jpg", "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/", "importedAt": "2026-10-07", "method": "Commons thumbnail; no content edits" } },
+    { "id": "cigar.drying.bulgaria", "type": "texture", "status": "filled", "path": "tobacco-drying-pd.jpg", "description": "保加利亚村庄晾晒烟叶棚；不是古巴雪茄烟叶处理现场", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" }, "category": "documentary.cigar", "tags": ["tobacco", "drying", "real-photo"], "source": "Wikimedia Commons", "license": "Public domain", "provenance": { "author": "Vassia Atanassova", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Drying-tobacco-leaves.JPG", "importedAt": "2026-10-07", "method": "Commons thumbnail; no content edits" } },
+    { "id": "cigar.rolling.trinidad", "type": "texture", "status": "filled", "path": "cigar-rolling-cc-by-sa.jpg", "description": "古巴特立尼达手工卷制现场；只证明所拍到的工序", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" }, "category": "documentary.cigar", "tags": ["cigar", "rolling", "real-photo"], "source": "Wikimedia Commons", "license": "CC BY-SA 4.0", "provenance": { "author": "Marc-Lautenbacher", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Herstellung_von_Zigarren_in_Handarbeit.jpg", "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/", "importedAt": "2026-10-07", "method": "Commons thumbnail; no content edits" } },
+    { "id": "cigar.mold.wisconsin", "type": "texture", "status": "filled", "path": "cigar-mold-cc0.jpg", "description": "威斯康星历史博物馆约 1900 年雪茄木模", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" }, "category": "documentary.cigar", "tags": ["cigar", "mold", "museum", "real-photo"], "source": "Wikimedia Commons", "license": "CC0 1.0", "provenance": { "author": "Daderot", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cigar_mold,_c._1900_-_Wisconsin_Historical_Museum_-_DSC03355.JPG", "importedAt": "2026-10-07", "method": "Commons thumbnail; no content edits" } },
+    { "id": "cigar.tools.wisconsin", "type": "texture", "status": "filled", "path": "cigar-tools-cc0.jpg", "description": "威斯康星历史博物馆约 1900 年雪茄制造工具陈列", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" }, "category": "documentary.cigar", "tags": ["cigar", "tools", "museum", "real-photo"], "source": "Wikimedia Commons", "license": "CC0 1.0", "provenance": { "author": "Daderot", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cigar-making_tools,_c._1900_-_Wisconsin_Historical_Museum_-_DSC03353.JPG", "importedAt": "2026-10-07", "method": "Commons thumbnail; no content edits" } },
+    { "id": "cigar.bands.mares", "type": "texture", "status": "filled", "path": "cigar-bands-museum-cc-by-sa.jpg", "description": "巴塞罗那 Frederic Marès 博物馆陈列的历史雪茄环收藏", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" }, "category": "documentary.cigar", "tags": ["cigar", "band", "museum", "real-photo"], "source": "Wikimedia Commons", "license": "CC BY-SA 4.0", "provenance": { "author": "Enric", "sourceUrl": "https://commons.wikimedia.org/wiki/File:118_Anells_de_cigars,_sala_del_fumador,_gabinet_del_col·leccionista_(Museu_Marès,_Barcelona).jpg", "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/", "importedAt": "2026-10-07", "method": "Commons thumbnail; no content edits" } },
+    { "id": "cigar.boxlabel.opera", "type": "texture", "status": "filled", "path": "cigar-box-label-pd.jpg", "description": "约 1905 年 Opera 雪茄盒标签设计样张；是历史印刷物，不是现售雪茄证明", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" }, "category": "documentary.cigar", "tags": ["cigar", "label", "historical", "real-photo"], "source": "Wikimedia Commons", "license": "Public domain", "provenance": { "author": "O. L. Schwencke catalogue / unknown artist", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Schwencke_cigar_box_label_Opera.jpg", "importedAt": "2026-10-07", "method": "Commons thumbnail; no content edits" } },
+    { "id": "cigar.box.auckland", "type": "texture", "status": "filled", "path": "cigar-box-auckland-cc-by.jpg", "description": "奥克兰博物馆 Fonseca 雪茄盒底面局部；手写数字含义未核对，不冒充生产日期", "spec": { "usage": "sprite", "colorSpace": "srgb", "wrap": "clamp" }, "category": "documentary.cigar", "tags": ["cigar", "box", "museum", "real-photo"], "source": "Wikimedia Commons / Auckland Museum", "license": "CC BY 4.0", "provenance": { "author": "Auckland Museum", "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cigar_box_(AM_615198-2).jpg", "licenseUrl": "https://creativecommons.org/licenses/by/4.0/", "importedAt": "2026-10-07", "method": "Commons thumbnail; no content edits" } }
+  ]
+}

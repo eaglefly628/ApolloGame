@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/usexless/Spritegen",
+  "revision": "510d2552add33ab056f16c69b1c70f748fea699d",
+  "path": "skills/spritegen",
+  "retrievedAt": "2026-10-07",
+  "author": "Jakob (upstream package.json)",
+  "declaredLicense": "MIT (upstream package.json)",
+  "licenseNotice": "No standalone LICENSE file present in this revision. Preserve attribution; obtain the full upstream license notice before redistributing the vendor scripts outside this project.",
+  "localChanges": ["Apollo instructions and style override", "disable destructive prepare --force", "reject silent sheet resizing", "empty frames fail validation", "retain request, source hash and prompt in package", "offline pipeline test"]
+}

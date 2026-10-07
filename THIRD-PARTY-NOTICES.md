@@ -6,6 +6,16 @@
 
 ---
 
+## Spritegen（离线美术技能）
+
+- 上游：https://github.com/usexless/Spritegen ，固定 revision `510d2552add33ab056f16c69b1c70f748fea699d`。
+- 作者：上游 package.json 标记 Jakob；license 字段声明 MIT，但此 revision **没有完整 LICENSE 文件**。本地安装用于作者工具；向外再分发前需补齐上游完整许可声明，不能把本记录当作许可正文。
+- 位置：`.claude/skills/spritegen/`（入库源）与 `.agents/skills/spritegen/`（本地 Codex 镜像）；不进入游戏运行时依赖。
+- 本地修改：Apollo 指令与导出工具链接、custom 绘本风提示词、禁用删除旧 run 的 `--force`、禁止隐式拉伸图集、空帧作为错误、测试。
+- 生成图片的授权独立于脚本许可；每项游戏资产另记模型、参考图、提示词和来源。`UPSTREAM.json` 保留版本与修改记录。
+
+---
+
 ## RVO2 Library（ORCA 避让）
 
 | 项 | 内容 |

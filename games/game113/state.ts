@@ -1,5 +1,5 @@
 import type { HobbyId } from './data.js';
-import { COLLECTIBLES } from './data.js';
+import { COLLECTIBLES, HOBBIES } from './data.js';
 
 export interface AppState {
   onboarded: boolean;
@@ -12,6 +12,7 @@ export interface AppState {
   inspected: string[];
   ledger: { id: string; label: string; amount: number }[];
   ownPosts: { id: string; title: string; text: string; hobbyId: HobbyId }[];
+  fieldNotes: { woodwork: string; sake: string; cigar: string };
   largeText: boolean;
 }
 
@@ -26,6 +27,7 @@ export const INITIAL_STATE: AppState = {
   inspected: [],
   ledger: [{ id: 'welcome', label: '演示账户初始雅钱', amount: 2400 }],
   ownPosts: [],
+  fieldNotes: { woodwork: '', sake: '', cigar: '' },
   largeText: false,
 };
 
@@ -58,7 +60,7 @@ export function normalizeState(raw: unknown): AppState {
   if (!raw || typeof raw !== 'object') return INITIAL_STATE;
   const p = raw as Partial<AppState>;
   const ids = new Set(COLLECTIBLES.map((x) => x.id));
-  const hobbies = new Set(COLLECTIBLES.map((x) => x.hobbyId));
+  const hobbies = new Set(HOBBIES.map((x) => x.id));
   const validHobbies = (v: unknown): HobbyId[] => Array.isArray(v) ? v.filter((x): x is HobbyId => hobbies.has(x as HobbyId)) : [];
   const validItems = (v: unknown): string[] => Array.isArray(v) ? v.filter((x): x is string => ids.has(x as string)) : [];
   return {
@@ -72,6 +74,11 @@ export function normalizeState(raw: unknown): AppState {
     inspected: validItems(p.inspected),
     ledger: Array.isArray(p.ledger) ? p.ledger.filter((x) => x && typeof x.id === 'string' && typeof x.label === 'string' && typeof x.amount === 'number').slice(0, 60) : INITIAL_STATE.ledger,
     ownPosts: Array.isArray(p.ownPosts) ? p.ownPosts.filter((x) => x && typeof x.id === 'string' && typeof x.title === 'string' && typeof x.text === 'string' && hobbies.has(x.hobbyId)).slice(0, 20) : [],
+    fieldNotes: {
+      woodwork: typeof p.fieldNotes?.woodwork === 'string' ? p.fieldNotes.woodwork.slice(0, 800) : '',
+      sake: typeof p.fieldNotes?.sake === 'string' ? p.fieldNotes.sake.slice(0, 800) : '',
+      cigar: typeof p.fieldNotes?.cigar === 'string' ? p.fieldNotes.cigar.slice(0, 800) : '',
+    },
     largeText: p.largeText === true,
   };
 }

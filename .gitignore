@@ -45,6 +45,9 @@ review-for-gemini*.txt
 # 离线渲染帧（render-frame.ts 的可再生产物，按需生成发一次，不入库）。
 game-e-preview.svg
 
+# 清酒官网候选图仅供本机私有 Demo 审看：待品牌授权，不入仓、不卡带、不得进入发行包。
+games/game113/preview-art-local/
+
 # 会话临时自验产物（截图脚本/PNG·勿入库）
 scratchpad/
 

@@ -57,7 +57,7 @@ describe('真实宿主的物件闭环', () => {
       click('#hot-toys');
       // 收纳篮使用与游戏相同的商店入口，测试不直接改世界。
       click('[data-action="shop.open"]');
-      click('#shop-cushion-inspect');
+      click('#shop-cushion');
       click('#shop-selected-buy');
       expect(document.getElementById('shop-selected-place')).not.toBeNull();
       click('#shop-selected-place');
@@ -75,6 +75,33 @@ describe('真实宿主的物件闭环', () => {
       click('#hot-toys'); click('#toy-cushion-remove');
       click('[data-action="hall.back"]');
       expect(document.getElementById('prop-art-cushion')).toBeNull();
+    } finally { dispose(); vi.useRealTimers(); }
+  });
+
+  it('百件货架可以按分类选中、购买并进入收纳篮，不给未制作的物件假摆放按钮', async () => {
+    vi.useFakeTimers();
+    const save = new MemorySavePort();
+    await save.write(SAVE_SLOT, sealEnvelope({ ...EMPTY_STATE, stardust: 100 }, SAVE_CODEC, 100));
+    await save.write(REGISTRY_SLOT, sealEnvelope({ visited: true, entries: [] }, SAVE_CODEC, 100));
+    const click = (id: string): void => {
+      const el = document.getElementById(id);
+      expect(el, id).not.toBeNull(); el!.click();
+    };
+    const dispose = mount(document.body, undefined, { save, now: () => 100, seed: 112 });
+    try {
+      click('starter-act-0'); await vi.advanceTimersByTimeAsync(TICK_MS);
+      click('hot-toys'); click('toys-shop');
+      click('shop-category-wand');
+      expect(document.getElementById('shop-T001')).not.toBeNull();
+      click('shop-T001');
+      click('shop-selected-buy'); await vi.advanceTimersByTimeAsync(TICK_MS);
+      expect(document.getElementById('shop-selected-collection')).not.toBeNull();
+      click('shop-selected-collection');
+      expect(document.getElementById('toy-T001-art')).not.toBeNull();
+      expect(document.getElementById('toy-T001-place')).toBeNull();
+      const persisted = normalizeState(openEnvelope((await save.read(SAVE_SLOT))!, SAVE_CODEC));
+      expect(persisted.items.T001).toBe(1);
+      expect(persisted.stardust).toBe(82);
     } finally { dispose(); vi.useRealTimers(); }
   });
 });

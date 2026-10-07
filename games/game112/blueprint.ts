@@ -91,18 +91,20 @@ function shopEntities(s: PersistedState): Record<string, EntityBlueprint> {
     const n = s.items[it.id] ?? 0;
     out[`res-item-${it.id}`] = { Resource: { id: itemCount(it.id), current: n, min: 0, max: 99 } };
     out[`flag-own-${it.id}`] = { Flag: { id: ownFlag(it.id), active: n > 0 } };
-    out[`flag-placed-${it.id}`] = { Flag: { id: placedFlag(it.id), active: n > 0 && s.placed.includes(it.id) } };
+    if (it.placement === 'scene') out[`flag-placed-${it.id}`] = { Flag: { id: placedFlag(it.id), active: n > 0 && s.placed.includes(it.id) } };
     out[`stock-${it.id}`] = { Resource: { id: `stock.${it.id}`, current: n > 0 ? 0 : 1, min: 0, max: 1 } };
     out[`kb-buy-${it.id}`] = { KeyBinding: { key: buyKey(it.id), signal: buyKey(it.id), phase: 'action' } };
     // 可负担才成交，否则整单不动（craft-recipe 口径）——心光永不进 costs（GDD §12.2）。
     out[`recipe-${it.id}`] = {
       CraftRecipe: { onSignal: buyKey(it.id), costs: [{ id: STARDUST, amount: it.price }, { id: `stock.${it.id}`, amount: 1 }], gains: [{ id: itemCount(it.id), amount: 1 }], grantsFlag: ownFlag(it.id) },
     };
-    out[`kb-place-${it.id}`] = { KeyBinding: { key: placeKey(it.id), signal: placeKey(it.id), phase: 'action' } };
-    // 非消耗式拥有门：同一配方扣 1 再还 1，只有真正拥有时才能摆放。
-    out[`recipe-place-${it.id}`] = { CraftRecipe: { onSignal: placeKey(it.id), costs: [{ id: itemCount(it.id), amount: 1 }], gains: [{ id: itemCount(it.id), amount: 1 }], grantsFlag: placedFlag(it.id) } };
-    out[`kb-remove-${it.id}`] = { KeyBinding: { key: removeKey(it.id), signal: removeKey(it.id), phase: 'action' } };
-    out[`fx-remove-${it.id}`] = { Effect: { onSignal: removeKey(it.id), kind: 'set-flag', targetId: placedFlag(it.id), value: false } };
+    if (it.placement === 'scene') {
+      out[`kb-place-${it.id}`] = { KeyBinding: { key: placeKey(it.id), signal: placeKey(it.id), phase: 'action' } };
+      // 非消耗式拥有门：同一配方扣 1 再还 1，只有真正拥有时才能摆放。
+      out[`recipe-place-${it.id}`] = { CraftRecipe: { onSignal: placeKey(it.id), costs: [{ id: itemCount(it.id), amount: 1 }], gains: [{ id: itemCount(it.id), amount: 1 }], grantsFlag: placedFlag(it.id) } };
+      out[`kb-remove-${it.id}`] = { KeyBinding: { key: removeKey(it.id), signal: removeKey(it.id), phase: 'action' } };
+      out[`fx-remove-${it.id}`] = { Effect: { onSignal: removeKey(it.id), kind: 'set-flag', targetId: placedFlag(it.id), value: false } };
+    }
   }
   return out;
 }

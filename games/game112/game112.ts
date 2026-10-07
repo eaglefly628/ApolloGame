@@ -16,8 +16,9 @@ import { EMPTY_STATE, type PersistedState } from './blueprint.js';
 import { setSkinOverrides } from './cat-art.js';
 import { addEntry, EMPTY_DRAFT, EMPTY_REGISTRY, normalizeRegistry, removeEntry, WHEREABOUTS, type CatRegistry, type RegistrationDraft } from './registration.js';
 import { EMPTY_CATALOG_BROWSE, sourceOf, type CatalogBrowse } from './cat-gallery.js';
+import { EMPTY_SHOP_BROWSE, shopCategoryOf, shopSortOf, shopValueOf, type ShopBrowse } from './shop-browse.js';
 import { STAR_TAIL_THEME } from './ui-theme.js';
-import { useKey, respondKey, removeKey, ITEM_CANCEL } from './item-data.js';
+import { useKey, respondKey, removeKey, ITEM_CANCEL, experienceOf } from './item-data.js';
 
 export const SAVE_CODEC: SaveCodec = { gameId: GAME_ID, schema: 1 };
 export const SAVE_SLOT = 'main';
@@ -50,6 +51,7 @@ export function routeAction(action: UiAction | string, arg?: string): Route | un
     case 'toys.open': return { screen: 'toys' };
     case 'shop.open': return { screen: 'shop' };
     case 'shop.inspect': return arg !== undefined && shopItemOf(arg) !== undefined ? {} : undefined;
+    case 'shop.category': case 'shop.value': case 'shop.sort': case 'shop.search': case 'shop.page': return {};
     case 'shop.claimWelcome': return { key: grantKey('welcome') };
     case 'memory.open': case 'memory.back': return { screen: 'memory' };
     case 'settings.open': return { screen: 'settings' };
@@ -58,12 +60,12 @@ export function routeAction(action: UiAction | string, arg?: string): Route | un
     case 'ui.hide': return { key: STAGE_HIDE_KEY };
     case 'ui.show': return { key: STAGE_SHOW_KEY };
     case 'shop.buy': return arg !== undefined && shopItemOf(arg) !== undefined ? { key: buyKey(arg) } : undefined;
-    case 'item.use': return arg !== undefined && shopItemOf(arg) !== undefined ? { key: useKey(arg), screen: 'scene', room: 'hall' } : undefined;
-    case 'item.respond': return arg !== undefined && shopItemOf(arg) !== undefined ? { key: respondKey(arg) } : undefined;
+    case 'item.use': return arg !== undefined && experienceOf(arg) !== undefined ? { key: useKey(arg), screen: 'scene', room: 'hall' } : undefined;
+    case 'item.respond': return arg !== undefined && experienceOf(arg) !== undefined ? { key: respondKey(arg) } : undefined;
     case 'item.cancel': return { key: ITEM_CANCEL };
-    case 'decor.remove': return arg !== undefined && shopItemOf(arg) !== undefined ? { key: removeKey(arg) } : undefined;
+    case 'decor.remove': return arg !== undefined && experienceOf(arg) !== undefined ? { key: removeKey(arg) } : undefined;
     // 购买后优先「放到馆里看看」→ 回主厅目击新物件（menu-flow §10）。
-    case 'decor.place': return arg !== undefined && shopItemOf(arg) !== undefined ? { key: placeKey(arg), screen: 'scene', room: 'hall' } : undefined;
+    case 'decor.place': return arg !== undefined && experienceOf(arg) !== undefined ? { key: placeKey(arg), screen: 'scene', room: 'hall' } : undefined;
     case 'memory.read': return arg !== undefined && chapterOf(arg) !== undefined ? { screen: 'reading', readChapter: arg } : undefined;
     case 'memory.advance': return { key: DIALOGUE_ACTION_ADVANCE };
     case 'memory.choose': {
@@ -113,6 +115,7 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
   let draft: RegistrationDraft = EMPTY_DRAFT;
   let catalog: CatalogBrowse = EMPTY_CATALOG_BROWSE;
   let shopItem = 'paperbag';
+  let shopBrowse: ShopBrowse = EMPTY_SHOP_BROWSE;
   let timer: ReturnType<typeof setInterval> | undefined;
   let lastView = '';
 
@@ -130,6 +133,7 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
       draft,
       catalog,
       shopItem,
+      shopBrowse,
     }), { flag: (id) => (world !== undefined ? flagOn(world, id) : false) });
     if (handle) handle.update(node);
     else handle = mountUI(container, node, handlers, STAR_TAIL_THEME);
@@ -206,6 +210,27 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
     }
     if (a === 'shop.inspect') {
       if (arg !== undefined && shopItemOf(arg) !== undefined) shopItem = arg;
+      render(); return;
+    }
+    if (a === 'shop.category') {
+      const category = shopCategoryOf(arg);
+      if (category !== undefined) shopBrowse = { ...shopBrowse, category, page: 0 };
+      render(); return;
+    }
+    if (a === 'shop.value') {
+      const value = shopValueOf(arg);
+      if (value !== undefined) shopBrowse = { ...shopBrowse, value, page: 0 };
+      render(); return;
+    }
+    if (a === 'shop.sort') {
+      const sort = shopSortOf(arg);
+      if (sort !== undefined) shopBrowse = { ...shopBrowse, sort, page: 0 };
+      render(); return;
+    }
+    if (a === 'shop.search') { shopBrowse = { ...shopBrowse, query: (arg ?? '').slice(0, 60), page: 0 }; render(); return; }
+    if (a === 'shop.page') {
+      const page = Number(arg);
+      if (Number.isInteger(page) && page >= 0) shopBrowse = { ...shopBrowse, page };
       render(); return;
     }
     const r = routeAction(a, arg);

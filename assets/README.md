@@ -20,14 +20,14 @@ assets/
 └── FreeArtLib/    ← 素材货架（DCSS CC0，自带 index.json，脚本生成，只读）
 ```
 
-## 星尾馆猫用物件百件库（Game112 美术候选）
+## 星尾馆猫用物件百件库（Game112 商店）
 
-- `curated/game112-cat-toys.v1.json`：T001–T100 的稳定编号、品类、外观方向与出图状态。现在 100 件均有候选成图。
+- `curated/game112-cat-toys.v1.json`：T001–T100 的稳定编号、品类、外观方向与出图状态。100 件已按本轮商店接入决定入库。
 - `curated/game112-cat-toys-overview.png`：100 件总览；`curated/game112-cat-toys-preview.png` 是 T001–T010 详细拼页，`curated/game112-cat-toys-preview-011-020.png` 至 `...-091-100.png` 是其余九页。每页从左上到右下依编号排列。
-- `ai/pending.json` 与 `ai/pending/openai-built-in-game112-cat-toy-*.png`：100 张透明 PNG 原图、逐张提示词、生成日期与授权说明，处于共享美术库的**待审区**。未经人审通过不进 `assets/index.json`，也不自动进入 Game112 商店。
-- 接入游戏时再按 `scripts/vendor-asset.mjs` 把已审核的共享图复制进游戏本地库，并逐件补玩法、摆位与价格。T011–T100 使用 `scripts/game112-toy-batch.mjs` 的稳定提示词模板单独生成，没有从拼图裁成假单品。
+- `ai/openai-built-in/game112-cat-toy-*.png` 与 `index.json`：100 张原图及逐张生成记录；`ai/pending.json` 中对应待审项已清空。
+- `public/games/game112/art/ai/openai-built-in/` 与本地 `art/index.json`：经 `scripts/vendor-asset.mjs` 复制到 Game112 的运行时资产。价格、分类和商品说明在 `games/game112/shop-catalog.v1.json`。T011–T100 使用 `scripts/game112-toy-batch.mjs` 的稳定提示词模板单独生成，没有从拼图裁成假单品。
 
-这一批不使用网上图集原图；外部图片的商用与二次加工许可必须逐张核对。待审图片中部分有透明边缘像素警告，发行前还需逐张复查并修图。
+这一批不使用网上图集原图；外部图片的商用与二次加工许可必须逐张核对。部分图有透明边缘像素警告，**入游戏不等于发行美术终审通过**，发行前仍需逐张复查并修图。新 100 件目前完成购买与收藏，摆放和猫咪互动需另行逐件制作。
 
 类型集合可扩展，但保持「按类型分的叶子目录」这一约定。
 

@@ -5,6 +5,7 @@
 // ⚠ 数值口径：GDD 只定了「无惩罚·心光只增·兴致当次临时」等**方向**，没有具体数字——本文件里的阈值/增量/价格
 //   全是 S3 占位（S4 手感调校面·随对齐单迭代·非 GDD 出处），改数不改结构。
 import type { DialogueGraph } from '@zerocraft/engine/skills/tier3/index.js';
+import toyCatalog from './shop-catalog.v1.json';
 
 export const GAME_ID = 'game112';
 export const SEED_DEFAULT = 112;
@@ -266,14 +267,21 @@ export interface ShopItem {
   readonly name: string;
   readonly price: number;
   readonly kind: 'toy' | 'decor' | 'cardskin';
+  readonly category: string;
+  /** 已完成场景摆放与互动的物件；其余先作为可购买收藏品。 */
+  readonly placement: 'scene' | 'collection';
   /** 展示「它会怎样改变互动」而非只展示属性（ui-visual-handoff §7.8）。 */
   readonly blurb: string;
 }
 export const SHOP_ITEMS: readonly ShopItem[] = [
-  { id: 'feather', name: '羽毛杆', price: 30, kind: 'toy', blurb: '轻晃羽毛，再放低一点，和雪团玩一小会儿。' },
-  { id: 'paperbag', name: '纸袋', price: 20, kind: 'toy', blurb: '撑开袋口，轻轻敲一下，让它熟悉沙沙声。' },
-  { id: 'cushion', name: '软垫', price: 40, kind: 'decor', blurb: '给雪团铺一个柔软的坐处，陪它歇一会儿。' },
-  { id: 'cardback-moon', name: '月相牌背', price: 50, kind: 'cardskin', blurb: '换上月相牌背，一起翻开今晚的月亮。' },
+  { id: 'feather', name: '羽毛杆', price: 30, kind: 'toy', category: 'wand', placement: 'scene', blurb: '轻晃羽毛，再放低一点，和雪团玩一小会儿。' },
+  { id: 'paperbag', name: '纸袋', price: 20, kind: 'toy', category: 'hide', placement: 'scene', blurb: '撑开袋口，轻轻敲一下，让它熟悉沙沙声。' },
+  { id: 'cushion', name: '软垫', price: 40, kind: 'decor', category: 'rest', placement: 'scene', blurb: '给雪团铺一个柔软的坐处，陪它歇一会儿。' },
+  { id: 'cardback-moon', name: '月相牌背', price: 50, kind: 'cardskin', category: 'cardskin', placement: 'scene', blurb: '换上月相牌背，一起翻开今晚的月亮。' },
+  ...toyCatalog.items.map((it): ShopItem => ({
+    id: it.id, name: it.name, price: it.price, kind: it.kind as ShopItem['kind'],
+    category: it.category, placement: 'collection', blurb: it.blurb,
+  })),
 ];
 export const itemCount = (id: string): string => `item.${id}`;
 export const ownFlag = (id: string): string => `own.${id}`;

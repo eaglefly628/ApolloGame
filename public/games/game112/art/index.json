@@ -749,6 +749,3306 @@
         "generatedAt": "2026-09-27",
         "notes": "编号 06；主色：月光蓝、暖奶油、淡薰衣草"
       }
+    },
+    {
+      "id": "game112/prop/T001",
+      "type": "texture",
+      "description": "星蛾短杆 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-001.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "wand",
+        "T001",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: reusable Apollo Game 112 cat-toy inventory cutout, item 001. Subject: one small handmade cat teaser wand, a short warm-brown carved wooden rod with a secure braided cord and a single soft teal-and-amber felt moth at the end. The whole physical toy, from handle to moth, is visible and centered; loosely curved cord stays inside the frame. Style: high-quality hand-painted storybook game prop, cozy cat-native star-house aesthetic, tactile worn edges, subtle imperfect brushwork, natural materials; gentle warm light with restrained teal accent. Clean isolated transparent background, no cast floor/background, no cat, no human, no other objects, no letters, no watermark, no logo. Distinct silhouette readable at 96px.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-001"
+      }
+    },
+    {
+      "id": "game112/prop/T002",
+      "type": "texture",
+      "description": "拼布弯月抱踢枕 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-002.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "kicker",
+        "T002",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: stylized-concept. Reusable inventory cutout for a cozy cat-native star-house game. One handmade soft felt crescent-moon kicker pillow for cats, small cat-scale, plump stitched shape, faded butter yellow and muted teal fabric patches, visible hand-sewn seam and gentle wear. Whole object centered in a clear isolated silhouette. Painterly children's storybook illustration, slightly imperfect hand brushwork, tactile fabric, warm ambient light. Genuinely transparent background with clean alpha, no floor, no vignette, no dark colored backdrop, no cast scene, no text, no cat, no human, no logo or watermark.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-002"
+      }
+    },
+    {
+      "id": "game112/prop/T003",
+      "type": "texture",
+      "description": "藤编铃星球 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-003.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "ball",
+        "T003",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: reusable Apollo cat-toy art-library inventory cutout. Exactly one complete handmade cat toy, centered with clear silhouette and generous transparent margin. Style: cozy cat-native star-house game, tactile painterly children's storybook illustration matching handmade wood and fabric props, visible subtle brushwork, imperfect wear, warm natural light, muted amber, cream, teal and coral as appropriate. Transparent PNG alpha only; no floor, no vignette, no scene/background, no cat, no human, no text, no logo, no watermark. Subject: a palm-sized cat chase ball made from woven rattan, a securely enclosed tiny brass bell visible through the weave, a small teal felt star sewn on one side",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-003"
+      }
+    },
+    {
+      "id": "game112/prop/T004",
+      "type": "texture",
+      "description": "珊瑚布鼠 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-004.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "prey",
+        "T004",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: reusable Apollo cat-toy art-library inventory cutout. Exactly one complete handmade cat toy, centered with clear silhouette and generous transparent margin. Style: cozy cat-native star-house game, tactile painterly children's storybook illustration matching handmade wood and fabric props, visible subtle brushwork, imperfect wear, warm natural light, muted amber, cream, teal and coral as appropriate. Transparent PNG alpha only; no floor, no vignette, no scene/background, no cat, no human, no text, no logo, no watermark. Subject: a handmade stuffed cloth mouse toy for cats, dusty coral linen body, stitched sleepy eyes, short thick braided tail and two small felt ears",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-004"
+      }
+    },
+    {
+      "id": "game112/prop/T005",
+      "type": "texture",
+      "description": "双星滚木环 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-005.png",
+      "spec": {
+        "format": "png",
+        "width": 1291,
+        "height": 1218,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "chase",
+        "T005",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: reusable Apollo cat-toy art-library inventory cutout. Exactly one complete handmade cat toy, centered with clear silhouette and generous transparent margin. Style: cozy cat-native star-house game, tactile painterly children's storybook illustration matching handmade wood and fabric props, visible subtle brushwork, imperfect wear, warm natural light, muted amber, cream, teal and coral as appropriate. Transparent PNG alpha only; no floor, no vignette, no scene/background, no cat, no human, no text, no logo, no watermark. Subject: a little rolling wooden ring toy for cats, warm oak hoop with two inset soft felt star shapes, worn edges, cat-scale",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-005"
+      }
+    },
+    {
+      "id": "game112/prop/T006",
+      "type": "texture",
+      "description": "布彗星 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-006.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "kicker",
+        "T006",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: reusable Apollo cat-toy art-library inventory cutout. Exactly one complete handmade cat toy, centered with clear silhouette and generous transparent margin. Style: cozy cat-native star-house game, tactile painterly children's storybook illustration matching handmade wood and fabric props, visible subtle brushwork, imperfect wear, warm natural light, muted amber, cream, teal and coral as appropriate. Transparent PNG alpha only; no floor, no vignette, no scene/background, no cat, no human, no text, no logo, no watermark. Subject: a small plump cloth comet cat toy with a muted amber round head and three short stitched teal fabric tails, no loose threads",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-006"
+      }
+    },
+    {
+      "id": "game112/prop/T007",
+      "type": "texture",
+      "description": "流星短杆 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-007.png",
+      "spec": {
+        "format": "png",
+        "width": 1024,
+        "height": 1536,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "wand",
+        "T007",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: reusable Apollo cat-toy art-library inventory cutout. Exactly one complete handmade cat toy, centered with clear silhouette and generous transparent margin. Style: cozy cat-native star-house game, tactile painterly children's storybook illustration matching handmade wood and fabric props, visible subtle brushwork, imperfect wear, warm natural light, muted amber, cream, teal, coral and sage as appropriate. Transparent PNG alpha only; no floor, no vignette, no scene/background, no cat, no human, no text, no logo, no watermark. Subject: a cat teaser wand with a short carved birch handle and a single soft coral felt shooting star tied on a short secure braided cord",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-007"
+      }
+    },
+    {
+      "id": "game112/prop/T008",
+      "type": "texture",
+      "description": "雾青布鱼 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-008.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "kicker",
+        "T008",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: reusable Apollo cat-toy art-library inventory cutout. Exactly one complete handmade cat toy, centered with clear silhouette and generous transparent margin. Style: cozy cat-native star-house game, tactile painterly children's storybook illustration matching handmade wood and fabric props, visible subtle brushwork, imperfect wear, warm natural light, muted amber, cream, teal, coral and sage as appropriate. Transparent PNG alpha only; no floor, no vignette, no scene/background, no cat, no human, no text, no logo, no watermark. Subject: a squat stitched felt fish kicker toy for a cat, muted teal body, cream belly, coral embroidered fins, rounded safe plush silhouette",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-008"
+      }
+    },
+    {
+      "id": "game112/prop/T009",
+      "type": "texture",
+      "description": "鼠尾草响叶 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-009.png",
+      "spec": {
+        "format": "png",
+        "width": 1374,
+        "height": 1145,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "crinkle",
+        "T009",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: reusable Apollo cat-toy art-library inventory cutout. Exactly one complete handmade cat toy, centered with clear silhouette and generous transparent margin. Style: cozy cat-native star-house game, tactile painterly children's storybook illustration matching handmade wood and fabric props, visible subtle brushwork, imperfect wear, warm natural light, muted amber, cream, teal, coral and sage as appropriate. Transparent PNG alpha only; no floor, no vignette, no scene/background, no cat, no human, no text, no logo, no watermark. Subject: a small crinkly leaf toy for cats, two layered faded sage linen leaves with visible stitching and a softly folded shape",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-009"
+      }
+    },
+    {
+      "id": "game112/prop/T010",
+      "type": "texture",
+      "description": "月纹纸隧道 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-010.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "hide",
+        "T010",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: reusable Apollo cat-toy art-library inventory cutout. Exactly one complete handmade cat toy, centered with clear silhouette and generous transparent margin. Style: cozy cat-native star-house game, tactile painterly children's storybook illustration matching handmade wood and fabric props, visible subtle brushwork, imperfect wear, warm natural light, muted amber, cream, teal, coral and sage as appropriate. Transparent PNG alpha only; no floor, no vignette, no scene/background, no cat, no human, no text, no logo, no watermark. Subject: a compact cardboard hideaway tunnel for one cat, cat-scale arch with two round openings, decorated only with tiny hand-painted crescent marks, worn edges",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-010"
+      }
+    },
+    {
+      "id": "game112/prop/T011",
+      "type": "texture",
+      "description": "茶叶蝶短杆 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-011.png",
+      "spec": {
+        "format": "png",
+        "width": 1223,
+        "height": 1286,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "逗猫杆与悬挂物",
+        "T011",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 茶叶蝶短杆 (逗猫杆与悬挂物); 茶棕木杆、折纸茶叶蝶. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-011"
+      }
+    },
+    {
+      "id": "game112/prop/T012",
+      "type": "texture",
+      "description": "柳叶毡杆 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-012.png",
+      "spec": {
+        "format": "png",
+        "width": 1024,
+        "height": 1536,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "逗猫杆与悬挂物",
+        "T012",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 柳叶毡杆 (逗猫杆与悬挂物); 柳木短杆、两片短毡叶. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-012"
+      }
+    },
+    {
+      "id": "game112/prop/T013",
+      "type": "texture",
+      "description": "晨星羽杆 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-013.png",
+      "spec": {
+        "format": "png",
+        "width": 1145,
+        "height": 1374,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "逗猫杆与悬挂物",
+        "T013",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 晨星羽杆 (逗猫杆与悬挂物); 浅木杆、米白与蜜橙羽片. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-013"
+      }
+    },
+    {
+      "id": "game112/prop/T014",
+      "type": "texture",
+      "description": "小鱼影杆 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-014.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "逗猫杆与悬挂物",
+        "T014",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 小鱼影杆 (逗猫杆与悬挂物); 短竹杆、软布鱼影. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-014"
+      }
+    },
+    {
+      "id": "game112/prop/T015",
+      "type": "texture",
+      "description": "云团短杆 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-015.png",
+      "spec": {
+        "format": "png",
+        "width": 1222,
+        "height": 1287,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "逗猫杆与悬挂物",
+        "T015",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 云团短杆 (逗猫杆与悬挂物); 旧橡木杆、奶油色毡云. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-015"
+      }
+    },
+    {
+      "id": "game112/prop/T016",
+      "type": "texture",
+      "description": "纸月铃杆 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-016.png",
+      "spec": {
+        "format": "png",
+        "width": 1024,
+        "height": 1536,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "逗猫杆与悬挂物",
+        "T016",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 纸月铃杆 (逗猫杆与悬挂物); 短木杆、叠纸弯月、封闭小铃. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-016"
+      }
+    },
+    {
+      "id": "game112/prop/T017",
+      "type": "texture",
+      "description": "石榴花杆 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-017.png",
+      "spec": {
+        "format": "png",
+        "width": 1227,
+        "height": 1281,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "逗猫杆与悬挂物",
+        "T017",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 石榴花杆 (逗猫杆与悬挂物); 短木杆、石榴红布花. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-017"
+      }
+    },
+    {
+      "id": "game112/prop/T018",
+      "type": "texture",
+      "description": "蒲公英杆 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-018.png",
+      "spec": {
+        "format": "png",
+        "width": 1024,
+        "height": 1536,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "逗猫杆与悬挂物",
+        "T018",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 蒲公英杆 (逗猫杆与悬挂物); 短木杆、蓬松米黄毡球. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-018"
+      }
+    },
+    {
+      "id": "game112/prop/T019",
+      "type": "texture",
+      "description": "绿藤星杆 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-019.png",
+      "spec": {
+        "format": "png",
+        "width": 1214,
+        "height": 1295,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "逗猫杆与悬挂物",
+        "T019",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 绿藤星杆 (逗猫杆与悬挂物); 短木杆、藤青毡星. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-019"
+      }
+    },
+    {
+      "id": "game112/prop/T020",
+      "type": "texture",
+      "description": "绒尾蜻蜓杆 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-020.png",
+      "spec": {
+        "format": "png",
+        "width": 1216,
+        "height": 1294,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "逗猫杆与悬挂物",
+        "T020",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 绒尾蜻蜓杆 (逗猫杆与悬挂物); 短木杆、雾蓝绒布蜻蜓. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-020"
+      }
+    },
+    {
+      "id": "game112/prop/T021",
+      "type": "texture",
+      "description": "软木月球 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-021.png",
+      "spec": {
+        "format": "png",
+        "width": 1278,
+        "height": 1230,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "滚动球",
+        "T021",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 软木月球 (滚动球); 软木球、手绘月相. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-021"
+      }
+    },
+    {
+      "id": "game112/prop/T022",
+      "type": "texture",
+      "description": "蜂蜜毡球 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-022.png",
+      "spec": {
+        "format": "png",
+        "width": 1336,
+        "height": 1177,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "滚动球",
+        "T022",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 蜂蜜毡球 (滚动球); 蜂蜜色厚毡球. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-022"
+      }
+    },
+    {
+      "id": "game112/prop/T023",
+      "type": "texture",
+      "description": "苔绿织球 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-023.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "滚动球",
+        "T023",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 苔绿织球 (滚动球); 苔绿色紧密编织球. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-023"
+      }
+    },
+    {
+      "id": "game112/prop/T024",
+      "type": "texture",
+      "description": "斑点布球 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-024.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "滚动球",
+        "T024",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 斑点布球 (滚动球); 奶油亚麻、珊瑚斑点. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-024"
+      }
+    },
+    {
+      "id": "game112/prop/T025",
+      "type": "texture",
+      "description": "藤青木珠球 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-025.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "滚动球",
+        "T025",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 藤青木珠球 (滚动球); 木珠外包藤青编带. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-025"
+      }
+    },
+    {
+      "id": "game112/prop/T026",
+      "type": "texture",
+      "description": "栗壳轻球 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-026.png",
+      "spec": {
+        "format": "png",
+        "width": 1331,
+        "height": 1181,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "滚动球",
+        "T026",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 栗壳轻球 (滚动球); 栗棕软木半壳拼球. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-026"
+      }
+    },
+    {
+      "id": "game112/prop/T027",
+      "type": "texture",
+      "description": "云纹软球 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-027.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "滚动球",
+        "T027",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 云纹软球 (滚动球); 米白布球、雾蓝云纹. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-027"
+      }
+    },
+    {
+      "id": "game112/prop/T028",
+      "type": "texture",
+      "description": "纸星响球 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-028.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "滚动球",
+        "T028",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 纸星响球 (滚动球); 紧密纸织球、星形压纹. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-028"
+      }
+    },
+    {
+      "id": "game112/prop/T029",
+      "type": "texture",
+      "description": "琥珀叶球 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-029.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "滚动球",
+        "T029",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 琥珀叶球 (滚动球); 琥珀毡球、布叶贴片. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-029"
+      }
+    },
+    {
+      "id": "game112/prop/T030",
+      "type": "texture",
+      "description": "夜蓝绒球 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-030.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "滚动球",
+        "T030",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 夜蓝绒球 (滚动球); 夜蓝短绒、奶油缝线. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-030"
+      }
+    },
+    {
+      "id": "game112/prop/T031",
+      "type": "texture",
+      "description": "长尾星鱼 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-031.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抱踢与咬抱",
+        "T031",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 长尾星鱼 (抱踢与咬抱); 雾蓝长鱼抱踢枕. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-031"
+      }
+    },
+    {
+      "id": "game112/prop/T032",
+      "type": "texture",
+      "description": "南瓜布枕 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-032.png",
+      "spec": {
+        "format": "png",
+        "width": 1374,
+        "height": 1145,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抱踢与咬抱",
+        "T032",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 南瓜布枕 (抱踢与咬抱); 浅橙短胖南瓜. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-032"
+      }
+    },
+    {
+      "id": "game112/prop/T033",
+      "type": "texture",
+      "description": "云朵绒枕 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-033.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抱踢与咬抱",
+        "T033",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 云朵绒枕 (抱踢与咬抱); 奶油白五瓣软云. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-033"
+      }
+    },
+    {
+      "id": "game112/prop/T034",
+      "type": "texture",
+      "description": "青叶布卷 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-034.png",
+      "spec": {
+        "format": "png",
+        "width": 1422,
+        "height": 1106,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抱踢与咬抱",
+        "T034",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 青叶布卷 (抱踢与咬抱); 鼠尾草布卷、叶脉线. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-034"
+      }
+    },
+    {
+      "id": "game112/prop/T035",
+      "type": "texture",
+      "description": "月亮布鲨 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-035.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抱踢与咬抱",
+        "T035",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 月亮布鲨 (抱踢与咬抱); 淡灰蓝圆头布鲨. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-035"
+      }
+    },
+    {
+      "id": "game112/prop/T036",
+      "type": "texture",
+      "description": "燕麦长枕 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-036.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抱踢与咬抱",
+        "T036",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 燕麦长枕 (抱踢与咬抱); 燕麦色粗布长枕. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-036"
+      }
+    },
+    {
+      "id": "game112/prop/T037",
+      "type": "texture",
+      "description": "珊瑚星枕 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-037.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抱踢与咬抱",
+        "T037",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 珊瑚星枕 (抱踢与咬抱); 珊瑚红五角厚毡星. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-037"
+      }
+    },
+    {
+      "id": "game112/prop/T038",
+      "type": "texture",
+      "description": "松果布枕 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-038.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抱踢与咬抱",
+        "T038",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 松果布枕 (抱踢与咬抱); 栗色软布松果纹. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-038"
+      }
+    },
+    {
+      "id": "game112/prop/T039",
+      "type": "texture",
+      "description": "奶油面包枕 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-039.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抱踢与咬抱",
+        "T039",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 奶油面包枕 (抱踢与咬抱); 米黄小面包形软枕. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-039"
+      }
+    },
+    {
+      "id": "game112/prop/T040",
+      "type": "texture",
+      "description": "青金彗尾枕 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-040.png",
+      "spec": {
+        "format": "png",
+        "width": 1374,
+        "height": 1145,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抱踢与咬抱",
+        "T040",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 青金彗尾枕 (抱踢与咬抱); 青金短圆体、布质短尾. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-040"
+      }
+    },
+    {
+      "id": "game112/prop/T041",
+      "type": "texture",
+      "description": "燕麦布鼠 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-041.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "小猎物布偶",
+        "T041",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 燕麦布鼠 (小猎物布偶); 燕麦麻布、短尾. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-041"
+      }
+    },
+    {
+      "id": "game112/prop/T042",
+      "type": "texture",
+      "description": "月影布雀 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-042.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "小猎物布偶",
+        "T042",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 月影布雀 (小猎物布偶); 灰蓝小鸟、米白翅. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-042"
+      }
+    },
+    {
+      "id": "game112/prop/T043",
+      "type": "texture",
+      "description": "栗色布蟹 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-043.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "小猎物布偶",
+        "T043",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 栗色布蟹 (小猎物布偶); 栗色圆蟹、短软足. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-043"
+      }
+    },
+    {
+      "id": "game112/prop/T044",
+      "type": "texture",
+      "description": "橙鳍布鱼 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-044.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "小猎物布偶",
+        "T044",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 橙鳍布鱼 (小猎物布偶); 奶油布鱼、蜜橙鳍. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-044"
+      }
+    },
+    {
+      "id": "game112/prop/T045",
+      "type": "texture",
+      "description": "茶棕布兔 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-045.png",
+      "spec": {
+        "format": "png",
+        "width": 1374,
+        "height": 1145,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "小猎物布偶",
+        "T045",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 茶棕布兔 (小猎物布偶); 茶棕圆兔、短软耳. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-045"
+      }
+    },
+    {
+      "id": "game112/prop/T046",
+      "type": "texture",
+      "description": "苔绿布蛙 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-046.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "小猎物布偶",
+        "T046",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 苔绿布蛙 (小猎物布偶); 苔绿小蛙、扁圆身. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-046"
+      }
+    },
+    {
+      "id": "game112/prop/T047",
+      "type": "texture",
+      "description": "雾青布蝶 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-047.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "小猎物布偶",
+        "T047",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 雾青布蝶 (小猎物布偶); 雾青双翼、奶油缝边. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-047"
+      }
+    },
+    {
+      "id": "game112/prop/T048",
+      "type": "texture",
+      "description": "榛子布虫 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-048.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "小猎物布偶",
+        "T048",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 榛子布虫 (小猎物布偶); 榛子色分节软虫. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-048"
+      }
+    },
+    {
+      "id": "game112/prop/T049",
+      "type": "texture",
+      "description": "杏黄布蜂 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-049.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "小猎物布偶",
+        "T049",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 杏黄布蜂 (小猎物布偶); 杏黄胖蜂、短软翼. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-049"
+      }
+    },
+    {
+      "id": "game112/prop/T050",
+      "type": "texture",
+      "description": "梅子布鼹 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-050.png",
+      "spec": {
+        "format": "png",
+        "width": 1379,
+        "height": 1141,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "小猎物布偶",
+        "T050",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 梅子布鼹 (小猎物布偶); 暗梅色圆鼹、短鼻. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-050"
+      }
+    },
+    {
+      "id": "game112/prop/T051",
+      "type": "texture",
+      "description": "半月滚木桥 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-051.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "轨道与追逐",
+        "T051",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 半月滚木桥 (轨道与追逐); 低矮弧木桥、滚珠槽. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-051"
+      }
+    },
+    {
+      "id": "game112/prop/T052",
+      "type": "texture",
+      "description": "双环软木轨 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-052.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "轨道与追逐",
+        "T052",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 双环软木轨 (轨道与追逐); 两层软木环轨. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-052"
+      }
+    },
+    {
+      "id": "game112/prop/T053",
+      "type": "texture",
+      "description": "蘑菇转盘 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-053.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "轨道与追逐",
+        "T053",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 蘑菇转盘 (轨道与追逐); 矮木转盘、布蘑菇. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-053"
+      }
+    },
+    {
+      "id": "game112/prop/T054",
+      "type": "texture",
+      "description": "叶形滚球槽 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-054.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "轨道与追逐",
+        "T054",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 叶形滚球槽 (轨道与追逐); 叶形木槽、木球. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-054"
+      }
+    },
+    {
+      "id": "game112/prop/T055",
+      "type": "texture",
+      "description": "星角拨盘 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-055.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "轨道与追逐",
+        "T055",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 星角拨盘 (轨道与追逐); 五角圆边木拨盘. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-055"
+      }
+    },
+    {
+      "id": "game112/prop/T056",
+      "type": "texture",
+      "description": "窗台小滚筒 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-056.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "轨道与追逐",
+        "T056",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 窗台小滚筒 (轨道与追逐); 矮木滚筒、软毡边. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-056"
+      }
+    },
+    {
+      "id": "game112/prop/T057",
+      "type": "texture",
+      "description": "茶盘迷你轨 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-057.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "轨道与追逐",
+        "T057",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 茶盘迷你轨 (轨道与追逐); 浅木茶盘、单圈球轨. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-057"
+      }
+    },
+    {
+      "id": "game112/prop/T058",
+      "type": "texture",
+      "description": "回声滚珠盒 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-058.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "轨道与追逐",
+        "T058",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 回声滚珠盒 (轨道与追逐); 木盒透明小窗、封闭滚珠. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-058"
+      }
+    },
+    {
+      "id": "game112/prop/T059",
+      "type": "texture",
+      "description": "转叶陀螺 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-059.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "轨道与追逐",
+        "T059",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 转叶陀螺 (轨道与追逐); 圆木轴、软布叶片. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-059"
+      }
+    },
+    {
+      "id": "game112/prop/T060",
+      "type": "texture",
+      "description": "两端探球管 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-060.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "轨道与追逐",
+        "T060",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 两端探球管 (轨道与追逐); 短纸筒、两头圆孔. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-060"
+      }
+    },
+    {
+      "id": "game112/prop/T061",
+      "type": "texture",
+      "description": "猫耳纸洞 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-061.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "藏身与钻行",
+        "T061",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 猫耳纸洞 (藏身与钻行); 猫耳形纸板洞口. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-061"
+      }
+    },
+    {
+      "id": "game112/prop/T062",
+      "type": "texture",
+      "description": "软毡月洞 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-062.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "藏身与钻行",
+        "T062",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 软毡月洞 (藏身与钻行); 厚毡半月形短洞. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-062"
+      }
+    },
+    {
+      "id": "game112/prop/T063",
+      "type": "texture",
+      "description": "旧茶箱 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-063.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "藏身与钻行",
+        "T063",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 旧茶箱 (藏身与钻行); 旧木茶箱、低门洞. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-063"
+      }
+    },
+    {
+      "id": "game112/prop/T064",
+      "type": "texture",
+      "description": "星窗纸袋 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-064.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "藏身与钻行",
+        "T064",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 星窗纸袋 (藏身与钻行); 厚纸袋、星形侧窗. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-064"
+      }
+    },
+    {
+      "id": "game112/prop/T065",
+      "type": "texture",
+      "description": "树根矮洞 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-065.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "藏身与钻行",
+        "T065",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 树根矮洞 (藏身与钻行); 仿树根软木矮洞. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-065"
+      }
+    },
+    {
+      "id": "game112/prop/T066",
+      "type": "texture",
+      "description": "织布双口筒 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-066.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "藏身与钻行",
+        "T066",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 织布双口筒 (藏身与钻行); 粗布短筒、双入口. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-066"
+      }
+    },
+    {
+      "id": "game112/prop/T067",
+      "type": "texture",
+      "description": "小阁楼纸屋 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-067.png",
+      "spec": {
+        "format": "png",
+        "width": 1448,
+        "height": 1086,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "藏身与钻行",
+        "T067",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 小阁楼纸屋 (藏身与钻行); 纸板低屋、圆窗. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-067"
+      }
+    },
+    {
+      "id": "game112/prop/T068",
+      "type": "texture",
+      "description": "三角云帐 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-068.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "藏身与钻行",
+        "T068",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 三角云帐 (藏身与钻行); 低矮布帐、奶油云纹. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-068"
+      }
+    },
+    {
+      "id": "game112/prop/T069",
+      "type": "texture",
+      "description": "弯月窗筒 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-069.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "藏身与钻行",
+        "T069",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 弯月窗筒 (藏身与钻行); 厚纸筒、弯月侧窗. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-069"
+      }
+    },
+    {
+      "id": "game112/prop/T070",
+      "type": "texture",
+      "description": "藤编半罩 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-070.png",
+      "spec": {
+        "format": "png",
+        "width": 1374,
+        "height": 1145,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "藏身与钻行",
+        "T070",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 藤编半罩 (藏身与钻行); 藤编半圆罩、宽入口. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-070"
+      }
+    },
+    {
+      "id": "game112/prop/T071",
+      "type": "texture",
+      "description": "矮麻绳柱 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-071.png",
+      "spec": {
+        "format": "png",
+        "width": 1222,
+        "height": 1287,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抓挠与攀靠",
+        "T071",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 矮麻绳柱 (抓挠与攀靠); 低木柱、紧密麻绳. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-071"
+      }
+    },
+    {
+      "id": "game112/prop/T072",
+      "type": "texture",
+      "description": "弯月抓板 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-072.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抓挠与攀靠",
+        "T072",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 弯月抓板 (抓挠与攀靠); 弯月形瓦楞抓板. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-072"
+      }
+    },
+    {
+      "id": "game112/prop/T073",
+      "type": "texture",
+      "description": "茶色树皮板 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-073.png",
+      "spec": {
+        "format": "png",
+        "width": 1266,
+        "height": 1242,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抓挠与攀靠",
+        "T073",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 茶色树皮板 (抓挠与攀靠); 茶棕树皮纹软木板. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-073"
+      }
+    },
+    {
+      "id": "game112/prop/T074",
+      "type": "texture",
+      "description": "云边抓毯 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-074.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抓挠与攀靠",
+        "T074",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 云边抓毯 (抓挠与攀靠); 云边粗布平毯. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-074"
+      }
+    },
+    {
+      "id": "game112/prop/T075",
+      "type": "texture",
+      "description": "双星小爬架 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-075.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抓挠与攀靠",
+        "T075",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 双星小爬架 (抓挠与攀靠); 双层低矮木踏台. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-075"
+      }
+    },
+    {
+      "id": "game112/prop/T076",
+      "type": "texture",
+      "description": "窗边麻绳梯 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-076.png",
+      "spec": {
+        "format": "png",
+        "width": 1024,
+        "height": 1536,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抓挠与攀靠",
+        "T076",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 窗边麻绳梯 (抓挠与攀靠); 短木梯、麻绳踏面. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-076"
+      }
+    },
+    {
+      "id": "game112/prop/T077",
+      "type": "texture",
+      "description": "叶片斜抓板 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-077.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抓挠与攀靠",
+        "T077",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 叶片斜抓板 (抓挠与攀靠); 叶形浅斜瓦楞板. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-077"
+      }
+    },
+    {
+      "id": "game112/prop/T078",
+      "type": "texture",
+      "description": "栗木磨爪桩 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-078.png",
+      "spec": {
+        "format": "png",
+        "width": 1241,
+        "height": 1268,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抓挠与攀靠",
+        "T078",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 栗木磨爪桩 (抓挠与攀靠); 矮栗木桩、粗布腰带. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-078"
+      }
+    },
+    {
+      "id": "game112/prop/T079",
+      "type": "texture",
+      "description": "软木小坡 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-079.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抓挠与攀靠",
+        "T079",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 软木小坡 (抓挠与攀靠); 低斜坡、软木防滑面. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-079"
+      }
+    },
+    {
+      "id": "game112/prop/T080",
+      "type": "texture",
+      "description": "月石靠柱 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-080.png",
+      "spec": {
+        "format": "png",
+        "width": 1024,
+        "height": 1536,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "抓挠与攀靠",
+        "T080",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 月石靠柱 (抓挠与攀靠); 圆角木靠柱、毡包边. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-080"
+      }
+    },
+    {
+      "id": "game112/prop/T081",
+      "type": "texture",
+      "description": "三叶寻物盘 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-081.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "寻物与解谜",
+        "T081",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 三叶寻物盘 (寻物与解谜); 木盘、三个叶形翻盖. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-081"
+      }
+    },
+    {
+      "id": "game112/prop/T082",
+      "type": "texture",
+      "description": "星孔纸盒 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-082.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "寻物与解谜",
+        "T082",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 星孔纸盒 (寻物与解谜); 纸盒、星形探爪孔. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-082"
+      }
+    },
+    {
+      "id": "game112/prop/T083",
+      "type": "texture",
+      "description": "滑月小抽屉 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-083.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "寻物与解谜",
+        "T083",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 滑月小抽屉 (寻物与解谜); 圆角木盒、滑动月片. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-083"
+      }
+    },
+    {
+      "id": "game112/prop/T084",
+      "type": "texture",
+      "description": "毡云嗅闻垫 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-084.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "寻物与解谜",
+        "T084",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 毡云嗅闻垫 (寻物与解谜); 浅色毡条短绒垫. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-084"
+      }
+    },
+    {
+      "id": "game112/prop/T085",
+      "type": "texture",
+      "description": "双层翻叶盒 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-085.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "寻物与解谜",
+        "T085",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 双层翻叶盒 (寻物与解谜); 木盒、两层布叶盖. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-085"
+      }
+    },
+    {
+      "id": "game112/prop/T086",
+      "type": "texture",
+      "description": "四角寻星盘 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-086.png",
+      "spec": {
+        "format": "png",
+        "width": 1374,
+        "height": 1145,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "寻物与解谜",
+        "T086",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 四角寻星盘 (寻物与解谜); 方木盘、四个圆滑拨片. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-086"
+      }
+    },
+    {
+      "id": "game112/prop/T087",
+      "type": "texture",
+      "description": "小鱼拨片盒 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-087.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "寻物与解谜",
+        "T087",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 小鱼拨片盒 (寻物与解谜); 鱼形木拨片、浅盒. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-087"
+      }
+    },
+    {
+      "id": "game112/prop/T088",
+      "type": "texture",
+      "description": "藤篮藏物角 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-088.png",
+      "spec": {
+        "format": "png",
+        "width": 1378,
+        "height": 1142,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "寻物与解谜",
+        "T088",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 藤篮藏物角 (寻物与解谜); 矮藤篮、布质翻边. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-088"
+      }
+    },
+    {
+      "id": "game112/prop/T089",
+      "type": "texture",
+      "description": "月窗旋盘 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-089.png",
+      "spec": {
+        "format": "png",
+        "width": 1372,
+        "height": 1146,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "寻物与解谜",
+        "T089",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 月窗旋盘 (寻物与解谜); 圆木盘、可旋月窗. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-089"
+      }
+    },
+    {
+      "id": "game112/prop/T090",
+      "type": "texture",
+      "description": "茶杯盖盒 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-090.png",
+      "spec": {
+        "format": "png",
+        "width": 1247,
+        "height": 1261,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "寻物与解谜",
+        "T090",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 茶杯盖盒 (寻物与解谜); 猫用尺度圆木盖盒. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-090"
+      }
+    },
+    {
+      "id": "game112/prop/T091",
+      "type": "texture",
+      "description": "窗台云垫 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-091.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "休憩与共同空间",
+        "T091",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 窗台云垫 (休憩与共同空间); 奶油云纹长软垫. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-091"
+      }
+    },
+    {
+      "id": "game112/prop/T092",
+      "type": "texture",
+      "description": "矮藤午睡篮 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-092.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "休憩与共同空间",
+        "T092",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 矮藤午睡篮 (休憩与共同空间); 矮藤篮、可拆布垫. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-092"
+      }
+    },
+    {
+      "id": "game112/prop/T093",
+      "type": "texture",
+      "description": "暖灯软毯 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-093.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "休憩与共同空间",
+        "T093",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 暖灯软毯 (休憩与共同空间); 蜜橙格纹小毯. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-093"
+      }
+    },
+    {
+      "id": "game112/prop/T094",
+      "type": "texture",
+      "description": "半月靠垫 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-094.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "休憩与共同空间",
+        "T094",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 半月靠垫 (休憩与共同空间); 雾青弯月低靠垫. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-094"
+      }
+    },
+    {
+      "id": "game112/prop/T095",
+      "type": "texture",
+      "description": "双猫并坐垫 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-095.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "休憩与共同空间",
+        "T095",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 双猫并坐垫 (休憩与共同空间); 宽幅双位粗布垫. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-095"
+      }
+    },
+    {
+      "id": "game112/prop/T096",
+      "type": "texture",
+      "description": "壁炉前草编席 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-096.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "休憩与共同空间",
+        "T096",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 壁炉前草编席 (休憩与共同空间); 浅草编平席. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-096"
+      }
+    },
+    {
+      "id": "game112/prop/T097",
+      "type": "texture",
+      "description": "星光窗边踏台 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-097.png",
+      "spec": {
+        "format": "png",
+        "width": 1312,
+        "height": 1199,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "休憩与共同空间",
+        "T097",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 星光窗边踏台 (休憩与共同空间); 低木台、软木踏面. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-097"
+      }
+    },
+    {
+      "id": "game112/prop/T098",
+      "type": "texture",
+      "description": "回忆小纸箱 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-098.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "休憩与共同空间",
+        "T098",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 回忆小纸箱 (休憩与共同空间); 旧纸箱、软毡底. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-098"
+      }
+    },
+    {
+      "id": "game112/prop/T099",
+      "type": "texture",
+      "description": "门边等候垫 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-099.png",
+      "spec": {
+        "format": "png",
+        "width": 1536,
+        "height": 1024,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "休憩与共同空间",
+        "T099",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 门边等候垫 (休憩与共同空间); 薄杏色门边垫. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-099"
+      }
+    },
+    {
+      "id": "game112/prop/T100",
+      "type": "texture",
+      "description": "屋顶观星窝 · 星尾馆猫用物件 · AI 生成，已入库（发行前仍须边缘复查）",
+      "status": "filled",
+      "path": "/games/game112/art/ai/openai-built-in/game112-cat-toy-100.png",
+      "spec": {
+        "format": "png",
+        "width": 1372,
+        "height": 1146,
+        "usage": "sprite",
+        "colorSpace": "srgb"
+      },
+      "category": "ai-gen",
+      "tags": [
+        "ai-gen",
+        "cat-toy",
+        "game112-storybook",
+        "休憩与共同空间",
+        "T100",
+        "skin"
+      ],
+      "license": "OpenAI Terms of Use (output ownership as between user and OpenAI); release review required",
+      "source": "ai:openai-built-in",
+      "provenance": {
+        "generator": "openai-built-in",
+        "prompt": "Use case: product-mockup. Asset type: one reusable Apollo Game112 cat-toy inventory cutout. Subject: 屋顶观星窝 (休憩与共同空间); 低圆猫窝、夜蓝内衬. One complete cat-scale handmade object only. If it has connected parts, show the complete assembled item; no separate duplicate parts. Match the approved T001–T010 collection: tactile painterly storybook game prop, natural wood, cork, rattan, felt, linen or cardboard as described; subtle wear, imperfect hand stitching and brushwork, warm gentle light, muted amber, cream, teal, coral, sage and night blue only where appropriate. Center the whole object with a readable silhouette and safe margin. Choose a three-quarter product view appropriate to its shape, not a flat symbol. Genuinely transparent PNG alpha cutout. No floor, backdrop, vignette, glow halo, cast scene, cat, person, text, logo, watermark, packaging, extra toy or unrelated decoration.",
+        "model": "OpenAI built-in image_gen (model ID not exposed)",
+        "mock": false,
+        "generatedAt": "2026-10-07",
+        "vendoredFrom": "ai/openai-built-in/game112-cat-toy-100"
+      }
     }
   ]
 }

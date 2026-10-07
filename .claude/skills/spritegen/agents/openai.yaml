@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spritegen · Apollo"
+  short_description: "生成、切帧、验证序列帧，导出 Apollo 资源数据。"
+  default_prompt: "Use $spritegen to generate and review a sprite animation in the game's approved style, then stage Apollo AssetIndex and Image.sprite data."

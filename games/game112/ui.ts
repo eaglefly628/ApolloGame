@@ -16,6 +16,7 @@ import {
 import type { HallView, ReadingView } from './project.js';
 import { WHEREABOUTS, type CatRegistry, type RegistrationDraft } from './registration.js';
 import { CAT_BREEDS, CAT_GALLERY, RAGDOLL_IMAGES, catalogPage, EMPTY_CATALOG_BROWSE, type CatalogBrowse, type CatalogSource } from './cat-gallery.js';
+import { EMPTY_SHOP_BROWSE, SHOP_CATEGORIES, SHOP_SORTS, SHOP_VALUES, shopPage, type ShopBrowse } from './shop-browse.js';
 
 /** 屏：scene = 当前房间（唯一的「主屏」）；map = 馆图；其余 = 叠在房间上的 Drawer。 */
 export type Screen = 'home' | 'reception' | 'scene' | 'map' | 'orbs' | 'catalog' | 'table' | 'toys' | 'shop' | 'memory' | 'reading' | 'settings' | 'about';
@@ -26,7 +27,8 @@ export const UI_ACTIONS = [
   'hall.back', 'map.open', 'room.enter', 'orbs.open', 'table.open', 'toys.open', 'shop.open', 'memory.open', 'settings.open', 'later',
   'catalog.open', 'catalog.search', 'catalog.source', 'catalog.page',
   'cat.greet', 'cat.sit', 'offline.ack', 'ui.hide', 'ui.show',
-  'shop.inspect', 'shop.buy', 'shop.claimWelcome', 'decor.place', 'decor.remove', 'item.use', 'item.respond', 'item.cancel',
+  'shop.inspect', 'shop.buy', 'shop.claimWelcome', 'shop.category', 'shop.value', 'shop.sort', 'shop.search', 'shop.page',
+  'decor.place', 'decor.remove', 'item.use', 'item.respond', 'item.cancel',
   'memory.read', 'memory.advance', 'memory.choose', 'memory.back',
   'registration.open', 'registration.name', 'registration.note', 'registration.whereabouts', 'registration.save', 'registration.skip', 'registration.remove',
 ] as const;
@@ -531,12 +533,14 @@ export function buildToys(v: HallView): LayoutNode {
                 { type: 'Label', id: `toy-${it.id}-name`, props: { text: it.name, size: 'lg', bold: true, color: 'text' } },
               ],
             },
-            subLabel(`toy-${it.id}-spot`, `${it.placed ? '已安放' : '可安放'}：${experienceOf(it.id)?.place ?? '主厅'}`),
+            subLabel(`toy-${it.id}-spot`, experienceOf(it.id) !== undefined
+              ? `${it.placed ? '已安放' : '可安放'}：${experienceOf(it.id)!.place}`
+              : '已收进馆藏；场景摆放与猫咪互动尚待制作。'),
             ...((v.itemUses[it.id] ?? 0) > 0 ? [subLabel(`toy-${it.id}-trace`, experienceOf(it.id)?.trace ?? '')] : []),
-            { type: 'Panel', id: `toy-${it.id}-actions`, props: { bare: true }, layout: { direction: 'row', gap: 8 }, children: it.placed ? [
+            ...(experienceOf(it.id) === undefined ? [] : [{ type: 'Panel', id: `toy-${it.id}-actions`, props: { bare: true }, layout: { direction: 'row', gap: 8 }, children: it.placed ? [
               { type: 'Button', id: `toy-${it.id}-use`, props: { label: experienceOf(it.id)?.invite ?? '一起玩', kind: 'primary', action: 'item.use', actionArg: it.id } },
               { type: 'Button', id: `toy-${it.id}-remove`, props: { label: '收回篮里', kind: 'ghost', action: 'decor.remove', actionArg: it.id } },
-            ] : [{ type: 'Button', id: `toy-${it.id}-place`, props: { label: '放到馆里', kind: 'primary', action: 'decor.place', actionArg: it.id } }] },
+            ] : [{ type: 'Button', id: `toy-${it.id}-place`, props: { label: '放到馆里', kind: 'primary', action: 'decor.place', actionArg: it.id } }] } as LayoutNode]),
           ],
         }))),
     backBtn('toys-back'),
@@ -544,63 +548,90 @@ export function buildToys(v: HallView): LayoutNode {
   ]);
 }
 
-export function buildShop(v: HallView, selectedItemId = 'paperbag'): LayoutNode {
+export function buildShop(v: HallView, selectedItemId = 'paperbag', browse: ShopBrowse = EMPTY_SHOP_BROWSE): LayoutNode {
   const merchantSrc = shopkeeperArt();
-  const selected = shopItemOf(selectedItemId) ?? SHOP_ITEMS[0]!;
-  const selectedOwned = v.owned.find((o) => o.id === selected.id);
-  const affordable = v.stardust >= selected.price;
+  const result = shopPage(browse);
+  const selected = result.entries.find((it) => it.id === selectedItemId) ?? result.entries[0];
+  const selectedOwned = selected !== undefined ? v.owned.find((o) => o.id === selected.id) : undefined;
+  const affordable = selected !== undefined && v.stardust >= selected.price;
   const welcome = STARDUST_GRANTS[0];
   const welcomeClaimed = v.claimedGrants.includes(welcome.id);
   const welcomeAmount = Math.min(welcome.amount, STARDUST_MAX - v.stardust);
-  const kindName = { toy: '新互动', decor: '猫用摆设', cardskin: '牌具外观' }[selected.kind];
+  const categoryName = (id: string): string => SHOP_CATEGORIES.find((c) => c.id === id)?.name ?? '猫用物件';
   return {
     type: 'Panel', id: 'shop-drawer', props: { bg: 'raised' },
     layout: { x: 0, y: 0, width: SCENE_W, height: SCENE_H, padding: 0, radius: 18 },
     children: [{ type: 'Panel', id: 'shop-counter-art', props: { skin: sceneSkin('shop-counter'), bg: 'raised' },
       layout: { x: 0, y: 0, width: SCENE_W, height: SCENE_H, padding: 0, radius: 18 }, children: [
       sign('shop-back', '收起货单 · 回馆里', 'hall.back', { x: 26, y: 25 }),
-      { ...readableChip('shop-stardust', `钱袋里 · 星砂 ${v.stardust}`), layout: { x: 748, y: 25, padding: 8, radius: 4 } },
-      ...SHOP_ITEMS.map((it, i): LayoutNode => {
-        const owned = v.owned.find((o) => o.id === it.id);
-        return {
-          type: 'Panel', id: `shop-${it.id}`, props: { bare: true },
-          layout: { x: 132 + i * 186, y: 202, width: 172, height: 242, padding: 0, direction: 'column', align: 'center', gap: 8 },
-          children: [
-            { type: 'Panel', id: `shop-${it.id}-support`, props: { bare: true }, layout: { width: 164, height: 150, padding: 0, justify: 'end', align: 'center' }, children: [
-              { type: 'Image', id: `shop-${it.id}-art`, props: { src: propArt(it.id), fit: 'contain', alt: it.name }, layout: { width: 164, height: it.id === 'cushion' ? 64 : 150 } },
-            ] },
-            readableChip(`shop-${it.id}-price`, `${it.name} · ${owned ? (owned.placed ? '已摆好' : '已带回') : `${it.price} 星砂`}`),
-            { type: 'Button', id: `shop-${it.id}-inspect`, props: { label: it.id === selected.id ? '正在看' : '看看详情', kind: it.id === selected.id ? 'hero' : 'primary', action: 'shop.inspect', actionArg: it.id } },
-          ],
-        };
-      }),
+      { ...readableChip('shop-stardust', `钱袋里 · 星砂 ${v.stardust}`), layout: { x: 768, y: 25, padding: 8, radius: 4 } },
+      { type: 'Panel', id: 'shop-category-shelf', props: { bg: 'raised', edge: 'gold' },
+        layout: { x: 20, y: 91, width: 171, direction: 'column', gap: 3, padding: 7, radius: 10 },
+        children: [
+          { type: 'Label', id: 'shop-category-heading', props: { text: '货架分类', size: 'sm', bold: true, color: 'gold' } },
+          ...SHOP_CATEGORIES.map((c): LayoutNode => ({ type: 'Panel', id: `shop-category-${c.id}`,
+            props: { bg: browse.category === c.id ? 'sunken' : 'raised', action: 'shop.category', actionArg: c.id },
+            layout: { padding: 4, radius: 5, press3d: true },
+            children: [{ type: 'Label', id: `shop-category-${c.id}-label`, props: { text: c.name, size: 'sm', bold: browse.category === c.id, color: 'text' } }],
+          })),
+        ] },
       { type: 'Image', id: 'shopkeeper-cat', props: { src: merchantSrc, fit: 'contain', alt: '坐在柜台边、眯着琥珀色眼睛的玳瑁猫掌柜', meshMotion: shopkeeperMotion(merchantSrc) },
-        layout: { x: 25, y: 446, width: 165, height: 198 } },
-      { ...readableChip('shopkeeper-name', '玳瑁掌柜'), layout: { x: 72, y: 646, padding: 6, radius: 4 } },
-      { type: 'Panel', id: 'shop-ledger', props: { bare: true },
-        layout: { x: 198, y: 496, width: 620, height: 145, padding: 0, direction: 'column', gap: 6 },
-        children: [heading('shop-title', `星砂铺 · ${selected.name}`),
-          subLabel('shop-sub', selected.blurb),
-          subLabel('shop-detail', `${kindName} · ${experienceOf(selected.id)?.place ?? '主厅'} · ${selectedOwned ? (selectedOwned.placed ? '已摆好' : '已带回') : `${selected.price} 星砂`}`),
-          { type: 'Panel', id: 'shop-ledger-actions', props: { bare: true }, layout: { direction: 'row', gap: 10, align: 'center' }, children: [
-            selectedOwned
-              ? { type: 'Button', id: 'shop-selected-place', props: { label: selectedOwned.placed ? '回主厅一起用' : '放进馆里看看', kind: 'primary', action: selectedOwned.placed ? 'item.use' : 'decor.place', actionArg: selected.id } }
-              : affordable
-                ? { type: 'Button', id: 'shop-selected-buy', props: { label: `用 ${selected.price} 星砂交换`, kind: 'primary', action: 'shop.buy', actionArg: selected.id } }
-                : readableChip('shop-selected-shortfall', `还差 ${selected.price - v.stardust} 星砂`),
-            welcomeClaimed
-              ? (affordable || selectedOwned
-                ? subLabel('shop-welcome-claimed', '见面星砂已领')
-                : { type: 'Button', id: 'shop-earn', props: { label: '回主厅陪它', kind: 'primary', action: 'room.enter', actionArg: 'hall' } })
-              : welcomeAmount > 0
-                ? { type: 'Button', id: 'shop-welcome-claim', props: { label: `领见面星砂 +${welcomeAmount}`, kind: 'primary', action: 'shop.claimWelcome' } }
-                : subLabel('shop-welcome-full', '星砂罐满了，稍后再领'),
-          ] },
-          subLabel('shop-promise', selectedOwned
-            ? '掌柜：账记下了。好不好玩，还得问雪团。'
-            : !affordable
-              ? (welcomeClaimed ? '掌柜：星砂不够也没关系，陪雪团坐坐会慢慢攒起来。' : '掌柜：先领见面星砂，也可以陪雪团坐坐。')
-              : '掌柜：不卖心光，也不卖回忆。喜欢，再交换。'),
+        layout: { x: 28, y: 496, width: 152, height: 149 } },
+      { ...readableChip('shopkeeper-name', '玳瑁掌柜 · 慢慢挑'), layout: { x: 23, y: 653, padding: 5, radius: 5 } },
+      { type: 'Panel', id: 'shop-ledger', props: { bg: 'raised', edge: 'gold' },
+        layout: { x: 210, y: 88, width: 776, height: 555, padding: 0, radius: 12 }, children: [
+          { type: 'Input', id: 'shop-search', props: { placeholder: '找名字或编号 T001', value: browse.query, action: 'shop.search' },
+            layout: { x: 13, y: 12, width: 272 } },
+          ...SHOP_VALUES.map((o, i): LayoutNode => ({ type: 'Button', id: `shop-value-${o.id}`,
+            props: { label: o.name, kind: browse.value === o.id ? 'primary' : 'ghost', action: 'shop.value', actionArg: o.id },
+            layout: { x: 314 + i * 113, y: 12, width: 107 } })),
+          ...SHOP_SORTS.map((o, i): LayoutNode => ({ type: 'Button', id: `shop-sort-${o.id}`,
+            props: { label: o.name, kind: browse.sort === o.id ? 'primary' : 'ghost', action: 'shop.sort', actionArg: o.id },
+            layout: { x: 14 + i * 114, y: 58, width: 108 } })),
+          { type: 'Label', id: 'shop-count', props: { text: `${result.total} 件 · 第 ${result.page + 1}/${result.pages} 页`, size: 'sm', bold: true, color: 'text' },
+            layout: { x: 561, y: 64 } },
+          ...result.entries.map((it, i): LayoutNode => {
+            const owned = v.owned.some((o) => o.id === it.id);
+            return { type: 'Panel', id: `shop-${it.id}`,
+              props: { bg: it.id === selected?.id ? 'sunken' : 'raised', edge: 'gold', action: 'shop.inspect', actionArg: it.id },
+              layout: { x: 13 + (i % 2) * 222, y: 110 + Math.floor(i / 2) * 136, width: 208, height: 122,
+                direction: 'row', gap: 4, padding: 5, radius: 8, press3d: true },
+              children: [
+                { type: 'Image', id: `shop-${it.id}-art`, props: { src: propArt(it.id), fit: 'contain', alt: it.name }, layout: { width: 90, height: 105 } },
+                { type: 'Panel', id: `shop-${it.id}-words`, props: { bare: true }, layout: { width: 101, direction: 'column', gap: 5, justify: 'center' }, children: [
+                  { type: 'Label', id: `shop-${it.id}-name`, props: { text: it.name, size: 'sm', bold: true, color: 'text' } },
+                  { type: 'Label', id: `shop-${it.id}-price`, props: { text: owned ? '已拥有' : `${it.price} 星砂`, size: 'sm', color: 'gold' } },
+                  { type: 'Label', id: `shop-${it.id}-code`, props: { text: it.id, size: 'xs', color: 'sub' } },
+                ] },
+              ] };
+          }),
+          { type: 'Panel', id: 'shop-product-detail', props: { bg: 'sunken', edge: 'gold' },
+            layout: { x: 466, y: 110, width: 295, height: 394, direction: 'column', gap: 6, padding: 10, radius: 9, align: 'center' },
+            children: selected === undefined ? [subLabel('shop-empty', '这组条件下没有物件，换个分类或价位看看。')] : [
+              { type: 'Image', id: 'shop-selected-art', props: { src: propArt(selected.id), fit: 'contain', alt: selected.name }, layout: { width: 222, height: 154 } },
+              heading('shop-title', selected.name),
+              subLabel('shop-detail', `${selected.id} · ${categoryName(selected.category)} · ${selected.price} 星砂`),
+              subLabel('shop-sub', selected.blurb),
+              ...(selectedOwned !== undefined
+                ? [selected.placement === 'scene'
+                    ? { type: 'Button', id: 'shop-selected-place', props: { label: selectedOwned.placed ? '回主厅一起用' : '放进馆里看看', kind: 'primary', action: selectedOwned.placed ? 'item.use' : 'decor.place', actionArg: selected.id } } as LayoutNode
+                    : { type: 'Button', id: 'shop-selected-collection', props: { label: '已带回 · 查看收纳篮', kind: 'primary', action: 'toys.open' } } as LayoutNode]
+                : affordable
+                  ? [{ type: 'Button', id: 'shop-selected-buy', props: { label: `用 ${selected.price} 星砂交换`, kind: 'primary', action: 'shop.buy', actionArg: selected.id } } as LayoutNode]
+                  : [readableChip('shop-selected-shortfall', `还差 ${selected.price - v.stardust} 星砂`)]),
+              ...(welcomeClaimed
+                ? [subLabel('shop-welcome-claimed', '见面星砂已领 · 陪猫会继续得到星砂')]
+                : welcomeAmount > 0
+                  ? [{ type: 'Button', id: 'shop-welcome-claim', props: { label: `领见面星砂 +${welcomeAmount}`, kind: 'ghost', action: 'shop.claimWelcome' } } as LayoutNode]
+                  : [subLabel('shop-welcome-full', '星砂罐满了，稍后再领')]),
+              subLabel('shop-promise', selected.placement === 'collection'
+                ? '掌柜：先替你收好。摆放和逗猫玩法会慢慢补上。'
+                : '掌柜：不卖心光，也不卖回忆。喜欢，再交换。'),
+            ] },
+          { type: 'Button', id: 'shop-page-prev', props: { label: '← 上一页', kind: 'ghost', action: 'shop.page', actionArg: String(result.page - 1), disabled: result.page === 0 },
+            layout: { x: 260, y: 519 } },
+          { type: 'Button', id: 'shop-page-next', props: { label: '下一页 →', kind: 'ghost', action: 'shop.page', actionArg: String(result.page + 1), disabled: result.page + 1 >= result.pages },
+            layout: { x: 361, y: 519 } },
         ] },
     ] }],
   };
@@ -691,7 +722,7 @@ export function buildAbout(): LayoutNode {
 }
 
 /** 屏 → 树（宿主唯一入口·纯查表）。子功能 = 当前房间舞台 + 叠层。 */
-export function buildScreen(o: { screen: Screen; view?: HallView; reading?: ReadingView; room?: RoomId; canExit?: boolean; registry?: CatRegistry; draft?: RegistrationDraft; catalog?: CatalogBrowse; shopItem?: string }): LayoutNode {
+export function buildScreen(o: { screen: Screen; view?: HallView; reading?: ReadingView; room?: RoomId; canExit?: boolean; registry?: CatRegistry; draft?: RegistrationDraft; catalog?: CatalogBrowse; shopItem?: string; shopBrowse?: ShopBrowse }): LayoutNode {
   const v = o.view;
   const room: RoomId = o.room ?? 'hall';
   switch (o.screen) {
@@ -708,7 +739,7 @@ export function buildScreen(o: { screen: Screen; view?: HallView; reading?: Read
     case 'catalog': return buildScene(v, room, buildCatalog(o.catalog));
     case 'table': return buildScene(v, room, buildTable(v));
     case 'toys': return buildScene(v, room, buildToys(v));
-    case 'shop': return buildScene(v, room, buildShop(v, o.shopItem));
+    case 'shop': return buildScene(v, room, buildShop(v, o.shopItem, o.shopBrowse));
     case 'memory': return buildScene(v, room, buildMemory(v));
     case 'reading': return buildScene(v, room, o.reading !== undefined ? buildReading(o.reading) : buildMemory(v));
     case 'settings': return buildScene(v, room, buildSettings());

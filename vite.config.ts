@@ -33,6 +33,25 @@ function serveLiveGameAssets() {
         let rel: string;
         try { rel = decodeURIComponent(url.slice(prefix.length)); } catch { return next(); }
         const base = roots[prefix];
+        // game113 的官网候选图只在本机开发预览提供；原文件不在 public/，正式构建不会带走。
+        // 缺图明确返回 404，避免 SPA 兜底把 HTML 伪装成 200 图片响应。
+        const previewPrefix = 'game113/preview-art-local/';
+        if (prefix === '/games/' && rel.startsWith(previewPrefix)) {
+          const file = rel.slice(previewPrefix.length);
+          if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*\.(?:png|jpe?g|webp)$/.test(file)) {
+            res.statusCode = 403; res.end('forbidden'); return;
+          }
+          const previewBase = resolve(__dirname, 'games/game113/preview-art-local');
+          const previewTarget = resolve(previewBase, file);
+          if (!previewTarget.startsWith(previewBase + sep)) { res.statusCode = 403; res.end('forbidden'); return; }
+          if (!existsSync(previewTarget) || !statSync(previewTarget).isFile()) {
+            res.statusCode = 404; res.end('not found'); return;
+          }
+          res.setHeader('Content-Type', ASSET_CT[extname(previewTarget).toLowerCase()] || 'application/octet-stream');
+          res.setHeader('Cache-Control', 'no-cache');
+          createReadStream(previewTarget).pipe(res);
+          return;
+        }
         // 卡带 art 回退（REQ-CARTART·与 server.py `_serve_public_games` 刻意孪生·规则见 scripts/art-paths.mjs）：
         // `/games/<slug>/art/**` 若该 slug 是创作台卡带 → 解析到 library/<slug>/art/**（不入引擎仓）。
         // 命中即出，落空照旧回退 public 根 —— 内置游戏与非 art 子路径行为一字不变。

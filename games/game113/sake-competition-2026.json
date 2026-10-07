@@ -1,0 +1,4289 @@
+{
+  "source": "SAKE COMPETITION official 2026 published results and finalist pages",
+  "capturedAt": "2026-10-06",
+  "totalEntrantsReported": 1139,
+  "limitation": "Only publicly named medalists and finalists are included. The organizer does not publish every entrant or an individual judging note for every bottle.",
+  "groups": [
+    {
+      "id": "junmai",
+      "label": "纯米酒",
+      "expected": {
+        "gold": 10,
+        "silver": 19,
+        "bronze": 30,
+        "finalists": 143
+      },
+      "finalistsUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "id": "junmaiginjo",
+      "label": "纯米吟酿",
+      "expected": {
+        "gold": 10,
+        "silver": 22,
+        "bronze": 34,
+        "finalists": 165
+      },
+      "finalistsUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "id": "junmaidaiginjo",
+      "label": "纯米大吟酿",
+      "expected": {
+        "gold": 10,
+        "silver": 23,
+        "bronze": 35,
+        "finalists": 172
+      },
+      "finalistsUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "id": "sp",
+      "label": "Super Premium",
+      "expected": {
+        "gold": 3,
+        "silver": 5,
+        "bronze": 8,
+        "finalists": null
+      },
+      "finalistsUrl": null
+    },
+    {
+      "id": "mn",
+      "label": "现代自然",
+      "expected": {
+        "gold": 5,
+        "silver": 5,
+        "bronze": 9,
+        "finalists": null
+      },
+      "finalistsUrl": null
+    }
+  ],
+  "records": [
+    {
+      "group": "junmai",
+      "maker": "今西酒造株式会社",
+      "nameJa": "みむろ杉 ろまんシリーズ Dio Abita（ディオアビータ）",
+      "result": "GOLD",
+      "rank": 1,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "笹正宗酒造株式会社",
+      "nameJa": "ささまさむね 特別純米",
+      "result": "GOLD",
+      "rank": 2,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "浅間酒造株式会社",
+      "nameJa": "あさまやま 夏純",
+      "result": "GOLD",
+      "rank": 3,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "合名会社大木代吉本店",
+      "nameJa": "楽器正宗 純醸",
+      "result": "GOLD",
+      "rank": 4,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "松瀬酒造株式会社",
+      "nameJa": "松の司 生酛純米酒",
+      "result": "GOLD",
+      "rank": 5,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "今西酒造株式会社",
+      "nameJa": "みむろ杉 ろまんシリーズ 特別純米辛口 露葉風",
+      "result": "GOLD",
+      "rank": 6,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社町田酒造店",
+      "nameJa": "清嘹 舞風 純米酒",
+      "result": "GOLD",
+      "rank": 7,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社新澤醸造店",
+      "nameJa": "あたごのまつ 特別純米",
+      "result": "GOLD",
+      "rank": 8,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "相原酒造株式会社",
+      "nameJa": "雨後の月 純米酒 呉未希米八反錦",
+      "result": "GOLD",
+      "rank": 9,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "有賀醸造合資会社",
+      "nameJa": "陣屋 特別純米",
+      "result": "GOLD",
+      "rank": 10,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "赤武酒造株式会社",
+      "nameJa": "AKABU 純米酒",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "会津酒造株式会社",
+      "nameJa": "山の井 天の川",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "合名会社大木代吉本店",
+      "nameJa": "楽器正宗 FUZZY GREEN 雄町",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "平和酒造株式会社",
+      "nameJa": "紀土 純米酒",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "高木酒造株式会社",
+      "nameJa": "土佐金蔵 特別純米",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社相良酒造",
+      "nameJa": "朝日榮 特別純米",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "酔鯨酒造株式会社",
+      "nameJa": "酔鯨 純米酒 八反錦 六十",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社山和酒造店",
+      "nameJa": "山和 特別純米",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社髙橋庄作酒造店",
+      "nameJa": "会津娘 純米酒",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "山陽盃酒造株式会社",
+      "nameJa": "播州一献 純米 北錦",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社越後鶴亀",
+      "nameJa": "越後鶴亀 純米",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社平孝酒造",
+      "nameJa": "日高見 特別純米酒 魚ラベル",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "平和酒造株式会社",
+      "nameJa": "紀土 特別純米酒 雄町",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "宝剣酒造株式会社",
+      "nameJa": "宝剣 純米酒",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "重家酒造株式会社 横山蔵",
+      "nameJa": "よこやま 純米酒",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社アリサワ",
+      "nameJa": "文佳人 純米酒",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社廣木酒造本店",
+      "nameJa": "飛露喜 特別純米",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "松本酒造株式会社",
+      "nameJa": "澤屋まつもと 守破離 雄町",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社澄川酒造場",
+      "nameJa": "東洋美人 別撰 山田錦",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "頚城酒造株式会社",
+      "nameJa": "越路乃紅梅 純米 五百万石",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "豊国酒造合資会社",
+      "nameJa": "一歩己 純米酒",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社今田酒造本店",
+      "nameJa": "富久長 辛口純米",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "松崎酒造株式会社",
+      "nameJa": "廣戸川 特別純米",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社土井酒造場",
+      "nameJa": "開運 純米 涼々",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "牧野酒造株式会社",
+      "nameJa": "大盃 特別純米 吾妻玉苗",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "八戸酒造株式会社",
+      "nameJa": "陸奥八仙 特別純米",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "清水清三郎商店株式会社",
+      "nameJa": "作 穂乃智 純米",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "有賀醸造合資会社",
+      "nameJa": "陣屋 純米辛口",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "松崎酒造株式会社",
+      "nameJa": "廣戸川 純米",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "有限会社中野酒造",
+      "nameJa": "ちえびじん 純米酒",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "浅間酒造株式会社",
+      "nameJa": "浅間山 IBUKI",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "阿部勘酒造株式会社",
+      "nameJa": "塩竈 阿部勘 翠潮",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "会津酒造株式会社",
+      "nameJa": "山の井 清か",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "有限会社仙頭酒造場",
+      "nameJa": "土佐しらぎく 斬辛 特別純米",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社八木酒造部",
+      "nameJa": "山丹正宗 純米酒 松山三井",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社虎屋本店",
+      "nameJa": "七水 純米６２ 山田錦",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "高木酒造株式会社",
+      "nameJa": "TOSA宇宙深海酒 特別純米酒 空と海",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "五町田酒造株式会社",
+      "nameJa": "東一 山田錦 特別純米酒",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社町田酒造店",
+      "nameJa": "清嘹 純米酒",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社山和酒造店",
+      "nameJa": "山和 特別純米 中取り原酒Rock",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "八百新酒造株式会社",
+      "nameJa": "雁木 純米 ひとつび",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "宝剣酒造株式会社",
+      "nameJa": "宝剣 純米酒 レトロラベル",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "末廣酒造株式会社",
+      "nameJa": "玄宰 特別純米",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "有限会社玄葉本店",
+      "nameJa": "あぶくま 特別純米",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "加茂錦酒造株式会社",
+      "nameJa": "加茂錦 荷札酒 月白",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "森島酒造株式会社",
+      "nameJa": "森嶋 美山錦 純米酒",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社佐浦",
+      "nameJa": "浦霞 特別純米酒 生一本",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "光栄菊酒造株式会社",
+      "nameJa": "光栄菊 Sukai 清海 特別純米",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社宮﨑本店",
+      "nameJa": "宮の雪 特別純米酒 神の穂",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "大和蔵酒造株式会社",
+      "nameJa": "雪の松島 KAI ひとめぼれ 純米原酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "牧野酒造株式会社",
+      "nameJa": "大盃 特別純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社外池酒造店",
+      "nameJa": "望bo: 特別純米 美山錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "雪雀酒造株式会社",
+      "nameJa": "雪雀 特別純米酒 純音",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社大田酒造",
+      "nameJa": "半蔵＆ 純米酒 八反錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "天山酒造株式会社",
+      "nameJa": "七田 510",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "墨廼江酒造株式会社",
+      "nameJa": "墨廼江 特別純米 ブルーラベル",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "伴野酒造株式会社",
+      "nameJa": "澤乃花 辛口純米 花ごころ",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社宮﨑本店",
+      "nameJa": "宮の雪 純米酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社金光酒造",
+      "nameJa": "賀茂金秀 特別純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社今田酒造本店",
+      "nameJa": "富久長 八反草 純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社土井酒造場",
+      "nameJa": "開運 純米 ひやづめ",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "有限会社南酒造場",
+      "nameJa": "南 特別純米 山田錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "西酒造株式会社",
+      "nameJa": "天賦 純米酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "丸石醸造株式会社",
+      "nameJa": "二兎 純米 山田錦六十五",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社外池酒造店",
+      "nameJa": "望bo: 特別純米 彗星",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "有限会社有光酒造場",
+      "nameJa": "安芸虎 純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社八木酒造部",
+      "nameJa": "山丹正宗 Jazz Brew",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "相原酒造株式会社",
+      "nameJa": "特別純米 雨後の月 未希米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "山梨銘醸株式会社",
+      "nameJa": "七賢 純米 風凛美山",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "合名会社川敬商店",
+      "nameJa": "黄金澤 山廃純米酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "司牡丹酒造株式会社",
+      "nameJa": "司牡丹 二割の麹が八割の味を決める",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "高木酒造株式会社（高知県）",
+      "nameJa": "TOSA宇宙深海酒 特別純米酒 空と海",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "藤平酒造合資会社",
+      "nameJa": "福祝 純米酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "吉田酒造株式会社",
+      "nameJa": "竹生嶋 からくち 辛口純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社アリサワ",
+      "nameJa": "文佳人 リズール 特別純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "鶴見酒造株式会社",
+      "nameJa": "かみつる 特別純米 出羽燦々",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "大澤酒造株式会社",
+      "nameJa": "大吉野 蓼科山",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "藤平酒造合資会社",
+      "nameJa": "福祝 特別純米酒55％",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "司牡丹酒造株式会社",
+      "nameJa": "司牡丹 AMAOTO",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "合名会社早川酒造",
+      "nameJa": "田光 純米酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社永山本家酒造場",
+      "nameJa": "貴 特別純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "福禄寿酒造株式会社",
+      "nameJa": "一白水成 良心",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "有限会社濵川商店",
+      "nameJa": "美丈夫 特別純米酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社越後鶴亀",
+      "nameJa": "越後鶴亀 すずみさけ 純米生貯蔵",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "亀泉酒造株式会社",
+      "nameJa": "亀泉 特別純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "柄酒造株式会社",
+      "nameJa": "9代目於多福 特別純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "合名会社栗林酒造店",
+      "nameJa": "春霞 純米 赤ラベル",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社新澤醸造店",
+      "nameJa": "伯楽星 特別純米酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "府中誉株式会社",
+      "nameJa": "太平海 特別純米酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "蔵王酒造株式会社",
+      "nameJa": "ZAO 純米酒 K",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社吉田酒造店",
+      "nameJa": "吉田蔵u 百万石乃白",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "土佐鶴酒造株式会社",
+      "nameJa": "土佐鶴 特別純米 無濾過原酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "有限会社仙頭酒造場",
+      "nameJa": "土佐しらぎく 斬辛 特別純米 雄町",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "高木酒造株式会社（高知県）",
+      "nameJa": "土佐金蔵 特別純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "天山酒造株式会社",
+      "nameJa": "SHUSHIDA 辛口純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "今里酒造株式会社",
+      "nameJa": "六十餘洲 特別純米酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "磐乃井酒造株式会社",
+      "nameJa": "百磐 純米酒 赤ラベル",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "松本酒造株式会社",
+      "nameJa": "澤屋まつもと 守破離 五百万石",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "宮泉銘醸株式会社",
+      "nameJa": "會津宮泉 純米酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "清水清三郎商店株式会社",
+      "nameJa": "作 玄乃智 純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "日本清酒株式会社",
+      "nameJa": "千歳鶴 純米酒 吟風",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社南部美人",
+      "nameJa": "南部美人 特別純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "永井酒造株式会社",
+      "nameJa": "谷川岳 超辛純米酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "冨士酒造株式会社",
+      "nameJa": "榮光冨士 純米酒 純月",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "白杉酒造株式会社",
+      "nameJa": "特別純米酒 銀シャリ",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "一宮酒造有限会社",
+      "nameJa": "石見銀山 特別純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "曙酒造株式会社",
+      "nameJa": "一生青春 純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "廣瀬酒造株式会社",
+      "nameJa": "白菊 にじのきらめき60 特別純米 火入",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "吉田酒造株式会社（島根県）",
+      "nameJa": "月山 特別純米 出雲",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "長州酒造株式会社",
+      "nameJa": "天美 特別純米 辛天",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "富士酒造合資会社",
+      "nameJa": "出雲富士 特別純米 黒ラベル",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社今西清兵衛商店",
+      "nameJa": "春鹿 純米 春麗",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "萩野酒造株式会社",
+      "nameJa": "萩の鶴 極上 純米酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "キング醸造株式会社",
+      "nameJa": "稲美 特別純米酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "名倉山酒造株式会社",
+      "nameJa": "会津士魂 特別純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "富美菊酒造株式会社",
+      "nameJa": "羽根屋 SHINE",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "小泉酒造合資会社",
+      "nameJa": "東魁盛 特別純米 山田錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "三春酒造株式会社",
+      "nameJa": "三春 特別純米原酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "石鎚酒造株式会社",
+      "nameJa": "石鎚 無濾過純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "岩崎酒造株式会社",
+      "nameJa": "長陽福娘 西都の雫 直汲み夏純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社小野酒造店",
+      "nameJa": "夜明け前 純米酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "蔵王酒造株式会社",
+      "nameJa": "ZAO Inspiration KURANOHANA",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "来福酒造株式会社",
+      "nameJa": "来福 純米酒 ふくまる",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "幸姫酒造株式会社",
+      "nameJa": "幸姫 特別純米酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "亀萬酒造合資会社",
+      "nameJa": "亀萬 辛口純米酒 Plus9",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "阿武の鶴酒造合資会社",
+      "nameJa": "阿武の鶴 純米 58",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社天寶一",
+      "nameJa": "天寶一 特別純米 八反錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "玉川酒造株式会社",
+      "nameJa": "ガラパゴス 4th Dimension",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "酒六酒造株式会社",
+      "nameJa": "京ひな 深山 特別純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "曙酒造株式会社",
+      "nameJa": "天明 純米火入 オレンジの天明",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社松緑酒造",
+      "nameJa": "六根 特別純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "相原酒造株式会社",
+      "nameJa": "雨後の月 特別純米 山田錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "株式会社吉田酒造店",
+      "nameJa": "吉田蔵u 巾着",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "水口酒造株式会社",
+      "nameJa": "NIKITATSU 仁喜多津 純米酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "宮下酒造株式会社",
+      "nameJa": "極聖 純米 一番滴",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmai",
+      "maker": "龍神酒造株式会社",
+      "nameJa": "尾瀬の雪どけ 純米",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmai2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "今西酒造株式会社",
+      "nameJa": "みむろ杉 ろまんシリーズ 純米吟醸 山田錦",
+      "result": "GOLD",
+      "rank": 1,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "仙台伊澤家 勝山酒造株式会社",
+      "nameJa": "勝山 KIRAKIRA（キラキラ）",
+      "result": "GOLD",
+      "rank": 2,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "今西酒造株式会社",
+      "nameJa": "三諸杉 純米吟醸",
+      "result": "GOLD",
+      "rank": 3,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "合名会社大木代吉本店",
+      "nameJa": "楽器正宗 愛山中取り",
+      "result": "GOLD",
+      "rank": 4,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "西酒造株式会社",
+      "nameJa": "天賦 純米吟醸",
+      "result": "GOLD",
+      "rank": 5,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社髙橋庄作酒造店",
+      "nameJa": "会津娘 純米吟醸「穣」松原8",
+      "result": "GOLD",
+      "rank": 6,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "合名会社大木代吉本店",
+      "nameJa": "楽器正宗 雄町中取り",
+      "result": "GOLD",
+      "rank": 7,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "平和酒造株式会社",
+      "nameJa": "紀土 純米吟醸",
+      "result": "GOLD",
+      "rank": 8,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "松瀬酒造株式会社",
+      "nameJa": "松の司 純米吟醸 楽",
+      "result": "GOLD",
+      "rank": 9,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "長州酒造株式会社",
+      "nameJa": "天美 純米吟醸 蛍天",
+      "result": "GOLD",
+      "rank": 10,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "開当男山酒造",
+      "nameJa": "南花 純米吟醸 なでしこ",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社アリサワ",
+      "nameJa": "文佳人 リズール 純米吟醸",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "ハクレイ酒造株式会社",
+      "nameJa": "酒吞童子 ENJOY スキューバ",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "原酒造株式会社",
+      "nameJa": "弐式 TYPE:BASIC",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "加茂錦酒造株式会社",
+      "nameJa": "加茂錦 荷札酒 美郷錦",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "山﨑合資会社",
+      "nameJa": "奥 Trial Brewing No.3",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社武勇",
+      "nameJa": "武勇 純米吟醸 山田錦",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社新潟一粒酒造",
+      "nameJa": "越乃梅里 純米吟醸",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社廣木酒造本店",
+      "nameJa": "飛露喜 純米吟醸",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "松崎酒造株式会社",
+      "nameJa": "廣戸川 純米吟醸",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "木屋正酒造株式会社",
+      "nameJa": "而今 純米吟醸 山田錦",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社町田酒造店",
+      "nameJa": "町田酒造55 純米吟醸 山田錦",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "和蔵酒造株式会社",
+      "nameJa": "聖泉 St.Spring",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "清水清三郎商店株式会社",
+      "nameJa": "作 恵乃智 純米吟醸",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "木屋正酒造株式会社",
+      "nameJa": "而今 純米吟醸 雄町",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "加茂錦酒造株式会社",
+      "nameJa": "加茂錦 荷札酒 特等雄町",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "花泉酒造株式会社",
+      "nameJa": "ロ万 純米吟醸一回火入れ",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "石鎚酒造株式会社",
+      "nameJa": "石鎚 純米吟醸 緑ラベル",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "豊國酒造合資会社",
+      "nameJa": "豊國 純米吟醸",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "小泉酒造合資会社",
+      "nameJa": "東魁盛 純米吟醸 なのはな",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "英君酒造株式会社",
+      "nameJa": "紫の英君 純米吟醸",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "高木酒造株式会社",
+      "nameJa": "豊能梅 純米吟醸 宵宵",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "萩野酒造株式会社",
+      "nameJa": "萩の鶴 別仕込 夕涼み猫",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社澄川酒造場",
+      "nameJa": "東洋美人 純米吟醸５０",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "合資会社大和川酒造店",
+      "nameJa": "弥右衛門 純米吟醸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社八木酒造部",
+      "nameJa": "山丹正宗 しずく媛 純米吟醸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "来福酒造株式会社",
+      "nameJa": "来福 純米吟醸 愛山",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "六花酒造株式会社",
+      "nameJa": "杜來 純米吟醸酒",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "松瀬酒造株式会社",
+      "nameJa": "松の司 純米吟醸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "清水清三郎商店株式会社",
+      "nameJa": "作 奏乃智 純米吟醸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "米澤酒造株式会社",
+      "nameJa": "今錦 純米吟醸 美山錦",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "相原酒造株式会社",
+      "nameJa": "雨後の月 純米吟醸 山田錦",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社澄川酒造場",
+      "nameJa": "東洋美人 限定純米吟醸 山田錦 醇道一途",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社髙橋庄作酒造店",
+      "nameJa": "会津娘 純米吟醸 山田穂",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "山﨑合資会社",
+      "nameJa": "奥 Trial Brewing No.1",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "合名会社寒梅酒造",
+      "nameJa": "宮寒梅 純米吟醸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "重家酒造株式会社 横山蔵",
+      "nameJa": "よこやま 純米吟醸 SILVER10",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "天領盃酒造株式会社",
+      "nameJa": "雅楽代〜日和〜",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "相原酒造株式会社",
+      "nameJa": "UGO NIMBUS",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "豊国酒造合資会社",
+      "nameJa": "一歩己 純米吟醸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "府中誉株式会社",
+      "nameJa": "渡舟 純米吟醸 無濾過原酒",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社飛良泉本舗",
+      "nameJa": "飛良泉 純米吟醸 室町蔵",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "西酒造株式会社",
+      "nameJa": "天賦 純米吟醸 播州愛山",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "笹正宗酒造株式会社",
+      "nameJa": "ささまさむね 純米吟醸 喜多方山田錦",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "一宮酒造有限会社",
+      "nameJa": "石見銀山 純米吟醸 改良八反流",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "小林酒造株式会社",
+      "nameJa": "鳳凰美田 亀の尾 純米吟醸酒",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "大和蔵酒造株式会社",
+      "nameJa": "雪の松島 KAI 吟のいろは 純米吟醸原酒",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社相良酒造",
+      "nameJa": "朝日榮 純米吟醸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "寒紅梅酒造株式会社",
+      "nameJa": "寒紅梅 純米吟醸 山田錦50％",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "冨士酒造株式会社",
+      "nameJa": "榮光冨士 純米吟醸酒 朝顔ラベル",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社佐浦",
+      "nameJa": "浦霞禅 純米吟醸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "龍神酒造株式会社",
+      "nameJa": "尾瀬の雪どけ 純米吟醸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "有限会社渡辺酒造店",
+      "nameJa": "蓬莱 純米吟醸 初汲み",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社廣木酒造本店",
+      "nameJa": "泉川 純米吟醸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "墨廼江酒造株式会社",
+      "nameJa": "墨廼江 純米吟醸 中垂れ",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "伴野酒造株式会社",
+      "nameJa": "澤の花 純米吟醸 ひまり",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "土佐酒造株式会社",
+      "nameJa": "桂月 吟之夢 純米吟醸酒 55",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社佐浦",
+      "nameJa": "浦霞No.12 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "冨士酒造株式会社",
+      "nameJa": "榮光冨士 純米吟醸酒 心鍵",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "米澤酒造株式会社",
+      "nameJa": "今錦 純米吟醸 山恵錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "丸石醸造株式会社",
+      "nameJa": "二兎 純米吟醸 山田錦五十五",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社アリサワ",
+      "nameJa": "文佳人 純米吟醸 吟の夢",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "善哉酒造株式会社",
+      "nameJa": "善哉 純米吟醸 AnotherType",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "亀泉酒造株式会社",
+      "nameJa": "亀泉 純米吟醸原酒 高育63号",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "水口酒造株式会社",
+      "nameJa": "NIKITATSU 仁喜多津 純米吟醸酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "福禄寿酒造株式会社",
+      "nameJa": "一白水成 純米吟醸 愛山",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社大田酒造",
+      "nameJa": "HANZO 志光 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社町田酒造店",
+      "nameJa": "町田酒造 純米吟醸 雄町",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "黄金井酒造株式会社",
+      "nameJa": "盛升 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "司牡丹酒造株式会社",
+      "nameJa": "司牡丹 蒼々",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社土井酒造場",
+      "nameJa": "開運 特選 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "水口酒造株式会社",
+      "nameJa": "仁喜多津 純米吟醸酒 さくらひめ酵母",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社宮﨑本店",
+      "nameJa": "宮の雪 純米吟醸 山田錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "米鶴酒造株式会社",
+      "nameJa": "マルマス米鶴 限定純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社新澤醸造店",
+      "nameJa": "あたごのまつ 純米吟醸 ささら",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "森島酒造株式会社",
+      "nameJa": "森嶋 山田錦 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "高木酒造株式会社（高知県）",
+      "nameJa": "豊能梅 純米吟醸 宵宵",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "有限会社渡辺酒造店",
+      "nameJa": "蓬莱 純米吟醸 家伝手造り",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "阿部勘酒造株式会社",
+      "nameJa": "塩竈 阿部勘 橙潮",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "宮坂醸造株式会社",
+      "nameJa": "MIYASAKA 山田錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "池亀酒造株式会社",
+      "nameJa": "黒兜 Green Label 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "初亀醸造株式会社",
+      "nameJa": "初亀 純米吟醸 東条山田錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "白扇酒造株式会社",
+      "nameJa": "黒松白扇 純米吟醸 花",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "蔵王酒造株式会社",
+      "nameJa": "ZAO 純米吟醸K",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "合資会社基山商店",
+      "nameJa": "基峰鶴 純米吟醸山田錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社神沢川酒造場",
+      "nameJa": "正雪 純米吟醸愛山",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "丸石醸造株式会社",
+      "nameJa": "二兎 純米吟醸 出羽燦々五十五",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "八戸酒造株式会社",
+      "nameJa": "陸奥八仙 黒ラベル",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "成龍酒造株式会社",
+      "nameJa": "伊予賀儀屋 責任仕込酒 無濾過 純米吟醸 TOSHI’S",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "若戎酒造株式会社",
+      "nameJa": "ワカエビスプラス 003",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社越後鶴亀",
+      "nameJa": "越弌 純米吟醸 Vader",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社山和酒造店",
+      "nameJa": "山和 純米吟醸 吟のいろは",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "富久錦株式会社",
+      "nameJa": "純青 播州雄町 生酛純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "宝剣酒造株式会社",
+      "nameJa": "宝剣 純米吟醸 八反錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "山陽盃酒造株式会社",
+      "nameJa": "播州一献 純米吟醸 渡船弐號",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "有限会社有光酒造場",
+      "nameJa": "安芸虎 雄町ひやおろし 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "朝日酒造株式会社",
+      "nameJa": "久保田 紅寿",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "麓井酒造株式会社",
+      "nameJa": "フモトヰ 純吟出羽燦々",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "北西酒造株式会社",
+      "nameJa": "Bunraku Reborn 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社新澤醸造店",
+      "nameJa": "伯楽星 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "府中誉株式会社",
+      "nameJa": "渡舟 純米吟醸五十五",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社八木酒造部",
+      "nameJa": "山丹正宗 夏空 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "磯自慢酒造株式会社",
+      "nameJa": "磯自慢 純米吟醸 桔梗",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "中埜酒造株式会社",
+      "nameJa": "國盛 純米吟醸 半田郷 酵母1801",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "天山酒造株式会社",
+      "nameJa": "七田 純米吟醸 雄町50",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "浅間酒造株式会社",
+      "nameJa": "あさまやま 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "盛田金しゃち酒造株式会社",
+      "nameJa": "金鯱 夢吟香 純米吟醸酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "酒田酒造株式会社",
+      "nameJa": "上喜元 純米吟醸 山田錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "雪雀酒造株式会社",
+      "nameJa": "雪雀 純米吟醸 風恋",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "小林酒造株式会社（栃木県）",
+      "nameJa": "鳳凰美田 亀の尾 純米吟醸酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "宮下酒造株式会社",
+      "nameJa": "極聖 純米吟醸 高島雄町",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社町田酒造店",
+      "nameJa": "町田酒造 純米吟醸 山田錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "五町田酒造株式会社",
+      "nameJa": "東一 純米吟醸 Nero",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "青木酒造株式会社（茨城県）",
+      "nameJa": "御慶事 純米吟醸 ひたち錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "出羽桜酒造株式会社",
+      "nameJa": "出羽桜 純米吟醸酒 つや姫",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "宮坂醸造株式会社",
+      "nameJa": "MIYASAKA 美山錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "有限会社有光酒造場",
+      "nameJa": "安芸虎 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "有限会社濵川商店",
+      "nameJa": "美丈夫 純米吟醸 純麗 たまラベル",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社今田酒造本店",
+      "nameJa": "富久長 八反草 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社遠藤酒造場",
+      "nameJa": "直虎 tag sake 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "磯自慢酒造株式会社",
+      "nameJa": "磯自慢 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "伴野酒造株式会社",
+      "nameJa": "澤の花 超辛口純米吟醸 ささら",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "宝剣酒造株式会社",
+      "nameJa": "宝剣 純米吟醸 山田錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "山梨銘醸株式会社",
+      "nameJa": "七賢 純米吟醸 天鵞絨の味",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "萩野酒造株式会社",
+      "nameJa": "萩の鶴 別仕込",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "ハクレイ酒造株式会社",
+      "nameJa": "酒吞童子 きざし",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "菊の司酒造株式会社",
+      "nameJa": "心星",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "飯沼銘醸株式会社",
+      "nameJa": "姿 純米吟醸 無濾過原酒 愛山",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "小泉酒造合資会社",
+      "nameJa": "東魁盛 純米吟醸 山田錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "酒六酒造株式会社",
+      "nameJa": "京ひな 内子座 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社無手無冠",
+      "nameJa": "無手無冠 純米吟醸酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "赤武酒造株式会社",
+      "nameJa": "AKABU 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社武勇",
+      "nameJa": "武勇 純米吟醸 山田錦 雷",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "多賀株式会社",
+      "nameJa": "AZM op.13",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "日本清酒株式会社",
+      "nameJa": "千歳鶴 純米吟醸 きたしずく",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "石鎚酒造株式会社",
+      "nameJa": "石鎚 純米吟醸 山田錦50",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社中島屋酒造場",
+      "nameJa": "中島屋 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "蔵王酒造株式会社",
+      "nameJa": "蔵王 純米吟醸 白麹仕込み",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "有賀醸造合資会社",
+      "nameJa": "生粋左馬 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "合資会社大和川酒造店",
+      "nameJa": "純米吟醸 弥右衛門",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "萩野酒造株式会社",
+      "nameJa": "萩の鶴 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社虎屋本店",
+      "nameJa": "七水 純米吟醸５５ 雄町",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "峰乃白梅酒造株式会社",
+      "nameJa": "菱湖 純米吟醸 五百万石",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "有賀醸造合資会社",
+      "nameJa": "生粋左馬 純米吟醸 山田錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "吉田酒造株式会社（島根県）",
+      "nameJa": "月山 美月 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "磐梯酒造株式会社",
+      "nameJa": "乗丹坊 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "大和蔵酒造株式会社",
+      "nameJa": "雪の松島 KAI 吟のいろは 純吟原酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "鶴乃江酒造株式会社",
+      "nameJa": "会津中将 純米吟醸 山田錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社南部美人",
+      "nameJa": "南部美人 純米吟醸 プリンセスミチコ",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "江井ヶ嶋酒造株式会社",
+      "nameJa": "神鷹 純米吟醸山田錦 中取り",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社南部美人",
+      "nameJa": "南部美人 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "有限会社仙頭酒造場",
+      "nameJa": "SHIRAGIKU TOSA 純米吟醸 愛山",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "仙台伊澤家 勝山酒造株式会社",
+      "nameJa": "勝山 献 純米吟醸 にじのきらめき",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "重家酒造株式会社 横山蔵",
+      "nameJa": "よこやま 純米吟醸 SLVER1814",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "酔鯨酒造株式会社",
+      "nameJa": "酔鯨 純米吟醸 山田錦 五十",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社金光酒造",
+      "nameJa": "賀茂金秀 純米吟醸 愛山",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "諏訪御湖鶴酒造場",
+      "nameJa": "御湖鶴 純米吟醸 山恵錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社山下誠志堂 田中酒造店",
+      "nameJa": "田林 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "宮泉銘醸株式会社",
+      "nameJa": "會津宮泉 純米吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "名倉山酒造株式会社",
+      "nameJa": "会津士魂 純米吟醸 備前雄町",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "株式会社小野酒造店",
+      "nameJa": "夜明け前 純米吟醸 生一本",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaiginjo",
+      "maker": "亀の井酒造株式会社",
+      "nameJa": "くどき上手 純米吟醸 酒未来",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "相原酒造株式会社",
+      "nameJa": "雨後の月 純米大吟醸",
+      "result": "GOLD",
+      "rank": 1,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社山和酒造店",
+      "nameJa": "山和 純米大吟醸",
+      "result": "GOLD",
+      "rank": 2,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "小玉醸造株式会社",
+      "nameJa": "太平山 純米大吟醸 天巧",
+      "result": "GOLD",
+      "rank": 3,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "愛友酒造株式会社",
+      "nameJa": "愛友 純米大吟醸 備前雄町",
+      "result": "GOLD",
+      "rank": 4,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "吉乃友酒造有限会社",
+      "nameJa": "后 50 Black",
+      "result": "GOLD",
+      "rank": 5,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "古澤酒造株式会社",
+      "nameJa": "紅花屋重兵衛 雪女神",
+      "result": "GOLD",
+      "rank": 6,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社澄川酒造場",
+      "nameJa": "東洋美人 壱番纏",
+      "result": "GOLD",
+      "rank": 7,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "松瀬酒造株式会社",
+      "nameJa": "松の司 純米大吟醸 黒",
+      "result": "GOLD",
+      "rank": 8,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "天鷹酒造株式会社",
+      "nameJa": "天鷹 有機純米大吟醸 槽搾り原酒",
+      "result": "GOLD",
+      "rank": 9,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "来福酒造株式会社",
+      "nameJa": "来福 純米大吟醸 愛山",
+      "result": "GOLD",
+      "rank": 10,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "合名会社大木代吉本店",
+      "nameJa": "楽器正宗 FUZZY GREEN 酒未来 純米大吟醸",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "黄金井酒造株式会社",
+      "nameJa": "盛升 純米大吟醸",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "八戸酒造株式会社",
+      "nameJa": "陸奥八仙 レイメイ４０",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "八百新酒造株式会社",
+      "nameJa": "雁木 純米大吟醸 鶺鴒",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "有賀醸造合資会社",
+      "nameJa": "陣屋 純米大吟醸 PREMIUM",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "秋田酒造株式会社",
+      "nameJa": "酔楽天 純米大吟醸 百田晴",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "大雪渓酒造株式会社",
+      "nameJa": "大雪渓 純米大吟醸 山恵錦",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社土屋酒造店",
+      "nameJa": "亀の海 純米大吟醸 金紋錦 Terroir Gorobei Premium Cuvee",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社外池酒造店",
+      "nameJa": "望bo: 純米大吟醸 雄町",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "八戸酒造株式会社",
+      "nameJa": "陸奥八仙 まっしぐら４０",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "浜松酒造株式会社",
+      "nameJa": "出世城 純米大吟醸",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "新谷酒造株式会社",
+      "nameJa": "わかむすめ 燕子花 純米大吟醸",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "鶴乃江酒造株式会社",
+      "nameJa": "会津中将 純米大吟醸 特醸酒",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "多賀株式会社",
+      "nameJa": "多賀 純米大吟醸 稲澄",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "合名会社寒梅酒造",
+      "nameJa": "宮寒梅 純米大吟醸",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "天吹酒造合資会社",
+      "nameJa": "天吹 純米大吟醸 愛山",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "吉田酒造株式会社",
+      "nameJa": "月山 純米大吟醸",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社今田酒造本店",
+      "nameJa": "富久長 八反草 純米大吟醸",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "天領盃酒造株式会社",
+      "nameJa": "雅楽代〜瑞華〜",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "酔鯨酒造株式会社",
+      "nameJa": "酔鯨 純米大吟醸 篠",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "浅間酒造株式会社",
+      "nameJa": "秘幻 Premium 純米大吟醸",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "清水清三郎商店株式会社",
+      "nameJa": "作 槐山一滴水 純米大吟醸",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "有賀醸造合資会社",
+      "nameJa": "生粋左馬 純米大吟醸",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社木村酒造",
+      "nameJa": "福小町 純米大吟醸 百田40",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "丸石醸造株式会社",
+      "nameJa": "二兎 純米大吟醸 雄町三十三",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "小林酒造株式会社",
+      "nameJa": "鳳凰美田 鳳 純米大吟醸酒",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社外池酒造店",
+      "nameJa": "燦爛 純米大吟醸 夢ささら",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社土井酒造場",
+      "nameJa": "開運 純米大吟醸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "鶴見酒造株式会社",
+      "nameJa": "我山 純米大吟醸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "萩野酒造株式会社",
+      "nameJa": "萩の鶴 純米大吟醸 山田錦",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "峰乃白梅酒造株式会社",
+      "nameJa": "峰乃白梅 純米大吟醸原酒 瑠璃",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "赤武酒造株式会社",
+      "nameJa": "AKABU 極上ノ斬",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "加茂錦酒造株式会社",
+      "nameJa": "加茂錦 BRILLIANCE 酒未来",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "亀の井酒造株式会社",
+      "nameJa": "くどき上手 純米大吟醸 愛山１１％",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "雪雀酒造株式会社",
+      "nameJa": "雪雀 純米大吟醸 宵い媛",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "伴野酒造株式会社",
+      "nameJa": "澤の花 中どり純米大吟醸 ひとつぶえり",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社伊勢萬",
+      "nameJa": "おかげさま 純米大吟醸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "盛田金しゃち酒造株式会社",
+      "nameJa": "金鯱 超特選 純米大吟醸酒",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "山﨑合資会社",
+      "nameJa": "奥 -刻め-",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社南部美人",
+      "nameJa": "南部美人 純米大吟醸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "加茂錦酒造株式会社",
+      "nameJa": "加茂錦 BRILLIANCE 播州愛山",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "仙台伊澤家 勝山酒造株式会社",
+      "nameJa": "勝山 暁 純米大吟醸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "末廣酒造株式会社",
+      "nameJa": "玄宰 特上",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "合資会社柴田酒造場",
+      "nameJa": "孝の司 まどろみ",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "楯の川酒造株式会社",
+      "nameJa": "楯野川 純米大吟醸 清流",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "亀の井酒造株式会社",
+      "nameJa": "くどき上手 純米大吟醸 Jr.の愛山",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "廣瀬酒造株式会社",
+      "nameJa": "白菊 山田錦40 純米大吟醸 雫取り",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "寒紅梅酒造株式会社",
+      "nameJa": "寒紅梅 純米大吟醸 山田錦40％",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "静岡平喜酒造株式会社",
+      "nameJa": "喜平 静岡蔵 純米大吟醸 赤",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "静岡平喜酒造株式会社",
+      "nameJa": "喜平 静岡蔵 純米大吟醸 青",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "赤武酒造株式会社",
+      "nameJa": "AKABU 純米大吟醸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "河武醸造株式会社",
+      "nameJa": "式 Fresh",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "合資会社辰泉酒造",
+      "nameJa": "京の華 純米大吟醸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "貴娘酒造株式会社",
+      "nameJa": "咲耶美 純米大吟醸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "瀧自慢酒造株式会社",
+      "nameJa": "瀧自慢 純米大吟醸 匠35",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "磯自慢酒造株式会社",
+      "nameJa": "磯自慢 純米大吟醸 ブルーボトル 西戸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "頚城酒造株式会社",
+      "nameJa": "越路乃紅梅 純米大吟醸 越淡麗",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社山和酒造店",
+      "nameJa": "山和 Shizukudori",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "西堀酒造株式会社",
+      "nameJa": "門外不出 純米大吟醸 CLEAR BREW",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "土佐酒造株式会社",
+      "nameJa": "桂月 CEL24 純米大吟醸 50（火入）",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社大田酒造",
+      "nameJa": "半蔵 純米大吟醸 赤ラベル",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "萩原酒造株式会社",
+      "nameJa": "徳正宗 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "菊池酒造株式会社",
+      "nameJa": "燦然 純米大吟醸 雄町 50磨",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社大田酒造",
+      "nameJa": "半蔵＆ 純米大吟醸 雄町",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "初亀醸造株式会社",
+      "nameJa": "初亀 純米大吟醸 東条山田錦 田尻農園作",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "亀田酒造株式会社",
+      "nameJa": "寿萬亀 純米大吟醸 愛山 能登杜氏 家修 監修",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "金虎酒造株式会社",
+      "nameJa": "金虎 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "石鎚酒造株式会社",
+      "nameJa": "石鎚 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "雪椿酒造株式会社",
+      "nameJa": "越乃雪椿 Grand-Cuvée 純米大吟醸原酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社髙橋庄作酒造店",
+      "nameJa": "会津娘 純米大吟醸 東条山田錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社山下誠志堂 田中酒造店",
+      "nameJa": "田林 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "蔵王酒造株式会社",
+      "nameJa": "蔵王昇り龍 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "木屋正酒造株式会社",
+      "nameJa": "而今 純米大吟醸 名張",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "森島酒造株式会社",
+      "nameJa": "森嶋25＋ BLACK 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "三宅彦右衛門酒造有限会社",
+      "nameJa": "早瀬浦 純米大吟醸 山田錦 福井酵母",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "豊國酒造合資会社",
+      "nameJa": "豊國 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "相原酒造株式会社",
+      "nameJa": "雨後の月 純米大吟醸 愛山",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社山口酒造場",
+      "nameJa": "庭のうぐいす 純米大吟醸 しろうぐ",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "石鎚酒造株式会社",
+      "nameJa": "石鎚 純米大吟醸 さくらひめ",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "名倉山酒造株式会社",
+      "nameJa": "名倉山 純米大吟醸 鑑評会出品酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "酒田酒造株式会社",
+      "nameJa": "上喜元 純米大吟醸 雪女神40",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "有限会社二世古酒造",
+      "nameJa": "あびら川 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "亀泉酒造株式会社",
+      "nameJa": "亀泉 純米大吟醸 貴賓",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "有限会社濵川商店",
+      "nameJa": "美丈夫 純米大吟醸 夢許",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "合資会社大和川酒造店",
+      "nameJa": "弥右衛門 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "三和酒類株式会社",
+      "nameJa": "和香牡丹 八蝶 ヒノヒカリ",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "東北銘醸株式会社",
+      "nameJa": "光輝 純米大吟醸 2236",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社無手無冠",
+      "nameJa": "無手無冠 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "土佐酒造株式会社",
+      "nameJa": "桂月 にごり 純米大吟醸 50",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社土井酒造場",
+      "nameJa": "開運 伝 波瀬正吉 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "萩野酒造株式会社",
+      "nameJa": "萩の鶴 純米大吟醸 美山錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社吉田酒造店",
+      "nameJa": "手取川 純大 白山市産山田錦（醸す白山）",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "刈穂酒造株式会社",
+      "nameJa": "刈穂 選抜純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社吉田酒造店",
+      "nameJa": "手取川 瑞流",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "亀泉酒造株式会社",
+      "nameJa": "亀泉 純米大吟醸原酒 酒家長春萬壽亀泉",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "天領盃酒造株式会社",
+      "nameJa": "雅楽代〜六華〜",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社北川本家",
+      "nameJa": "富翁 純米大吟醸 山田錦49 （ひとつ火）",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社新澤醸造店",
+      "nameJa": "伯楽星 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "高木酒造株式会社（高知県）",
+      "nameJa": "豊能梅 純米大吟醸 響香",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社髙橋庄作酒造店",
+      "nameJa": "会津娘 純米大吟醸 吉川山田錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社廣木酒造本店",
+      "nameJa": "飛露喜 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社アリサワ",
+      "nameJa": "文佳人 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "白馬錦酒造株式会社",
+      "nameJa": "白馬錦 金紋錦 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "墨廼江酒造株式会社",
+      "nameJa": "墨廼江 純米大吟醸 PREMIUM365",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "豊国酒造合資会社",
+      "nameJa": "一歩己 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "伴野酒造株式会社",
+      "nameJa": "澤の花 純米大吟醸 満ち月",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社宮﨑本店",
+      "nameJa": "宮の雪 純米大吟醸 山田錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "小林酒造株式会社（栃木県）",
+      "nameJa": "鳳凰美田 鳳 純米大吟醸酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "北西酒造株式会社",
+      "nameJa": "文楽 純米大吟醸 袋吊り 無濾過原酒 中汲み",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "蔵王酒造株式会社",
+      "nameJa": "ZAO 純米大吟醸 K 雄町",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社車多酒造",
+      "nameJa": "五凛 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "八海醸造株式会社",
+      "nameJa": "ニセコ蝦夷富士 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "玉川酒造株式会社",
+      "nameJa": "ガラパゴス Oneness",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "初亀醸造株式会社",
+      "nameJa": "初亀 純米大吟醸 東条愛山 田尻農園作",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "平和酒造株式会社",
+      "nameJa": "紀土 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社中島屋酒造場",
+      "nameJa": "中島屋 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "龍神酒造株式会社",
+      "nameJa": "尾瀬の雪どけ 純米大吟醸35",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "楯の川酒造株式会社",
+      "nameJa": "楯野川 純米大吟醸 急流",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "中埜酒造株式会社",
+      "nameJa": "我逢人 純米大吟醸Y40",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "葵酒造株式会社",
+      "nameJa": "Maison Aoi 撫子",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "青木酒造株式会社（茨城県）",
+      "nameJa": "御慶事 鑑評会出品 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "水口酒造株式会社",
+      "nameJa": "NIKITATSU 仁喜多津 純米大吟醸酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "有限会社舩坂酒造店",
+      "nameJa": "杜氏 平岡誠治 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "府中誉株式会社",
+      "nameJa": "渡舟 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社平田酒造場",
+      "nameJa": "多賀山 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "六花酒造株式会社",
+      "nameJa": "杜來 純米大吟醸華想い",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社みいの寿",
+      "nameJa": "三井の寿 純米大吟醸 斗瓶採り",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "合資会社後藤酒造場",
+      "nameJa": "青雲 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "池田酒造株式会社",
+      "nameJa": "池雲 純米大吟醸 金ラベル",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "松崎酒造株式会社",
+      "nameJa": "廣戸川 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "合名会社寒梅酒造",
+      "nameJa": "宮寒梅 純米大吟醸 贅撰",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "松屋酒造株式会社",
+      "nameJa": "流輝 純米大吟醸 モルフォ",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "吉田酒造株式会社（島根県）",
+      "nameJa": "月山 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社金光酒造",
+      "nameJa": "賀茂金秀 純米大吟醸40千本錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "若戎酒造株式会社",
+      "nameJa": "若戎 純米大吟醸 －磨き35－",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "一宮酒造有限会社",
+      "nameJa": "石見銀山 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社中島屋酒造場",
+      "nameJa": "寿 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社小野酒造店",
+      "nameJa": "夜明け前 金紋錦純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "出羽鶴酒造株式会社",
+      "nameJa": "出羽鶴 純米大吟醸 飛翔の舞",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "出羽桜酒造株式会社",
+      "nameJa": "出羽桜 純米大吟醸酒 雪女神三割五分",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "天寿酒造株式会社",
+      "nameJa": "純米大吟醸「天寿」",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "中埜酒造株式会社",
+      "nameJa": "我逢人 純米大吟醸 Y30",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社釜屋",
+      "nameJa": "力士 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "会津酒造株式会社",
+      "nameJa": "山の井 幽天",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "花泉酒造株式会社",
+      "nameJa": "ロ万 純米大吟醸原酒一回火入れ 福乃香35",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "水口酒造株式会社",
+      "nameJa": "NIKITATSU 2024 仁喜多津 純米大吟醸酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "新谷酒造株式会社",
+      "nameJa": "わかむすめ 紅の匂 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "古橋酒造株式会社",
+      "nameJa": "初陣 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "米鶴酒造株式会社",
+      "nameJa": "米鶴 純米大吟醸 天に舞う鶴の輝き",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "米澤酒造株式会社",
+      "nameJa": "今錦 NENRIN S 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社松緑酒造",
+      "nameJa": "六根 純米大吟醸 山田錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "重家酒造株式会社 横山蔵",
+      "nameJa": "よこやま 純米大吟醸 Princess Michiko",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "山﨑合資会社",
+      "nameJa": "幻々 出品酒",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "井村屋株式会社 福和蔵",
+      "nameJa": "福和蔵 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社澄川酒造場",
+      "nameJa": "東洋美人 大吟醸 酒未来 純米醸造",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "箱館醸蔵有限会社",
+      "nameJa": "郷宝 純米大吟醸 壱火 磨き三割五分",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "日の丸醸造株式会社",
+      "nameJa": "まんさくの花 純米大吟醸一度火入れ原酒 サキホコレ",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社土屋酒造店",
+      "nameJa": "亀の海 純米大吟醸 金紋錦 terroir Gorobei premium cuvee",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "菊の司酒造株式会社",
+      "nameJa": "虹水 KOSUI 純米大吟醸 Blue Iris",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社松緑酒造",
+      "nameJa": "六根 純米大吟醸 華想い",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "英君酒造株式会社",
+      "nameJa": "英君 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "都鶴酒造株式会社",
+      "nameJa": "一角 純米大吟醸 山田錦",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "人気酒造株式会社",
+      "nameJa": "人気一 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "仙台伊澤家 勝山酒造株式会社",
+      "nameJa": "勝山 伝 純米大吟醸",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "junmaidaiginjo",
+      "maker": "株式会社南部美人",
+      "nameJa": "南部美人 純米大吟醸 結の香",
+      "result": "FINALIST",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/result/final_junmaidaiginjo2026.html"
+    },
+    {
+      "group": "sp",
+      "maker": "木屋正酒造株式会社",
+      "nameJa": "而今 特等雄町",
+      "result": "GOLD",
+      "rank": 1,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "sp",
+      "maker": "株式会社澄川酒造場",
+      "nameJa": "東洋美人 志荘",
+      "result": "GOLD",
+      "rank": 2,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "sp",
+      "maker": "亀の井酒造株式会社",
+      "nameJa": "くどき上手 命 斗瓶囲大吟醸",
+      "result": "GOLD",
+      "rank": 3,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "sp",
+      "maker": "株式会社西田酒造店",
+      "nameJa": "田酒 純米大吟醸 PREMIUM",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "sp",
+      "maker": "清水清三郎商店株式会社",
+      "nameJa": "作 特選酒 智 純米大吟醸 滴取り",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "sp",
+      "maker": "磯自慢酒造株式会社",
+      "nameJa": "磯自慢 純米大吟醸37 Largo",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "sp",
+      "maker": "株式会社今田酒造本店",
+      "nameJa": "富久長 純米大吟醸 百試千改",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "sp",
+      "maker": "有限会社渡辺酒造店",
+      "nameJa": "蓬莱 純米大吟醸 心白18",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "sp",
+      "maker": "株式会社武勇",
+      "nameJa": "武勇 純米大吟醸 TEN",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "sp",
+      "maker": "米鶴酒造株式会社",
+      "nameJa": "米鶴 純米大吟醸 天に舞う鶴の輝き 袋取り",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "sp",
+      "maker": "山梨銘醸株式会社",
+      "nameJa": "七賢 純米大吟醸 白心",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "sp",
+      "maker": "高木酒造株式会社",
+      "nameJa": "十四代 龍泉",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "sp",
+      "maker": "八戸酒造株式会社",
+      "nameJa": "Hassenblage",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "sp",
+      "maker": "花の舞酒造株式会社",
+      "nameJa": "花の舞 18 小仕込み純米大吟醸",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "sp",
+      "maker": "株式会社外池酒造店",
+      "nameJa": "外池 AUTHENTIC 純米大吟醸 袋吊り雫酒",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "sp",
+      "maker": "八百新酒造株式会社",
+      "nameJa": "雁木 MUSUHI",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "mn",
+      "maker": "合名会社川敬商店",
+      "nameJa": "たちばなや 純米吟醸",
+      "result": "GOLD",
+      "rank": 1,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "mn",
+      "maker": "萩原酒造株式会社",
+      "nameJa": "萩原 山廃純米",
+      "result": "GOLD",
+      "rank": 2,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "mn",
+      "maker": "城陽酒造株式会社",
+      "nameJa": "試験醸造2025 Type-Kimoto",
+      "result": "GOLD",
+      "rank": 3,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "mn",
+      "maker": "藤本酒造株式会社",
+      "nameJa": "神開 純米原酒 水酛",
+      "result": "GOLD",
+      "rank": 4,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "mn",
+      "maker": "頚城酒造株式会社",
+      "nameJa": "久比岐 和希水 生酛",
+      "result": "GOLD",
+      "rank": 5,
+      "resultUrl": "https://www.sakecompetition.com/award.html"
+    },
+    {
+      "group": "mn",
+      "maker": "吉川醸造株式会社",
+      "nameJa": "雨降 OHANA",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "mn",
+      "maker": "株式会社九重雜賀",
+      "nameJa": "雑賀 純米 山廃仕込",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "mn",
+      "maker": "合資会社後藤酒造場",
+      "nameJa": "颯 純米吟醸 神々の黄昏",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "mn",
+      "maker": "株式会社八木酒造部",
+      "nameJa": "山丹正宗 MINAMOTO",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "mn",
+      "maker": "岩手銘醸株式会社",
+      "nameJa": "奥六 純米吟醸生酛 Unite",
+      "result": "SILVER",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "mn",
+      "maker": "萩原酒造株式会社",
+      "nameJa": "萩原FOREST series 「Rooted Light」",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "mn",
+      "maker": "江井ヶ嶋酒造株式会社",
+      "nameJa": "日本魂 純米 無濾過生原酒 水酛スペシャルⅡ",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "mn",
+      "maker": "富士高砂酒造株式会社",
+      "nameJa": "高砂 山廃純米吟醸あらばしり",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "mn",
+      "maker": "株式会社高橋助作酒造店",
+      "nameJa": "Matsuwo 荒瀬原 純米吟醸 生酛",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "mn",
+      "maker": "株式会社水戸部酒造",
+      "nameJa": "山形正宗 純米雄町 生もと造り",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "mn",
+      "maker": "酒井酒造株式会社",
+      "nameJa": "五（five）イエロー 純米酒 白糀",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "mn",
+      "maker": "合名会社川敬商店",
+      "nameJa": "KOGANESAWA Merry Go Round",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "mn",
+      "maker": "株式会社車多酒造",
+      "nameJa": "天狗舞 山廃仕込純米酒 黒",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    },
+    {
+      "group": "mn",
+      "maker": "株式会社みいの寿",
+      "nameJa": "美田 豊醸 山廃純米",
+      "result": "BRONZE",
+      "rank": null,
+      "resultUrl": "https://www.sakecompetition.com/award_silver.html"
+    }
+  ]
+}

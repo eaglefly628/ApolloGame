@@ -2,6 +2,18 @@
 
 配套 `docs/design/ui-playbook.md`（UI 实操手册）。给 LLM/人在交 UI 前**直接跑、用证据验**，不靠肉眼、不等用户挑错。
 
+## spritegen-export.mjs · 序列帧制作工具接入
+
+技能源在 [Spritegen](../.claude/skills/spritegen/SKILL.md)，本地 Codex 镜像在 `.agents/skills/spritegen`。这是离线 AI 出图 / 切帧 / 预览流程，不给游戏运行时增加 Python 或生成 API 依赖；不等于动作自然度已通过验收。
+
+```sh
+node tools/spritegen-export.mjs --help
+node --test tools/spritegen-export.test.mjs
+python3 .claude/skills/spritegen/scripts/test_apollo.py
+```
+
+导出沿用现有 `AssetIndex.spec.sheet` 与 `Image.sprite`，不新增引擎 capability。多行图集仅导出 AssetIndex，UI 动画须为横向单行。命令生成独立 staging 包，不自动覆盖游戏资产。工作流、风格选择、审核门与许可证待确认事项见技能的 `references/apollo.md`。
+
 ## ui-audit.mjs · UI 审计（重叠 + 对比度）
 
 把一棵 LayoutNode 树 mount 到真浏览器，量真实包围盒 + computed 颜色，程序化检查两件 `validate.ts` 挡不住的事：
