@@ -1,7 +1,7 @@
 {
   "version": 1,
   "collection": "星尾馆·猫用物件百件库",
-  "usage": "shared-art-library-catalog; not shop inventory",
+  "usage": "local-only-art-candidate-ledger; not shop inventory",
   "numbering": "T001–T100; stable IDs, do not renumber",
   "artStatus": {
     "approved": [

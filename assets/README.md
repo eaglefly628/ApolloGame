@@ -20,14 +20,14 @@ assets/
 └── FreeArtLib/    ← 素材货架（DCSS CC0，自带 index.json，脚本生成，只读）
 ```
 
-## 星尾馆猫用物件百件库（Game112 商店）
+## 星尾馆猫用物件候选库（Game112 · 本机美术）
 
-- `curated/game112-cat-toys.v1.json`：T001–T100 的稳定编号、品类、外观方向与出图状态。100 件已按本轮商店接入决定入库。
-- `curated/game112-cat-toys-overview.png`：100 件总览；`curated/game112-cat-toys-preview.png` 是 T001–T010 详细拼页，`curated/game112-cat-toys-preview-011-020.png` 至 `...-091-100.png` 是其余九页。每页从左上到右下依编号排列。
-- `ai/openai-built-in/game112-cat-toy-*.png` 与 `index.json`：100 张原图及逐张生成记录；`ai/pending.json` 中对应待审项已清空。
-- `public/games/game112/art/ai/openai-built-in/` 与本地 `art/index.json`：经 `scripts/vendor-asset.mjs` 复制到 Game112 的运行时资产。价格、分类和商品说明在 `games/game112/shop-catalog.v1.json`。T011–T100 使用 `scripts/game112-toy-batch.mjs` 的稳定提示词模板单独生成，没有从拼图裁成假单品。
+- `curated/game112-cat-toys.v1.json`：T001–T100 的稳定编号、品类和外观方向；这是创作台账，**不是游戏商店货单**。
+- 原图放在仓库根目录下被 Git 忽略的 `art-local/game112/cat-toys/masters/`，11 张总览与预览拼板在 `.../previews/`，旧版百件货单在 `.../shop-catalog.v1.json`。它们不进入共享资产索引、不进入游戏本地索引，也不随构建发布；本机需自行备份该目录。
+- `scripts/game112-toy-batch.mjs plan 1 100` 只输出稳定提示词，不再把生成图写入 Git 待审目录。未来仅在某件物品的猫咪互动和发行美术验收完成后，才从本机候选中选图、优化尺寸并登记到游戏本地 `AssetIndex`；不要把游戏专属原图重新塞进共享资产库。
+- 当前游戏商店只保留已经具备摆放与猫咪互动的四件物品。旧存档中的 T 编号会保留在数据里以便将来恢复，但不会显示成无法使用的商品。
 
-这一批不使用网上图集原图；外部图片的商用与二次加工许可必须逐张核对。部分图有透明边缘像素警告，**入游戏不等于发行美术终审通过**，发行前仍需逐张复查并修图。新 100 件目前完成购买与收藏，摆放和猫咪互动需另行逐件制作。
+这批图不使用网上图集原图；外部图片的商用与二次加工许可仍须逐张核对。部分候选有透明边缘像素警告，正式入游戏前仍需复查和修图。
 
 类型集合可扩展，但保持「按类型分的叶子目录」这一约定。
 

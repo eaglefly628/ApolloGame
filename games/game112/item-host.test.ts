@@ -78,7 +78,7 @@ describe('真实宿主的物件闭环', () => {
     } finally { dispose(); vi.useRealTimers(); }
   });
 
-  it('百件货架可以按分类选中、购买并进入收纳篮，不给未制作的物件假摆放按钮', async () => {
+  it('候选美术不进入商店；已实现的羽毛杆可以购买并放进馆里', async () => {
     vi.useFakeTimers();
     const save = new MemorySavePort();
     await save.write(SAVE_SLOT, sealEnvelope({ ...EMPTY_STATE, stardust: 100 }, SAVE_CODEC, 100));
@@ -92,16 +92,17 @@ describe('真实宿主的物件闭环', () => {
       click('starter-act-0'); await vi.advanceTimersByTimeAsync(TICK_MS);
       click('hot-toys'); click('toys-shop');
       click('shop-category-wand');
-      expect(document.getElementById('shop-T001')).not.toBeNull();
-      click('shop-T001');
+      expect(document.getElementById('shop-T001')).toBeNull();
+      expect(document.getElementById('shop-feather')).not.toBeNull();
+      click('shop-feather');
       click('shop-selected-buy'); await vi.advanceTimersByTimeAsync(TICK_MS);
-      expect(document.getElementById('shop-selected-collection')).not.toBeNull();
-      click('shop-selected-collection');
-      expect(document.getElementById('toy-T001-art')).not.toBeNull();
-      expect(document.getElementById('toy-T001-place')).toBeNull();
+      expect(document.getElementById('shop-selected-place')).not.toBeNull();
+      click('shop-selected-place');
+      expect(document.getElementById('prop-art-feather')).not.toBeNull();
       const persisted = normalizeState(openEnvelope((await save.read(SAVE_SLOT))!, SAVE_CODEC));
-      expect(persisted.items.T001).toBe(1);
-      expect(persisted.stardust).toBe(82);
+      expect(persisted.items.feather).toBe(1);
+      expect(persisted.placed).toContain('feather');
+      expect(persisted.stardust).toBe(70);
     } finally { dispose(); vi.useRealTimers(); }
   });
 });

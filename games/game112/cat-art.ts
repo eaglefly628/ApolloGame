@@ -34,9 +34,7 @@ export function mapSkin(): string | undefined {
 }
 /** 商品与场景复用同一份本地资产；无异步索引时也能加载明确的本地路径。 */
 export function propArt(id: string): string {
-  const fallback = /^T\d{3}$/.test(id)
-    ? `/games/game112/art/ai/openai-built-in/game112-cat-toy-${id.slice(1)}.png`
-    : `/games/game112/art/props/${id}-v1.png`;
+  const fallback = `/games/game112/art/props/${id}-v1.png`;
   return SKIN_OVERRIDES[`game112/prop/${id}`] ?? fallback;
 }
 /** 掌柜是商店画面层，不进入猫咪收养/关系数值；本地索引未加载时仍可见。 */

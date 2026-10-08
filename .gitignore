@@ -77,3 +77,10 @@ dokiworld/*/node_modules/
 
 # 本地 agent 工具的技能镜像（桌面端每机自生成·不进共享仓·2026-08-19 owner 确认）
 .agents/
+
+# Game112 创作候选原图只留本机；正式入戏时另行挑选、优化并 vendor。
+art-local/
+assets/ai/pending/
+assets/ai/openai-built-in/game112-cat-toy-*.png
+assets/curated/game112-cat-toys*.png
+public/games/game112/art/ai/openai-built-in/game112-cat-toy-*.png

@@ -580,7 +580,7 @@ export function buildShop(v: HallView, selectedItemId = 'paperbag', browse: Shop
       { ...readableChip('shopkeeper-name', '玳瑁掌柜 · 慢慢挑'), layout: { x: 23, y: 653, padding: 5, radius: 5 } },
       { type: 'Panel', id: 'shop-ledger', props: { bg: 'raised', edge: 'gold' },
         layout: { x: 210, y: 88, width: 776, height: 555, padding: 0, radius: 12 }, children: [
-          { type: 'Input', id: 'shop-search', props: { placeholder: '找名字或编号 T001', value: browse.query, action: 'shop.search' },
+          { type: 'Input', id: 'shop-search', props: { placeholder: '找猫咪喜欢的物件', value: browse.query, action: 'shop.search' },
             layout: { x: 13, y: 12, width: 272 } },
           ...SHOP_VALUES.map((o, i): LayoutNode => ({ type: 'Button', id: `shop-value-${o.id}`,
             props: { label: o.name, kind: browse.value === o.id ? 'primary' : 'ghost', action: 'shop.value', actionArg: o.id },

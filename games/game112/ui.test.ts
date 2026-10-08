@@ -150,11 +150,11 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
     expect(cat.type).toBe('Image');
     expect((cat.props as { src?: string }).src).toContain('shopkeeper-tortoiseshell-v1.png');
     expect((cat.layout!.x! + cat.layout!.width!)).toBeLessThan(ledger.layout!.x!);
-    expect(nodes.filter((n) => SHOP_ITEMS.some((it) => n.id === `shop-${it.id}`))).toHaveLength(SHOP_PAGE_SIZE);
+    expect(nodes.filter((n) => SHOP_ITEMS.some((it) => n.id === `shop-${it.id}`))).toHaveLength(Math.min(SHOP_PAGE_SIZE, SHOP_ITEMS.length));
     expect(validateLayoutNode(shop)).toEqual([]);
   });
 
-  it('百件与原有四件都可按编号检索查看；交换只从详情确认，见面星砂有明确反馈', () => {
+  it('精选四件可按名称检索查看；交换只从详情确认，见面星砂有明确反馈', () => {
     const empty = new HallSession(112).hall();
     for (const item of SHOP_ITEMS) {
       const tree = buildScreen({ screen: 'shop', view: empty, shopItem: item.id,

@@ -4,13 +4,7 @@ import { SHOP_ITEMS, type ShopItem } from './world-data.js';
 export const SHOP_CATEGORIES = [
   { id: 'all', name: '全部' },
   { id: 'wand', name: '逗猫杆' },
-  { id: 'ball', name: '滚动球' },
-  { id: 'kicker', name: '抱踢玩具' },
-  { id: 'plush', name: '小布偶' },
-  { id: 'track', name: '轨道追逐' },
   { id: 'hide', name: '藏身钻行' },
-  { id: 'scratch', name: '抓挠攀靠' },
-  { id: 'puzzle', name: '寻物解谜' },
   { id: 'rest', name: '休憩空间' },
   { id: 'cardskin', name: '星牌外观' },
 ] as const;
