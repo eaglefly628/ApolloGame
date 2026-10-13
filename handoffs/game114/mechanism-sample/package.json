@@ -1,0 +1,13 @@
+{
+  "name": "apollo-mechanism-render-sample",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "models": "python3 build-textures.py && node build-models.mjs",
+    "dev": "vite --host 127.0.0.1 --port 5187",
+    "build": "vite build",
+    "verify:navigation": "vite-node --config vite.config.mjs verify-navigation.ts",
+    "verify:stress": "vite-node --config vite.config.mjs verify-stress.ts",
+    "verify:battle": "vite-node --config vite.config.mjs verify-battle-density.ts 64 600 && vite-node --config vite.config.mjs verify-battle-density.ts 128 600"
+  }
+}

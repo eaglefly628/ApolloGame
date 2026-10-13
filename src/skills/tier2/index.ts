@@ -166,3 +166,6 @@ export { intentBarrierCapability, openBarrier, deliverIntents, failIntents, appl
 export type { IntentBarrier, IntentInbox, OpenBarrierSpec, IntentCheck, SettleDraft } from './intent-barrier.js';
 // 上两件的纯函数核（零 World·打分/排序/衰减/淘汰 与 闭集校验/结算产物 都在核里可直接喂数据断言）。
 export { normalizeEntry, evictWeakest, sortById } from './memory-core.js';
+
+export { crowdAvoidanceCapability } from './crowd-avoidance.js';
+export { navigationGridCapability } from './navigation-grid.js';

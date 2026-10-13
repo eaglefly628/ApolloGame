@@ -326,7 +326,7 @@ export function buildFlow(field: FlowField, cost: Int32Array, integ: Int32Array)
     for (let col = 0; col < cols; col++) {
       const i = index(col, row, cols);
       if (cost[i] === 0 || integ[i] === 0 || integ[i] === UNREACHABLE) continue;   // 墙/终点/孤岛 → (0,0)
-      let bestVal = integ[i];
+      let bestVal = field.costAware === true ? UNREACHABLE : integ[i];
       let bx = 0; let by = 0;
       for (const [dx, dy] of NEIGHBORS) {
         const ni = cellIndex(field, col + dx, row + dy);
@@ -336,7 +336,12 @@ export function buildFlow(field: FlowField, cost: Int32Array, integ: Int32Array)
           const b = cellIndex(field, col, row + dy);
           if (a < 0 || b < 0 || cost[a] === 0 || cost[b] === 0) continue;
         }
-        if (integ[ni] < bestVal) { bestVal = integ[ni]; bx = dx; by = dy; }
+        // Generated shared-grid profiles opt in to Bellman-consistent extraction.
+        // Legacy fields keep their historical gradient (and trajectories).
+        const candidate = field.costAware === true
+          ? integ[ni] + cost[i] * (dx !== 0 && dy !== 0 ? DIAGONAL : STRAIGHT)
+          : integ[ni];
+        if (candidate < bestVal) { bestVal = candidate; bx = dx; by = dy; }
       }
       dir[i * 2] = bx; dir[i * 2 + 1] = by;
     }
@@ -365,6 +370,7 @@ export function bakeFlowField(field: FlowField): BakedField {
  * 代价与哈希同阶（都要扫一遍数组），换来的是**没有别名可能**——不靠"碰撞概率极低"这种话。
  */
 interface InputSnapshot {
+  costAware?: boolean;
   cellSize: number; originX: number; originY: number; cols: number; rows: number;
   goals: Array<{ x: number; y: number }>;
   blocked?: number[];
@@ -373,6 +379,7 @@ interface InputSnapshot {
 
 function snapshotOf(field: FlowField): InputSnapshot {
   return {
+    costAware: field.costAware === true,
     cellSize: field.cellSize, originX: field.originX, originY: field.originY,
     cols: field.cols, rows: field.rows,
     goals: field.goals.map((g) => ({ x: g.x, y: g.y })),
@@ -383,6 +390,7 @@ function snapshotOf(field: FlowField): InputSnapshot {
 
 /** 精确比对（`Object.is` 而非 `===`：把 NaN/-0 这类也判得一致，别让它们成为第二种别名）。 */
 export function sameInputs(a: InputSnapshot, field: FlowField): boolean {
+  if ((a.costAware === true) !== (field.costAware === true)) return false;
   if (!Object.is(a.cellSize, field.cellSize) || !Object.is(a.originX, field.originX) || !Object.is(a.originY, field.originY)) return false;
   if (a.cols !== field.cols || a.rows !== field.rows) return false;
   if (a.goals.length !== field.goals.length) return false;
@@ -437,6 +445,7 @@ function bucketKey(field: FlowField): string {
   let h = FNV_OFFSET;
   const mix = (n: number): void => { h = fnvMixInt(h, n); }; // engine/math/hash（逐位同旧本地实现）
   mix(field.cols); mix(field.rows);
+  if (field.costAware === true) mix(1);
   mix(Math.round(field.cellSize * 1000)); mix(Math.round(field.originX * 1000)); mix(Math.round(field.originY * 1000));
   mix(field.goals.length);
   for (const g of field.goals) { mix(Math.round(g.x * 1000)); mix(Math.round(g.y * 1000)); }

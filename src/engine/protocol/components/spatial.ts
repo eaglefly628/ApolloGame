@@ -2,6 +2,7 @@
 // 实体在世界里"在哪、多大、怎么动、碰没碰、占没占区"的物理基底；以及挂在 world 实体上的
 // 随机数与空间索引服务。被 motion/collision/spatial-query/trigger-zone/tilemap 等读写。
 import type { Component, EntityId } from '../../core/types.js';
+import type { NavigationGraphGrid } from './navigation-grid.js';
 
 // ── A1 transform ── 实体在世界的位置、朝向和大小
 export interface Transform extends Component {
@@ -199,6 +200,7 @@ export interface Tilemap extends Component {
 // 推开（**正交**·nav 写 Velocity → motion-apply 积分 → overlap/collision-resolve 分离·零新碰撞代码·复用）。
 export interface NavGraph extends Component {
   readonly type: 'NavGraph';
+  grid?: NavigationGraphGrid; // Generated shared grid; source-cell terrain costs and strict bounds.
   nodes: Array<{ x: number; y: number }>;                 // 航点世界坐标（下标即节点 id）。摆放数据·最弱 LLM 也能填。
   edges: Array<{ a: number; b: number; cost?: number }>;  // 连边（节点下标·无向）；cost 缺省 = 两端 Euclidean 距离。
 }
@@ -207,11 +209,17 @@ export interface NavGraph extends Component {
 // 复用 aggro 写的 Relation(target)（同 steering/grid-move 索敌接缝·零新目标概念）。无目标/被 CC → 停。
 export interface NavAgent extends Component {
   readonly type: 'NavAgent';
+  graphId?: EntityId; // Explicit graph/profile entity; missing/invalid/unreachable stops.
   speed: number;            // 移动速度（写入 Velocity 模长·单位/tick）
   arriveRange: number;      // 到终点此距离内即停
   waypointRange?: number;   // 到当前航点此距离内即推进下一航点（缺省 = max(speed, arriveRange)·防抖/防一拍一停）
   repathPeriod?: number;    // 每多少 tick 强制重算路径（缺省 30）；目标显著移动（> arriveRange）也会触发重算
   haltStatusMask?: number;  // 自身 Status 含这些位时停（冻结/眩晕 CC·同 Steering/GridMover.haltStatusMask）
+  patrol?: { // 可选固定目标序列：每到一点才切下一点，仍经 NavGraph A* 寻路
+    waypoints: Array<{ x: number; y: number }>;
+    index?: number; // 当前目标下标；引擎推进，进入快照
+    loop?: boolean; // 到最后一点后回到第一个点
+  };
 }
 
 // ── flow-field（REQ-FLOWFIELD·群体流场寻路·确定性 sim·进 hash）──────────────────────
@@ -224,6 +232,7 @@ export interface NavAgent extends Component {
 // 凹形障碍不卡死）→ 每格取积分最小邻格得方向。积分全程**整数**（直走 10/斜走 14）以逐位可复现。
 export interface FlowField extends Component {
   readonly type: 'FlowField';
+  costAware?: boolean; // opt-in：方向最小化源格步进代价+剩余积分；旧配置保持原方向语义
   id: string;                     // 场 id（FlowAgent.fieldId 认领·多阵营/多目标可并存多张）
   cellSize: number;               // 格边长（世界单位）
   originX: number;                // 网格左下角世界 x
@@ -310,6 +319,9 @@ export interface FlowAgent extends Component {
 // ── NavPath ── 引擎写的缓存路径（确定性派生·进 hash）。via=待经节点下标序；gx/gy=规划所据目标点；age=自上次重算 tick。
 export interface NavPath extends Component {
   readonly type: 'NavPath';
+  graphId?: EntityId;
+  graphKey?: string; // Exact serialized geometry identity, rollback-safe.
+  reachable?: boolean; // Explicit graphs never use straight-line fallback.
   via: number[];   // 剩余待经航点（节点下标·按序·整数进 hash）
   gx: number;      // 规划时的目标点 x（检测目标移动 → 触发重算）
   gy: number;      // 规划时的目标点 y

@@ -228,3 +228,7 @@ desync（`determinism.ts` 对 Camera 的同款理由）。条目进 hash → 注
 ```
 
 ---
+
+### REQ-114-NAV · 通用 ORCA 与共享网格导航 · [2026-10-09] · owner 判 A · status: 本地实现/复查完成，基线门禁有阻塞 · P1
+
+施工主体：game114 当前会话（01a11e73-f648-72c3-a624-8e9dd51a430b，2026-10-09 本地领取）；独立复查已通过，交付见 docs/design/game114/navigation-delivery.md。用户确认由本会话贯穿实现，保留独立复查；2026-10-13 又授权提交并推送本轮改动以跨机器接续。规格与验收：[game114 导航需求](../design/game114/engine-navigation-request.md)。复用已有 ORCA/网格核，保持旧配置行为；本单不接管 REQ-FLOWFIELD 未完成分期。

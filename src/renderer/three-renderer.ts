@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
-import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D, AnimState3D, Glow3D, Transform3D, Pivot3D, Pickable3D } from '@engine/protocol/components.js';
+import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D, AnimState3D, Glow3D, Transform3D, Pivot3D, Pickable3D, FaceDir, Velocity } from '@engine/protocol/components.js';
 import type { AssetManager, MaterialSpec } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
 import { getCamera3D, getSky3D, getLights3D, getPost3D, getFog3D } from '@engine/protocol/camera-view.js';
@@ -15,6 +15,7 @@ import { hashPoses, camSig, postSig } from './three/stats.js';
 import { LightRig } from './three/lights.js';
 import { PostPipeline, FlashDecay } from './three/post.js';
 import { ModelPool } from './three/models.js';
+import { modelYawFromFaceDir, turnModelYaw, modelMotionSpeed } from './three/model-motion.js';
 import { InstancedBatches, type InstGroups, type PbrBatchBuild } from './three/batches.js';
 import { CameraRig, CameraShake, FollowDamper, type DampedCenter } from './three/camera-rig.js';
 import { ColliderDebug } from './three/collider-debug.js';
@@ -100,6 +101,8 @@ export class ThreeRenderer implements RendererBackend {
   private readonly reflectors = new ReflectorSystem(); // 平面反射镜面（Reflector3D·RTT 倒影·render-only·REQ-3D-PLANAR-REFLECT）
   private readonly anim3d = new Anim3DSystem(); // 程序化位姿动画（Anim3D·spin/bob·render-only·把 title 骰自转等从游戏层手写下沉成数据）
   private readonly paths = new PathSystem(); // 路径跟随（Path3D·沿控制点走·移动平台/巡逻/dolly·render-only）
+  private readonly modelYaw = new Map<string, number>(); // FaceDir → GLB 地面朝向；只在表现层平滑转身
+  private lastModelYawMs = 0;
   private readonly worldUi = new WorldUiLayer(); // 世界空间 UI 头顶飘字（TA Phase 3·render-only·走主程 UI 库）
   private physics: PhysicsSystem | null = null; // 真物理刚体（cannon-es·render-only·**懒加载**·仅有 RigidBody3D 时）
   private physicsLoading = false;
@@ -245,6 +248,8 @@ export class ThreeRenderer implements RendererBackend {
 
   sync(world: IWorld): void {
     const t0 = performance.now();
+    const turnStep = this.lastModelYawMs ? Math.min(0.05, (t0 - this.lastModelYawMs) / 1000) * 6 : Infinity;
+    this.lastModelYawMs = t0;
     this.gl.info.reset(); // 手动重置 → calls/triangles 跨 scene+post 全 pass 累加（真·每帧 draw 数）
     const seen = new Set<string>();
     const poses: Pose3D[] = [];
@@ -304,6 +309,16 @@ export class ThreeRenderer implements RendererBackend {
           const rawPose: Pose3D = (r.transform3d || cam3d)
             ? (r.transform3d ? transform3dPose(r.transform3d) : groundPose(r, 0))
             : renderablePose(r, this.zStep);
+          if (!r.transform3d && cam3d) {
+            const dir = world.getComponent<FaceDir>(r.entityId, 'FaceDir');
+            if (dir) {
+              const wanted = modelYawFromFaceDir(dir, rawPose.ry ?? 0);
+              const previous = this.modelYaw.get(r.entityId);
+              const yaw = previous === undefined ? wanted : turnModelYaw(previous, wanted, turnStep);
+              this.modelYaw.set(r.entityId, yaw);
+              rawPose.ry = yaw;
+            }
+          }
           const pose = pivotPose(r.entityId, rawPose); // Pivot3D 父合成（无 pivot 则恒等）
           obj.position.set(pose.x, pose.y, pose.z);
           if (pose.quat) obj.quaternion.set(pose.quat[0], pose.quat[1], pose.quat[2], pose.quat[3]);
@@ -311,7 +326,9 @@ export class ThreeRenderer implements RendererBackend {
           obj.scale.set(pose.sx * ms, pose.sy * ms, (pose.sz ?? 1) * ms);
           if (r.model3d.tint !== undefined) this.models.tint(r.entityId, r.model3d.tint);
           const anim = world.getComponent<AnimState3D>(r.entityId, 'AnimState3D'); // 骨骼动画（render-only·播 glTF clip）
-          if (anim) this.models.applyAnim(r.entityId, anim);
+          if (anim) this.models.applyAnim(r.entityId, anim.speedAtVelocity === undefined ? anim : {
+            ...anim, speed: modelMotionSpeed(anim, world.getComponent<Velocity>(r.entityId, 'Velocity')),
+          });
           seen.add(r.entityId);
           poses.push(pose);
           if (r.entityId === followTarget) followPose = pose;
@@ -461,6 +478,7 @@ export class ThreeRenderer implements RendererBackend {
       }
     }
     this.models.sweep(this.scene, seen);
+    for (const id of this.modelYaw.keys()) if (!seen.has(id)) this.modelYaw.delete(id);
 
     this.colliderDebug.sync(this.scene, world, this.debugColliders); // 碰撞体线框（debug·开则画·关则清）
     this.navDebug.sync(this.scene, world, this.debugNav); // 导航图/路径（debug·开则画·关则清）

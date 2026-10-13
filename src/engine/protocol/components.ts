@@ -59,3 +59,6 @@ export type * from './components/render.js';
 export type * from './components/input.js';
 export type * from './components/autochess.js';
 export type * from './components/cardboard.js';
+
+export type * from './components/crowd.js';
+export type * from './components/navigation-grid.js';

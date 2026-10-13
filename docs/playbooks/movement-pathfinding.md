@@ -13,7 +13,8 @@
 | 朝/背目标移动（AI） | `t2-steering` | 挂 `Steering{mode,speed,stopRange}`；配 `t3-aggro` 写 target + motion-apply |
 | 六边形棋盘沿格寻路 | `t2-grid-move` | 单位挂 `HexPos`+`GridMover{period}`+`Relation(target)`；世界放 `HexBoard`（内建 A*） |
 | 连续坐标绕障寻路 | `t2-pathfind` | 世界放 `NavGraph{nodes,edges}`；单位挂 `NavAgent{speed,arriveRange}`+`Relation(target)` |
-| 固定航点轨道匀速跑（巡逻/传送带） | `t2-path-follow` | 挂 `PathFollow{waypoints,speed,loop?}`（`pathFollowAt` 生成）；不索敌不绕障 |
+| 固定航点往返且需要 A* 绕障 | `t2-pathfind` | 单位挂 `NavAgent{graphId,speed,arriveRange,patrol:{waypoints:[{x,y},...],index:0,loop:true}}`；到达航点才切换目标，不需移动的目标实体。配 `t2-crowd-avoidance` 保留群体避让 |
+| 固定航点闭环行走（巡逻/传送带） | `t2-path-follow` | 挂 `PathFollow{waypoints,speed,loop:true}`（`pathFollowAt` 生成）；环线交错时叠加 `CrowdAvoidance` 处理单位间避让。避让后需要更重视原路线方向时，可选 `lookAhead:正数`，沿当前线段前方取期望方向，并在跨过航点横截面时推进游标；不配置时保留直奔航点的旧语义。本身不索敌、不绕静态障碍 |
 | 传送带队列：有序不重叠占位 + 递进（不超车） | `t2-path-follow` | 同上 + `queueId,minGap?`（REQ-CONVEYOR-CAP M1）：同 `queueId` 按 path 进度排序，每个非排头成员夹在「前一名进度 − minGap」；容量 full 旗标/空槽分配/死锁**不建新能力**，组合 `group-count`+`event-when(level 双向)`+`effect-apply`（空槽用既有 `t2-tray`），见 `conveyor-queue-compose.test.ts` |
 | 绕完一圈到末点→落一件+自毁（belt/巡逻收尾） | `t2-path-follow` | 同上 + `onEnd:{dropTemplate?,destroy?}`（REQ-PATHEND-DROP，非 loop 到末点触发一次，`ended` 布尔守卫防重发，=Mortal 的 path-完成版） |
 | 排队叫号/消费队首（或队中任一个）后**全体前移补位**（槽间不留空洞） | `t2-queue-slots`（REQ-POOL-ADVANCE 缺口） | 挂 `QueueSlots{originX,originY,gap,headCount,memberTag,action}`；成员挂 `Tag`(含 memberTag)+`Transform`。每 tick 按既有 `QueueMember.index`（新成员排末尾）+id 升序稳定重排成连续 0..N-1、钉位、前 headCount 个自动挂/摘 `Clickable`。与 `t2-tray`（占坑制、老成员不前移）互补：占坑用 tray，消费即整体递补用本能力 |
@@ -24,6 +25,10 @@
 | **大规模同目标行军**（成百上千单位走向同一处） | `t2-flow-field` | 世界放 `FlowField{cellSize,cols,rows,goals[],blocked?,cost?}`（**多源** Dijkstra 铺满一次·无局部极小）；单位挂 `FlowAgent{fieldId,speed,arriveRange?}`。**一次铺场服务全部单位**——与 `t2-pathfind` 的「每单位各算一次」是**成本形状**之别，不是好坏之别 |
 | 大军别叠成一条线（软避让） | `t2-flow-field` + `FlowAgent.separation{weight}` | Reynolds 分离力（`offset/-d²`），**权重恒被钳在流场之下**（永不掉头）。**软承诺**：允许瞬时重叠、靠力弹开 |
 | 「不许穿模」的小队（硬避让） | `t2-flow-field` + `FlowAgent.orca{radius,timeHorizon?,maxNeighbors?}` | 移植自 RVO2（`src/skills/tier2/orca.ts`·Apache-2.0）。**与 separation 二选一**（同填 ORCA 优先）。⚠ 不是"保证不碰"——线性规划无可行解时落「最不违反」，实测把穿模从 ~90% 压到最坏 8%，不是 0 |
+| A* 与流场单位相互避让 | `t2-crowd-avoidance` + `CrowdAvoidance{radius,maxSpeed}` | 同拍速度快照→ORCA→motion→硬碰撞；同地面 group 相同；停止意图不被推动；勿同单位双开旧 FlowAgent.orca/separation。平地角色用同半径的 `Shape{kind:'circle'}` 作实际碰撞，地面截面等价竖直圆柱，不用模型网格作碰撞。可选 `flowGuide.edgeRepathSlots:正整数`：同一流场及碰撞组先让侧边更空、实际能规划回原路线的单位取得 A* 回路名额；规划失败则顺延下一候选，已有回路（临时暂停也包括）持续占用，旧 FlowAgent 规避配置不参与预选；卡住达到脱困阈值一半（至少 12 tick）时可越限，未获名额者仍走原流场/ORCA。可选 `zeroEscape:true`：有前进意图但首次 ORCA 解近零时，固定侧向期望速度重解 ORCA，只接受有速且不明显倒退的可行解；不会直接越过 ORCA 或硬碰撞。可选 `yieldAfterTicks`：连续几乎无位移到阈值约三分之一时，先给期望速度固定侧向扰动矢量（强度 `nudgeStrength`）；仍卡到阈值才逐步同步缩小 ORCA 与 Shape 半径（下限 `minRadiusScale`、步长 `radiusStep`）；恢复前检查真实空位。硬碰撞全程生效，收缩只作最后兜底 |
+| 共享方格地图、不同体型净空 | `t2-navigation-grid` + `NavigationGrid` / `NavigationProfile{gridId,radius,goals?}` | 格角原点/行主序 blocked+cost；profile 实体 id 同时供 NavAgent.graphId 与 FlowAgent.fieldId；生成图不可达停止，旧 NavMesh 保留 |
+
+共享网格净空按**整个格子**保守扩张，半径越大、格子越粗，可通区域越少；桥宽接近单位直径时应细化网格。A* 与生成流场统一使用「出发格 cost × 直走10/斜走14」；生成字段启用 `FlowField.costAware:true`，旧流场省略时保持既有选向。接口与限制见 `docs/design/game114/engine-navigation-request.md`。
 
 ### 走位四选一（成本形状分诊·别按"哪个高级"选）
 

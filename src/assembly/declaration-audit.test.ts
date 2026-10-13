@@ -149,6 +149,9 @@ describe('相位落桶棘轮 — 非缺省相位成员点名（根因①·A1 探
 
 /** 相位基线（2026-08-16 实测灌入）。改动纪律同 SCC 基线：挪相位 = 同提交带理由更新本表。 */
 const PHASE_BASELINE: string[] = [
+  // REQ-114-NAV: capture actual velocity before Update navigation overwrites it
+  // with the preferred velocity; the ORCA oracle independently verifies this order.
+  'p-10:crowd-capture',
   'p4:rotation-apply',
   'p10:collision-resolve,collision-resolve-3d,tile-collision',
   'p14:conveyor-queue,friction,gauge,hierarchy-resolve,orbit-motion,text-binding',
@@ -194,7 +197,12 @@ const SCC_BASELINE: string[] = [
   // 不是本件的申报缺陷。**本件真有过的那个缺陷已另行治本**：首版它还 `reads:['TurnOrder']`，
   // 与 turn-order 构成真 2-环（strict 模式当场抛）；改成由 `setBarrierTurn` 推回合号后那条读边消失，
   // 2-环随之消失（`intent-barrier.test.ts` ⑦ 断言 strict 不抛 + warn 数为零 + 系统不读 TurnOrder）。
-  'p0:accel-apply+aggro+block-place+bounce-relay+card-pile+card-play-input+card-score-pass+clickable+dialogue+dice-roll+drag-place+drop-zone+event-when+flow+flow-field+grid-drag-square+grid-move+group-count+hitbox+intent-barrier+keybind+launch+match-resolve+match3-drag-swap+matrix-duel+merge-on-place+merge-proximity-clear+motion-apply+nav-follow+navmesh-bake+order-fulfill+over-time+overlap-detect+path-follow+poker-eval+pull-anchor+queue-slots+resource-apply+self-rule+state-sync+steering+string-apply+t3-slot-payout+timeline+tray+trigger-zone+turn-order+tween+zone-occupancy|via:Bounce,Clickable,Flag,HexPos,MergeEvent,NavGraph,OverTime,Overlap,PlaceBlockIntent,PlayedHand,RandomSeed,Relation,Resource,ResourceModify,RolledDice,Signal,State,Status,StringVar,Transform,Trigger,Tween,Velocity',
+  // REQ-114-NAV: independent strict bounce/crowd/motion repro fixed by explicit crowd→bounce.
+  // Remaining full-registry SCC only adds crowd to the existing blob; e.g. crowd→navmesh-bake
+  // →nav-follow→crowd inherits the pre-existing navmesh-bake↔nav-follow cycle. No new via component.
+  // 2026-10-09 圆形硬碰撞兜底：crowd 写 Shape.radius 后，全库超集已有大环增加 via:Shape。
+  // 独立复查确认成员集合不变；与 drag-place 的真实 2 环已用显式 drag-place→crowd 顺序消除。
+  'p0:accel-apply+aggro+block-place+bounce-relay+card-pile+card-play-input+card-score-pass+clickable+crowd-avoidance+dialogue+dice-roll+drag-place+drop-zone+event-when+flow+flow-field+grid-drag-square+grid-move+group-count+hitbox+intent-barrier+keybind+launch+match-resolve+match3-drag-swap+matrix-duel+merge-on-place+merge-proximity-clear+motion-apply+nav-follow+navmesh-bake+order-fulfill+over-time+overlap-detect+path-follow+poker-eval+pull-anchor+queue-slots+resource-apply+self-rule+state-sync+steering+string-apply+t3-slot-payout+timeline+tray+trigger-zone+turn-order+tween+zone-occupancy|via:Bounce,Clickable,Flag,HexPos,MergeEvent,NavGraph,OverTime,Overlap,PathFollow,PlaceBlockIntent,PlayedHand,RandomSeed,Relation,Resource,ResourceModify,RolledDice,Shape,Signal,State,Status,StringVar,Transform,Trigger,Tween,Velocity',
   'p10:collision-resolve+collision-resolve-3d+tile-collision|via:Transform,Velocity',
   'p20:anim-state+match-view-sync|via:Sprite',
   'p20:bounds-clamp+facing|via:Transform',

@@ -164,6 +164,7 @@ export interface PathFollow extends Component {
   loop?: boolean; // 闭环（跑完回到航点0）；缺省 false=停在末点
   speed: number; // 写入 Velocity 模长（单位/tick）
   arriveRadius?: number; // 进入该半径算「到达」进下一航点；缺省 4
+  lookAhead?: number; // 可选路线方向优先：沿当前线段前方此距离瞄准；越大越偏向切线，绕行后仍回收横向偏差
   index?: number; // 当前目标航点游标（运行时状态·缺省 0·序列化进 snapshot）
   queueId?: string; // 队列分组键（传送带/队列 id）；同 queueId 成员按 path 进度排序、互不超车
   minGap?: number; // 与「前一名」的最小 path 进度间距；缺省 0（仍不超车）

@@ -43,6 +43,17 @@ function orcaLinesOf(self: OrcaAgent, neighbors: readonly OrcaAgent[], timeHoriz
 }
 
 describe('orca — 移植自 RVO2（Apache-2.0）· 线性规划本体', () => {
+  it('质量优先级把避让责任互补分配：大车少偏移，小牛多让行；省略时仍对半', () => {
+    const cart: OrcaAgent = {x:0,y:0,vx:0,vy:0,radius:2.5,idx:0,priority:12};
+    const ox: OrcaAgent = {x:3,y:0,vx:0,vy:0,radius:.8,idx:1,priority:1};
+    const cartOut = orcaVelocity(cart,[ox],{x:0,y:0},1,8,1);
+    const oxOut = orcaVelocity(ox,[cart],{x:0,y:0},1,8,1);
+    expect(cartOut.x).toBeCloseTo(-.3/13,9);
+    expect(oxOut.x).toBeCloseTo(.3*12/13,9);
+    expect(oxOut.x-cartOut.x).toBeCloseTo(.3,9);
+    const equalCart = orcaVelocity({...cart,priority:undefined},[{...ox,priority:undefined}],{x:0,y:0},1,8,1);
+    expect(equalCart.x).toBeCloseTo(-.15,9);
+  });
   it('无邻居 → 原样返回期望速度（避让不该无中生有地改路）', () => {
     const out = orcaVelocity(agent(0, 0), [], { x: 1, y: 0 }, 1, 2, 1);
     expect(out).toMatchObject({ x: 1, y: 0 });

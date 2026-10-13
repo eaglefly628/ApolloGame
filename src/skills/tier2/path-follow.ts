@@ -4,6 +4,7 @@ import type { IWorld } from '@engine/core/types.js';
 import type { PathFollow, Transform, Velocity, SpawnRequest, DestroyRequest } from '@engine/protocol/components.js';
 import { cmpStr } from '@engine/math/scalar.js';
 import { len as vecLen } from '@engine/math/vec2.js';
+import { findDebugTrace, appendTrace } from '../debug-trace.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  path-follow —— 固定航点轨道匀速跑（REQ-PATHFOLLOW）。实体沿一条摆好的航点轨道（闭环或折线）依次
@@ -47,6 +48,7 @@ export function pathFollowAt(
   opts?: {
     loop?: boolean;
     arriveRadius?: number;
+    lookAhead?: number;
     queueId?: string;
     minGap?: number;
     onEnd?: { dropTemplate?: string; destroy?: boolean };
@@ -58,6 +60,7 @@ export function pathFollowAt(
     index: 0,
     ...(opts?.loop !== undefined ? { loop: opts.loop } : {}),
     ...(opts?.arriveRadius !== undefined ? { arriveRadius: opts.arriveRadius } : {}),
+    ...(opts?.lookAhead !== undefined ? { lookAhead: opts.lookAhead } : {}),
     ...(opts?.queueId !== undefined ? { queueId: opts.queueId } : {}),
     ...(opts?.minGap !== undefined ? { minGap: opts.minGap } : {}),
     ...(opts?.onEnd !== undefined ? { onEnd: opts.onEnd } : {}),
@@ -99,6 +102,7 @@ export const pathFollowCapability = defineCapability({
           loop: { type: 'boolean', describe: '闭环：跑完末航点回到航点0；缺省 false=停在末点' },
           speed: { type: 'number', describe: '移动速度（写入 Velocity 模长，单位/tick）' },
           arriveRadius: { type: 'number', describe: '进入该半径算「到达」当前航点、游标前进；缺省 4' },
+          lookAhead: { type: 'number', describe: '可选正数：沿当前线段前方此距离产生期望方向，优先保持路线切向；越大横向回收越缓。默认仍直奔航点' },
           index: { type: 'number', describe: '当前目标航点游标（运行时状态·缺省 0·随 snapshot 存读）' },
           queueId: { type: 'string', describe: '队列分组键：同 queueId 成员按 path 进度排序、互不超车（缺省不分组=不受限）' },
           minGap: { type: 'number', describe: '与「前一名」的最小 path 进度间距（仅 queueId 设了才生效）；缺省 0' },
@@ -129,6 +133,9 @@ export const pathFollowCapability = defineCapability({
       consumes: [],
       execute(world: IWorld) {
         const ids = sortedIds(world, 'PathFollow', 'Transform');
+        const trace = findDebugTrace(world);
+        const invalidLookAhead: string[] = [];
+        const guided: string[] = [];
         // REQ-CONVEYOR-CAP M1：queueId 成员本 tick 的「起点 path 进度」（clamp 用，见文件头注释）——
         // 用本 tick **移动前**的 index/剩余距离算，故所有成员的界都基于同一时间切片，无处理序依赖。
         const queued: { id: string; queueId: string; minGap: number; progress: number }[] = [];
@@ -143,6 +150,11 @@ export const pathFollowCapability = defineCapability({
           }
 
           const wps = pf.waypoints;
+          if (pf.lookAhead !== undefined && (!Number.isFinite(pf.lookAhead) || pf.lookAhead <= 0)) {
+            v.vx = 0; v.vy = 0;
+            if (trace) invalidLookAhead.push(id);
+            continue;
+          }
           if (wps.length === 0) {
             v.vx = 0;
             v.vy = 0;
@@ -159,7 +171,13 @@ export const pathFollowCapability = defineCapability({
           let d = vecLen(dx, dy);
 
           const arrive = pf.arriveRadius ?? 4;
-          if (d <= arrive) {
+          const lookAhead = pf.lookAhead;
+          const previous = i > 0 ? wps[i - 1] : pf.loop ? wps[len - 1] : undefined;
+          const sx = previous ? wp.x - previous.x : 0;
+          const sy = previous ? wp.y - previous.y : 0;
+          const segmentLength = vecLen(sx, sy);
+          const along = previous && segmentLength > 0 ? ((t.x - previous.x) * sx + (t.y - previous.y) * sy) / segmentLength : -Infinity;
+          if (d <= arrive || (lookAhead !== undefined && (pf.loop || i < len - 1) && segmentLength > 0 && along >= segmentLength - arrive)) {
             // 到达当前航点：游标前进（loop 回到 0 / 非 loop 钉死在末点），本 tick 就朝新航点走（不空转一拍）。
             i = pf.loop ? (i + 1) % len : Math.min(i + 1, len - 1);
             pf.index = i;
@@ -168,6 +186,8 @@ export const pathFollowCapability = defineCapability({
             dy = wp.y - t.y;
             d = vecLen(dx, dy);
           }
+
+          const remainingToWaypoint = d;
 
           // onEnd（REQ-PATHEND-DROP）：非 loop 且游标已在末航点、本 tick 在 arriveRadius 内 → 触发一次
           // （到达当帧与此后每帧原地停靠都满足此条件，靠 `ended` 守卫保证只触发一次——见文件头「第一坑」注释）。
@@ -190,6 +210,21 @@ export const pathFollowCapability = defineCapability({
             }
           }
 
+          if (lookAhead !== undefined && (pf.loop || i > 0)) {
+            const start = i > 0 ? wps[i - 1] : wps[len - 1];
+            const ex = wp.x - start.x, ey = wp.y - start.y;
+            const length = vecLen(ex, ey);
+            if (length > 0) {
+              const tx = ex / length, ty = ey / length;
+              const progress = Math.max(0, (t.x - start.x) * tx + (t.y - start.y) * ty);
+              if (pf.loop || i < len - 1 || progress < length - arrive) {
+                dx = start.x + tx * (progress + lookAhead) - t.x;
+                dy = start.y + ty * (progress + lookAhead) - t.y;
+                d = vecLen(dx, dy);
+              }
+            }
+          }
+
           if (d > 0) {
             v.vx = (dx / d) * pf.speed;
             v.vy = (dy / d) * pf.speed;
@@ -198,9 +233,10 @@ export const pathFollowCapability = defineCapability({
             v.vx = 0;
             v.vy = 0;
           }
+          if (trace && lookAhead !== undefined) guided.push(id);
 
           if (pf.queueId !== undefined) {
-            queued.push({ id, queueId: pf.queueId, minGap: pf.minGap ?? 0, progress: pathProgress(wps, i, d) });
+            queued.push({ id, queueId: pf.queueId, minGap: pf.minGap ?? 0, progress: pathProgress(wps, i, remainingToWaypoint) });
           }
         }
 
@@ -228,6 +264,12 @@ export const pathFollowCapability = defineCapability({
             }
           }
         }
+        if (invalidLookAhead.length) appendTrace(trace, world.getVersion(), 'path-follow', 'reject', `非法 lookAhead ${invalidLookAhead.join(',')}`);
+        if (guided.length) appendTrace(trace, world.getVersion(), 'path-follow', 'commit', `路线方向速度 ${guided.map(id => {
+          const cfg = world.getComponent<PathFollow>(id, 'PathFollow')!;
+          const v = world.getComponent<Velocity>(id, 'Velocity')!;
+          return `${id}:${cfg.index}:L${cfg.lookAhead}:${v.vx},${v.vy}`;
+        }).join(';')}`);
       },
     },
   ],

@@ -93,6 +93,8 @@ export const CAPABILITY_LOADERS: readonly CapabilityLoader[] = [
   { id: 't2-orbit-motion', provides: ['Orbit'], load: () => import('@skills/tier2/orbit-motion.js').then((m) => m.orbitMotionCapability) },
   { id: 't2-path-follow', provides: ['PathFollow'], load: () => import('@skills/tier2/path-follow.js').then((m) => m.pathFollowCapability) },
   { id: 't2-flow-field', provides: ['FlowField', 'FlowAgent'], load: () => import('@skills/tier2/flow-field.js').then((m) => m.flowFieldCapability) },
+  { id: 't2-crowd-avoidance', provides: ['CrowdAvoidance', 'CrowdVelocity'], load: () => import('@skills/tier2/crowd-avoidance.js').then((m) => m.crowdAvoidanceCapability) },
+  { id: 't2-navigation-grid', provides: ['NavigationGrid', 'NavigationProfile'], load: () => import('@skills/tier2/navigation-grid.js').then((m) => m.navigationGridCapability) },
   { id: 't2-stat-bind', provides: ['StatBind'], load: () => import('@skills/tier2/stat-bind.js').then((m) => m.statBindCapability) },
   { id: 't2-bounce-relay', provides: ['Bounce'], load: () => import('@skills/tier2/bounce-relay.js').then((m) => m.bounceRelayCapability) },
   { id: 't2-pull-anchor', provides: ['PullAnchor'], load: () => import('@skills/tier2/pull-anchor.js').then((m) => m.pullAnchorCapability) },

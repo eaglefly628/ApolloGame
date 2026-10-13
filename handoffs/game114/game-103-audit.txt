@@ -1,0 +1,32 @@
+
+══ 游戏能力接入审计 ══
+
+game      代码行     测试文件     能力导入源      World/manifest 旗标
+game-103  1800    1        4          5              🔵 引擎同形手写×7（批注覆盖）  🟡 无美术台账(art-pipeline.md 编译期三行接入)  ⚠ 墙钟×1
+
+── game-103 明细 ──
+  · 🔴 引擎同形手写（localStorage 直读写→persist/local-store · GameLog→tier1/event-log · recordScore→persist/leaderboard · Math.imul→atoms/random）:
+      games/game-103/achievements.ts:43
+      games/game-103/achievements.ts:52
+      games/game-103/game-103.ts:19
+      games/game-103/game-103.ts:166
+      games/game-103/leaderboard.ts:17
+      games/game-103/leaderboard.ts:29
+      games/game-103/leaderboard.ts:38
+  · ⚠ 墙钟 Date.now/performance.now（sim 面应走 tick/引擎时钟·先建议档不阻断）:
+      games/game-103/game-103.ts:165
+  · 能力导入源: @zerocraft/engine/atom-skills/index.js, skills/tier1/index.js, skills/tier2/index.js, skills/tier3/index.js
+
+── 分层汇总 ──
+  🔴 未覆盖红旗: 无
+  🔵 批注覆盖红旗（Lead 批注·仍显示不红判·C 件下沉后归零撤批注）: game-103(引擎同形手写×7)
+  🟡 缺失防线: 无
+  ⚠ 建议(非判词): game-103(墙钟×1)
+
+AUDIT: WARNINGS
+
+── 红旗棘轮（对比基线 scripts/audit-baseline.json·只降不升·豁免须 Lead 批注）──
+  🔵 批注覆盖（Lead 已批·不红判·C 件下沉后应归零并撤 approvedBy）:
+      game-103: 引擎同形手写×7
+
+RATCHET: PASS

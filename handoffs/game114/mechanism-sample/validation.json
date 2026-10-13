@@ -1,0 +1,35 @@
+{
+  "animations": [
+    "wheel-1.83z-1.42",
+    "wheel-1.83z1.42",
+    "wheel1.83z-1.42",
+    "wheel1.83z1.42",
+    "bow-1.35",
+    "bow1.35",
+    "catapult"
+  ],
+  "turtle": {
+    "meshes": 46,
+    "bytes": 216060
+  },
+  "house": {
+    "meshes": 6,
+    "bytes": 116592
+  },
+  "tree": {
+    "meshes": 2,
+    "bytes": 5108
+  },
+  "rock": {
+    "meshes": 1,
+    "bytes": 4776
+  },
+  "ox": {
+    "meshes": 9,
+    "bytes": 127432
+  },
+  "pickup": {
+    "meshes": 2,
+    "bytes": 110960
+  }
+}
