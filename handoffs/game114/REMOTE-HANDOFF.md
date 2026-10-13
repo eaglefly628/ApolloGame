@@ -19,3 +19,7 @@ npm run dev
 原始交接中的 `engine-review/` 是旧引擎仓库快照，当前样例已直接引用本仓库引擎，故上传包不重复收录该 120 MB 快照；`transfer-manifest.json` 和 `TRANSFER-RESULT.md` 仍是 2026-10-09 本机原始交接的历史记录，不是本次远程文件清单。`node_modules` 与 `dist` 为可重建产物，也不收录。
 
 本次提供的是移动、避让与密度演示；攻击、伤害及吞噬规则尚未实现。性能记录为无渲染模拟时间，不等同另一台机器的浏览器帧率。
+
+## Codex 分支验证状态
+
+本次 game114 接入在 `codex/mainbranch` 基线上通过 TypeScript 检查、根项目构建与 123 个导航/场景专项用例；交接 demo 的构建及导航、压力、64/128 单位验证也通过。全库测试为 5653 通过、1 失败、1 个空测试文件；失败来自该分支已有的 `games/game113/guide-art.ts` 相对路径跨界导入，空文件为 `tools/spritegen-export.test.mjs`。该跨界导入同时令 `scoped-gate --base origin/codex/mainbranch --run` 在 depcruise 步停止。两处均在本次 game114 提交前的 Codex 分支，未混入本轮 game113/spritegen 改动。此前同一份 game114 接入在 `claude/mainbranch` 基线上通过完整门禁（5586 个测试）。
