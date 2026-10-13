@@ -1,0 +1,36 @@
+{
+  "turtle": {
+    "bytes": 216060,
+    "triangles": 894,
+    "clips": [
+      "mechanical-loop"
+    ]
+  },
+  "house": {
+    "bytes": 116592,
+    "triangles": 68,
+    "clips": []
+  },
+  "tree": {
+    "bytes": 5108,
+    "triangles": 32,
+    "clips": []
+  },
+  "rock": {
+    "bytes": 4776,
+    "triangles": 36,
+    "clips": []
+  },
+  "ox": {
+    "bytes": 126884,
+    "triangles": 108,
+    "clips": [
+      "walk"
+    ]
+  },
+  "pickup": {
+    "bytes": 110960,
+    "triangles": 48,
+    "clips": []
+  }
+}

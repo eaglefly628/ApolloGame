@@ -89,6 +89,7 @@ export const flowFieldCapability = defineCapability({
           blocked: { type: 'string', describe: '行主序 0/1 数组·1=不可走（缺省全可走）' },
           cost: { type: 'string', describe: '行主序 ≥1 的地形代价（缺省全 1·公路 1/沼泽 3·非整数向上取整）' },
           goals: { type: 'string', describe: '目标点世界坐标数组 [{x,y}…]·多源一次铺完' },
+          costAware: { type: 'boolean', describe: '可选：方向最小化源格步进代价+邻格积分，与共享网格 A* 同一代价；缺省保持旧行为' },
           los: { type: 'string', describe: '视线直指优化（M2 未实现·M1 忽略并留痕）' },
         },
       },

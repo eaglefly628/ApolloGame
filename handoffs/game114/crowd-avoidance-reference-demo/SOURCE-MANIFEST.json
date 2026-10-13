@@ -1,0 +1,1421 @@
+{
+  "source": "ApolloGame working tree",
+  "exportDate": "2026-10-12",
+  "files": [
+    {
+      "path": "demo/build-models.mjs",
+      "origin": "handoffs/game114/mechanism-sample/build-models.mjs",
+      "sha256": "d57e3914537a51bd3153963889bc2375b0bd67ac171e9019d25fc485bd901b2b"
+    },
+    {
+      "path": "demo/build-textures.py",
+      "origin": "handoffs/game114/mechanism-sample/build-textures.py",
+      "sha256": "0d668e4332768a2893b6a7deb914f580a74845696a5034de2f8969184323900d"
+    },
+    {
+      "path": "demo/controls-ui.ts",
+      "origin": "handoffs/game114/mechanism-sample/controls-ui.ts",
+      "sha256": "d0ef4702c2c599779f1e79aa49064385887ce39298ceca9690020c6a5673e1eb"
+    },
+    {
+      "path": "demo/flow-debug-view.ts",
+      "origin": "handoffs/game114/mechanism-sample/flow-debug-view.ts",
+      "sha256": "9b150d8ea29f57c112cd44eefb0c1160e3ef47c3d9b9dd1fe23bb0997c71c7cd"
+    },
+    {
+      "path": "demo/index.html",
+      "origin": "handoffs/game114/mechanism-sample/index.html",
+      "sha256": "2d3a6b2139cf2c1120518ecf9303f981625667cfa321445491e94cd8d5ac7220"
+    },
+    {
+      "path": "demo/main.ts",
+      "origin": "handoffs/game114/mechanism-sample/main.ts",
+      "sha256": "5e7def055903291c275621cc74e8f1a3eaadfce6923cb7534796e7f980e65f0b"
+    },
+    {
+      "path": "demo/navigation-tuning-results.json",
+      "origin": "handoffs/game114/mechanism-sample/navigation-tuning-results.json",
+      "sha256": "8ee3870fe8e11cc322704c8cc6bf7995ebffa86515df55a07bc1e2e8954c3d52"
+    },
+    {
+      "path": "demo/navigation-verification.json",
+      "origin": "handoffs/game114/mechanism-sample/navigation-verification.json",
+      "sha256": "0e989472eabf59f776778dfa812b021f0dd2cd02c61e97af6709bf0baf199a21"
+    },
+    {
+      "path": "demo/navigation.json",
+      "origin": "handoffs/game114/mechanism-sample/navigation.json",
+      "sha256": "e9b1e33a60642ea811d870679146a2a35c973368114ece309e74aa2691993afc"
+    },
+    {
+      "path": "demo/public/models/house.glb",
+      "origin": "handoffs/game114/mechanism-sample/public/models/house.glb",
+      "sha256": "e1a591d846db5bf2e8eeedc2c942131820cac6aca77fac144dc2e6cbd7def190"
+    },
+    {
+      "path": "demo/public/models/ox.glb",
+      "origin": "handoffs/game114/mechanism-sample/public/models/ox.glb",
+      "sha256": "35fdaee1de6a7728e42684160bd50e088f96f483457f529e4ef1a1eead2dbab8"
+    },
+    {
+      "path": "demo/public/models/pickup.glb",
+      "origin": "handoffs/game114/mechanism-sample/public/models/pickup.glb",
+      "sha256": "6ab2ab114ac09cd4edd5f985448ce1ffa3b92b5e2d0ac157f81f4596500033e5"
+    },
+    {
+      "path": "demo/public/models/rock.glb",
+      "origin": "handoffs/game114/mechanism-sample/public/models/rock.glb",
+      "sha256": "034ac11a3c3ecd37e56da2490db27b30b0a4133e10341d07bb7fc8ebaa42ea1a"
+    },
+    {
+      "path": "demo/public/models/tree.glb",
+      "origin": "handoffs/game114/mechanism-sample/public/models/tree.glb",
+      "sha256": "8611f4f79f2e90b9cfac1ac1923618387d987e1d8955acec4901b0ad8cf58f08"
+    },
+    {
+      "path": "demo/public/models/turtle.glb",
+      "origin": "handoffs/game114/mechanism-sample/public/models/turtle.glb",
+      "sha256": "e30294333b094cbbaf604d49874b343f38420498cbc0e2de494c48630bf057a6"
+    },
+    {
+      "path": "demo/public/textures/grass.png",
+      "origin": "handoffs/game114/mechanism-sample/public/textures/grass.png",
+      "sha256": "1ccb230ae716e3f6f8d4b0bbc0e09d6fe700f298cd4316ef4d6759e90686f4be"
+    },
+    {
+      "path": "demo/public/textures/wood-grain.png",
+      "origin": "handoffs/game114/mechanism-sample/public/textures/wood-grain.png",
+      "sha256": "ecdd6590ab053e67d7c2956a15872f4f090ccde5a7557b73126032293f3bf0f8"
+    },
+    {
+      "path": "demo/scenario-controls.test.ts",
+      "origin": "handoffs/game114/mechanism-sample/scenario-controls.test.ts",
+      "sha256": "909ef5403898190f6640dac768045d22138caa94fef0a3e28b4fa52aec2da7a7"
+    },
+    {
+      "path": "demo/scenario-controls.ts",
+      "origin": "handoffs/game114/mechanism-sample/scenario-controls.ts",
+      "sha256": "43393370f7d66d3a0d26c282ae9e8f29d055663e28c99d8e7daa66dea13ee054"
+    },
+    {
+      "path": "demo/scene.ts",
+      "origin": "handoffs/game114/mechanism-sample/scene.ts",
+      "sha256": "5c3bcdd1a30a0fdc829ef3709d4e8350dd3301b6af64f9cc41e62585d31b7b0f"
+    },
+    {
+      "path": "demo/stress-verification.json",
+      "origin": "handoffs/game114/mechanism-sample/stress-verification.json",
+      "sha256": "12aaa23b25b9d639178e7719e2f1ee8ce7ab570baf82c67ec48ed139857cfce5"
+    },
+    {
+      "path": "demo/tune-navigation.ts",
+      "origin": "handoffs/game114/mechanism-sample/tune-navigation.ts",
+      "sha256": "760d5210359467ca995408be8341954fde8cacd0a3296653fe9f766e51a4dea9"
+    },
+    {
+      "path": "demo/tuning-candidates-16.json",
+      "origin": "handoffs/game114/mechanism-sample/tuning-candidates-16.json",
+      "sha256": "76b772721ffe61d662477c15bab321434e9ffa00f558d80a44e047590fd7cb95"
+    },
+    {
+      "path": "demo/tuning-candidates-32.json",
+      "origin": "handoffs/game114/mechanism-sample/tuning-candidates-32.json",
+      "sha256": "972c835236470bff5937d3e4c85e27d9531f0cb1c9941578ea7d5a720c1b141c"
+    },
+    {
+      "path": "demo/verify-models.mjs",
+      "origin": "handoffs/game114/mechanism-sample/verify-models.mjs",
+      "sha256": "bef5bc8cbdda9ed0f270238a6a4f3a413493e32fa2a5553c040d491b2f70f4bb"
+    },
+    {
+      "path": "demo/verify-navigation.ts",
+      "origin": "handoffs/game114/mechanism-sample/verify-navigation.ts",
+      "sha256": "2c2d91a86f92ef0ee65976b2e9b6af5b626338608b2977d1e2233b09b076a0b9"
+    },
+    {
+      "path": "demo/verify-stress.ts",
+      "origin": "handoffs/game114/mechanism-sample/verify-stress.ts",
+      "sha256": "fe984f189caf6ee53c33e55599123faf8ae8268c987a4a0c72edee4065d8b674"
+    },
+    {
+      "path": "licenses/Apache-2.0.txt",
+      "origin": "licenses/Apache-2.0.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "src/assembly/component-map.ts",
+      "origin": "src/assembly/component-map.ts",
+      "sha256": "da412d462abfdb75242f18fab7af8321cb2b1975186c862058e7e8aaceb6da83"
+    },
+    {
+      "path": "src/assembly/component-universe.gen.ts",
+      "origin": "src/assembly/component-universe.gen.ts",
+      "sha256": "2e8cc23abe1c281dde16cf21081f9ed58d693df81fd667006b4f66fb0afc5b9f"
+    },
+    {
+      "path": "src/assembly/demo.assembly.ts",
+      "origin": "src/assembly/demo.assembly.ts",
+      "sha256": "9f6c770ab00b751180c331905829ccf7e007b2c51778895665479c3be3be7c9a"
+    },
+    {
+      "path": "src/assets/artlib-tags.ts",
+      "origin": "src/assets/artlib-tags.ts",
+      "sha256": "ff4aabd07f8aa81f6b771e614be760064e3e660dfc0aa3d1551fd90a63cf8385"
+    },
+    {
+      "path": "src/assets/artlib.ts",
+      "origin": "src/assets/artlib.ts",
+      "sha256": "3f82c1095ba126d65d869778d248b26ebff684cce12e00c3c4313de0b8359a28"
+    },
+    {
+      "path": "src/assets/asset-index.ts",
+      "origin": "src/assets/asset-index.ts",
+      "sha256": "ed9daa04fef8c2a00e80e350884ec05d386806753364bd31c9bef39f143a2f86"
+    },
+    {
+      "path": "src/assets/asset-manager.ts",
+      "origin": "src/assets/asset-manager.ts",
+      "sha256": "2cc71c024ec69ee22eba35e54a45dd419728eb6e61b0c81f0a8428ce5e056a20"
+    },
+    {
+      "path": "src/assets/asset-types.ts",
+      "origin": "src/assets/asset-types.ts",
+      "sha256": "4d4a521f640d9e3cb0a30c6275948eb966002c43cd788f84d164ec881bf2eea6"
+    },
+    {
+      "path": "src/assets/game-art-load.ts",
+      "origin": "src/assets/game-art-load.ts",
+      "sha256": "5172245d61f6493051ee754dfb07676af8c84de98dbc7240d4e9f26ab9da4132"
+    },
+    {
+      "path": "src/assets/image-loader.ts",
+      "origin": "src/assets/image-loader.ts",
+      "sha256": "accc065adec34a18ff818c1be2509752a1e0a7065625bfc165f38ef8a890bbe8"
+    },
+    {
+      "path": "src/assets/import/normalize.ts",
+      "origin": "src/assets/import/normalize.ts",
+      "sha256": "d27e04278e82288b7e6c9ac7bc7280150ed590b0d8f2aff3dc180957ba774785"
+    },
+    {
+      "path": "src/assets/import/profile.ts",
+      "origin": "src/assets/import/profile.ts",
+      "sha256": "8e75433b246e86c4cc12ead0df20474230c6a7c69ff9f91c1fa88b6ebf04d08e"
+    },
+    {
+      "path": "src/assets/import/slice.ts",
+      "origin": "src/assets/import/slice.ts",
+      "sha256": "02eaa944fe8416e7df08ab8a5f572ea5754d1c6b8b9940bd14c631c0333960a1"
+    },
+    {
+      "path": "src/assets/import/sniff.ts",
+      "origin": "src/assets/import/sniff.ts",
+      "sha256": "c10571b71ba383749b2810053e6b235b155114207a10a9004bf9bda33f4398b8"
+    },
+    {
+      "path": "src/assets/index.ts",
+      "origin": "src/assets/index.ts",
+      "sha256": "e08b752fd216a7a112f645aadff0eace7a4a6559c62ba34d0eef71cb491dab1c"
+    },
+    {
+      "path": "src/assets/library.ts",
+      "origin": "src/assets/library.ts",
+      "sha256": "87594dc02a67dc145bbf1cc21304a892ccf4a9dd01e142d4a15c671a3bb8d05f"
+    },
+    {
+      "path": "src/assets/model-loader.ts",
+      "origin": "src/assets/model-loader.ts",
+      "sha256": "2465846c829946bb56459ecfea2ced6fe3b603988ae7c65d36394c051d8166cd"
+    },
+    {
+      "path": "src/assets/pack-atlas.ts",
+      "origin": "src/assets/pack-atlas.ts",
+      "sha256": "ce8df43df39eaf444feb49719813d4beb1346cdb32242732c3a8fab8717d54be"
+    },
+    {
+      "path": "src/assets/pbr-materials.ts",
+      "origin": "src/assets/pbr-materials.ts",
+      "sha256": "3e7a4eddd63545e892a25cc4b718f438fcbeb883b1c838dad729d97207c87c5f"
+    },
+    {
+      "path": "src/assets/texture-generators.ts",
+      "origin": "src/assets/texture-generators.ts",
+      "sha256": "e785b26c46c10e0fb2607320198f49b522937d53db41781d23d8cb055013b327"
+    },
+    {
+      "path": "src/engine/core/define-capability.ts",
+      "origin": "src/engine/core/define-capability.ts",
+      "sha256": "c63e3a509a09b2fc6086e544c72707980debfde17317d6575a79f731dd28ec0a"
+    },
+    {
+      "path": "src/engine/core/define-component.ts",
+      "origin": "src/engine/core/define-component.ts",
+      "sha256": "08607f38af0e35c4581e34f49f0d89d0a78ac647c149a1a2fb6834154283f73e"
+    },
+    {
+      "path": "src/engine/core/define-system.ts",
+      "origin": "src/engine/core/define-system.ts",
+      "sha256": "ba231bdc7ce1a7d29f7e80cfc012ae999b0c3d5d08c3fed097b18063ffba9402"
+    },
+    {
+      "path": "src/engine/core/query.ts",
+      "origin": "src/engine/core/query.ts",
+      "sha256": "6ce70d682dadfb33e811d6528d03db329e4701f5966adf3289c49767cfdec4a4"
+    },
+    {
+      "path": "src/engine/core/schema.ts",
+      "origin": "src/engine/core/schema.ts",
+      "sha256": "47767ae4ff676965d3d0b59cbdf9df42aeb25018441552f760d9a33a028d1eb5"
+    },
+    {
+      "path": "src/engine/core/system-view.ts",
+      "origin": "src/engine/core/system-view.ts",
+      "sha256": "e10332ad6970eaab8a6c6dfe1a57801a2747621bb93bfba3211ecedefce997a6"
+    },
+    {
+      "path": "src/engine/core/topological-sort.ts",
+      "origin": "src/engine/core/topological-sort.ts",
+      "sha256": "7e2be3e8c7bc6d8991374e5076ca706d1a330f52693d25624e0d7e7591b38540"
+    },
+    {
+      "path": "src/engine/core/types.ts",
+      "origin": "src/engine/core/types.ts",
+      "sha256": "cf7922e9b1bdff7092abdbf7e6665508ff0fa60616541e26cde9ec0754f0882c"
+    },
+    {
+      "path": "src/engine/core/world.ts",
+      "origin": "src/engine/core/world.ts",
+      "sha256": "a93dd1e031e520c54fa595157412aa1f9985d85b86d89dc725cacaf50dc41c21"
+    },
+    {
+      "path": "src/engine/logic/index.ts",
+      "origin": "src/engine/logic/index.ts",
+      "sha256": "3c017e2ce8b141247484ab0210d65460806d954f5ee37a8a6c10270f9f5d5705"
+    },
+    {
+      "path": "src/engine/math/ease.ts",
+      "origin": "src/engine/math/ease.ts",
+      "sha256": "f178983fe023aa1d373909e1500bdd98457470890564466fe426b3bbe96076ed"
+    },
+    {
+      "path": "src/engine/math/grid.ts",
+      "origin": "src/engine/math/grid.ts",
+      "sha256": "9be405d0128e5f833fbb2f339f4c2b1961532b273335bf4f74a422cabb3c1cdf"
+    },
+    {
+      "path": "src/engine/math/hash.ts",
+      "origin": "src/engine/math/hash.ts",
+      "sha256": "0f66a4d17378d928ab78736bfa06f07dd36c2f07b6de3cd195a563a7d4110556"
+    },
+    {
+      "path": "src/engine/math/scalar.ts",
+      "origin": "src/engine/math/scalar.ts",
+      "sha256": "74daffa47bf31524648eefe313ae08ca08fa7970619c84e63fd5f7e9f3766842"
+    },
+    {
+      "path": "src/engine/math/tick.ts",
+      "origin": "src/engine/math/tick.ts",
+      "sha256": "c57a06cdc3f0eff13b9cd1cee3d4c44862ecb30d383243611c4e6da10f47a806"
+    },
+    {
+      "path": "src/engine/math/vec2.ts",
+      "origin": "src/engine/math/vec2.ts",
+      "sha256": "7210b0d891612ea680711b2f0ad6b70ce0ed99bf1ea52b8d62dc3a8e6cfcb636"
+    },
+    {
+      "path": "src/engine/protocol/agent.ts",
+      "origin": "src/engine/protocol/agent.ts",
+      "sha256": "0a2e727631e9c505f5dd1ee2a73a2ab5e9a70f2f5239b62161b0907d86db3adb"
+    },
+    {
+      "path": "src/engine/protocol/camera-view.ts",
+      "origin": "src/engine/protocol/camera-view.ts",
+      "sha256": "13115530aa220d9de343722c21aede6b7b69d298eafb854deb29fc1f88ac5289"
+    },
+    {
+      "path": "src/engine/protocol/components.ts",
+      "origin": "src/engine/protocol/components.ts",
+      "sha256": "9b6946480e2640c7238e96b4246a53b2040a0f71beb1020688fec5bcd4797ffb"
+    },
+    {
+      "path": "src/engine/protocol/components/autochess.ts",
+      "origin": "src/engine/protocol/components/autochess.ts",
+      "sha256": "4389b4e866811259917382ba7fc7e62136d6a096718e766e0edfb0e9a61af9a7"
+    },
+    {
+      "path": "src/engine/protocol/components/cardboard.ts",
+      "origin": "src/engine/protocol/components/cardboard.ts",
+      "sha256": "b467a8932c89e402edc844225e054452f66bdd9a982508b31fdea43ca776770b"
+    },
+    {
+      "path": "src/engine/protocol/components/combat.ts",
+      "origin": "src/engine/protocol/components/combat.ts",
+      "sha256": "1464dd55e8dbde080f36859b7b316b8d112b05b1dbc5e4d2f1a66e500627dc76"
+    },
+    {
+      "path": "src/engine/protocol/components/crowd.ts",
+      "origin": "src/engine/protocol/components/crowd.ts",
+      "sha256": "8b12381cfe0cc716037fd79babf4d6bc3899ac19a78b949fbde49f87a972ece0"
+    },
+    {
+      "path": "src/engine/protocol/components/input.ts",
+      "origin": "src/engine/protocol/components/input.ts",
+      "sha256": "90e0b4f0d95e916c2fa66508caacc4e7da9151a81e2c8d2a90d0ac84bad488cb"
+    },
+    {
+      "path": "src/engine/protocol/components/logic.ts",
+      "origin": "src/engine/protocol/components/logic.ts",
+      "sha256": "8868a5f4e7f38883ea23ca65dbddb09939a6f5bc6d4649fd3de3460e2e5ca71e"
+    },
+    {
+      "path": "src/engine/protocol/components/navigation-grid.ts",
+      "origin": "src/engine/protocol/components/navigation-grid.ts",
+      "sha256": "db036022fb1b1bdd4ad528a70a30e525ead5392e3b301e791dace2f50c9169e2"
+    },
+    {
+      "path": "src/engine/protocol/components/render.ts",
+      "origin": "src/engine/protocol/components/render.ts",
+      "sha256": "670b84206c0001ecbf45a69d5a2e1600b644fdd69f068e2a1c42c247fd2d15fb"
+    },
+    {
+      "path": "src/engine/protocol/components/spatial.ts",
+      "origin": "src/engine/protocol/components/spatial.ts",
+      "sha256": "08c695d43bc8ec51c368e52ad6f2f8936915d953aa40d98818477f8122cef952"
+    },
+    {
+      "path": "src/engine/protocol/components/spawn.ts",
+      "origin": "src/engine/protocol/components/spawn.ts",
+      "sha256": "6f53daa62d3970b39948e29c7aad6d5dfac11a9ba78d474f2db000b224397d21"
+    },
+    {
+      "path": "src/engine/protocol/schemas/logic.ts",
+      "origin": "src/engine/protocol/schemas/logic.ts",
+      "sha256": "58c5019edbab6864712dc52284205e3395235dc788ed76eae8d8f2990d2c2b8b"
+    },
+    {
+      "path": "src/engine/spatial/aabb-tree.ts",
+      "origin": "src/engine/spatial/aabb-tree.ts",
+      "sha256": "e3be61b2dfa0fedc24f21cc066951ad044b8d2baebdc19760f7c1eb76f46fa38"
+    },
+    {
+      "path": "src/engine/spatial/astar.ts",
+      "origin": "src/engine/spatial/astar.ts",
+      "sha256": "a99f7ac5b9cc5e62cd5cc84bde6c115fe9e8ef760f20e513b15e2ec164dbad06"
+    },
+    {
+      "path": "src/engine/spatial/contact.ts",
+      "origin": "src/engine/spatial/contact.ts",
+      "sha256": "d23cebe1444276dca7eb14827d1c47e1e2ab743b93e483f301fdd2869ef4b496"
+    },
+    {
+      "path": "src/engine/spatial/contact3d.ts",
+      "origin": "src/engine/spatial/contact3d.ts",
+      "sha256": "24a6d58f450fb49725e005655d3753c7884c80abe4a27a5deccf361fdd2dd3ab"
+    },
+    {
+      "path": "src/engine/spatial/navmesh.ts",
+      "origin": "src/engine/spatial/navmesh.ts",
+      "sha256": "9276041e0d8f539c01825b221858faaa5597a8a287d90be2aaf118d9b23ffe2c"
+    },
+    {
+      "path": "src/engine/spatial/sat3d.ts",
+      "origin": "src/engine/spatial/sat3d.ts",
+      "sha256": "d46146e8fac986f321c66308358df567c163a0434e928177ee518c9c33584be4"
+    },
+    {
+      "path": "src/net/commands.ts",
+      "origin": "src/net/commands.ts",
+      "sha256": "55f1a288f43764a01daa571ff6f85e5ebf8a9ddc4306358603ee6f685c8dde78"
+    },
+    {
+      "path": "src/net/determinism.ts",
+      "origin": "src/net/determinism.ts",
+      "sha256": "402534baad675c1ea805949f3a82c56ceedf3b69e67ffc4b7e230836e794f9df"
+    },
+    {
+      "path": "src/net/fixed-step.ts",
+      "origin": "src/net/fixed-step.ts",
+      "sha256": "a8113bfe770884f234a1dc633744aa5da82c7432346c7795476a116cfb8fc3da"
+    },
+    {
+      "path": "src/net/world-hash.ts",
+      "origin": "src/net/world-hash.ts",
+      "sha256": "a3ce327f225c1ef9c0d8ec1139f690ece2d916ee372f7ee0e78e2791df084855"
+    },
+    {
+      "path": "src/renderer/renderable.ts",
+      "origin": "src/renderer/renderable.ts",
+      "sha256": "bcbdedec64e75e6b66a58d487a8ce990f079dbfeb908508e8fbbc62aef94b0fa"
+    },
+    {
+      "path": "src/renderer/three-projection.ts",
+      "origin": "src/renderer/three-projection.ts",
+      "sha256": "c3b8d14186919b73d0e28f8c6fc9c9f82371ea9fc5c643ae92014d8b1f26fbaf"
+    },
+    {
+      "path": "src/renderer/three-renderer.ts",
+      "origin": "src/renderer/three-renderer.ts",
+      "sha256": "a379269574faf1b1dbf9e4f8bf8cfae772f766ecdb70918e7ba2855de47aeedd"
+    },
+    {
+      "path": "src/renderer/three/anim3d.ts",
+      "origin": "src/renderer/three/anim3d.ts",
+      "sha256": "da6fd930bce8cdc1e07628e2252e8cbf627fdd7d312a7bb307631b9c4da76898"
+    },
+    {
+      "path": "src/renderer/three/asset-ready.ts",
+      "origin": "src/renderer/three/asset-ready.ts",
+      "sha256": "7e65d7891ba76c3ce0497692a8e1bd3cd8ed98f0020f469bafde9c3989e7dd8c"
+    },
+    {
+      "path": "src/renderer/three/batches.ts",
+      "origin": "src/renderer/three/batches.ts",
+      "sha256": "415df6114012d9fa5224aca15b944a3f4fb9318859d953d173494d745e037fb9"
+    },
+    {
+      "path": "src/renderer/three/billboard.ts",
+      "origin": "src/renderer/three/billboard.ts",
+      "sha256": "e11e3dd545a54282fbf9b362b3d0428d17ef99e980b9556aaa790d2f389a930c"
+    },
+    {
+      "path": "src/renderer/three/camera-rig.ts",
+      "origin": "src/renderer/three/camera-rig.ts",
+      "sha256": "3ac2dabbd66ccf6cc477a8024b457915a75e52e53fa74218997c2102cd2a275a"
+    },
+    {
+      "path": "src/renderer/three/collider-debug.ts",
+      "origin": "src/renderer/three/collider-debug.ts",
+      "sha256": "14b2b5570a0485d764890dcb9ff2fab5836f308fb007de2e9ad76ead79e0cb7a"
+    },
+    {
+      "path": "src/renderer/three/curve.ts",
+      "origin": "src/renderer/three/curve.ts",
+      "sha256": "e7599f68a982b9c2070da8ba49f3ac931ccc38f3d1c02e57d4868c817f9ea895"
+    },
+    {
+      "path": "src/renderer/three/decal.ts",
+      "origin": "src/renderer/three/decal.ts",
+      "sha256": "badb45a47de96864e90202d12928cd6e36df8a505ebbda83a1e5229304327ee8"
+    },
+    {
+      "path": "src/renderer/three/diegetic.ts",
+      "origin": "src/renderer/three/diegetic.ts",
+      "sha256": "0c3f59f130718f452957e8815b5a4e9e94e09ca1890dd513b75a2c09b6bc901b"
+    },
+    {
+      "path": "src/renderer/three/dissolve.ts",
+      "origin": "src/renderer/three/dissolve.ts",
+      "sha256": "3a441f420546050811a7f5018a8004505c7006551ce0be335b550b29bfe981df"
+    },
+    {
+      "path": "src/renderer/three/geometry.ts",
+      "origin": "src/renderer/three/geometry.ts",
+      "sha256": "eb47bc21b4263bd310713d7a6ab0fe422b9e278350f901665d07999d77906b2c"
+    },
+    {
+      "path": "src/renderer/three/index-debug.ts",
+      "origin": "src/renderer/three/index-debug.ts",
+      "sha256": "3a98977e7812adc7f202d5779c99f6d5f3c43bba687d25745aa1cb85c7e4ea6d"
+    },
+    {
+      "path": "src/renderer/three/lights.ts",
+      "origin": "src/renderer/three/lights.ts",
+      "sha256": "068a518be92a13c48ea3efcd07aa391efc812cf6650ccb2105fef6c428da4213"
+    },
+    {
+      "path": "src/renderer/three/line3d.ts",
+      "origin": "src/renderer/three/line3d.ts",
+      "sha256": "b015068f2084276dc40d4b0dc09eb164afaa0b1cce410f97186469f82edd9d71"
+    },
+    {
+      "path": "src/renderer/three/material.ts",
+      "origin": "src/renderer/three/material.ts",
+      "sha256": "69ef1ae913eb18d4c7ffff85ef248734b2c5f533a5540eff11ebdfe7d0a1e818"
+    },
+    {
+      "path": "src/renderer/three/model-motion.ts",
+      "origin": "src/renderer/three/model-motion.ts",
+      "sha256": "f7029d25a210db51df9d0b0150535707a2ebb5edaf4a807579c116eebc74dbbd"
+    },
+    {
+      "path": "src/renderer/three/models.ts",
+      "origin": "src/renderer/three/models.ts",
+      "sha256": "7333ceedffa823f49fcc3a1163e5b61f1a445a7c50826c57b7d9b817a10ed95e"
+    },
+    {
+      "path": "src/renderer/three/nav-debug.ts",
+      "origin": "src/renderer/three/nav-debug.ts",
+      "sha256": "85a694b67d4fcfbed4126e1b1e48d8b08e8644c44c4e6fd6a602ce1698b5e058"
+    },
+    {
+      "path": "src/renderer/three/num-guard.ts",
+      "origin": "src/renderer/three/num-guard.ts",
+      "sha256": "410cff59a8e45386f4ea540812b9fc36a8389be5fa94ed4aff5f14676602451e"
+    },
+    {
+      "path": "src/renderer/three/path.ts",
+      "origin": "src/renderer/three/path.ts",
+      "sha256": "d0e5086334677d5dec682ba6f45ab54e8a012ffde2d3f9f56c8a0e7d949ea690"
+    },
+    {
+      "path": "src/renderer/three/physics.ts",
+      "origin": "src/renderer/three/physics.ts",
+      "sha256": "1f58739f673e354ab2005f897405f00ee449ddb3ca710cc5c2b6176678002c42"
+    },
+    {
+      "path": "src/renderer/three/pivot.ts",
+      "origin": "src/renderer/three/pivot.ts",
+      "sha256": "7889a11938b9c789a16712f343a5b2ae2d2ef59425e41774ea3b91fe58aa02b7"
+    },
+    {
+      "path": "src/renderer/three/post.ts",
+      "origin": "src/renderer/three/post.ts",
+      "sha256": "f2f2855d9084f394c9932417d35cea4d3df94c79c62393a3443e524f64c1e248"
+    },
+    {
+      "path": "src/renderer/three/reflector.ts",
+      "origin": "src/renderer/three/reflector.ts",
+      "sha256": "621f9d9518afe7b176d343fb3ecccf71b0e782a2e32d6fc76e861151fc40f864"
+    },
+    {
+      "path": "src/renderer/three/stats.ts",
+      "origin": "src/renderer/three/stats.ts",
+      "sha256": "8c4be2b6a07e669e98800b36446ab3713c80dd68d564e7199a3bfa82e8277389"
+    },
+    {
+      "path": "src/renderer/three/surface-tex.ts",
+      "origin": "src/renderer/three/surface-tex.ts",
+      "sha256": "4e816d8033036850612bb49ff7f74b7fa71e7744ba9cb86b09a35f853eaa0bd1"
+    },
+    {
+      "path": "src/renderer/three/trail.ts",
+      "origin": "src/renderer/three/trail.ts",
+      "sha256": "a21fd88d385891780f4daac3c6b3e7e8d7c0c241facb7d420f0cbd6080dc1c8c"
+    },
+    {
+      "path": "src/renderer/three/uv-anim.ts",
+      "origin": "src/renderer/three/uv-anim.ts",
+      "sha256": "0d432d1cec5aa2b3b2bff4e5ecfd981d7691985eed283354232d800f85203305"
+    },
+    {
+      "path": "src/renderer/three/vfx.ts",
+      "origin": "src/renderer/three/vfx.ts",
+      "sha256": "dec5f5d561bfb0de66bcef8a36b1a27ce69791f2df23566aa27a1a27eca8d85e"
+    },
+    {
+      "path": "src/renderer/three/world-ui.ts",
+      "origin": "src/renderer/three/world-ui.ts",
+      "sha256": "99f93ba838fe04f82ac7f87747e6c7f75d582ee57e460cc34a8dda72932e45da"
+    },
+    {
+      "path": "src/runtime/engine.ts",
+      "origin": "src/runtime/engine.ts",
+      "sha256": "e31c009fbca58e43032c0a52c80c33c464d0a8f31ef6da8b6455f1291a67fda1"
+    },
+    {
+      "path": "src/skills/atoms/acceleration/index.ts",
+      "origin": "src/skills/atoms/acceleration/index.ts",
+      "sha256": "1a456d5556c25dfa2fdbbca0bdbca11b85781a548eb5d1e3dfbbad3748c0915f"
+    },
+    {
+      "path": "src/skills/atoms/action-map/index.ts",
+      "origin": "src/skills/atoms/action-map/index.ts",
+      "sha256": "06ab2d98184774e3470d50ffa99ae70550529970f066feac2e9db5a0f9146281"
+    },
+    {
+      "path": "src/skills/atoms/camera/index.ts",
+      "origin": "src/skills/atoms/camera/index.ts",
+      "sha256": "664f1ee2a62bc6aa56e7fad07b62d6f45788e86aac260608088e2964a4e83cca"
+    },
+    {
+      "path": "src/skills/atoms/collision-resolve-3d/index.ts",
+      "origin": "src/skills/atoms/collision-resolve-3d/index.ts",
+      "sha256": "2bca9169363deb5cfa41fce579b3d069a87de29327ba24b54a185f6fddd4cb4e"
+    },
+    {
+      "path": "src/skills/atoms/color/index.ts",
+      "origin": "src/skills/atoms/color/index.ts",
+      "sha256": "9747c483e9498aa38916d797c4a4da4388cf2086a49f698f9c0c14cd2ff47254"
+    },
+    {
+      "path": "src/skills/atoms/controllable/index.ts",
+      "origin": "src/skills/atoms/controllable/index.ts",
+      "sha256": "1e85e5a12908dfa2bd1f576e3a029542fa042f0b84d4a3439b801181e7df2b7e"
+    },
+    {
+      "path": "src/skills/atoms/destroy/index.ts",
+      "origin": "src/skills/atoms/destroy/index.ts",
+      "sha256": "1e2e5ea2269e38866d67a3eb7757c6a3709d5c7ac936f10cc5b0983f90ed510b"
+    },
+    {
+      "path": "src/skills/atoms/flag/index.ts",
+      "origin": "src/skills/atoms/flag/index.ts",
+      "sha256": "08bcc8199d334651fda06cae834addf6475f3846ab5d1095d66f228f918b5e13"
+    },
+    {
+      "path": "src/skills/atoms/frame/index.ts",
+      "origin": "src/skills/atoms/frame/index.ts",
+      "sha256": "5aafbc8fc95e6c875de02f7278db48b8c282802b932768b1ed0dd83d0b190a84"
+    },
+    {
+      "path": "src/skills/atoms/group/index.ts",
+      "origin": "src/skills/atoms/group/index.ts",
+      "sha256": "2db9dd88aa4bbe83eeefad4ea20803beae0002852f4b4f278503c2cdd136d0cf"
+    },
+    {
+      "path": "src/skills/atoms/hierarchy/index.ts",
+      "origin": "src/skills/atoms/hierarchy/index.ts",
+      "sha256": "ed63ce0aa99849d9097d2e32f2dd9640b187d1b4ff57ef6e8c78ab7d6a7759fb"
+    },
+    {
+      "path": "src/skills/atoms/index.ts",
+      "origin": "src/skills/atoms/index.ts",
+      "sha256": "39da37b28741f43ef7ff3a2458d5fed4060bcc5c886d260a16738321d5c6807a"
+    },
+    {
+      "path": "src/skills/atoms/input-capture/index.ts",
+      "origin": "src/skills/atoms/input-capture/index.ts",
+      "sha256": "9b8e0a968732278cf550d57071ffd78b341b9d8ded7de6b27602ac92ed122930"
+    },
+    {
+      "path": "src/skills/atoms/mass/index.ts",
+      "origin": "src/skills/atoms/mass/index.ts",
+      "sha256": "fc33988346551619a70185c66bc037e7cc469191f318c4bbedd3c826a58a91a1"
+    },
+    {
+      "path": "src/skills/atoms/navmesh-bake/index.ts",
+      "origin": "src/skills/atoms/navmesh-bake/index.ts",
+      "sha256": "be62162c5b07aa0f980da9af477d4a0be74f540f6b0121446f43e3764abfb951"
+    },
+    {
+      "path": "src/skills/atoms/overlap-detect-3d/index.ts",
+      "origin": "src/skills/atoms/overlap-detect-3d/index.ts",
+      "sha256": "b9182b6d5bd5e572b12e8383b4a14f0089e72b54dbf74415d4710b0480308331"
+    },
+    {
+      "path": "src/skills/atoms/overlap-detect/index.ts",
+      "origin": "src/skills/atoms/overlap-detect/index.ts",
+      "sha256": "e1c955831706f1129a4f4c6952d06be750cef0cd13759ffc48e8e9cca028b1af"
+    },
+    {
+      "path": "src/skills/atoms/owner/index.ts",
+      "origin": "src/skills/atoms/owner/index.ts",
+      "sha256": "dfd07701856831cbbd43e2de1b6334fcdb7c78ac7f0f2ef24a017ed704b7638f"
+    },
+    {
+      "path": "src/skills/atoms/random/index.ts",
+      "origin": "src/skills/atoms/random/index.ts",
+      "sha256": "d87d9e50e4d0965d6be3b90d08cc7ae2edd2c82485f52960cbee1da2c1daca48"
+    },
+    {
+      "path": "src/skills/atoms/relation/index.ts",
+      "origin": "src/skills/atoms/relation/index.ts",
+      "sha256": "ab39c971a1a29689a88fa9267f0de037890065bab218186337b36007af442912"
+    },
+    {
+      "path": "src/skills/atoms/resource/index.ts",
+      "origin": "src/skills/atoms/resource/index.ts",
+      "sha256": "1b69aa0c3ed9be5b86ea9f28e71b7997c7a1804944cee576b3d1e34f88ae5684"
+    },
+    {
+      "path": "src/skills/atoms/shape/index.ts",
+      "origin": "src/skills/atoms/shape/index.ts",
+      "sha256": "f1840f1e3ec2e51371abb376dbca8f9a1e7f345ab37cbf6c6c0ec766cb1ed8a0"
+    },
+    {
+      "path": "src/skills/atoms/sound/index.ts",
+      "origin": "src/skills/atoms/sound/index.ts",
+      "sha256": "80416670f2b7b55f113f4c559f15b0b49f8d68cfff5b6c8dcef8190135a25aac"
+    },
+    {
+      "path": "src/skills/atoms/spatial-query/index.ts",
+      "origin": "src/skills/atoms/spatial-query/index.ts",
+      "sha256": "93f621ee6baeb17e6e65a93fc44ef47ed446320c2d39448d3a66010d54cfd540"
+    },
+    {
+      "path": "src/skills/atoms/spawn/index.ts",
+      "origin": "src/skills/atoms/spawn/index.ts",
+      "sha256": "05a962c0fa47852e55e0be500a583b272d04fa3b1b764fe9d096c47272da79bd"
+    },
+    {
+      "path": "src/skills/atoms/sprite/index.ts",
+      "origin": "src/skills/atoms/sprite/index.ts",
+      "sha256": "cb53d2f2dcc55877bc5329722489f17942fdb382f8363e68bc8f25883a78a5a0"
+    },
+    {
+      "path": "src/skills/atoms/state/index.ts",
+      "origin": "src/skills/atoms/state/index.ts",
+      "sha256": "d084238bc6d71288967b41cf8a91e01a387f890fd7bc5914da45f2977d2c8023"
+    },
+    {
+      "path": "src/skills/atoms/string-variable/index.ts",
+      "origin": "src/skills/atoms/string-variable/index.ts",
+      "sha256": "c458d7db198913fc898d8615858e7834a0d30a4a56546c5248d544ce299f1792"
+    },
+    {
+      "path": "src/skills/atoms/tag/index.ts",
+      "origin": "src/skills/atoms/tag/index.ts",
+      "sha256": "83056fbb3a55d00365a3ec938ef7588c917b01a478b5b69b47c98b1cd0076376"
+    },
+    {
+      "path": "src/skills/atoms/text/index.ts",
+      "origin": "src/skills/atoms/text/index.ts",
+      "sha256": "72c1ac56219752aa9a875a77706f4da9e78d95b78832f23b192cf55454bf2847"
+    },
+    {
+      "path": "src/skills/atoms/timer/index.ts",
+      "origin": "src/skills/atoms/timer/index.ts",
+      "sha256": "3a2b581c8ba706ac69cb90d7f9f4dc89e409a0257c080502605e89ce2d91697e"
+    },
+    {
+      "path": "src/skills/atoms/transform/index.ts",
+      "origin": "src/skills/atoms/transform/index.ts",
+      "sha256": "0c6573fba8c22fec44a599186aec11cfe2ff31cb8d2aad437e782b4964d49ea3"
+    },
+    {
+      "path": "src/skills/atoms/velocity/index.ts",
+      "origin": "src/skills/atoms/velocity/index.ts",
+      "sha256": "d1a9e00d39a2c18c139e4c81af0f61e5f2fff1a8111bbdfe732e0fd3be9b02e9"
+    },
+    {
+      "path": "src/skills/atoms/vfx2d/index.ts",
+      "origin": "src/skills/atoms/vfx2d/index.ts",
+      "sha256": "55608a2d37a518853d853cbf5d35cc23b34cd124fc7ffaa3b4c19e818b356c62"
+    },
+    {
+      "path": "src/skills/atoms/visibility/index.ts",
+      "origin": "src/skills/atoms/visibility/index.ts",
+      "sha256": "e6f7d587cbbe6fdf769c5dc5a0d6722f9178d717cf8d703218522a680e41a0a8"
+    },
+    {
+      "path": "src/skills/debug-trace.ts",
+      "origin": "src/skills/debug-trace.ts",
+      "sha256": "c05a6f402c53334af1cf2a44a3dc09f1e330489d81ac0e66ee9f2dfbb4fe6ced"
+    },
+    {
+      "path": "src/skills/score-trace.ts",
+      "origin": "src/skills/score-trace.ts",
+      "sha256": "587377edf6c1723bc576e25c177611717d41b8cd875561ff4923d8cc752403bb"
+    },
+    {
+      "path": "src/skills/tier1/accel-apply.ts",
+      "origin": "src/skills/tier1/accel-apply.ts",
+      "sha256": "4da73d170c46f5715319b9a078aae1712a75183d9a9859e8cd947eaaa073ff2d"
+    },
+    {
+      "path": "src/skills/tier1/animation.ts",
+      "origin": "src/skills/tier1/animation.ts",
+      "sha256": "f2b6f1d4ce1ec0bdceca3791d87270b1525826c3f07e515f5bb11e6b56505d39"
+    },
+    {
+      "path": "src/skills/tier1/event-log.ts",
+      "origin": "src/skills/tier1/event-log.ts",
+      "sha256": "18eeac13f2e7c91e9910bf735c2d0d5e94d2a6de285d037d98c0e87e58aabb9b"
+    },
+    {
+      "path": "src/skills/tier1/group-gc.ts",
+      "origin": "src/skills/tier1/group-gc.ts",
+      "sha256": "746b7c9bec6d4ec71f1a2401896d492b2ef18c33bd5113bba7ab588c887ea716"
+    },
+    {
+      "path": "src/skills/tier1/hierarchy-cascade.ts",
+      "origin": "src/skills/tier1/hierarchy-cascade.ts",
+      "sha256": "590c32078a2ab3890475b92c9dfcdfecf7c1eaec3a86bfa637fb0aa475c8468b"
+    },
+    {
+      "path": "src/skills/tier1/hierarchy-resolve.ts",
+      "origin": "src/skills/tier1/hierarchy-resolve.ts",
+      "sha256": "5b0b87bb22f5983db49a4f601d66d775196d0e62c3a5a182276ed7f87a09fcee"
+    },
+    {
+      "path": "src/skills/tier1/index.ts",
+      "origin": "src/skills/tier1/index.ts",
+      "sha256": "3654fe075e76abeb878200eb343ce54ebc31a031ff83100db535ed73fcdaaad1"
+    },
+    {
+      "path": "src/skills/tier1/lifetime.ts",
+      "origin": "src/skills/tier1/lifetime.ts",
+      "sha256": "0ddb493b6f77ff24d21db98dfdc86b2df19a2bed76549ae155a93a164458f43d"
+    },
+    {
+      "path": "src/skills/tier1/motion-apply.ts",
+      "origin": "src/skills/tier1/motion-apply.ts",
+      "sha256": "833d0499f0da8ab27823c52cf2eebea39fb71bf37061e604f4df334908985b88"
+    },
+    {
+      "path": "src/skills/tier1/rotation-apply.ts",
+      "origin": "src/skills/tier1/rotation-apply.ts",
+      "sha256": "259cf0c39bc948379ef071a27403a6d9eca55f6117b480f97d93bebf246d50c9"
+    },
+    {
+      "path": "src/skills/tier1/tween.ts",
+      "origin": "src/skills/tier1/tween.ts",
+      "sha256": "35eb258bac17ca35e48ed6f47ed739f61ff1847d8c4d127ac3b3e15e58c8fdba"
+    },
+    {
+      "path": "src/skills/tier2/anim-state.ts",
+      "origin": "src/skills/tier2/anim-state.ts",
+      "sha256": "0a8e9018b57e671af407194899b5d97aaadaa6e5a2eae1929afbc73c1879409f"
+    },
+    {
+      "path": "src/skills/tier2/behavior-tree.ts",
+      "origin": "src/skills/tier2/behavior-tree.ts",
+      "sha256": "4d6835b11457147625fd978b999c6e811c2a1179be57cf0677c6ddb95dca29de"
+    },
+    {
+      "path": "src/skills/tier2/bounce-relay.ts",
+      "origin": "src/skills/tier2/bounce-relay.ts",
+      "sha256": "7a86e6862f5d2d90f1914adf1e7fdcd4ddc131154e76e835634eab0c73206b8d"
+    },
+    {
+      "path": "src/skills/tier2/bounds-clamp.ts",
+      "origin": "src/skills/tier2/bounds-clamp.ts",
+      "sha256": "2b2b993dbbccea69d4690ff70a4d9f6fe491acf6bd147fcaec2e0988f589ea03"
+    },
+    {
+      "path": "src/skills/tier2/camera-follow.ts",
+      "origin": "src/skills/tier2/camera-follow.ts",
+      "sha256": "251323bf2735c841c8e44dc8342db3241d573aab0a05b6d17604a69f3d08092d"
+    },
+    {
+      "path": "src/skills/tier2/card-pile.ts",
+      "origin": "src/skills/tier2/card-pile.ts",
+      "sha256": "95d8f654982da9a12a061676c393938231f5409942f8ff11c320c5d373a1c9ba"
+    },
+    {
+      "path": "src/skills/tier2/card-play.ts",
+      "origin": "src/skills/tier2/card-play.ts",
+      "sha256": "b192704214be8639c2652c207cb00a6dc55b57334bd57f2e53a24cbb74c99fb2"
+    },
+    {
+      "path": "src/skills/tier2/cardboard-codec.ts",
+      "origin": "src/skills/tier2/cardboard-codec.ts",
+      "sha256": "10a2f89cbe29aad35a1a9e3c2c258295f1c81e1766f65832e9ab450f7648692b"
+    },
+    {
+      "path": "src/skills/tier2/clickable.ts",
+      "origin": "src/skills/tier2/clickable.ts",
+      "sha256": "5ed235be11f51c2301aa7ab8ec1b9e0885dcb450775daf219fa3440c670563d1"
+    },
+    {
+      "path": "src/skills/tier2/collision-resolve.test.ts",
+      "origin": "src/skills/tier2/collision-resolve.test.ts",
+      "sha256": "20b4e2d0b31db44673e9a8af3f8d9f3ce9e1e3ae8e8e6d13100ab3d3f3de832d"
+    },
+    {
+      "path": "src/skills/tier2/collision-resolve.ts",
+      "origin": "src/skills/tier2/collision-resolve.ts",
+      "sha256": "b0eb0d6b67a153aa2d6aa373fc5d297f04119adb495969f2a68dd8b9331a8376"
+    },
+    {
+      "path": "src/skills/tier2/condition.ts",
+      "origin": "src/skills/tier2/condition.ts",
+      "sha256": "f84d9172f02e754041867fd4d95b91ba32bd504bbd8c34980f04cb031be28c88"
+    },
+    {
+      "path": "src/skills/tier2/conveyor-queue.ts",
+      "origin": "src/skills/tier2/conveyor-queue.ts",
+      "sha256": "946761a251820fbceb8e9514b8ca488f014ed6b02f1bd7acc9cc5ca180e1a122"
+    },
+    {
+      "path": "src/skills/tier2/cooldown.ts",
+      "origin": "src/skills/tier2/cooldown.ts",
+      "sha256": "53487a8600526e2132a72a50ccefdac75f7615d4eae25f17e35955b44630c760"
+    },
+    {
+      "path": "src/skills/tier2/craft-recipe.ts",
+      "origin": "src/skills/tier2/craft-recipe.ts",
+      "sha256": "2cc4c786f0aff55fcb65e6c61c4cbe5fabc1c9ab9dc8e451cb23650ca2d140be"
+    },
+    {
+      "path": "src/skills/tier2/crowd-avoidance.test.ts",
+      "origin": "src/skills/tier2/crowd-avoidance.test.ts",
+      "sha256": "8c569617c491888e82456d32de9ed7017b9dc1c34c77f34ba99497d34ddf301e"
+    },
+    {
+      "path": "src/skills/tier2/crowd-avoidance.ts",
+      "origin": "src/skills/tier2/crowd-avoidance.ts",
+      "sha256": "aa4756d9d07f210d8b86171dc8507246b68c1271e0026d0e1f548f9b1678039d"
+    },
+    {
+      "path": "src/skills/tier2/crowd-flow-guide.test.ts",
+      "origin": "src/skills/tier2/crowd-flow-guide.test.ts",
+      "sha256": "ea140b32b6f862d543014693301270225374dc795d4a37bfabb9529c04cd9afa"
+    },
+    {
+      "path": "src/skills/tier2/crowd-flow-guide.ts",
+      "origin": "src/skills/tier2/crowd-flow-guide.ts",
+      "sha256": "34c082b64531f3bc2be0f1591292e767bbc2495d53fb8e12bbf35dd0c5163bc6"
+    },
+    {
+      "path": "src/skills/tier2/crowd-route-repath.test.ts",
+      "origin": "src/skills/tier2/crowd-route-repath.test.ts",
+      "sha256": "c7cf660d04f7cee1872c6f01cd2832d3cc692708d54f06d70fce4a082f1faa31"
+    },
+    {
+      "path": "src/skills/tier2/crowd-route-repath.ts",
+      "origin": "src/skills/tier2/crowd-route-repath.ts",
+      "sha256": "5326f0fc46c7a6e8a691d1ffc3663d8b08167667a94acd4f157457b68a340992"
+    },
+    {
+      "path": "src/skills/tier2/damage-table.ts",
+      "origin": "src/skills/tier2/damage-table.ts",
+      "sha256": "6a06a8a778cfb6eef0db58242ec08bd9d582b5d78c48d340015c2a3d80cbf9d3"
+    },
+    {
+      "path": "src/skills/tier2/dice-roll.ts",
+      "origin": "src/skills/tier2/dice-roll.ts",
+      "sha256": "9e3fd966f389f84a9f9e49a7a73000658e36f3a20616ddcb511238dcace08ef6"
+    },
+    {
+      "path": "src/skills/tier2/dice.ts",
+      "origin": "src/skills/tier2/dice.ts",
+      "sha256": "ec675406481b7c5288871354e2cf8a04329a47aeddbae8139c3df547d0f39ae2"
+    },
+    {
+      "path": "src/skills/tier2/draft-offer.ts",
+      "origin": "src/skills/tier2/draft-offer.ts",
+      "sha256": "94019ede8ccbdfe31063580a2fc3933910fd185d5d73ca1d3470b79dd47c6720"
+    },
+    {
+      "path": "src/skills/tier2/drag-place.ts",
+      "origin": "src/skills/tier2/drag-place.ts",
+      "sha256": "dde88311296a3185b0dfdc2a6824f6c7eafc7e8b8dc77cf509212559140c65fc"
+    },
+    {
+      "path": "src/skills/tier2/effect-apply.ts",
+      "origin": "src/skills/tier2/effect-apply.ts",
+      "sha256": "3e12faeec624e6b2dc7f7974b26fce82ae6951b371fca55dd5c8c1b845fa3021"
+    },
+    {
+      "path": "src/skills/tier2/event-when.ts",
+      "origin": "src/skills/tier2/event-when.ts",
+      "sha256": "630a7b3e701c7897e8bc6e869e9022f394ca856f8c04e3aba56f81a974771f2c"
+    },
+    {
+      "path": "src/skills/tier2/face-rotate.ts",
+      "origin": "src/skills/tier2/face-rotate.ts",
+      "sha256": "9a63128817abc6e7c9131a8e3b5488f0d6136360766121749b0f8b6ab815a314"
+    },
+    {
+      "path": "src/skills/tier2/facing.ts",
+      "origin": "src/skills/tier2/facing.ts",
+      "sha256": "ea435a37d861144cc8aa892489d2cd0c4bbf89c8ffc204ff756f0aa701f76c1a"
+    },
+    {
+      "path": "src/skills/tier2/flow-field-core.ts",
+      "origin": "src/skills/tier2/flow-field-core.ts",
+      "sha256": "d316a788b76176eda88c75c6ac23d757d917f649735f9e7ca75f8cb610307347"
+    },
+    {
+      "path": "src/skills/tier2/flow-field.ts",
+      "origin": "src/skills/tier2/flow-field.ts",
+      "sha256": "6f5969fc993b6605c879b64266ebc69dd8f2dea4bedfffb746bdf6e7bcc095ad"
+    },
+    {
+      "path": "src/skills/tier2/friction.ts",
+      "origin": "src/skills/tier2/friction.ts",
+      "sha256": "2592f8d438dab86f01cb340d49b4524aca53b6898847295f009aa1b715595e9d"
+    },
+    {
+      "path": "src/skills/tier2/gauge.ts",
+      "origin": "src/skills/tier2/gauge.ts",
+      "sha256": "02041315e413517a981527d5fa83e00c80f617f486b212a89fd7a81b3f0e8ce9"
+    },
+    {
+      "path": "src/skills/tier2/grid-drag-square.ts",
+      "origin": "src/skills/tier2/grid-drag-square.ts",
+      "sha256": "340a331f015c6f9c3fde1ea4db6553c02cb45fe2b53758fb893cf6ff8406d290"
+    },
+    {
+      "path": "src/skills/tier2/grid-move.ts",
+      "origin": "src/skills/tier2/grid-move.ts",
+      "sha256": "0e1371f05cfb830a3333817e510268bf396d21ba24f724d85fe2d8f5052cb791"
+    },
+    {
+      "path": "src/skills/tier2/ground-sense.ts",
+      "origin": "src/skills/tier2/ground-sense.ts",
+      "sha256": "d316ba842b759eef816ebd8c81a3dfd618e2e700150984f30726b5e698677eea"
+    },
+    {
+      "path": "src/skills/tier2/group-count.ts",
+      "origin": "src/skills/tier2/group-count.ts",
+      "sha256": "104b7213ba36eecf4fc04ee58dca72e4bb716d320f483763c6296dfbfce76306"
+    },
+    {
+      "path": "src/skills/tier2/hex.ts",
+      "origin": "src/skills/tier2/hex.ts",
+      "sha256": "92076ef54142231cccd23869054ed2ac1f9ee4c0af79f801ec84d2e85b43857c"
+    },
+    {
+      "path": "src/skills/tier2/hitbox.ts",
+      "origin": "src/skills/tier2/hitbox.ts",
+      "sha256": "c4ca805370aec1dc40e1f6ba14a6eecf4f431bbf3dd96dbb08ec47bd584cc8e3"
+    },
+    {
+      "path": "src/skills/tier2/index.ts",
+      "origin": "src/skills/tier2/index.ts",
+      "sha256": "5e011911b2369a389f049152a6810538d4a6374fcdf1293262d791085c8031dc"
+    },
+    {
+      "path": "src/skills/tier2/intent-barrier-core.ts",
+      "origin": "src/skills/tier2/intent-barrier-core.ts",
+      "sha256": "33b55b159a346b2a68ddb656e2f15f7e24f92537b13e61612e1821a98bceb605"
+    },
+    {
+      "path": "src/skills/tier2/intent-barrier.ts",
+      "origin": "src/skills/tier2/intent-barrier.ts",
+      "sha256": "a7c4d4c57228d37b4c5c4e4652204b3b3e37f66e5c0a1c6620b1da845ebd7387"
+    },
+    {
+      "path": "src/skills/tier2/inventory.ts",
+      "origin": "src/skills/tier2/inventory.ts",
+      "sha256": "251d1b98097b1ff840929ddd7063682d677b37520c69a03d3f30b01d6204c705"
+    },
+    {
+      "path": "src/skills/tier2/jump.ts",
+      "origin": "src/skills/tier2/jump.ts",
+      "sha256": "23d4efc96c88a992d19b468189131a9cf60250532ba442dbf251d62c3d1b8c98"
+    },
+    {
+      "path": "src/skills/tier2/keybind.ts",
+      "origin": "src/skills/tier2/keybind.ts",
+      "sha256": "35ccfa78d54e9f1c2419cdb0b8ebea4092be8c0abf6400228769a8b8c5e7f93b"
+    },
+    {
+      "path": "src/skills/tier2/launch.ts",
+      "origin": "src/skills/tier2/launch.ts",
+      "sha256": "e5213a27d7b59bcd1303e6111ea8a7b7e0f6b718dea74d4d93ab83c99f09ac67"
+    },
+    {
+      "path": "src/skills/tier2/match3-drag-swap.ts",
+      "origin": "src/skills/tier2/match3-drag-swap.ts",
+      "sha256": "97b2ff9f08a9f87de0cff72b32338a2393f113420f95adee0c16e8c80dca65d2"
+    },
+    {
+      "path": "src/skills/tier2/matrix-duel.ts",
+      "origin": "src/skills/tier2/matrix-duel.ts",
+      "sha256": "d852176ef74f7cf5963a7475e19f6bf36acad19223ec5ec9784d455687539888"
+    },
+    {
+      "path": "src/skills/tier2/memory-core.ts",
+      "origin": "src/skills/tier2/memory-core.ts",
+      "sha256": "df73bf0fd49fed26e3747ec2759afc58241b2f3a07f26ee9d618c3cf4674d8df"
+    },
+    {
+      "path": "src/skills/tier2/memory.ts",
+      "origin": "src/skills/tier2/memory.ts",
+      "sha256": "8fc5a550e38c6284b3cc5aeb5a742444051400d77a09c3a9e250714fa47d7d2d"
+    },
+    {
+      "path": "src/skills/tier2/merge-on-place.ts",
+      "origin": "src/skills/tier2/merge-on-place.ts",
+      "sha256": "8747250a9da88244f49198bfc5077d4a35d4b01278aa7c019c67e3749e6a9c22"
+    },
+    {
+      "path": "src/skills/tier2/merge-proximity-clear.ts",
+      "origin": "src/skills/tier2/merge-proximity-clear.ts",
+      "sha256": "f7e1ed8b39ec17ac9e72f9d534a4f1ed80f3bad44fffb9a029ffa5520da98320"
+    },
+    {
+      "path": "src/skills/tier2/modifier-stack.ts",
+      "origin": "src/skills/tier2/modifier-stack.ts",
+      "sha256": "3addd07309bfcfd76f8dacd66a3fb1841359099a4c91aededc8814b2a0a9a1b2"
+    },
+    {
+      "path": "src/skills/tier2/mortal.ts",
+      "origin": "src/skills/tier2/mortal.ts",
+      "sha256": "24cd806e6e26b93cb533d4c250491f9eb29560b8f1f293a96f622273fe5f3858"
+    },
+    {
+      "path": "src/skills/tier2/navigation-grid.test.ts",
+      "origin": "src/skills/tier2/navigation-grid.test.ts",
+      "sha256": "c61c6635cb06e42981272f64b3848d325db67ea5e5721f2ad1ac00b735f5337f"
+    },
+    {
+      "path": "src/skills/tier2/navigation-grid.ts",
+      "origin": "src/skills/tier2/navigation-grid.ts",
+      "sha256": "55b4fb25c69aa0244fdf598f247f2aad00f04a5e43ea3b668e30a6db41ba9956"
+    },
+    {
+      "path": "src/skills/tier2/orbit-motion.ts",
+      "origin": "src/skills/tier2/orbit-motion.ts",
+      "sha256": "089e79181fc1d1d128b07c6467bf4a87e84416f500cb579768572b7e07ec2722"
+    },
+    {
+      "path": "src/skills/tier2/orca.test.ts",
+      "origin": "src/skills/tier2/orca.test.ts",
+      "sha256": "90f1018f520a49974ffe2258b76500af0f04e10d6cbf64b29f85e67cdb688eda"
+    },
+    {
+      "path": "src/skills/tier2/orca.ts",
+      "origin": "src/skills/tier2/orca.ts",
+      "sha256": "ed02fa48631417e92682a6535088786e7955b5d3b4b787102d9ea2a9b70cfd92"
+    },
+    {
+      "path": "src/skills/tier2/order-fulfill.ts",
+      "origin": "src/skills/tier2/order-fulfill.ts",
+      "sha256": "60d1983f4f6e9836515ff9ed185dd4a88b17d55c388e90b2bed72dc76e50a98d"
+    },
+    {
+      "path": "src/skills/tier2/over-time.ts",
+      "origin": "src/skills/tier2/over-time.ts",
+      "sha256": "69fab706e8467bf35ac8b91e9110b83786ef0a29db6f977a5b04153f21264af8"
+    },
+    {
+      "path": "src/skills/tier2/path-follow.test.ts",
+      "origin": "src/skills/tier2/path-follow.test.ts",
+      "sha256": "ae568932d23188185ff829020de81b3b9747f35f77148fa452e98466bd5ea8fa"
+    },
+    {
+      "path": "src/skills/tier2/path-follow.ts",
+      "origin": "src/skills/tier2/path-follow.ts",
+      "sha256": "d8461eff0860a73fba82f1568a087cf27802b5769fd3b54cb5472d60ab8a7040"
+    },
+    {
+      "path": "src/skills/tier2/pathfind-graph-key.ts",
+      "origin": "src/skills/tier2/pathfind-graph-key.ts",
+      "sha256": "d3ef92c8b1f613d1dc7569ab3355ebd59a298747b0252fc72de1234dbfc67211"
+    },
+    {
+      "path": "src/skills/tier2/pathfind-patrol.ts",
+      "origin": "src/skills/tier2/pathfind-patrol.ts",
+      "sha256": "8c485ae671ce036062fcc331bd29855a19a093bad29dd85f3676aa5e6817978b"
+    },
+    {
+      "path": "src/skills/tier2/pathfind.ts",
+      "origin": "src/skills/tier2/pathfind.ts",
+      "sha256": "6f1b0ad7cd83d7a09ee1337ef4e21f947139fffbdc346a221bb7bd3887dfbfeb"
+    },
+    {
+      "path": "src/skills/tier2/pull-anchor.ts",
+      "origin": "src/skills/tier2/pull-anchor.ts",
+      "sha256": "bcf4be17fcc5145c350bcbe0610fa2c92cd34d99bb6343f3ac4a5045532d26f7"
+    },
+    {
+      "path": "src/skills/tier2/queue-slots.ts",
+      "origin": "src/skills/tier2/queue-slots.ts",
+      "sha256": "e563e78f0fa1ff05525e2962f997e0f3ecb4d9fb3e209feca5e8baaa4e14599e"
+    },
+    {
+      "path": "src/skills/tier2/rate-limit.ts",
+      "origin": "src/skills/tier2/rate-limit.ts",
+      "sha256": "1c0f5b173ab047dd5b63618246daed7e27d65ee342b5c32e66d963c341b803a2"
+    },
+    {
+      "path": "src/skills/tier2/self-rule.ts",
+      "origin": "src/skills/tier2/self-rule.ts",
+      "sha256": "e318a77912dae6e83374c8ecd96c20d55e6f60cbb83923d5db7bb6e6a6f25748"
+    },
+    {
+      "path": "src/skills/tier2/spawn-director.ts",
+      "origin": "src/skills/tier2/spawn-director.ts",
+      "sha256": "befa9cc5697a3f2635bec6bdcf220d87deea0f1aa24f1e4f37f7fe4e5933edab"
+    },
+    {
+      "path": "src/skills/tier2/stat-bind.ts",
+      "origin": "src/skills/tier2/stat-bind.ts",
+      "sha256": "167e17eaae72b86f45e2ee59732e0a1a4658d368689a76125db01a2cae62551f"
+    },
+    {
+      "path": "src/skills/tier2/stats.ts",
+      "origin": "src/skills/tier2/stats.ts",
+      "sha256": "977c027df9f85888822aecb48a462303688709bd3167f7b7a4dc0dbe3c386570"
+    },
+    {
+      "path": "src/skills/tier2/steering.ts",
+      "origin": "src/skills/tier2/steering.ts",
+      "sha256": "cf6bba1ae3809a9c5589dad285d198a767fc6fb0d493605b0514878fc74918ef"
+    },
+    {
+      "path": "src/skills/tier2/text-binding.ts",
+      "origin": "src/skills/tier2/text-binding.ts",
+      "sha256": "f9264266a98480bbe978f0f1e9a9fadf0e835e7ec673f088eb80e1622954fc41"
+    },
+    {
+      "path": "src/skills/tier2/tilemap.ts",
+      "origin": "src/skills/tier2/tilemap.ts",
+      "sha256": "2802ccbeffed2c7180411fce55e17be21e3e8e0e820a69f68041fcb5a2b7deb9"
+    },
+    {
+      "path": "src/skills/tier2/tray.ts",
+      "origin": "src/skills/tier2/tray.ts",
+      "sha256": "2d9e719208681a24600eeaa6426e65a42d7367b7f2fe4dae9970cb195845b910"
+    },
+    {
+      "path": "src/skills/tier2/trigger-zone.ts",
+      "origin": "src/skills/tier2/trigger-zone.ts",
+      "sha256": "b940e5c9f980b5920ae593516ddfcd42f95a521d85df087fb62e960ec4a19497"
+    },
+    {
+      "path": "src/skills/tier2/turn-order.ts",
+      "origin": "src/skills/tier2/turn-order.ts",
+      "sha256": "2cb106f5687457e3cf00052cf75b60c5d11372d417345e1b74fb5917d9006666"
+    },
+    {
+      "path": "src/skills/tier2/weighted-pick.ts",
+      "origin": "src/skills/tier2/weighted-pick.ts",
+      "sha256": "b1030ef724d20d9db724061d20971a9fed9bb5742f81091110a8fa52d9ab7408"
+    },
+    {
+      "path": "src/skills/tier2/weighted-spawn.ts",
+      "origin": "src/skills/tier2/weighted-spawn.ts",
+      "sha256": "8b1b790fa3690f0392509e60e549b992aacac46c5f37b9a15253d87e3056159e"
+    },
+    {
+      "path": "src/skills/tier2/zone-occupancy.ts",
+      "origin": "src/skills/tier2/zone-occupancy.ts",
+      "sha256": "db9b3e4bcc21ce4b253044d3a953fc48fbc23317691184789ec3ea24fe2998b5"
+    },
+    {
+      "path": "src/skills/tier3/aggro.ts",
+      "origin": "src/skills/tier3/aggro.ts",
+      "sha256": "a76cda339509bf9147819c4b6c6dc9ba325c5fcd88c9d8d58f06b89bc0ecd996"
+    },
+    {
+      "path": "src/skills/tier3/block-grid.ts",
+      "origin": "src/skills/tier3/block-grid.ts",
+      "sha256": "c129cbcf8439ed26db7ae88d98421d703f08576c61e02ac4744d1ac545494346"
+    },
+    {
+      "path": "src/skills/tier3/card-scoring.ts",
+      "origin": "src/skills/tier3/card-scoring.ts",
+      "sha256": "40d7ebd72f0350a51bd9b0f84431239aeb630959dcd442a26c28898d6a0ca84a"
+    },
+    {
+      "path": "src/skills/tier3/caster.ts",
+      "origin": "src/skills/tier3/caster.ts",
+      "sha256": "2ffa7a025efa228de14fc7f4999698b8a3bf42093e375bf85611d2298737e429"
+    },
+    {
+      "path": "src/skills/tier3/dialogue.ts",
+      "origin": "src/skills/tier3/dialogue.ts",
+      "sha256": "0b2adb19340a4ed4ab338cb14d88b59ac9d4547801bff67be9b052d207c6a989"
+    },
+    {
+      "path": "src/skills/tier3/flow.ts",
+      "origin": "src/skills/tier3/flow.ts",
+      "sha256": "eecee8946f8072234bbb48d14d62c248faab2fe0c56d77cdc2c9034fda9379b5"
+    },
+    {
+      "path": "src/skills/tier3/hand-pattern.ts",
+      "origin": "src/skills/tier3/hand-pattern.ts",
+      "sha256": "9db4102de846381b0ea465ee342a2512c47a03bc12e69943906c9c3d089b4fd9"
+    },
+    {
+      "path": "src/skills/tier3/index.ts",
+      "origin": "src/skills/tier3/index.ts",
+      "sha256": "492dd7492973d0acf86110ea6f49106ee7368713c6a8d75c328cc73b974c308d"
+    },
+    {
+      "path": "src/skills/tier3/match3-board.ts",
+      "origin": "src/skills/tier3/match3-board.ts",
+      "sha256": "0b30d0c4a488d6bdafee656a81ec9dee0d65b57a203e37a6cdc62145ba9772a7"
+    },
+    {
+      "path": "src/skills/tier3/merge-rule.ts",
+      "origin": "src/skills/tier3/merge-rule.ts",
+      "sha256": "146bc20a7d167a85680904d4878dd8e24c292466cf573e0e9ab2ccdd01d5b536"
+    },
+    {
+      "path": "src/skills/tier3/poker-hand.ts",
+      "origin": "src/skills/tier3/poker-hand.ts",
+      "sha256": "816296cda53d72107d8d7419e72c086ed56122ddbb22d381ddfd99663a9f4080"
+    },
+    {
+      "path": "src/skills/tier3/prefab.ts",
+      "origin": "src/skills/tier3/prefab.ts",
+      "sha256": "b1c75f51dda145b91445c946a31bc59b0721d19039da66b9a0abfeaa3aeb215c"
+    },
+    {
+      "path": "src/skills/tier3/slot-payout.ts",
+      "origin": "src/skills/tier3/slot-payout.ts",
+      "sha256": "f5da5b2265a4d7d9b25d1142798738be27de623e4932ae76458db3bfedeaaee1"
+    },
+    {
+      "path": "src/skills/tier3/timeline.ts",
+      "origin": "src/skills/tier3/timeline.ts",
+      "sha256": "195c6ddadbc0be6e0c2fe20b7a1c8592fa0d07cf8bd90e6c54166f52bd4b9b46"
+    },
+    {
+      "path": "src/test-fixtures/test-kit.ts",
+      "origin": "src/test-fixtures/test-kit.ts",
+      "sha256": "554a4d9b4da0b4f3a39ac1201f3ff9b77cf0d20cbce8b2facbd6d20905ee75ec"
+    },
+    {
+      "path": "src/ui/components/apollo-kit.ts",
+      "origin": "src/ui/components/apollo-kit.ts",
+      "sha256": "c7bf7b1f41becd215076ed7075c92d62d3f7c4248368cd9363bc2a77627c9ad8"
+    },
+    {
+      "path": "src/ui/components/art-fonts-cjk.ts",
+      "origin": "src/ui/components/art-fonts-cjk.ts",
+      "sha256": "154fdcf5090957dcfe0a77205d341666962b8e5f5f053ba3f1f7111180ae531b"
+    },
+    {
+      "path": "src/ui/components/art-fonts.ts",
+      "origin": "src/ui/components/art-fonts.ts",
+      "sha256": "44b8d81fcd9a7c25f296bf440375a1fdf5240f2dca27dcf3fe8a8097271258f1"
+    },
+    {
+      "path": "src/ui/components/bindings.ts",
+      "origin": "src/ui/components/bindings.ts",
+      "sha256": "8885e96c599d1746f2450e37d057ecb89f59374024fa8b6fe153d564251d253b"
+    },
+    {
+      "path": "src/ui/components/catalog.ts",
+      "origin": "src/ui/components/catalog.ts",
+      "sha256": "b40c17d061778fc2dd88fffec49df7aeb532f0a5942afdf3684bbb0c97d4bfa0"
+    },
+    {
+      "path": "src/ui/components/composed-samples.ts",
+      "origin": "src/ui/components/composed-samples.ts",
+      "sha256": "0c73d0012edbbaa8241238e957b74c5d7c7faf52df0f732bcf36699f20fe95cb"
+    },
+    {
+      "path": "src/ui/components/emoji.ts",
+      "origin": "src/ui/components/emoji.ts",
+      "sha256": "623fee4291731406551aee6c408c1b169d8de812ac668c78bf38f211a95ca379"
+    },
+    {
+      "path": "src/ui/components/image-mesh-motion.ts",
+      "origin": "src/ui/components/image-mesh-motion.ts",
+      "sha256": "779c3e71207687ac756e5cca2243413218f108646a7590c971bebd585aa2c071"
+    },
+    {
+      "path": "src/ui/components/index.ts",
+      "origin": "src/ui/components/index.ts",
+      "sha256": "1b42910894c7b163aea91aaf87b7e1d906e2ffbcad4b9a1ba63e06f9565078fa"
+    },
+    {
+      "path": "src/ui/components/layout-solver.ts",
+      "origin": "src/ui/components/layout-solver.ts",
+      "sha256": "76e4c05c9cf819d636189834ab7570fdd4bfb28a663efee48c30e74294b721d0"
+    },
+    {
+      "path": "src/ui/components/render.ts",
+      "origin": "src/ui/components/render.ts",
+      "sha256": "0c30f9e8110aaef273769ffbd2a926b427e57cee5ca5e472ca19837ad41e9619"
+    },
+    {
+      "path": "src/ui/components/server.ts",
+      "origin": "src/ui/components/server.ts",
+      "sha256": "c33c8183606851935ffbeeacd71a609533f3d944fd5cdff7b799cdaec5e72e5c"
+    },
+    {
+      "path": "src/ui/components/types.ts",
+      "origin": "src/ui/components/types.ts",
+      "sha256": "8d287ec13ff7215f3109e18b62612a0e69a9e238a27fddaec8cfbf07fa9abc6a"
+    },
+    {
+      "path": "src/ui/components/validate.ts",
+      "origin": "src/ui/components/validate.ts",
+      "sha256": "aba29c83fe4ee5a392447a9e57af7ece541dca7a11066e47b958e5472bdebf60"
+    },
+    {
+      "path": "src/ui/shell-theme.ts",
+      "origin": "src/ui/shell-theme.ts",
+      "sha256": "33165dec945ac8ed6c8f1b0468c8f44513974700b0772158536dca8a247c2862"
+    }
+  ]
+}

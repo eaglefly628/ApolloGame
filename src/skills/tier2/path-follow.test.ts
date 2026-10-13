@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { World } from '@engine/core/world.js';
-import type { PathFollow, Transform, Velocity, SpawnRequest, DestroyRequest } from '@engine/protocol/components.js';
+import type { PathFollow, Transform, Velocity, SpawnRequest, DestroyRequest, DebugTrace } from '@engine/protocol/components.js';
 import { pathFollowCapability, pathFollowAt } from './path-follow.js';
 import {
   transformCapability, shapeCapability, tagCapability, colorCapability,
@@ -106,6 +106,50 @@ describe('path-follow — 速度模长', () => {
     expect(v.vx).toBeCloseTo(3, 9);
     expect(v.vy).toBeCloseTo(4, 9);
     expect(Math.hypot(v.vx, v.vy)).toBeCloseTo(5, 9);
+  });
+});
+
+describe('path-follow — 路线方向优先', () => {
+  it('横向偏离后仍优先沿线段前进；未配置时保留直奔航点', () => {
+    const waypoints = [{ x: 0, y: 0 }, { x: 0, y: 10 }];
+    const plain = world(), guided = world();
+    follower(plain, 'm', 4, 8, { ...pathFollowAt(waypoints, 1, { arriveRadius: .1 }), index: 1 });
+    follower(guided, 'm', 4, 8, { ...pathFollowAt(waypoints, 1, { arriveRadius: .1, lookAhead: 6 }), index: 1 });
+    plain.tick(); guided.tick();
+    expect(vel(guided, 'm').vy).toBeGreaterThan(vel(plain, 'm').vy);
+    expect(vel(guided, 'm').vy).toBeGreaterThan(Math.abs(vel(guided, 'm').vx));
+    expect(Math.hypot(vel(guided, 'm').vx, vel(guided, 'm').vy)).toBeCloseTo(1, 9);
+  });
+
+  it('闭环越过端点所在横截面时切换方向，即使避让后横向偏离', () => {
+    const w = world();
+    follower(w, 'm', 4, 10.2, { ...pathFollowAt([{ x: 0, y: 0 }, { x: 0, y: 10 }], 1,
+      { loop: true, arriveRadius: .1, lookAhead: 6 }), index: 1 });
+    w.tick();
+    expect(pf(w, 'm').index).toBe(0);
+    expect(vel(w, 'm').vy).toBeLessThan(0);
+  });
+
+  it('非闭环的中间航点同样按横截面推进，末点仍按到达半径停靠', () => {
+    const w = world();
+    follower(w, 'm', 4, 10.2, { ...pathFollowAt([{ x: 0, y: 0 }, { x: 0, y: 10 }, { x: 10, y: 10 }], 1,
+      { arriveRadius: .1, lookAhead: 6 }), index: 1 });
+    w.tick();
+    expect(pf(w, 'm').index).toBe(2);
+    expect(vel(w, 'm').vx).toBeGreaterThan(0);
+  });
+
+  it('非法前瞻距离拒收并留痕，不将无效速度写入运动', () => {
+    const w = world();
+    follower(w, 'm', 0, 0, pathFollowAt([{ x: 0, y: 0 }, { x: 10, y: 0 }], 1,
+      { loop: true, arriveRadius: .1, lookAhead: 0 }));
+    w.createEntity('trace');
+    w.addComponent<DebugTrace>('trace', { type: 'DebugTrace', events: [] });
+    w.tick();
+    expect(vel(w, 'm').vx).toBe(0);
+    expect(vel(w, 'm').vy).toBe(0);
+    expect(w.getComponent<DebugTrace>('trace', 'DebugTrace')!.events.some(e =>
+      e.system === 'path-follow' && e.kind === 'reject' && e.what.includes('m'))).toBe(true);
   });
 });
 

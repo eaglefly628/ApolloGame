@@ -122,6 +122,7 @@ export interface AnimState3D extends Component {
   readonly type: 'AnimState3D';
   clip: string; // 动画名（glTF clip·如 'Run'/'Walk'）
   speed?: number; // 播放倍速·缺省 1
+  speedAtVelocity?: number; // 设正值时，Velocity 达到此值则以 speed 倍速播放；静止暂停。单位：世界单位/tick
   loop?: boolean; // 循环·缺省 true（false=播一遍停在末帧）
 }
 

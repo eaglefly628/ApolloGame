@@ -39,3 +39,12 @@
 
 - 宪法 `docs/design/data-driven-manifesto.md`；新游戏接入唯一入口 `docs/llm-onboarding.md`（数字口径以它 §0 机读真相为准·文档手抄数字 = 过期信号）；交接 `docs/workflow/SESSION-HANDOFF.md`；能力库 `src/skills/{atoms,tier1,tier2,tier3}`·组件契约 `src/engine/protocol/components.ts`。
 - 游戏 `games/`：d/e/f/g/i/z（出口 D+G·e/i = sample·f 冻结；q/x/t 已随 REQ-RETRO 2026-08-03 删除·再提到即过期信号）；**A/B/C + 101/102/103 为新项目**（A = 掼蛋·B = 雀宴日麻·C = 六人德州·101 = 海港绯闻 Merge·102 = Pixel Pour·103 = 幸存者·各 `docs/design/<game>/`）。
+
+
+## 项目 Session 归属与交接（owner 2026-10-09）
+
+- 为 ApolloGame 新建 session 前，通过受支持的项目元数据核对项目名称、projectId、根目录与执行环境；使用目标项目创建，创建后核实 session 的项目归属及目录。projectId 以执行创建操作的环境即时返回值为准，不跨环境猜测或复用。
+- 不默认用项目外独立 session 代替项目任务。无法绑定目标项目时，先说明具体限制并取得用户确认，再采用替代方式。
+- 项目外旧任务迁移前，整理可复用交接文档、源码与资产位置、启动及验证证据、未完成项和在途改动；保留原文件，确认目标任务能够接续后再按用户安排归档。
+- 侧边栏分组不等于项目绑定；不得仅凭改名、移动分组或写入本约定宣称 session 已迁移或绑定。
+- 本节是正式项目中的可阅读协作约定，不是任何特定 session 已完成绑定的证明。

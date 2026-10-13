@@ -58,6 +58,8 @@ import {
   orbitMotionCapability,
   pathFollowCapability,
   flowFieldCapability,
+  crowdAvoidanceCapability,
+  navigationGridCapability,
   statBindCapability,
   bounceRelayCapability,
   pullAnchorCapability,
@@ -160,6 +162,8 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   // （实测千单位查表 0.075ms/tick，而 A*-per-agent 同规模稳态 20ms+、首拍 500ms+）。
   // 与 pathfind 并存不互斥：单位多目标少用它，单位少各走各的用 pathfind。整数积分 → 逐位可复现。
   flowFieldCapability,
+  crowdAvoidanceCapability,
+  navigationGridCapability,
   // t2-stat-bind（REQ-SURVIVOR被动轴）：属性桥——把 ModifierTotals(单例)/Stats(本实体 effective) 按 key
   // 投影到本实体任意组件字段（moveSpeed→Controllable.speed、range→Shape.radius、attackSpeed→Timer.duration
   // 等），幂等重算不复利。runsAfter modifier-stack/stat-apply/resource-apply/timer-advance 打破传递环。

@@ -81,6 +81,8 @@ export interface OrcaAgent {
    * 缺省 `true` = 原码语义（原码里所有 agent 都跑 ORCA）。
    */
   reciprocal?: boolean;
+  /** 可选、正且有限的通行优先级；双方责任按对方/总优先级分配，缺省 1。 */
+  priority?: number;
 }
 
 /** 退化分支的计数（只为留痕与测试·不参与判定）。 */
@@ -319,11 +321,13 @@ export function orcaVelocity(
       u = { x: k * unitW.x, y: k * unitW.y };
     }
 
-    // **各让一半**（reciprocal 的由来）：line.point = 自己的速度 + u/2。
+    // 缺省各让一半；双方带优先级时按对方优先级分摊，本方越重越少偏离期望速度。
     // ⚠ 邻居**不还礼**时（没开 ORCA 的纯流场/软分离单位）必须独自让满，否则那一半没人让，
     // 「timeHorizon 内保证不撞」这句强承诺就静默变成半句（独立复查实测：ORCA 队对穿纯流场队
     // 最近两心距 0.1000，而半径和是 0.70）。
-    const share = other.reciprocal === false ? 1 : 0.5;
+    const ownPriority = Number.isFinite(self.priority) && (self.priority ?? 0) > 0 ? Math.min(self.priority!, 1e6) : 1;
+    const otherPriority = Number.isFinite(other.priority) && (other.priority ?? 0) > 0 ? Math.min(other.priority!, 1e6) : 1;
+    const share = other.reciprocal === false ? 1 : otherPriority / (ownPriority + otherPriority);
     if (share === 1 && stats) stats.oneSided++;
     lines.push({ point: { x: self.vx + share * u.x, y: self.vy + share * u.y }, direction });
   }

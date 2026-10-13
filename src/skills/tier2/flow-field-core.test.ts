@@ -117,3 +117,32 @@ describe('flow-field-core —— 纯函数核（拆核后的独立可测性）',
     expect(body).not.toMatch(/Date\.now|performance\.now|Math\.random/);
   });
 });
+
+
+describe('共享网格代价一致性（显式 opt-in）', () => {
+  it('高代价起点按步进总代价选方向，旧配置逐位保持原方向', () => {
+    const f=field({cols:3,rows:2,cost:[10,1,1,1,1,1],goals:[{x:2.5,y:1.5}]});
+    const legacy=getBakedField(f);
+    expect([...legacy.dir.slice(0,2)]).toEqual([1,1]);
+    f.costAware=true;
+    const current=getBakedField(f);
+    expect([...current.dir.slice(0,2)]).toEqual([1,0]);
+    expect(current.integration[0]).toBe(114);
+    expect(current.integration[1]+10*10).toBe(current.integration[0]);
+    expect(flowFieldBakes()).toBe(2);
+    f.costAware=false;
+    expect([...getBakedField(f).dir]).toEqual([...legacy.dir]);
+  });
+  it('每个可达格的方向均满足最短路积分，清缓存不会改变结果',()=>{
+    const f=field({cols:8,rows:8,cost:Array.from({length:64},(_,i)=>1+i*7%11),costAware:true});
+    const a=getBakedField(f);
+    for(let i=0;i<64;i++){
+      if(a.integration[i]===0)continue;
+      const dx=a.dir[2*i],dy=a.dir[2*i+1];
+      expect(dx!==0||dy!==0).toBe(true);
+      const j=i+dy*8+dx;
+      expect(a.integration[j]+a.cost[i]*(dx&&dy?14:10)).toBe(a.integration[i]);
+    }
+    clearFlowFieldCache();expect([...getBakedField(f).dir]).toEqual([...a.dir]);
+  });
+});

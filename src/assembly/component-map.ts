@@ -38,6 +38,8 @@ import type {
   Effect,
   EventWhen,
   Facing,
+  CrowdAvoidance,
+  CrowdVelocity,
   FlowAgent,
   FlowField,
   FaceDir,
@@ -79,6 +81,8 @@ import type {
   ModifierTotals,
   Model3D,
   Mortal,
+  NavigationGrid,
+  NavigationProfile,
   NavAgent,
   NavGraph,
   NavMesh,
@@ -235,6 +239,8 @@ export interface ComponentDataMap {
   ModifierTotals: Omit<ModifierTotals, 'type'>;
   Model3D: Omit<Model3D, 'type'>;
   Mortal: Omit<Mortal, 'type'>;
+  NavigationGrid: Omit<NavigationGrid, 'type'>;
+  NavigationProfile: Omit<NavigationProfile, 'type'>;
   NavAgent: Omit<NavAgent, 'type'>;
   NavGraph: Omit<NavGraph, 'type'>;
   NavMesh: Omit<NavMesh, 'type'>;
@@ -320,6 +326,8 @@ export interface ComponentDataMap {
   Cooldowns: Omit<Cooldowns, 'type'>;
   DamageTable: Omit<DamageTable, 'type'>;
   DebugTrace: Omit<DebugTrace, 'type'>;
+  CrowdAvoidance: Omit<CrowdAvoidance, 'type'>;
+  CrowdVelocity: Omit<CrowdVelocity, 'type'>;
   FlowAgent: Omit<FlowAgent, 'type'>;
   FlowField: Omit<FlowField, 'type'>;
   Group: Omit<Group, 'type'>;

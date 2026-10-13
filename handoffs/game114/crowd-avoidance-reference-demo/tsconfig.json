@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "paths": {
+      "@engine/*": ["./src/engine/*"],
+      "@skills/*": ["./src/skills/*"],
+      "@atom-skills/*": ["./src/skills/atoms/*"],
+      "@ui/*": ["./src/ui/*"],
+      "@renderer/*": ["./src/renderer/*"],
+      "@assets/*": ["./src/assets/*"],
+      "@runtime/*": ["./src/runtime/*"],
+      "@assembly/*": ["./src/assembly/*"],
+      "@services/*": ["./src/services/*"],
+      "@net/*": ["./src/net/*"],
+      "@zerocraft/engine/engine/*": ["./src/engine/*"],
+      "@zerocraft/engine/skills/*": ["./src/skills/*"],
+      "@zerocraft/engine/atom-skills/*": ["./src/skills/atoms/*"],
+      "@zerocraft/engine/ui/*": ["./src/ui/*"],
+      "@zerocraft/engine/renderer/*": ["./src/renderer/*"],
+      "@zerocraft/engine/assets/*": ["./src/assets/*"],
+      "@zerocraft/engine/runtime/*": ["./src/runtime/*"],
+      "@zerocraft/engine/assembly/*": ["./src/assembly/*"],
+      "@zerocraft/engine/services/*": ["./src/services/*"],
+      "@zerocraft/engine/net/*": ["./src/net/*"]
+    }
+  },
+  "include": ["demo/**/*.ts", "demo/**/*.tsx"],
+  "exclude": ["node_modules", "dist"]
+}
