@@ -1,0 +1,98 @@
+{
+  "back-hair.png": {
+    "size": [
+      932,
+      1688
+    ],
+    "rgba": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "sha256": "06a146f8c4189e3ec419fbb253b4f46bdeb75f3919f5ee12af253a9c31b50221"
+  },
+  "body.png": {
+    "size": [
+      932,
+      1688
+    ],
+    "rgba": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "sha256": "8165d22b799728a386a82b8774980cd25c93d491436e21357e71f111d1479b0d"
+  },
+  "cape.png": {
+    "size": [
+      932,
+      1688
+    ],
+    "rgba": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "sha256": "d0d77d114be56718c4c4c099975c7e61773eab74ccaae8817f2b01a39da97f09"
+  },
+  "face-closed.png": {
+    "size": [
+      977,
+      1609
+    ],
+    "rgba": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "sha256": "c62462ece86b55f24d62e571e9dc4cb49533af77cf188b949018aa9609548eba"
+  },
+  "face-open.png": {
+    "size": [
+      977,
+      1610
+    ],
+    "rgba": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "sha256": "fa969b0c8017e45d612193ad62e7773394b9163f03dd16fbf95eeebf8c836fb4"
+  },
+  "front-hair.png": {
+    "size": [
+      977,
+      1610
+    ],
+    "rgba": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "sha256": "a8300e35fb855e022353d47d653c83c4787a6980bd5793c5acfc6155cde9d3a9"
+  },
+  "master.png": {
+    "size": [
+      932,
+      1688
+    ],
+    "rgba": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "sha256": "d43f8cd5ac471a83f6cfe015f00a1b9f57ea872ea29a3e9ea75aa5e8d03d2974"
+  },
+  "sword.png": {
+    "size": [
+      932,
+      1688
+    ],
+    "rgba": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "sha256": "de0609745244ebdc35fbc76912672d40f408a9e4bd02a3893ee230b287f7edb7"
+  }
+}

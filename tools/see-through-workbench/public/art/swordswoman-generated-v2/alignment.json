@@ -1,0 +1,119 @@
+{
+  "canvas": {
+    "width": 932,
+    "height": 1688
+  },
+  "alignment": [
+    {
+      "id": "back-hair",
+      "sourceSize": [
+        932,
+        1688
+      ],
+      "scaleX": 0.65,
+      "scaleY": 0.57,
+      "translateX": 98,
+      "translateY": 0
+    },
+    {
+      "id": "cape-back",
+      "sourceSize": [
+        932,
+        1688
+      ],
+      "scaleX": 0.784,
+      "scaleY": 0.8,
+      "translateX": 58,
+      "translateY": 152
+    },
+    {
+      "id": "body",
+      "sourceSize": [
+        932,
+        1688
+      ],
+      "scaleX": 0.98,
+      "scaleY": 0.958,
+      "translateX": 5,
+      "translateY": 69
+    },
+    {
+      "id": "cape",
+      "sourceSize": [
+        932,
+        1688
+      ],
+      "scaleX": 0.784,
+      "scaleY": 0.8,
+      "translateX": 58,
+      "translateY": 152
+    },
+    {
+      "id": "sword",
+      "sourceSize": [
+        932,
+        1688
+      ],
+      "scaleX": 0.76,
+      "scaleY": 0.738,
+      "translateX": 85,
+      "translateY": 135
+    },
+    {
+      "id": "hand-left",
+      "sourceSize": [
+        932,
+        1688
+      ],
+      "scaleX": 0.98,
+      "scaleY": 0.958,
+      "translateX": 5,
+      "translateY": 69
+    },
+    {
+      "id": "hand-right",
+      "sourceSize": [
+        932,
+        1688
+      ],
+      "scaleX": 0.98,
+      "scaleY": 0.958,
+      "translateX": 5,
+      "translateY": 69
+    },
+    {
+      "id": "face-open",
+      "sourceSize": [
+        977,
+        1610
+      ],
+      "scaleX": 0.85,
+      "scaleY": 0.65,
+      "translateX": 55,
+      "translateY": 14
+    },
+    {
+      "id": "face-closed",
+      "sourceSize": [
+        977,
+        1609
+      ],
+      "scaleX": 0.85,
+      "scaleY": 0.65,
+      "translateX": 55,
+      "translateY": 14
+    },
+    {
+      "id": "front-hair",
+      "sourceSize": [
+        977,
+        1610
+      ],
+      "scaleX": 0.73,
+      "scaleY": 0.68,
+      "translateX": 99,
+      "translateY": 2
+    }
+  ],
+  "method": "native mesh coordinate alignment; generated texture bytes unchanged"
+}

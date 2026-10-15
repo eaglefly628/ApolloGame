@@ -1,0 +1,24 @@
+{
+  "asset": "blue-robed-swordswoman",
+  "comparisons": [
+    {
+      "timeMs": 0,
+      "nativeSha256": "f7a2a3bfbf8eaee00f403ed9aa81c22525d085addc1f88d1af284eaafb1e69e6",
+      "engineSha256": "f7a2a3bfbf8eaee00f403ed9aa81c22525d085addc1f88d1af284eaafb1e69e6",
+      "identical": true
+    },
+    {
+      "timeMs": 6040,
+      "nativeSha256": "2dc5ebb61fbbf1f375422cc6bfc8f5ee72347ba684f905aabbb345d0403f0fce",
+      "engineSha256": "2dc5ebb61fbbf1f375422cc6bfc8f5ee72347ba684f905aabbb345d0403f0fce",
+      "identical": true
+    },
+    {
+      "timeMs": 13000,
+      "nativeSha256": "d397bc9f69e7986e98362de3170da966d60e0290b36cb0bffd55de58c93bb3d5",
+      "engineSha256": "d397bc9f69e7986e98362de3170da966d60e0290b36cb0bffd55de58c93bb3d5",
+      "identical": true
+    }
+  ],
+  "browserErrors": []
+}

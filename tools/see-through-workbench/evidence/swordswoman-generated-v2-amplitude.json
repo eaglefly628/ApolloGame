@@ -1,0 +1,51 @@
+{
+  "manual": {
+    "headRotationDegrees": [
+      -12,
+      12
+    ],
+    "bodyRotationDegrees": [
+      -3,
+      3
+    ],
+    "hairBackPixels": [
+      -70,
+      70
+    ],
+    "capePixels": [
+      -60,
+      60
+    ],
+    "headOffsetXPixels": [
+      -18,
+      18
+    ],
+    "headOffsetYPixels": [
+      -8,
+      8
+    ]
+  },
+  "loop": {
+    "headRotationDegrees": [
+      -2.2,
+      2.2
+    ],
+    "hairBackPixels": [
+      -30,
+      38
+    ],
+    "capePixels": [
+      -24,
+      28
+    ],
+    "breathScaleY": [
+      1,
+      1.006
+    ]
+  },
+  "texturePixelsChanged": false,
+  "beforeAsset": "workspace/swordswoman-generated-v2-before-amplitude.stretch",
+  "runtimeReport": "swordswoman-generated-v2-runtime.json",
+  "neckConnection": "Pinned collar using three native warp deformers; no cover texture",
+  "independentReview": "PASS: neutral pixels identical, head and combined extremes visually checked, native parity and ten parameters verified"
+}

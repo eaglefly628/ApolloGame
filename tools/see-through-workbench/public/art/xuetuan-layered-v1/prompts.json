@@ -1,0 +1,43 @@
+{
+  "tool": "built-in image_gen",
+  "date": "2026-10-15",
+  "status": "pending-human-review",
+  "records": [
+    {
+      "id": "body",
+      "prompt": "Use case: precise-object-edit. Asset type: ONE RGBA transparent PNG layer for a 2D animated cat rig. Generate ONLY the isolated seated torso, fluffy neck ruff and all stationary legs/paws of the reference ragdoll cat. Remove the entire head, both ears and the tail, replacing all removed areas with transparency. Complete the hidden neck stump and shoulder fur so a separate head can overlap it. Preserve its seated pose, cream chest ruff, taupe back, white paw mittens, four visible feet, realistic fluffy fur, exact body outline and lighting. No head/face/eyes, no tail, no extra limbs. Do not draw a cat-shaped hole at the neck: finish a natural rounded fur stump. Full original 1312x1198 canvas, keep body position/scale and foot contact y=1140, do not zoom or center body. Genuine transparent alpha outside the component, no text, no diagram, no checkerboard. Reference-guided newly drawn complete component, not a segmentation mask.",
+      "sourceImage": "public/games/game112/art/cat/xuetuan-rest-v1.png",
+      "outputPath": "/Users/junbaili/.codex/generated_images/01a1240a-b630-7b62-bb36-10f430c12a2f/exec-0f3e7734-efb4-4945-bbd7-c05e955b5c9a.png"
+    },
+    {
+      "id": "tail",
+      "prompt": "Use case: precise-object-edit. Asset type: ONE RGBA transparent PNG layer for a 2D animated cat rig. Generate ONLY the isolated complete fluffy taupe tail of this specific reference ragdoll cat. Preserve its curved curled lying-on-floor shape from base at approximately (885,930) to tip at (1240,1060), fur direction, realistic soft fur and lighting. Complete the hidden tail root that will overlap behind the torso. No torso, face, ears, legs, shadow or floor. Keep the tail in the original bottom-right location on original 1312x1198 canvas, same scale and framing; all rest transparent. Genuine transparent alpha outside the component, no text, no diagram, no checkerboard. Reference-guided newly drawn complete component, not a segmentation mask.",
+      "sourceImage": "public/games/game112/art/cat/xuetuan-rest-v1.png",
+      "outputPath": "/Users/junbaili/.codex/generated_images/01a1240a-b630-7b62-bb36-10f430c12a2f/exec-312c4de8-a7eb-498f-8f0f-49fd5888f757.png"
+    },
+    {
+      "id": "ear-left",
+      "prompt": "Use case: precise-object-edit. Asset type: ONE RGBA transparent PNG layer for a 2D animated cat rig. Generate ONLY the isolated upper-left ear as seen by the viewer of this reference ragdoll cat. Preserve this ear's exact triangular silhouette, taupe rim, pink inner ear, pale wispy fur, tilt and lighting. Complete its hidden fluffy base for overlap under a separate head. No face, second ear or body. Keep original approximate ear location (x300..485,y25..225) on full 1312x1198 canvas and original scale. All other areas transparent. Genuine transparent alpha outside the component, no text, no diagram, no checkerboard. Reference-guided newly drawn complete component, not a segmentation mask.",
+      "sourceImage": "public/games/game112/art/cat/xuetuan-rest-v1.png",
+      "outputPath": "/Users/junbaili/.codex/generated_images/01a1240a-b630-7b62-bb36-10f430c12a2f/exec-d596bf97-ece4-4e24-87e5-4cdf7da1d565.png"
+    },
+    {
+      "id": "ear-right",
+      "prompt": "Use case: precise-object-edit. Asset type: ONE RGBA transparent PNG layer for a 2D animated cat rig. Generate ONLY the isolated upper-right ear as seen by the viewer of this reference ragdoll cat. Preserve its exact swept-right triangular silhouette, taupe rim, pink inner ear, pale wispy fur, tilt and lighting. Complete its hidden fluffy base for overlap under a separate head. No face, second ear or body. Keep original approximate ear location (x640..835,y190..340) on full 1312x1198 canvas and original scale. All other areas transparent. Genuine transparent alpha outside the component, no text, no diagram, no checkerboard. Reference-guided newly drawn complete component, not a segmentation mask.",
+      "sourceImage": "public/games/game112/art/cat/xuetuan-rest-v1.png",
+      "outputPath": "/Users/junbaili/.codex/generated_images/01a1240a-b630-7b62-bb36-10f430c12a2f/exec-2c1b4035-e10d-4b59-9600-ff571fa6b5e7.png"
+    },
+    {
+      "id": "head-closed",
+      "prompt": "Use case: precise-object-edit. Asset type: ONE RGBA transparent PNG layer for a 2D animated cat rig. Change ONLY the two open blue eyes to naturally gently CLOSED eyelids in this isolated earless cat head. Preserve every other aspect of image 1: exact canvas, head framing/scale/tilt, white inverted V blaze, pink nose, mouth, whiskers, detailed fur silhouette, lighting and transparency. Both eyelids smoothly closed with natural short fur, no blue iris visible, no new eyebrows or lashes. Do not add ears, torso, background or neck. This layer must align over the input head for a blink. Genuine transparent alpha outside the component, no text, no diagram, no checkerboard. Reference-guided newly drawn complete component, not a segmentation mask.",
+      "sourceImage": "head-open.png",
+      "outputPath": "/Users/junbaili/.codex/generated_images/01a1240a-b630-7b62-bb36-10f430c12a2f/exec-50062078-873e-4ef8-b5ff-efeb140e3d4d.png"
+    },
+    {
+      "id": "head-open",
+      "prompt": "Use case: precise-object-edit. Asset type: ONE transparent PNG component for a layered 2D animated cat rig. Reference is Xuetuan: a seated fluffy cream-white and warm taupe ragdoll cat with bright blue eyes, white inverted V blaze and pink nose. Generate ONLY its isolated HEAD WITH FACE, WITHOUT EARS, without neck ruff, torso, paws or tail. Preserve the exact face identity, inquisitive tilt, eye positions, facial markings, lighting, realistic soft fur and scale from the reference. Keep the head at its original location on the full original 1312x1198 canvas, same framing; do not center or enlarge the component. Fill the hidden top-of-skull under both removed ears with natural taupe fur, and the hidden bottom of the head behind the neck ruff with cream fur for rig overlap. Both eyes fully open. Entire rest of image genuinely transparent, no shadow, no text, no checkerboard. This is a newly completed animation layer, not a segmentation mask.",
+      "sourceImage": "public/games/game112/art/cat/xuetuan-rest-v1.png",
+      "outputPath": "/Users/junbaili/.codex/generated_images/01a1240a-b630-7b62-bb36-10f430c12a2f/exec-170fa36e-ddfd-457e-87c2-d0ddb97ca458.png"
+    }
+  ]
+}

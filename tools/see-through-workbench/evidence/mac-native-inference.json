@@ -1,0 +1,22 @@
+{
+  "input": "user-provided silver-haired portrait",
+  "backend": "MPS",
+  "torch": "2.8.0",
+  "ramGiB": 32,
+  "colorResolution": 384,
+  "depthResolution": 384,
+  "bodySteps": 30,
+  "faceSteps": 30,
+  "depthSteps": 4,
+  "elapsedSeconds": 589.05,
+  "psdSize": [
+    384,
+    384
+  ],
+  "psdLayers": 11,
+  "psdSha256": "d04dac12415906363822c886c3a2209d2738cbcfb234d5bfb8a64298663452da",
+  "nativeCoreFilesChanged": 0,
+  "wholePipelineExit": "success",
+  "quality": "initial rig and low-resolution generation; facial layer edges may need refinement",
+  "runtimeReport": "silver-haired-portrait-runtime.json"
+}

@@ -1,0 +1,154 @@
+{
+  "parameters": [
+    {
+      "id": "ParamAngleX",
+      "name": "头部左右",
+      "min": -30,
+      "max": 30,
+      "default": 0,
+      "bindings": [
+        {
+          "animationId": "parameters",
+          "nodeId": "head-warp-X",
+          "property": "mesh_verts"
+        }
+      ]
+    },
+    {
+      "id": "ParamAngleY",
+      "name": "头部上下",
+      "min": -30,
+      "max": 30,
+      "default": 0,
+      "bindings": [
+        {
+          "animationId": "parameters",
+          "nodeId": "head-warp-Y",
+          "property": "mesh_verts"
+        }
+      ]
+    },
+    {
+      "id": "ParamAngleZ",
+      "name": "头部倾斜",
+      "min": -30,
+      "max": 30,
+      "default": 0,
+      "bindings": [
+        {
+          "animationId": "parameters",
+          "nodeId": "head-warp-Z",
+          "property": "mesh_verts"
+        }
+      ]
+    },
+    {
+      "id": "ParamBodyAngleZ",
+      "name": "身体倾斜",
+      "min": -10,
+      "max": 10,
+      "default": 0,
+      "bindings": [
+        {
+          "animationId": "parameters",
+          "nodeId": "body-root",
+          "property": "rotation"
+        }
+      ]
+    },
+    {
+      "id": "ParamBreath",
+      "name": "呼吸",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "bindings": [
+        {
+          "animationId": "parameters",
+          "nodeId": "body-root",
+          "property": "scaleY"
+        }
+      ]
+    },
+    {
+      "id": "ParamHairBack",
+      "name": "后发摆动",
+      "min": -1,
+      "max": 1,
+      "default": 0,
+      "bindings": [
+        {
+          "animationId": "parameters",
+          "nodeId": "back-hair",
+          "property": "mesh_verts"
+        }
+      ]
+    },
+    {
+      "id": "ParamHairFront",
+      "name": "前发摆动",
+      "min": -1,
+      "max": 1,
+      "default": 0,
+      "bindings": [
+        {
+          "animationId": "parameters",
+          "nodeId": "front-hair",
+          "property": "mesh_verts"
+        }
+      ]
+    },
+    {
+      "id": "ParamCape",
+      "name": "披风摆动",
+      "min": -1,
+      "max": 1,
+      "default": 0,
+      "bindings": [
+        {
+          "animationId": "parameters",
+          "nodeId": "cape",
+          "property": "mesh_verts"
+        },
+        {
+          "animationId": "parameters",
+          "nodeId": "cape-back",
+          "property": "mesh_verts"
+        }
+      ]
+    },
+    {
+      "id": "ParamEyeLOpen",
+      "name": "左眼开合",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "bindings": [
+        {
+          "animationId": "parameters",
+          "nodeId": "eye-closed-L",
+          "property": "opacity"
+        }
+      ]
+    },
+    {
+      "id": "ParamEyeROpen",
+      "name": "右眼开合",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "bindings": [
+        {
+          "animationId": "parameters",
+          "nodeId": "eye-closed-R",
+          "property": "opacity"
+        }
+      ]
+    }
+  ],
+  "manualClip": "controls",
+  "parameterClip": "parameters",
+  "texturePixelsChanged": false,
+  "nativeSourceModified": false,
+  "limits": "Head X/Y are planar offsets, not newly generated alternate viewpoints. Eyes have independent closed patches; mouth/eyeball direction are not independently generated."
+}

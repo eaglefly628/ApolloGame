@@ -1,0 +1,45 @@
+{
+  "physicsRules": [],
+  "parts": 20,
+  "meshes": 20,
+  "warps": 14,
+  "clips": [
+    {
+      "id": "49mtuu2",
+      "name": "Parameters",
+      "duration": 2000
+    },
+    {
+      "id": "idle",
+      "name": "自然待机 · 呼吸 · 眨眼 · 发丝",
+      "duration": 4000
+    },
+    {
+      "id": "nod",
+      "name": "轻微点头",
+      "duration": 4000
+    },
+    {
+      "id": "shake",
+      "name": "轻微摇头",
+      "duration": 4000
+    },
+    {
+      "id": "curious",
+      "name": "歪头观察",
+      "duration": 4000
+    },
+    {
+      "id": "greeting",
+      "name": "呼吸 · 问候",
+      "duration": 4000
+    },
+    {
+      "id": "showcase",
+      "name": "连续组合 · 待机 → 观察 → 点头 → 摇头",
+      "duration": 16000
+    }
+  ],
+  "input": "/Users/junbaili/Documents/GitHub/ApolloGame/tools/see-through-workbench/workspace/mac-verified-output/test_image3.psd",
+  "errors": []
+}

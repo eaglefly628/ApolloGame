@@ -1,0 +1,26 @@
+[
+  {
+    "clipId": "showcase",
+    "visiblyChanges": true
+  },
+  {
+    "clipId": "curious",
+    "visiblyChanges": true
+  },
+  {
+    "clipId": "nod",
+    "visiblyChanges": true
+  },
+  {
+    "clipId": "shake",
+    "visiblyChanges": true
+  },
+  {
+    "clipId": "wink",
+    "visiblyChanges": true
+  },
+  {
+    "clipId": "greeting",
+    "visiblyChanges": true
+  }
+]

@@ -1,0 +1,28 @@
+{
+  "input": "user attachment: 截屏2026-10-10 14.54.31.png",
+  "inputSha256": "30281602687a3872d797b213dc89f1cd1b2db8d83c86604e1109694044e5d712",
+  "backend": "MPS",
+  "torch": "2.8.0",
+  "colorResolution": 384,
+  "depthResolution": 384,
+  "bodySteps": 30,
+  "faceSteps": 30,
+  "depthSteps": 4,
+  "elapsedSeconds": 611.4,
+  "psdLayers": 15,
+  "parts": 20,
+  "meshes": 20,
+  "warps": 14,
+  "actionClips": 6,
+  "nativeCoreFilesChanged": 0,
+  "wholePipelineExit": "success",
+  "warnings": [
+    "Native depth model empty-mask NumPy mean/cast warnings; PSD export succeeded"
+  ],
+  "quality": "Automatic layered animation draft; generated face and clothing details differ from source image; back hair native mesh continuously clipped to remove extra generated artifacts",
+  "meshReport": "blue-robed-swordswoman-mesh-refinement.json",
+  "runtimeReport": "blue-robed-swordswoman-runtime.json",
+  "psd": "deliverables/青衣剑客分层.psd (raw upstream PSD; mesh refinement lives in .stretch)",
+  "animation": "deliverables/青衣剑客动画.stretch",
+  "preview": "deliverables/青衣剑客动画预览.gif"
+}

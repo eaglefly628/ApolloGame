@@ -1,0 +1,8 @@
+{
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "torch": "2.8.0",
+  "backend": "mps",
+  "bf16Matmul": "passed",
+  "mpsGenerator": "passed",
+  "fullInference": "not-established-by-this-check"
+}

@@ -1,0 +1,56 @@
+{
+  "cases": [
+    {
+      "parameter": "ParamAngleX",
+      "value": 30,
+      "changesPixels": true
+    },
+    {
+      "parameter": "ParamAngleY",
+      "value": 30,
+      "changesPixels": true
+    },
+    {
+      "parameter": "ParamAngleZ",
+      "value": 30,
+      "changesPixels": true
+    },
+    {
+      "parameter": "ParamBodyAngleZ",
+      "value": 10,
+      "changesPixels": true
+    },
+    {
+      "parameter": "ParamBreath",
+      "value": 1,
+      "changesPixels": true
+    },
+    {
+      "parameter": "ParamHairBack",
+      "value": 1,
+      "changesPixels": true
+    },
+    {
+      "parameter": "ParamHairFront",
+      "value": 1,
+      "changesPixels": true
+    },
+    {
+      "parameter": "ParamCape",
+      "value": 1,
+      "changesPixels": true
+    },
+    {
+      "parameter": "ParamEyeLOpen",
+      "value": 0,
+      "changesPixels": true
+    },
+    {
+      "parameter": "ParamEyeROpen",
+      "value": 0,
+      "changesPixels": true
+    }
+  ],
+  "nativeSliderKeyboardWorks": true,
+  "browserErrors": []
+}

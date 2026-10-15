@@ -1,0 +1,28 @@
+{
+  "reference": "user attachment 截屏2026-10-10 14.54.31.png",
+  "method": "built-in image_gen master and independent transparent component generation",
+  "generatedComponentPNGs": 7,
+  "nativeMeshParts": 12,
+  "nativeCanvas": [
+    932,
+    1688
+  ],
+  "texturePixelsChangedByPacking": false,
+  "clips": [
+    "idle",
+    "breeze",
+    "nod",
+    "showcase",
+    "parameters",
+    "controls"
+  ],
+  "showcaseDurationMs": 16000,
+  "framesExported": 128,
+  "nativeSourceFilesChanged": 0,
+  "runtimeReport": "swordswoman-generated-v2-runtime.json",
+  "qualification": "Reference-based repaint, not pixel-perfect restoration. Facial identity and costume details differ somewhat from user prototype. Native motion supports breathing, blink, enlarged hair/cape sway and head mesh motion. No walking or new viewpoint.",
+  "parameters": 10,
+  "manualControlClip": "controls",
+  "amplitudeRevision": "2026-10-11 increased motion; collar pinned by native warp lattice",
+  "warpDeformers": 3
+}

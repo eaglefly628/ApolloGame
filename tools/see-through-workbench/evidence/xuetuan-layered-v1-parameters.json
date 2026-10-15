@@ -1,0 +1,70 @@
+{
+  "extremes": [
+    {
+      "id": "HeadTilt",
+      "min": -1,
+      "max": 1,
+      "hashes": [
+        "a8c8174cab6161fb92cce53ce49b80e5b6cdaa35926251c431a269f4fb651b72",
+        "2c9cf35a610b61076a4f6a1432898ebbeacc12c213f7e2f8420a828f6bbfca20"
+      ]
+    },
+    {
+      "id": "EarLeft",
+      "min": -1,
+      "max": 1,
+      "hashes": [
+        "df6b14b3499903b917da529096f365b79bb991749fe9d713330876831f97448a",
+        "fc1569a537c75c6b9fe07f496693c0c7d574d7d959ab20cccd4d2e6575d8ed11"
+      ]
+    },
+    {
+      "id": "EarRight",
+      "min": -1,
+      "max": 1,
+      "hashes": [
+        "855eeb88ffe6780e46a90ce75d3c073f1591a62eae36c819d700f55d4ca4069a",
+        "77e78605785d94ec8a073bd6e43adfe8c08d321dcb08214184a98cfb8bb750de"
+      ]
+    },
+    {
+      "id": "Tail",
+      "min": -1,
+      "max": 1,
+      "hashes": [
+        "8ff9adacd8660d4c4f20c838258a857fd3386685cefd96c51655f4bbdf12b00a",
+        "f488cbb45324cc5fb579ed2749a64bd21ad268e01339806896ecf87fdd1ffb10"
+      ]
+    },
+    {
+      "id": "Breath",
+      "min": 0,
+      "max": 1,
+      "hashes": [
+        "a1f02d2b013684e5278902c1d6290fadcb67d63234b448912c8192269671e53a",
+        "6d6ba9b81115f62793019946129c4a961ea434f3e93bea20f393df3e89a86d1d"
+      ]
+    },
+    {
+      "id": "EyeOpen-left",
+      "min": 0,
+      "max": 1,
+      "hashes": [
+        "21c8012ff0490b5d49b878657b6a9cb9b73ab2cab2da9cf5bee2ce12a5c24b19",
+        "a1f02d2b013684e5278902c1d6290fadcb67d63234b448912c8192269671e53a"
+      ]
+    },
+    {
+      "id": "EyeOpen-right",
+      "min": 0,
+      "max": 1,
+      "hashes": [
+        "7704d4775d8effc09a2fc68ce36c232324d86cb5f7c27623c1b74e888bcfaa03",
+        "a1f02d2b013684e5278902c1d6290fadcb67d63234b448912c8192269671e53a"
+      ]
+    }
+  ],
+  "browserErrors": [],
+  "exportedFrames": 80,
+  "pendingHumanReview": true
+}

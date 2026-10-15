@@ -1,0 +1,51 @@
+{
+  "part": "back hair",
+  "method": "continuous native mesh triangle clipping; UV interpolation at silhouette boundary",
+  "trianglesBefore": 277,
+  "trianglesAfter": 375,
+  "verticesAfter": 887,
+  "textureBytesChanged": false,
+  "coreFilesChanged": 0,
+  "boundary": [
+    [
+      0,
+      135
+    ],
+    [
+      20,
+      139
+    ],
+    [
+      40,
+      135
+    ],
+    [
+      60,
+      128
+    ],
+    [
+      75,
+      130
+    ],
+    [
+      90,
+      149
+    ],
+    [
+      105,
+      160
+    ],
+    [
+      130,
+      170
+    ],
+    [
+      160,
+      180
+    ],
+    [
+      200,
+      190
+    ]
+  ]
+}

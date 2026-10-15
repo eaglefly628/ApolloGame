@@ -1,0 +1,39 @@
+{
+  "checkedAt": "2026-10-15T12:30:18.737Z",
+  "project": "original vector fixture; not See-through inference",
+  "nativeFilesChanged": false,
+  "comparisons": [
+    {
+      "timeMs": 0,
+      "nativeSha256": "92dfb101a5e6eb56bf59c7756ac197f334068364c76b92d7e6e3c17ec1f72254",
+      "engineSha256": "92dfb101a5e6eb56bf59c7756ac197f334068364c76b92d7e6e3c17ec1f72254",
+      "identical": true
+    },
+    {
+      "timeMs": 1380,
+      "nativeSha256": "61eeecca0ff53f8e177d8c05e56388f1b17c7802ad0de22af2471250d85b3a71",
+      "engineSha256": "61eeecca0ff53f8e177d8c05e56388f1b17c7802ad0de22af2471250d85b3a71",
+      "identical": true
+    },
+    {
+      "timeMs": 2000,
+      "nativeSha256": "75c68e6b8ef48c737127be76557d79905f3a6c066f8d77aa87a969794fadb753",
+      "engineSha256": "75c68e6b8ef48c737127be76557d79905f3a6c066f8d77aa87a969794fadb753",
+      "identical": true
+    }
+  ],
+  "checks": [
+    "native pixel equality at 3 times",
+    "visible blinking",
+    "visible mesh/breathing changes",
+    "parameter-driven gaze",
+    "clip switch",
+    "pause",
+    "invalid clip rejection",
+    "corrupt bundle rejection",
+    "missing audio rejection",
+    "broken PNG rejection",
+    "original physicsRules retained after reload"
+  ],
+  "browserErrors": []
+}

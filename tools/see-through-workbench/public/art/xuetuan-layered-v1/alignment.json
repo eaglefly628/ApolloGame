@@ -1,0 +1,11 @@
+{
+  "canvas": [1312, 1199],
+  "method": "Native mesh coordinates; original generated texture bytes preserved. Completed neck stump is folded behind head.",
+  "parts": [
+    {"id":"tail","name":"完整尾巴","file":"tail.png","parent":"root","order":0,"affine":[1,1,0,0]},
+    {"id":"body","name":"躯干胸毛与固定四足","file":"body.png","parent":"root","order":1,"affine":[1,1,0,0]},
+    {"id":"ear-left","name":"左耳 · 完整耳根","file":"ear-left.png","parent":"head-root","order":2,"affine":[0.28,0.28,271,19],"pivot":[390,215]},
+    {"id":"ear-right","name":"右耳 · 完整耳根","file":"ear-right.png","parent":"head-root","order":2.1,"affine":[0.36,0.30,425,135],"pivot":[705,305]},
+    {"id":"head-open","name":"头部 · 睁眼","file":"head-open.png","parent":"head-root","order":3,"affine":[0.64,0.64,115,23]}
+  ]
+}
