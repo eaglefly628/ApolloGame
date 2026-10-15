@@ -4690,163 +4690,167 @@
     {
       "path": "handoffs/game114/mechanism-sample/garden-assets.json",
       "bytes": 2111,
-      "source": "game114-upload-checkout",
       "snapshotSha256": "6b1e00911e9190b7b746358ad311be81e87efd079c042552c1d18fa82ab38b5b",
-      "uploadedSha256": "6b1e00911e9190b7b746358ad311be81e87efd079c042552c1d18fa82ab38b5b"
+      "uploadedSha256": "6b1e00911e9190b7b746358ad311be81e87efd079c042552c1d18fa82ab38b5b",
+      "source": "game114-completed-road-centreline-followup"
     },
     {
       "path": "handoffs/game114/mechanism-sample/garden-scene.ts",
       "bytes": 2592,
-      "source": "game114-upload-checkout",
       "snapshotSha256": "963499fbe67105a82a6b911f0cefeadcf2bb833f3d11b46d65fa305fc8d45260",
-      "uploadedSha256": "963499fbe67105a82a6b911f0cefeadcf2bb833f3d11b46d65fa305fc8d45260"
+      "uploadedSha256": "963499fbe67105a82a6b911f0cefeadcf2bb833f3d11b46d65fa305fc8d45260",
+      "source": "game114-completed-road-centreline-followup"
     },
     {
       "path": "handoffs/game114/mechanism-sample/main-path-patrol-preview.png",
       "bytes": 124315,
-      "source": "game114-upload-checkout",
       "snapshotSha256": "8e448ef36e11f9815d71936cb87073e38914e18605363bcf9d9afd17f75dcc85",
-      "uploadedSha256": "8e448ef36e11f9815d71936cb87073e38914e18605363bcf9d9afd17f75dcc85"
+      "uploadedSha256": "8e448ef36e11f9815d71936cb87073e38914e18605363bcf9d9afd17f75dcc85",
+      "source": "game114-completed-road-centreline-followup"
     },
     {
       "path": "handoffs/game114/mechanism-sample/play-scene.ts",
-      "bytes": 12167,
-      "source": "game114-upload-checkout",
-      "snapshotSha256": "394c59de2711eef35e9cce36b8eb8da6f0faf090657d5d4b1242fc56b01817b3",
-      "uploadedSha256": "394c59de2711eef35e9cce36b8eb8da6f0faf090657d5d4b1242fc56b01817b3"
+      "bytes": 12300,
+      "snapshotSha256": "e1456b7883d6786fcdb21881137ce90014bd55412172dae3c27ce52f1bcd9583",
+      "uploadedSha256": "e1456b7883d6786fcdb21881137ce90014bd55412172dae3c27ce52f1bcd9583",
+      "source": "game114-completed-road-centreline-followup",
+      "previousSnapshotSha256": "394c59de2711eef35e9cce36b8eb8da6f0faf090657d5d4b1242fc56b01817b3"
     },
     {
       "path": "handoffs/game114/mechanism-sample/public/textures/garden-map-v1.png",
       "bytes": 3797844,
-      "source": "game114-upload-checkout",
       "snapshotSha256": "014c0d0ed7c04eed13a105248bf1735d2be569fd7eb178056cb6ad31e400e826",
-      "uploadedSha256": "014c0d0ed7c04eed13a105248bf1735d2be569fd7eb178056cb6ad31e400e826"
+      "uploadedSha256": "014c0d0ed7c04eed13a105248bf1735d2be569fd7eb178056cb6ad31e400e826",
+      "source": "game114-completed-road-centreline-followup"
     },
     {
       "path": "handoffs/game114/mechanism-sample/public/textures/garden-map-v2.png",
       "bytes": 2733703,
-      "source": "game114-upload-checkout",
       "snapshotSha256": "bd077af27ede34216deefe10e40dc121ddcda1a8aea5758e72e192636c14e83b",
-      "uploadedSha256": "bd077af27ede34216deefe10e40dc121ddcda1a8aea5758e72e192636c14e83b"
+      "uploadedSha256": "bd077af27ede34216deefe10e40dc121ddcda1a8aea5758e72e192636c14e83b",
+      "source": "game114-completed-road-centreline-followup"
     },
     {
       "path": "handoffs/game114/mechanism-sample/public/textures/garden-map-v3.png",
       "bytes": 2772566,
-      "source": "game114-upload-checkout",
       "snapshotSha256": "de73862f61f7347888d4a6db3fa34d300043c13d21cb4ca1fa12e5c9e9fb9456",
-      "uploadedSha256": "de73862f61f7347888d4a6db3fa34d300043c13d21cb4ca1fa12e5c9e9fb9456"
+      "uploadedSha256": "de73862f61f7347888d4a6db3fa34d300043c13d21cb4ca1fa12e5c9e9fb9456",
+      "source": "game114-completed-road-centreline-followup"
     },
     {
       "path": "handoffs/game114/mechanism-sample/public/textures/garden-map-v4.png",
       "bytes": 2823931,
-      "source": "game114-upload-checkout",
       "snapshotSha256": "694998cb57e235b3ac2adcd5cc55312af7b7f23dc70a1071b5ae6024dba578ff",
-      "uploadedSha256": "694998cb57e235b3ac2adcd5cc55312af7b7f23dc70a1071b5ae6024dba578ff"
+      "uploadedSha256": "694998cb57e235b3ac2adcd5cc55312af7b7f23dc70a1071b5ae6024dba578ff",
+      "source": "game114-completed-road-centreline-followup"
     },
     {
       "path": "handoffs/game114/mechanism-sample/road-centrelines.json",
-      "bytes": 1903,
-      "source": "game114-upload-checkout",
-      "snapshotSha256": "2c43e396a2aaf946d46e59cb64f4f01bae7d374275e83ee493c91dfdabd7f973",
-      "uploadedSha256": "2c43e396a2aaf946d46e59cb64f4f01bae7d374275e83ee493c91dfdabd7f973"
+      "bytes": 4733,
+      "snapshotSha256": "f2595dedb18d3d9fb03d41b49d5ee7991e8a70d3abcbbd7e302a05b799268ba1",
+      "uploadedSha256": "f2595dedb18d3d9fb03d41b49d5ee7991e8a70d3abcbbd7e302a05b799268ba1",
+      "source": "game114-completed-road-centreline-followup",
+      "previousSnapshotSha256": "2c43e396a2aaf946d46e59cb64f4f01bae7d374275e83ee493c91dfdabd7f973"
     },
     {
       "path": "handoffs/game114/mechanism-sample/verify-garden.ts",
       "bytes": 2497,
-      "source": "game114-upload-checkout",
       "snapshotSha256": "28fa4925f8317c74220b6c1e2b48bc65657a122350eb03fa0a2a311a73645512",
-      "uploadedSha256": "28fa4925f8317c74220b6c1e2b48bc65657a122350eb03fa0a2a311a73645512"
+      "uploadedSha256": "28fa4925f8317c74220b6c1e2b48bc65657a122350eb03fa0a2a311a73645512",
+      "source": "game114-completed-road-centreline-followup"
     },
     {
       "path": "handoffs/game114/mechanism-sample/verify-play.ts",
-      "bytes": 5738,
-      "source": "game114-upload-checkout",
-      "snapshotSha256": "81bcced1d78dab730f7960ba5a02f9ec7babe938800b43940bc0650ec0415b60",
-      "uploadedSha256": "81bcced1d78dab730f7960ba5a02f9ec7babe938800b43940bc0650ec0415b60"
+      "bytes": 7657,
+      "snapshotSha256": "7fcbd8314706fe94310aac236b2d0c68cb600ea76caa4be9d10adfc91fcf8b7c",
+      "uploadedSha256": "7fcbd8314706fe94310aac236b2d0c68cb600ea76caa4be9d10adfc91fcf8b7c",
+      "source": "game114-completed-road-centreline-followup",
+      "previousSnapshotSha256": "81bcced1d78dab730f7960ba5a02f9ec7babe938800b43940bc0650ec0415b60"
     },
     {
       "path": "tools/audits/game114-play.audit.ts",
       "bytes": 727,
-      "source": "game114-upload-checkout",
       "snapshotSha256": "f39a86094ab381e876eae4e0d98ab8d4ba57318de79630fb1d64709f4c81be96",
-      "uploadedSha256": "f39a86094ab381e876eae4e0d98ab8d4ba57318de79630fb1d64709f4c81be96"
+      "uploadedSha256": "f39a86094ab381e876eae4e0d98ab8d4ba57318de79630fb1d64709f4c81be96",
+      "source": "game114-completed-road-centreline-followup"
     },
     {
       "path": "handoffs/game114/mechanism-sample/README.md",
-      "bytes": 7369,
-      "source": "game114-upload-checkout",
-      "snapshotSha256": "b457f05c6977810240de8aaf37071819faab04832b03b40a8172fed55aac0ae8",
-      "uploadedSha256": "b457f05c6977810240de8aaf37071819faab04832b03b40a8172fed55aac0ae8"
+      "bytes": 7460,
+      "snapshotSha256": "449356cbbe5d3d1efa41d7162a452e6a4be7fb201fae789f24d580a5d231584d",
+      "uploadedSha256": "449356cbbe5d3d1efa41d7162a452e6a4be7fb201fae789f24d580a5d231584d",
+      "source": "game114-completed-road-centreline-followup",
+      "previousSnapshotSha256": "b457f05c6977810240de8aaf37071819faab04832b03b40a8172fed55aac0ae8"
     },
     {
       "path": "handoffs/game114/mechanism-sample/controls-ui.ts",
       "bytes": 4648,
-      "source": "game114-upload-checkout",
       "snapshotSha256": "596722187511928918ad6f34ab816d9357f2fc457bbd24e0d78f8f875a864e35",
-      "uploadedSha256": "596722187511928918ad6f34ab816d9357f2fc457bbd24e0d78f8f875a864e35"
+      "uploadedSha256": "596722187511928918ad6f34ab816d9357f2fc457bbd24e0d78f8f875a864e35",
+      "source": "game114-completed-road-centreline-followup"
     },
     {
       "path": "handoffs/game114/mechanism-sample/index.html",
       "bytes": 504,
-      "source": "game114-upload-checkout",
       "snapshotSha256": "310bd0775bc7190ffc34aea6f47c3bb266c6699caf19e400dc48eeb1a64fee6f",
-      "uploadedSha256": "310bd0775bc7190ffc34aea6f47c3bb266c6699caf19e400dc48eeb1a64fee6f"
+      "uploadedSha256": "310bd0775bc7190ffc34aea6f47c3bb266c6699caf19e400dc48eeb1a64fee6f",
+      "source": "game114-completed-road-centreline-followup"
     },
     {
       "path": "handoffs/game114/mechanism-sample/main.ts",
       "bytes": 3804,
-      "source": "game114-upload-checkout",
       "snapshotSha256": "29c434a577257bd0a1ce28ce8d6ea88cbaaf4cac91df37485c697542b085e224",
-      "uploadedSha256": "29c434a577257bd0a1ce28ce8d6ea88cbaaf4cac91df37485c697542b085e224"
+      "uploadedSha256": "29c434a577257bd0a1ce28ce8d6ea88cbaaf4cac91df37485c697542b085e224",
+      "source": "game114-completed-road-centreline-followup"
     },
     {
       "path": "handoffs/game114/mechanism-sample/package.json",
       "bytes": 788,
-      "source": "game114-upload-checkout",
       "snapshotSha256": "ce733dadbcfaf9a0632f39b8726bc07af0e8a3c3b2a288959009092517039922",
-      "uploadedSha256": "ce733dadbcfaf9a0632f39b8726bc07af0e8a3c3b2a288959009092517039922"
+      "uploadedSha256": "ce733dadbcfaf9a0632f39b8726bc07af0e8a3c3b2a288959009092517039922",
+      "source": "game114-completed-road-centreline-followup"
     },
     {
       "path": "handoffs/game114/mechanism-sample/scenario-controls.ts",
       "bytes": 12686,
-      "source": "game114-upload-checkout",
       "snapshotSha256": "0794b4b768127d6b2e9d6f2fec904f5c7ec9954417bead29083151f9a9e897c5",
-      "uploadedSha256": "0794b4b768127d6b2e9d6f2fec904f5c7ec9954417bead29083151f9a9e897c5"
+      "uploadedSha256": "0794b4b768127d6b2e9d6f2fec904f5c7ec9954417bead29083151f9a9e897c5",
+      "source": "game114-completed-road-centreline-followup"
     },
     {
       "path": "src/engine/protocol/components/crowd.ts",
       "bytes": 3383,
-      "source": "game114-upload-checkout",
       "snapshotSha256": "70d62c0bac6654ce4ddddf2178fecddb5e4d87c643dc1ba3937279f5bcd3efbb",
-      "uploadedSha256": "70d62c0bac6654ce4ddddf2178fecddb5e4d87c643dc1ba3937279f5bcd3efbb"
+      "uploadedSha256": "70d62c0bac6654ce4ddddf2178fecddb5e4d87c643dc1ba3937279f5bcd3efbb",
+      "source": "game114-completed-road-centreline-followup"
     },
     {
       "path": "src/skills/tier2/crowd-avoidance.ts",
       "bytes": 18570,
-      "source": "game114-upload-checkout",
       "snapshotSha256": "fe6281aa56669f3e91b3bd56a952175f20ad2d887ae968befd5f1ed4147b8684",
-      "uploadedSha256": "fe6281aa56669f3e91b3bd56a952175f20ad2d887ae968befd5f1ed4147b8684"
+      "uploadedSha256": "fe6281aa56669f3e91b3bd56a952175f20ad2d887ae968befd5f1ed4147b8684",
+      "source": "game114-completed-road-centreline-followup"
     },
     {
       "path": "src/skills/tier2/crowd-config.ts",
       "bytes": 3205,
-      "source": "game114-upload-checkout",
       "snapshotSha256": "fd8dbe1083cf88ca020147a6974792dff3146818845451a532938ee607d16c58",
-      "uploadedSha256": "fd8dbe1083cf88ca020147a6974792dff3146818845451a532938ee607d16c58"
+      "uploadedSha256": "fd8dbe1083cf88ca020147a6974792dff3146818845451a532938ee607d16c58",
+      "source": "game114-completed-road-centreline-followup"
     },
     {
       "path": "src/skills/tier2/crowd-orca-solve.test.ts",
       "bytes": 1773,
-      "source": "game114-upload-checkout",
       "snapshotSha256": "2096643f58b1a38c3f97c340fb033a77c0e84f07fb10825dfac1e67ca1c40077",
-      "uploadedSha256": "2096643f58b1a38c3f97c340fb033a77c0e84f07fb10825dfac1e67ca1c40077"
+      "uploadedSha256": "2096643f58b1a38c3f97c340fb033a77c0e84f07fb10825dfac1e67ca1c40077",
+      "source": "game114-completed-road-centreline-followup"
     },
     {
       "path": "src/skills/tier2/crowd-orca-solve.ts",
       "bytes": 3311,
-      "source": "game114-upload-checkout",
       "snapshotSha256": "8eb982a64cb35a6fae911295a21a1898a69f6eb68b46d2291ddd29d4de03f298",
-      "uploadedSha256": "8eb982a64cb35a6fae911295a21a1898a69f6eb68b46d2291ddd29d4de03f298"
+      "uploadedSha256": "8eb982a64cb35a6fae911295a21a1898a69f6eb68b46d2291ddd29d4de03f298",
+      "source": "game114-completed-road-centreline-followup"
     },
     {
       "path": "assets/README.md",
@@ -4868,6 +4872,13 @@
       "snapshotSha256": "65f7f459930a6c9f81c68e55772a3298a4fe7038957680e706da0d9e3d1a99d2",
       "uploadedSha256": "65f7f459930a6c9f81c68e55772a3298a4fe7038957680e706da0d9e3d1a99d2",
       "source": "primary-worktree"
+    },
+    {
+      "path": "src/skills/tier2/crowd-size-offset.test.ts",
+      "bytes": 2120,
+      "snapshotSha256": "afd75e9a9674eb303c8e7cbe9125e9e3408b03342a3b5eb8b112b8ac7b785d8d",
+      "uploadedSha256": "afd75e9a9674eb303c8e7cbe9125e9e3408b03342a3b5eb8b112b8ac7b785d8d",
+      "source": "game114-completed-road-centreline-followup"
     }
   ],
   "excluded": [
@@ -4897,5 +4908,6 @@
       "location": "browser-local-storage",
       "reason": "Game113 progress is per browser and not repository data"
     }
-  ]
+  ],
+  "game114Followup": "Original session completed road-centreline revision; independent rerun recorded in review."
 }

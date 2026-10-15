@@ -28,7 +28,7 @@ function corridor(id: string, color: number, pixels: readonly (readonly [number,
     const mirroredAlongTravel = axis === 'x' ? flippedX(tileX) : flippedY(tileY);
     return (mirroredAlongTravel ? [...pixels].reverse() : pixels)
       .map(pixel => tilePoint(pixel as readonly [number, number], tileX, tileY));
-  });
+  }).filter(point => Math.abs(axis === 'x' ? point.x : point.y) < 91.5);
   return { id, color, points: [...forward, ...forward.slice(1, -1).reverse()] };
 }
 export const playRoutes = [
@@ -69,7 +69,8 @@ delete entities['garden-annex'];
 export const playObstacles = [
   { id: 'castle-roof', minX: -26, maxX: 4, minY: -30, maxY: -15 },
   { id: 'castle-west-wing', minX: -30, maxX: -13, minY: -15, maxY: -9 },
-  { id: 'garden-annex', minX: -32, maxX: -16, minY: 10, maxY: 27 },
+  { id: 'garden-annex', minX: -32, maxX: -18, minY: 21, maxY: 32 },
+  { id: 'stone-wall', minX: 25, maxX: 32, minY: -32, maxY: -17 },
 ] as const;
 for (const obstacle of playObstacles) entities[obstacle.id] = {
   Transform: { x: (obstacle.minX + obstacle.maxX) / 2, y: (obstacle.minY + obstacle.maxY) / 2,

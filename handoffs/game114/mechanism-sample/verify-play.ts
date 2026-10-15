@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { applyCommands } from '@zerocraft/engine/net/commands.js';
 import type { Camera3D, NavigationGrid, Shape, Transform } from '@zerocraft/engine/engine/protocol/components.js';
-import { playBlueprint, playCartId, playPatrolIds, playRoutes } from './play-scene';
+import { playBlueprint, playCartId, playPatrolIds, playRoutes, playObstacles } from './play-scene';
 import { ScenarioControls } from './scenario-controls';
 
 const engine = new Engine();
@@ -28,6 +28,38 @@ assert.equal(grid.cols, 384);
 assert.equal(grid.rows, 384);
 assert.equal(grid.originX, -96);
 assert.equal(grid.originY, -96);
+assert(grid.blocked.filter(Boolean).length / grid.blocked.length > .19);
+assert(grid.blocked.filter(Boolean).length / grid.blocked.length < .21);
+const buildingIds = Object.keys(playBlueprint.entities).filter(id =>
+  playObstacles.some(obstacle => id === obstacle.id || id.startsWith(`${obstacle.id}-`)));
+assert.equal(buildingIds.length, 36, 'every tile needs its own castle and garden colliders');
+const buildingRects = buildingIds.map(id => {
+  const center = playBlueprint.entities[id]!.Transform!;
+  const shape = playBlueprint.entities[id]!.Shape!;
+  return { id, x: center.x, y: center.y, halfWidth: shape.width! / 2,
+    halfHeight: shape.height! / 2 };
+});
+let minimumRouteClearance = Infinity;
+let narrowestRoutePoint = '';
+for (const route of playRoutes) for (let index = 0; index < route.points.length - 1; index++) {
+  const a = route.points[index]!, b = route.points[index + 1]!;
+  const steps = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / .5));
+  for (let step = 0; step <= steps; step++) {
+    const x = a.x + (b.x - a.x) * step / steps;
+    const y = a.y + (b.y - a.y) * step / steps;
+    for (const rect of buildingRects) {
+      const dx = Math.max(Math.abs(x - rect.x) - rect.halfWidth, 0);
+      const dy = Math.max(Math.abs(y - rect.y) - rect.halfHeight, 0);
+      const clearance = Math.hypot(dx, dy);
+      if (clearance < minimumRouteClearance) {
+        minimumRouteClearance = clearance;
+        narrowestRoutePoint = `${route.id} segment ${index} near ${rect.id}`;
+      }
+    }
+  }
+}
+assert(minimumRouteClearance > 1.15,
+  `small patrols need radius 0.8 plus 0.35 clearance: ${minimumRouteClearance} at ${narrowestRoutePoint}`);
 const camera = world.getComponent<Camera3D>('camera', 'Camera3D')!;
 assert.equal(camera.mode, 'follow');
 assert.equal(camera.pitch, Math.PI / 3, 'camera should show a visible angled view');
@@ -53,6 +85,7 @@ const patrolStart = new Map(patrolIds.map(id => [id, structuredClone(world.getCo
 const lastPatrolPosition = new Map(patrolStart);
 const cumulativeTravel = new Map(patrolIds.map(id => [id, 0]));
 let worstBuildingPenetration = 0;
+let worstBuildingContact = '';
 for (let tick = 1; tick <= 850; tick++) {
   applyCommands(world, tick <= 700 ? [{ playerId: 'p1', tick, move: { dx: 1, dy: 0 } }] : []);
   world.tick();
@@ -65,12 +98,16 @@ for (let tick = 1; tick <= 850; tick++) {
     }
     const radius = world.getComponent<Shape>(id, 'Shape')!.radius!;
     assert(Number.isFinite(t.x) && Number.isFinite(t.y));
-    for (const buildingId of ['cottage-wing', 'garden-annex']) {
+    for (const buildingId of buildingIds) {
       const b = world.getComponent<Transform>(buildingId, 'Transform')!;
       const shape = world.getComponent<Shape>(buildingId, 'Shape')!;
       const dx = Math.max(Math.abs(t.x - b.x) - shape.width! / 2, 0);
       const dy = Math.max(Math.abs(t.y - b.y) - shape.height! / 2, 0);
-      worstBuildingPenetration = Math.max(worstBuildingPenetration, radius - Math.hypot(dx, dy));
+      const penetration = radius - Math.hypot(dx, dy);
+      if (penetration > worstBuildingPenetration) {
+        worstBuildingPenetration = penetration;
+        worstBuildingContact = `${id} vs ${buildingId} at tick ${tick} (${t.x.toFixed(2)},${t.y.toFixed(2)})`;
+      }
     }
   }
 }
@@ -86,9 +123,10 @@ const crossedPatrols = patrolIds.filter(id =>
   tileOf(patrolStart.get(id)!) !== tileOf(world.getComponent<Transform>(id, 'Transform')!)).length;
 const minDistanceTravelled = Math.min(...cumulativeTravel.values());
 console.log(JSON.stringify({ patrols: patrolIds.length, routes: playRoutes.length,
-  cartTravel: travel, crossedPatrols, minPatrolDisplacement: Math.min(...patrolTravel),
+  cartTravel: travel, crossedPatrols, minimumRouteClearance,
+  minPatrolDisplacement: Math.min(...patrolTravel),
   minPatrolTravel: minDistanceTravelled,
-  worstBuildingPenetration }, null, 2));
+  worstBuildingPenetration, worstBuildingContact }, null, 2));
 assert(travel > 2, 'keyboard command should move the fortress');
 assert(cart.x > 32, 'WASD-controlled fortress should cross into the eastern map tile');
 assert(minDistanceTravelled > 2, 'every NPC should advance along a main route');
