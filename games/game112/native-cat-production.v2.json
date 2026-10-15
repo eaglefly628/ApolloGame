@@ -1,0 +1,179 @@
+{
+  "version": 2,
+  "revision": "rest-pose-v1",
+  "supersedes": "native-cat-production.v1.json",
+  "catalog": "games/game112/cat-gallery.v1.json",
+  "output": "art-local/game112/native-character",
+  "scope": "Current Gallery breed catalogue, then named age/sex variants and shopkeeper. Finish and verify the snow-cat rest-pose baseline before expanding to other cats.",
+  "ownerDirection": "2026-10-13: neutral bind pose first; layers based on the same complete cat; feline skeletal control. Do not continue the rejected independently redesigned component assembly.",
+  "style": "High-fidelity softly painted cozy storybook cat, believable feline anatomy, gently imperfect coat markings, tactile breed-appropriate fur or skin, warm neutral frontal daylight, restrained natural colours, no human costume, no lettering or watermark.",
+  "pose": "Neutral four-legged standing bind pose, upright head without sideways roll or yaw, level eye baseline, untwisted neck and torso, natural grounded paws, tail visible to one side. Front-view baseline for facial and idle control. Not a human T-pose, not a tilted seated illustration, and not a walk/side-view asset.",
+  "method": "Source-anchored layers from one neutral master. Retain the master's visible artwork and canvas coordinates where separated. Generate overlap, hidden attachments, clean underpainting and closed-state patches by reference editing that same source. Do not independently redesign visible components and align them afterwards. Separate extracted, generated-completion and mixed provenance. Never label reference edits as pixel-identical without verification.",
+  "parts": [
+    {
+      "id": "body",
+      "region": "body",
+      "request": "Standing torso and haunch base"
+    },
+    {
+      "id": "chest",
+      "region": "body",
+      "request": "Chest and neck fur"
+    },
+    {
+      "id": "tail",
+      "region": "body",
+      "request": "Tail, from hidden root to tip"
+    },
+    {
+      "id": "foreleg-left",
+      "region": "body",
+      "request": "Viewer-left front leg and paw"
+    },
+    {
+      "id": "foreleg-right",
+      "region": "body",
+      "request": "Viewer-right front leg and paw"
+    },
+    {
+      "id": "hindleg-left",
+      "region": "body",
+      "request": "Viewer-left hind leg and paw"
+    },
+    {
+      "id": "hindleg-right",
+      "region": "body",
+      "request": "Viewer-right hind leg and paw"
+    },
+    {
+      "id": "face-base",
+      "region": "face",
+      "request": "Head fur underpainting, excluding ears and movable facial features"
+    },
+    {
+      "id": "ear-left",
+      "region": "face",
+      "request": "Viewer-left ear and hidden root"
+    },
+    {
+      "id": "ear-right",
+      "region": "face",
+      "request": "Viewer-right ear and hidden root"
+    },
+    {
+      "id": "eye-white-left",
+      "region": "face",
+      "request": "Viewer-left eye aperture"
+    },
+    {
+      "id": "eye-white-right",
+      "region": "face",
+      "request": "Viewer-right eye aperture"
+    },
+    {
+      "id": "iris-left",
+      "region": "face",
+      "request": "Viewer-left iris and pupil"
+    },
+    {
+      "id": "iris-right",
+      "region": "face",
+      "request": "Viewer-right iris and pupil"
+    },
+    {
+      "id": "lid-upper-left",
+      "region": "face",
+      "request": "Viewer-left upper eyelid"
+    },
+    {
+      "id": "lid-upper-right",
+      "region": "face",
+      "request": "Viewer-right upper eyelid"
+    },
+    {
+      "id": "lid-lower-left",
+      "region": "face",
+      "request": "Viewer-left lower eyelid"
+    },
+    {
+      "id": "lid-lower-right",
+      "region": "face",
+      "request": "Viewer-right lower eyelid"
+    },
+    {
+      "id": "brow-fur-left",
+      "region": "face",
+      "request": "Viewer-left feline brow fur"
+    },
+    {
+      "id": "brow-fur-right",
+      "region": "face",
+      "request": "Viewer-right feline brow fur"
+    },
+    {
+      "id": "muzzle-left",
+      "region": "face",
+      "request": "Viewer-left muzzle pad"
+    },
+    {
+      "id": "muzzle-right",
+      "region": "face",
+      "request": "Viewer-right muzzle pad"
+    },
+    {
+      "id": "nose",
+      "region": "face",
+      "request": "Nose leather and philtrum root"
+    },
+    {
+      "id": "mouth",
+      "region": "face",
+      "request": "Feline mouth curves"
+    },
+    {
+      "id": "whiskers-left",
+      "region": "face",
+      "request": "Viewer-left whiskers"
+    },
+    {
+      "id": "whiskers-right",
+      "region": "face",
+      "request": "Viewer-right whiskers"
+    },
+    {
+      "id": "cheek-fur-left",
+      "region": "face",
+      "request": "Viewer-left cheek edge fur"
+    },
+    {
+      "id": "cheek-fur-right",
+      "region": "face",
+      "request": "Viewer-right cheek edge fur"
+    }
+  ],
+  "recording": {
+    "queueFile": "queue.rest-pose-v1.json",
+    "assetFolder": "<catId>/rest-pose-v1",
+    "commands": "node scripts/game112-native-cat-queue.mjs --spec games/game112/native-cat-production.v2.json init|summary|next; record <breed/part> <real.png> --request <request.json>",
+    "legacyQueue": "Preserve queue.json and all previous images/models; they describe the rejected v1 experiment, not completed v2 parts.",
+    "completion": "Recorded source candidates are not equivalent to validated artwork or a ready model."
+  },
+  "rig": {
+    "body": "Use native .stretch group hierarchy and anatomical joint pivots for trunk, neck/head, four legs, ears and tail segments. Calibrate cats, not the upstream human pose detector.",
+    "softMotion": "Mesh deformation and native masks for breathing, blinking and local facial motion; not rigid whole-image rotation.",
+    "rest": "Head and paws stable during breathing; fixed ear/tail roots; no fabricated walking, side view or paper-flip turns."
+  },
+  "review": {
+    "gates": [
+      "Master pose and identity inspection",
+      "Static reassembly visually matches the selected master before motion",
+      "Texture, fur-flow, overlap and anatomical continuity",
+      "Single parameter endpoints and combinations",
+      "Fixed roots, paws and breath/head separation",
+      "Loop endpoints, scaled contact and static failure recovery",
+      "Real native Demo capture"
+    ],
+    "status": "pending until genuinely verified; no automatic filled, modelReady or hall-cat replacement"
+  },
+  "git": "PNG originals, masks, PSDs, revisions, queues, previews, native candidates and build outputs stay ignored under art-local. Only small production data/code enter Git."
+}

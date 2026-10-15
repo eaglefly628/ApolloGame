@@ -32,8 +32,9 @@ export function sceneSkin(room: string): string | undefined {
 export function mapSkin(): string | undefined {
   return SKIN_OVERRIDES[SKIN_KEYS.map];
 }
-/** 商品与场景复用同一份本地资产；无异步索引时也能加载明确的本地路径。 */
+/** 商品与场景复用同一份本地资产；本机未装候选图时给清晰的占位物件，而非断图。 */
 export function propArt(id: string): string {
+  if (/^T\d{3}$/.test(id)) return SKIN_OVERRIDES[`game112/prop/${id}`] ?? svg(`<rect x="48" y="36" width="224" height="168" rx="25" fill="#d3b88f" stroke="#806247" stroke-width="8"/><path d="M48 95h224M160 36v168" fill="none" stroke="#eee0bf" stroke-width="13"/><circle cx="160" cy="119" r="27" fill="#f7eed9"/><path d="m160 99 7 14 15 2-11 11 3 15-14-7-14 7 3-15-11-11 15-2z" fill="#ad834d"/>`);
   const fallback = `/games/game112/art/props/${id}-v1.png`;
   return SKIN_OVERRIDES[`game112/prop/${id}`] ?? fallback;
 }

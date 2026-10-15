@@ -4,8 +4,14 @@ import { SHOP_ITEMS, type ShopItem } from './world-data.js';
 export const SHOP_CATEGORIES = [
   { id: 'all', name: '全部' },
   { id: 'wand', name: '逗猫杆' },
+  { id: 'ball', name: '滚球铃铛' },
+  { id: 'kicker', name: '抱踢玩具' },
+  { id: 'plush', name: '布艺玩伴' },
+  { id: 'track', name: '轨道机关' },
   { id: 'hide', name: '藏身钻行' },
   { id: 'rest', name: '休憩空间' },
+  { id: 'scratch', name: '磨爪攀爬' },
+  { id: 'puzzle', name: '闻嗅益智' },
   { id: 'cardskin', name: '星牌外观' },
 ] as const;
 export type ShopCategory = (typeof SHOP_CATEGORIES)[number]['id'];

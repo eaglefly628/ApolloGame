@@ -14,6 +14,8 @@ export interface AppState {
   ownPosts: { id: string; title: string; text: string; hobbyId: HobbyId }[];
   fieldNotes: { woodwork: string; sake: string; cigar: string };
   largeText: boolean;
+  textSize: 'standard' | 'large' | 'extra';
+  dailyCompletions: string[];
 }
 
 export const INITIAL_STATE: AppState = {
@@ -29,6 +31,8 @@ export const INITIAL_STATE: AppState = {
   ownPosts: [],
   fieldNotes: { woodwork: '', sake: '', cigar: '' },
   largeText: false,
+  textSize: 'standard',
+  dailyCompletions: [],
 };
 
 const toggle = <T,>(items: T[], value: T): T[] => items.includes(value) ? items.filter((x) => x !== value) : [...items, value];
@@ -80,5 +84,7 @@ export function normalizeState(raw: unknown): AppState {
       cigar: typeof p.fieldNotes?.cigar === 'string' ? p.fieldNotes.cigar.slice(0, 800) : '',
     },
     largeText: p.largeText === true,
+    textSize: p.textSize === 'standard' || p.textSize === 'large' || p.textSize === 'extra' ? p.textSize : p.largeText === true ? 'large' : 'standard',
+    dailyCompletions: Array.isArray(p.dailyCompletions) ? p.dailyCompletions.filter((x): x is string => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}:(watch|walnut|woodwork|car)$/.test(x)).slice(-60) : [],
   };
 }

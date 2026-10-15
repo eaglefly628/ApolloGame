@@ -154,7 +154,7 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
     expect(validateLayoutNode(shop)).toEqual([]);
   });
 
-  it('精选四件可按名称检索查看；交换只从详情确认，见面星砂有明确反馈', () => {
+  it('全部商品可按编号检索查看；交换只从详情确认，见面星砂有明确反馈', () => {
     const empty = new HallSession(112).hall();
     for (const item of SHOP_ITEMS) {
       const tree = buildScreen({ screen: 'shop', view: empty, shopItem: item.id,
