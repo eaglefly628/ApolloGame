@@ -22,8 +22,15 @@ for (const spec of specs.parts) {
   const crop=spec.crop ?? [0,0,width,height];
   for(let row=0;row<=rows;row++)for(let col=0;col<=cols;col++){
     const ix=crop[0]+(crop[2]-crop[0])*col/cols,iy=crop[1]+(crop[3]-crop[1])*row/rows;
-    const x=ix*sx+tx;
+    let x=ix*sx+tx;
     let y=iy*sy+ty;
+    // A joint is an underlap, never two silhouettes touching edge to edge.
+    // Preserve ear tips; extend and tuck only the root behind the front head.
+    if(spec.underlap){
+      const u=Math.max(0,Math.min(1,(y-spec.underlap.startY)/(spec.underlap.endY-spec.underlap.startY)));
+      const weight=u*u*(3-2*u);
+      x+=spec.underlap.insetX*weight;y+=spec.underlap.depth*weight;
+    }
     // Fold completed neck-stump fur behind the head; all paws remain fixed.
     if(spec.id==='body')y+=Math.max(0,500-y)*.64;
     vertices.push({x,y,restX:x,restY:y});uvs.push(ix/width,iy/height);

@@ -230,10 +230,11 @@
     },
     {
       "path": "tools/see-through-workbench/build-xuetuan-rig.mjs",
-      "bytes": 7662,
-      "source": "primary-worktree",
-      "snapshotSha256": "218b8a1ac83fcb10918464326e8b324733f18e9b601ec5ff4205dbfb5d83dbdd",
-      "uploadedSha256": "218b8a1ac83fcb10918464326e8b324733f18e9b601ec5ff4205dbfb5d83dbdd"
+      "bytes": 8050,
+      "snapshotSha256": "208eef4dd139c08bb4a4e46dd6356d783e8fd7f4d126a6dc9a1c333bda755b13",
+      "uploadedSha256": "208eef4dd139c08bb4a4e46dd6356d783e8fd7f4d126a6dc9a1c333bda755b13",
+      "source": "native-active-candidate-followup",
+      "previousSnapshotSha256": "218b8a1ac83fcb10918464326e8b324733f18e9b601ec5ff4205dbfb5d83dbdd"
     },
     {
       "path": "tools/see-through-workbench/demo-fixture.mjs",
@@ -615,17 +616,19 @@
     },
     {
       "path": "tools/see-through-workbench/public/art/xuetuan-layered-v1.stretch",
-      "bytes": 6605554,
-      "source": "primary-worktree",
-      "snapshotSha256": "ad03c906616c0b2aafd2d2b84ba6acbfe2a1e947d8ac586fb1b39491da4bd721",
-      "uploadedSha256": "ad03c906616c0b2aafd2d2b84ba6acbfe2a1e947d8ac586fb1b39491da4bd721"
+      "bytes": 6613978,
+      "snapshotSha256": "9fbd1d187053d6346264fa89bbdd95fe6222863081d71c471b9c3a8405b53b37",
+      "uploadedSha256": "9fbd1d187053d6346264fa89bbdd95fe6222863081d71c471b9c3a8405b53b37",
+      "source": "native-active-candidate-followup",
+      "previousSnapshotSha256": "ad03c906616c0b2aafd2d2b84ba6acbfe2a1e947d8ac586fb1b39491da4bd721"
     },
     {
       "path": "tools/see-through-workbench/public/art/xuetuan-layered-v1/alignment.json",
-      "bytes": 842,
-      "source": "primary-worktree",
-      "snapshotSha256": "bd9d19cbef366b0c359de837b3934fe7ab3d2af49dbc09810f3352291a10f827",
-      "uploadedSha256": "bd9d19cbef366b0c359de837b3934fe7ab3d2af49dbc09810f3352291a10f827"
+      "bytes": 1380,
+      "snapshotSha256": "ddfee8010f0df60ddd6af2ddff7d7dadb2df9755ad83e76e40d24de4983b75b6",
+      "uploadedSha256": "ddfee8010f0df60ddd6af2ddff7d7dadb2df9755ad83e76e40d24de4983b75b6",
+      "source": "native-active-candidate-followup",
+      "previousSnapshotSha256": "bd9d19cbef366b0c359de837b3934fe7ab3d2af49dbc09810f3352291a10f827"
     },
     {
       "path": "tools/see-through-workbench/public/art/xuetuan-layered-v1/body.png",
@@ -4879,6 +4882,20 @@
       "snapshotSha256": "afd75e9a9674eb303c8e7cbe9125e9e3408b03342a3b5eb8b112b8ac7b785d8d",
       "uploadedSha256": "afd75e9a9674eb303c8e7cbe9125e9e3408b03342a3b5eb8b112b8ac7b785d8d",
       "source": "game114-completed-road-centreline-followup"
+    },
+    {
+      "path": "tools/see-through-workbench/evidence/xuetuan-layered-v1-review.json",
+      "bytes": 667,
+      "snapshotSha256": "a70f47a39d3ee74acb71ed160f355a0b28792338670bdbd307e09fa72ff7b940",
+      "uploadedSha256": "a70f47a39d3ee74acb71ed160f355a0b28792338670bdbd307e09fa72ff7b940",
+      "source": "native-active-candidate-followup"
+    },
+    {
+      "path": "tools/see-through-workbench/public/art/xuetuan-layered-v1/image-metadata.json",
+      "bytes": 1824,
+      "snapshotSha256": "0de9cd09066bc060fa73873fe42ac19fe0bc3adb7b70101283f9d74af3341631",
+      "uploadedSha256": "0de9cd09066bc060fa73873fe42ac19fe0bc3adb7b70101283f9d74af3341631",
+      "source": "native-active-candidate-followup"
     }
   ],
   "excluded": [
@@ -4909,5 +4926,6 @@
       "reason": "Game113 progress is per browser and not repository data"
     }
   ],
-  "game114Followup": "Original session completed road-centreline revision; independent rerun recorded in review."
+  "game114Followup": "Original session completed road-centreline revision; independent rerun recorded in review.",
+  "nativeFollowup": "Latest independently authored Xuetuan seated rig candidate and review record preserved, not Game112 neutral rest-pose acceptance."
 }

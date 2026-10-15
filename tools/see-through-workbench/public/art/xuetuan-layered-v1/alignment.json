@@ -1,11 +1,16 @@
 {
   "canvas": [1312, 1199],
-  "method": "Native mesh coordinates; original generated texture bytes preserved. Completed neck stump is folded behind head.",
+  "method": "Native mesh coordinates; original generated texture bytes preserved. Ear roots extend inward/downward under the front head, just as the tail root sits under the body. Ear tips are preserved.",
+  "occlusion": [
+    {"lower":"ear-left","upper":"head-open","rootProbeSource":[310,620,620,720],"angles":[-12,0,12]},
+    {"lower":"ear-right","upper":"head-open","rootProbeSource":[740,520,950,650],"angles":[-10,0,10]},
+    {"lower":"tail","upper":"body","note":"Completed tail root is hidden behind the seated torso."}
+  ],
   "parts": [
     {"id":"tail","name":"完整尾巴","file":"tail.png","parent":"root","order":0,"affine":[1,1,0,0]},
     {"id":"body","name":"躯干胸毛与固定四足","file":"body.png","parent":"root","order":1,"affine":[1,1,0,0]},
-    {"id":"ear-left","name":"左耳 · 完整耳根","file":"ear-left.png","parent":"head-root","order":2,"affine":[0.28,0.28,271,19],"pivot":[390,215]},
-    {"id":"ear-right","name":"右耳 · 完整耳根","file":"ear-right.png","parent":"head-root","order":2.1,"affine":[0.36,0.30,425,135],"pivot":[705,305]},
+    {"id":"ear-left","name":"左耳 · 耳根埋入头毛","file":"ear-left.png","parent":"head-root","order":2,"affine":[0.28,0.28,271,19],"pivot":[410,255],"underlap":{"startY":110,"endY":235,"depth":55,"insetX":25}},
+    {"id":"ear-right","name":"右耳 · 耳根埋入头毛","file":"ear-right.png","parent":"head-root","order":2.1,"affine":[0.36,0.30,425,135],"pivot":[685,350],"underlap":{"startY":235,"endY":340,"depth":70,"insetX":-55}},
     {"id":"head-open","name":"头部 · 睁眼","file":"head-open.png","parent":"head-root","order":3,"affine":[0.64,0.64,115,23]}
   ]
 }

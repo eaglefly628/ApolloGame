@@ -1,0 +1,15 @@
+{
+  "date": "2026-10-15",
+  "reviewer": "native_character_review",
+  "verdict": "PASS candidate preview",
+  "assetSha256": "ad03c906616c0b2aafd2d2b84ba6acbfe2a1e947d8ac586fb1b39491da4bd721",
+  "verified": [
+    "closed-eyelid jaw-outline regression fixed",
+    "independent left/right eye closure without blue iris residue",
+    "head/ear/tail/breath extremes without obvious connection gaps",
+    "stationary paws",
+    "15 parts / 7 parameters / 6 unmodified generated PNG sources",
+    "no Game112 install or index modification"
+  ],
+  "scopeLimit": "Candidate art/rig preview only; human art approval, game UI integration and endurance checks remain separate."
+}
