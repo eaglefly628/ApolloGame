@@ -14,6 +14,7 @@ export interface CrowdAvoidance extends Component {
   radiusStep?: number; // 每 tick 收缩/恢复的原始半径比例，缺省 0.025
   nudgeStrength?: number; // 卡住初期先侧向偏置期望速度的比例，缺省 0.5
   zeroEscape?: boolean; // ORCA 首次解接近零且仍有移动意图时，用侧向期望速度重解；缺省关闭
+  anticipatoryOffset?: number; // 可选 (0,1]：前方邻居按双方圆形半径和提前偏移期望方向，强度上限；仍由 ORCA/硬碰撞约束
   priorityMode?: 'mass-stall'; // 可选：Mass.value × 连续卡住时长决定避让责任；缺省仍为对半避让
   desiredInertia?: number; // 可选 [0,1)：先用上一拍实际速度平滑期望方向，再交 ORCA；0=无惯性
   flowGuide?: { // 可选：按 PathFollow 当前航点读取共享网格流场，在远离路线时把场方向混入期望速度

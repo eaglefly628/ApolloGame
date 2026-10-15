@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "mechanism/garden-map",
+      "type": "texture",
+      "status": "filled",
+      "description": "原创手绘庭院俯视地面，用于 game114 群体导航场景",
+      "path": "/textures/garden-map-v3.png",
+      "source": "gen:openai-imagegen",
+      "license": "OpenAI image-generation output (subject to OpenAI terms)",
+      "style": "storybook.sage-grass-cream-roads",
+      "spec": {
+        "usage": "albedo",
+        "colorSpace": "srgb",
+        "wrap": "clamp",
+        "width": 1254,
+        "height": 1254
+      },
+      "provenance": {
+        "generator": "OpenAI built-in image generation",
+        "generatedAt": "2026-10-14",
+        "sourceFile": "exec-7741d62a-1c21-4209-85fc-0ff2febffc02.png",
+        "promptSummary": "Shift open ground to coherent muted green grass and preserve cream paths, increasing tonal contrast and road-edge clarity without changing level geometry",
+        "reference": "20261013-204903.jpeg (mood only; original scene and layout)"
+      }
+    },
+    {
+      "id": "mechanism/garden-map-feather",
+      "type": "texture",
+      "status": "filled",
+      "description": "九宫格庭院使用的透明渐隐边缘底图，覆在连续草地层上",
+      "path": "/textures/garden-map-v4.png",
+      "source": "gen:openai-imagegen",
+      "license": "OpenAI image-generation output (subject to OpenAI terms)",
+      "style": "storybook.sage-grass-cream-roads-feathered",
+      "spec": {
+        "usage": "albedo",
+        "colorSpace": "srgb",
+        "wrap": "clamp",
+        "width": 1254,
+        "height": 1254
+      },
+      "provenance": {
+        "generator": "OpenAI built-in image generation",
+        "generatedAt": "2026-10-15",
+        "sourceFile": "exec-23938e37-c124-4232-b53e-5135b185faa1.png",
+        "promptSummary": "Feather the outer edge to transparent grass while preserving the cottage and cream path layout, allowing adjoining map squares to blend over a continuous grass underlay",
+        "reference": "20261013-204903.jpeg (mood only; original scene and layout)"
+      }
+    }
+  ]
+}

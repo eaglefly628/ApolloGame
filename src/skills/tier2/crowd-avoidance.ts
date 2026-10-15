@@ -39,6 +39,7 @@ export const crowdAvoidanceCapability = defineCapability({
         radiusStep: { type: 'number', describe: '每拍收缩/恢复初始半径的比例 (0,1]，缺省 0.025；恢复会检查周围空位' },
         nudgeStrength: { type: 'number', describe: '先尝试固定侧向扰动矢量的强度 (0,1]，缺省 0.5；硬碰撞始终保留' },
         zeroEscape: { type: 'boolean', describe: '可选：首次 ORCA 速度接近零且仍有移动意图时，以侧向候选期望速度重新求解；缺省关闭' },
+        anticipatoryOffset: { type: 'number', describe: '可选 (0,1]：前方圆形邻居按双方实际半径和提前侧偏，数值是最大侧向强度；ORCA 与硬碰撞仍约束结果' },
         priorityMode: { type: 'string', describe: '可选 mass-stall：按 Mass.value（缺省1）× 连续卡住时间分配避让责任；卡住30步优先级翻倍，最多提高至5倍；缺省双方各让一半。Mass 可按体积配置。' },
         desiredInertia: { type: 'number', describe: '可选 [0,1)：把上拍真实速度混入路线期望速度，再交 ORCA 求解，抑制载具急转与摆动；零移动意图仍立即停止。缺省0' },
         flowGuide: { type: 'string', describe: '可选 {fieldId,weight?,repathDistance?,pathfindDistance?,releaseDistance?,occupancyPenalty?,pathfindPeriod?,edgeRepathSlots?}：偏离路线先受共享 FlowField 引导，更远时可用同 profile 的 NavGraph/A* 绕占用格回路；edgeRepathSlots 按空侧优先限制同路活跃回路数，久卡可越限，然后交 ORCA；无场或不可达保留原意图' },
@@ -80,7 +81,7 @@ export const crowdAvoidanceCapability = defineCapability({
         const stats: OrcaStats = { degenerate: 0, oneSided: 0, infeasible: 0 };
         let invalid = 0; let dual = 0; let stopped = 0; let solved = 0;
         let nudged = 0;
-        let zeroRecovered = 0; let zeroUnresolved = 0; let missingVectors = 0; let invalidPriorityMass = 0; let weighted = 0;
+        let zeroRecovered = 0; let zeroUnresolved = 0; let anticipatorySteered = 0; let missingVectors = 0; let invalidPriorityMass = 0; let weighted = 0;
         let guided = 0; let guideUnavailable = 0; let routePlanned = 0; let routeFollowing = 0; let routeUnavailable = 0; let routeDeferred = 0;
         const { recoveryReady, recoveryRejected, recoveryBlocked, shrunk, restored } = updateFootprints(world, ids);
         // 所有输入先快照；循环中不读其他单位刚求出的速度。
@@ -226,8 +227,9 @@ export const crowdAvoidanceCapability = defineCapability({
             .filter(n => n.d2 <= range * range)
             .sort((x,y) => x.d2-y.d2 || x.other.idx-y.other.idx)
             .slice(0,s.cfg.maxNeighbors ?? 8).map(n=>n.other);
-          const { raw, out, recovered, unresolved } = solveCrowdVelocity(
-            id, a, neighbors, s.pref, s.desired, s.cfg.maxSpeed, h, s.cfg.zeroEscape, stats);
+          const { raw, out, recovered, unresolved, steered } = solveCrowdVelocity(
+            id, a, neighbors, s.pref, s.desired, s.cfg.maxSpeed, h, s.cfg.zeroEscape, stats, s.cfg.anticipatoryOffset);
+          if (steered) anticipatorySteered++;
           if (recovered) zeroRecovered++;
           if (unresolved) zeroUnresolved++;
           if (v) {v.vx=out.x;v.vy=out.y;} solved++;
@@ -236,8 +238,8 @@ export const crowdAvoidanceCapability = defineCapability({
         if (invalid || dual || recoveryRejected || recoveryBlocked || missingVectors || invalidPriorityMass || guideUnavailable || routeUnavailable || routeDeferred || stats.degenerate || stats.oneSided || stats.infeasible)
           appendTrace(trace, world.getVersion(), 'crowd-avoidance', 'reject',
             `非法 ${invalid} · 非法优先级质量 ${invalidPriorityMass} · 流场不可用 ${guideUnavailable} · 回路不可达 ${routeUnavailable} · 边缘名额等待 ${routeDeferred} · 收缩配置不匹配 ${recoveryRejected} · 恢复空间不足 ${recoveryBlocked} · 缺调试线 ${missingVectors} · 重复配置保留旧行为 ${dual} · 退化 ${stats.degenerate} · 单方避让 ${stats.oneSided} · 无解 ${stats.infeasible}`);
-        if (nudged || shrunk || restored || zeroRecovered || zeroUnresolved) appendTrace(trace, world.getVersion(), 'crowd-avoidance', 'transition',
-          `侧向扰动 ${nudged} · 零速重解成功 ${zeroRecovered} · 仍为零 ${zeroUnresolved} · 兜底收缩 ${shrunk} · 安全恢复 ${restored}`);
+        if (nudged || shrunk || restored || zeroRecovered || zeroUnresolved || anticipatorySteered) appendTrace(trace, world.getVersion(), 'crowd-avoidance', 'transition',
+          `提前侧偏 ${anticipatorySteered} · 侧向扰动 ${nudged} · 零速重解成功 ${zeroRecovered} · 仍为零 ${zeroUnresolved} · 兜底收缩 ${shrunk} · 安全恢复 ${restored}`);
         appendTrace(trace, world.getVersion(), 'crowd-avoidance', 'commit', `求解 ${solved} · 保持停止 ${stopped} · 质量/卡顿加权 ${weighted} · 网格流场引导 ${guided} · A* 重算 ${routePlanned} / 跟随 ${routeFollowing}`);
       },
     },
