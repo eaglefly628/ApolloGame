@@ -1,0 +1,284 @@
+{
+  "status": "pending-human-review",
+  "game112Installed": false,
+  "sourcePixelsModified": false,
+  "canvas": {
+    "width": 1312,
+    "height": 1199
+  },
+  "parts": [
+    {
+      "id": "tail",
+      "file": "tail.png",
+      "width": 1312,
+      "height": 1199,
+      "sha256": "e8d59107a092cc9a946e0a07c8668bcc8e0ea79b0f12cd0a8028a1d60344cf84"
+    },
+    {
+      "id": "body",
+      "file": "body.png",
+      "width": 1312,
+      "height": 1199,
+      "sha256": "c280ddf65569b339ac9c2ca387c22ba9d914e113e966e39d7ac772088e40645f"
+    },
+    {
+      "id": "ear-left",
+      "file": "ear-left.png",
+      "width": 1312,
+      "height": 1199,
+      "sha256": "02e7be1633bcd326fba8e33df2329559207bb9a5956bf874151f90b66a64f78a"
+    },
+    {
+      "id": "ear-right",
+      "file": "ear-right.png",
+      "width": 1312,
+      "height": 1199,
+      "sha256": "31f69ee7bd84ee99c8024dedd3643090cd424b04b9895b93de3e9ce138217c0f"
+    },
+    {
+      "id": "head-open",
+      "file": "head-open.png",
+      "width": 1312,
+      "height": 1199,
+      "sha256": "efd95c814f300bb00b941ecce63ce2c7ff5d88440a422d9c3e2dbb4321eb78d1"
+    },
+    {
+      "id": "blink-left-0",
+      "file": "head-closed.png",
+      "width": 1312,
+      "height": 1199,
+      "sha256": "fad31dead4733d13cbdb1ffb47b36dcf631fe66d80273239bc4eef20ff7a4c17"
+    },
+    {
+      "id": "blink-left-1",
+      "file": "head-closed.png",
+      "width": 1312,
+      "height": 1199,
+      "sha256": "fad31dead4733d13cbdb1ffb47b36dcf631fe66d80273239bc4eef20ff7a4c17"
+    },
+    {
+      "id": "blink-left-2",
+      "file": "head-closed.png",
+      "width": 1312,
+      "height": 1199,
+      "sha256": "fad31dead4733d13cbdb1ffb47b36dcf631fe66d80273239bc4eef20ff7a4c17"
+    },
+    {
+      "id": "blink-left-3",
+      "file": "head-closed.png",
+      "width": 1312,
+      "height": 1199,
+      "sha256": "fad31dead4733d13cbdb1ffb47b36dcf631fe66d80273239bc4eef20ff7a4c17"
+    },
+    {
+      "id": "blink-left-4",
+      "file": "head-closed.png",
+      "width": 1312,
+      "height": 1199,
+      "sha256": "fad31dead4733d13cbdb1ffb47b36dcf631fe66d80273239bc4eef20ff7a4c17"
+    },
+    {
+      "id": "blink-right-0",
+      "file": "head-closed.png",
+      "width": 1312,
+      "height": 1199,
+      "sha256": "fad31dead4733d13cbdb1ffb47b36dcf631fe66d80273239bc4eef20ff7a4c17"
+    },
+    {
+      "id": "blink-right-1",
+      "file": "head-closed.png",
+      "width": 1312,
+      "height": 1199,
+      "sha256": "fad31dead4733d13cbdb1ffb47b36dcf631fe66d80273239bc4eef20ff7a4c17"
+    },
+    {
+      "id": "blink-right-2",
+      "file": "head-closed.png",
+      "width": 1312,
+      "height": 1199,
+      "sha256": "fad31dead4733d13cbdb1ffb47b36dcf631fe66d80273239bc4eef20ff7a4c17"
+    },
+    {
+      "id": "blink-right-3",
+      "file": "head-closed.png",
+      "width": 1312,
+      "height": 1199,
+      "sha256": "fad31dead4733d13cbdb1ffb47b36dcf631fe66d80273239bc4eef20ff7a4c17"
+    },
+    {
+      "id": "blink-right-4",
+      "file": "head-closed.png",
+      "width": 1312,
+      "height": 1199,
+      "sha256": "fad31dead4733d13cbdb1ffb47b36dcf631fe66d80273239bc4eef20ff7a4c17"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "HeadTilt",
+      "name": "歪头",
+      "min": -1,
+      "max": 1,
+      "default": 0,
+      "bindings": [
+        {
+          "animationId": "parameters",
+          "nodeId": "head-root",
+          "property": "rotation"
+        }
+      ]
+    },
+    {
+      "id": "EarLeft",
+      "name": "左耳转动",
+      "min": -1,
+      "max": 1,
+      "default": 0,
+      "bindings": [
+        {
+          "animationId": "parameters",
+          "nodeId": "ear-left",
+          "property": "rotation"
+        }
+      ]
+    },
+    {
+      "id": "EarRight",
+      "name": "右耳转动",
+      "min": -1,
+      "max": 1,
+      "default": 0,
+      "bindings": [
+        {
+          "animationId": "parameters",
+          "nodeId": "ear-right",
+          "property": "rotation"
+        }
+      ]
+    },
+    {
+      "id": "Tail",
+      "name": "尾尖摆动",
+      "min": -1,
+      "max": 1,
+      "default": 0,
+      "bindings": [
+        {
+          "animationId": "parameters",
+          "nodeId": "tail",
+          "property": "mesh_verts"
+        }
+      ]
+    },
+    {
+      "id": "Breath",
+      "name": "胸毛呼吸",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "bindings": [
+        {
+          "animationId": "parameters",
+          "nodeId": "body",
+          "property": "mesh_verts"
+        }
+      ]
+    },
+    {
+      "id": "EyeOpen-left",
+      "name": "左眼开合",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "bindings": [
+        {
+          "animationId": "parameters",
+          "nodeId": "blink-left-0",
+          "property": "opacity"
+        },
+        {
+          "animationId": "parameters",
+          "nodeId": "blink-left-1",
+          "property": "opacity"
+        },
+        {
+          "animationId": "parameters",
+          "nodeId": "blink-left-2",
+          "property": "opacity"
+        },
+        {
+          "animationId": "parameters",
+          "nodeId": "blink-left-3",
+          "property": "opacity"
+        },
+        {
+          "animationId": "parameters",
+          "nodeId": "blink-left-4",
+          "property": "opacity"
+        }
+      ]
+    },
+    {
+      "id": "EyeOpen-right",
+      "name": "右眼开合",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "bindings": [
+        {
+          "animationId": "parameters",
+          "nodeId": "blink-right-0",
+          "property": "opacity"
+        },
+        {
+          "animationId": "parameters",
+          "nodeId": "blink-right-1",
+          "property": "opacity"
+        },
+        {
+          "animationId": "parameters",
+          "nodeId": "blink-right-2",
+          "property": "opacity"
+        },
+        {
+          "animationId": "parameters",
+          "nodeId": "blink-right-3",
+          "property": "opacity"
+        },
+        {
+          "animationId": "parameters",
+          "nodeId": "blink-right-4",
+          "property": "opacity"
+        }
+      ]
+    }
+  ],
+  "clips": [
+    {
+      "id": "idle",
+      "name": "雪团待审 · 呼吸 · 眨眼 · 耳动 · 摆尾",
+      "duration": 5200
+    },
+    {
+      "id": "notice",
+      "name": "雪团待审 · 歪头回应",
+      "duration": 4200
+    },
+    {
+      "id": "showcase",
+      "name": "雪团待审 · 16秒动作组合",
+      "duration": 16000
+    },
+    {
+      "id": "parameters",
+      "name": "Parameters",
+      "duration": 1000
+    },
+    {
+      "id": "controls",
+      "name": "手动参数控制 · 待审",
+      "duration": 2000
+    }
+  ],
+  "limits": "Reference redraw; no walking, turning, mouth or new viewpoints. Stationary legs remain one body layer."
+}

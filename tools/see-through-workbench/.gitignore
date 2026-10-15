@@ -1,0 +1,12 @@
+node_modules
+dist/
+workspace/
+__pycache__/
+.venv/
+.venv-mac/
+vendor/**/*.egg-info/
+vendor/**/__pycache__/
+viewer/
+evidence/*.png
+
+.vite-cache/

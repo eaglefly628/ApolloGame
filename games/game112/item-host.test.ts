@@ -6,6 +6,7 @@ import { EMPTY_STATE } from './blueprint.js';
 import { TICK_MS } from './world-data.js';
 
 vi.mock('@zerocraft/engine/assets/index.js', () => ({ loadGameArtOverrides: async () => ({}) }));
+vi.mock('./local-toy-art.js', () => ({ loadLocalToyArtOverrides: async () => ({}) }));
 
 describe('真实宿主的物件闭环', () => {
   it('空档领见面星砂 → 确认交换纸袋 → 读档后不能重复领取', async () => {
@@ -78,7 +79,7 @@ describe('真实宿主的物件闭环', () => {
     } finally { dispose(); vi.useRealTimers(); }
   });
 
-  it('候选美术不进入商店；已实现的羽毛杆可以购买并放进馆里', async () => {
+  it('百件新物件可买入收纳篮；原有羽毛杆仍可放进馆里', async () => {
     vi.useFakeTimers();
     const save = new MemorySavePort();
     await save.write(SAVE_SLOT, sealEnvelope({ ...EMPTY_STATE, stardust: 100 }, SAVE_CODEC, 100));
@@ -92,7 +93,14 @@ describe('真实宿主的物件闭环', () => {
       click('starter-act-0'); await vi.advanceTimersByTimeAsync(TICK_MS);
       click('hot-toys'); click('toys-shop');
       click('shop-category-wand');
-      expect(document.getElementById('shop-T001')).toBeNull();
+      expect(document.getElementById('shop-T001')).not.toBeNull();
+      click('shop-T001');
+      click('shop-selected-buy'); await vi.advanceTimersByTimeAsync(TICK_MS);
+      expect(document.getElementById('shop-selected-collection')).not.toBeNull();
+      click('shop-selected-collection');
+      expect(document.getElementById('toy-T001-art')).not.toBeNull();
+      click('toys-more');
+      click('shop-category-wand');
       expect(document.getElementById('shop-feather')).not.toBeNull();
       click('shop-feather');
       click('shop-selected-buy'); await vi.advanceTimersByTimeAsync(TICK_MS);
@@ -101,8 +109,9 @@ describe('真实宿主的物件闭环', () => {
       expect(document.getElementById('prop-art-feather')).not.toBeNull();
       const persisted = normalizeState(openEnvelope((await save.read(SAVE_SLOT))!, SAVE_CODEC));
       expect(persisted.items.feather).toBe(1);
+      expect(persisted.items.T001).toBe(1);
       expect(persisted.placed).toContain('feather');
-      expect(persisted.stardust).toBe(70);
+      expect(persisted.stardust).toBe(52);
     } finally { dispose(); vi.useRealTimers(); }
   });
 });

@@ -468,7 +468,7 @@ class APIHandler(BaseHTTPRequestHandler):
         elif path == '/api/git-status':
             data = run_command(['git', 'status', '--short'])
         elif path == '/api/git-pull':
-            data = run_command(['git', 'pull', 'origin', 'claude/mainbranch', '--rebase'])
+            data = run_command(['git', 'pull', 'origin', 'codex/mainbranch', '--rebase'])
         elif path == '/api/generate/presets':
             data = {name: {'name': bp['name'], 'description': bp['description']} for name, bp in PRESET_BLUEPRINTS.items()}
         elif path.startswith('/api/generate/preset/'):

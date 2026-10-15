@@ -1,4 +1,4 @@
-import { parseAssetIndex } from '../../src/assets/asset-index.js';
+import { parseAssetIndex } from '@zerocraft/engine/assets/index.js';
 import rawAssetIndex from './real-assets.json';
 
 const assets = parseAssetIndex(rawAssetIndex);

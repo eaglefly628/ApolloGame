@@ -1,0 +1,11 @@
+{
+  "patrols": 36,
+  "routes": 6,
+  "cartTravel": 52.338373127265946,
+  "crossedPatrols": 12,
+  "minimumRouteClearance": 4.012759170653908,
+  "minPatrolDisplacement": 32.3752367397153,
+  "minPatrolTravel": 41.910608414529705,
+  "worstBuildingPenetration": 0,
+  "worstBuildingContact": ""
+}

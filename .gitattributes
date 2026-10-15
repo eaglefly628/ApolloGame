@@ -1,0 +1,6 @@
+
+# Preserve imported upstream bytes and literal forensic patches.
+tools/see-through-workbench/vendor/** -whitespace
+docs/reviews/recovery-2026-10-15/*.patch -whitespace
+# Adapted upstream Tailwind config retains upstream indentation.
+tools/see-through-workbench/tailwind.native.cjs -whitespace

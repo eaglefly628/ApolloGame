@@ -1,0 +1,87 @@
+{
+  "repository": "https://github.com/shitagaki-lab/see-through",
+  "archive": "https://codeload.github.com/shitagaki-lab/see-through/tar.gz/refs/heads/main",
+  "downloadedOn": "2026-10-10",
+  "archiveSha256": "c80c9f967f5b9084d7fc1e9c0baa6ccf5e88158dd86163ca40227e33648be39c",
+  "license": "Apache-2.0",
+  "sourceDirectory": "vendor/see-through",
+  "status": "native-animation-host-integrated",
+  "modelsDownloaded": true,
+  "inferenceVerified": true,
+  "animationVerified": true,
+  "capabilityAudit": {
+    "checked": [
+      "src/assembly/capability-registry.ts",
+      "src/skills/tier1/tween.ts",
+      "src/renderer/renderable.ts",
+      "docs/playbooks/rendering-fx.md"
+    ],
+    "existing": [
+      "l1-sprite",
+      "t1-tween",
+      "t1-animation",
+      "t2-anim-state"
+    ],
+    "gap": "Existing capabilities animate whole sprites or sprite-sheet frames. No registered Live2D/2D mesh deformation runtime was found. See-through exports layered PSDs and does not provide animation rigging.",
+    "recommended": "A: reusable engine capability for layered 2D character animation",
+    "alternative": "B: isolated project-specific animation workbench",
+    "decision": "owner-approved-A-2026-10-10"
+  },
+  "animationRuntime": {
+    "repository": "https://github.com/MangoLion/stretchystudio",
+    "archive": "https://codeload.github.com/MangoLion/stretchystudio/tar.gz/refs/heads/master",
+    "archiveSha256": "a21b4fa27078349442935f9af6c9815b95d4f7cf79dd68f73330f13b1d0b7ffc",
+    "license": "MIT",
+    "sourceDirectory": "vendor/stretchystudio",
+    "modifiedUpstreamFiles": []
+  },
+  "integrationSpec": {
+    "constructionOwner": "this-session-2026-10-10",
+    "ownerDecision": "A; retain upstream core; adapt workflows to ApolloGame",
+    "boundary": "render-only host port; no world/snapshot/hash writes",
+    "nativeEditor": "retained unchanged",
+    "nativePlayer": "original CanvasViewport, ScenePass, animation stores, shaders; transparent background via build-time adapter",
+    "assetFormat": ".stretch native ZIP",
+    "acceptance": [
+      "same-project same-time native/embedded pixel equality",
+      "breathing/blinking/mesh deformation visibly changes frames",
+      "animation switch, seek, parameter, pause via engine port",
+      "bad project errors surfaced; teardown cancels pending requests"
+    ],
+    "inferenceEnvironment": "Mac MPS complete native body + face + depth + PSD verified at 384; CUDA target prepared, not run"
+  },
+  "windowsGPUSetup": {
+    "target": "Windows RTX 4090",
+    "python": "3.12",
+    "torch": "2.8.0+cu128",
+    "cudaRuntime": "12.8",
+    "installer": "windows/Install.cmd",
+    "verifiedOnTarget": false,
+    "editorLauncher": "windows/Open-Animation.cmd"
+  },
+  "macSetup": {
+    "target": "Apple-silicon Mac",
+    "ramGiB": 32,
+    "torch": "2.8.0",
+    "backend": "mps",
+    "bf16Matmul": "passed",
+    "seededMpsGenerator": "passed",
+    "diffusersSeededNoise": "passed",
+    "baseDependencies": "installed; pip check passed",
+    "nativeImports": "passed",
+    "fullInference": "passed: user silver-haired portrait, 384 color/depth, native 30-step body and face, 4-step depth, PSD export; 589 seconds",
+    "installer": "macos/Install.command",
+    "inferenceLauncher": "macos/Run-Image.command",
+    "editorLauncher": "macos/Open-Animation.command",
+    "nativeFileEdits": 0,
+    "runtimeAdapters": [
+      "CUDA device selection to MPS",
+      "5D transparent decoder median on CPU, values returned to MPS",
+      "release completed layer model before allocating depth model"
+    ]
+  },
+  "modelRevisions": {
+    "layerdifforg/seethroughv0.0.2_layerdiff3d": "4477e6ce529bc6a141732e1a55a4932176db3b89",
+    "24yearsold/seethroughv0.0.1_marigold": "4f4ffc46050b6feb764b628859968a26e76e6b6a"
+  }
+}

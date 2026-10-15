@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { guidePhoto } from './guide-art.js';
 import { sakeMentorChapter } from './sake-mentor.js';
 import { sakeMentorPanel } from './sake-mentor-panels.js';
@@ -31,9 +31,18 @@ export function SakeMentorView({ topic = 'sake', chapterId, guideName, guideMark
   const [selectedSpot, setSelectedSpot] = useState<number | null>(null);
   const [speaking, setSpeaking] = useState(false);
   const [photoRatio, setPhotoRatio] = useState<{ src: string; ratio: number } | null>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+  const deskRef = useRef<HTMLDivElement>(null);
+  const pendingJump = useRef<'photo' | 'question' | null>(null);
   useEffect(() => {
     return () => { if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel(); };
   }, [chapterId, step, mode]);
+  useLayoutEffect(() => {
+    const destination = pendingJump.current;
+    if (!destination) return;
+    pendingJump.current = null;
+    (destination === 'photo' ? progressRef.current : deskRef.current)?.scrollIntoView?.({ block: 'start', behavior: 'auto' });
+  }, [step, mode, questionIndex]);
   if (!chapter) return null;
 
   const observation = chapter.observations[step];
@@ -60,27 +69,31 @@ export function SakeMentorView({ topic = 'sake', chapterId, guideName, guideMark
   };
   const advanceObservation = () => {
     if (step < chapter.observations.length - 1) {
+      pendingJump.current = 'photo';
       setStep(step + 1);
       setRevealed(false);
       setSelectedSpot(null);
       setSpeaking(false);
     } else {
+      pendingJump.current = 'question';
       setMode('exam');
     }
   };
   const advanceExam = () => {
     if (!correct) return;
     if (questionIndex < chapter.exam.length - 1) {
+      pendingJump.current = 'question';
       setQuestionIndex(questionIndex + 1);
       setAnswer(null);
     } else {
       if (!passed) onPass();
+      pendingJump.current = 'question';
       setMode('passed');
     }
   };
 
   return <div className="g113-mentor">
-    <div className="g113-mentor-progress" aria-label="本章进度">
+    <div className="g113-mentor-progress" aria-label="本章进度" ref={progressRef}>
       <span>师傅带看</span><div>{chapter.observations.map((item, index) => <i key={item.title} className={mode !== 'lesson' || index <= step ? 'active' : ''} aria-label={`观察 ${index + 1}${mode !== 'lesson' || index < step ? '已完成' : ''}`}/>)}<i className={mode !== 'lesson' ? 'active' : ''} aria-label="出门小考"/></div><span>{mode === 'lesson' ? `观察 ${step + 1} / ${chapter.observations.length}` : mode === 'exam' ? `小考 ${questionIndex + 1} / ${chapter.exam.length}` : '本章已通过'}</span>
     </div>
     <div className="g113-mentor-workbench">
@@ -91,7 +104,7 @@ export function SakeMentorView({ topic = 'sake', chapterId, guideName, guideMark
         </div>
         {hotspots.length > 0 && <div className="g113-mentor-hotspot-index" aria-label="照片线索列表"><span>点图探索</span>{hotspots.map((item, index) => <button type="button" key={item.title} aria-pressed={selectedSpot === index} className={selectedSpot === index ? 'active' : ''} onClick={() => chooseSpot(index)}>{String(index + 1).padStart(2, '0')} · {item.title}</button>)}</div>}
       </figure>
-      <div className="g113-mentor-desk" aria-live="polite">
+      <div className="g113-mentor-desk" aria-live="polite" ref={deskRef}>
         {mode === 'lesson' && <>
           <small className="g113-mentor-kicker">第 {step + 1} 处 / {chapter.threshold}</small>
           <h4>{observation.title}</h4>

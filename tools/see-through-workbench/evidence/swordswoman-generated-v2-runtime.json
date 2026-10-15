@@ -1,0 +1,24 @@
+{
+  "asset": "swordswoman-generated-v2",
+  "comparisons": [
+    {
+      "timeMs": 0,
+      "nativeSha256": "d9ea97fdb4c054436944afc05eebf3c0c45d0c031d95e3f1e568cc66d51e2cb4",
+      "engineSha256": "d9ea97fdb4c054436944afc05eebf3c0c45d0c031d95e3f1e568cc66d51e2cb4",
+      "identical": true
+    },
+    {
+      "timeMs": 6040,
+      "nativeSha256": "cab738fe0fb3f6abec8c7ea5a5c7030be4da879adb2db81ebc723b7cf6f62f52",
+      "engineSha256": "cab738fe0fb3f6abec8c7ea5a5c7030be4da879adb2db81ebc723b7cf6f62f52",
+      "identical": true
+    },
+    {
+      "timeMs": 13000,
+      "nativeSha256": "3d9119a13d1aea04900af5c405ff40c1feab8c31662dbfb1cc84eac533d00633",
+      "engineSha256": "3d9119a13d1aea04900af5c405ff40c1feab8c31662dbfb1cc84eac533d00633",
+      "identical": true
+    }
+  ],
+  "browserErrors": []
+}

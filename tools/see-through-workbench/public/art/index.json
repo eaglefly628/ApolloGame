@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "anim/native-character-demo",
+      "type": "animation",
+      "status": "filled",
+      "description": "原生二维网格动画接入验收角色（原创矢量示例，非 See-through 推理结果）",
+      "path": "art/native-character-demo.stretch",
+      "spec": {
+        "format": "stretch"
+      },
+      "license": "CC0-1.0",
+      "source": "original-vector-fixture",
+      "provenance": {
+        "method": "native-project-fixture",
+        "generator": "demo-fixture.mjs"
+      }
+    },
+    {
+      "id": "anim/mac-generated-sample",
+      "type": "animation",
+      "status": "filled",
+      "description": "Mac原生模型生成验证样例",
+      "path": "art/mac-generated-sample.stretch",
+      "spec": {
+        "format": "stretch"
+      },
+      "license": "upstream repository sample",
+      "source": "vendor/see-through/common/assets/test_image3.png",
+      "provenance": {
+        "method": "see-through-native-mps-psd-and-stretchy-native-rig",
+        "colorResolution": 384,
+        "depthResolution": 384,
+        "bodyAndFaceSteps": 30,
+        "depthSteps": 4
+      }
+    },
+    {
+      "id": "anim/silver-haired-portrait",
+      "type": "animation",
+      "status": "filled",
+      "description": "用户银发人物原图生成的分层网格动画初版",
+      "path": "art/silver-haired-portrait.stretch",
+      "spec": {
+        "format": "stretch"
+      },
+      "license": "user-provided",
+      "source": "user attachment: 截屏2026-10-10 14.32.26.png",
+      "provenance": {
+        "method": "see-through-native-mps-psd-and-stretchy-native-rig",
+        "colorResolution": 384,
+        "depthResolution": 384,
+        "bodyAndFaceSteps": 30,
+        "depthSteps": 4
+      }
+    },
+    {
+      "id": "anim/blue-robed-swordswoman",
+      "type": "animation",
+      "status": "filled",
+      "description": "用户青衣佩剑全身人物的分层网格动画初稿",
+      "path": "art/blue-robed-swordswoman.stretch",
+      "spec": {
+        "format": "stretch"
+      },
+      "license": "user-provided",
+      "source": "user attachment: 截屏2026-10-10 14.54.31.png",
+      "provenance": {
+        "method": "see-through-native-mps-psd-and-stretchy-native-rig",
+        "colorResolution": 384,
+        "depthResolution": 384,
+        "bodyAndFaceSteps": 30,
+        "depthSteps": 4,
+        "refinement": "native back hair mesh silhouette trim; texture bytes unchanged"
+      }
+    },
+    {
+      "id": "anim/swordswoman-generated-v2",
+      "type": "animation",
+      "status": "filled",
+      "description": "以用户青衣剑客为参考逐层生成的动画角色第二版",
+      "path": "art/swordswoman-generated-v2.stretch",
+      "spec": {
+        "format": "stretch"
+      },
+      "license": "user-provided reference; generated derivative assets",
+      "source": "user attachment: 截屏2026-10-10 14.54.31.png",
+      "provenance": {
+        "method": "reference-master-repaint-and-seven-separate-imagegen-layers",
+        "generationTool": "built-in image_gen",
+        "layerCount": 7,
+        "alignment": "native mesh data; no source segmentation",
+        "clips": [
+          "idle",
+          "breeze",
+          "nod",
+          "showcase"
+        ]
+      }
+    }
+  ]
+}

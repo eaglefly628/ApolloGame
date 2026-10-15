@@ -8,6 +8,8 @@
     "build": "vite build",
     "verify:navigation": "vite-node --config vite.config.mjs verify-navigation.ts",
     "verify:stress": "vite-node --config vite.config.mjs verify-stress.ts",
-    "verify:battle": "vite-node --config vite.config.mjs verify-battle-density.ts 64 600 && vite-node --config vite.config.mjs verify-battle-density.ts 128 600"
+    "verify:battle": "vite-node --config vite.config.mjs verify-battle-density.ts 64 600 && vite-node --config vite.config.mjs verify-battle-density.ts 128 600",
+    "verify:garden": "vite-node --config vite.config.mjs verify-garden.ts 64 400 && vite-node --config vite.config.mjs verify-garden.ts 128 400",
+    "verify:play": "vite-node --config vite.config.mjs verify-play.ts"
   }
 }

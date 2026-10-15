@@ -14,6 +14,7 @@ import { buildScreen, UI_ACTIONS, type Screen, type UiAction } from './ui.js';
 import { GAME_ID, TICK_MS, OFFLINE_ACK_KEY, STAGE_HIDE_KEY, STAGE_SHOW_KEY, STARDUST_MAX, STARDUST_GRANTS, offlineTierOf, offlineKey, buyKey, placeKey, shopItemOf, chapterOf, roomOf, grantKey, type RoomId } from './world-data.js';
 import { EMPTY_STATE, type PersistedState } from './blueprint.js';
 import { setSkinOverrides } from './cat-art.js';
+import { loadLocalToyArtOverrides } from './local-toy-art.js';
 import { addEntry, EMPTY_DRAFT, EMPTY_REGISTRY, normalizeRegistry, removeEntry, WHEREABOUTS, type CatRegistry, type RegistrationDraft } from './registration.js';
 import { EMPTY_CATALOG_BROWSE, sourceOf, type CatalogBrowse } from './cat-gallery.js';
 import { EMPTY_SHOP_BROWSE, shopCategoryOf, shopSortOf, shopValueOf, type ShopBrowse } from './shop-browse.js';
@@ -173,9 +174,10 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
     }, TICK_MS);
     render();
     // 美术索引是投影层的增量：基座件兜住无索引/非 200/解析失败，空表就继续程序化回退。
-    void loadGameArtOverrides(GAME_ID).then((skins) => {
-      if (disposed || Object.keys(skins).length === 0) return;
-      setSkinOverrides(skins);
+    void Promise.all([loadGameArtOverrides(GAME_ID), loadLocalToyArtOverrides()]).then(([skins, toys]) => {
+      const allSkins = { ...skins, ...toys };
+      if (disposed || Object.keys(allSkins).length === 0) return;
+      setSkinOverrides(allSkins);
       render(); // 真图异步到位即换装，不重开会话。
     });
   };

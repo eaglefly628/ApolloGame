@@ -19,6 +19,7 @@
 | 逐游戏美术需求/生成/替换/换皮 | **美术平台**（ArtLedgerPanel·主屏 🎨 / 卡带「美术台账」入口）+ 大脑 `scripts/art-replace.mjs` + 风格包 `scripts/style-packs.json` | 台账 art-NN 编号 append-only·写回=manifest 重钉或 skinKey 别名·**全员必读终态档 `docs/design/art-platform-2026-07-09.md`** |
 | 加贴图/模型/图集/精灵表 | `asset-manager` agent | 维护 `assets/index.json` 单一真相 + 按类型填 spec |
 | AI 序列帧制作、切帧和 GIF 预览 | `.claude/skills/spritegen/SKILL.md` + `tools/spritegen-export.mjs` | 离线生成与人审；导出已有 `AssetIndex.spec.sheet` / 单行 `Image.sprite` 数据。不新增运行时依赖，不保证动作质量；上游许可记录见 THIRD-PARTY-NOTICES |
+| 分层二维角色（Live2D 风格）制作与原生参数播放 | `.claude/skills/native-character/SKILL.md` + `engine/host/native-character` | 原生 `.stretch` + 游戏本地 AssetIndex；render-only，同源播放器。共享宿主端口已可用，LayoutNode 控件尚未实现；Game112 续接见 `docs/design/game112/native-character-handoff.md` |
 | 批量灌入共享货架（图标/emoji 系列） | `scripts/import-art-pack.mjs` · `import-emoji.mjs` | 整包从 GitHub 拉取→sniff→盖 style/license/source/provenance→并入 `assets/index.json`（加一个包=加一条 PACKS 配置，纯数据）；细节见 `docs/workflow/art-library-handoff.md` |
 | 贴图/网格 spec 元数据 | spec 闭集 | usage/colorSpace/wrap/genCollision（贴图）· scale（模型）——闭集，非自由字段 |
 | 3D 材质数据资产 | `Material3D`（type:'material'） | 引 texture key（走上面 art:/index），非硬编码预设 |

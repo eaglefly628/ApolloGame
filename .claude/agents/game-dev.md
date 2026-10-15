@@ -96,7 +96,7 @@ color: green
   **在游戏层手写一个 system 来绕过，是本仓最严重的一类事故。**
 
 ## 纪律
-- 分支：`claude/mainbranch`（被注入到别的分支 → 第一动作切回来）。
+- 分支：`codex/mainbranch`（被注入到别的分支 → 第一动作切回来）。
 - 推送前：`node scripts/scoped-gate.mjs --run` **全绿·用退出码核对**（别经管道吞失败码）。
 - 署名 `Claude <noreply@anthropic.com>`，提交信息以 session URL 结尾，**产物里不写模型标识**。
 - **收工律**：只有两种合法中途停——等 owner 判 A/B，或复查门。其余做完再停。

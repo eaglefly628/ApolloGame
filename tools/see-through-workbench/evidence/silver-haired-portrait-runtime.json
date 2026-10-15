@@ -1,0 +1,24 @@
+{
+  "asset": "silver-haired-portrait",
+  "comparisons": [
+    {
+      "timeMs": 0,
+      "nativeSha256": "8bc1b7870f25f802215f532f4cbea55f7bd79511b5bf3f2b91c4b10a945065f0",
+      "engineSha256": "8bc1b7870f25f802215f532f4cbea55f7bd79511b5bf3f2b91c4b10a945065f0",
+      "identical": true
+    },
+    {
+      "timeMs": 6040,
+      "nativeSha256": "ddb2dcae1907a67edc542832ba0e1e9ffd5e26d9a1c28b25d911109666487ab7",
+      "engineSha256": "ddb2dcae1907a67edc542832ba0e1e9ffd5e26d9a1c28b25d911109666487ab7",
+      "identical": true
+    },
+    {
+      "timeMs": 13000,
+      "nativeSha256": "3cf91bd568035789c793e6a3482eaf4a1af04167224d75ddbcb89e823dafc71d",
+      "engineSha256": "3cf91bd568035789c793e6a3482eaf4a1af04167224d75ddbcb89e823dafc71d",
+      "identical": true
+    }
+  ],
+  "browserErrors": []
+}

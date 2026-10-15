@@ -1,65 +1,54 @@
-# ZeroCraft Preview
+# ApolloGame / ZeroCraft
 
-> 工作目录(本地 clone)叫 `MemBrain`；GitHub 远端仓库是 `eaglefly628/ApolloGame`。两者不一致属正常。
+数据驱动的 ECS 游戏引擎、创作台与游戏样例。默认开发主线为 `codex/mainbranch`；项目协作规则见 [AGENTS.md](AGENTS.md) 和 [CLAUDE.md](CLAUDE.md)。
 
-> 工作目录(本地 clone)叫 `MemBrain`；GitHub 远端仓库是 `eaglefly628/ApolloGame`。两者不一致属正常。
+## 新机器开始
 
-数据驱动的原子化 ECS 游戏引擎：26 个核心原子 skill + Tier 1-4 涌现层，确定性 tick 循环，
-可替换渲染后端，内置 debug / record-replay + 美术资产系统。
-
-> ⛔ **第一性原则：整个游戏是数据，不是代码**（`docs/design/data-driven-manifesto.md`）。
-> 代码只属于引擎这台固定的确定性解释器；游戏内容全部用数据描述，AI/用户只编辑数据。
-
-所有 skill 集中在 `src/skills/{atoms,tier1,tier2,tier3,tier4}`（见 `src/skills/README.md`）；
-美术资产（表现层、不进确定性 sim）在 `src/assets/`。
-
-## 快速开始
-
-需要 **Node ≥ 18**。
+需要 Git、Node.js 22 和 npm。游戏预览不需要模型 API key。
 
 ```bash
-npm install          # 先装依赖（必须）
-npm run dev          # 前端开发服务器
+git clone --branch codex/mainbranch https://github.com/eaglefly628/ApolloGame.git
+cd ApolloGame
+npm ci
+npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
-终端会打印 `➜  Local:   http://localhost:5173/`，**用浏览器打开这个地址**，会看到三个彩色形状在画布上持续运动。
-（`npm run dev` 会一直运行、不返回命令行，这是正常的——它是个服务器。停止按 `Ctrl+C`。）
+浏览器打开 `http://127.0.0.1:5173/` 进入游戏库。Game112 为 `/?game=game112`，Game113 为 `/?game=game113#/home`。
 
-> ⚠️ **不要用 `node src/main.tsx` 直接跑。** `main.tsx` 是浏览器入口（含 JSX 与
-> `document` / `createRoot` 等 DOM API），Node 不认 `.tsx` 也没有 DOM。
-> 前端一律 `npm run dev`；想在终端跑纯逻辑用 `npm run demo`。
+2026-10-15 的跨机器恢复快照在 `codex/project-sync-20261015`，合入主线前可直接克隆该分支继续；它是待审查快照，不代表 S1–S8 全部通过。覆盖范围、验证和剩余本机文件见 [同步审查记录](docs/reviews/project-sync-2026-10-15.md)。
 
-## 命令
+## 独立工具和样例
 
-| 命令 | 作用 |
-|------|------|
-| `npm run dev` | 前端开发服务器（浏览器，HMR）→ http://localhost:5173/ |
-| `npm run demo` | 无头跑引擎：ASCII 可视化 + skill 协作日志 + record/replay 校验 |
-| `npm run test` | 全部单测（vitest，152 passed） |
-| `npm run build` | 类型检查 + 生产构建 → `dist/` |
-| `npm run preview` | 预览生产构建（build 之后） |
-| `npx tsc --noEmit` | 仅类型检查 |
+根目录先完成 `npm ci`，再按需要启动：
 
-## 项目结构
+| 内容 | 命令 | 地址 |
+|---|---|---|
+| Game114 机关车庭院 | `npm run dev --prefix handoffs/game114/mechanism-sample` | `http://127.0.0.1:5187/` |
+| 原生二维动画编辑器 | `npm ci --prefix tools/see-through-workbench`，再 `npm run dev --prefix tools/see-through-workbench` | `http://127.0.0.1:5182/?demo=1` |
+| 动画宿主端口示例 | 同动画编辑器服务 | `http://127.0.0.1:5182/engine.html` |
 
+Game114 的模型和庭院贴图随源码提供；不依赖原开发者的临时目录。动画编辑器与示例不需要 GPU 模型；重新从整图推理分层另需 Python 3.12、GPU 环境和下载权重，见 [工作台说明](tools/see-through-workbench/README.md)。
+
+Game112 的候选猫图、玩具原图和生产队列按既有要求保存在被忽略的 `art-local/`，未上传。未安装私有玩具索引时商店显示包裹占位图，正式主厅猫和既有道具仍使用仓库素材。Game113 浏览器里的演示进度只保存在当前浏览器；未授权产品候选照片也不随 Git 转移。
+
+## 可选创作台后端
+
+```bash
+python3 -m venv .venv
+# macOS / Linux: source .venv/bin/activate
+# Windows PowerShell: activate .venv/Scripts/Activate.ps1
+python -m pip install -r requirements.txt
+python zerocraft.py
 ```
-src/
-  engine/        ECS 内核（World / 类型 / 拓扑排序 / defineCapability）+ protocol 共享组件契约
-  atom-skills/   26 个核心原子 skill（transform / velocity / resource / overlap-detect / ...）
-  tier1/         Tier 1 涌现系统（motion-apply / lifetime）
-  renderer/      collectRenderables + AsciiRenderer（无头）+ CanvasRenderer（浏览器）
-  debug/         Tracer（skill 协作日志）+ Recorder / Replayer（确定性录制回放）
-  runtime/       Engine（加载蓝图 + 循环 + 渲染后端）
-  assembly/      蓝图：playground（浏览器场景）/ demo（生命周期演示）
-  ui/            React overlay
-wiki/, docs/     设计文档与原子周期表
-```
+
+按终端打印的地址打开创作台。配置模板为 [.apollo-config.example.json](.apollo-config.example.json) 和 [.env.example](.env.example)；复制成对应本机配置后再填自己的 provider 信息。配置文件与凭据不进入 Git。
 
 ## 验证
 
 ```bash
-npx tsc --noEmit   # 类型检查，exit 0
-npm run test       # 152 passed / 29 files
-npm run build      # 构建通过 → dist/
-npm run demo       # 引擎无头自检
+npm test
+npm run build
+node scripts/scoped-gate.mjs --run
 ```
+
+`scoped-gate` 默认比较 `origin/codex/mainbranch`。测试与构建的实际结果以审查记录和命令退出码为准，不在 README 手抄固定用例数量。

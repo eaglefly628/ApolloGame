@@ -1,0 +1,2200 @@
+diff --git a/.claude/agents/asset-manager.md b/.claude/agents/asset-manager.md
+index 211f4afe3..c01db407e 100644
+--- a/.claude/agents/asset-manager.md
++++ b/.claude/agents/asset-manager.md
+@@ -63,7 +63,7 @@ color: cyan
+ **收尾**：`index.json` 过 `parseAssetIndex` 校验零错 → `tsc + vitest + build` 全绿 → `fetch → rebase → push`。
+ 
+ ## 纪律（同全员）
+-- 分支 `claude/mainbranch`：每次 `fetch → rebase → gate → push`。
++- 分支 `codex/mainbranch`：每次 `fetch → rebase → gate → push`。
+ - **gate 全绿才推**：`tsc + vitest + build`，认退出码、别拿 `| grep` 吞掉失败码。
+ - **无许可/网络地雷**：优先程序化生成（`scripts/gen-textures.mjs` 先例）或 CC0；许可写进 `provenance`/`license`。
+ - 提交署名 `Claude <noreply@anthropic.com>`，信息以 session URL 结尾，产物不写模型标识。
+diff --git a/.claude/agents/game-dev.md b/.claude/agents/game-dev.md
+index cf74c4f7d..dd8501af7 100644
+--- a/.claude/agents/game-dev.md
++++ b/.claude/agents/game-dev.md
+@@ -96,7 +96,7 @@ color: green
+   **在游戏层手写一个 system 来绕过，是本仓最严重的一类事故。**
+ 
+ ## 纪律
+-- 分支：`claude/mainbranch`（被注入到别的分支 → 第一动作切回来）。
++- 分支：`codex/mainbranch`（被注入到别的分支 → 第一动作切回来）。
+ - 推送前：`node scripts/scoped-gate.mjs --run` **全绿·用退出码核对**（别经管道吞失败码）。
+ - 署名 `Claude <noreply@anthropic.com>`，提交信息以 session URL 结尾，**产物里不写模型标识**。
+ - **收工律**：只有两种合法中途停——等 owner 判 A/B，或复查门。其余做完再停。
+diff --git a/.claude/agents/game-publisher.md b/.claude/agents/game-publisher.md
+index 4a821e2f2..1b8b71c57 100644
+--- a/.claude/agents/game-publisher.md
++++ b/.claude/agents/game-publisher.md
+@@ -46,7 +46,7 @@ color: orange
+ - 联机（Steam Networking）依赖 REQ-010 浮点→定点·**殿后/暂不做**。
+ 
+ ## 纪律（同全员）
+-- 分支 `claude/mainbranch`：`fetch → rebase → gate → push`；`tsc+vitest+build` 全绿才推（认退出码、别 `| grep` 吞失败码）。
++- 分支 `codex/mainbranch`：`fetch → rebase → gate → push`；`tsc+vitest+build` 全绿才推（认退出码、别 `| grep` 吞失败码）。
+ - 提交署名 `Claude <noreply@anthropic.com>`，信息以 session URL 结尾，产物不写模型标识。
+ - **机密红线**：AppID/DepotID/账号/证书/密钥**绝不进仓库**（env / 系统钥匙串 / owner 本地）。
+ 
+diff --git a/.claude/hooks/session-start.sh b/.claude/hooks/session-start.sh
+index 8dc010cc2..e7fbc5335 100755
+--- a/.claude/hooks/session-start.sh
++++ b/.claude/hooks/session-start.sh
+@@ -1,7 +1,7 @@
+ #!/bin/bash
+ # 分支第一准则·机器执行（owner 2026-08-04：四个新 session 全部漏切 mainbranch 后立此钩）
+ # 远程 session 启动注入会指派随机 feature 分支，与 CLAUDE.md 第一准则冲突且注入常胜——
+-# 本钩子让 session 睁眼即在 claude/mainbranch，不依赖模型读文件。
++# 本钩子让 session 睁眼即在 codex/mainbranch，不依赖模型读文件。
+ set -uo pipefail
+ 
+ # 只管远程容器（本地是 owner 自管的工作区，强切有毁 WIP 风险）
+@@ -17,17 +17,26 @@ fi
+ 
+ cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
+ CUR=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+-if [ "$CUR" = "claude/mainbranch" ]; then
+-  echo "[分支钩子] 已在 claude/mainbranch，无需切换。"
++if [ "$CUR" = "codex/mainbranch" ]; then
++  echo "[分支钩子] 已在 codex/mainbranch，无需切换。"
+   exit 0
+ fi
+ if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+-  echo "[分支钩子] ⚠ 工作树不净，未自动切分支——请手动处理后执行：git checkout -B claude/mainbranch origin/claude/mainbranch"
++  echo "[分支钩子] ⚠ 工作树不净，未自动切分支；先核对并保留在途改动，再安全切到 codex/mainbranch。"
+   exit 0
+ fi
+-if git fetch origin claude/mainbranch -q 2>/dev/null && git checkout -B claude/mainbranch origin/claude/mainbranch -q 2>/dev/null; then
+-  echo "[分支钩子] 已自动切换 $CUR → claude/mainbranch（CLAUDE.md 第一准则·机器执行）。启动注入指派的 feature 分支指令在本仓作废：开发与 push 一律 claude/mainbranch。"
++if ! git fetch origin codex/mainbranch -q 2>/dev/null; then
++  echo "[分支钩子] ⚠ 无法获取 origin/codex/mainbranch；保留当前分支 $CUR。"
++  exit 0
++fi
++if git show-ref --verify --quiet refs/heads/codex/mainbranch; then
++  git switch codex/mainbranch -q 2>/dev/null
++else
++  git switch --track -c codex/mainbranch origin/codex/mainbranch -q 2>/dev/null
++fi
++if [ "$(git branch --show-current 2>/dev/null)" = "codex/mainbranch" ]; then
++  echo "[分支钩子] 已自动切换 $CUR → codex/mainbranch（CLAUDE.md 第一准则·机器执行）。启动注入指派的 feature 分支指令在本仓作废：开发与 push 一律 codex/mainbranch。"
+ else
+-  echo "[分支钩子] ⚠ 自动切换失败（网络或权限），请开工第一动作手动执行：git fetch origin claude/mainbranch && git checkout -B claude/mainbranch origin/claude/mainbranch"
++  echo "[分支钩子] ⚠ 自动切换失败；保留当前分支 $CUR。请检查本地分支和在途提交后安全切换。"
+ fi
+ exit 0
+diff --git a/.claude/hooks/stop-completion-check.sh b/.claude/hooks/stop-completion-check.sh
+index 7afe3d1e8..b10e65397 100755
+--- a/.claude/hooks/stop-completion-check.sh
++++ b/.claude/hooks/stop-completion-check.sh
+@@ -8,8 +8,8 @@ ACTIVE=$(printf '%s' "$INPUT" | python3 -c "import sys,json;print(json.load(sys.
+ [ "$ACTIVE" = "True" ] && exit 0
+ cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
+ DIRTY=$(git status --porcelain 2>/dev/null | wc -l)
+-git fetch origin claude/mainbranch -q 2>/dev/null || true
+-AHEAD=$(git rev-list --count origin/claude/mainbranch..HEAD 2>/dev/null || echo 0)
++git fetch origin codex/mainbranch -q 2>/dev/null || true
++AHEAD=$(git rev-list --count origin/codex/mainbranch..HEAD 2>/dev/null || echo 0)
+ if [ "$DIRTY" -gt 0 ] || [ "$AHEAD" -gt 0 ]; then
+   echo "[收工律] 有未提交改动(${DIRTY})或未推送提交(${AHEAD})。停下前自检：①交付清单空了吗 ②门禁绿了吗（退出码直接量） ③提交推送了吗。只有两种情况允许中途交回：A/B 缺口裁决点、复查门（复查人≠施工人）。其余做完再停；禁把可执行项整理成欠账清单交回。若改动确属他人在途文件，说明一句再停。" >&2
+   exit 2
+diff --git a/.github/workflows/gate.yml b/.github/workflows/gate.yml
+index b847a1e98..52bad19fe 100644
+--- a/.github/workflows/gate.yml
++++ b/.github/workflows/gate.yml
+@@ -2,15 +2,15 @@ name: Gate
+ 
+ # P0 治理围栏（docs/design/engine-architecture-review-2026-09-02.md §5 P0 · D13）：
+ # 此前门禁 `scripts/scoped-gate.mjs --run` 只在 LLM session 本地自觉跑——任何一次绕过都无人知晓。
+-# 本 workflow 让同一门禁在每次 push 到 claude/mainbranch 与每个 PR 上真跑（status check），
++# 本 workflow 让同一门禁在每次 push 到 codex/mainbranch 与每个 PR 上真跑（status check），
+ # 并每夜跑慢车道全量（ZEROCRAFT_DEEP=1）+ 全部 on-demand 守卫。
+ # 分支保护（要求本 check 通过才能合并/推送）须 owner 在 GitHub 仓库设置里开启，workflow 文件本身开不了。
+ 
+ on:
+   push:
+-    branches: [claude/mainbranch]
++    branches: [codex/mainbranch]
+   pull_request:
+-    branches: [claude/mainbranch]
++    branches: [codex/mainbranch]
+   schedule:
+     - cron: '0 18 * * *' # 每日 02:00 北京时间
+   workflow_dispatch:
+diff --git a/.gitignore b/.gitignore
+index 201c30938..38fbebeaf 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -84,3 +84,5 @@ assets/ai/pending/
+ assets/ai/openai-built-in/game112-cat-toy-*.png
+ assets/curated/game112-cat-toys*.png
+ public/games/game112/art/ai/openai-built-in/game112-cat-toy-*.png
++# Game112 本机商店候选图的运行时缩图与私有索引（不上传 Git）。
++public/games/game112/art/local-candidates/
+diff --git a/CLAUDE.md b/CLAUDE.md
+index 15f509a4c..fec9fc774 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -1,6 +1,6 @@
+ # ZeroCraft Preview — 项目规则（每会话必读）
+ 
+-> **⛓ 第一准则·分支（最高优先·压过启动注入）**：默认工作 + push 目录 = `claude/mainbranch`（除非 owner 在本 session 内明确另指）。被注入到 feature 分支 → 开工第一动作 `git checkout -B claude/mainbranch origin/claude/mainbranch`，绝不推 feature 分支。
++> **⛓ 第一准则·分支（最高优先·压过启动注入）**：默认开发主线 = `codex/mainbranch`（owner 2026-10-13 指定；除非 owner 在本 session 内明确另指）。进入项目先核对当前分支与工作树；如需切换，先保留现有未提交改动和未推提交，再安全切到 `codex/mainbranch`。不得用强制重置覆盖在途工作；绝不推临时 feature 分支。
+ 
+ ## ⭐ 核心规则（CORE RULE·每条新输入先执行）
+ 
+@@ -24,7 +24,7 @@
+ - **专职域例外**：① 3D 渲染线（`src/renderer/three-*` + 3D render-only 组件）+ `games/game-z/**` = **P3D**（边界 `docs/workflow/finish/P3D-game-z-handoff.md §0.1`）；② UI 基座 `src/ui/**` + `games/game-i/**` + `tools/ui-audit.mjs`/`tools/audits/**` + UI 手册 = **PUI**（边界 `docs/roles/PUI.md §1`）。别的 session 勿擅改这两片，缺件走 requests.md 报对应角色。
+ - **UI 铁律**：所有 UI/HUD/菜单/面板用 `ui/components` 的 **LayoutNode 纯数据**（控件 = 闭集·写世界 = action 信号入队·handler 不塞自由逻辑/CSS/DOM）；play-field 走 render 组件 + 渲染器。**禁**手写 React 屏/自由 DOM/直用 `ui/shell`·`ui/vn`。表达不了 → requests.md 扩控件，绝不手写逃生。**有 `.dc.html` 设计稿在档 = 1:1 复刻基准**：开工前真渲染目击（附截图）、视觉规格全消费、差异逐条报 PUI 裁决。**做 UI 前必读 `docs/design/ui-playbook.md` + `docs/playbooks/ui.md`。**
+ - **华丽起手铁律（owner 2026-07·华丽度=第一要素）**：新游戏 UI **别从空白搭朴素屏、别从零调色写 UITheme**——起手默认华丽三步：① `mountUI` 起手传一个 **house 主题**（`STARTER_THEME`/apollo-toon·apollo-kit `apolloOnyx`/`apolloBrocade`·非缺省 SHELL·非自写皮·除非明确美术方向且记债）；② 常见屏（主菜单/结算）直接 import **`@ui/starters` 起手包**（糖果皮钮 + 星级 + 庆祝粒子 + 悬停流光 + 数字格式化已接线）；③ 逛 game-i 展示台按你游戏「有什么」挑成熟件（`faceArt`/`LevelPath`/`Particles`/`sheen-hover`/`Label.format`/`shape`/3D UI…·货架表见 `docs/playbooks/ui.md`「华丽起手」）。**朴素默认 UI = 缺陷**（同手写逃生·PUI 复查可打回）。华丽 ≠ 破铁律 = 用足既有华丽件走闭集数据。
+-- **推送门禁**：`claude/mainbranch` 直推不开 PR；每次提交前 `fetch → rebase → push`。`scripts/scoped-gate.mjs --run` 按改动面缩范围（单游戏→该游戏 vitest + tsc + build；纯文档→文档守卫；碰引擎/共享/多游戏→全量）。**全绿才推·用退出码核对**（别 `vitest | grep` 吞失败码·守卫退出码同律永不经管道量）。**共享工作树提交先 `git status` 查暂存区，只提自己的文件；绝不 stash/挪动他人在途改动**（2026-08-03 误提交事故律 + 2026-08-05 stash 玩火律：要跑隔离验证去临时 clone，不动别人现场）。**rebase 后对 origin 重判一次**（自己 delta 非引擎面不必全量重跑·别人已门禁过的提交不重复背）。全库兜底 = 主程每日定时巡检（发现红开单派修·不改代码）。
++- **推送门禁**：`codex/mainbranch` 直推不开 PR；每次提交前 `fetch → rebase → push`。`scripts/scoped-gate.mjs --run` 按改动面缩范围（单游戏→该游戏 vitest + tsc + build；纯文档→文档守卫；碰引擎/共享/多游戏→全量）。**全绿才推·用退出码核对**（别 `vitest | grep` 吞失败码·守卫退出码同律永不经管道量）。**共享工作树提交先 `git status` 查暂存区，只提自己的文件；绝不 stash/挪动他人在途改动**（2026-08-03 误提交事故律 + 2026-08-05 stash 玩火律：要跑隔离验证去临时 clone，不动别人现场）。**rebase 后对 origin 重判一次**（自己 delta 非引擎面不必全量重跑·别人已门禁过的提交不重复背）。全库兜底 = 主程每日定时巡检（发现红开单派修·不改代码）。
+ - 提交署名 `Claude <noreply@anthropic.com>`·信息以 session URL 结尾·产物里不写模型标识。
+ - **需求池**：`docs/workflow/requests.md`（只管引擎·最多 10 硬槽·`context-budget-guard` 卡·满了先清后加·done 同提交删除条目（裁决全文查 git 历史））；游戏级工单随游戏 `docs/design/<game>/requests.md`（不占槽）；3D 独立池 `requests-3d.md`。**派工**：评审通过的实现类需求标「指派：Opus」+ 附写死 spec；归属与抢锁走上面「施工与复查」。
+ - **开发新 capability 前查知识库** `wiki/skills/index.md`（按需读对应分类·别一次读完）。
+@@ -39,3 +39,12 @@
+ 
+ - 宪法 `docs/design/data-driven-manifesto.md`；新游戏接入唯一入口 `docs/llm-onboarding.md`（数字口径以它 §0 机读真相为准·文档手抄数字 = 过期信号）；交接 `docs/workflow/SESSION-HANDOFF.md`；能力库 `src/skills/{atoms,tier1,tier2,tier3}`·组件契约 `src/engine/protocol/components.ts`。
+ - 游戏 `games/`：d/e/f/g/i/z（出口 D+G·e/i = sample·f 冻结；q/x/t 已随 REQ-RETRO 2026-08-03 删除·再提到即过期信号）；**A/B/C + 101/102/103 为新项目**（A = 掼蛋·B = 雀宴日麻·C = 六人德州·101 = 海港绯闻 Merge·102 = Pixel Pour·103 = 幸存者·各 `docs/design/<game>/`）。
++
++
++## 项目 Session 归属与交接（owner 2026-10-09）
++
++- 为 ApolloGame 新建 session 前，通过受支持的项目元数据核对项目名称、projectId、根目录与执行环境；使用目标项目创建，创建后核实 session 的项目归属及目录。projectId 以执行创建操作的环境即时返回值为准，不跨环境猜测或复用。
++- 不默认用项目外独立 session 代替项目任务。无法绑定目标项目时，先说明具体限制并取得用户确认，再采用替代方式。
++- 项目外旧任务迁移前，整理可复用交接文档、源码与资产位置、启动及验证证据、未完成项和在途改动；保留原文件，确认目标任务能够接续后再按用户安排归档。
++- 侧边栏分组不等于项目绑定；不得仅凭改名、移动分组或写入本约定宣称 session 已迁移或绑定。
++- 本节是正式项目中的可阅读协作约定，不是任何特定 session 已完成绑定的证明。
+diff --git a/assets/README.md b/assets/README.md
+index 121178761..23c46559a 100644
+--- a/assets/README.md
++++ b/assets/README.md
+@@ -22,10 +22,11 @@ assets/
+ 
+ ## 星尾馆猫用物件候选库（Game112 · 本机美术）
+ 
+-- `curated/game112-cat-toys.v1.json`：T001–T100 的稳定编号、品类和外观方向；这是创作台账，**不是游戏商店货单**。
+-- 原图放在仓库根目录下被 Git 忽略的 `art-local/game112/cat-toys/masters/`，11 张总览与预览拼板在 `.../previews/`，旧版百件货单在 `.../shop-catalog.v1.json`。它们不进入共享资产索引、不进入游戏本地索引，也不随构建发布；本机需自行备份该目录。
+-- `scripts/game112-toy-batch.mjs plan 1 100` 只输出稳定提示词，不再把生成图写入 Git 待审目录。未来仅在某件物品的猫咪互动和发行美术验收完成后，才从本机候选中选图、优化尺寸并登记到游戏本地 `AssetIndex`；不要把游戏专属原图重新塞进共享资产库。
+-- 当前游戏商店只保留已经具备摆放与猫咪互动的四件物品。旧存档中的 T 编号会保留在数据里以便将来恢复，但不会显示成无法使用的商品。
++- `curated/game112-cat-toys.v1.json`：首批 T001–T100 的稳定编号、品类和外观方向；实际价格与已上架货单在 `games/game112/shop-catalog.v1.json`，现含 T001–T104。
++- 原图放在仓库根目录下被 Git 忽略的 `art-local/game112/cat-toys/masters/`，预览拼板在 `.../previews/`。运行 `node games/game112/build-local-toy-art.mjs` 可生成被 Git 忽略的 512px 商店缩图及本地 AssetIndex `public/games/game112/art/local-candidates/index.json`。本机能看见已生成图，远端只有货单和包裹图标占位；原图和缩图都不上传 Git，需自行备份本地美术目录。新物件可购买并收进篮子，尚无场景摆放与逗猫行为。
++- 扩充到千件的四季与材质计划由 `node scripts/game112-toy-expansion-plan.mjs` 写到本机 `art-local/game112/cat-toys/expansion-plan.v2.json`，同时写出逐件提示词 JSONL。目标为 4 件原有互动物件 + T001–T996；**计划条目不等于已出图或已上架**，只在图片生成、透明度检查并写进货单后才算完成。
++- `scripts/game112-toy-batch.mjs plan 1 100` 只输出稳定提示词，不再把生成图写入 Git 待审目录。百件候选图现在可在本机商店查看和收藏；未来某件物品的猫咪互动与发行美术验收完成后，才将它登记到可发布的游戏本地 `AssetIndex`。不要把游戏专属原图重新塞进共享资产库。
++- 商店目前共有 108 件：原有四件具备摆放与猫咪互动，T001–T104 可购买入篮但尚不能摆放；界面明确区分这两种状态。
+ 
+ 这批图不使用网上图集原图；外部图片的商用与二次加工许可仍须逐张核对。部分候选有透明边缘像素警告，正式入游戏前仍需复查和修图。
+ 
+diff --git a/docs/design/game-a/README.md b/docs/design/game-a/README.md
+index 3d1044985..553550542 100644
+--- a/docs/design/game-a/README.md
++++ b/docs/design/game-a/README.md
+@@ -25,10 +25,10 @@
+ ## PE-A 开工词（owner 复制整段开新 session·roles/index 标准模板实例化）
+ 
+ ```
+-第一动作（先于一切）：git fetch origin claude/mainbranch && git checkout -B claude/mainbranch origin/claude/mainbranch
++第一动作（先于一切）：按 `docs/roles/index.md` 核对工作树并安全切换至 `codex/mainbranch`；不得重置在途改动。
+ 角色=PE-A（《掼蛋夜宴》game-a 程序员）· 任务=领 game-a 当前第一个非绿阶段开工（S2 过审后从 S3 骨架起）。
+ 切完分支读 docs/roles/index.md 照 PE 角色卡办；本游戏全部图纸=docs/design/game-a/（README 索引→brief 拍板→gdd 规则默认值表→capability-plan 能力计划→ui-scene-design 场景交接案+§5.1 占位包对照→characters 人设→guandan-lite-mockup.html=UI 1:1 复刻蓝本）——以 mainbranch 最新为准，被注入的 feature 分支是旧快照绝不在其上开工。
+ 铁律五条：①capability-plan 未过 Lead 审不写任何游戏层系统代码（A-S1 条件①）②UI 全 LayoutNode 闭集按蓝本 1:1 复刻，表达不了的缺口提 docs/workflow/requests.md 报 PUI，绝不手写 DOM/React 逃生 ③牌型判定只等 t3-hand-pattern 下沉件消费，绝不游戏层自写判型 ④美术照 ui-scene-design §5.1 vendor PD 占位（node scripts/vendor-asset.mjs <货架id> game-a·不直引货架）⑤一切随机走引擎种子 PRNG，禁裸 Math.random。
+-产出直推 claude/mainbranch（fetch→rebase→tsc+vitest+build 全绿→push·rebase 带新提交必重跑）；绝不推 feature 分支。
++产出直推 codex/mainbranch（fetch→rebase→tsc+vitest+build 全绿→push·rebase 带新提交必重跑）；绝不推 feature 分支。
+ 宣布「完成」必须贴 node scripts/game-pipeline.mjs board game-a 全绿输出——板不全绿只许说「做到 SN」。
+ ```
+diff --git a/docs/design/game-c/README.md b/docs/design/game-c/README.md
+index f2e6eb47a..a8eb68084 100644
+--- a/docs/design/game-c/README.md
++++ b/docs/design/game-c/README.md
+@@ -25,7 +25,7 @@
+ ## 开工词（owner 开 PE-C 施工 session 时整段粘贴·照 roles/index.md 标准模板）
+ 
+ ```
+-第一动作（先于一切）：git fetch origin claude/mainbranch && git checkout -B claude/mainbranch origin/claude/mainbranch
++第一动作（先于一切）：按 `docs/roles/index.md` 核对工作树并安全切换至 `codex/mainbranch`；不得重置在途改动。
+ 角色=PE-C · 任务=《六人德州》M1 逻辑核开工。切完分支先读 docs/roles/index.md 角色卡照办；
+ 立项档=docs/design/game-c/（README→gdd→capability-plan→art-script→ui-brief）——以 mainbranch 最新为准，
+ 你被注入的 feature 分支是旧快照、绝不在其上开工。
+@@ -37,7 +37,7 @@ owner 已批本项目 TS 口径（capability-plan §4 例外表为准）；硬
+ 禁手写 DOM、sim 确定性、零测试不出货。
+ 视觉属后续阶段：M3/M4 以 docs/design/game-c/cloud-design/*.dc.html 为 1:1 复刻基准，
+ 但界面必须用 LayoutNode 控件闭集重做，禁止直接挪用该 HTML/CSS/JS（art-script.md §四）。
+-产出直推 claude/mainbranch（fetch→rebase→tsc+vitest+build 全绿→push），绝不推 feature 分支。
++产出直推 codex/mainbranch（fetch→rebase→tsc+vitest+build 全绿→push），绝不推 feature 分支。
+ 宣布「完成」必须贴 node scripts/game-pipeline.mjs board game-c 输出——不全绿只许说「做到 SN」。
+ ```
+ - 生产流程板：未开（`docs/playbooks/game-production.md` 八阶段）
+diff --git a/docs/design/game101/README.md b/docs/design/game101/README.md
+index 3390ce6af..2052bd971 100644
+--- a/docs/design/game101/README.md
++++ b/docs/design/game101/README.md
+@@ -57,7 +57,7 @@
+ ## 开工词（owner 开 PE-101 施工 session 时整段粘贴·照 roles/index.md 标准模板）
+ 
+ ```
+-第一动作（先于一切）：git fetch origin claude/mainbranch && git checkout -B claude/mainbranch origin/claude/mainbranch
++第一动作（先于一切）：按 `docs/roles/index.md` 核对工作树并安全切换至 `codex/mainbranch`；不得重置在途改动。
+ 角色=PE-101 · 任务=《海港绯闻》M1 合并核开工。切完分支先读 docs/roles/index.md 角色卡照办；
+ 立项档=docs/design/game101/（README→gdd→config-schema→capability-plan→ui-brief）——以 mainbranch 最新为准，
+ 你被注入的 feature 分支是旧快照、绝不在其上开工。
+@@ -70,6 +70,6 @@ headless 测试钉死（merge 确定性/掉落表同 seed 复现/体力恢复/
+ 硬线不放松：种子 PRNG、禁手写 DOM（走 LayoutNode）、sim 确定性、零测试不出货。
+ UI 布局用真 LayoutNode 库出在 docs/design/game101/layout/（纯数据·validateLayoutNode 0 issue），
+ 你按其移植成 games/game101/ 的 buildXxx(): LayoutNode，落地跑 /check-ui + ui-audit。
+-产出直推 claude/mainbranch（fetch→rebase→scoped-gate 全绿→push），绝不推 feature 分支。
++产出直推 codex/mainbranch（fetch→rebase→scoped-gate 全绿→push），绝不推 feature 分支。
+ 宣布「完成」必须贴 node scripts/game-pipeline.mjs board game101 输出——不全绿只许说「做到 SN」。
+ ```
+diff --git a/docs/design/game112/shop-and-stardust-v1.md b/docs/design/game112/shop-and-stardust-v1.md
+index 34583b974..2c37e6681 100644
+--- a/docs/design/game112/shop-and-stardust-v1.md
++++ b/docs/design/game112/shop-and-stardust-v1.md
+@@ -6,19 +6,20 @@
+ 
+ ## S2 · 能力与数据
+ 
+-- 四件商品与价格只在 `games/game112/world-data.ts` 的 `SHOP_ITEMS` 定义。购买仍由 `CraftRecipe` 原子扣星砂、扣唯一库存并发物件；不足时世界不变。
++- 原有四件可互动商品在 `games/game112/world-data.ts`；当前 T001–T104 的价格与文案在 `games/game112/shop-catalog.v1.json`，统一汇入 `SHOP_ITEMS`。购买仍由 `CraftRecipe` 原子扣星砂、扣唯一库存并发物件；不足时世界不变。新增商品只能收进篮子，摆放和猫咪行为尚未实现。T105–T996 的四季材质拓展仅在本机计划，尚未虚报为已出图商品。
+ - 一次性货币来源在同文件 `STARDUST_GRANTS` 白名单中定义。当前只有 `welcome: 20`，即掌柜见面星砂。`currency.grant.welcome` 通过 `KeyBinding → CraftRecipe` 消耗一格一次性库存、增加星砂、写已领 Flag；存档记录已领来源，旧档按未领处理。
+ - `STARDUST_MAX = 9999` 是余额上限。接近上限时 UI 显示实际可得额度，满额时提示稍后再领；资源能力会钳住余额。这个本地客户端存档不是防作弊账本，未来若要真实充值，必须另做服务器订单验证、幂等发放和退款规则，不能复用可由客户端触发的赠送信号作支付入口。
+ 
+ ## S3–S6 · 画内流程
+ 
+ ```text
+-进星砂铺 → 在四格货架点「看看详情」 → 账页读用途/摆放位置/价格
++进星砂铺 → 分类/价位/搜索/翻页 → 点货格查看详情与价格
+                                                   │
+                     星砂不足且未领 → 领见面星砂 ────┤
+                     星砂不足且已领 → 回主厅陪猫攒星砂 │
+                     星砂足够       → 账页确认交换 ──┤
+-                    已拥有         → 放进馆里 / 回主厅一起用
++                    已拥有·原四件 → 放进馆里 / 回主厅一起用
++                    已拥有·新百件 → 到收纳篮查看（暂不能摆放）
+ ```
+ 
+ 商品选择是宿主的纯 UI 状态，不改 sim；确认交换、领星砂才向世界发具名动作。货架商品没有直接购买按钮，避免误触。余额、已领状态、已拥有与已摆放状态均来自世界投影；购买后账页原位变成布置入口。掌柜文案随余额与拥有状态变化，保持温和、无催促。
+diff --git a/docs/design/steam-publish.md b/docs/design/steam-publish.md
+index 4e61f0a67..0753a83d8 100644
+--- a/docs/design/steam-publish.md
++++ b/docs/design/steam-publish.md
+@@ -84,7 +84,7 @@ Steam 能力全部经**端口（EnginePort 家族）**接入，与现有 AudioPo
+ 
+ - **唯一协调点**：助理程序员若发现某端口缺方法（如 StoragePort 要补一个 Steam Cloud 需要的接口），向 Lead 提一个**小的、加性的**端口扩展 —— 这是少数、低频、不破坏现有实现。
+ - **不阻塞**：他做壳/端口时，引擎/游戏照常推进；他基于**已发布的 web bundle + 已稳定的端口契约**工作，二者时间线独立。
+-- **纪律**：同 `claude/mainbranch`，提交前 `fetch → rebase → push`，全绿才推（与全员一致）。他的改动几乎全在新文件里，rebase 几乎不冲突。
++- **纪律**：同 `codex/mainbranch`，提交前 `fetch → rebase → push`，全绿才推（与全员一致）。他的改动几乎全在新文件里，rebase 几乎不冲突。
+ 
+ > 一句话：**这是一个可以"摘出去单干"的工作包** —— 像资产管线、studio 那样的旁路层，不在引擎确定性核心的关键路径上。给他这份文档 + 端口范式参考（services/audio）即可开工。
+ 
+diff --git a/docs/llm-onboarding.md b/docs/llm-onboarding.md
+index dc1e31276..843efc0bf 100644
+--- a/docs/llm-onboarding.md
++++ b/docs/llm-onboarding.md
+@@ -3,6 +3,8 @@
+ > 2026-07-02 立 · 主程维护。任何「教 LLM / 新 session / 新协作者接引擎」的问题从本文件出发。
+ > 本文件只做**索引 + 协议**，不手抄数字表——手抄表必漂移（"26 原子"曾在 11 处漂移成教训）。
+ 
++创作台 AI Python 后端的入口、职责、模块关系和本地用法见 [AI Python 核心代码导览](playbooks/ai-python-core.md)。
++
+ ## 0. 数字口径铁律（防漂移）
+ 
+ 文档不抄数字，一律指向**机读单一真相**：
+diff --git a/docs/playbooks/3d.md b/docs/playbooks/3d.md
+index 6256ac7fe..ce50bd017 100644
+--- a/docs/playbooks/3d.md
++++ b/docs/playbooks/3d.md
+@@ -19,7 +19,7 @@
+ |---|---|---|
+ | 3D 物件（盒/片/球/柱/锥/胶囊/环） | `Mesh3D{shape:box\|plane\|sphere\|cylinder\|cone\|capsule\|torus}` + `Transform3D`（真三维）或 2D `Transform` | 圆润图元单材质·torus 用 `tube`(默认0.35)·`diorama.ts` prim-* 样例 |
+ | 薄片正反分色 + 可靠躺平（牌/瓷砖/硬币/招牌） | `Mesh3D{shape:box, faceAxis:'y', frontTint, backTint, edgeTint}`（沿 Y 薄·顶=正/底=反色）+ `RigidBody3D{shape:'cylinder'}`（轴 Y 圆盘·可靠躺平） | `faceAxis` 决定正反色落哪轴两面（缺省 'z'=+z/−z·零回归）。**薄矩形牌抛落恒躺平**（不立边/斜停·根治薄凸包 ~55° 恒斜伪影）＝牌沿 Y 薄 + 原生 cylinder 刚体；正反色走 `faceAxis:'y'`（REQ-3D-CARD-FACE-AXIS·game-z Platform Four `p4-card-*` 样例·game211 消费） |
+-| 导入模型（glTF/glb） | `Model3D{modelKey,scale}`（资产 key）+ 骨骼动画 `AnimState3D{clip,speed,loop}` | scale 目前手估→见资产手册「模型导入」缺口·fox 样例 |
++| 导入模型（glTF/glb） | `Model3D{modelKey,scale}`（资产 key）+ 骨骼动画 `AnimState3D{clip,speed,loop,speedAtVelocity?}`；地面单位加 `FaceRotate{source:'velocity'}` | 在 Camera3D 地面模式，FaceDir 驱动模型平滑转身（glTF 正面为 +Z）；`speedAtVelocity` 表示按该移动速度播放设定倍速，静止时暂停步态。game114 机关牛样例；scale 目前手估→见资产手册「模型导入」缺口 |
+ | 材质 / PBR | `Material3D{preset\|materialRef,...}`；预设闭集 `assets/pbr-materials`（Filament 金属值） | 预设选一 + 覆盖·`materialRef`=材质数据资产（REQ-Resource ④）。**同材质自动归批实例化**（同 pbrSig → 1 InstancedMesh·几百同材质网格 = 几批·零数据改动·REQ-3D-PBR-INSTANCING）；透明（玻璃/`transparent`）/描边走单 mesh |
+ | 进阶物理波瓣（华丽材质） | `Material3D{clearcoat, sheen+sheenColor, iridescence+iridescenceThickness, anisotropy}` 或现成预设 `carpaint/pearl/soap/velvet/brushed` | 车漆清漆/绸缎绒光/肥皂泡幻彩/拉丝各向异性——**任一在场→MeshPhysical·全 three native·需 `Sky3D.env` IBL 环境才显反射/彩虹**。不透明波瓣仍可实例化（进 pbrSig）·soap 带透射走单 mesh（REQ-3D-PBR-LOBES·game-z 材质陈列台样例） |
+ | 平面反射（镜面地板/水面/冰面/casino 大堂） | `Reflector3D{width,height,color?,opacity?,orientation?,quality?}` + `Transform3D` | 真倒影（three.Reflector·每帧场景渲进 RTT·比 SSR 干净无噪声）。`floor`=水平镜(缺省·法线+Y)·`wall`=竖直镜。`opacity<1`=半反射湿地板（倒影混下方底色）。倒影随场景/相机变自动更新（进 renderSig）。挂 Reflector3D 即成镜面·不需 Mesh3D（REQ-3D-PLANAR-REFLECT·game-z Platform Three `p3-refl` 样例） |
+diff --git a/docs/playbooks/assets.md b/docs/playbooks/assets.md
+index 8a042d7ec..623be59bc 100644
+--- a/docs/playbooks/assets.md
++++ b/docs/playbooks/assets.md
+@@ -19,6 +19,7 @@
+ | 逐游戏美术需求/生成/替换/换皮 | **美术平台**（ArtLedgerPanel·主屏 🎨 / 卡带「美术台账」入口）+ 大脑 `scripts/art-replace.mjs` + 风格包 `scripts/style-packs.json` | 台账 art-NN 编号 append-only·写回=manifest 重钉或 skinKey 别名·**全员必读终态档 `docs/design/art-platform-2026-07-09.md`** |
+ | 加贴图/模型/图集/精灵表 | `asset-manager` agent | 维护 `assets/index.json` 单一真相 + 按类型填 spec |
+ | AI 序列帧制作、切帧和 GIF 预览 | `.claude/skills/spritegen/SKILL.md` + `tools/spritegen-export.mjs` | 离线生成与人审；导出已有 `AssetIndex.spec.sheet` / 单行 `Image.sprite` 数据。不新增运行时依赖，不保证动作质量；上游许可记录见 THIRD-PARTY-NOTICES |
++| 分层二维角色（Live2D 风格）制作与原生参数播放 | `.claude/skills/native-character/SKILL.md` + `engine/host/native-character` | 原生 `.stretch` + 游戏本地 AssetIndex；render-only，同源播放器。共享宿主端口已可用，LayoutNode 控件尚未实现；Game112 续接见 `docs/design/game112/native-character-handoff.md` |
+ | 批量灌入共享货架（图标/emoji 系列） | `scripts/import-art-pack.mjs` · `import-emoji.mjs` | 整包从 GitHub 拉取→sniff→盖 style/license/source/provenance→并入 `assets/index.json`（加一个包=加一条 PACKS 配置，纯数据）；细节见 `docs/workflow/art-library-handoff.md` |
+ | 贴图/网格 spec 元数据 | spec 闭集 | usage/colorSpace/wrap/genCollision（贴图）· scale（模型）——闭集，非自由字段 |
+ | 3D 材质数据资产 | `Material3D`（type:'material'） | 引 texture key（走上面 art:/index），非硬编码预设 |
+diff --git a/docs/playbooks/movement-pathfinding.md b/docs/playbooks/movement-pathfinding.md
+index 492a90201..c09fb3c6a 100644
+--- a/docs/playbooks/movement-pathfinding.md
++++ b/docs/playbooks/movement-pathfinding.md
+@@ -13,7 +13,8 @@
+ | 朝/背目标移动（AI） | `t2-steering` | 挂 `Steering{mode,speed,stopRange}`；配 `t3-aggro` 写 target + motion-apply |
+ | 六边形棋盘沿格寻路 | `t2-grid-move` | 单位挂 `HexPos`+`GridMover{period}`+`Relation(target)`；世界放 `HexBoard`（内建 A*） |
+ | 连续坐标绕障寻路 | `t2-pathfind` | 世界放 `NavGraph{nodes,edges}`；单位挂 `NavAgent{speed,arriveRange}`+`Relation(target)` |
+-| 固定航点轨道匀速跑（巡逻/传送带） | `t2-path-follow` | 挂 `PathFollow{waypoints,speed,loop?}`（`pathFollowAt` 生成）；不索敌不绕障 |
++| 固定航点往返且需要 A* 绕障 | `t2-pathfind` | 单位挂 `NavAgent{graphId,speed,arriveRange,patrol:{waypoints:[{x,y},...],index:0,loop:true}}`；到达航点才切换目标，不需移动的目标实体。配 `t2-crowd-avoidance` 保留群体避让 |
++| 固定航点闭环行走（巡逻/传送带） | `t2-path-follow` | 挂 `PathFollow{waypoints,speed,loop:true}`（`pathFollowAt` 生成）；环线交错时叠加 `CrowdAvoidance` 处理单位间避让。避让后需要更重视原路线方向时，可选 `lookAhead:正数`，沿当前线段前方取期望方向，并在跨过航点横截面时推进游标；不配置时保留直奔航点的旧语义。本身不索敌、不绕静态障碍 |
+ | 传送带队列：有序不重叠占位 + 递进（不超车） | `t2-path-follow` | 同上 + `queueId,minGap?`（REQ-CONVEYOR-CAP M1）：同 `queueId` 按 path 进度排序，每个非排头成员夹在「前一名进度 − minGap」；容量 full 旗标/空槽分配/死锁**不建新能力**，组合 `group-count`+`event-when(level 双向)`+`effect-apply`（空槽用既有 `t2-tray`），见 `conveyor-queue-compose.test.ts` |
+ | 绕完一圈到末点→落一件+自毁（belt/巡逻收尾） | `t2-path-follow` | 同上 + `onEnd:{dropTemplate?,destroy?}`（REQ-PATHEND-DROP，非 loop 到末点触发一次，`ended` 布尔守卫防重发，=Mortal 的 path-完成版） |
+ | 排队叫号/消费队首（或队中任一个）后**全体前移补位**（槽间不留空洞） | `t2-queue-slots`（REQ-POOL-ADVANCE 缺口） | 挂 `QueueSlots{originX,originY,gap,headCount,memberTag,action}`；成员挂 `Tag`(含 memberTag)+`Transform`。每 tick 按既有 `QueueMember.index`（新成员排末尾）+id 升序稳定重排成连续 0..N-1、钉位、前 headCount 个自动挂/摘 `Clickable`。与 `t2-tray`（占坑制、老成员不前移）互补：占坑用 tray，消费即整体递补用本能力 |
+@@ -24,6 +25,10 @@
+ | **大规模同目标行军**（成百上千单位走向同一处） | `t2-flow-field` | 世界放 `FlowField{cellSize,cols,rows,goals[],blocked?,cost?}`（**多源** Dijkstra 铺满一次·无局部极小）；单位挂 `FlowAgent{fieldId,speed,arriveRange?}`。**一次铺场服务全部单位**——与 `t2-pathfind` 的「每单位各算一次」是**成本形状**之别，不是好坏之别 |
+ | 大军别叠成一条线（软避让） | `t2-flow-field` + `FlowAgent.separation{weight}` | Reynolds 分离力（`offset/-d²`），**权重恒被钳在流场之下**（永不掉头）。**软承诺**：允许瞬时重叠、靠力弹开 |
+ | 「不许穿模」的小队（硬避让） | `t2-flow-field` + `FlowAgent.orca{radius,timeHorizon?,maxNeighbors?}` | 移植自 RVO2（`src/skills/tier2/orca.ts`·Apache-2.0）。**与 separation 二选一**（同填 ORCA 优先）。⚠ 不是"保证不碰"——线性规划无可行解时落「最不违反」，实测把穿模从 ~90% 压到最坏 8%，不是 0 |
++| A* 与流场单位相互避让 | `t2-crowd-avoidance` + `CrowdAvoidance{radius,maxSpeed}` | 同拍速度快照→ORCA→motion→硬碰撞；同地面 group 相同；停止意图不被推动；勿同单位双开旧 FlowAgent.orca/separation。平地角色用同半径的 `Shape{kind:'circle'}` 作实际碰撞，地面截面等价竖直圆柱，不用模型网格作碰撞。可选 `flowGuide.edgeRepathSlots:正整数`：同一流场及碰撞组先让侧边更空、实际能规划回原路线的单位取得 A* 回路名额；规划失败则顺延下一候选，已有回路（临时暂停也包括）持续占用，旧 FlowAgent 规避配置不参与预选；卡住达到脱困阈值一半（至少 12 tick）时可越限，未获名额者仍走原流场/ORCA。可选 `zeroEscape:true`：有前进意图但首次 ORCA 解近零时，固定侧向期望速度重解 ORCA，只接受有速且不明显倒退的可行解；不会直接越过 ORCA 或硬碰撞。可选 `yieldAfterTicks`：连续几乎无位移到阈值约三分之一时，先给期望速度固定侧向扰动矢量（强度 `nudgeStrength`）；仍卡到阈值才逐步同步缩小 ORCA 与 Shape 半径（下限 `minRadiusScale`、步长 `radiusStep`）；恢复前检查真实空位。硬碰撞全程生效，收缩只作最后兜底 |
++| 共享方格地图、不同体型净空 | `t2-navigation-grid` + `NavigationGrid` / `NavigationProfile{gridId,radius,goals?}` | 格角原点/行主序 blocked+cost；profile 实体 id 同时供 NavAgent.graphId 与 FlowAgent.fieldId；生成图不可达停止，旧 NavMesh 保留 |
++
++共享网格净空按**整个格子**保守扩张，半径越大、格子越粗，可通区域越少；桥宽接近单位直径时应细化网格。A* 与生成流场统一使用「出发格 cost × 直走10/斜走14」；生成字段启用 `FlowField.costAware:true`，旧流场省略时保持既有选向。接口与限制见 `docs/design/game114/engine-navigation-request.md`。
+ 
+ ### 走位四选一（成本形状分诊·别按"哪个高级"选）
+ 
+diff --git a/docs/roles/index.md b/docs/roles/index.md
+index 30b83484d..ae69e8918 100644
+--- a/docs/roles/index.md
++++ b/docs/roles/index.md
+@@ -5,9 +5,9 @@
+ > 角色卡按 `_template.md` 格式**慢慢补全**——卡不全时以「域边界 + 必读」两节为最低可用集。
+ > **⚠ 标准启动词模板（Lead 2026-07-16 事故补牙·必须整段粘贴，光宣告角色赌不起）**——当天两个新 session 仅收到「角色=X·任务=Y」两行，没执行第一准则切分支，在克隆旧基线的 feature 分支上凭空瞎做（旧基线看不到新策划案）。此后 owner 开 session 启动词一律用此模板：
+ > ```
+-> 第一动作（先于一切）：git fetch origin claude/mainbranch && git checkout -B claude/mainbranch origin/claude/mainbranch
++> 第一动作（先于一切）：`git status --short --branch` 核对现场；如不在 `codex/mainbranch`，先保留未提交改动和未推提交，再 `git fetch origin codex/mainbranch` 并安全切换。禁止用 `checkout -B` 重置在途分支。
+ > 角色=<X> · 任务=<Y>。切完分支再读 docs/roles/index.md 找角色卡照办；任务的设计文档在 docs/design/<对应目录>/ ——以 mainbranch 最新为准，你被注入的 feature 分支是旧快照、绝不在其上开工。
+-> 产出直推 claude/mainbranch（fetch→rebase→tsc+vitest+build 全绿→push），绝不推 feature 分支。
++> 产出直推 codex/mainbranch（fetch→rebase→tsc+vitest+build 全绿→push），绝不推 feature 分支。
+ > 做游戏的任务：宣布「完成」必须贴 node scripts/game-pipeline.mjs board <slug> 全绿输出——不全绿只许说「做到 SN」。
+ > ```
+ 
+diff --git a/docs/workflow/agent-skill-guide.md b/docs/workflow/agent-skill-guide.md
+index ffeaa75e3..5fbf4a547 100644
+--- a/docs/workflow/agent-skill-guide.md
++++ b/docs/workflow/agent-skill-guide.md
+@@ -87,5 +87,5 @@ allowed-tools: Read, Grep, Glob, Bash              # 可选·连字符!·免提
+ - **格式先核准**：建前用 `claude-code-guide` 对齐 Claude Code 当前 agent/skill 格式，别凭记忆。
+ - **命名** kebab-case；**description** 带触发词、驱动自动委派/唤起。
+ - **引用不复制**：指向 `docs/**` / `wiki/**` 权威源。
+-- **同全员纪律**：分支 `claude/mainbranch`·`fetch→rebase→gate→push`·`tsc+vitest+build` 全绿才推·机密不进仓库·署名 `Claude <noreply@anthropic.com>`·信息以 session URL 结尾·产物不写模型标识。
++- **同全员纪律**：分支 `codex/mainbranch`·`fetch→rebase→gate→push`·`tsc+vitest+build` 全绿才推·机密不进仓库·署名 `Claude <noreply@anthropic.com>`·信息以 session URL 结尾·产物不写模型标识。
+ - **落盘 `.claude/` 进版本库**（团队/多 session 共享）。
+diff --git a/docs/workflow/agent-team-overview.md b/docs/workflow/agent-team-overview.md
+index 1de4031bc..591372dbd 100644
+--- a/docs/workflow/agent-team-overview.md
++++ b/docs/workflow/agent-team-overview.md
+@@ -56,7 +56,7 @@
+ 
+ ## 4. 各角色初始化差异
+ 
+-**共用 T0（自动叠加）**：SessionStart 钩子强切 `claude/mainbranch`（**唯一机器执行的一步**·仅全新启动）· CLAUDE.md 注入 · 宪法 + `llm-onboarding.md` · owner 粘贴启动词模板「角色=X · 任务=Y」→ 去 `roles/index.md` 找卡。
++**共用 T0（自动叠加）**：SessionStart 钩子安全切换至 `codex/mainbranch`（仅全新启动；工作树不净时保留现场）· CLAUDE.md 注入 · 宪法 + `llm-onboarding.md` · owner 粘贴启动词模板「角色=X · 任务=Y」→ 去 `roles/index.md` 找卡。
+ 
+ | 角色 | 第一份增量必读 | 专属工具 | 交付前自检 / 红线 | 通道 |
+ |---|---|---|---|---|
+diff --git a/docs/workflow/art-library-handoff.md b/docs/workflow/art-library-handoff.md
+index 3e23f9d0e..941ec1791 100644
+--- a/docs/workflow/art-library-handoff.md
++++ b/docs/workflow/art-library-handoff.md
+@@ -64,7 +64,7 @@
+ 2. GitHub MCP 搜索恢复后，关键字捞像素/tileset 系列（本会话仍 502）。
+ 3. ~~tabler/phosphor/mdi 调大 limit 拉全~~ ✅ 已办（2026-06-19，5093/1512/7447，全绿推送）。
+ 4. 把 `game-g-icons.json` 接进 Game G 渲染（game 层）。
+-5. 纪律：分支 `claude/mainbranch`，每次 `fetch→rebase→push`；tsc+vitest+build 全绿才推；提交署名 `Claude <noreply@anthropic.com>`、信息以 session URL 结尾。
++5. 纪律：分支 `codex/mainbranch`，每次 `fetch→rebase→push`；tsc+vitest+build 全绿才推；提交署名 `Claude <noreply@anthropic.com>`、信息以 session URL 结尾。
+ 
+ ## 8. Agent 搜罗短名单 + 拉取波次（2026-06-20）
+ 
+diff --git a/docs/workflow/finish/P3D-game-z-handoff.md b/docs/workflow/finish/P3D-game-z-handoff.md
+index 704aba7aa..af0117da4 100644
+--- a/docs/workflow/finish/P3D-game-z-handoff.md
++++ b/docs/workflow/finish/P3D-game-z-handoff.md
+@@ -163,7 +163,7 @@ node scripts/shoot-game.mjs game-z /tmp/game-z.png    # 任意 game id 都行
+ 
+ ## 8. 工作规范
+ 
+-- 分支 **`claude/mainbranch`**，直推不开 PR；每次提交前 `fetch → rebase → push`（多 session 并行）。
++- 分支 **`codex/mainbranch`**，直推不开 PR；每次提交前 `fetch → rebase → push`（多 session 并行）。
+ - **tsc + vitest + build 全绿才推**；rebase 带进新提交后**必须重跑全套再推**（陈旧基线测的绿不算绿）。
+ - 提交署名 `Claude <noreply@anthropic.com>`，提交信息以 session URL 结尾；不在产物里写模型标识。
+ - 你的需求/被评审记 `docs/workflow/requests.md`；开工清单（本文件）随进度更新。
+diff --git a/docs/workflow/finish/PS-steam-finish-list.md b/docs/workflow/finish/PS-steam-finish-list.md
+index 114adc8e8..6e023ebaf 100644
+--- a/docs/workflow/finish/PS-steam-finish-list.md
++++ b/docs/workflow/finish/PS-steam-finish-list.md
+@@ -2,7 +2,7 @@
+ 
+ > **本 session（cartridge/平台轨）维护。** owner（junbai.li · 2026-06-25）拍板：**Steam 发行作为独立平台轨，由本 session 接管全部事项。**
+ > 给 **Lead/主程** 看引擎触点供 review、给其他 session 看车道避免撞车。
+-> 分支 `claude/mainbranch`；每条 tsc + vitest + build 全绿才推。设计真相：`docs/design/steam-publish.md`。
++> 分支 `codex/mainbranch`；每条 tsc + vitest + build 全绿才推。设计真相：`docs/design/steam-publish.md`。
+ 
+ ---
+ 
+diff --git a/docs/workflow/game-creator-role.md b/docs/workflow/game-creator-role.md
+index 614e7c343..e46aa6e3f 100644
+--- a/docs/workflow/game-creator-role.md
++++ b/docs/workflow/game-creator-role.md
+@@ -12,7 +12,7 @@
+ 
+ 1. **选一个游戏想法**，用现有引擎原子（atom-skills / tier1 / tier2）拼装：blueprint + 场景 + 关卡 + 游戏专属胶水。
+ 2. 做的过程中**发现引擎做不到某件事** → **不要自己改引擎**，写一条需求进 `docs/workflow/requests.md`。
+-3. Lead 实现/扩展引擎 → push → 你 `pull` 最新 `claude/mainbranch` → 用新能力继续做。
++3. Lead 实现/扩展引擎 → push → 你 `pull` 最新 `codex/mainbranch` → 用新能力继续做。
+ 4. **遇到困难自己不改引擎，提需求**。引擎是两个游戏共享的地基。
+ 
+ ## 边界（硬规则）
+diff --git a/docs/workflow/platform-mac-run.md b/docs/workflow/platform-mac-run.md
+index 1eb220adc..5acc3087b 100644
+--- a/docs/workflow/platform-mac-run.md
++++ b/docs/workflow/platform-mac-run.md
+@@ -10,7 +10,7 @@
+ 侧验过什么」）。拿法：
+ 
+ 1. 打开仓库 GitHub 页面 → **Actions** → **Build Platform (macOS)** workflow。
+-2. 点 **Run workflow**（`workflow_dispatch` 手动触发·分支选 `claude/mainbranch`）。
++2. 点 **Run workflow**（`workflow_dispatch` 手动触发·分支选 `codex/mainbranch`）。
+    可选填两个输入（不填就用默认值，已验证真实存在的一组 `python-build-standalone` release）：
+    - `pybuild_python_series`（默认 `3.11`）
+    - `pybuild_release_tag`（默认 `20250626`）
+@@ -25,10 +25,10 @@ python + `pip install`（`scripts/bundle-python-mac.mjs`）→ 零 key 门禁（
+ 
+ ## 1.5 本地一键出包（自己就有 Apple 芯片 Mac·不想走 CI）
+ 
+-不必开 GitHub。在你自己的 M 系列 Mac 上，克隆仓库到 `claude/mainbranch` 后一条命令搞定：
++不必开 GitHub。在你自己的 M 系列 Mac 上，克隆仓库到 `codex/mainbranch` 后一条命令搞定：
+ 
+ ```
+-git clone -b claude/mainbranch <仓库地址> ApolloGame   # 已经有就跳过，进目录 git pull
++git clone -b codex/mainbranch <仓库地址> ApolloGame   # 已经有就跳过，进目录 git pull
+ cd ApolloGame
+ bash scripts/build-mac-dmg.sh
+ ```
+diff --git a/docs/workflow/requests.md b/docs/workflow/requests.md
+index 867666b56..103a6e48e 100644
+--- a/docs/workflow/requests.md
++++ b/docs/workflow/requests.md
+@@ -228,3 +228,7 @@ desync（`determinism.ts` 对 Camera 的同款理由）。条目进 hash → 注
+ ```
+ 
+ ---
++
++### REQ-114-NAV · 通用 ORCA 与共享网格导航 · [2026-10-09] · owner 判 A · status: 本地实现/复查完成，基线门禁有阻塞 · P1
++
++施工主体：game114 当前会话（01a11e73-f648-72c3-a624-8e9dd51a430b，2026-10-09 本地领取）；独立复查已通过，交付见 docs/design/game114/navigation-delivery.md。用户确认由本会话贯穿实现，保留独立复查。未授权提交/推送，故仅登记本地锁，不推送锁。规格与验收：[game114 导航需求](../design/game114/engine-navigation-request.md)。复用已有 ORCA/网格核，保持旧配置行为；本单不接管 REQ-FLOWFIELD 未完成分期。
+diff --git a/games/game112/cat-art.ts b/games/game112/cat-art.ts
+index 740bb1a8a..88ecafa09 100644
+--- a/games/game112/cat-art.ts
++++ b/games/game112/cat-art.ts
+@@ -32,8 +32,9 @@ export function sceneSkin(room: string): string | undefined {
+ export function mapSkin(): string | undefined {
+   return SKIN_OVERRIDES[SKIN_KEYS.map];
+ }
+-/** 商品与场景复用同一份本地资产；无异步索引时也能加载明确的本地路径。 */
++/** 商品与场景复用同一份本地资产；本机未装候选图时给清晰的占位物件，而非断图。 */
+ export function propArt(id: string): string {
++  if (/^T\d{3}$/.test(id)) return SKIN_OVERRIDES[`game112/prop/${id}`] ?? svg(`<rect x="48" y="36" width="224" height="168" rx="25" fill="#d3b88f" stroke="#806247" stroke-width="8"/><path d="M48 95h224M160 36v168" fill="none" stroke="#eee0bf" stroke-width="13"/><circle cx="160" cy="119" r="27" fill="#f7eed9"/><path d="m160 99 7 14 15 2-11 11 3 15-14-7-14 7 3-15-11-11 15-2z" fill="#ad834d"/>`);
+   const fallback = `/games/game112/art/props/${id}-v1.png`;
+   return SKIN_OVERRIDES[`game112/prop/${id}`] ?? fallback;
+ }
+diff --git a/games/game112/game112.ts b/games/game112/game112.ts
+index 3329eb3de..1c88f10cf 100644
+--- a/games/game112/game112.ts
++++ b/games/game112/game112.ts
+@@ -14,6 +14,7 @@ import { buildScreen, UI_ACTIONS, type Screen, type UiAction } from './ui.js';
+ import { GAME_ID, TICK_MS, OFFLINE_ACK_KEY, STAGE_HIDE_KEY, STAGE_SHOW_KEY, STARDUST_MAX, STARDUST_GRANTS, offlineTierOf, offlineKey, buyKey, placeKey, shopItemOf, chapterOf, roomOf, grantKey, type RoomId } from './world-data.js';
+ import { EMPTY_STATE, type PersistedState } from './blueprint.js';
+ import { setSkinOverrides } from './cat-art.js';
++import { loadLocalToyArtOverrides } from './local-toy-art.js';
+ import { addEntry, EMPTY_DRAFT, EMPTY_REGISTRY, normalizeRegistry, removeEntry, WHEREABOUTS, type CatRegistry, type RegistrationDraft } from './registration.js';
+ import { EMPTY_CATALOG_BROWSE, sourceOf, type CatalogBrowse } from './cat-gallery.js';
+ import { EMPTY_SHOP_BROWSE, shopCategoryOf, shopSortOf, shopValueOf, type ShopBrowse } from './shop-browse.js';
+@@ -173,9 +174,10 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
+     }, TICK_MS);
+     render();
+     // 美术索引是投影层的增量：基座件兜住无索引/非 200/解析失败，空表就继续程序化回退。
+-    void loadGameArtOverrides(GAME_ID).then((skins) => {
+-      if (disposed || Object.keys(skins).length === 0) return;
+-      setSkinOverrides(skins);
++    void Promise.all([loadGameArtOverrides(GAME_ID), loadLocalToyArtOverrides()]).then(([skins, toys]) => {
++      const allSkins = { ...skins, ...toys };
++      if (disposed || Object.keys(allSkins).length === 0) return;
++      setSkinOverrides(allSkins);
+       render(); // 真图异步到位即换装，不重开会话。
+     });
+   };
+diff --git a/games/game112/item-host.test.ts b/games/game112/item-host.test.ts
+index 78f8787c6..d83393623 100644
+--- a/games/game112/item-host.test.ts
++++ b/games/game112/item-host.test.ts
+@@ -6,6 +6,7 @@ import { EMPTY_STATE } from './blueprint.js';
+ import { TICK_MS } from './world-data.js';
+ 
+ vi.mock('@zerocraft/engine/assets/index.js', () => ({ loadGameArtOverrides: async () => ({}) }));
++vi.mock('./local-toy-art.js', () => ({ loadLocalToyArtOverrides: async () => ({}) }));
+ 
+ describe('真实宿主的物件闭环', () => {
+   it('空档领见面星砂 → 确认交换纸袋 → 读档后不能重复领取', async () => {
+@@ -78,7 +79,7 @@ describe('真实宿主的物件闭环', () => {
+     } finally { dispose(); vi.useRealTimers(); }
+   });
+ 
+-  it('候选美术不进入商店；已实现的羽毛杆可以购买并放进馆里', async () => {
++  it('百件新物件可买入收纳篮；原有羽毛杆仍可放进馆里', async () => {
+     vi.useFakeTimers();
+     const save = new MemorySavePort();
+     await save.write(SAVE_SLOT, sealEnvelope({ ...EMPTY_STATE, stardust: 100 }, SAVE_CODEC, 100));
+@@ -92,7 +93,14 @@ describe('真实宿主的物件闭环', () => {
+       click('starter-act-0'); await vi.advanceTimersByTimeAsync(TICK_MS);
+       click('hot-toys'); click('toys-shop');
+       click('shop-category-wand');
+-      expect(document.getElementById('shop-T001')).toBeNull();
++      expect(document.getElementById('shop-T001')).not.toBeNull();
++      click('shop-T001');
++      click('shop-selected-buy'); await vi.advanceTimersByTimeAsync(TICK_MS);
++      expect(document.getElementById('shop-selected-collection')).not.toBeNull();
++      click('shop-selected-collection');
++      expect(document.getElementById('toy-T001-art')).not.toBeNull();
++      click('toys-more');
++      click('shop-category-wand');
+       expect(document.getElementById('shop-feather')).not.toBeNull();
+       click('shop-feather');
+       click('shop-selected-buy'); await vi.advanceTimersByTimeAsync(TICK_MS);
+@@ -101,8 +109,9 @@ describe('真实宿主的物件闭环', () => {
+       expect(document.getElementById('prop-art-feather')).not.toBeNull();
+       const persisted = normalizeState(openEnvelope((await save.read(SAVE_SLOT))!, SAVE_CODEC));
+       expect(persisted.items.feather).toBe(1);
++      expect(persisted.items.T001).toBe(1);
+       expect(persisted.placed).toContain('feather');
+-      expect(persisted.stardust).toBe(70);
++      expect(persisted.stardust).toBe(52);
+     } finally { dispose(); vi.useRealTimers(); }
+   });
+ });
+diff --git a/games/game112/shop-browse.test.ts b/games/game112/shop-browse.test.ts
+index 2aff9c54e..f5e79c9d0 100644
+--- a/games/game112/shop-browse.test.ts
++++ b/games/game112/shop-browse.test.ts
+@@ -1,30 +1,40 @@
+ import { describe, expect, it } from 'vitest';
+ import { readFileSync } from 'node:fs';
+ import { SHOP_ITEMS } from './world-data.js';
++import catalog from './shop-catalog.v1.json';
+ import { EMPTY_SHOP_BROWSE, SHOP_CATEGORIES, shopPage } from './shop-browse.js';
+ 
+-describe('星砂铺精选货架', () => {
+-  it('只上架有真实摆放与互动的四件物品，候选美术不成为空玩法商品', () => {
+-    expect(SHOP_ITEMS.map((it) => it.id)).toEqual(['feather', 'paperbag', 'cushion', 'cardback-moon']);
+-    expect(SHOP_ITEMS.every((it) => it.placement === 'scene')).toBe(true);
++describe('星砂铺百件货架', () => {
++  it('四件可互动物件与百件可收藏物件都有稳定货号和分类，私有图不写进公开索引', () => {
++    expect(SHOP_ITEMS).toHaveLength(108);
++    expect(SHOP_ITEMS.slice(0, 4).map((it) => it.id)).toEqual(['feather', 'paperbag', 'cushion', 'cardback-moon']);
++    expect(SHOP_ITEMS.slice(0, 4).every((it) => it.placement === 'scene')).toBe(true);
++    expect(SHOP_ITEMS.slice(4).map((it) => it.id)).toEqual(Array.from({ length: 104 }, (_, i) => `T${String(i + 1).padStart(3, '0')}`));
++    expect(SHOP_ITEMS.slice(4).every((it) => it.placement === 'collection')).toBe(true);
++    expect(catalog.items.slice(-4).map((it) => it.season)).toEqual(['spring', 'summer', 'autumn', 'winter']);
++    expect(catalog.items.slice(-4).every((it) => Array.isArray(it.materials) && it.materials.length >= 3)).toBe(true);
+     expect(SHOP_ITEMS.every((it) => SHOP_CATEGORIES.some((c) => c.id === it.category))).toBe(true);
+     const art = JSON.parse(readFileSync('public/games/game112/art/index.json', 'utf8')) as { assets: { id: string }[] };
+     expect(art.assets.some((it) => /^game112\/prop\/T\d{3}$/.test(it.id))).toBe(false);
+   });
+ 
+-  it('分类、价位、搜索和排序仍可选中现有物件', () => {
++  it('分类、价位、搜索、排序和翻页覆盖全部货物', () => {
+     const all = shopPage(EMPTY_SHOP_BROWSE);
+-    expect(all.total).toBe(4);
+-    expect(all.entries).toHaveLength(4);
+-    expect(all.pages).toBe(1);
++    expect(all.total).toBe(108);
++    expect(all.entries).toHaveLength(6);
++    expect(all.pages).toBe(18);
+     const wand = shopPage({ ...EMPTY_SHOP_BROWSE, category: 'wand' });
+-    expect(wand.entries.map((it) => it.id)).toEqual(['feather']);
++    expect(wand.total).toBeGreaterThan(1);
++    expect(wand.entries.map((it) => it.id)).toContain('feather');
++    expect(wand.entries.map((it) => it.id)).toContain('T001');
+     const search = shopPage({ ...EMPTY_SHOP_BROWSE, query: 'paperbag' });
+     expect(search.entries.map((it) => it.id)).toEqual(['paperbag']);
+     const high = shopPage({ ...EMPTY_SHOP_BROWSE, value: '50plus' });
+-    expect(high.entries.map((it) => it.id)).toEqual(['cardback-moon']);
++    expect(high.entries.map((it) => it.id)).toContain('cardback-moon');
++    expect(high.entries.every((it) => it.price >= 50)).toBe(true);
+     const sorted = shopPage({ ...EMPTY_SHOP_BROWSE, sort: 'priceDesc', page: 999 });
+-    expect(sorted.page).toBe(0);
+-    expect(sorted.entries.map((it) => it.price)).toEqual([50, 40, 30, 20]);
++    expect(sorted.page).toBe(sorted.pages - 1);
++    expect(sorted.entries.every((it, i, entries) => i === 0 || entries[i - 1]!.price >= it.price)).toBe(true);
++    expect(shopPage({ ...EMPTY_SHOP_BROWSE, query: 'T100' }).entries.map((it) => it.id)).toEqual(['T100']);
+   });
+ });
+diff --git a/games/game112/shop-browse.ts b/games/game112/shop-browse.ts
+index f4f60c4a1..0dd3dfa0f 100644
+--- a/games/game112/shop-browse.ts
++++ b/games/game112/shop-browse.ts
+@@ -4,8 +4,14 @@ import { SHOP_ITEMS, type ShopItem } from './world-data.js';
+ export const SHOP_CATEGORIES = [
+   { id: 'all', name: '全部' },
+   { id: 'wand', name: '逗猫杆' },
++  { id: 'ball', name: '滚球铃铛' },
++  { id: 'kicker', name: '抱踢玩具' },
++  { id: 'plush', name: '布艺玩伴' },
++  { id: 'track', name: '轨道机关' },
+   { id: 'hide', name: '藏身钻行' },
+   { id: 'rest', name: '休憩空间' },
++  { id: 'scratch', name: '磨爪攀爬' },
++  { id: 'puzzle', name: '闻嗅益智' },
+   { id: 'cardskin', name: '星牌外观' },
+ ] as const;
+ export type ShopCategory = (typeof SHOP_CATEGORIES)[number]['id'];
+diff --git a/games/game112/ui.test.ts b/games/game112/ui.test.ts
+index f8ace2cf7..50ba47046 100644
+--- a/games/game112/ui.test.ts
++++ b/games/game112/ui.test.ts
+@@ -154,7 +154,7 @@ describe('game112 UI = LayoutNode 纯数据（闭集校验零 issue）', () => {
+     expect(validateLayoutNode(shop)).toEqual([]);
+   });
+ 
+-  it('精选四件可按名称检索查看；交换只从详情确认，见面星砂有明确反馈', () => {
++  it('全部商品可按编号检索查看；交换只从详情确认，见面星砂有明确反馈', () => {
+     const empty = new HallSession(112).hall();
+     for (const item of SHOP_ITEMS) {
+       const tree = buildScreen({ screen: 'shop', view: empty, shopItem: item.id,
+diff --git a/games/game112/world-data.ts b/games/game112/world-data.ts
+index 7101c4d20..91562e500 100644
+--- a/games/game112/world-data.ts
++++ b/games/game112/world-data.ts
+@@ -5,6 +5,7 @@
+ // ⚠ 数值口径：GDD 只定了「无惩罚·心光只增·兴致当次临时」等**方向**，没有具体数字——本文件里的阈值/增量/价格
+ //   全是 S3 占位（S4 手感调校面·随对齐单迭代·非 GDD 出处），改数不改结构。
+ import type { DialogueGraph } from '@zerocraft/engine/skills/tier3/index.js';
++import toyCatalog from './shop-catalog.v1.json';
+ 
+ export const GAME_ID = 'game112';
+ export const SEED_DEFAULT = 112;
+@@ -267,7 +268,7 @@ export interface ShopItem {
+   readonly price: number;
+   readonly kind: 'toy' | 'decor' | 'cardskin';
+   readonly category: string;
+-  /** 已完成场景摆放与互动的物件；候选美术不自动进入商店。 */
++  /** scene 已完成摆放互动；collection 可购买入篮，尚不伪装成可摆放。 */
+   readonly placement: 'scene' | 'collection';
+   /** 展示「它会怎样改变互动」而非只展示属性（ui-visual-handoff §7.8）。 */
+   readonly blurb: string;
+@@ -277,6 +278,7 @@ export const SHOP_ITEMS: readonly ShopItem[] = [
+   { id: 'paperbag', name: '纸袋', price: 20, kind: 'toy', category: 'hide', placement: 'scene', blurb: '撑开袋口，轻轻敲一下，让它熟悉沙沙声。' },
+   { id: 'cushion', name: '软垫', price: 40, kind: 'decor', category: 'rest', placement: 'scene', blurb: '给雪团铺一个柔软的坐处，陪它歇一会儿。' },
+   { id: 'cardback-moon', name: '月相牌背', price: 50, kind: 'cardskin', category: 'cardskin', placement: 'scene', blurb: '换上月相牌背，一起翻开今晚的月亮。' },
++  ...toyCatalog.items.map((item): ShopItem => ({ ...item, kind: item.kind as ShopItem['kind'], placement: 'collection' })),
+ ];
+ export const itemCount = (id: string): string => `item.${id}`;
+ export const ownFlag = (id: string): string => `own.${id}`;
+diff --git a/games/game113/README.md b/games/game113/README.md
+index 6e2158829..396d680ab 100644
+--- a/games/game113/README.md
++++ b/games/game113/README.md
+@@ -1,12 +1,12 @@
+ # 《雅趣：第二人生》可运行应用 Demo
+ 
+-从仓库启动开发服务后，访问 `/?game=game113`。电脑与手机浏览器共用同一套响应式页面。此版是**本机可交互的应用流程原型**，不是已上线的账号、社交、交易或游戏服务。
++从仓库启动开发服务后，访问 `/?game=game113`。此版以**手机版为唯一展示界面**：真实手机浏览器全屏显示，电脑浏览器则在手机画框中预览同一界面。它是**本机可交互的应用流程原型**，不是已上线的账号、社交、交易或游戏服务。
+ 
+-电脑网页顶部提供「切换手机版」按钮：在当前页面进入 390px 左右的手机宽度预览，内部可继续浏览；按「返回网页版」会回到手机预览里最后访问的页面。真实手机浏览器直接使用响应式布局，不额外套手机框。
++电脑预览的地址会跟随手机画框内的页面变化，刷新或复制链接仍能打开当前章节；真实手机浏览器不额外套手机框。
+ 
+ ## 页面与流程
+ 
+-- 初见与选兴趣 → 首页今日推荐／每日新鲜。
++- 初见与选兴趣 → 首页「今天的一小步」→ 两处图像观察 → 可重试的小考 → 本机章印；其他爱好与收藏从首页的次级入口继续探索。
+ - 发现 → 已开爱好馆；下方「兴趣图谱」先展示六个策展领域，不一次展开全部分支。选领域或搜索后，分支每次显示六条，可继续展开、查看具体物件与五个深读样本。图谱其他分支仅为策展候选。
+ - 木工／清酒深读馆 → 木工提供五个观察点、五类器物档案、同好议题与本机私人手记，可转入虚拟小椅档案。清酒馆新增「名酒深读」「世界酒藏」「资料索引」，与酒藏索引、历史、工艺、鉴赏、同好和手记一起形成站内分卷。首批四座日本酒藏、四座海外酒藏与 27 条具体作品档案已写入本地，另有八座日本酒藏的基础索引；前台不跳外站，资料索引可下载本地 JSON 研究包。导览顺序是编辑编排，不是销量、品质或用户关注的真实排行榜；目前没有跨品牌人气指标。价格页只展示注明日期、地区、容量与税费口径的官方公开标价样本；没有交易入口。清酒不进入游戏市集或每日主动推荐。研究来源与扩充队列见 [`sake-research-ledger.md`](../../docs/design/game113/sake-research-ledger.md)。
+ - 市集 → 演示行情 → 藏品档案 → 本机雅钱买入 → 仓库待鉴 → 细看知识卡；仓库藏品可进入养护预览或演示卖出。
+diff --git a/games/game113/app.css b/games/game113/app.css
+index 600474bf1..8aec27b69 100644
+--- a/games/game113/app.css
++++ b/games/game113/app.css
+@@ -336,3 +336,123 @@
+ @media(max-width:600px){.g113-mentor-image-frame{--mentor-image-height:240px}}
+ .g113-cigar-culture-after{display:flex;align-items:center;justify-content:space-between;gap:17px;padding:20px 23px;margin-top:20px;background:#e9e2d4;border-left:3px solid #8f7856}.g113-cigar-culture-after p{max-width:650px;margin:0;color:#5f5546;font:400 13px/1.75 'Noto Serif SC',serif}.g113-cigar-culture-after button{flex:none;min-height:42px;padding:8px 15px;border:1px solid #3d513e;background:#3d513e;color:#fff9ee;font-size:12px;cursor:pointer}
+ @media(max-width:600px){.g113-cigar-culture-after{display:grid}.g113-cigar-culture-after button{width:100%}}
++
++/* Mobile is the product surface. A desktop browser only presents this narrow viewport. */
++@media(max-width:760px){
++  .g113-app{--g113-reading-size:17px;--g113-small-size:14px;min-height:100dvh;font-size:var(--g113-reading-size);background:#f7f4ee;overflow-x:clip}
++  .g113-app--large{--g113-reading-size:19px;--g113-small-size:16px}
++  .g113-app--extra{--g113-reading-size:22px;--g113-small-size:18px}
++  .g113-app main{min-height:calc(100dvh - 68px)}
++  .g113-header{height:68px;position:sticky;top:0;grid-template-columns:1fr auto;padding:0 19px;background:#fffdf9;z-index:19}
++  .g113-brand>span{font-size:23px!important;letter-spacing:.035em}
++  .g113-size-short{min-width:69px;min-height:44px;border:1px solid #d8c8af;border-radius:22px;background:#f8f2e8;color:#654d2f;font:700 17px 'Noto Sans SC',sans-serif}
++  .g113-size-short span{font-size:14px;margin-left:2px}
++  .g113-page{width:calc(100% - 36px);padding:23px 0 112px}
++  .g113-page section{margin-top:31px}
++  .g113-mobile-nav{grid-template-columns:repeat(4,1fr);height:76px;padding:0 0 env(safe-area-inset-bottom);box-shadow:0 -4px 20px #493a2610}
++  .g113-mobile-nav button{font-size:15px;gap:3px;min-height:56px}
++  .g113-mobile-nav button.active{color:#674533}
++  .g113-action{min-height:55px;font-size:var(--g113-reading-size);border-radius:5px}
++  .g113-section-head{align-items:start;margin-bottom:13px;gap:8px}
++  .g113-section-head h2{font-size:23px}
++  .g113-section-head p{font-size:var(--g113-small-size)}
++  .g113-section-head .g113-text-button{font-size:var(--g113-small-size);min-height:36px}
++  .g113-eyebrow{font-size:var(--g113-small-size);letter-spacing:.06em;text-transform:none;margin-bottom:8px}
++  .g113-page-intro h1{font-size:30px}
++  .g113-page-intro p,.g113-lead{font-size:var(--g113-reading-size)}
++  .g113-mobile-greeting{padding:2px 1px 0}
++  .g113-mobile-greeting>span{display:block;color:#806e54;font-size:var(--g113-small-size);margin-bottom:3px}
++  .g113-mobile-greeting h1{font-size:27px;line-height:1.4;margin:0 0 2px;letter-spacing:.01em}
++  .g113-mobile-greeting p{font-size:var(--g113-reading-size);color:#6c675f;margin:0}
++  .g113-mobile-home .g113-daily-feature{margin-top:19px}
++  .g113-daily-feature{background:#fffdf9;border:1px solid #e5dbcc;box-shadow:0 9px 30px #59493610;overflow:hidden}
++  .g113-daily-feature>.g113-image{height:185px}
++  .g113-daily-feature-copy{padding:18px 19px 20px}
++  .g113-daily-kicker{display:block;color:#806039;font-size:var(--g113-small-size);font-weight:700;letter-spacing:.02em}
++  .g113-daily-feature h2{font-size:25px;line-height:1.36;margin:6px 0 8px}
++  .g113-daily-feature p{font-size:var(--g113-reading-size);line-height:1.65;color:#625c52;margin:0 0 10px}
++  .g113-daily-meta{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:15px}
++  .g113-daily-meta span{font-size:var(--g113-small-size);color:#776d5d;background:#f4eee4;padding:3px 8px;border-radius:3px}
++  .g113-daily-feature .g113-action{width:100%;background:#5b393a;border-color:#5b393a;color:#fff;justify-content:space-between;padding-inline:19px}
++  .g113-home-progress>button,.g113-home-community>button{width:100%;display:flex;align-items:center;gap:13px;text-align:left;border:1px solid #e6ded2;background:#fffdf9;color:#292923;padding:14px;min-height:86px}
++  .g113-home-progress>button>span:nth-child(2),.g113-home-community>button>span:nth-child(2){flex:1;min-width:0}
++  .g113-home-progress b,.g113-home-community b{display:block;font-size:var(--g113-reading-size);line-height:1.4}
++  .g113-home-progress small,.g113-home-community small{display:block;font-size:var(--g113-small-size);color:#7c756a;margin-top:2px}
++  .g113-progress-icon{width:49px;height:49px;border-radius:50%;background:#f3ebdd;color:#7d6043;display:grid;place-items:center;flex:none}
++  .g113-home-shelf{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:11px;margin-right:-18px;padding:1px 18px 7px 0}
++  .g113-home-shelf>button{flex:none;width:145px;scroll-snap-align:start;border:1px solid #e7ded1;background:#fffdf9;text-align:left;padding:0 0 10px;color:#242522}
++  .g113-home-shelf .g113-image{height:105px}
++  .g113-home-shelf b,.g113-home-shelf span{display:block;padding:0 10px}
++  .g113-home-shelf b{font:600 19px 'Noto Serif SC',serif;margin-top:9px}
++  .g113-home-shelf span{font-size:var(--g113-small-size);color:#71685e;line-height:1.45}
++  .g113-home-community .g113-avatar{flex:none}
++  .g113-daily-page .g113-subhead{margin-bottom:16px}
++  .g113-daily-page .g113-subhead h1{font-size:27px}
++  .g113-daily-progress{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:17px}
++  .g113-daily-progress span{border-bottom:3px solid #ddd6ca;color:#7c7468;padding-bottom:7px;text-align:center;font-size:var(--g113-small-size)}
++  .g113-daily-progress span.active{border-color:#906b42;color:#644b31;font-weight:700}
++  .g113-daily-main-image{height:235px}
++  .g113-daily-observe-image{height:315px;position:relative}
++  .g113-daily-observe-image>.g113-image{position:absolute;inset:0}
++  .g113-daily-hotspot{position:absolute;z-index:2;transform:translate(-50%,-50%);width:47px;height:47px;border:2px solid #fff;border-radius:50%;background:#674039;color:#fff;box-shadow:0 2px 14px #0008;font-size:20px;font-weight:700}
++  .g113-daily-hotspot.seen{background:#786f4c}
++  .g113-daily-reading{background:#fffdf9;border:1px solid #e7dfd2;padding:23px 19px 25px}
++  .g113-daily-reading h2{font-size:27px;line-height:1.43;margin:6px 0 12px}
++  .g113-daily-reading p{font-size:var(--g113-reading-size);line-height:1.8;color:#5e5b54}
++  .g113-daily-reading .g113-action{width:100%;justify-content:space-between;margin-top:10px}
++  .g113-daily-answers{display:grid;gap:10px;margin:19px 0}
++  .g113-daily-answers button{display:flex;align-items:center;gap:13px;text-align:left;min-height:64px;padding:10px 15px;border:1px solid #d4c8b7;background:#fff;color:#322e2a;font-size:var(--g113-reading-size)}
++  .g113-daily-answers button.selected{border:2px solid #785f45;background:#f6eee2}
++  .g113-daily-answers button span{color:#826341;font-weight:700}
++  .g113-daily-feedback{background:#f5eee2;border-left:4px solid #ad8154;padding:15px;margin:0 0 14px}
++  .g113-daily-feedback.correct{border-color:#718360;background:#edf3e9}
++  .g113-daily-feedback b{font-size:var(--g113-reading-size)}
++  .g113-daily-feedback p{margin:4px 0 0}
++  .g113-daily-done{text-align:center;background:#fffdf9;border:1px solid #e6ddce;padding:45px 24px}
++  .g113-daily-stamp{width:86px;height:86px;border:3px double #965e50;border-radius:50%;display:grid;place-items:center;margin:0 auto 20px;color:#965e50;font:600 40px 'Noto Serif SC',serif}
++  .g113-daily-done h2{font-size:28px;margin:12px 0}
++  .g113-daily-done p{font-size:var(--g113-reading-size);line-height:1.75;color:#665e54}
++  .g113-daily-done .g113-action{width:100%;margin-top:13px}
++  .g113-daily-done>button:last-child{border:0;background:none;color:#795432;min-height:54px;margin-top:10px}
++  .g113-hobby-grid{grid-template-columns:1fr;gap:11px}
++  .g113-hobby-grid .g113-hobby-card{display:grid;grid-template-columns:116px minmax(0,1fr);min-height:140px}
++  .g113-hobby-grid .g113-hobby-card>.g113-image{height:100%;min-height:140px}
++  .g113-hobby-grid .g113-hobby-copy{padding:12px}
++  .g113-hobby-grid .g113-hobby-copy h3{font-size:21px}
++  .g113-hobby-grid .g113-hobby-copy p{font-size:var(--g113-small-size);min-height:0;margin-bottom:4px}
++  .g113-hobby-grid .g113-hobby-copy span{font-size:var(--g113-small-size)}
++  .g113-mobile-profile .g113-profile-links{gap:0;margin:20px 0}
++  .g113-mobile-profile .g113-profile-links button{min-height:78px}
++  .g113-mobile-profile .g113-profile-links b{font-size:var(--g113-reading-size)}
++  .g113-mobile-profile .g113-profile-links small{font-size:var(--g113-small-size)}
++  .g113-profile-demo-note{font-size:var(--g113-small-size);color:#716a5f;line-height:1.8;margin:27px 0}
++  .g113-community-intro .g113-action{width:100%;justify-content:space-between;margin-top:14px}
++  .g113-community-banner{font-size:var(--g113-small-size)!important;line-height:1.55!important;padding:9px 11px;margin:0 0 21px}
++  .g113-post{padding:18px}
++  .g113-post-author b{font-size:var(--g113-reading-size)}
++  .g113-post-author small{font-size:var(--g113-small-size)}
++  .g113-post-body h3{font-size:22px}
++  .g113-post-body p{font-size:var(--g113-reading-size)}
++  .g113-post-actions{gap:15px;flex-wrap:wrap}
++  .g113-post-actions button{font-size:var(--g113-small-size);min-height:36px}
++  .g113-mentor-progress,.g113-mentor-desk{scroll-margin-top:82px}
++  .g113-size-options{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
++  .g113-size-options button{border:1px solid #cdbfaa;background:#fff;padding:7px 10px;min-width:58px;min-height:42px}
++  .g113-size-options button.active{background:#61413c;color:white;border-color:#61413c}
++  .g113-welcome{min-height:calc(100dvh - 144px);background:#f7f4ee;padding-bottom:95px}
++  .g113-welcome-hero{height:auto;min-height:0;display:flex;flex-direction:column}
++  .g113-welcome-hero>.g113-image{position:relative;inset:auto;height:305px;flex:none}
++  .g113-welcome-hero>.g113-image:after{display:none}
++  .g113-welcome-hero>.g113-image img{object-position:center}
++  .g113-welcome-copy{position:static;transform:none;color:#292722;padding:25px 20px 14px}
++  .g113-welcome-copy .g113-eyebrow{color:#806139}
++  .g113-welcome-copy h1{font-size:37px;line-height:1.3;letter-spacing:.025em;margin:0 0 11px}
++  .g113-welcome-copy p{font-size:var(--g113-reading-size);color:#605a52;line-height:1.7;margin:0 0 20px}
++  .g113-welcome-copy .g113-action{width:100%;background:#5b393a;border-color:#5b393a;color:#fff;justify-content:space-between}
++  .g113-welcome-foot{justify-content:space-around;gap:5px;padding:12px 15px;color:#7c6f5f;font-size:var(--g113-small-size);letter-spacing:0}
++  .g113-onboarding .g113-choice-grid{gap:10px}
++  .g113-onboarding .g113-choice{height:150px}
++  .g113-onboarding .g113-choice>span{font-size:19px}
++  .g113-onboarding-actions span{font-size:var(--g113-small-size)}
++  .g113-app--large .g113-page p,.g113-app--large .g113-page button,.g113-app--large .g113-page small{font-size:inherit}
++}
+diff --git a/games/game113/app.tsx b/games/game113/app.tsx
+index d7bf23a0f..2b145dd1d 100644
+--- a/games/game113/app.tsx
++++ b/games/game113/app.tsx
+@@ -1,5 +1,6 @@
+ import React, { useEffect, useState } from 'react';
+ import { InterestAtlas } from './atlas-view.js';
++import { dailyCompletionKey, dailyLessonFor } from './daily-lesson.js';
+ import { FocusHallView } from './focus-hall-view.js';
+ import { HobbyGuideView } from './hobby-guide-view.js';
+ import type { FocusHallId } from './focus-halls.js';
+@@ -10,8 +11,7 @@ import './app.css';
+ const STORE_KEY = 'game113-app-demo-v1';
+ const NAV = [
+   { id: 'home', label: '首页', icon: 'home' }, { id: 'discover', label: '发现', icon: 'search' },
+-  { id: 'market', label: '市集', icon: 'market' }, { id: 'warehouse', label: '仓库', icon: 'box' },
+-  { id: 'community', label: '同好', icon: 'people' },
++  { id: 'community', label: '同好', icon: 'people' }, { id: 'profile', label: '我的', icon: 'user' },
+ ] as const;
+ 
+ type IconName = 'home' | 'search' | 'market' | 'box' | 'people' | 'arrow' | 'back' | 'heart' | 'coin' | 'user' | 'book' | 'settings' | 'plus' | 'close' | 'check' | 'spark' | 'camera';
+@@ -39,7 +39,10 @@ function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
+ function Image({ source, alt, className = '' }: { source: ImageSource; alt: string; className?: string }) {
+   return <div className={`g113-image ${className}`}><img src={source.src} alt={alt}/>{source.kind === 'ai-demo' && <span className="g113-image-tag">AI 示意图</span>}</div>;
+ }
+-function Eyebrow({ children }: { children: React.ReactNode }) { return <div className="g113-eyebrow">{children}</div>; }
++function Eyebrow({ children }: { children: React.ReactNode }) {
++  const label = typeof children === 'string' ? children.replace(/^[A-Z][A-Z\s&.-]*\/\s*/, '') : children;
++  return <div className="g113-eyebrow">{label}</div>;
++}
+ function Action({ children, onClick, ghost = false, disabled = false, icon }: { children: React.ReactNode; onClick: () => void; ghost?: boolean; disabled?: boolean; icon?: IconName }) {
+   return <button className={`g113-action ${ghost ? 'g113-action--ghost' : ''}`} onClick={onClick} disabled={disabled}>{children}{icon && <Icon name={icon} size={18}/>}</button>;
+ }
+@@ -71,6 +74,10 @@ export function App({ onExit }: { onExit?: () => void }) {
+   const [trendPeriod, setTrendPeriod] = useState('30天');
+   const [selectedSpot, setSelectedSpot] = useState<number | null>(null);
+   const [examAnswer, setExamAnswer] = useState<number | null>(null);
++  const [dailyStage, setDailyStage] = useState<'intro' | 'observe' | 'quiz' | 'done'>('intro');
++  const [dailySpots, setDailySpots] = useState<number[]>([]);
++  const [dailySelectedSpot, setDailySelectedSpot] = useState<number | null>(null);
++  const [dailyAnswer, setDailyAnswer] = useState<number | null>(null);
+   const [draft, setDraft] = useState({ title: '', text: '', hobbyId: 'watch' as HobbyId });
+   const [uploadName, setUploadName] = useState('');
+   useEffect(() => { try { window.localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch { /* private mode: keep in memory */ } }, [state]);
+@@ -80,11 +87,18 @@ export function App({ onExit }: { onExit?: () => void }) {
+   const segments = route.split('/');
+   const page = segments[0];
+   const subId = segments[1];
+-  const active = NAV.some((n) => n.id === page) ? page : page === 'hobby' ? 'discover' : page === 'item' ? 'market' : page === 'inspect' || page === 'care' || page === 'play' ? 'warehouse' : page === 'post' || page === 'compose' || page === 'circle' ? 'community' : '';
++  const active = NAV.some((n) => n.id === page) ? page : page === 'hobby' ? 'discover' : page === 'item' || page === 'market' || page === 'warehouse' || page === 'inspect' || page === 'care' || page === 'play' || page === 'wallet' || page === 'settings' ? 'profile' : page === 'post' || page === 'compose' || page === 'circle' ? 'community' : page === 'daily' ? 'home' : '';
+   const openItem = (id: string) => go(`item/${id}`);
+   const openHobby = (id: string) => { setHobbyTab('guide'); go(`hobby/${id}`); };
+   const composeFor = (id: HobbyId) => { setDraft({ title: '', text: '', hobbyId: id }); go('compose'); };
+   const chosenRecommendation = dailyRecommendation(state.interests, new Date());
++  const dailyLesson = dailyLessonFor(chosenRecommendation.id);
++  const dailyKey = dailyCompletionKey(chosenRecommendation.id, new Date());
++  const dailyComplete = state.dailyCompletions.includes(dailyKey);
++  const openDaily = () => { setDailyStage(dailyComplete ? 'done' : 'intro'); setDailySpots([]); setDailySelectedSpot(null); setDailyAnswer(null); go('daily'); };
++  const textSizes = ['standard', 'large', 'extra'] as const;
++  const textSizeLabel = { standard: '标准', large: '大', extra: '特大' }[state.textSize];
++  const cycleTextSize = () => update((s) => ({ ...s, textSize: textSizes[(textSizes.indexOf(s.textSize) + 1) % textSizes.length] }));
+   const pending = state.owned.filter((id) => !state.inspected.includes(id));
+   const ownedItems = state.owned.map((id) => itemById(id)).filter((x): x is Collectible => Boolean(x));
+ 
+@@ -108,7 +122,22 @@ export function App({ onExit }: { onExit?: () => void }) {
+     }
+     if (page === 'welcome' || (!state.onboarded && page === 'home')) return <div className="g113-welcome"><div className="g113-welcome-hero"><Image source={HOBBIES[0].image} alt="机械表氛围示意图"/><div className="g113-welcome-copy"><Eyebrow>人生下半场 · 新爱好正当时</Eyebrow><h1>雅趣<span>·</span>第二人生</h1><p>去认识一件有趣的事，遇见愿意一起聊的人。</p><Action onClick={() => go('onboarding')} icon="arrow">开启第二兴趣</Action></div></div><div className="g113-welcome-foot"><span>发现兴趣</span><span>收藏成长</span><span>同好交流</span></div></div>;
+     if (page === 'onboarding') return <div className="g113-page g113-onboarding"><Subhead title="先从喜欢的开始" kicker="WELCOME / 第一步" back="welcome"/><p className="g113-lead">选几门你愿意了解的爱好。以后每天，我们也会带你认识一个新的世界。</p><div className="g113-choice-grid">{HOBBIES.map((h) => <button key={h.id} className={`g113-choice ${state.interests.includes(h.id) ? 'selected' : ''}`} onClick={() => update((s) => toggleInterest(s, h.id))}><Image source={h.image} alt={`${h.name}示意图`}/><span>{h.name}</span>{state.interests.includes(h.id) && <i><Icon name="check" size={16}/></i>}</button>)}</div><div className="g113-onboarding-actions"><span>已选 {state.interests.length} 门 · 随时可以更改</span><Action onClick={() => { update((s) => ({ ...s, onboarded: true })); go('home'); }} icon="arrow">进入雅趣</Action></div></div>;
+-    if (page === 'home') return <div className="g113-page g113-home"><div className="g113-home-top"><div><Eyebrow>WELCOME BACK / 今天也慢慢来</Eyebrow><h1>愿你今天，<br/>又遇见一点新趣味。</h1></div><div className="g113-date-note">今日推荐，<br/>从你尚未认识的爱好开始。</div></div><div className="g113-home-grid"><div className="g113-hero-card"><Image source={chosenRecommendation.image} alt={`${chosenRecommendation.name}推荐示意图`}/><div className="g113-hero-copy"><Eyebrow>今日推荐 · 一门新爱好</Eyebrow><h2>认识一个新爱好：<br/>{chosenRecommendation.name}</h2><p>{chosenRecommendation.tagline}</p><Action onClick={() => openHobby(chosenRecommendation.id)} icon="arrow">先看看</Action></div></div><div className="g113-fresh-card"><Eyebrow>DAILY NOTES</Eyebrow><h2>今日新鲜</h2><button onClick={() => openItem('wine-01')}><span className="g113-fresh-thumb"><img src={HOBBIES[1].image.src} alt="红酒示意图"/></span><span><b>红酒馆新开一件</b><small>认识产区，也认识杯中的故事。</small></span><Icon name="arrow" size={17}/></button><button onClick={() => go('community')}><span className="g113-fresh-thumb"><img src={HOBBIES[3].image.src} alt="木工示意图"/></span><span><b>同好分享 · 木工小椅</b><small>一把小椅子的诞生过程。</small></span><Icon name="arrow" size={17}/></button><button onClick={() => go('market')}><span className="g113-fresh-thumb"><img src={HOBBIES[2].image.src} alt="核桃示意图"/></span><span><b>看看今天的市集</b><small>游戏内行情，温和日更。</small></span><Icon name="arrow" size={17}/></button></div></div><section><SectionHead title="为你打开的兴趣" note="生活不止一种精彩，总有一个兴趣适合现在的你。" action="查看全部" onAction={() => go('discover')}/><div className="g113-hobby-row">{HOBBIES.map((h) => <HobbyCard key={h.id} hobby={h} compact/>)}</div></section><div className="g113-home-lower"><section><SectionHead title="继续培养" note="从上一件藏品，继续向前走。" action="我的仓库" onAction={() => go('warehouse')}/><button className="g113-continue" onClick={() => go(pending.length ? `inspect/${pending[0]}` : 'warehouse')}><img src={(pending.length ? itemById(pending[0]) : ownedItems[0])?.image.src || HOBBIES[0].image.src} alt="继续培养示意图"/><span><small>{pending.length ? '待鉴区 · 下一步' : '仓库 · 下一步'}</small><b>{pending.length ? '细看一件新藏品' : '看看自己的收藏'}</b><em>每一件，都值得慢慢认识。</em></span><Icon name="arrow"/></button></section><section><SectionHead title="同好正在聊" note="分享见闻，让兴趣有了回声。" action="进入同好" onAction={() => go('community')}/><div className="g113-home-posts">{DEMO_POSTS.filter((p) => p.id === 'post-1' || p.id === 'post-2').map((p) => <button key={p.id} onClick={() => go(`post/${p.id}`)}><span className="g113-avatar">{p.initials}</span><span><b>{p.title}</b><small>{p.author} · {p.time}</small></span><Icon name="arrow" size={17}/></button>)}</div></section></div></div>;
++    if (page === 'home') return <div className="g113-page g113-mobile-home">
++      <div className="g113-mobile-greeting"><span>{new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })}</span><h1>{new Date().getHours() < 11 ? '上午好' : new Date().getHours() < 18 ? '下午好' : '晚上好'}，今天也慢慢来。</h1><p>从一件小事，走进一门新爱好。</p></div>
++      <section className="g113-daily-feature" aria-label="今天的一小步">
++        <Image source={chosenRecommendation.image} alt={`${chosenRecommendation.name}主题示意图`}/>
++        <div className="g113-daily-feature-copy"><span className="g113-daily-kicker">今天的一小步 · {chosenRecommendation.name}</span><h2>{dailyLesson.title}</h2><p>{dailyLesson.lead}</p><div className="g113-daily-meta"><span>看两处细节</span><span>答一道小题</span><span>随时可停</span></div><Action onClick={openDaily} icon="arrow">{dailyComplete ? '重温今天的发现' : '开始今天的探索'}</Action></div>
++      </section>
++      <section className="g113-home-progress"><SectionHead title="接着慢慢来"/><button onClick={() => go(pending.length ? `inspect/${pending[0]}` : 'warehouse')}><span className="g113-progress-icon"><Icon name="box" size={24}/></span><span><b>{pending.length ? '有一件藏品，等你细看' : '看看我的收藏'}</b><small>{pending.length ? '从上次停下的地方继续' : '每一件，都有值得记住的故事'}</small></span><Icon name="arrow" size={20}/></button></section>
++      <section className="g113-home-discover"><SectionHead title="也可以看看" note="好奇心可以慢慢生长。" action="全部兴趣" onAction={() => go('discover')}/><div className="g113-home-shelf">{HOBBIES.filter((h) => h.id !== chosenRecommendation.id).slice(0, 3).map((h) => <button key={h.id} onClick={() => openHobby(h.id)}><Image source={h.image} alt={`${h.name}示意图`}/><b>{h.name}</b><span>{h.tagline}</span></button>)}</div></section>
++      <section className="g113-home-community"><SectionHead title="同好的一句话" action="去同好" onAction={() => go('community')}/><button onClick={() => go('post/post-1')}><span className="g113-avatar">清</span><span><b>周末完成了第一把小椅子</b><small>示例分享 · 木工圈</small></span><Icon name="arrow" size={20}/></button></section>
++    </div>;
++    if (page === 'daily') return <div className="g113-page g113-daily-page"><Subhead title="今天的一小步" back="home"/><div className="g113-daily-progress" aria-label="探索进度"><span className="active">认识</span><span className={dailyStage !== 'intro' ? 'active' : ''}>观察</span><span className={dailyStage === 'quiz' || dailyStage === 'done' ? 'active' : ''}>试一试</span></div>
++      {dailyStage === 'intro' && <><Image source={chosenRecommendation.image} alt={`${chosenRecommendation.name}主题示意图`} className="g113-daily-main-image"/><div className="g113-daily-reading"><span className="g113-daily-kicker">{chosenRecommendation.name} · 第一眼</span><h2>{dailyLesson.title}</h2><p>{dailyLesson.lead}</p><p>先看一张图，听两个小故事。今天不谈价格，也不必一次学完。</p><Action onClick={() => setDailyStage('observe')} icon="arrow">看一看细节</Action></div></>}
++      {dailyStage === 'observe' && <><div className="g113-daily-observe-image"><Image source={chosenRecommendation.image} alt={`${chosenRecommendation.name}细节观察示意图`}/>{dailyLesson.spots.map((spot, i) => <button key={spot.title} style={{ left: `${spot.x}%`, top: `${spot.y}%` }} className={`g113-daily-hotspot ${dailySpots.includes(i) ? 'seen' : ''}`} onClick={() => { setDailySelectedSpot(i); setDailySpots((old) => old.includes(i) ? old : [...old, i]); }} aria-label={`查看细节${i + 1}：${spot.title}`}>{i + 1}</button>)}</div><div className="g113-daily-reading"><span className="g113-daily-kicker">轻点图上的数字</span><h2>{dailySelectedSpot === null ? '先发现，再理解。' : dailyLesson.spots[dailySelectedSpot].title}</h2><p>{dailySelectedSpot === null ? '两处细节都可以点开，不用着急。' : dailyLesson.spots[dailySelectedSpot].body}</p><Action disabled={dailySpots.length < 2} onClick={() => setDailyStage('quiz')} icon="arrow">{dailySpots.length < 2 ? `还差 ${2 - dailySpots.length} 处细节` : '我看过了，试一试'}</Action></div></>}
++      {dailyStage === 'quiz' && <div className="g113-daily-reading g113-daily-quiz"><span className="g113-daily-kicker">没有计时，也不怕答错</span><h2>{dailyLesson.question}</h2><div className="g113-daily-answers">{dailyLesson.answers.map((answer, i) => <button key={answer} className={dailyAnswer === i ? 'selected' : ''} onClick={() => setDailyAnswer(i)}><span>{String.fromCharCode(65 + i)}</span>{answer}</button>)}</div>{dailyAnswer !== null && <div className={`g113-daily-feedback ${dailyAnswer === dailyLesson.correct ? 'correct' : ''}`} role="status"><b>{dailyAnswer === dailyLesson.correct ? '答对了，今天的发现记住了。' : '再看一眼，不着急。'}</b><p>{dailyAnswer === dailyLesson.correct ? dailyLesson.explanation : dailyLesson.hint}</p></div>}{dailyAnswer === dailyLesson.correct && <Action onClick={() => { update((s) => ({ ...s, dailyCompletions: s.dailyCompletions.includes(dailyKey) ? s.dailyCompletions : [...s.dailyCompletions, dailyKey].slice(-60) })); setDailyStage('done'); }} icon="arrow">收下今天的章印</Action>}</div>}
++      {dailyStage === 'done' && <div className="g113-daily-done"><span className="g113-daily-stamp">雅</span><span className="g113-daily-kicker">今日章印 · {chosenRecommendation.name}初识</span><h2>今天，认识了一件新鲜事。</h2><p>{dailyLesson.explanation}</p><Action onClick={() => go('home')}>先到这里</Action><button onClick={() => openHobby(chosenRecommendation.id)}>还想深入看看{chosenRecommendation.name} →</button></div>}
++    </div>;
+     if (page === 'discover') { const list = HOBBIES.filter((h) => (category === 'all' || h.category === category) && `${h.name}${h.tagline}${h.english}`.toLowerCase().includes(query.toLowerCase())); return <div className="g113-page"><div className="g113-page-intro"><Eyebrow>DISCOVER / 发现</Eyebrow><h1>新的热爱，从这里开始。</h1><p>不必精通，先跟着好奇心走一小段。</p></div><div className="g113-toolbar"><label className="g113-search"><Icon name="search"/><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索你想了解的爱好" aria-label="搜索爱好"/></label><span>已开 {HOBBIES.length} 座爱好馆</span></div><div className="g113-chip-row">{CATEGORIES.map((c) => <button key={c.id} className={category === c.id ? 'active' : ''} onClick={() => setCategory(c.id)}>{c.name}</button>)}</div><div className="g113-hobby-grid">{list.map((h) => <HobbyCard key={h.id} hobby={h}/>)}</div>{!list.length && <div className="g113-empty"><h2>这一类正在筹备中</h2><p>我们会先让每座爱好馆有扎实的照片与知识，再邀请你来逛。</p><Action onClick={() => setCategory('all')} ghost>看看已开馆的爱好</Action></div>}<InterestAtlas openHobby={openHobby}/></div>; }
+     if (page === 'hobby') {
+       const h = hobbyById(subId);
+@@ -134,12 +163,12 @@ export function App({ onExit }: { onExit?: () => void }) {
+     if (page === 'circle') { const h = hobbyById(subId); return <div className="g113-page"><Subhead title={`${h?.name || '兴趣'}圈`} kicker="同好交流 · 本机演示" back="community"/><div className="g113-hobby-hero"><Image source={h?.image || HOBBIES[0].image} alt="兴趣圈示意图"/><div><Eyebrow>{h?.people}</Eyebrow><h2>在这里，聊聊{h?.name}。</h2><p>分享真实的经验，向同好请教，也看看别人的收藏故事。</p><Action onClick={() => composeFor(h?.id || 'watch')} icon="plus">写一条分享</Action></div></div><SectionHead title="圈内话题"/><div className="g113-feed">{[...state.ownPosts.filter((p) => p.hobbyId === subId).map((p) => ({ ...p, initials: '我' })), ...DEMO_POSTS.filter((p) => p.hobbyId === subId)].map((p) => <button className="g113-learn-row" key={p.id} onClick={() => go(`post/${p.id}`)}><span className="g113-avatar">{p.initials}</span><b>{p.title}</b><Icon name="arrow"/></button>)}</div></div>; }
+     if (page === 'post') { const p = DEMO_POSTS.find((x) => x.id === subId) || state.ownPosts.find((x) => x.id === subId); if (!p) return <div className="g113-page"><Subhead title="未找到分享" back="community"/></div>; const own = DEMO_POSTS.find((x) => x.id === subId) || { ...p, author: '我', initials: '我', time: '刚刚', image: hobbyById(p.hobbyId)!.image, likes: 0, comments: 0 }; return <div className="g113-page"><Subhead title="同好分享" kicker={`${hobbyById(own.hobbyId)?.name}圈`} back="community"/><div className="g113-post-detail g113-paper"><div className="g113-post-author"><span className="g113-avatar">{own.initials}</span><div><b>{own.author}</b><small>{own.time} · 本机演示</small></div></div><h2>{own.title}</h2><p>{own.text}</p>{own.author !== '我' && <Image source={own.image} alt="帖子示意图"/>}<div className="g113-post-actions"><button onClick={() => update((s) => toggleLike(s, own.id))}><Icon name="heart" size={18}/>{own.likes + (state.likedPosts.includes(own.id) ? 1 : 0)} 赞同</button><button onClick={() => go(`circle/${own.hobbyId}`)}>进入{hobbyById(own.hobbyId)?.name}圈 →</button></div><div className="g113-comment-preview"><h3>评论与掌眼</h3><p>真实评论、掌眼和举报依赖账户、内容审核与云端服务；目前只展示页面入口。</p><textarea placeholder="真实社区开放后，在这里交流你的看法" disabled/><button disabled>暂未开放发布</button></div></div></div>; }
+     if (page === 'compose') return <div className="g113-page"><Subhead title="分享一件有趣的事" kicker="CREATE / 本机演示" back="community"/><div className="g113-compose g113-paper"><div className="g113-demo-note">本机演示：文字仅保存在当前浏览器；照片不会上传、保存或公开发布。正式版必须先有真实用户账户与内容审核。</div><label>选择兴趣圈<select value={draft.hobbyId} onChange={(e) => setDraft({ ...draft, hobbyId: e.target.value as HobbyId })}>{HOBBIES.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}</select></label><label>标题<input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} maxLength={50} placeholder="今天想分享什么？"/></label><label>说说你的故事<textarea value={draft.text} onChange={(e) => setDraft({ ...draft, text: e.target.value })} maxLength={500} rows={7} placeholder="一段经历、一个问题，或你新学到的门道……"/></label><label className="g113-upload"><Icon name="camera"/> 选择真藏照片（只预览文件名）<input type="file" accept="image/*" onChange={(e) => setUploadName(e.target.files?.[0]?.name || '')}/></label>{uploadName && <p className="g113-upload-name">已选：{uploadName} · 此 Demo 不上传或保存图片</p>}<Action disabled={!draft.title.trim() || !draft.text.trim()} onClick={() => { const post = { id: `local-${Date.now()}`, title: draft.title.trim(), text: draft.text.trim(), hobbyId: draft.hobbyId }; update((s) => ({ ...s, ownPosts: [post, ...s.ownPosts] })); setDraft({ title: '', text: '', hobbyId: 'watch' }); setUploadName(''); notify('已加入本机演示社区，未公开发布'); go('community'); }} icon="arrow">保存本机演示分享</Action></div></div>;
+-    if (page === 'profile') return <div className="g113-page"><Subhead title="我的雅趣" kicker="PROFILE / 第二人生" back="home"/><div className="g113-profile-hero"><span className="g113-profile-avatar">雅</span><div><Eyebrow>兴趣探索者</Eyebrow><h2>从喜欢的一件事开始</h2><p>你已关注 {state.following.length} 门爱好，仓库里有 {ownedItems.length} 件演示藏品。</p></div></div><div className="g113-profile-links"><button onClick={() => go('wallet')}><Icon name="coin"/><span><b>雅钱与明细</b><small>查看来源与本机演示记录</small></span><Icon name="arrow"/></button><button onClick={() => go('exam')}><Icon name="book"/><span><b>学习与证书</b><small>无时限小考 · 知识成长</small></span><Icon name="arrow"/></button><button onClick={() => go('settings')}><Icon name="settings"/><span><b>设置与显示</b><small>大字模式 · 图片说明 · 隐私</small></span><Icon name="arrow"/></button></div><div className="g113-paper"><Eyebrow>MY INTERESTS</Eyebrow><h2>我的兴趣</h2><div className="g113-chip-row">{state.interests.length ? state.interests.map((id) => <button key={id} onClick={() => openHobby(id)}>{hobbyById(id)?.name}</button>) : <p>还没选择兴趣。去发现页，先从好奇开始。</p>}</div></div></div>;
++    if (page === 'profile') return <div className="g113-page g113-mobile-profile"><div className="g113-page-intro"><Eyebrow>我的雅趣</Eyebrow><h1>把喜欢的，慢慢留下。</h1></div><div className="g113-profile-hero"><span className="g113-profile-avatar">雅</span><div><Eyebrow>兴趣探索者</Eyebrow><h2>从喜欢的一件事开始</h2><p>已关注 {state.following.length} 门爱好 · 收藏 {ownedItems.length} 件演示藏品</p></div></div><div className="g113-profile-links"><button onClick={() => go('warehouse')}><Icon name="box"/><span><b>我的收藏</b><small>继续细看、整理自己的藏品</small></span><Icon name="arrow"/></button><button onClick={() => go('exam')}><Icon name="book"/><span><b>学习与章印</b><small>没有时限，按自己的节奏来</small></span><Icon name="arrow"/></button><button onClick={() => go('market')}><Icon name="market"/><span><b>市集与行情</b><small>游戏内演示，不是真实交易</small></span><Icon name="arrow"/></button><button onClick={() => go('wallet')}><Icon name="coin"/><span><b>雅钱与明细</b><small>只在本机演示系统内流转</small></span><Icon name="arrow"/></button><button onClick={() => go('settings')}><Icon name="settings"/><span><b>设置与说明</b><small>字号、图片来源与数据说明</small></span><Icon name="arrow"/></button></div><div className="g113-paper"><Eyebrow>我的兴趣</Eyebrow><h2>慢慢探索的方向</h2><div className="g113-chip-row">{state.interests.length ? state.interests.map((id) => <button key={id} onClick={() => openHobby(id)}>{hobbyById(id)?.name}</button>) : <p>还没选择兴趣。去发现页，先从好奇开始。</p>}</div></div><p className="g113-profile-demo-note">当前为本机 Demo：部分藏品图为 AI 示意；示例帖子不是真实用户。学习、收藏与雅钱数据只保存在此浏览器，不能用于真实鉴定或交易。</p></div>;
+     if (page === 'wallet') return <div className="g113-page"><Subhead title="雅钱与明细" kicker="WALLET / 只在游戏内流转" back="profile"/><div className="g113-wallet-hero"><span>演示雅钱余额</span><strong>◎ {ya(state.balance)}</strong><p>雅钱不能提现、不能赠送、不能兑换真实物品。此处为本机演示账户。</p></div><div className="g113-three-col"><div className="g113-paper"><Icon name="book"/><h3>学习与考级</h3><p>阅读知识卡、完成小考，获得成长与奖励。</p><Action ghost onClick={() => go('exam')}>查看小考</Action></div><div className="g113-paper"><Icon name="people"/><h3>优质分享</h3><p>未来经审核通过的真藏分享，可以获得社区贡献奖励。</p><Action ghost onClick={() => go('compose')}>去分享</Action></div><div className="g113-paper"><Icon name="spark"/><h3>主动观看广告</h3><p>正式版由你主动选择；本 Demo 不播放广告，也不发奖励。</p><Action ghost onClick={() => notify('演示版未接入广告，不发放雅钱')}>了解规则</Action></div></div><section><SectionHead title="本机演示明细"/><div className="g113-ledger">{state.ledger.map((x) => <div key={x.id}><span>{x.label}</span><b className={x.amount < 0 ? 'down' : ''}>{x.amount > 0 ? '+' : ''}{ya(x.amount)}</b></div>)}</div></section></div>;
+-    if (page === 'exam') return <div className="g113-page"><Subhead title="学识小考" kicker="LEARN / 无时限" back="profile"/><div className="g113-exam g113-paper"><Eyebrow>机械表 · 入门小考 / 页面预览</Eyebrow><h2>一枚机械表里，负责调节走时节奏的部件是什么？</h2><p>不着急，选一个你觉得对的答案。</p>{['摆轮与擒纵机构', '表带', '表扣'].map((x, i) => <button key={x} className={`g113-answer ${examAnswer === i ? 'selected' : ''}`} onClick={() => setExamAnswer(i)}><span>{String.fromCharCode(65 + i)}</span>{x}</button>)}{examAnswer !== null && <div className="g113-exam-result"><b>{examAnswer === 0 ? '答对了。' : '再认识一下这个知识点。'}</b><p>摆轮与擒纵机构共同控制能量释放的节奏。正式考级的题库、成绩和雅钱奖励仍待 Apollo 玩法接入。</p></div>}<div className="g113-demo-note">这里只预览考试页面，不计分、不发证书或雅钱。</div></div></div>;
+-    if (page === 'settings') return <div className="g113-page"><Subhead title="设置" kicker="PREFERENCES" back="profile"/><div className="g113-settings g113-paper"><h2>显示与阅读</h2><label className="g113-setting-row"><span><b>大字模式</b><small>放大正文与操作文字，方便舒适阅读。</small></span><input type="checkbox" checked={state.largeText} onChange={(e) => update((s) => ({ ...s, largeText: e.target.checked }))}/></label><div className="g113-setting-row"><span><b>图片真实性说明</b><small>清酒馆与雪茄馆入门章节使用注明来源的真实资料照片；其他演示藏品图可能是 AI 示意，均不作鉴定依据。</small></span></div><div className="g113-setting-row"><span><b>演示数据</b><small>收藏、雅钱、帖子与两馆长卷进度只保存在本机浏览器，不与他人共享。</small></span></div><button className="g113-clear-demo" onClick={() => setDialog({ title: '清除本机演示数据？', body: '这会清除当前浏览器里的兴趣选择、演示收藏、雅钱、分享、品牌书架与清酒、雪茄长卷进度，不能撤销。', action: '清除数据', run: () => { try { for (const key of ['game113-guide-v1-sake', 'game113-guide-v2-sake', 'game113-guide-v3-sake', 'game113-guide-v1-cigar', 'game113-guide-v2-cigar', 'game113-guide-v3-cigar', 'game113-guide-v1-woodwork', 'game113-guide-v2-woodwork', 'game113-sake-brand-shelf-v1']) window.localStorage.removeItem(key); } catch { /* Private mode: no persistent data to clear. */ } setState(INITIAL_STATE); setDialog(null); go('welcome'); } })}>清除本机演示数据</button>{onExit && <button className="g113-inline-link" onClick={onExit}>返回 Apollo 游戏库</button>}</div></div>;
++    if (page === 'exam') return <div className="g113-page"><Subhead title="学识小考" kicker="无时限 · 可以重试" back="profile"/><div className="g113-exam g113-paper"><Eyebrow>机械表 · 入门小考</Eyebrow><h2>一枚机械表里，负责调节走时节奏的部件是什么？</h2><p>不着急，选一个你觉得对的答案。</p>{['摆轮与擒纵机构', '表带', '表扣'].map((x, i) => <button key={x} className={`g113-answer ${examAnswer === i ? 'selected' : ''}`} onClick={() => setExamAnswer(i)}><span>{String.fromCharCode(65 + i)}</span>{x}</button>)}{examAnswer !== null && <div className="g113-exam-result" role="status"><b>{examAnswer === 0 ? '答对了。' : '再试一次，不着急。'}</b><p>{examAnswer === 0 ? '摆轮与擒纵机构共同控制能量释放的节奏。' : '提示：想想哪一组结构会规律地往复运动，并控制能量释放。你可以直接重新选择。'}</p></div>}<div className="g113-demo-note">这里只预览考试页面，不计分、不发证书或雅钱。</div></div></div>;
++    if (page === 'settings') return <div className="g113-page"><Subhead title="设置与说明" back="profile"/><div className="g113-settings g113-paper"><h2>显示与阅读</h2><div className="g113-setting-row"><span><b>字号大小</b><small>也可以随时点页面顶部的「Aa」切换。</small></span><div className="g113-size-options">{textSizes.map((size) => <button key={size} className={state.textSize === size ? 'active' : ''} onClick={() => update((s) => ({ ...s, textSize: size }))}>{({ standard: '标准', large: '大', extra: '特大' })[size]}</button>)}</div></div><div className="g113-setting-row"><span><b>图片真实性说明</b><small>清酒馆与雪茄馆入门章节使用注明来源的真实资料照片；其他演示藏品图可能是 AI 示意，均不作鉴定依据。</small></span></div><div className="g113-setting-row"><span><b>演示数据</b><small>收藏、雅钱、帖子与长卷进度只保存在本机浏览器，不与他人共享。</small></span></div><button className="g113-clear-demo" onClick={() => setDialog({ title: '清除本机演示数据？', body: '这会清除当前浏览器里的兴趣选择、每日章印、演示收藏、雅钱、分享、品牌书架与清酒、雪茄长卷进度，不能撤销。', action: '清除数据', run: () => { try { for (const key of ['game113-guide-v1-sake', 'game113-guide-v2-sake', 'game113-guide-v3-sake', 'game113-guide-v1-cigar', 'game113-guide-v2-cigar', 'game113-guide-v3-cigar', 'game113-guide-v1-woodwork', 'game113-guide-v2-woodwork', 'game113-sake-brand-shelf-v1']) window.localStorage.removeItem(key); } catch { /* Private mode: no persistent data to clear. */ } setState(INITIAL_STATE); setDialog(null); go('welcome'); } })}>清除本机演示数据</button>{onExit && <button className="g113-inline-link" onClick={onExit}>返回 Apollo 游戏库</button>}</div></div>;
+     return <div className="g113-page"><Subhead title="这页还没有找到" back="home"/><Action onClick={() => go('home')}>回到首页</Action></div>;
+   })();
+ 
+-  return <div className={`g113-app ${state.largeText ? 'g113-app--large' : ''}`}><header className="g113-header"><button className="g113-brand" onClick={() => go('home')}><span>雅趣<span className="g113-brand-dot">·</span>第二人生</span><small>兴 趣 ， 让 生 活 继 续 发 光</small></button><nav className="g113-desktop-nav" aria-label="主导航">{NAV.map((n) => <button key={n.id} className={active === n.id ? 'active' : ''} onClick={() => go(n.id)}>{n.label}</button>)}</nav><div className="g113-header-actions"><button className="g113-wallet-short" onClick={() => go('wallet')} title="雅钱与明细"><Icon name="coin" size={21}/><span>雅钱 <b>{ya(state.balance)}</b></span></button><button className="g113-header-avatar" onClick={() => go('profile')} aria-label="我的雅趣"><Icon name="user" size={22}/></button></div></header><div className="g113-demo-ribbon"><span>APP DEMO</span> 当前为应用流程原型 · AI 图片仅作示意 · 游戏与真实社交尚未接入</div><main>{main}</main><footer className="g113-footer"><div><b>雅趣 · 第二人生</b><p>让兴趣，陪你继续走一段。</p></div><span>演示版 · 虚拟藏品与本机数据 · 不构成投资建议</span></footer><nav className="g113-mobile-nav" aria-label="手机主导航">{NAV.map((n) => <button key={n.id} className={active === n.id ? 'active' : ''} onClick={() => go(n.id)}><Icon name={n.icon} size={22}/><span>{n.label}</span></button>)}</nav>{notice && <div className="g113-toast" role="status">{notice}</div>}{dialog && <div className="g113-modal-layer" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && setDialog(null)}><div className="g113-modal" role="dialog" aria-modal="true" aria-label={dialog.title}><button className="g113-modal-close" onClick={() => setDialog(null)} aria-label="关闭"><Icon name="close"/></button><Eyebrow>APPLICATION DEMO</Eyebrow><h2>{dialog.title}</h2><p>{dialog.body}</p><div><Action ghost onClick={() => setDialog(null)}>再想想</Action><Action onClick={dialog.run}>{dialog.action}</Action></div></div></div>}</div>;
++  return <div className={`g113-app g113-app--${state.textSize}`}><header className="g113-header"><button className="g113-brand" onClick={() => go('home')} aria-label="回到雅趣首页"><span>雅趣<span className="g113-brand-dot">·</span>第二人生</span></button><div className="g113-header-actions"><button className="g113-size-short" onClick={cycleTextSize} aria-label={`当前字号${textSizeLabel}，点击切换字号`}>Aa <span>{textSizeLabel}</span></button></div></header><main>{main}</main><nav className="g113-mobile-nav" aria-label="手机主导航">{NAV.map((n) => <button key={n.id} className={active === n.id ? 'active' : ''} onClick={() => go(n.id)}><Icon name={n.icon} size={24}/><span>{n.label}</span></button>)}</nav>{notice && <div className="g113-toast" role="status">{notice}</div>}{dialog && <div className="g113-modal-layer" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && setDialog(null)}><div className="g113-modal" role="dialog" aria-modal="true" aria-label={dialog.title}><button className="g113-modal-close" onClick={() => setDialog(null)} aria-label="关闭"><Icon name="close"/></button><Eyebrow>请确认</Eyebrow><h2>{dialog.title}</h2><p>{dialog.body}</p><div><Action ghost onClick={() => setDialog(null)}>再想想</Action><Action onClick={dialog.run}>{dialog.action}</Action></div></div></div>}</div>;
+ }
+diff --git a/games/game113/game113.tsx b/games/game113/game113.tsx
+index 1c14eda9a..2bd50163a 100644
+--- a/games/game113/game113.tsx
++++ b/games/game113/game113.tsx
+@@ -1,39 +1,79 @@
+-import React, { useRef, useState } from 'react';
++import React, { useEffect, useRef, useState } from 'react';
+ import { createRoot } from 'react-dom/client';
+ import { App } from './app.js';
+ import { mobileFrameUrl, MOBILE_FRAME_PARAM } from './preview.js';
+ 
+-function AppWithViewSwitch({ onExit }: { onExit?: () => void }) {
+-  const [mobile, setMobile] = useState(false);
+-  const [frameUrl, setFrameUrl] = useState('');
++function DesktopPhonePreview() {
+   const frameRef = useRef<HTMLIFrameElement>(null);
+ 
+-  const showMobile = () => {
+-    setFrameUrl(mobileFrameUrl(window.location.href));
+-    setMobile(true);
+-    window.scrollTo({ top: 0, behavior: 'auto' });
+-  };
+-  const showWeb = () => {
+-    try {
+-      const frameHash = frameRef.current?.contentWindow?.location.hash;
+-      if (frameHash?.startsWith('#/')) window.location.hash = frameHash;
+-    } catch { /* Preview remains usable even if the frame URL was changed externally. */ }
+-    setMobile(false);
+-    window.scrollTo({ top: 0, behavior: 'auto' });
+-  };
+-
+-  return <div className={`g113-preview-host ${mobile ? 'g113-preview-host--mobile' : ''}`}>
+-    <div className="g113-view-switch" aria-label="页面预览方式">
+-      <div><b>雅趣 · 第二人生</b><span>{mobile ? '手机版预览 · 可在手机画面里继续浏览' : '网页版预览 · 也可以看看手机版'}</span></div>
+-      <button type="button" onClick={mobile ? showWeb : showMobile} aria-label={mobile ? '返回网页版' : '切换手机版'}>{mobile ? '返回网页版' : '切换手机版'} <span aria-hidden="true">{mobile ? '▣' : '▯'}</span></button>
++  useEffect(() => {
++    const frame = frameRef.current;
++    if (!frame) return;
++    let frameWindow: Window | null = null;
++
++    const syncParentRoute = () => {
++      try {
++        const hash = frameWindow?.location.hash;
++        if (!hash?.startsWith('#/') || hash === window.location.hash) return;
++        const url = new URL(window.location.href);
++        url.hash = hash;
++        window.history.replaceState(window.history.state, '', url);
++      } catch { /* The preview must remain usable if its frame leaves this origin. */ }
++    };
++    const syncFrameRoute = () => {
++      try {
++        if (frameWindow && frameWindow.location.hash !== window.location.hash) {
++          frameWindow.location.hash = window.location.hash || '#/home';
++        }
++      } catch { /* A cross-origin frame cannot be controlled by the preview. */ }
++    };
++    const frameLoaded = () => {
++      frameWindow?.removeEventListener('hashchange', syncParentRoute);
++      frameWindow = frame.contentWindow;
++      if (!frameWindow) return;
++      syncFrameRoute();
++      frameWindow.addEventListener('hashchange', syncParentRoute);
++    };
++
++    frame.addEventListener('load', frameLoaded);
++    window.addEventListener('hashchange', syncFrameRoute);
++    window.addEventListener('popstate', syncFrameRoute);
++    if (frame.contentDocument?.readyState === 'complete') frameLoaded();
++    return () => {
++      frame.removeEventListener('load', frameLoaded);
++      window.removeEventListener('hashchange', syncFrameRoute);
++      window.removeEventListener('popstate', syncFrameRoute);
++      frameWindow?.removeEventListener('hashchange', syncParentRoute);
++    };
++  }, []);
++
++  return <div className="g113-preview-host">
++    <div className="g113-preview-stage">
++      <div className="g113-phone-frame">
++        <iframe ref={frameRef} title="雅趣：第二人生 手机版" src={mobileFrameUrl(window.location.href)}/>
++      </div>
++      <p>雅趣 · 第二人生｜手机版预览</p>
+     </div>
+-    {mobile ? <div className="g113-preview-stage"><div className="g113-phone-frame"><iframe ref={frameRef} title="雅趣：第二人生 手机版预览" src={frameUrl}/></div><p>手机宽度预览 · 内容和操作与真实手机布局一致</p></div> : <App onExit={onExit}/>}
+   </div>;
+ }
+ 
++function MobilePresentation({ onExit }: { onExit?: () => void }) {
++  const isFrame = new URLSearchParams(window.location.search).get(MOBILE_FRAME_PARAM) === '1';
++  const [isPhone, setIsPhone] = useState(() => window.matchMedia('(max-width: 760px)').matches);
++  useEffect(() => {
++    const media = window.matchMedia('(max-width: 760px)');
++    const changed = () => setIsPhone(media.matches);
++    media.addEventListener('change', changed);
++    return () => media.removeEventListener('change', changed);
++  }, []);
++
++  if (isFrame || isPhone) return <App onExit={onExit}/>;
++
++  return <DesktopPhonePreview/>;
++}
++
+ export function mount(container: HTMLElement, host?: { exit: () => void }): () => void {
+   const root = createRoot(container);
+-  const insidePreviewFrame = new URLSearchParams(window.location.search).get(MOBILE_FRAME_PARAM) === '1';
+-  root.render(insidePreviewFrame ? <App/> : <AppWithViewSwitch onExit={host?.exit}/>);
++  root.render(<MobilePresentation onExit={host?.exit}/>);
+   return () => root.unmount();
+ }
+diff --git a/games/game113/hobby-guide.test.tsx b/games/game113/hobby-guide.test.tsx
+index 6a466c109..d53d7e000 100644
+--- a/games/game113/hobby-guide.test.tsx
++++ b/games/game113/hobby-guide.test.tsx
+@@ -69,6 +69,18 @@ describe('game113 guided sake entrance', () => {
+     expect(readGuideProgress('sake', 5)).toMatchObject({ scene: 0, completed: 0 });
+   });
+ 
++  it('moves the reader back to the new photo after advancing an observation', async () => {
++    await act(async () => root.render(<FocusHallView hobby={sake} following={false} note="" onFollow={() => {}} onCircle={() => {}} onCompose={() => {}} onOpenItem={() => {}} onSaveNote={() => {}}/>));
++    await act(async () => (host.querySelector('.g113-focus-gate button') as HTMLButtonElement).click());
++    const progress = host.querySelector('.g113-mentor-progress') as HTMLDivElement;
++    const scrollTo = vi.fn();
++    progress.scrollIntoView = scrollTo;
++    await act(async () => (host.querySelector('.g113-mentor-action') as HTMLButtonElement).click());
++    await act(async () => (host.querySelector('.g113-mentor-action') as HTMLButtonElement).click());
++    expect(host.querySelector('.g113-mentor-desk h4')?.textContent).toBe('再看颜色');
++    expect(scrollTo).toHaveBeenCalledWith({ block: 'start', behavior: 'auto' });
++  });
++
+   it('pairs each sake chapter with a local licensed photograph and a readable diagram', () => {
+     for (const chapter of guideJourneyFor(sake).scenes) {
+       const art = guideArtFor('sake', chapter.id);
+diff --git a/games/game113/sake-mentor-view.tsx b/games/game113/sake-mentor-view.tsx
+index ac59c2703..2139367f3 100644
+--- a/games/game113/sake-mentor-view.tsx
++++ b/games/game113/sake-mentor-view.tsx
+@@ -1,4 +1,4 @@
+-import React, { useEffect, useState } from 'react';
++import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+ import { guidePhoto } from './guide-art.js';
+ import { sakeMentorChapter } from './sake-mentor.js';
+ import { sakeMentorPanel } from './sake-mentor-panels.js';
+@@ -31,9 +31,18 @@ export function SakeMentorView({ topic = 'sake', chapterId, guideName, guideMark
+   const [selectedSpot, setSelectedSpot] = useState<number | null>(null);
+   const [speaking, setSpeaking] = useState(false);
+   const [photoRatio, setPhotoRatio] = useState<{ src: string; ratio: number } | null>(null);
++  const progressRef = useRef<HTMLDivElement>(null);
++  const deskRef = useRef<HTMLDivElement>(null);
++  const pendingJump = useRef<'photo' | 'question' | null>(null);
+   useEffect(() => {
+     return () => { if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel(); };
+   }, [chapterId, step, mode]);
++  useLayoutEffect(() => {
++    const destination = pendingJump.current;
++    if (!destination) return;
++    pendingJump.current = null;
++    (destination === 'photo' ? progressRef.current : deskRef.current)?.scrollIntoView?.({ block: 'start', behavior: 'auto' });
++  }, [step, mode, questionIndex]);
+   if (!chapter) return null;
+ 
+   const observation = chapter.observations[step];
+@@ -60,27 +69,31 @@ export function SakeMentorView({ topic = 'sake', chapterId, guideName, guideMark
+   };
+   const advanceObservation = () => {
+     if (step < chapter.observations.length - 1) {
++      pendingJump.current = 'photo';
+       setStep(step + 1);
+       setRevealed(false);
+       setSelectedSpot(null);
+       setSpeaking(false);
+     } else {
++      pendingJump.current = 'question';
+       setMode('exam');
+     }
+   };
+   const advanceExam = () => {
+     if (!correct) return;
+     if (questionIndex < chapter.exam.length - 1) {
++      pendingJump.current = 'question';
+       setQuestionIndex(questionIndex + 1);
+       setAnswer(null);
+     } else {
+       if (!passed) onPass();
++      pendingJump.current = 'question';
+       setMode('passed');
+     }
+   };
+ 
+   return <div className="g113-mentor">
+-    <div className="g113-mentor-progress" aria-label="本章进度">
++    <div className="g113-mentor-progress" aria-label="本章进度" ref={progressRef}>
+       <span>师傅带看</span><div>{chapter.observations.map((item, index) => <i key={item.title} className={mode !== 'lesson' || index <= step ? 'active' : ''} aria-label={`观察 ${index + 1}${mode !== 'lesson' || index < step ? '已完成' : ''}`}/>)}<i className={mode !== 'lesson' ? 'active' : ''} aria-label="出门小考"/></div><span>{mode === 'lesson' ? `观察 ${step + 1} / ${chapter.observations.length}` : mode === 'exam' ? `小考 ${questionIndex + 1} / ${chapter.exam.length}` : '本章已通过'}</span>
+     </div>
+     <div className="g113-mentor-workbench">
+@@ -91,7 +104,7 @@ export function SakeMentorView({ topic = 'sake', chapterId, guideName, guideMark
+         </div>
+         {hotspots.length > 0 && <div className="g113-mentor-hotspot-index" aria-label="照片线索列表"><span>点图探索</span>{hotspots.map((item, index) => <button type="button" key={item.title} aria-pressed={selectedSpot === index} className={selectedSpot === index ? 'active' : ''} onClick={() => chooseSpot(index)}>{String(index + 1).padStart(2, '0')} · {item.title}</button>)}</div>}
+       </figure>
+-      <div className="g113-mentor-desk" aria-live="polite">
++      <div className="g113-mentor-desk" aria-live="polite" ref={deskRef}>
+         {mode === 'lesson' && <>
+           <small className="g113-mentor-kicker">第 {step + 1} 处 / {chapter.threshold}</small>
+           <h4>{observation.title}</h4>
+diff --git a/games/game113/state.test.ts b/games/game113/state.test.ts
+index 27ded6906..411c5eefe 100644
+--- a/games/game113/state.test.ts
++++ b/games/game113/state.test.ts
+@@ -50,5 +50,7 @@ describe('game113 application demo state', () => {
+     expect(recovered.interests).toEqual(['watch']);
+     expect(recovered.owned).toEqual(['walnut-01']);
+     expect(recovered.largeText).toBe(true);
++    expect(recovered.textSize).toBe('large');
++    expect(normalizeState({ textSize: 'extra', dailyCompletions: ['2026-10-08:watch', 'bad-key'] }).dailyCompletions).toEqual(['2026-10-08:watch']);
+   });
+ });
+diff --git a/games/game113/state.ts b/games/game113/state.ts
+index ddddba1aa..6108a67d0 100644
+--- a/games/game113/state.ts
++++ b/games/game113/state.ts
+@@ -14,6 +14,8 @@ export interface AppState {
+   ownPosts: { id: string; title: string; text: string; hobbyId: HobbyId }[];
+   fieldNotes: { woodwork: string; sake: string; cigar: string };
+   largeText: boolean;
++  textSize: 'standard' | 'large' | 'extra';
++  dailyCompletions: string[];
+ }
+ 
+ export const INITIAL_STATE: AppState = {
+@@ -29,6 +31,8 @@ export const INITIAL_STATE: AppState = {
+   ownPosts: [],
+   fieldNotes: { woodwork: '', sake: '', cigar: '' },
+   largeText: false,
++  textSize: 'standard',
++  dailyCompletions: [],
+ };
+ 
+ const toggle = <T,>(items: T[], value: T): T[] => items.includes(value) ? items.filter((x) => x !== value) : [...items, value];
+@@ -80,5 +84,7 @@ export function normalizeState(raw: unknown): AppState {
+       cigar: typeof p.fieldNotes?.cigar === 'string' ? p.fieldNotes.cigar.slice(0, 800) : '',
+     },
+     largeText: p.largeText === true,
++    textSize: p.textSize === 'standard' || p.textSize === 'large' || p.textSize === 'extra' ? p.textSize : p.largeText === true ? 'large' : 'standard',
++    dailyCompletions: Array.isArray(p.dailyCompletions) ? p.dailyCompletions.filter((x): x is string => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}:(watch|walnut|woodwork|car)$/.test(x)).slice(-60) : [],
+   };
+ }
+diff --git a/main_entry/server.py b/main_entry/server.py
+index 671ed45bc..a7d963416 100644
+--- a/main_entry/server.py
++++ b/main_entry/server.py
+@@ -468,7 +468,7 @@ class APIHandler(BaseHTTPRequestHandler):
+         elif path == '/api/git-status':
+             data = run_command(['git', 'status', '--short'])
+         elif path == '/api/git-pull':
+-            data = run_command(['git', 'pull', 'origin', 'claude/mainbranch', '--rebase'])
++            data = run_command(['git', 'pull', 'origin', 'codex/mainbranch', '--rebase'])
+         elif path == '/api/generate/presets':
+             data = {name: {'name': bp['name'], 'description': bp['description']} for name, bp in PRESET_BLUEPRINTS.items()}
+         elif path.startswith('/api/generate/preset/'):
+diff --git a/scripts/component-manifest-baseline.json b/scripts/component-manifest-baseline.json
+index 5e7ab749b..ff31748e0 100644
+--- a/scripts/component-manifest-baseline.json
++++ b/scripts/component-manifest-baseline.json
+@@ -1,6 +1,6 @@
+ {
+   "_doc": "引擎共同零件（组件）清单基线——所有游戏共用的积木。改/加/删任一零件必须同提交跑 `node scripts/component-manifest-guard.mjs --update` 更新本文件（让共同语言的变动在 diff 里可见）。",
+-  "count": 149,
++  "count": 153,
+   "components": [
+     "Acceleration",
+     "Action",
+@@ -25,6 +25,8 @@
+     "Color",
+     "Controllable",
+     "CraftRecipe",
++    "CrowdAvoidance",
++    "CrowdVelocity",
+     "DebugTrace",
+     "Decal3D",
+     "DeliverDrop",
+@@ -79,6 +81,8 @@
+     "NavGraph",
+     "NavMesh",
+     "NavPath",
++    "NavigationGrid",
++    "NavigationProfile",
+     "Orbit",
+     "Order",
+     "OverTime",
+diff --git a/scripts/scoped-gate.mjs b/scripts/scoped-gate.mjs
+index f974c625c..416f24152 100644
+--- a/scripts/scoped-gate.mjs
++++ b/scripts/scoped-gate.mjs
+@@ -15,7 +15,7 @@
+ // 用法：
+ //   node scripts/scoped-gate.mjs               分类并打印计划 + 判词（不执行）
+ //   node scripts/scoped-gate.mjs --run         按计划真跑门禁（退出码=门禁结果）
+-//   node scripts/scoped-gate.mjs --base <ref>  改比较基线（默认 origin/claude/mainbranch）
++//   node scripts/scoped-gate.mjs --base <ref>  改比较基线（默认 origin/codex/mainbranch）
+ // 判词 token：`SCOPED-GATE: FULL|GAME:<g>|DOCS-ONLY|NONE`（审计/日志可 grep）。
+ //
+ // audit 进推送门（8/4 大评审 Q1 消费路径批·2026-08-10）：改动面涉及 games/<g>/** 非文档文件时，
+@@ -250,7 +250,7 @@ function main() {
+   const argv = process.argv.slice(2);
+   const run = argv.includes('--run');
+   const bi = argv.indexOf('--base');
+-  const base = bi >= 0 ? argv[bi + 1] : 'origin/claude/mainbranch';
++  const base = bi >= 0 ? argv[bi + 1] : 'origin/codex/mainbranch';
+ 
+   const files = changedFiles(base);
+   const c = classify(files);
+diff --git a/src/assembly/capability-registry.gen.ts b/src/assembly/capability-registry.gen.ts
+index 6a655e8b3..d717f6128 100644
+--- a/src/assembly/capability-registry.gen.ts
++++ b/src/assembly/capability-registry.gen.ts
+@@ -93,6 +93,8 @@ export const CAPABILITY_LOADERS: readonly CapabilityLoader[] = [
+   { id: 't2-orbit-motion', provides: ['Orbit'], load: () => import('@skills/tier2/orbit-motion.js').then((m) => m.orbitMotionCapability) },
+   { id: 't2-path-follow', provides: ['PathFollow'], load: () => import('@skills/tier2/path-follow.js').then((m) => m.pathFollowCapability) },
+   { id: 't2-flow-field', provides: ['FlowField', 'FlowAgent'], load: () => import('@skills/tier2/flow-field.js').then((m) => m.flowFieldCapability) },
++  { id: 't2-crowd-avoidance', provides: ['CrowdAvoidance', 'CrowdVelocity'], load: () => import('@skills/tier2/crowd-avoidance.js').then((m) => m.crowdAvoidanceCapability) },
++  { id: 't2-navigation-grid', provides: ['NavigationGrid', 'NavigationProfile'], load: () => import('@skills/tier2/navigation-grid.js').then((m) => m.navigationGridCapability) },
+   { id: 't2-stat-bind', provides: ['StatBind'], load: () => import('@skills/tier2/stat-bind.js').then((m) => m.statBindCapability) },
+   { id: 't2-bounce-relay', provides: ['Bounce'], load: () => import('@skills/tier2/bounce-relay.js').then((m) => m.bounceRelayCapability) },
+   { id: 't2-pull-anchor', provides: ['PullAnchor'], load: () => import('@skills/tier2/pull-anchor.js').then((m) => m.pullAnchorCapability) },
+diff --git a/src/assembly/capability-registry.ts b/src/assembly/capability-registry.ts
+index 5c532cdf3..1170d57b5 100644
+--- a/src/assembly/capability-registry.ts
++++ b/src/assembly/capability-registry.ts
+@@ -58,6 +58,8 @@ import {
+   orbitMotionCapability,
+   pathFollowCapability,
+   flowFieldCapability,
++  crowdAvoidanceCapability,
++  navigationGridCapability,
+   statBindCapability,
+   bounceRelayCapability,
+   pullAnchorCapability,
+@@ -160,6 +162,8 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
+   // （实测千单位查表 0.075ms/tick，而 A*-per-agent 同规模稳态 20ms+、首拍 500ms+）。
+   // 与 pathfind 并存不互斥：单位多目标少用它，单位少各走各的用 pathfind。整数积分 → 逐位可复现。
+   flowFieldCapability,
++  crowdAvoidanceCapability,
++  navigationGridCapability,
+   // t2-stat-bind（REQ-SURVIVOR被动轴）：属性桥——把 ModifierTotals(单例)/Stats(本实体 effective) 按 key
+   // 投影到本实体任意组件字段（moveSpeed→Controllable.speed、range→Shape.radius、attackSpeed→Timer.duration
+   // 等），幂等重算不复利。runsAfter modifier-stack/stat-apply/resource-apply/timer-advance 打破传递环。
+diff --git a/src/assembly/component-map.ts b/src/assembly/component-map.ts
+index 292fc7673..3fd1c3c0d 100644
+--- a/src/assembly/component-map.ts
++++ b/src/assembly/component-map.ts
+@@ -38,6 +38,8 @@ import type {
+   Effect,
+   EventWhen,
+   Facing,
++  CrowdAvoidance,
++  CrowdVelocity,
+   FlowAgent,
+   FlowField,
+   FaceDir,
+@@ -79,6 +81,8 @@ import type {
+   ModifierTotals,
+   Model3D,
+   Mortal,
++  NavigationGrid,
++  NavigationProfile,
+   NavAgent,
+   NavGraph,
+   NavMesh,
+@@ -235,6 +239,8 @@ export interface ComponentDataMap {
+   ModifierTotals: Omit<ModifierTotals, 'type'>;
+   Model3D: Omit<Model3D, 'type'>;
+   Mortal: Omit<Mortal, 'type'>;
++  NavigationGrid: Omit<NavigationGrid, 'type'>;
++  NavigationProfile: Omit<NavigationProfile, 'type'>;
+   NavAgent: Omit<NavAgent, 'type'>;
+   NavGraph: Omit<NavGraph, 'type'>;
+   NavMesh: Omit<NavMesh, 'type'>;
+@@ -320,6 +326,8 @@ export interface ComponentDataMap {
+   Cooldowns: Omit<Cooldowns, 'type'>;
+   DamageTable: Omit<DamageTable, 'type'>;
+   DebugTrace: Omit<DebugTrace, 'type'>;
++  CrowdAvoidance: Omit<CrowdAvoidance, 'type'>;
++  CrowdVelocity: Omit<CrowdVelocity, 'type'>;
+   FlowAgent: Omit<FlowAgent, 'type'>;
+   FlowField: Omit<FlowField, 'type'>;
+   Group: Omit<Group, 'type'>;
+diff --git a/src/assembly/component-universe.gen.ts b/src/assembly/component-universe.gen.ts
+index 3e700cb75..bdf6b8372 100644
+--- a/src/assembly/component-universe.gen.ts
++++ b/src/assembly/component-universe.gen.ts
+@@ -8,7 +8,7 @@
+ //  加/改/删组件后同提交重跑生成命令；忘了 → scripts/build-component-map.test.mjs 漂移守卫亮红。
+ // ═══════════════════════════════════════════════════════════════
+ 
+-/** 全部运行时组件名（166 个·升序去重·生成物）。 */
++/** 全部运行时组件名（170 个·升序去重·生成物）。 */
+ export const COMPONENT_UNIVERSE = [
+   'Acceleration',
+   'Action',
+@@ -36,6 +36,8 @@ export const COMPONENT_UNIVERSE = [
+   'ConveyorQueue',
+   'Cooldowns',
+   'CraftRecipe',
++  'CrowdAvoidance',
++  'CrowdVelocity',
+   'DamageTable',
+   'DebugTrace',
+   'Decal3D',
+@@ -102,6 +104,8 @@ export const COMPONENT_UNIVERSE = [
+   'NavGraph',
+   'NavMesh',
+   'NavPath',
++  'NavigationGrid',
++  'NavigationProfile',
+   'Orbit',
+   'Order',
+   'OverTime',
+diff --git a/src/assembly/declaration-audit.test.ts b/src/assembly/declaration-audit.test.ts
+index a599072e4..086d05553 100644
+--- a/src/assembly/declaration-audit.test.ts
++++ b/src/assembly/declaration-audit.test.ts
+@@ -149,6 +149,9 @@ describe('相位落桶棘轮 — 非缺省相位成员点名（根因①·A1 探
+ 
+ /** 相位基线（2026-08-16 实测灌入）。改动纪律同 SCC 基线：挪相位 = 同提交带理由更新本表。 */
+ const PHASE_BASELINE: string[] = [
++  // REQ-114-NAV: capture actual velocity before Update navigation overwrites it
++  // with the preferred velocity; the ORCA oracle independently verifies this order.
++  'p-10:crowd-capture',
+   'p4:rotation-apply',
+   'p10:collision-resolve,collision-resolve-3d,tile-collision',
+   'p14:conveyor-queue,friction,gauge,hierarchy-resolve,orbit-motion,text-binding',
+@@ -194,7 +197,12 @@ const SCC_BASELINE: string[] = [
+   // 不是本件的申报缺陷。**本件真有过的那个缺陷已另行治本**：首版它还 `reads:['TurnOrder']`，
+   // 与 turn-order 构成真 2-环（strict 模式当场抛）；改成由 `setBarrierTurn` 推回合号后那条读边消失，
+   // 2-环随之消失（`intent-barrier.test.ts` ⑦ 断言 strict 不抛 + warn 数为零 + 系统不读 TurnOrder）。
+-  'p0:accel-apply+aggro+block-place+bounce-relay+card-pile+card-play-input+card-score-pass+clickable+dialogue+dice-roll+drag-place+drop-zone+event-when+flow+flow-field+grid-drag-square+grid-move+group-count+hitbox+intent-barrier+keybind+launch+match-resolve+match3-drag-swap+matrix-duel+merge-on-place+merge-proximity-clear+motion-apply+nav-follow+navmesh-bake+order-fulfill+over-time+overlap-detect+path-follow+poker-eval+pull-anchor+queue-slots+resource-apply+self-rule+state-sync+steering+string-apply+t3-slot-payout+timeline+tray+trigger-zone+turn-order+tween+zone-occupancy|via:Bounce,Clickable,Flag,HexPos,MergeEvent,NavGraph,OverTime,Overlap,PlaceBlockIntent,PlayedHand,RandomSeed,Relation,Resource,ResourceModify,RolledDice,Signal,State,Status,StringVar,Transform,Trigger,Tween,Velocity',
++  // REQ-114-NAV: independent strict bounce/crowd/motion repro fixed by explicit crowd→bounce.
++  // Remaining full-registry SCC only adds crowd to the existing blob; e.g. crowd→navmesh-bake
++  // →nav-follow→crowd inherits the pre-existing navmesh-bake↔nav-follow cycle. No new via component.
++  // 2026-10-09 圆形硬碰撞兜底：crowd 写 Shape.radius 后，全库超集已有大环增加 via:Shape。
++  // 独立复查确认成员集合不变；与 drag-place 的真实 2 环已用显式 drag-place→crowd 顺序消除。
++  'p0:accel-apply+aggro+block-place+bounce-relay+card-pile+card-play-input+card-score-pass+clickable+crowd-avoidance+dialogue+dice-roll+drag-place+drop-zone+event-when+flow+flow-field+grid-drag-square+grid-move+group-count+hitbox+intent-barrier+keybind+launch+match-resolve+match3-drag-swap+matrix-duel+merge-on-place+merge-proximity-clear+motion-apply+nav-follow+navmesh-bake+order-fulfill+over-time+overlap-detect+path-follow+poker-eval+pull-anchor+queue-slots+resource-apply+self-rule+state-sync+steering+string-apply+t3-slot-payout+timeline+tray+trigger-zone+turn-order+tween+zone-occupancy|via:Bounce,Clickable,Flag,HexPos,MergeEvent,NavGraph,OverTime,Overlap,PathFollow,PlaceBlockIntent,PlayedHand,RandomSeed,Relation,Resource,ResourceModify,RolledDice,Shape,Signal,State,Status,StringVar,Transform,Trigger,Tween,Velocity',
+   'p10:collision-resolve+collision-resolve-3d+tile-collision|via:Transform,Velocity',
+   'p20:anim-state+match-view-sync|via:Sprite',
+   'p20:bounds-clamp+facing|via:Transform',
+diff --git a/src/engine/protocol/components.ts b/src/engine/protocol/components.ts
+index 88ed31431..60e99d4d1 100644
+--- a/src/engine/protocol/components.ts
++++ b/src/engine/protocol/components.ts
+@@ -59,3 +59,6 @@ export type * from './components/render.js';
+ export type * from './components/input.js';
+ export type * from './components/autochess.js';
+ export type * from './components/cardboard.js';
++
++export type * from './components/crowd.js';
++export type * from './components/navigation-grid.js';
+diff --git a/src/engine/protocol/components/combat.ts b/src/engine/protocol/components/combat.ts
+index d001cef9e..55dd7c69b 100644
+--- a/src/engine/protocol/components/combat.ts
++++ b/src/engine/protocol/components/combat.ts
+@@ -164,6 +164,7 @@ export interface PathFollow extends Component {
+   loop?: boolean; // 闭环（跑完回到航点0）；缺省 false=停在末点
+   speed: number; // 写入 Velocity 模长（单位/tick）
+   arriveRadius?: number; // 进入该半径算「到达」进下一航点；缺省 4
++  lookAhead?: number; // 可选路线方向优先：沿当前线段前方此距离瞄准；越大越偏向切线，绕行后仍回收横向偏差
+   index?: number; // 当前目标航点游标（运行时状态·缺省 0·序列化进 snapshot）
+   queueId?: string; // 队列分组键（传送带/队列 id）；同 queueId 成员按 path 进度排序、互不超车
+   minGap?: number; // 与「前一名」的最小 path 进度间距；缺省 0（仍不超车）
+diff --git a/src/engine/protocol/components/render.ts b/src/engine/protocol/components/render.ts
+index c2a9ce13e..4e935aeea 100644
+--- a/src/engine/protocol/components/render.ts
++++ b/src/engine/protocol/components/render.ts
+@@ -122,6 +122,7 @@ export interface AnimState3D extends Component {
+   readonly type: 'AnimState3D';
+   clip: string; // 动画名（glTF clip·如 'Run'/'Walk'）
+   speed?: number; // 播放倍速·缺省 1
++  speedAtVelocity?: number; // 设正值时，Velocity 达到此值则以 speed 倍速播放；静止暂停。单位：世界单位/tick
+   loop?: boolean; // 循环·缺省 true（false=播一遍停在末帧）
+ }
+ 
+diff --git a/src/engine/protocol/components/spatial.ts b/src/engine/protocol/components/spatial.ts
+index 589ead650..87f824c3e 100644
+--- a/src/engine/protocol/components/spatial.ts
++++ b/src/engine/protocol/components/spatial.ts
+@@ -2,6 +2,7 @@
+ // 实体在世界里"在哪、多大、怎么动、碰没碰、占没占区"的物理基底；以及挂在 world 实体上的
+ // 随机数与空间索引服务。被 motion/collision/spatial-query/trigger-zone/tilemap 等读写。
+ import type { Component, EntityId } from '../../core/types.js';
++import type { NavigationGraphGrid } from './navigation-grid.js';
+ 
+ // ── A1 transform ── 实体在世界的位置、朝向和大小
+ export interface Transform extends Component {
+@@ -199,6 +200,7 @@ export interface Tilemap extends Component {
+ // 推开（**正交**·nav 写 Velocity → motion-apply 积分 → overlap/collision-resolve 分离·零新碰撞代码·复用）。
+ export interface NavGraph extends Component {
+   readonly type: 'NavGraph';
++  grid?: NavigationGraphGrid; // Generated shared grid; source-cell terrain costs and strict bounds.
+   nodes: Array<{ x: number; y: number }>;                 // 航点世界坐标（下标即节点 id）。摆放数据·最弱 LLM 也能填。
+   edges: Array<{ a: number; b: number; cost?: number }>;  // 连边（节点下标·无向）；cost 缺省 = 两端 Euclidean 距离。
+ }
+@@ -207,11 +209,17 @@ export interface NavGraph extends Component {
+ // 复用 aggro 写的 Relation(target)（同 steering/grid-move 索敌接缝·零新目标概念）。无目标/被 CC → 停。
+ export interface NavAgent extends Component {
+   readonly type: 'NavAgent';
++  graphId?: EntityId; // Explicit graph/profile entity; missing/invalid/unreachable stops.
+   speed: number;            // 移动速度（写入 Velocity 模长·单位/tick）
+   arriveRange: number;      // 到终点此距离内即停
+   waypointRange?: number;   // 到当前航点此距离内即推进下一航点（缺省 = max(speed, arriveRange)·防抖/防一拍一停）
+   repathPeriod?: number;    // 每多少 tick 强制重算路径（缺省 30）；目标显著移动（> arriveRange）也会触发重算
+   haltStatusMask?: number;  // 自身 Status 含这些位时停（冻结/眩晕 CC·同 Steering/GridMover.haltStatusMask）
++  patrol?: { // 可选固定目标序列：每到一点才切下一点，仍经 NavGraph A* 寻路
++    waypoints: Array<{ x: number; y: number }>;
++    index?: number; // 当前目标下标；引擎推进，进入快照
++    loop?: boolean; // 到最后一点后回到第一个点
++  };
+ }
+ 
+ // ── flow-field（REQ-FLOWFIELD·群体流场寻路·确定性 sim·进 hash）──────────────────────
+@@ -224,6 +232,7 @@ export interface NavAgent extends Component {
+ // 凹形障碍不卡死）→ 每格取积分最小邻格得方向。积分全程**整数**（直走 10/斜走 14）以逐位可复现。
+ export interface FlowField extends Component {
+   readonly type: 'FlowField';
++  costAware?: boolean; // opt-in：方向最小化源格步进代价+剩余积分；旧配置保持原方向语义
+   id: string;                     // 场 id（FlowAgent.fieldId 认领·多阵营/多目标可并存多张）
+   cellSize: number;               // 格边长（世界单位）
+   originX: number;                // 网格左下角世界 x
+@@ -310,6 +319,9 @@ export interface FlowAgent extends Component {
+ // ── NavPath ── 引擎写的缓存路径（确定性派生·进 hash）。via=待经节点下标序；gx/gy=规划所据目标点；age=自上次重算 tick。
+ export interface NavPath extends Component {
+   readonly type: 'NavPath';
++  graphId?: EntityId;
++  graphKey?: string; // Exact serialized geometry identity, rollback-safe.
++  reachable?: boolean; // Explicit graphs never use straight-line fallback.
+   via: number[];   // 剩余待经航点（节点下标·按序·整数进 hash）
+   gx: number;      // 规划时的目标点 x（检测目标移动 → 触发重算）
+   gy: number;      // 规划时的目标点 y
+diff --git a/src/renderer/three-renderer.ts b/src/renderer/three-renderer.ts
+index 8b8d19f6d..23345dd2a 100644
+--- a/src/renderer/three-renderer.ts
++++ b/src/renderer/three-renderer.ts
+@@ -1,6 +1,6 @@
+ import * as THREE from 'three';
+ import type { IWorld, RendererBackend } from '@engine/core/types.js';
+-import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D, AnimState3D, Glow3D, Transform3D, Pivot3D, Pickable3D } from '@engine/protocol/components.js';
++import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D, AnimState3D, Glow3D, Transform3D, Pivot3D, Pickable3D, FaceDir, Velocity } from '@engine/protocol/components.js';
+ import type { AssetManager, MaterialSpec } from '@assets/index.js';
+ import { isImageHandle } from '@assets/index.js';
+ import { getCamera3D, getSky3D, getLights3D, getPost3D, getFog3D } from '@engine/protocol/camera-view.js';
+@@ -15,6 +15,7 @@ import { hashPoses, camSig, postSig } from './three/stats.js';
+ import { LightRig } from './three/lights.js';
+ import { PostPipeline, FlashDecay } from './three/post.js';
+ import { ModelPool } from './three/models.js';
++import { modelYawFromFaceDir, turnModelYaw, modelMotionSpeed } from './three/model-motion.js';
+ import { InstancedBatches, type InstGroups, type PbrBatchBuild } from './three/batches.js';
+ import { CameraRig, CameraShake, FollowDamper, type DampedCenter } from './three/camera-rig.js';
+ import { ColliderDebug } from './three/collider-debug.js';
+@@ -100,6 +101,8 @@ export class ThreeRenderer implements RendererBackend {
+   private readonly reflectors = new ReflectorSystem(); // 平面反射镜面（Reflector3D·RTT 倒影·render-only·REQ-3D-PLANAR-REFLECT）
+   private readonly anim3d = new Anim3DSystem(); // 程序化位姿动画（Anim3D·spin/bob·render-only·把 title 骰自转等从游戏层手写下沉成数据）
+   private readonly paths = new PathSystem(); // 路径跟随（Path3D·沿控制点走·移动平台/巡逻/dolly·render-only）
++  private readonly modelYaw = new Map<string, number>(); // FaceDir → GLB 地面朝向；只在表现层平滑转身
++  private lastModelYawMs = 0;
+   private readonly worldUi = new WorldUiLayer(); // 世界空间 UI 头顶飘字（TA Phase 3·render-only·走主程 UI 库）
+   private physics: PhysicsSystem | null = null; // 真物理刚体（cannon-es·render-only·**懒加载**·仅有 RigidBody3D 时）
+   private physicsLoading = false;
+@@ -245,6 +248,8 @@ export class ThreeRenderer implements RendererBackend {
+ 
+   sync(world: IWorld): void {
+     const t0 = performance.now();
++    const turnStep = this.lastModelYawMs ? Math.min(0.05, (t0 - this.lastModelYawMs) / 1000) * 6 : Infinity;
++    this.lastModelYawMs = t0;
+     this.gl.info.reset(); // 手动重置 → calls/triangles 跨 scene+post 全 pass 累加（真·每帧 draw 数）
+     const seen = new Set<string>();
+     const poses: Pose3D[] = [];
+@@ -304,6 +309,16 @@ export class ThreeRenderer implements RendererBackend {
+           const rawPose: Pose3D = (r.transform3d || cam3d)
+             ? (r.transform3d ? transform3dPose(r.transform3d) : groundPose(r, 0))
+             : renderablePose(r, this.zStep);
++          if (!r.transform3d && cam3d) {
++            const dir = world.getComponent<FaceDir>(r.entityId, 'FaceDir');
++            if (dir) {
++              const wanted = modelYawFromFaceDir(dir, rawPose.ry ?? 0);
++              const previous = this.modelYaw.get(r.entityId);
++              const yaw = previous === undefined ? wanted : turnModelYaw(previous, wanted, turnStep);
++              this.modelYaw.set(r.entityId, yaw);
++              rawPose.ry = yaw;
++            }
++          }
+           const pose = pivotPose(r.entityId, rawPose); // Pivot3D 父合成（无 pivot 则恒等）
+           obj.position.set(pose.x, pose.y, pose.z);
+           if (pose.quat) obj.quaternion.set(pose.quat[0], pose.quat[1], pose.quat[2], pose.quat[3]);
+@@ -311,7 +326,9 @@ export class ThreeRenderer implements RendererBackend {
+           obj.scale.set(pose.sx * ms, pose.sy * ms, (pose.sz ?? 1) * ms);
+           if (r.model3d.tint !== undefined) this.models.tint(r.entityId, r.model3d.tint);
+           const anim = world.getComponent<AnimState3D>(r.entityId, 'AnimState3D'); // 骨骼动画（render-only·播 glTF clip）
+-          if (anim) this.models.applyAnim(r.entityId, anim);
++          if (anim) this.models.applyAnim(r.entityId, anim.speedAtVelocity === undefined ? anim : {
++            ...anim, speed: modelMotionSpeed(anim, world.getComponent<Velocity>(r.entityId, 'Velocity')),
++          });
+           seen.add(r.entityId);
+           poses.push(pose);
+           if (r.entityId === followTarget) followPose = pose;
+@@ -461,6 +478,7 @@ export class ThreeRenderer implements RendererBackend {
+       }
+     }
+     this.models.sweep(this.scene, seen);
++    for (const id of this.modelYaw.keys()) if (!seen.has(id)) this.modelYaw.delete(id);
+ 
+     this.colliderDebug.sync(this.scene, world, this.debugColliders); // 碰撞体线框（debug·开则画·关则清）
+     this.navDebug.sync(this.scene, world, this.debugNav); // 导航图/路径（debug·开则画·关则清）
+diff --git a/src/skills/tier2/flow-field-core.test.ts b/src/skills/tier2/flow-field-core.test.ts
+index 2da110863..3076e405b 100644
+--- a/src/skills/tier2/flow-field-core.test.ts
++++ b/src/skills/tier2/flow-field-core.test.ts
+@@ -117,3 +117,32 @@ describe('flow-field-core —— 纯函数核（拆核后的独立可测性）',
+     expect(body).not.toMatch(/Date\.now|performance\.now|Math\.random/);
+   });
+ });
++
++
++describe('共享网格代价一致性（显式 opt-in）', () => {
++  it('高代价起点按步进总代价选方向，旧配置逐位保持原方向', () => {
++    const f=field({cols:3,rows:2,cost:[10,1,1,1,1,1],goals:[{x:2.5,y:1.5}]});
++    const legacy=getBakedField(f);
++    expect([...legacy.dir.slice(0,2)]).toEqual([1,1]);
++    f.costAware=true;
++    const current=getBakedField(f);
++    expect([...current.dir.slice(0,2)]).toEqual([1,0]);
++    expect(current.integration[0]).toBe(114);
++    expect(current.integration[1]+10*10).toBe(current.integration[0]);
++    expect(flowFieldBakes()).toBe(2);
++    f.costAware=false;
++    expect([...getBakedField(f).dir]).toEqual([...legacy.dir]);
++  });
++  it('每个可达格的方向均满足最短路积分，清缓存不会改变结果',()=>{
++    const f=field({cols:8,rows:8,cost:Array.from({length:64},(_,i)=>1+i*7%11),costAware:true});
++    const a=getBakedField(f);
++    for(let i=0;i<64;i++){
++      if(a.integration[i]===0)continue;
++      const dx=a.dir[2*i],dy=a.dir[2*i+1];
++      expect(dx!==0||dy!==0).toBe(true);
++      const j=i+dy*8+dx;
++      expect(a.integration[j]+a.cost[i]*(dx&&dy?14:10)).toBe(a.integration[i]);
++    }
++    clearFlowFieldCache();expect([...getBakedField(f).dir]).toEqual([...a.dir]);
++  });
++});
+diff --git a/src/skills/tier2/flow-field-core.ts b/src/skills/tier2/flow-field-core.ts
+index da857d1a1..b3625d677 100644
+--- a/src/skills/tier2/flow-field-core.ts
++++ b/src/skills/tier2/flow-field-core.ts
+@@ -326,7 +326,7 @@ export function buildFlow(field: FlowField, cost: Int32Array, integ: Int32Array)
+     for (let col = 0; col < cols; col++) {
+       const i = index(col, row, cols);
+       if (cost[i] === 0 || integ[i] === 0 || integ[i] === UNREACHABLE) continue;   // 墙/终点/孤岛 → (0,0)
+-      let bestVal = integ[i];
++      let bestVal = field.costAware === true ? UNREACHABLE : integ[i];
+       let bx = 0; let by = 0;
+       for (const [dx, dy] of NEIGHBORS) {
+         const ni = cellIndex(field, col + dx, row + dy);
+@@ -336,7 +336,12 @@ export function buildFlow(field: FlowField, cost: Int32Array, integ: Int32Array)
+           const b = cellIndex(field, col, row + dy);
+           if (a < 0 || b < 0 || cost[a] === 0 || cost[b] === 0) continue;
+         }
+-        if (integ[ni] < bestVal) { bestVal = integ[ni]; bx = dx; by = dy; }
++        // Generated shared-grid profiles opt in to Bellman-consistent extraction.
++        // Legacy fields keep their historical gradient (and trajectories).
++        const candidate = field.costAware === true
++          ? integ[ni] + cost[i] * (dx !== 0 && dy !== 0 ? DIAGONAL : STRAIGHT)
++          : integ[ni];
++        if (candidate < bestVal) { bestVal = candidate; bx = dx; by = dy; }
+       }
+       dir[i * 2] = bx; dir[i * 2 + 1] = by;
+     }
+@@ -365,6 +370,7 @@ export function bakeFlowField(field: FlowField): BakedField {
+  * 代价与哈希同阶（都要扫一遍数组），换来的是**没有别名可能**——不靠"碰撞概率极低"这种话。
+  */
+ interface InputSnapshot {
++  costAware?: boolean;
+   cellSize: number; originX: number; originY: number; cols: number; rows: number;
+   goals: Array<{ x: number; y: number }>;
+   blocked?: number[];
+@@ -373,6 +379,7 @@ interface InputSnapshot {
+ 
+ function snapshotOf(field: FlowField): InputSnapshot {
+   return {
++    costAware: field.costAware === true,
+     cellSize: field.cellSize, originX: field.originX, originY: field.originY,
+     cols: field.cols, rows: field.rows,
+     goals: field.goals.map((g) => ({ x: g.x, y: g.y })),
+@@ -383,6 +390,7 @@ function snapshotOf(field: FlowField): InputSnapshot {
+ 
+ /** 精确比对（`Object.is` 而非 `===`：把 NaN/-0 这类也判得一致，别让它们成为第二种别名）。 */
+ export function sameInputs(a: InputSnapshot, field: FlowField): boolean {
++  if ((a.costAware === true) !== (field.costAware === true)) return false;
+   if (!Object.is(a.cellSize, field.cellSize) || !Object.is(a.originX, field.originX) || !Object.is(a.originY, field.originY)) return false;
+   if (a.cols !== field.cols || a.rows !== field.rows) return false;
+   if (a.goals.length !== field.goals.length) return false;
+@@ -437,6 +445,7 @@ function bucketKey(field: FlowField): string {
+   let h = FNV_OFFSET;
+   const mix = (n: number): void => { h = fnvMixInt(h, n); }; // engine/math/hash（逐位同旧本地实现）
+   mix(field.cols); mix(field.rows);
++  if (field.costAware === true) mix(1);
+   mix(Math.round(field.cellSize * 1000)); mix(Math.round(field.originX * 1000)); mix(Math.round(field.originY * 1000));
+   mix(field.goals.length);
+   for (const g of field.goals) { mix(Math.round(g.x * 1000)); mix(Math.round(g.y * 1000)); }
+diff --git a/src/skills/tier2/flow-field.ts b/src/skills/tier2/flow-field.ts
+index 92634ad29..b6ebd1166 100644
+--- a/src/skills/tier2/flow-field.ts
++++ b/src/skills/tier2/flow-field.ts
+@@ -89,6 +89,7 @@ export const flowFieldCapability = defineCapability({
+           blocked: { type: 'string', describe: '行主序 0/1 数组·1=不可走（缺省全可走）' },
+           cost: { type: 'string', describe: '行主序 ≥1 的地形代价（缺省全 1·公路 1/沼泽 3·非整数向上取整）' },
+           goals: { type: 'string', describe: '目标点世界坐标数组 [{x,y}…]·多源一次铺完' },
++          costAware: { type: 'boolean', describe: '可选：方向最小化源格步进代价+邻格积分，与共享网格 A* 同一代价；缺省保持旧行为' },
+           los: { type: 'string', describe: '视线直指优化（M2 未实现·M1 忽略并留痕）' },
+         },
+       },
+diff --git a/src/skills/tier2/index.ts b/src/skills/tier2/index.ts
+index 47e990d29..79dc1d479 100644
+--- a/src/skills/tier2/index.ts
++++ b/src/skills/tier2/index.ts
+@@ -166,3 +166,6 @@ export { intentBarrierCapability, openBarrier, deliverIntents, failIntents, appl
+ export type { IntentBarrier, IntentInbox, OpenBarrierSpec, IntentCheck, SettleDraft } from './intent-barrier.js';
+ // 上两件的纯函数核（零 World·打分/排序/衰减/淘汰 与 闭集校验/结算产物 都在核里可直接喂数据断言）。
+ export { normalizeEntry, evictWeakest, sortById } from './memory-core.js';
++
++export { crowdAvoidanceCapability } from './crowd-avoidance.js';
++export { navigationGridCapability } from './navigation-grid.js';
+diff --git a/src/skills/tier2/orca.test.ts b/src/skills/tier2/orca.test.ts
+index eac941026..3ef4b597c 100644
+--- a/src/skills/tier2/orca.test.ts
++++ b/src/skills/tier2/orca.test.ts
+@@ -43,6 +43,17 @@ function orcaLinesOf(self: OrcaAgent, neighbors: readonly OrcaAgent[], timeHoriz
+ }
+ 
+ describe('orca — 移植自 RVO2（Apache-2.0）· 线性规划本体', () => {
++  it('质量优先级把避让责任互补分配：大车少偏移，小牛多让行；省略时仍对半', () => {
++    const cart: OrcaAgent = {x:0,y:0,vx:0,vy:0,radius:2.5,idx:0,priority:12};
++    const ox: OrcaAgent = {x:3,y:0,vx:0,vy:0,radius:.8,idx:1,priority:1};
++    const cartOut = orcaVelocity(cart,[ox],{x:0,y:0},1,8,1);
++    const oxOut = orcaVelocity(ox,[cart],{x:0,y:0},1,8,1);
++    expect(cartOut.x).toBeCloseTo(-.3/13,9);
++    expect(oxOut.x).toBeCloseTo(.3*12/13,9);
++    expect(oxOut.x-cartOut.x).toBeCloseTo(.3,9);
++    const equalCart = orcaVelocity({...cart,priority:undefined},[{...ox,priority:undefined}],{x:0,y:0},1,8,1);
++    expect(equalCart.x).toBeCloseTo(-.15,9);
++  });
+   it('无邻居 → 原样返回期望速度（避让不该无中生有地改路）', () => {
+     const out = orcaVelocity(agent(0, 0), [], { x: 1, y: 0 }, 1, 2, 1);
+     expect(out).toMatchObject({ x: 1, y: 0 });
+diff --git a/src/skills/tier2/orca.ts b/src/skills/tier2/orca.ts
+index 09e7542ee..242a2c161 100644
+--- a/src/skills/tier2/orca.ts
++++ b/src/skills/tier2/orca.ts
+@@ -81,6 +81,8 @@ export interface OrcaAgent {
+    * 缺省 `true` = 原码语义（原码里所有 agent 都跑 ORCA）。
+    */
+   reciprocal?: boolean;
++  /** 可选、正且有限的通行优先级；双方责任按对方/总优先级分配，缺省 1。 */
++  priority?: number;
+ }
+ 
+ /** 退化分支的计数（只为留痕与测试·不参与判定）。 */
+@@ -319,11 +321,13 @@ export function orcaVelocity(
+       u = { x: k * unitW.x, y: k * unitW.y };
+     }
+ 
+-    // **各让一半**（reciprocal 的由来）：line.point = 自己的速度 + u/2。
++    // 缺省各让一半；双方带优先级时按对方优先级分摊，本方越重越少偏离期望速度。
+     // ⚠ 邻居**不还礼**时（没开 ORCA 的纯流场/软分离单位）必须独自让满，否则那一半没人让，
+     // 「timeHorizon 内保证不撞」这句强承诺就静默变成半句（独立复查实测：ORCA 队对穿纯流场队
+     // 最近两心距 0.1000，而半径和是 0.70）。
+-    const share = other.reciprocal === false ? 1 : 0.5;
++    const ownPriority = Number.isFinite(self.priority) && (self.priority ?? 0) > 0 ? Math.min(self.priority!, 1e6) : 1;
++    const otherPriority = Number.isFinite(other.priority) && (other.priority ?? 0) > 0 ? Math.min(other.priority!, 1e6) : 1;
++    const share = other.reciprocal === false ? 1 : otherPriority / (ownPriority + otherPriority);
+     if (share === 1 && stats) stats.oneSided++;
+     lines.push({ point: { x: self.vx + share * u.x, y: self.vy + share * u.y }, direction });
+   }
+diff --git a/src/skills/tier2/path-follow.test.ts b/src/skills/tier2/path-follow.test.ts
+index a99305199..f576df721 100644
+--- a/src/skills/tier2/path-follow.test.ts
++++ b/src/skills/tier2/path-follow.test.ts
+@@ -1,6 +1,6 @@
+ import { describe, it, expect, vi } from 'vitest';
+ import { World } from '@engine/core/world.js';
+-import type { PathFollow, Transform, Velocity, SpawnRequest, DestroyRequest } from '@engine/protocol/components.js';
++import type { PathFollow, Transform, Velocity, SpawnRequest, DestroyRequest, DebugTrace } from '@engine/protocol/components.js';
+ import { pathFollowCapability, pathFollowAt } from './path-follow.js';
+ import {
+   transformCapability, shapeCapability, tagCapability, colorCapability,
+@@ -109,6 +109,50 @@ describe('path-follow — 速度模长', () => {
+   });
+ });
+ 
++describe('path-follow — 路线方向优先', () => {
++  it('横向偏离后仍优先沿线段前进；未配置时保留直奔航点', () => {
++    const waypoints = [{ x: 0, y: 0 }, { x: 0, y: 10 }];
++    const plain = world(), guided = world();
++    follower(plain, 'm', 4, 8, { ...pathFollowAt(waypoints, 1, { arriveRadius: .1 }), index: 1 });
++    follower(guided, 'm', 4, 8, { ...pathFollowAt(waypoints, 1, { arriveRadius: .1, lookAhead: 6 }), index: 1 });
++    plain.tick(); guided.tick();
++    expect(vel(guided, 'm').vy).toBeGreaterThan(vel(plain, 'm').vy);
++    expect(vel(guided, 'm').vy).toBeGreaterThan(Math.abs(vel(guided, 'm').vx));
++    expect(Math.hypot(vel(guided, 'm').vx, vel(guided, 'm').vy)).toBeCloseTo(1, 9);
++  });
++
++  it('闭环越过端点所在横截面时切换方向，即使避让后横向偏离', () => {
++    const w = world();
++    follower(w, 'm', 4, 10.2, { ...pathFollowAt([{ x: 0, y: 0 }, { x: 0, y: 10 }], 1,
++      { loop: true, arriveRadius: .1, lookAhead: 6 }), index: 1 });
++    w.tick();
++    expect(pf(w, 'm').index).toBe(0);
++    expect(vel(w, 'm').vy).toBeLessThan(0);
++  });
++
++  it('非闭环的中间航点同样按横截面推进，末点仍按到达半径停靠', () => {
++    const w = world();
++    follower(w, 'm', 4, 10.2, { ...pathFollowAt([{ x: 0, y: 0 }, { x: 0, y: 10 }, { x: 10, y: 10 }], 1,
++      { arriveRadius: .1, lookAhead: 6 }), index: 1 });
++    w.tick();
++    expect(pf(w, 'm').index).toBe(2);
++    expect(vel(w, 'm').vx).toBeGreaterThan(0);
++  });
++
++  it('非法前瞻距离拒收并留痕，不将无效速度写入运动', () => {
++    const w = world();
++    follower(w, 'm', 0, 0, pathFollowAt([{ x: 0, y: 0 }, { x: 10, y: 0 }], 1,
++      { loop: true, arriveRadius: .1, lookAhead: 0 }));
++    w.createEntity('trace');
++    w.addComponent<DebugTrace>('trace', { type: 'DebugTrace', events: [] });
++    w.tick();
++    expect(vel(w, 'm').vx).toBe(0);
++    expect(vel(w, 'm').vy).toBe(0);
++    expect(w.getComponent<DebugTrace>('trace', 'DebugTrace')!.events.some(e =>
++      e.system === 'path-follow' && e.kind === 'reject' && e.what.includes('m'))).toBe(true);
++  });
++});
++
+ describe('path-follow — 边界', () => {
+   it('空 waypoints → Velocity 置零', () => {
+     const w = world();
+diff --git a/src/skills/tier2/path-follow.ts b/src/skills/tier2/path-follow.ts
+index 0a7de3caa..8f42746a6 100644
+--- a/src/skills/tier2/path-follow.ts
++++ b/src/skills/tier2/path-follow.ts
+@@ -4,6 +4,7 @@ import type { IWorld } from '@engine/core/types.js';
+ import type { PathFollow, Transform, Velocity, SpawnRequest, DestroyRequest } from '@engine/protocol/components.js';
+ import { cmpStr } from '@engine/math/scalar.js';
+ import { len as vecLen } from '@engine/math/vec2.js';
++import { findDebugTrace, appendTrace } from '../debug-trace.js';
+ 
+ // ═══════════════════════════════════════════════════════════════
+ //  path-follow —— 固定航点轨道匀速跑（REQ-PATHFOLLOW）。实体沿一条摆好的航点轨道（闭环或折线）依次
+@@ -47,6 +48,7 @@ export function pathFollowAt(
+   opts?: {
+     loop?: boolean;
+     arriveRadius?: number;
++    lookAhead?: number;
+     queueId?: string;
+     minGap?: number;
+     onEnd?: { dropTemplate?: string; destroy?: boolean };
+@@ -58,6 +60,7 @@ export function pathFollowAt(
+     index: 0,
+     ...(opts?.loop !== undefined ? { loop: opts.loop } : {}),
+     ...(opts?.arriveRadius !== undefined ? { arriveRadius: opts.arriveRadius } : {}),
++    ...(opts?.lookAhead !== undefined ? { lookAhead: opts.lookAhead } : {}),
+     ...(opts?.queueId !== undefined ? { queueId: opts.queueId } : {}),
+     ...(opts?.minGap !== undefined ? { minGap: opts.minGap } : {}),
+     ...(opts?.onEnd !== undefined ? { onEnd: opts.onEnd } : {}),
+@@ -99,6 +102,7 @@ export const pathFollowCapability = defineCapability({
+           loop: { type: 'boolean', describe: '闭环：跑完末航点回到航点0；缺省 false=停在末点' },
+           speed: { type: 'number', describe: '移动速度（写入 Velocity 模长，单位/tick）' },
+           arriveRadius: { type: 'number', describe: '进入该半径算「到达」当前航点、游标前进；缺省 4' },
++          lookAhead: { type: 'number', describe: '可选正数：沿当前线段前方此距离产生期望方向，优先保持路线切向；越大横向回收越缓。默认仍直奔航点' },
+           index: { type: 'number', describe: '当前目标航点游标（运行时状态·缺省 0·随 snapshot 存读）' },
+           queueId: { type: 'string', describe: '队列分组键：同 queueId 成员按 path 进度排序、互不超车（缺省不分组=不受限）' },
+           minGap: { type: 'number', describe: '与「前一名」的最小 path 进度间距（仅 queueId 设了才生效）；缺省 0' },
+@@ -129,6 +133,9 @@ export const pathFollowCapability = defineCapability({
+       consumes: [],
+       execute(world: IWorld) {
+         const ids = sortedIds(world, 'PathFollow', 'Transform');
++        const trace = findDebugTrace(world);
++        const invalidLookAhead: string[] = [];
++        const guided: string[] = [];
+         // REQ-CONVEYOR-CAP M1：queueId 成员本 tick 的「起点 path 进度」（clamp 用，见文件头注释）——
+         // 用本 tick **移动前**的 index/剩余距离算，故所有成员的界都基于同一时间切片，无处理序依赖。
+         const queued: { id: string; queueId: string; minGap: number; progress: number }[] = [];
+@@ -143,6 +150,11 @@ export const pathFollowCapability = defineCapability({
+           }
+ 
+           const wps = pf.waypoints;
++          if (pf.lookAhead !== undefined && (!Number.isFinite(pf.lookAhead) || pf.lookAhead <= 0)) {
++            v.vx = 0; v.vy = 0;
++            if (trace) invalidLookAhead.push(id);
++            continue;
++          }
+           if (wps.length === 0) {
+             v.vx = 0;
+             v.vy = 0;
+@@ -159,7 +171,13 @@ export const pathFollowCapability = defineCapability({
+           let d = vecLen(dx, dy);
+ 
+           const arrive = pf.arriveRadius ?? 4;
+-          if (d <= arrive) {
++          const lookAhead = pf.lookAhead;
++          const previous = i > 0 ? wps[i - 1] : pf.loop ? wps[len - 1] : undefined;
++          const sx = previous ? wp.x - previous.x : 0;
++          const sy = previous ? wp.y - previous.y : 0;
++          const segmentLength = vecLen(sx, sy);
++          const along = previous && segmentLength > 0 ? ((t.x - previous.x) * sx + (t.y - previous.y) * sy) / segmentLength : -Infinity;
++          if (d <= arrive || (lookAhead !== undefined && (pf.loop || i < len - 1) && segmentLength > 0 && along >= segmentLength - arrive)) {
+             // 到达当前航点：游标前进（loop 回到 0 / 非 loop 钉死在末点），本 tick 就朝新航点走（不空转一拍）。
+             i = pf.loop ? (i + 1) % len : Math.min(i + 1, len - 1);
+             pf.index = i;
+@@ -169,6 +187,8 @@ export const pathFollowCapability = defineCapability({
+             d = vecLen(dx, dy);
+           }
+ 
++          const remainingToWaypoint = d;
++
+           // onEnd（REQ-PATHEND-DROP）：非 loop 且游标已在末航点、本 tick 在 arriveRadius 内 → 触发一次
+           // （到达当帧与此后每帧原地停靠都满足此条件，靠 `ended` 守卫保证只触发一次——见文件头「第一坑」注释）。
+           if (pf.onEnd && !pf.loop && !pf.ended && i === len - 1 && d <= arrive) {
+@@ -190,6 +210,21 @@ export const pathFollowCapability = defineCapability({
+             }
+           }
+ 
++          if (lookAhead !== undefined && (pf.loop || i > 0)) {
++            const start = i > 0 ? wps[i - 1] : wps[len - 1];
++            const ex = wp.x - start.x, ey = wp.y - start.y;
++            const length = vecLen(ex, ey);
++            if (length > 0) {
++              const tx = ex / length, ty = ey / length;
++              const progress = Math.max(0, (t.x - start.x) * tx + (t.y - start.y) * ty);
++              if (pf.loop || i < len - 1 || progress < length - arrive) {
++                dx = start.x + tx * (progress + lookAhead) - t.x;
++                dy = start.y + ty * (progress + lookAhead) - t.y;
++                d = vecLen(dx, dy);
++              }
++            }
++          }
++
+           if (d > 0) {
+             v.vx = (dx / d) * pf.speed;
+             v.vy = (dy / d) * pf.speed;
+@@ -198,9 +233,10 @@ export const pathFollowCapability = defineCapability({
+             v.vx = 0;
+             v.vy = 0;
+           }
++          if (trace && lookAhead !== undefined) guided.push(id);
+ 
+           if (pf.queueId !== undefined) {
+-            queued.push({ id, queueId: pf.queueId, minGap: pf.minGap ?? 0, progress: pathProgress(wps, i, d) });
++            queued.push({ id, queueId: pf.queueId, minGap: pf.minGap ?? 0, progress: pathProgress(wps, i, remainingToWaypoint) });
+           }
+         }
+ 
+@@ -228,6 +264,12 @@ export const pathFollowCapability = defineCapability({
+             }
+           }
+         }
++        if (invalidLookAhead.length) appendTrace(trace, world.getVersion(), 'path-follow', 'reject', `非法 lookAhead ${invalidLookAhead.join(',')}`);
++        if (guided.length) appendTrace(trace, world.getVersion(), 'path-follow', 'commit', `路线方向速度 ${guided.map(id => {
++          const cfg = world.getComponent<PathFollow>(id, 'PathFollow')!;
++          const v = world.getComponent<Velocity>(id, 'Velocity')!;
++          return `${id}:${cfg.index}:L${cfg.lookAhead}:${v.vx},${v.vy}`;
++        }).join(';')}`);
+       },
+     },
+   ],
+diff --git a/src/skills/tier2/pathfind.ts b/src/skills/tier2/pathfind.ts
+index 446c7d1f0..b889aad9f 100644
+--- a/src/skills/tier2/pathfind.ts
++++ b/src/skills/tier2/pathfind.ts
+@@ -5,6 +5,9 @@ import type { IWorld } from '@engine/core/types.js';
+ import type { NavGraph, NavAgent, NavPath, Transform, Velocity, Relation, Status } from '@engine/protocol/components.js';
+ import { astar } from '@engine/spatial/astar.js';
+ import { dist } from '@engine/math/vec2.js';
++import { findDebugTrace, appendTrace } from '../debug-trace.js';
++import { selectPatrolGoal } from './pathfind-patrol.js';
++import { exactGraphKey, clearGraphKeyCache, validExplicitGraph } from './pathfind-graph-key.js';
+ 
+ // ═══════════════════════════════════════════════════════════════
+ //  pathfind —— 连续自由空间寻路（航点图 NavGraph + 通用 A* + 沿路跟随）。grid-move（六格离散）的连续坐标对偶。
+@@ -27,6 +30,10 @@ import { dist } from '@engine/math/vec2.js';
+ //  hitbox/over-time（读「上一拍」Status 做 CC·冻结延迟一帧·与 Condition→Effect 同纪律）。
+ // ═══════════════════════════════════════════════════════════════
+ 
++// Pure derived graph cache: exact serialized keys, bounded; clearing is semantically inert.
++const preparedGraphs = new Map<string, ReturnType<typeof buildAdjacency>>();
++export function clearPathfindGraphCache(): void { preparedGraphs.clear(); clearGraphKeyCache(); }
++
+ const TARGET = 'target';
+ 
+ // 两点 Euclidean（确定性 IEEE sqrt）= @engine/math/vec2 `dist`（同序 dx = bx − ax, dy = by − ay）。
+@@ -58,18 +65,32 @@ export function buildAdjacency(nav: NavGraph): { adj: number[][]; edgeKey: (a: n
+   return { adj, edgeKey, edgeCost };
+ }
+ 
++/** Generated grids require the actual cell, never nearest-point snapping through walls. */
++export function graphCell(nav: NavGraph, x: number, y: number): number {
++  const g = nav.grid;
++  if (!g || !Number.isFinite(x) || !Number.isFinite(y)) return -1;
++  const c = Math.floor((x - g.originX) / g.cellSize), r = Math.floor((y - g.originY) / g.cellSize);
++  if (c < 0 || r < 0 || c >= g.cols || r >= g.rows || g.blocked[r * g.cols + c]) return -1;
++  return r * g.cols + c;
++}
++function nodeInCell(nav: NavGraph, x: number, y: number): number {
++  const ci = graphCell(nav, x, y);
++  if (ci < 0) return -1;
++  return nav.nodes.findIndex(n => graphCell(nav, n.x, n.y) === ci);
++}
+ export const pathfindCapability = defineCapability({
+   id: 't2-pathfind',
+   version: '1.0.0',
+ 
+   describe: {
+     name: 'pathfind',
+-    summary: '连续自由空间寻路：读单例 NavGraph(航点+连边·摆放数据) + Relation(target) → 通用 A* 求航点路径 → 沿路 steer 写 Velocity → 末段直奔目标。grid-move(六格) 的连续坐标对偶；动态避让复用 collision-resolve。',
++    summary: '连续自由空间寻路：NavGraph + Relation(target) 或固定 patrol 航点 → A* 求航点路径 → 沿路写 Velocity。巡逻到点才切下一目标；动态避让可接 crowd-avoidance。',
+     semantic: ['tier2', 'movement', 'pathfind', 'navigation'],
+     whenToUse:
+       '连续坐标自由空间寻路（绕障走向目标·非网格）：世界放一个 NavGraph{nodes,edges}（在可走处布航点连边）；单位挂 NavAgent{speed,arriveRange}+Relation(target,由 aggro 写)。引擎 A* 沿航点引路、写 Velocity（motion-apply 积分、collision-resolve 避让）。网格场景用 grid-move、定点贪婪用 steering。',
+     examples: [
+       'NPC 巡游：NavAgent{speed:2,arriveRange:8} + Relation{kind:"target",targetId:门} + 世界 NavGraph → 沿航点绕墙走到门口停',
++      '往返巡逻：NavAgent{speed:0.05,arriveRange:0.15,patrol:{waypoints:[{x:0,y:0},{x:10,y:0}],loop:true}} → 每到端点才切换目标，路径仍走 A*',
+       '怪物追击：NavAgent{speed:3,arriveRange:24,haltStatusMask:FROZEN} + aggro 写 target → 沿可走航点逼近、被冻结停',
+     ],
+   },
+@@ -80,25 +101,31 @@ export const pathfindCapability = defineCapability({
+         category: 'config',
+         describe: '航点图（摆放并行数据·单例）：nodes=航点世界坐标(下标即 id)，edges=连边(下标·无向·cost 缺省 Euclidean)。在可走处布点连边 = 声明「可走拓扑」。',
+         fields: {
++          grid: { type: 'string', describe: 'Optional derived grid geometry: corner origin, cellSize/cols/rows, blocked/cost; strict point lookup and source-cell 10/14 terrain cost' },
+           nodes: { type: 'string', describe: '航点对象数组 [{x,y},…]（下标即节点 id）' },
+           edges: { type: 'string', describe: '连边对象数组 [{a,b,cost?},…]（a/b=节点下标·无向·cost 缺省=两端 Euclidean 距离）' },
+         },
+       },
+       NavAgent: {
+         category: 'config',
+-        describe: '沿 NavGraph 走向 Relation(target) 的移动意图（写 Velocity）。无目标/被 CC → 停。',
++        describe: '沿 NavGraph 走向 Relation(target) 或自身 patrol 固定航点的移动意图（写 Velocity）。无目标/被 CC → 停。',
+         fields: {
++          graphId: { type: 'string', describe: 'Optional NavGraph/profile entity id; missing/invalid/unreachable graph stops (no straight-line fallback)' },
+           speed: { type: 'number', describe: '移动速度（Velocity 模长·单位/tick）' },
+           arriveRange: { type: 'number', describe: '到终点此距离内即停' },
+           waypointRange: { type: 'number', describe: '到当前航点此距离内即推进下一航点（缺省 max(speed,arriveRange)·防一拍一停）' },
+           repathPeriod: { type: 'number', describe: '每多少 tick 强制重算路径（缺省 30）；目标移动 > arriveRange 也触发' },
+           haltStatusMask: { type: 'number', describe: '自身 Status 含这些位时停（冻结/眩晕 CC·同 Steering.haltStatusMask）' },
++          patrol: { type: 'string', describe: '可选 {waypoints:[{x,y}],index?,loop?}；到达当前固定点后才切下一个目标，仍使用本 NavGraph A*；有 patrol 时不读 Relation' },
+         },
+       },
+       NavPath: {
+         category: 'config', // 持久 per-entity 状态（同 GridMover 体例）；引擎写·游戏不手填（见 describe）。
+         describe: '引擎写的缓存路径（确定性派生·进 hash·游戏不手填）：via=待经航点下标序·gx/gy=规划目标点·age=自上次重算 tick。',
+         fields: {
++          graphId: { type: 'string', describe: 'Engine cached selected graph entity' },
++          graphKey: { type: 'string', describe: 'Exact serialized graph identity; dynamic changes invalidate path' },
++          reachable: { type: 'boolean', describe: 'Explicit graph path found; false means stop' },
+           via: { type: 'number[]', describe: '剩余待经航点下标序（引擎写）' },
+           gx: { type: 'number', describe: '规划时目标点 x' },
+           gy: { type: 'number', describe: '规划时目标点 y' },
+@@ -107,7 +134,7 @@ export const pathfindCapability = defineCapability({
+       },
+     },
+     reads: ['NavGraph', 'NavAgent', 'NavPath', 'Transform', 'Relation', 'Status'],
+-    writes: ['Velocity', 'NavPath'],
++    writes: ['Velocity', 'NavPath', 'NavAgent'],
+     consumes: [],
+   },
+ 
+@@ -120,23 +147,31 @@ export const pathfindCapability = defineCapability({
+       runsAfter: ['aggro'],                                  // 目标由 aggro 写 Relation → nav 据此寻路（同 grid-move 破环纪律）
+       runsBefore: ['motion-apply', 'hitbox', 'over-time'],   // 先定速再移动；读上一拍 Status 做 CC（同 steering/grid-move）
+       reads: ['NavGraph', 'NavAgent', 'NavPath', 'Transform', 'Relation', 'Status'],
+-      writes: ['Velocity', 'NavPath'],
++      writes: ['Velocity', 'NavPath', 'NavAgent'],
+       consumes: [],
+       execute(world: IWorld) {
+-        // NavGraph 单例。
+-        let nav: NavGraph | undefined;
+-        { const gid = world.singleton('NavGraph'); if (gid !== undefined) nav = world.getComponent<NavGraph>(gid, 'NavGraph'); } // 黑板单例（P1b）：严格模式多份即抛·生产按创建序取首个（= 旧 for…break 语义）
+-        if (!nav || nav.nodes.length === 0) return;
+-        const navG = nav;
+-
+-        const { adj, edgeKey, edgeCost } = buildAdjacency(navG);
+-        const costOf = (a: number, b: number): number =>
+-          edgeCost.get(edgeKey(a, b)) ?? dist(navG.nodes[a].x, navG.nodes[a].y, navG.nodes[b].x, navG.nodes[b].y);
+-
+-        const ids = sortedIds(world, 'NavAgent', 'Transform');
+-        for (const id of ids) {
++        // Legacy singleton is queried lazily: explicit profiles may coexist even in strict mode.
++        let legacy: NavGraph | undefined;
++        let legacyQueried = false;
++        const prepared = new Map<NavGraph, ReturnType<typeof buildAdjacency>>();
++        const validGraphs = new Map<NavGraph, boolean>();
++        const graphKeys = new Map<NavGraph, string>();
++        let replanned = 0, rejected = 0, stopped = 0;
++        const trace = findDebugTrace(world);
++        const patrolTransitions: string[] | undefined = trace ? [] : undefined;
++        let patrolTurnCount = 0;
++        for (const id of sortedIds(world, 'NavAgent', 'Transform')) {
+           const ag = world.getComponent<NavAgent>(id, 'NavAgent')!;
+           const t = world.getComponent<Transform>(id, 'Transform')!;
++          const explicit = ag.graphId !== undefined;
++          if (!explicit && !legacyQueried) {
++            legacyQueried = true;
++            const gid = world.singleton('NavGraph');
++            if (gid !== undefined) legacy = world.getComponent<NavGraph>(gid, 'NavGraph');
++          }
++          const navG = explicit ? world.getComponent<NavGraph>(ag.graphId!, 'NavGraph') : legacy;
++          if (!explicit && (!navG || navG.nodes.length === 0)) continue; // Preserve legacy missing-graph behavior.
++
+ 
+           // Velocity 确保存在。
+           let v = world.getComponent<Velocity>(id, 'Velocity');
+@@ -145,39 +180,102 @@ export const pathfindCapability = defineCapability({
+             v = world.getComponent<Velocity>(id, 'Velocity')!;
+           }
+ 
++          if (explicit && navG && !validGraphs.has(navG)) validGraphs.set(navG, validExplicitGraph(navG));
++          if (!navG || (explicit && (!validGraphs.get(navG)
++            || !Number.isFinite(ag.speed) || ag.speed < 0 || !Number.isFinite(ag.arriveRange) || ag.arriveRange < 0
++            || !Number.isFinite(t.x) || !Number.isFinite(t.y))) || navG.nodes.length === 0) {
++            v.vx = 0; v.vy = 0; world.removeComponent(id, 'NavPath'); rejected++; continue;
++          }
++          let graphKey: string | undefined;
++          if (explicit) {
++            graphKey = graphKeys.get(navG);
++            if (!graphKey) { graphKey = exactGraphKey(navG); graphKeys.set(navG, graphKey); }
++          }
++          let adjacency = prepared.get(navG) ?? (graphKey ? preparedGraphs.get(graphKey) : undefined);
++          if (!adjacency) {
++            adjacency = buildAdjacency(navG);
++            if (graphKey) {
++              if (preparedGraphs.size >= 32) preparedGraphs.delete(preparedGraphs.keys().next().value!);
++              preparedGraphs.set(graphKey, adjacency);
++            }
++          }
++          prepared.set(navG, adjacency);
++          const { adj, edgeKey, edgeCost } = adjacency;
++          const costOf = (a: number, b: number): number => {
++            if (navG.grid) {
++              const na = navG.nodes[a], nb = navG.nodes[b];
++              const ci = graphCell(navG, na.x, na.y);
++              return navG.grid.cost[ci] * (na.x !== nb.x && na.y !== nb.y ? 14 : 10);
++            }
++            return edgeCost.get(edgeKey(a, b)) ?? dist(navG.nodes[a].x, navG.nodes[a].y, navG.nodes[b].x, navG.nodes[b].y);
++          };
+           // CC 定身（冻结/眩晕）→ 停。
+           if (ag.haltStatusMask) {
+             const st = world.getComponent<Status>(id, 'Status');
+-            if (st && (st.flags & ag.haltStatusMask) !== 0) { v.vx = 0; v.vy = 0; continue; }
++            if (st && (st.flags & ag.haltStatusMask) !== 0) { v.vx = 0; v.vy = 0; stopped++; continue; }
+           }
+ 
+-          // 目标 = 自身 Relation(target) 的 Transform。无目标 → idle。
+-          const rel = world.getComponent<Relation>(id, 'Relation');
+-          const tt = rel && rel.kind === TARGET ? world.getComponent<Transform>(rel.targetId, 'Transform') : undefined;
+-          if (!tt) { v.vx = 0; v.vy = 0; continue; }
+-          const gx = tt.x, gy = tt.y;
++          // 固定巡逻目标只在真正到达航点时切换，避免追逐移动目标时在到达半径边界反复启停。
++          let gx: number, gy: number;
++          if (ag.patrol) {
++            const selected = selectPatrolGoal(ag.patrol, t.x, t.y, ag.arriveRange);
++            if (!selected) { v.vx = 0; v.vy = 0; world.removeComponent(id, 'NavPath'); rejected++; continue; }
++            if (selected.changed) {
++              ag.patrol.index = selected.index;
++              if (patrolTransitions) { patrolTurnCount++; if (patrolTransitions.length < 8) patrolTransitions.push(`${id}:${selected.index}`); }
++            }
++            gx = selected.x; gy = selected.y;
++          } else {
++            const rel = world.getComponent<Relation>(id, 'Relation');
++            const tt = rel && rel.kind === TARGET ? world.getComponent<Transform>(rel.targetId, 'Transform') : undefined;
++            if (!tt) { v.vx = 0; v.vy = 0; stopped++; continue; }
++            gx = tt.x; gy = tt.y;
++          }
++
++          if (explicit && (!Number.isFinite(gx) || !Number.isFinite(gy)
++            || (navG.grid && (graphCell(navG, t.x, t.y) < 0 || graphCell(navG, gx, gy) < 0)))) {
++            v.vx = 0; v.vy = 0; world.removeComponent(id, 'NavPath'); rejected++; continue;
++          }
+ 
+-          // 是否重算：无缓存 / 目标显著移动(> arriveRange) / 到期(repathPeriod)。
++          // 网格路径只在目标换格或定期到期时重算；同格内的移动由末段直接追踪实时目标。
++          // 避免动态目标的浮点坐标每 tick 改变时反复执行整张网格 A*。
+           let path = world.getComponent<NavPath>(id, 'NavPath');
+           const repath = ag.repathPeriod ?? 30;
+-          const needReplan = !path || dist(path.gx, path.gy, gx, gy) > ag.arriveRange || path.age >= repath;
++          const goalChanged = navG.grid
++            ? !!path && graphCell(navG, path.gx, path.gy) !== graphCell(navG, gx, gy)
++            : !!path && dist(path.gx, path.gy, gx, gy) > ag.arriveRange;
++          const needReplan = !path || goalChanged || path.age >= repath
++            || (!explicit && path.graphId !== undefined)
++            || (explicit && (path.graphId !== ag.graphId || path.graphKey !== graphKey
++              || (!navG.grid && (path.gx !== gx || path.gy !== gy))));
+           if (needReplan) {
+-            const startNode = nearestNode(navG, t.x, t.y);
+-            const goalNode = nearestNode(navG, gx, gy);
++            const startNode = navG.grid ? nodeInCell(navG, t.x, t.y) : nearestNode(navG, t.x, t.y);
++            const goalNode = navG.grid ? nodeInCell(navG, gx, gy) : nearestNode(navG, gx, gy);
+             const full = startNode >= 0 && goalNode >= 0
+-              ? astar(startNode, goalNode, (n) => adj[n], costOf, (n) => dist(navG.nodes[n].x, navG.nodes[n].y, navG.nodes[goalNode].x, navG.nodes[goalNode].y))
++              ? astar(startNode, goalNode, (n) => adj[n], costOf, (n) => {
++                if (navG.grid) {
++                  const dx = Math.abs(navG.nodes[n].x - navG.nodes[goalNode].x) / navG.grid.cellSize;
++                  const dy = Math.abs(navG.nodes[n].y - navG.nodes[goalNode].y) / navG.grid.cellSize;
++                  return 14 * Math.min(dx, dy) + 10 * Math.abs(dx - dy);
++                }
++                return explicit ? 0 : dist(navG.nodes[n].x, navG.nodes[n].y, navG.nodes[goalNode].x, navG.nodes[goalNode].y);
++              })
+               : null;
+             const via = full ? full.slice(1) : []; // 去起点(已在/近)·留待经航点；无路=空 → 末段直奔目标点近似
+             if (!path) {
+               world.addComponent(id, { type: 'NavPath', via, gx, gy, age: 0 } as NavPath);
+               path = world.getComponent<NavPath>(id, 'NavPath')!;
+             } else { path.via = via; path.gx = gx; path.gy = gy; path.age = 0; }
++            if (explicit) { path!.graphId = ag.graphId; path!.graphKey = graphKey; path!.reachable = full !== null; }
++            else { delete path!.graphId; delete path!.graphKey; delete path!.reachable; }
++            replanned++;
+           }
+           if (!path) continue; // 安全（needReplan 含 !path → 上方必建；此守卫供 TS 收窄）
+           path.age = (path.age ?? 0) + 1;
++          if (explicit && !path.reachable) { v.vx = 0; v.vy = 0; rejected++; continue; }
+ 
+           // 推进：吃掉所有已到达的航点（防一拍一停）。
+-          const wpRange = ag.waypointRange ?? Math.max(ag.speed, ag.arriveRange);
++          const wpRange = navG.grid ? 1e-8 : ag.waypointRange ?? Math.max(ag.speed, ag.arriveRange);
+           while (path.via.length > 0) {
+             const n = navG.nodes[path.via[0]];
+             if (dist(t.x, t.y, n.x, n.y) <= wpRange) path.via.shift();
+@@ -191,9 +289,13 @@ export const pathfindCapability = defineCapability({
+           const d = dist(t.x, t.y, wx, wy);
+           if (finalLeg && (d <= ag.arriveRange || d === 0)) { v.vx = 0; v.vy = 0; continue; } // 到终点停
+           if (d === 0) { v.vx = 0; v.vy = 0; continue; }
+-          v.vx = (wx - t.x) / d * ag.speed;
+-          v.vy = (wy - t.y) / d * ag.speed;
++          const speed = navG.grid ? Math.min(ag.speed, d) : ag.speed;
++          v.vx = (wx - t.x) / d * speed;
++          v.vy = (wy - t.y) / d * speed;
+         }
++        if (patrolTurnCount) appendTrace(trace, world.getVersion(), 'nav-follow', 'transition', `patrol ${patrolTurnCount}: ${patrolTransitions!.join(',')}`, 'Reached fixed waypoint');
++        if (replanned) appendTrace(trace, world.getVersion(), 'nav-follow', 'decision', `replanned ${replanned}`, 'Target, graph selection, geometry or period changed');
++        if (rejected || stopped) appendTrace(trace, world.getVersion(), 'nav-follow', 'reject', `invalid/unreachable ${rejected}; halted/no target ${stopped}`, 'Explicit graph failures stop; no straight-line fallback');
+       },
+     },
+   ],
+diff --git a/wiki/apollo-project-brief.md b/wiki/apollo-project-brief.md
+index 38ab1cec6..b540c2ad5 100644
+--- a/wiki/apollo-project-brief.md
++++ b/wiki/apollo-project-brief.md
+@@ -224,5 +224,5 @@ ZeroCraft 的架构天然支持 LLM 驱动的游戏生成：
+ 
+ - **Lead（设计师助理）**：文档、工具、知识库、架构决策
+ - **Programmer（主程序员）**：原子实现、Tier 涌现、测试
+-- 协作方式：共享 git 分支（claude/mainbranch），文件系统 IPC
++- 协作方式：共享 git 分支（codex/mainbranch），文件系统 IPC
+ - 质量守卫：vitest 全量测试 + tsc 类型检查 + 确定性哈希校验

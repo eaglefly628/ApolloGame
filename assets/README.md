@@ -22,10 +22,11 @@ assets/
 
 ## 星尾馆猫用物件候选库（Game112 · 本机美术）
 
-- `curated/game112-cat-toys.v1.json`：T001–T100 的稳定编号、品类和外观方向；这是创作台账，**不是游戏商店货单**。
-- 原图放在仓库根目录下被 Git 忽略的 `art-local/game112/cat-toys/masters/`，11 张总览与预览拼板在 `.../previews/`，旧版百件货单在 `.../shop-catalog.v1.json`。它们不进入共享资产索引、不进入游戏本地索引，也不随构建发布；本机需自行备份该目录。
-- `scripts/game112-toy-batch.mjs plan 1 100` 只输出稳定提示词，不再把生成图写入 Git 待审目录。未来仅在某件物品的猫咪互动和发行美术验收完成后，才从本机候选中选图、优化尺寸并登记到游戏本地 `AssetIndex`；不要把游戏专属原图重新塞进共享资产库。
-- 当前游戏商店只保留已经具备摆放与猫咪互动的四件物品。旧存档中的 T 编号会保留在数据里以便将来恢复，但不会显示成无法使用的商品。
+- `curated/game112-cat-toys.v1.json`：首批 T001–T100 的稳定编号、品类和外观方向；实际价格与已上架货单在 `games/game112/shop-catalog.v1.json`，现含 T001–T104。
+- 原图放在仓库根目录下被 Git 忽略的 `art-local/game112/cat-toys/masters/`，预览拼板在 `.../previews/`。运行 `node games/game112/build-local-toy-art.mjs` 可生成被 Git 忽略的 512px 商店缩图及本地 AssetIndex `public/games/game112/art/local-candidates/index.json`。本机能看见已生成图，远端只有货单和包裹图标占位；原图和缩图都不上传 Git，需自行备份本地美术目录。新物件可购买并收进篮子，尚无场景摆放与逗猫行为。
+- 扩充到千件的四季与材质计划由 `node scripts/game112-toy-expansion-plan.mjs` 写到本机 `art-local/game112/cat-toys/expansion-plan.v2.json`，同时写出逐件提示词 JSONL。目标为 4 件原有互动物件 + T001–T996；**计划条目不等于已出图或已上架**，只在图片生成、透明度检查并写进货单后才算完成。
+- `scripts/game112-toy-batch.mjs plan 1 100` 只输出稳定提示词，不再把生成图写入 Git 待审目录。百件候选图现在可在本机商店查看和收藏；未来某件物品的猫咪互动与发行美术验收完成后，才将它登记到可发布的游戏本地 `AssetIndex`。不要把游戏专属原图重新塞进共享资产库。
+- 商店目前共有 108 件：原有四件具备摆放与猫咪互动，T001–T104 可购买入篮但尚不能摆放；界面明确区分这两种状态。
 
 这批图不使用网上图集原图；外部图片的商用与二次加工许可仍须逐张核对。部分候选有透明边缘像素警告，正式入游戏前仍需复查和修图。
 

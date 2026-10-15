@@ -12,7 +12,7 @@
 
 1. **选一个游戏想法**，用现有引擎原子（atom-skills / tier1 / tier2）拼装：blueprint + 场景 + 关卡 + 游戏专属胶水。
 2. 做的过程中**发现引擎做不到某件事** → **不要自己改引擎**，写一条需求进 `docs/workflow/requests.md`。
-3. Lead 实现/扩展引擎 → push → 你 `pull` 最新 `claude/mainbranch` → 用新能力继续做。
+3. Lead 实现/扩展引擎 → push → 你 `pull` 最新 `codex/mainbranch` → 用新能力继续做。
 4. **遇到困难自己不改引擎，提需求**。引擎是两个游戏共享的地基。
 
 ## 边界（硬规则）

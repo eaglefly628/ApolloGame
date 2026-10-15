@@ -2,7 +2,7 @@
 
 > **本 session（cartridge/平台轨）维护。** owner（junbai.li · 2026-06-25）拍板：**Steam 发行作为独立平台轨，由本 session 接管全部事项。**
 > 给 **Lead/主程** 看引擎触点供 review、给其他 session 看车道避免撞车。
-> 分支 `claude/mainbranch`；每条 tsc + vitest + build 全绿才推。设计真相：`docs/design/steam-publish.md`。
+> 分支 `codex/mainbranch`；每条 tsc + vitest + build 全绿才推。设计真相：`docs/design/steam-publish.md`。
 
 ---
 

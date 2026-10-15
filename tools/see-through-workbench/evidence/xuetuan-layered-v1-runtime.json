@@ -1,0 +1,24 @@
+{
+  "asset": "xuetuan-layered-v1",
+  "comparisons": [
+    {
+      "timeMs": 0,
+      "nativeSha256": "a1f02d2b013684e5278902c1d6290fadcb67d63234b448912c8192269671e53a",
+      "engineSha256": "a1f02d2b013684e5278902c1d6290fadcb67d63234b448912c8192269671e53a",
+      "identical": true
+    },
+    {
+      "timeMs": 6040,
+      "nativeSha256": "e7ba1c5f34e99dd2aa3f8c3dae294bc88cb5f3aed64b0c7a2615ae0e60c42424",
+      "engineSha256": "e7ba1c5f34e99dd2aa3f8c3dae294bc88cb5f3aed64b0c7a2615ae0e60c42424",
+      "identical": true
+    },
+    {
+      "timeMs": 13000,
+      "nativeSha256": "93107d7d33628ac38b95615fa1706e4647d9393212f558c5fc29fcbf411ff308",
+      "engineSha256": "93107d7d33628ac38b95615fa1706e4647d9393212f558c5fc29fcbf411ff308",
+      "identical": true
+    }
+  ],
+  "browserErrors": []
+}

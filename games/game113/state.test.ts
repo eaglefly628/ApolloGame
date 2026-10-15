@@ -50,5 +50,7 @@ describe('game113 application demo state', () => {
     expect(recovered.interests).toEqual(['watch']);
     expect(recovered.owned).toEqual(['walnut-01']);
     expect(recovered.largeText).toBe(true);
+    expect(recovered.textSize).toBe('large');
+    expect(normalizeState({ textSize: 'extra', dailyCompletions: ['2026-10-08:watch', 'bad-key'] }).dailyCompletions).toEqual(['2026-10-08:watch']);
   });
 });

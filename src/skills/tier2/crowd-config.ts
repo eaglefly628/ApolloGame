@@ -9,6 +9,7 @@ export const valid = (a: CrowdAvoidance): boolean => Number.isFinite(a.radius) &
   (a.minRadiusScale === undefined || (Number.isFinite(a.minRadiusScale) && a.minRadiusScale > 0 && a.minRadiusScale <= 1)) &&
   (a.radiusStep === undefined || (Number.isFinite(a.radiusStep) && a.radiusStep > 0 && a.radiusStep <= 1)) &&
   (a.nudgeStrength === undefined || (Number.isFinite(a.nudgeStrength) && a.nudgeStrength > 0 && a.nudgeStrength <= 1)) &&
+  (a.anticipatoryOffset === undefined || (Number.isFinite(a.anticipatoryOffset) && a.anticipatoryOffset > 0 && a.anticipatoryOffset <= 1)) &&
   (a.zeroEscape === undefined || typeof a.zeroEscape === 'boolean') &&
   (a.priorityMode === undefined || a.priorityMode === 'mass-stall') &&
   (a.desiredInertia === undefined || (Number.isFinite(a.desiredInertia) && a.desiredInertia >= 0 && a.desiredInertia < 1)) &&

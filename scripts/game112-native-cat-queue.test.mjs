@@ -1,0 +1,66 @@
+// Isolated authoring CLI fixtures; never mutate the user's production queues.
+import assert from 'node:assert/strict';
+import { mkdtemp, mkdir, copyFile, writeFile, readFile, stat } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+import { encodePngRGBA } from './asset-matte.mjs';
+import { test } from 'vitest';
+
+test('authoring queue preserves revisions, provenance and path guards', async () => {
+const repo = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const fixture = await mkdtemp(path.join(tmpdir(), 'game112-queue-test-'));
+await mkdir(path.join(fixture, 'scripts'));
+await mkdir(path.join(fixture, 'games/game112'), { recursive: true });
+for (const name of ['game112-native-cat-queue.mjs', 'asset-matte.mjs']) await copyFile(path.join(repo, 'scripts', name), path.join(fixture, 'scripts', name));
+const specs = 'games/game112/native-cat-production.';
+const base = { version: 1, catalog: 'games/game112/catalog.json', output: 'art-local/game112/native-character', parts: [{ id: 'body', request: 'Torso' }], style: 'fixture', pose: 'fixture', method: 'fixture' };
+const v2 = { ...base, version: 2, revision: 'rest-pose-v1' };
+await writeFile(path.join(fixture, specs + 'v1.json'), JSON.stringify(base));
+await writeFile(path.join(fixture, specs + 'v2.json'), JSON.stringify(v2));
+await writeFile(path.join(fixture, base.catalog), JSON.stringify({ breeds: [{ id: 'ragdoll', zh: '布偶猫', en: 'Ragdoll' }, { id: 'abyssinian', zh: '阿比西尼亚猫', en: 'Abyssinian' }] }));
+const run = (args, ok = true) => {
+  const r = spawnSync(process.execPath, [path.join(fixture, 'scripts/game112-native-cat-queue.mjs'), ...args], { encoding: 'utf8' });
+  assert.equal(r.status === 0, ok, r.stderr);
+  return ok ? JSON.parse(r.stdout) : r.stderr;
+};
+const revised = args => ['--spec', specs + 'v2.json', ...args];
+assert.equal(run(['init']).generated, 0);
+const oldQueue = path.join(fixture, base.output, 'queue.json');
+const oldBytes = await readFile(oldQueue);
+assert.equal(run(revised(['init'])).generated, 0);
+let pending = run(revised(['next', '8']));
+assert.deepEqual(pending.map(j => j.id), ['ragdoll/master'], 'Unvalidated baseline must gate other cats');
+assert.ok(pending[0].destination.endsWith('/ragdoll/rest-pose-v1/master.png'), 'Revision output must be isolated');
+const png = path.join(fixture, 'synthetic-transparent.png');
+await writeFile(png, encodePngRGBA(2, 1, Buffer.from([90, 60, 40, 255, 0, 0, 0, 0])));
+const request = path.join(fixture, 'request.json');
+await writeFile(request, JSON.stringify({ catId: 'ragdoll', prompt: 'Actual fixture generation prompt', reference: 'fixture-only' }));
+assert.equal(run(revised(['record', 'ragdoll/master', png, '--request', request])).generated, 1);
+const sidecar = JSON.parse(await readFile(path.join(fixture, base.output, 'ragdoll/rest-pose-v1/master.json')));
+assert.equal(sidecar.prompt, 'Actual fixture generation prompt');
+assert.equal(sidecar.productionRevision, 'rest-pose-v1');
+assert.equal(sidecar.originalVisiblePixelsVerified, false);
+assert.equal(sidecar.reviewStatus, 'pending');
+assert.equal(sidecar.width, 2);
+assert.deepEqual(await readFile(oldQueue), oldBytes, 'V2 must not alter the live legacy queue');
+await assert.rejects(stat(path.join(fixture, base.output, 'ragdoll/master.png')), { code: 'ENOENT' });
+assert.deepEqual(run(revised(['next', '8'])).map(j => j.id), ['ragdoll/body']);
+assert.match(run(revised(['record', 'ragdoll/master', png]), false), /Already generated/);
+await writeFile(request, JSON.stringify({ catId: 'abyssinian', prompt: 'wrong cat' }));
+assert.match(run(revised(['record', 'ragdoll/body', png, '--request', request]), false), /same cat/);
+await writeFile(request, JSON.stringify({ catId: 'ragdoll', part: 'tail', prompt: 'wrong part' }));
+assert.match(run(revised(['record', 'ragdoll/body', png, '--request', request]), false), /different part/);
+const opaque = path.join(fixture, 'opaque.png');
+await writeFile(opaque, encodePngRGBA(1, 1, Buffer.from([90, 60, 40, 255])));
+assert.match(run(revised(['record', 'ragdoll/body', opaque]), false), /genuinely transparent/);
+assert.match(run(['--spec', '../outside.json', 'init'], false), /versioned production spec/);
+await writeFile(path.join(fixture, specs + 'v2.json'), JSON.stringify({ ...v2, revision: '../escape' }));
+assert.match(run(revised(['summary']), false), /Invalid identifier/);
+await writeFile(path.join(fixture, specs + 'v2.json'), JSON.stringify({ ...v2, output: '../outside' }));
+assert.match(run(revised(['summary']), false), /ignored local cat art directory/);
+assert.deepEqual(await readFile(oldQueue), oldBytes);
+console.log('PASS: revision isolation, baseline gate, actual prompt provenance, duplicate/wrong-request/alpha/path guards. Synthetic fixtures remain only in ' + fixture);
+
+});

@@ -69,6 +69,18 @@ describe('game113 guided sake entrance', () => {
     expect(readGuideProgress('sake', 5)).toMatchObject({ scene: 0, completed: 0 });
   });
 
+  it('moves the reader back to the new photo after advancing an observation', async () => {
+    await act(async () => root.render(<FocusHallView hobby={sake} following={false} note="" onFollow={() => {}} onCircle={() => {}} onCompose={() => {}} onOpenItem={() => {}} onSaveNote={() => {}}/>));
+    await act(async () => (host.querySelector('.g113-focus-gate button') as HTMLButtonElement).click());
+    const progress = host.querySelector('.g113-mentor-progress') as HTMLDivElement;
+    const scrollTo = vi.fn();
+    progress.scrollIntoView = scrollTo;
+    await act(async () => (host.querySelector('.g113-mentor-action') as HTMLButtonElement).click());
+    await act(async () => (host.querySelector('.g113-mentor-action') as HTMLButtonElement).click());
+    expect(host.querySelector('.g113-mentor-desk h4')?.textContent).toBe('再看颜色');
+    expect(scrollTo).toHaveBeenCalledWith({ block: 'start', behavior: 'auto' });
+  });
+
   it('pairs each sake chapter with a local licensed photograph and a readable diagram', () => {
     for (const chapter of guideJourneyFor(sake).scenes) {
       const art = guideArtFor('sake', chapter.id);
