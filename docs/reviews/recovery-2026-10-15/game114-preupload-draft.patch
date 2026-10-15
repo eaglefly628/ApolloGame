@@ -1,0 +1,1168 @@
+diff --git a/CLAUDE.md b/CLAUDE.md
+index 15f509a4c..d07d12b25 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -39,3 +39,12 @@
+ 
+ - 宪法 `docs/design/data-driven-manifesto.md`；新游戏接入唯一入口 `docs/llm-onboarding.md`（数字口径以它 §0 机读真相为准·文档手抄数字 = 过期信号）；交接 `docs/workflow/SESSION-HANDOFF.md`；能力库 `src/skills/{atoms,tier1,tier2,tier3}`·组件契约 `src/engine/protocol/components.ts`。
+ - 游戏 `games/`：d/e/f/g/i/z（出口 D+G·e/i = sample·f 冻结；q/x/t 已随 REQ-RETRO 2026-08-03 删除·再提到即过期信号）；**A/B/C + 101/102/103 为新项目**（A = 掼蛋·B = 雀宴日麻·C = 六人德州·101 = 海港绯闻 Merge·102 = Pixel Pour·103 = 幸存者·各 `docs/design/<game>/`）。
++
++
++## 项目 Session 归属与交接（owner 2026-10-09）
++
++- 为 ApolloGame 新建 session 前，通过受支持的项目元数据核对项目名称、projectId、根目录与执行环境；使用目标项目创建，创建后核实 session 的项目归属及目录。projectId 以执行创建操作的环境即时返回值为准，不跨环境猜测或复用。
++- 不默认用项目外独立 session 代替项目任务。无法绑定目标项目时，先说明具体限制并取得用户确认，再采用替代方式。
++- 项目外旧任务迁移前，整理可复用交接文档、源码与资产位置、启动及验证证据、未完成项和在途改动；保留原文件，确认目标任务能够接续后再按用户安排归档。
++- 侧边栏分组不等于项目绑定；不得仅凭改名、移动分组或写入本约定宣称 session 已迁移或绑定。
++- 本节是正式项目中的可阅读协作约定，不是任何特定 session 已完成绑定的证明。
+diff --git a/docs/design/playground-vs-apollo-2026-10-08.md b/docs/design/playground-vs-apollo-2026-10-08.md
+new file mode 100644
+index 000000000..a7b24444f
+--- /dev/null
++++ b/docs/design/playground-vs-apollo-2026-10-08.md
+@@ -0,0 +1,92 @@
++# Google Playground 对标分析 · 阿波罗能否做成同类平台（Lead 2026-10-08）
++
++> owner 问：「分析对比 Google Playground（playground.google/explore），我们能不能把平台做成一样？」
++> 资料口径：容器内 playground.google / blog.google 解析不到（DNS 拒），以下产品事实来自 2026-10-07 发布当天的多家报道（Google 官方博客、9to5Google、Shacknews、VGC、The Decoder 等），**未亲手试玩**，细节以官网为准。
++
++## 一、Google Playground 是什么（2026-10-07 Google Labs 发布）
++
++| 维度 | 事实 |
++|---|---|
++| 定位 | 实验性浏览器游戏平台：**create · play · share** |
++| 创作 | 一句话描述 → 生成可玩版 → **聊天迭代**（例：给平台跳跃游戏加二段跳）；可从空白起步或 remix 起手 prompt |
++| 模型 | Gemini（推理 + **写代码**）+ Nano Banana（出图）+ Lyria（出音乐）+ 自研 harness |
++| 分享 | 私有 / 链接分享好友 / 发布到 **Explore 画廊**（按评分 + 游玩活跃度排序） |
++| Remix | 任何公开游戏可被 remix 成自己的版本 |
++| 安全 | 公开发布走安全审核（社区准则） |
++| 商业 | 免费；Google One 订阅给更高的周 token 额度 |
++| 范围 | 仅美国 18+；创作权限分批放量 |
++| 下一步 | Unity Spark 集成（封测）→ 补 3D 物理与复杂机制 |
++
++本质：**「AI 生成代码的小游戏」+「UGC 社区闭环（画廊/排名/remix）」**。护城河在模型与分发，不在游戏技术。
++
++## 二、对照阿波罗现状（实查仓库，非印象）
++
++| Playground 环节 | 阿波罗已有 | 位置 | 差距 |
++|---|---|---|---|
++| 一句话生成 | ✅ prompt → manifest，服务端 parse + manifest-check 自动校验重试 ≤3 | `main_entry/generate_api.py`、`jobs.py`（后台任务） | 无 |
++| 聊天迭代 | ✅ 向导 revise 态「修改指令 → 新版本」 | `src/studio/CreationWizard.tsx` | 无 |
++| 即时试玩 | ✅ ManifestPreview 运行核 | `src/studio/DataCartridgeRunner.tsx` | 无 |
++| 版本 / 回滚 | ✅ 每游戏 git 快照 + rollback | `main_entry/library.py`、`library_api.py` | Playground 未见报道此能力，**我们领先** |
++| 出图 | 🟡 封面文生图（qwen 2D·无 key 走占位） | `main_entry/games_list.py` cover | 只有封面，未接进游戏内美术 |
++| 出音乐 | 🟡 音频是合成 SfxSpec；有 media-job 端口 | `src/services/audio`、`media-job` | 无生成式 BGM |
++| 玩家货架 | ✅ `?mode=player` 卡带架，数据源 = 用户游戏库 | `src/launcher.tsx` | 只是本机库 |
++| 链接分享 | 🟡 有单文件构建 `build:cartridge:single` | cartridge 线 | 没有「一键得链接」 |
++| 公开画廊 / 排名 | ❌ | — | 服务器只绑 `127.0.0.1`（`server.py:904`），没有多用户后端 |
++| Remix | ❌（底子已经在：游戏 = 一份 JSON，复制即 fork） | — | 缺「fork + 血缘 meta」入口 |
++| 账户 / 额度 | 🟡 有 profile 端口，无云账户、无配额 | `src/services/profile` | 缺 |
++| 安全审核 | ❌ | — | 缺（但我们这条更容易做，见下） |
++| 多人 | ✅ lockstep / state-sync / 世界 hash | `src/net/` | **Playground 没有，我们领先** |
++| 发行出口 | ✅ Steam、掌机卡带、Electron | `steam-publisher/`、`cartridge-station/` | **我们领先** |
++
++**结论：创作端已经有约 80%，缺的是「社区平台」那一半（云端托管 + 画廊 + remix + 审核 + 账户）。**
++这一半全是**服务 / 产品层**的活，**引擎和 capability 一行都不用改**。
++
++## 三、Lead 判词：做，但别照抄成「一样」
++
++**接受**：抄 Playground 的**闭环**——创作 → 试玩 → 分享 → 画廊 → remix。这是它真正的产品价值，我们缺的正是这一段。
++
++**回驳**：不抄它的**技术路线**（让 LLM 每个游戏写一份自由代码）。理由：
++
++1. **宪法冲突**：自由代码正是 `data-driven-manifesto.md` 禁的 L4 档。
++2. **路线不同反而是我们的差异点**——我们的游戏是**数据**，这带来 Google 那条路给不了的五样东西：
++   - **remix 是一等能力**：fork = 复制一份 JSON；能比对 diff、合并、追溯血缘。代码游戏的 remix 只能整体再生成。
++   - **审核便宜且可靠**：游戏里没有任意代码，审核只扫文本和美术资产，不用沙箱跑未知 JS。
++   - **质量下限**：manifest-check + bench 五轴 + 确定性双跑，「能存就能跑」。
++   - **多人联机**：lockstep 对数据游戏天然成立；代码生成的游戏基本做不了。
++   - **出口**：同一份卡带能发 Steam、上掌机。
++3. **正面硬拼拼不过的**：免费模型额度、Google 分发流量、Nano Banana / Lyria 的出图出音乐质量。所以定位是「**能联机、能出货、能 remix 到底的 AI 游戏工坊**」，不是「另一个 Playground」。
++4. **要说清的代价**：数据路线的表现力受 capability 词汇表限制，品类宽度比不上「Gemini 什么都能写」。补救是已有的 L2 capgap 通道 + L3 TS 卡带，**不是放开自由代码**。
++
++## 四、两条路（按缺口裁决协议摆出，owner 判）
++
++> 这不是引擎缺口，属于**产品 / 平台战略**，同样按「摆两条路·Lead 推荐·owner 判」处理。
++
++**A · 本地优先的轻平台（推荐先做）**
++- 内容：① **Remix**：库里一键 fork（复制 manifest，meta 记 `remixOf` + 版本号）；② **分享**：一键导出单文件 HTML / 卡带包，可直接发人；③ **本地画廊**：玩家模式货架加「游玩次数·评分·remix 数」排序（先用本机 localStore）；④ 封面文生图在生成链里默认开。
++- 代价：服务层 + 工坊壳小改，**引擎零改动**，周级工作量，可回退。
++- 影响面：`main_entry/library*`、`src/launcher`、`src/studio`。
++- 选错的代价：低，A 的组件都能直接被 B 复用。
++
++**B · 全托管云平台（Playground 同构）**
++- 内容：A 全部 + 云账户、托管游玩链接（CDN 静态托管卡带）、公共 Explore 画廊与排名、审核队列、生成额度 / 付费档、remix 树、联机房间。
++- 代价：新增后端服务 + 运维 + 合规（未成年人、内容审核、版权、模型成本），月级工作量，需要专人长期运营。
++- 影响面：新服务面（不碰引擎）；`server.py` 要从单机 dev 服务拆出生产服务。
++- 选错的代价：高。没有内容供给和用户量，画廊是空的，运营成本白付。
++
++**Lead 推荐**：**先 A，用数据决定要不要上 B**。门槛：A 上线后本地生成 → remix 的链路有人真在用（比如每周有 N 个新卡带被 fork），再立 B。B 立项时先做「托管链接 + 画廊」两件，账户和额度可以用第三方登录 / 按 key 计费起步。
++
++## 五、需要 owner 拍板
++
++1. **A / B / A→B**（Lead 推荐 A→B）。
++2. 对外定位是否接受「能联机、能出货、能 remix 的 AI 游戏工坊」，**不做 Playground 的翻版**。
++3. 如果走 B：目标地区与年龄政策（Google 只开放美国 18+，正是因为合规成本）。
++
++## 资料来源
++
++- [Introducing Playground: Create and play custom games（Google 官方博客）](https://blog.google/innovation-and-ai/technology/ai/playground-experimental-gaming-platform/)
++- [9to5Google · Google Labs announces Playground](https://9to5google.com/2026/10/07/google-labs-playground/)
++- [Shacknews · Google announces Playground](https://www.shacknews.com/article/150932/google-playground-ai-game-development)
++- [VGC · Google officially reveals Playground](https://www.videogameschronicle.com/news/google-officially-reveals-ai-game-creation-platform-playground/)
++- [The Decoder · Google bets Gemini can turn casual players into game developers](https://the-decoder.com/google-bets-gemini-can-turn-casual-players-into-game-developers-with-new-playground-feature/)
++- [Inven Global · Expanding to 3D via Unity Spark](https://www.invenglobal.com/articles/26909/google-unveils-playground-to-create-games-from-text-prompts-expanding-to-3d-via-unity-spark)
++- [Gizmodo · vibe code a game in your browser](https://gizmodo.com/googles-new-playground-aims-to-make-it-easy-to-vibe-code-a-game-right-in-your-browser-2000822955)
+diff --git a/docs/playbooks/3d.md b/docs/playbooks/3d.md
+index 6256ac7fe..ce50bd017 100644
+--- a/docs/playbooks/3d.md
++++ b/docs/playbooks/3d.md
+@@ -19,7 +19,7 @@
+ |---|---|---|
+ | 3D 物件（盒/片/球/柱/锥/胶囊/环） | `Mesh3D{shape:box\|plane\|sphere\|cylinder\|cone\|capsule\|torus}` + `Transform3D`（真三维）或 2D `Transform` | 圆润图元单材质·torus 用 `tube`(默认0.35)·`diorama.ts` prim-* 样例 |
+ | 薄片正反分色 + 可靠躺平（牌/瓷砖/硬币/招牌） | `Mesh3D{shape:box, faceAxis:'y', frontTint, backTint, edgeTint}`（沿 Y 薄·顶=正/底=反色）+ `RigidBody3D{shape:'cylinder'}`（轴 Y 圆盘·可靠躺平） | `faceAxis` 决定正反色落哪轴两面（缺省 'z'=+z/−z·零回归）。**薄矩形牌抛落恒躺平**（不立边/斜停·根治薄凸包 ~55° 恒斜伪影）＝牌沿 Y 薄 + 原生 cylinder 刚体；正反色走 `faceAxis:'y'`（REQ-3D-CARD-FACE-AXIS·game-z Platform Four `p4-card-*` 样例·game211 消费） |
+-| 导入模型（glTF/glb） | `Model3D{modelKey,scale}`（资产 key）+ 骨骼动画 `AnimState3D{clip,speed,loop}` | scale 目前手估→见资产手册「模型导入」缺口·fox 样例 |
++| 导入模型（glTF/glb） | `Model3D{modelKey,scale}`（资产 key）+ 骨骼动画 `AnimState3D{clip,speed,loop,speedAtVelocity?}`；地面单位加 `FaceRotate{source:'velocity'}` | 在 Camera3D 地面模式，FaceDir 驱动模型平滑转身（glTF 正面为 +Z）；`speedAtVelocity` 表示按该移动速度播放设定倍速，静止时暂停步态。game114 机关牛样例；scale 目前手估→见资产手册「模型导入」缺口 |
+ | 材质 / PBR | `Material3D{preset\|materialRef,...}`；预设闭集 `assets/pbr-materials`（Filament 金属值） | 预设选一 + 覆盖·`materialRef`=材质数据资产（REQ-Resource ④）。**同材质自动归批实例化**（同 pbrSig → 1 InstancedMesh·几百同材质网格 = 几批·零数据改动·REQ-3D-PBR-INSTANCING）；透明（玻璃/`transparent`）/描边走单 mesh |
+ | 进阶物理波瓣（华丽材质） | `Material3D{clearcoat, sheen+sheenColor, iridescence+iridescenceThickness, anisotropy}` 或现成预设 `carpaint/pearl/soap/velvet/brushed` | 车漆清漆/绸缎绒光/肥皂泡幻彩/拉丝各向异性——**任一在场→MeshPhysical·全 three native·需 `Sky3D.env` IBL 环境才显反射/彩虹**。不透明波瓣仍可实例化（进 pbrSig）·soap 带透射走单 mesh（REQ-3D-PBR-LOBES·game-z 材质陈列台样例） |
+ | 平面反射（镜面地板/水面/冰面/casino 大堂） | `Reflector3D{width,height,color?,opacity?,orientation?,quality?}` + `Transform3D` | 真倒影（three.Reflector·每帧场景渲进 RTT·比 SSR 干净无噪声）。`floor`=水平镜(缺省·法线+Y)·`wall`=竖直镜。`opacity<1`=半反射湿地板（倒影混下方底色）。倒影随场景/相机变自动更新（进 renderSig）。挂 Reflector3D 即成镜面·不需 Mesh3D（REQ-3D-PLANAR-REFLECT·game-z Platform Three `p3-refl` 样例） |
+diff --git a/docs/playbooks/movement-pathfinding.md b/docs/playbooks/movement-pathfinding.md
+index 492a90201..c09fb3c6a 100644
+--- a/docs/playbooks/movement-pathfinding.md
++++ b/docs/playbooks/movement-pathfinding.md
+@@ -13,7 +13,8 @@
+ | 朝/背目标移动（AI） | `t2-steering` | 挂 `Steering{mode,speed,stopRange}`；配 `t3-aggro` 写 target + motion-apply |
+ | 六边形棋盘沿格寻路 | `t2-grid-move` | 单位挂 `HexPos`+`GridMover{period}`+`Relation(target)`；世界放 `HexBoard`（内建 A*） |
+ | 连续坐标绕障寻路 | `t2-pathfind` | 世界放 `NavGraph{nodes,edges}`；单位挂 `NavAgent{speed,arriveRange}`+`Relation(target)` |
+-| 固定航点轨道匀速跑（巡逻/传送带） | `t2-path-follow` | 挂 `PathFollow{waypoints,speed,loop?}`（`pathFollowAt` 生成）；不索敌不绕障 |
++| 固定航点往返且需要 A* 绕障 | `t2-pathfind` | 单位挂 `NavAgent{graphId,speed,arriveRange,patrol:{waypoints:[{x,y},...],index:0,loop:true}}`；到达航点才切换目标，不需移动的目标实体。配 `t2-crowd-avoidance` 保留群体避让 |
++| 固定航点闭环行走（巡逻/传送带） | `t2-path-follow` | 挂 `PathFollow{waypoints,speed,loop:true}`（`pathFollowAt` 生成）；环线交错时叠加 `CrowdAvoidance` 处理单位间避让。避让后需要更重视原路线方向时，可选 `lookAhead:正数`，沿当前线段前方取期望方向，并在跨过航点横截面时推进游标；不配置时保留直奔航点的旧语义。本身不索敌、不绕静态障碍 |
+ | 传送带队列：有序不重叠占位 + 递进（不超车） | `t2-path-follow` | 同上 + `queueId,minGap?`（REQ-CONVEYOR-CAP M1）：同 `queueId` 按 path 进度排序，每个非排头成员夹在「前一名进度 − minGap」；容量 full 旗标/空槽分配/死锁**不建新能力**，组合 `group-count`+`event-when(level 双向)`+`effect-apply`（空槽用既有 `t2-tray`），见 `conveyor-queue-compose.test.ts` |
+ | 绕完一圈到末点→落一件+自毁（belt/巡逻收尾） | `t2-path-follow` | 同上 + `onEnd:{dropTemplate?,destroy?}`（REQ-PATHEND-DROP，非 loop 到末点触发一次，`ended` 布尔守卫防重发，=Mortal 的 path-完成版） |
+ | 排队叫号/消费队首（或队中任一个）后**全体前移补位**（槽间不留空洞） | `t2-queue-slots`（REQ-POOL-ADVANCE 缺口） | 挂 `QueueSlots{originX,originY,gap,headCount,memberTag,action}`；成员挂 `Tag`(含 memberTag)+`Transform`。每 tick 按既有 `QueueMember.index`（新成员排末尾）+id 升序稳定重排成连续 0..N-1、钉位、前 headCount 个自动挂/摘 `Clickable`。与 `t2-tray`（占坑制、老成员不前移）互补：占坑用 tray，消费即整体递补用本能力 |
+@@ -24,6 +25,10 @@
+ | **大规模同目标行军**（成百上千单位走向同一处） | `t2-flow-field` | 世界放 `FlowField{cellSize,cols,rows,goals[],blocked?,cost?}`（**多源** Dijkstra 铺满一次·无局部极小）；单位挂 `FlowAgent{fieldId,speed,arriveRange?}`。**一次铺场服务全部单位**——与 `t2-pathfind` 的「每单位各算一次」是**成本形状**之别，不是好坏之别 |
+ | 大军别叠成一条线（软避让） | `t2-flow-field` + `FlowAgent.separation{weight}` | Reynolds 分离力（`offset/-d²`），**权重恒被钳在流场之下**（永不掉头）。**软承诺**：允许瞬时重叠、靠力弹开 |
+ | 「不许穿模」的小队（硬避让） | `t2-flow-field` + `FlowAgent.orca{radius,timeHorizon?,maxNeighbors?}` | 移植自 RVO2（`src/skills/tier2/orca.ts`·Apache-2.0）。**与 separation 二选一**（同填 ORCA 优先）。⚠ 不是"保证不碰"——线性规划无可行解时落「最不违反」，实测把穿模从 ~90% 压到最坏 8%，不是 0 |
++| A* 与流场单位相互避让 | `t2-crowd-avoidance` + `CrowdAvoidance{radius,maxSpeed}` | 同拍速度快照→ORCA→motion→硬碰撞；同地面 group 相同；停止意图不被推动；勿同单位双开旧 FlowAgent.orca/separation。平地角色用同半径的 `Shape{kind:'circle'}` 作实际碰撞，地面截面等价竖直圆柱，不用模型网格作碰撞。可选 `flowGuide.edgeRepathSlots:正整数`：同一流场及碰撞组先让侧边更空、实际能规划回原路线的单位取得 A* 回路名额；规划失败则顺延下一候选，已有回路（临时暂停也包括）持续占用，旧 FlowAgent 规避配置不参与预选；卡住达到脱困阈值一半（至少 12 tick）时可越限，未获名额者仍走原流场/ORCA。可选 `zeroEscape:true`：有前进意图但首次 ORCA 解近零时，固定侧向期望速度重解 ORCA，只接受有速且不明显倒退的可行解；不会直接越过 ORCA 或硬碰撞。可选 `yieldAfterTicks`：连续几乎无位移到阈值约三分之一时，先给期望速度固定侧向扰动矢量（强度 `nudgeStrength`）；仍卡到阈值才逐步同步缩小 ORCA 与 Shape 半径（下限 `minRadiusScale`、步长 `radiusStep`）；恢复前检查真实空位。硬碰撞全程生效，收缩只作最后兜底 |
++| 共享方格地图、不同体型净空 | `t2-navigation-grid` + `NavigationGrid` / `NavigationProfile{gridId,radius,goals?}` | 格角原点/行主序 blocked+cost；profile 实体 id 同时供 NavAgent.graphId 与 FlowAgent.fieldId；生成图不可达停止，旧 NavMesh 保留 |
++
++共享网格净空按**整个格子**保守扩张，半径越大、格子越粗，可通区域越少；桥宽接近单位直径时应细化网格。A* 与生成流场统一使用「出发格 cost × 直走10/斜走14」；生成字段启用 `FlowField.costAware:true`，旧流场省略时保持既有选向。接口与限制见 `docs/design/game114/engine-navigation-request.md`。
+ 
+ ### 走位四选一（成本形状分诊·别按"哪个高级"选）
+ 
+diff --git a/docs/workflow/requests.md b/docs/workflow/requests.md
+index 867666b56..836621c19 100644
+--- a/docs/workflow/requests.md
++++ b/docs/workflow/requests.md
+@@ -228,3 +228,7 @@ desync（`determinism.ts` 对 Camera 的同款理由）。条目进 hash → 注
+ ```
+ 
+ ---
++
++### REQ-114-NAV · 通用 ORCA 与共享网格导航 · [2026-10-09] · owner 判 A · status: 本地实现/复查完成，基线门禁有阻塞 · P1
++
++施工主体：game114 当前会话（01a11e73-f648-72c3-a624-8e9dd51a430b，2026-10-09 本地领取）；独立复查已通过，交付见 docs/design/game114/navigation-delivery.md。用户确认由本会话贯穿实现，保留独立复查；2026-10-13 又授权提交并推送本轮改动以跨机器接续。规格与验收：[game114 导航需求](../design/game114/engine-navigation-request.md)。复用已有 ORCA/网格核，保持旧配置行为；本单不接管 REQ-FLOWFIELD 未完成分期。
+diff --git a/scripts/component-manifest-baseline.json b/scripts/component-manifest-baseline.json
+index 5e7ab749b..ff31748e0 100644
+--- a/scripts/component-manifest-baseline.json
++++ b/scripts/component-manifest-baseline.json
+@@ -1,6 +1,6 @@
+ {
+   "_doc": "引擎共同零件（组件）清单基线——所有游戏共用的积木。改/加/删任一零件必须同提交跑 `node scripts/component-manifest-guard.mjs --update` 更新本文件（让共同语言的变动在 diff 里可见）。",
+-  "count": 149,
++  "count": 153,
+   "components": [
+     "Acceleration",
+     "Action",
+@@ -25,6 +25,8 @@
+     "Color",
+     "Controllable",
+     "CraftRecipe",
++    "CrowdAvoidance",
++    "CrowdVelocity",
+     "DebugTrace",
+     "Decal3D",
+     "DeliverDrop",
+@@ -79,6 +81,8 @@
+     "NavGraph",
+     "NavMesh",
+     "NavPath",
++    "NavigationGrid",
++    "NavigationProfile",
+     "Orbit",
+     "Order",
+     "OverTime",
+diff --git a/scripts/context-budget-baseline.json b/scripts/context-budget-baseline.json
+index afd8b33f6..5f480bba5 100644
+--- a/scripts/context-budget-baseline.json
++++ b/scripts/context-budget-baseline.json
+@@ -1,8 +1,8 @@
+ {
+-  "_doc": "上下文预算基线（REQ-CTX·owner 2026-07-15 批·同日追加 10 硬槽铁律）——需求池=owner 级最多 10 条（做不完不许加新的·先清后加）+字符封顶；T0 必读各封顶；手册 ≤100 行（owner 2026-08-07 由 80 放宽：「手册还是更全一点比较好，但太多会乱，100 行之内可以」）+ ≤22000 字符（REQ-RETRO 2026-08-03 补：行数未捕捉字符密度，ui.md 曾 74 行塞 2 万字符逼近顶·各手册统一封顶而非逐本单开，给现状最厚手册合理余量）；3D 独立需求池 requests-3d.md 曾完全在监控盲区（可无限膨胀），同批补封顶。超顶=CONTEXT-BUDGET: FAIL 拦推送；抬预算唯一合法姿势=同提交改本文件（diff 可见·须给理由）。游戏工作票不占槽（各游戏 docs/design/<game>/requests.md·工单随游戏走）。校准（10 槽分流后实测 14687→顶 25000）。08-07 随手册放宽同步抬 playbooks/index.md 封顶 4210→4400（放宽口径本身要写进索引，字数得留出来）。08-10 抬 4400→4600：8/4 大评审 Q1 批新增 pick-list.md（按玩法选件决策树）须在索引登记一行（实测 4246+行长≈4440 超旧顶）。08-12 抬 4600→4700：owner 立 DokiWorld 出包线,新手册 dokiworld-pack.md 须登记一行（登记行已极简仍超）。07-15 owner 批扩面：T0 加交接档/角色表封顶；游戏需求单各 ≤45000 字符（done 迁归档纪律一体适用）。 09-08 抬 4700→4900：owner 令底层功能库补齐并「让后面的人用这个消费」，新手册 base-lib.md 须在索引登记一行（登记行已极简仍超 · 同前例 08-10/08-12）。",
++  "_doc": "上下文预算基线（REQ-CTX·owner 2026-07-15 批·同日追加 10 硬槽铁律）——需求池=owner 级最多 10 条（做不完不许加新的·先清后加）+字符封顶；T0 必读各封顶；手册 ≤100 行（owner 2026-08-07 由 80 放宽：「手册还是更全一点比较好，但太多会乱，100 行之内可以」）+ ≤22000 字符（REQ-RETRO 2026-08-03 补：行数未捕捉字符密度，ui.md 曾 74 行塞 2 万字符逼近顶·各手册统一封顶而非逐本单开，给现状最厚手册合理余量）；3D 独立需求池 requests-3d.md 曾完全在监控盲区（可无限膨胀），同批补封顶。超顶=CONTEXT-BUDGET: FAIL 拦推送；抬预算唯一合法姿势=同提交改本文件（diff 可见·须给理由）。游戏工作票不占槽（各游戏 docs/design/<game>/requests.md·工单随游戏走）。校准（10 槽分流后实测 14687→顶 25000）。08-07 随手册放宽同步抬 playbooks/index.md 封顶 4210→4400（放宽口径本身要写进索引，字数得留出来）。08-10 抬 4400→4600：8/4 大评审 Q1 批新增 pick-list.md（按玩法选件决策树）须在索引登记一行（实测 4246+行长≈4440 超旧顶）。08-12 抬 4600→4700：owner 立 DokiWorld 出包线,新手册 dokiworld-pack.md 须登记一行（登记行已极简仍超）。07-15 owner 批扩面：T0 加交接档/角色表封顶；游戏需求单各 ≤45000 字符（done 迁归档纪律一体适用）。 09-08 抬 4700→4900：owner 令底层功能库补齐并「让后面的人用这个消费」，新手册 base-lib.md 须在索引登记一行（登记行已极简仍超 · 同前例 08-10/08-12）。 2026-10-13 owner 指定的项目 Session 归属与交接规则进入 CLAUDE.md，T0 封顶 7000→7500（实测约 7280）；其余预算不变。",
+   "requestsPoolMaxChars": 25000,
+   "t0MaxChars": {
+-    "CLAUDE.md": 7000,
++    "CLAUDE.md": 7500,
+     "docs/design/data-driven-manifesto.md": 3000,
+     "docs/llm-onboarding.md": 4000,
+     "docs/playbooks/index.md": 4900,
+diff --git a/scripts/context-budget-guard.mjs b/scripts/context-budget-guard.mjs
+index 9b71d7550..5628cda29 100644
+--- a/scripts/context-budget-guard.mjs
++++ b/scripts/context-budget-guard.mjs
+@@ -14,7 +14,7 @@
+ //  判词 token：`CONTEXT-BUDGET: PASS|FAIL`（照 docs-ref-guard 模式·退出码进门禁）。
+ //  基线=scripts/context-budget-baseline.json；抬预算唯一合法姿势=同提交改基线（review 一眼可见）。
+ // ═══════════════════════════════════════════════════════════════
+-import { readFileSync, readdirSync } from 'node:fs';
++import { readFileSync, readdirSync, realpathSync } from 'node:fs';
+ import { fileURLToPath } from 'node:url';
+ import { dirname, resolve, join } from 'node:path';
+ 
+@@ -100,4 +100,5 @@ function main() {
+   process.exit(issues.length ? 1 : 0);
+ }
+ 
+-if (import.meta.url === `file://${process.argv[1]}`) main();
++// macOS temp paths may enter as /var/... but resolve to /private/var/...
++if (process.argv[1] && realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])) main();
+diff --git a/src/assembly/capability-registry.gen.ts b/src/assembly/capability-registry.gen.ts
+index 6a655e8b3..d717f6128 100644
+--- a/src/assembly/capability-registry.gen.ts
++++ b/src/assembly/capability-registry.gen.ts
+@@ -93,6 +93,8 @@ export const CAPABILITY_LOADERS: readonly CapabilityLoader[] = [
+   { id: 't2-orbit-motion', provides: ['Orbit'], load: () => import('@skills/tier2/orbit-motion.js').then((m) => m.orbitMotionCapability) },
+   { id: 't2-path-follow', provides: ['PathFollow'], load: () => import('@skills/tier2/path-follow.js').then((m) => m.pathFollowCapability) },
+   { id: 't2-flow-field', provides: ['FlowField', 'FlowAgent'], load: () => import('@skills/tier2/flow-field.js').then((m) => m.flowFieldCapability) },
++  { id: 't2-crowd-avoidance', provides: ['CrowdAvoidance', 'CrowdVelocity'], load: () => import('@skills/tier2/crowd-avoidance.js').then((m) => m.crowdAvoidanceCapability) },
++  { id: 't2-navigation-grid', provides: ['NavigationGrid', 'NavigationProfile'], load: () => import('@skills/tier2/navigation-grid.js').then((m) => m.navigationGridCapability) },
+   { id: 't2-stat-bind', provides: ['StatBind'], load: () => import('@skills/tier2/stat-bind.js').then((m) => m.statBindCapability) },
+   { id: 't2-bounce-relay', provides: ['Bounce'], load: () => import('@skills/tier2/bounce-relay.js').then((m) => m.bounceRelayCapability) },
+   { id: 't2-pull-anchor', provides: ['PullAnchor'], load: () => import('@skills/tier2/pull-anchor.js').then((m) => m.pullAnchorCapability) },
+diff --git a/src/assembly/capability-registry.ts b/src/assembly/capability-registry.ts
+index 5c532cdf3..1170d57b5 100644
+--- a/src/assembly/capability-registry.ts
++++ b/src/assembly/capability-registry.ts
+@@ -58,6 +58,8 @@ import {
+   orbitMotionCapability,
+   pathFollowCapability,
+   flowFieldCapability,
++  crowdAvoidanceCapability,
++  navigationGridCapability,
+   statBindCapability,
+   bounceRelayCapability,
+   pullAnchorCapability,
+@@ -160,6 +162,8 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
+   // （实测千单位查表 0.075ms/tick，而 A*-per-agent 同规模稳态 20ms+、首拍 500ms+）。
+   // 与 pathfind 并存不互斥：单位多目标少用它，单位少各走各的用 pathfind。整数积分 → 逐位可复现。
+   flowFieldCapability,
++  crowdAvoidanceCapability,
++  navigationGridCapability,
+   // t2-stat-bind（REQ-SURVIVOR被动轴）：属性桥——把 ModifierTotals(单例)/Stats(本实体 effective) 按 key
+   // 投影到本实体任意组件字段（moveSpeed→Controllable.speed、range→Shape.radius、attackSpeed→Timer.duration
+   // 等），幂等重算不复利。runsAfter modifier-stack/stat-apply/resource-apply/timer-advance 打破传递环。
+diff --git a/src/assembly/component-map.ts b/src/assembly/component-map.ts
+index 292fc7673..3fd1c3c0d 100644
+--- a/src/assembly/component-map.ts
++++ b/src/assembly/component-map.ts
+@@ -38,6 +38,8 @@ import type {
+   Effect,
+   EventWhen,
+   Facing,
++  CrowdAvoidance,
++  CrowdVelocity,
+   FlowAgent,
+   FlowField,
+   FaceDir,
+@@ -79,6 +81,8 @@ import type {
+   ModifierTotals,
+   Model3D,
+   Mortal,
++  NavigationGrid,
++  NavigationProfile,
+   NavAgent,
+   NavGraph,
+   NavMesh,
+@@ -235,6 +239,8 @@ export interface ComponentDataMap {
+   ModifierTotals: Omit<ModifierTotals, 'type'>;
+   Model3D: Omit<Model3D, 'type'>;
+   Mortal: Omit<Mortal, 'type'>;
++  NavigationGrid: Omit<NavigationGrid, 'type'>;
++  NavigationProfile: Omit<NavigationProfile, 'type'>;
+   NavAgent: Omit<NavAgent, 'type'>;
+   NavGraph: Omit<NavGraph, 'type'>;
+   NavMesh: Omit<NavMesh, 'type'>;
+@@ -320,6 +326,8 @@ export interface ComponentDataMap {
+   Cooldowns: Omit<Cooldowns, 'type'>;
+   DamageTable: Omit<DamageTable, 'type'>;
+   DebugTrace: Omit<DebugTrace, 'type'>;
++  CrowdAvoidance: Omit<CrowdAvoidance, 'type'>;
++  CrowdVelocity: Omit<CrowdVelocity, 'type'>;
+   FlowAgent: Omit<FlowAgent, 'type'>;
+   FlowField: Omit<FlowField, 'type'>;
+   Group: Omit<Group, 'type'>;
+diff --git a/src/assembly/component-universe.gen.ts b/src/assembly/component-universe.gen.ts
+index 3e700cb75..bdf6b8372 100644
+--- a/src/assembly/component-universe.gen.ts
++++ b/src/assembly/component-universe.gen.ts
+@@ -8,7 +8,7 @@
+ //  加/改/删组件后同提交重跑生成命令；忘了 → scripts/build-component-map.test.mjs 漂移守卫亮红。
+ // ═══════════════════════════════════════════════════════════════
+ 
+-/** 全部运行时组件名（166 个·升序去重·生成物）。 */
++/** 全部运行时组件名（170 个·升序去重·生成物）。 */
+ export const COMPONENT_UNIVERSE = [
+   'Acceleration',
+   'Action',
+@@ -36,6 +36,8 @@ export const COMPONENT_UNIVERSE = [
+   'ConveyorQueue',
+   'Cooldowns',
+   'CraftRecipe',
++  'CrowdAvoidance',
++  'CrowdVelocity',
+   'DamageTable',
+   'DebugTrace',
+   'Decal3D',
+@@ -102,6 +104,8 @@ export const COMPONENT_UNIVERSE = [
+   'NavGraph',
+   'NavMesh',
+   'NavPath',
++  'NavigationGrid',
++  'NavigationProfile',
+   'Orbit',
+   'Order',
+   'OverTime',
+diff --git a/src/assembly/declaration-audit.test.ts b/src/assembly/declaration-audit.test.ts
+index a599072e4..086d05553 100644
+--- a/src/assembly/declaration-audit.test.ts
++++ b/src/assembly/declaration-audit.test.ts
+@@ -149,6 +149,9 @@ describe('相位落桶棘轮 — 非缺省相位成员点名（根因①·A1 探
+ 
+ /** 相位基线（2026-08-16 实测灌入）。改动纪律同 SCC 基线：挪相位 = 同提交带理由更新本表。 */
+ const PHASE_BASELINE: string[] = [
++  // REQ-114-NAV: capture actual velocity before Update navigation overwrites it
++  // with the preferred velocity; the ORCA oracle independently verifies this order.
++  'p-10:crowd-capture',
+   'p4:rotation-apply',
+   'p10:collision-resolve,collision-resolve-3d,tile-collision',
+   'p14:conveyor-queue,friction,gauge,hierarchy-resolve,orbit-motion,text-binding',
+@@ -194,7 +197,12 @@ const SCC_BASELINE: string[] = [
+   // 不是本件的申报缺陷。**本件真有过的那个缺陷已另行治本**：首版它还 `reads:['TurnOrder']`，
+   // 与 turn-order 构成真 2-环（strict 模式当场抛）；改成由 `setBarrierTurn` 推回合号后那条读边消失，
+   // 2-环随之消失（`intent-barrier.test.ts` ⑦ 断言 strict 不抛 + warn 数为零 + 系统不读 TurnOrder）。
+-  'p0:accel-apply+aggro+block-place+bounce-relay+card-pile+card-play-input+card-score-pass+clickable+dialogue+dice-roll+drag-place+drop-zone+event-when+flow+flow-field+grid-drag-square+grid-move+group-count+hitbox+intent-barrier+keybind+launch+match-resolve+match3-drag-swap+matrix-duel+merge-on-place+merge-proximity-clear+motion-apply+nav-follow+navmesh-bake+order-fulfill+over-time+overlap-detect+path-follow+poker-eval+pull-anchor+queue-slots+resource-apply+self-rule+state-sync+steering+string-apply+t3-slot-payout+timeline+tray+trigger-zone+turn-order+tween+zone-occupancy|via:Bounce,Clickable,Flag,HexPos,MergeEvent,NavGraph,OverTime,Overlap,PlaceBlockIntent,PlayedHand,RandomSeed,Relation,Resource,ResourceModify,RolledDice,Signal,State,Status,StringVar,Transform,Trigger,Tween,Velocity',
++  // REQ-114-NAV: independent strict bounce/crowd/motion repro fixed by explicit crowd→bounce.
++  // Remaining full-registry SCC only adds crowd to the existing blob; e.g. crowd→navmesh-bake
++  // →nav-follow→crowd inherits the pre-existing navmesh-bake↔nav-follow cycle. No new via component.
++  // 2026-10-09 圆形硬碰撞兜底：crowd 写 Shape.radius 后，全库超集已有大环增加 via:Shape。
++  // 独立复查确认成员集合不变；与 drag-place 的真实 2 环已用显式 drag-place→crowd 顺序消除。
++  'p0:accel-apply+aggro+block-place+bounce-relay+card-pile+card-play-input+card-score-pass+clickable+crowd-avoidance+dialogue+dice-roll+drag-place+drop-zone+event-when+flow+flow-field+grid-drag-square+grid-move+group-count+hitbox+intent-barrier+keybind+launch+match-resolve+match3-drag-swap+matrix-duel+merge-on-place+merge-proximity-clear+motion-apply+nav-follow+navmesh-bake+order-fulfill+over-time+overlap-detect+path-follow+poker-eval+pull-anchor+queue-slots+resource-apply+self-rule+state-sync+steering+string-apply+t3-slot-payout+timeline+tray+trigger-zone+turn-order+tween+zone-occupancy|via:Bounce,Clickable,Flag,HexPos,MergeEvent,NavGraph,OverTime,Overlap,PathFollow,PlaceBlockIntent,PlayedHand,RandomSeed,Relation,Resource,ResourceModify,RolledDice,Shape,Signal,State,Status,StringVar,Transform,Trigger,Tween,Velocity',
+   'p10:collision-resolve+collision-resolve-3d+tile-collision|via:Transform,Velocity',
+   'p20:anim-state+match-view-sync|via:Sprite',
+   'p20:bounds-clamp+facing|via:Transform',
+diff --git a/src/engine/protocol/components.ts b/src/engine/protocol/components.ts
+index 88ed31431..60e99d4d1 100644
+--- a/src/engine/protocol/components.ts
++++ b/src/engine/protocol/components.ts
+@@ -59,3 +59,6 @@ export type * from './components/render.js';
+ export type * from './components/input.js';
+ export type * from './components/autochess.js';
+ export type * from './components/cardboard.js';
++
++export type * from './components/crowd.js';
++export type * from './components/navigation-grid.js';
+diff --git a/src/engine/protocol/components/combat.ts b/src/engine/protocol/components/combat.ts
+index d001cef9e..55dd7c69b 100644
+--- a/src/engine/protocol/components/combat.ts
++++ b/src/engine/protocol/components/combat.ts
+@@ -164,6 +164,7 @@ export interface PathFollow extends Component {
+   loop?: boolean; // 闭环（跑完回到航点0）；缺省 false=停在末点
+   speed: number; // 写入 Velocity 模长（单位/tick）
+   arriveRadius?: number; // 进入该半径算「到达」进下一航点；缺省 4
++  lookAhead?: number; // 可选路线方向优先：沿当前线段前方此距离瞄准；越大越偏向切线，绕行后仍回收横向偏差
+   index?: number; // 当前目标航点游标（运行时状态·缺省 0·序列化进 snapshot）
+   queueId?: string; // 队列分组键（传送带/队列 id）；同 queueId 成员按 path 进度排序、互不超车
+   minGap?: number; // 与「前一名」的最小 path 进度间距；缺省 0（仍不超车）
+diff --git a/src/engine/protocol/components/render.ts b/src/engine/protocol/components/render.ts
+index c2a9ce13e..4e935aeea 100644
+--- a/src/engine/protocol/components/render.ts
++++ b/src/engine/protocol/components/render.ts
+@@ -122,6 +122,7 @@ export interface AnimState3D extends Component {
+   readonly type: 'AnimState3D';
+   clip: string; // 动画名（glTF clip·如 'Run'/'Walk'）
+   speed?: number; // 播放倍速·缺省 1
++  speedAtVelocity?: number; // 设正值时，Velocity 达到此值则以 speed 倍速播放；静止暂停。单位：世界单位/tick
+   loop?: boolean; // 循环·缺省 true（false=播一遍停在末帧）
+ }
+ 
+diff --git a/src/engine/protocol/components/spatial.ts b/src/engine/protocol/components/spatial.ts
+index 589ead650..87f824c3e 100644
+--- a/src/engine/protocol/components/spatial.ts
++++ b/src/engine/protocol/components/spatial.ts
+@@ -2,6 +2,7 @@
+ // 实体在世界里"在哪、多大、怎么动、碰没碰、占没占区"的物理基底；以及挂在 world 实体上的
+ // 随机数与空间索引服务。被 motion/collision/spatial-query/trigger-zone/tilemap 等读写。
+ import type { Component, EntityId } from '../../core/types.js';
++import type { NavigationGraphGrid } from './navigation-grid.js';
+ 
+ // ── A1 transform ── 实体在世界的位置、朝向和大小
+ export interface Transform extends Component {
+@@ -199,6 +200,7 @@ export interface Tilemap extends Component {
+ // 推开（**正交**·nav 写 Velocity → motion-apply 积分 → overlap/collision-resolve 分离·零新碰撞代码·复用）。
+ export interface NavGraph extends Component {
+   readonly type: 'NavGraph';
++  grid?: NavigationGraphGrid; // Generated shared grid; source-cell terrain costs and strict bounds.
+   nodes: Array<{ x: number; y: number }>;                 // 航点世界坐标（下标即节点 id）。摆放数据·最弱 LLM 也能填。
+   edges: Array<{ a: number; b: number; cost?: number }>;  // 连边（节点下标·无向）；cost 缺省 = 两端 Euclidean 距离。
+ }
+@@ -207,11 +209,17 @@ export interface NavGraph extends Component {
+ // 复用 aggro 写的 Relation(target)（同 steering/grid-move 索敌接缝·零新目标概念）。无目标/被 CC → 停。
+ export interface NavAgent extends Component {
+   readonly type: 'NavAgent';
++  graphId?: EntityId; // Explicit graph/profile entity; missing/invalid/unreachable stops.
+   speed: number;            // 移动速度（写入 Velocity 模长·单位/tick）
+   arriveRange: number;      // 到终点此距离内即停
+   waypointRange?: number;   // 到当前航点此距离内即推进下一航点（缺省 = max(speed, arriveRange)·防抖/防一拍一停）
+   repathPeriod?: number;    // 每多少 tick 强制重算路径（缺省 30）；目标显著移动（> arriveRange）也会触发重算
+   haltStatusMask?: number;  // 自身 Status 含这些位时停（冻结/眩晕 CC·同 Steering/GridMover.haltStatusMask）
++  patrol?: { // 可选固定目标序列：每到一点才切下一点，仍经 NavGraph A* 寻路
++    waypoints: Array<{ x: number; y: number }>;
++    index?: number; // 当前目标下标；引擎推进，进入快照
++    loop?: boolean; // 到最后一点后回到第一个点
++  };
+ }
+ 
+ // ── flow-field（REQ-FLOWFIELD·群体流场寻路·确定性 sim·进 hash）──────────────────────
+@@ -224,6 +232,7 @@ export interface NavAgent extends Component {
+ // 凹形障碍不卡死）→ 每格取积分最小邻格得方向。积分全程**整数**（直走 10/斜走 14）以逐位可复现。
+ export interface FlowField extends Component {
+   readonly type: 'FlowField';
++  costAware?: boolean; // opt-in：方向最小化源格步进代价+剩余积分；旧配置保持原方向语义
+   id: string;                     // 场 id（FlowAgent.fieldId 认领·多阵营/多目标可并存多张）
+   cellSize: number;               // 格边长（世界单位）
+   originX: number;                // 网格左下角世界 x
+@@ -310,6 +319,9 @@ export interface FlowAgent extends Component {
+ // ── NavPath ── 引擎写的缓存路径（确定性派生·进 hash）。via=待经节点下标序；gx/gy=规划所据目标点；age=自上次重算 tick。
+ export interface NavPath extends Component {
+   readonly type: 'NavPath';
++  graphId?: EntityId;
++  graphKey?: string; // Exact serialized geometry identity, rollback-safe.
++  reachable?: boolean; // Explicit graphs never use straight-line fallback.
+   via: number[];   // 剩余待经航点（节点下标·按序·整数进 hash）
+   gx: number;      // 规划时的目标点 x（检测目标移动 → 触发重算）
+   gy: number;      // 规划时的目标点 y
+diff --git a/src/renderer/three-renderer.ts b/src/renderer/three-renderer.ts
+index 8b8d19f6d..23345dd2a 100644
+--- a/src/renderer/three-renderer.ts
++++ b/src/renderer/three-renderer.ts
+@@ -1,6 +1,6 @@
+ import * as THREE from 'three';
+ import type { IWorld, RendererBackend } from '@engine/core/types.js';
+-import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D, AnimState3D, Glow3D, Transform3D, Pivot3D, Pickable3D } from '@engine/protocol/components.js';
++import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D, AnimState3D, Glow3D, Transform3D, Pivot3D, Pickable3D, FaceDir, Velocity } from '@engine/protocol/components.js';
+ import type { AssetManager, MaterialSpec } from '@assets/index.js';
+ import { isImageHandle } from '@assets/index.js';
+ import { getCamera3D, getSky3D, getLights3D, getPost3D, getFog3D } from '@engine/protocol/camera-view.js';
+@@ -15,6 +15,7 @@ import { hashPoses, camSig, postSig } from './three/stats.js';
+ import { LightRig } from './three/lights.js';
+ import { PostPipeline, FlashDecay } from './three/post.js';
+ import { ModelPool } from './three/models.js';
++import { modelYawFromFaceDir, turnModelYaw, modelMotionSpeed } from './three/model-motion.js';
+ import { InstancedBatches, type InstGroups, type PbrBatchBuild } from './three/batches.js';
+ import { CameraRig, CameraShake, FollowDamper, type DampedCenter } from './three/camera-rig.js';
+ import { ColliderDebug } from './three/collider-debug.js';
+@@ -100,6 +101,8 @@ export class ThreeRenderer implements RendererBackend {
+   private readonly reflectors = new ReflectorSystem(); // 平面反射镜面（Reflector3D·RTT 倒影·render-only·REQ-3D-PLANAR-REFLECT）
+   private readonly anim3d = new Anim3DSystem(); // 程序化位姿动画（Anim3D·spin/bob·render-only·把 title 骰自转等从游戏层手写下沉成数据）
+   private readonly paths = new PathSystem(); // 路径跟随（Path3D·沿控制点走·移动平台/巡逻/dolly·render-only）
++  private readonly modelYaw = new Map<string, number>(); // FaceDir → GLB 地面朝向；只在表现层平滑转身
++  private lastModelYawMs = 0;
+   private readonly worldUi = new WorldUiLayer(); // 世界空间 UI 头顶飘字（TA Phase 3·render-only·走主程 UI 库）
+   private physics: PhysicsSystem | null = null; // 真物理刚体（cannon-es·render-only·**懒加载**·仅有 RigidBody3D 时）
+   private physicsLoading = false;
+@@ -245,6 +248,8 @@ export class ThreeRenderer implements RendererBackend {
+ 
+   sync(world: IWorld): void {
+     const t0 = performance.now();
++    const turnStep = this.lastModelYawMs ? Math.min(0.05, (t0 - this.lastModelYawMs) / 1000) * 6 : Infinity;
++    this.lastModelYawMs = t0;
+     this.gl.info.reset(); // 手动重置 → calls/triangles 跨 scene+post 全 pass 累加（真·每帧 draw 数）
+     const seen = new Set<string>();
+     const poses: Pose3D[] = [];
+@@ -304,6 +309,16 @@ export class ThreeRenderer implements RendererBackend {
+           const rawPose: Pose3D = (r.transform3d || cam3d)
+             ? (r.transform3d ? transform3dPose(r.transform3d) : groundPose(r, 0))
+             : renderablePose(r, this.zStep);
++          if (!r.transform3d && cam3d) {
++            const dir = world.getComponent<FaceDir>(r.entityId, 'FaceDir');
++            if (dir) {
++              const wanted = modelYawFromFaceDir(dir, rawPose.ry ?? 0);
++              const previous = this.modelYaw.get(r.entityId);
++              const yaw = previous === undefined ? wanted : turnModelYaw(previous, wanted, turnStep);
++              this.modelYaw.set(r.entityId, yaw);
++              rawPose.ry = yaw;
++            }
++          }
+           const pose = pivotPose(r.entityId, rawPose); // Pivot3D 父合成（无 pivot 则恒等）
+           obj.position.set(pose.x, pose.y, pose.z);
+           if (pose.quat) obj.quaternion.set(pose.quat[0], pose.quat[1], pose.quat[2], pose.quat[3]);
+@@ -311,7 +326,9 @@ export class ThreeRenderer implements RendererBackend {
+           obj.scale.set(pose.sx * ms, pose.sy * ms, (pose.sz ?? 1) * ms);
+           if (r.model3d.tint !== undefined) this.models.tint(r.entityId, r.model3d.tint);
+           const anim = world.getComponent<AnimState3D>(r.entityId, 'AnimState3D'); // 骨骼动画（render-only·播 glTF clip）
+-          if (anim) this.models.applyAnim(r.entityId, anim);
++          if (anim) this.models.applyAnim(r.entityId, anim.speedAtVelocity === undefined ? anim : {
++            ...anim, speed: modelMotionSpeed(anim, world.getComponent<Velocity>(r.entityId, 'Velocity')),
++          });
+           seen.add(r.entityId);
+           poses.push(pose);
+           if (r.entityId === followTarget) followPose = pose;
+@@ -461,6 +478,7 @@ export class ThreeRenderer implements RendererBackend {
+       }
+     }
+     this.models.sweep(this.scene, seen);
++    for (const id of this.modelYaw.keys()) if (!seen.has(id)) this.modelYaw.delete(id);
+ 
+     this.colliderDebug.sync(this.scene, world, this.debugColliders); // 碰撞体线框（debug·开则画·关则清）
+     this.navDebug.sync(this.scene, world, this.debugNav); // 导航图/路径（debug·开则画·关则清）
+diff --git a/src/skills/tier2/flow-field-core.test.ts b/src/skills/tier2/flow-field-core.test.ts
+index 2da110863..3076e405b 100644
+--- a/src/skills/tier2/flow-field-core.test.ts
++++ b/src/skills/tier2/flow-field-core.test.ts
+@@ -117,3 +117,32 @@ describe('flow-field-core —— 纯函数核（拆核后的独立可测性）',
+     expect(body).not.toMatch(/Date\.now|performance\.now|Math\.random/);
+   });
+ });
++
++
++describe('共享网格代价一致性（显式 opt-in）', () => {
++  it('高代价起点按步进总代价选方向，旧配置逐位保持原方向', () => {
++    const f=field({cols:3,rows:2,cost:[10,1,1,1,1,1],goals:[{x:2.5,y:1.5}]});
++    const legacy=getBakedField(f);
++    expect([...legacy.dir.slice(0,2)]).toEqual([1,1]);
++    f.costAware=true;
++    const current=getBakedField(f);
++    expect([...current.dir.slice(0,2)]).toEqual([1,0]);
++    expect(current.integration[0]).toBe(114);
++    expect(current.integration[1]+10*10).toBe(current.integration[0]);
++    expect(flowFieldBakes()).toBe(2);
++    f.costAware=false;
++    expect([...getBakedField(f).dir]).toEqual([...legacy.dir]);
++  });
++  it('每个可达格的方向均满足最短路积分，清缓存不会改变结果',()=>{
++    const f=field({cols:8,rows:8,cost:Array.from({length:64},(_,i)=>1+i*7%11),costAware:true});
++    const a=getBakedField(f);
++    for(let i=0;i<64;i++){
++      if(a.integration[i]===0)continue;
++      const dx=a.dir[2*i],dy=a.dir[2*i+1];
++      expect(dx!==0||dy!==0).toBe(true);
++      const j=i+dy*8+dx;
++      expect(a.integration[j]+a.cost[i]*(dx&&dy?14:10)).toBe(a.integration[i]);
++    }
++    clearFlowFieldCache();expect([...getBakedField(f).dir]).toEqual([...a.dir]);
++  });
++});
+diff --git a/src/skills/tier2/flow-field-core.ts b/src/skills/tier2/flow-field-core.ts
+index da857d1a1..b3625d677 100644
+--- a/src/skills/tier2/flow-field-core.ts
++++ b/src/skills/tier2/flow-field-core.ts
+@@ -326,7 +326,7 @@ export function buildFlow(field: FlowField, cost: Int32Array, integ: Int32Array)
+     for (let col = 0; col < cols; col++) {
+       const i = index(col, row, cols);
+       if (cost[i] === 0 || integ[i] === 0 || integ[i] === UNREACHABLE) continue;   // 墙/终点/孤岛 → (0,0)
+-      let bestVal = integ[i];
++      let bestVal = field.costAware === true ? UNREACHABLE : integ[i];
+       let bx = 0; let by = 0;
+       for (const [dx, dy] of NEIGHBORS) {
+         const ni = cellIndex(field, col + dx, row + dy);
+@@ -336,7 +336,12 @@ export function buildFlow(field: FlowField, cost: Int32Array, integ: Int32Array)
+           const b = cellIndex(field, col, row + dy);
+           if (a < 0 || b < 0 || cost[a] === 0 || cost[b] === 0) continue;
+         }
+-        if (integ[ni] < bestVal) { bestVal = integ[ni]; bx = dx; by = dy; }
++        // Generated shared-grid profiles opt in to Bellman-consistent extraction.
++        // Legacy fields keep their historical gradient (and trajectories).
++        const candidate = field.costAware === true
++          ? integ[ni] + cost[i] * (dx !== 0 && dy !== 0 ? DIAGONAL : STRAIGHT)
++          : integ[ni];
++        if (candidate < bestVal) { bestVal = candidate; bx = dx; by = dy; }
+       }
+       dir[i * 2] = bx; dir[i * 2 + 1] = by;
+     }
+@@ -365,6 +370,7 @@ export function bakeFlowField(field: FlowField): BakedField {
+  * 代价与哈希同阶（都要扫一遍数组），换来的是**没有别名可能**——不靠"碰撞概率极低"这种话。
+  */
+ interface InputSnapshot {
++  costAware?: boolean;
+   cellSize: number; originX: number; originY: number; cols: number; rows: number;
+   goals: Array<{ x: number; y: number }>;
+   blocked?: number[];
+@@ -373,6 +379,7 @@ interface InputSnapshot {
+ 
+ function snapshotOf(field: FlowField): InputSnapshot {
+   return {
++    costAware: field.costAware === true,
+     cellSize: field.cellSize, originX: field.originX, originY: field.originY,
+     cols: field.cols, rows: field.rows,
+     goals: field.goals.map((g) => ({ x: g.x, y: g.y })),
+@@ -383,6 +390,7 @@ function snapshotOf(field: FlowField): InputSnapshot {
+ 
+ /** 精确比对（`Object.is` 而非 `===`：把 NaN/-0 这类也判得一致，别让它们成为第二种别名）。 */
+ export function sameInputs(a: InputSnapshot, field: FlowField): boolean {
++  if ((a.costAware === true) !== (field.costAware === true)) return false;
+   if (!Object.is(a.cellSize, field.cellSize) || !Object.is(a.originX, field.originX) || !Object.is(a.originY, field.originY)) return false;
+   if (a.cols !== field.cols || a.rows !== field.rows) return false;
+   if (a.goals.length !== field.goals.length) return false;
+@@ -437,6 +445,7 @@ function bucketKey(field: FlowField): string {
+   let h = FNV_OFFSET;
+   const mix = (n: number): void => { h = fnvMixInt(h, n); }; // engine/math/hash（逐位同旧本地实现）
+   mix(field.cols); mix(field.rows);
++  if (field.costAware === true) mix(1);
+   mix(Math.round(field.cellSize * 1000)); mix(Math.round(field.originX * 1000)); mix(Math.round(field.originY * 1000));
+   mix(field.goals.length);
+   for (const g of field.goals) { mix(Math.round(g.x * 1000)); mix(Math.round(g.y * 1000)); }
+diff --git a/src/skills/tier2/flow-field.ts b/src/skills/tier2/flow-field.ts
+index 92634ad29..b6ebd1166 100644
+--- a/src/skills/tier2/flow-field.ts
++++ b/src/skills/tier2/flow-field.ts
+@@ -89,6 +89,7 @@ export const flowFieldCapability = defineCapability({
+           blocked: { type: 'string', describe: '行主序 0/1 数组·1=不可走（缺省全可走）' },
+           cost: { type: 'string', describe: '行主序 ≥1 的地形代价（缺省全 1·公路 1/沼泽 3·非整数向上取整）' },
+           goals: { type: 'string', describe: '目标点世界坐标数组 [{x,y}…]·多源一次铺完' },
++          costAware: { type: 'boolean', describe: '可选：方向最小化源格步进代价+邻格积分，与共享网格 A* 同一代价；缺省保持旧行为' },
+           los: { type: 'string', describe: '视线直指优化（M2 未实现·M1 忽略并留痕）' },
+         },
+       },
+diff --git a/src/skills/tier2/index.ts b/src/skills/tier2/index.ts
+index 47e990d29..79dc1d479 100644
+--- a/src/skills/tier2/index.ts
++++ b/src/skills/tier2/index.ts
+@@ -166,3 +166,6 @@ export { intentBarrierCapability, openBarrier, deliverIntents, failIntents, appl
+ export type { IntentBarrier, IntentInbox, OpenBarrierSpec, IntentCheck, SettleDraft } from './intent-barrier.js';
+ // 上两件的纯函数核（零 World·打分/排序/衰减/淘汰 与 闭集校验/结算产物 都在核里可直接喂数据断言）。
+ export { normalizeEntry, evictWeakest, sortById } from './memory-core.js';
++
++export { crowdAvoidanceCapability } from './crowd-avoidance.js';
++export { navigationGridCapability } from './navigation-grid.js';
+diff --git a/src/skills/tier2/orca.test.ts b/src/skills/tier2/orca.test.ts
+index eac941026..3ef4b597c 100644
+--- a/src/skills/tier2/orca.test.ts
++++ b/src/skills/tier2/orca.test.ts
+@@ -43,6 +43,17 @@ function orcaLinesOf(self: OrcaAgent, neighbors: readonly OrcaAgent[], timeHoriz
+ }
+ 
+ describe('orca — 移植自 RVO2（Apache-2.0）· 线性规划本体', () => {
++  it('质量优先级把避让责任互补分配：大车少偏移，小牛多让行；省略时仍对半', () => {
++    const cart: OrcaAgent = {x:0,y:0,vx:0,vy:0,radius:2.5,idx:0,priority:12};
++    const ox: OrcaAgent = {x:3,y:0,vx:0,vy:0,radius:.8,idx:1,priority:1};
++    const cartOut = orcaVelocity(cart,[ox],{x:0,y:0},1,8,1);
++    const oxOut = orcaVelocity(ox,[cart],{x:0,y:0},1,8,1);
++    expect(cartOut.x).toBeCloseTo(-.3/13,9);
++    expect(oxOut.x).toBeCloseTo(.3*12/13,9);
++    expect(oxOut.x-cartOut.x).toBeCloseTo(.3,9);
++    const equalCart = orcaVelocity({...cart,priority:undefined},[{...ox,priority:undefined}],{x:0,y:0},1,8,1);
++    expect(equalCart.x).toBeCloseTo(-.15,9);
++  });
+   it('无邻居 → 原样返回期望速度（避让不该无中生有地改路）', () => {
+     const out = orcaVelocity(agent(0, 0), [], { x: 1, y: 0 }, 1, 2, 1);
+     expect(out).toMatchObject({ x: 1, y: 0 });
+diff --git a/src/skills/tier2/orca.ts b/src/skills/tier2/orca.ts
+index 09e7542ee..242a2c161 100644
+--- a/src/skills/tier2/orca.ts
++++ b/src/skills/tier2/orca.ts
+@@ -81,6 +81,8 @@ export interface OrcaAgent {
+    * 缺省 `true` = 原码语义（原码里所有 agent 都跑 ORCA）。
+    */
+   reciprocal?: boolean;
++  /** 可选、正且有限的通行优先级；双方责任按对方/总优先级分配，缺省 1。 */
++  priority?: number;
+ }
+ 
+ /** 退化分支的计数（只为留痕与测试·不参与判定）。 */
+@@ -319,11 +321,13 @@ export function orcaVelocity(
+       u = { x: k * unitW.x, y: k * unitW.y };
+     }
+ 
+-    // **各让一半**（reciprocal 的由来）：line.point = 自己的速度 + u/2。
++    // 缺省各让一半；双方带优先级时按对方优先级分摊，本方越重越少偏离期望速度。
+     // ⚠ 邻居**不还礼**时（没开 ORCA 的纯流场/软分离单位）必须独自让满，否则那一半没人让，
+     // 「timeHorizon 内保证不撞」这句强承诺就静默变成半句（独立复查实测：ORCA 队对穿纯流场队
+     // 最近两心距 0.1000，而半径和是 0.70）。
+-    const share = other.reciprocal === false ? 1 : 0.5;
++    const ownPriority = Number.isFinite(self.priority) && (self.priority ?? 0) > 0 ? Math.min(self.priority!, 1e6) : 1;
++    const otherPriority = Number.isFinite(other.priority) && (other.priority ?? 0) > 0 ? Math.min(other.priority!, 1e6) : 1;
++    const share = other.reciprocal === false ? 1 : otherPriority / (ownPriority + otherPriority);
+     if (share === 1 && stats) stats.oneSided++;
+     lines.push({ point: { x: self.vx + share * u.x, y: self.vy + share * u.y }, direction });
+   }
+diff --git a/src/skills/tier2/path-follow.test.ts b/src/skills/tier2/path-follow.test.ts
+index a99305199..f576df721 100644
+--- a/src/skills/tier2/path-follow.test.ts
++++ b/src/skills/tier2/path-follow.test.ts
+@@ -1,6 +1,6 @@
+ import { describe, it, expect, vi } from 'vitest';
+ import { World } from '@engine/core/world.js';
+-import type { PathFollow, Transform, Velocity, SpawnRequest, DestroyRequest } from '@engine/protocol/components.js';
++import type { PathFollow, Transform, Velocity, SpawnRequest, DestroyRequest, DebugTrace } from '@engine/protocol/components.js';
+ import { pathFollowCapability, pathFollowAt } from './path-follow.js';
+ import {
+   transformCapability, shapeCapability, tagCapability, colorCapability,
+@@ -109,6 +109,50 @@ describe('path-follow — 速度模长', () => {
+   });
+ });
+ 
++describe('path-follow — 路线方向优先', () => {
++  it('横向偏离后仍优先沿线段前进；未配置时保留直奔航点', () => {
++    const waypoints = [{ x: 0, y: 0 }, { x: 0, y: 10 }];
++    const plain = world(), guided = world();
++    follower(plain, 'm', 4, 8, { ...pathFollowAt(waypoints, 1, { arriveRadius: .1 }), index: 1 });
++    follower(guided, 'm', 4, 8, { ...pathFollowAt(waypoints, 1, { arriveRadius: .1, lookAhead: 6 }), index: 1 });
++    plain.tick(); guided.tick();
++    expect(vel(guided, 'm').vy).toBeGreaterThan(vel(plain, 'm').vy);
++    expect(vel(guided, 'm').vy).toBeGreaterThan(Math.abs(vel(guided, 'm').vx));
++    expect(Math.hypot(vel(guided, 'm').vx, vel(guided, 'm').vy)).toBeCloseTo(1, 9);
++  });
++
++  it('闭环越过端点所在横截面时切换方向，即使避让后横向偏离', () => {
++    const w = world();
++    follower(w, 'm', 4, 10.2, { ...pathFollowAt([{ x: 0, y: 0 }, { x: 0, y: 10 }], 1,
++      { loop: true, arriveRadius: .1, lookAhead: 6 }), index: 1 });
++    w.tick();
++    expect(pf(w, 'm').index).toBe(0);
++    expect(vel(w, 'm').vy).toBeLessThan(0);
++  });
++
++  it('非闭环的中间航点同样按横截面推进，末点仍按到达半径停靠', () => {
++    const w = world();
++    follower(w, 'm', 4, 10.2, { ...pathFollowAt([{ x: 0, y: 0 }, { x: 0, y: 10 }, { x: 10, y: 10 }], 1,
++      { arriveRadius: .1, lookAhead: 6 }), index: 1 });
++    w.tick();
++    expect(pf(w, 'm').index).toBe(2);
++    expect(vel(w, 'm').vx).toBeGreaterThan(0);
++  });
++
++  it('非法前瞻距离拒收并留痕，不将无效速度写入运动', () => {
++    const w = world();
++    follower(w, 'm', 0, 0, pathFollowAt([{ x: 0, y: 0 }, { x: 10, y: 0 }], 1,
++      { loop: true, arriveRadius: .1, lookAhead: 0 }));
++    w.createEntity('trace');
++    w.addComponent<DebugTrace>('trace', { type: 'DebugTrace', events: [] });
++    w.tick();
++    expect(vel(w, 'm').vx).toBe(0);
++    expect(vel(w, 'm').vy).toBe(0);
++    expect(w.getComponent<DebugTrace>('trace', 'DebugTrace')!.events.some(e =>
++      e.system === 'path-follow' && e.kind === 'reject' && e.what.includes('m'))).toBe(true);
++  });
++});
++
+ describe('path-follow — 边界', () => {
+   it('空 waypoints → Velocity 置零', () => {
+     const w = world();
+diff --git a/src/skills/tier2/path-follow.ts b/src/skills/tier2/path-follow.ts
+index 0a7de3caa..8f42746a6 100644
+--- a/src/skills/tier2/path-follow.ts
++++ b/src/skills/tier2/path-follow.ts
+@@ -4,6 +4,7 @@ import type { IWorld } from '@engine/core/types.js';
+ import type { PathFollow, Transform, Velocity, SpawnRequest, DestroyRequest } from '@engine/protocol/components.js';
+ import { cmpStr } from '@engine/math/scalar.js';
+ import { len as vecLen } from '@engine/math/vec2.js';
++import { findDebugTrace, appendTrace } from '../debug-trace.js';
+ 
+ // ═══════════════════════════════════════════════════════════════
+ //  path-follow —— 固定航点轨道匀速跑（REQ-PATHFOLLOW）。实体沿一条摆好的航点轨道（闭环或折线）依次
+@@ -47,6 +48,7 @@ export function pathFollowAt(
+   opts?: {
+     loop?: boolean;
+     arriveRadius?: number;
++    lookAhead?: number;
+     queueId?: string;
+     minGap?: number;
+     onEnd?: { dropTemplate?: string; destroy?: boolean };
+@@ -58,6 +60,7 @@ export function pathFollowAt(
+     index: 0,
+     ...(opts?.loop !== undefined ? { loop: opts.loop } : {}),
+     ...(opts?.arriveRadius !== undefined ? { arriveRadius: opts.arriveRadius } : {}),
++    ...(opts?.lookAhead !== undefined ? { lookAhead: opts.lookAhead } : {}),
+     ...(opts?.queueId !== undefined ? { queueId: opts.queueId } : {}),
+     ...(opts?.minGap !== undefined ? { minGap: opts.minGap } : {}),
+     ...(opts?.onEnd !== undefined ? { onEnd: opts.onEnd } : {}),
+@@ -99,6 +102,7 @@ export const pathFollowCapability = defineCapability({
+           loop: { type: 'boolean', describe: '闭环：跑完末航点回到航点0；缺省 false=停在末点' },
+           speed: { type: 'number', describe: '移动速度（写入 Velocity 模长，单位/tick）' },
+           arriveRadius: { type: 'number', describe: '进入该半径算「到达」当前航点、游标前进；缺省 4' },
++          lookAhead: { type: 'number', describe: '可选正数：沿当前线段前方此距离产生期望方向，优先保持路线切向；越大横向回收越缓。默认仍直奔航点' },
+           index: { type: 'number', describe: '当前目标航点游标（运行时状态·缺省 0·随 snapshot 存读）' },
+           queueId: { type: 'string', describe: '队列分组键：同 queueId 成员按 path 进度排序、互不超车（缺省不分组=不受限）' },
+           minGap: { type: 'number', describe: '与「前一名」的最小 path 进度间距（仅 queueId 设了才生效）；缺省 0' },
+@@ -129,6 +133,9 @@ export const pathFollowCapability = defineCapability({
+       consumes: [],
+       execute(world: IWorld) {
+         const ids = sortedIds(world, 'PathFollow', 'Transform');
++        const trace = findDebugTrace(world);
++        const invalidLookAhead: string[] = [];
++        const guided: string[] = [];
+         // REQ-CONVEYOR-CAP M1：queueId 成员本 tick 的「起点 path 进度」（clamp 用，见文件头注释）——
+         // 用本 tick **移动前**的 index/剩余距离算，故所有成员的界都基于同一时间切片，无处理序依赖。
+         const queued: { id: string; queueId: string; minGap: number; progress: number }[] = [];
+@@ -143,6 +150,11 @@ export const pathFollowCapability = defineCapability({
+           }
+ 
+           const wps = pf.waypoints;
++          if (pf.lookAhead !== undefined && (!Number.isFinite(pf.lookAhead) || pf.lookAhead <= 0)) {
++            v.vx = 0; v.vy = 0;
++            if (trace) invalidLookAhead.push(id);
++            continue;
++          }
+           if (wps.length === 0) {
+             v.vx = 0;
+             v.vy = 0;
+@@ -159,7 +171,13 @@ export const pathFollowCapability = defineCapability({
+           let d = vecLen(dx, dy);
+ 
+           const arrive = pf.arriveRadius ?? 4;
+-          if (d <= arrive) {
++          const lookAhead = pf.lookAhead;
++          const previous = i > 0 ? wps[i - 1] : pf.loop ? wps[len - 1] : undefined;
++          const sx = previous ? wp.x - previous.x : 0;
++          const sy = previous ? wp.y - previous.y : 0;
++          const segmentLength = vecLen(sx, sy);
++          const along = previous && segmentLength > 0 ? ((t.x - previous.x) * sx + (t.y - previous.y) * sy) / segmentLength : -Infinity;
++          if (d <= arrive || (lookAhead !== undefined && (pf.loop || i < len - 1) && segmentLength > 0 && along >= segmentLength - arrive)) {
+             // 到达当前航点：游标前进（loop 回到 0 / 非 loop 钉死在末点），本 tick 就朝新航点走（不空转一拍）。
+             i = pf.loop ? (i + 1) % len : Math.min(i + 1, len - 1);
+             pf.index = i;
+@@ -169,6 +187,8 @@ export const pathFollowCapability = defineCapability({
+             d = vecLen(dx, dy);
+           }
+ 
++          const remainingToWaypoint = d;
++
+           // onEnd（REQ-PATHEND-DROP）：非 loop 且游标已在末航点、本 tick 在 arriveRadius 内 → 触发一次
+           // （到达当帧与此后每帧原地停靠都满足此条件，靠 `ended` 守卫保证只触发一次——见文件头「第一坑」注释）。
+           if (pf.onEnd && !pf.loop && !pf.ended && i === len - 1 && d <= arrive) {
+@@ -190,6 +210,21 @@ export const pathFollowCapability = defineCapability({
+             }
+           }
+ 
++          if (lookAhead !== undefined && (pf.loop || i > 0)) {
++            const start = i > 0 ? wps[i - 1] : wps[len - 1];
++            const ex = wp.x - start.x, ey = wp.y - start.y;
++            const length = vecLen(ex, ey);
++            if (length > 0) {
++              const tx = ex / length, ty = ey / length;
++              const progress = Math.max(0, (t.x - start.x) * tx + (t.y - start.y) * ty);
++              if (pf.loop || i < len - 1 || progress < length - arrive) {
++                dx = start.x + tx * (progress + lookAhead) - t.x;
++                dy = start.y + ty * (progress + lookAhead) - t.y;
++                d = vecLen(dx, dy);
++              }
++            }
++          }
++
+           if (d > 0) {
+             v.vx = (dx / d) * pf.speed;
+             v.vy = (dy / d) * pf.speed;
+@@ -198,9 +233,10 @@ export const pathFollowCapability = defineCapability({
+             v.vx = 0;
+             v.vy = 0;
+           }
++          if (trace && lookAhead !== undefined) guided.push(id);
+ 
+           if (pf.queueId !== undefined) {
+-            queued.push({ id, queueId: pf.queueId, minGap: pf.minGap ?? 0, progress: pathProgress(wps, i, d) });
++            queued.push({ id, queueId: pf.queueId, minGap: pf.minGap ?? 0, progress: pathProgress(wps, i, remainingToWaypoint) });
+           }
+         }
+ 
+@@ -228,6 +264,12 @@ export const pathFollowCapability = defineCapability({
+             }
+           }
+         }
++        if (invalidLookAhead.length) appendTrace(trace, world.getVersion(), 'path-follow', 'reject', `非法 lookAhead ${invalidLookAhead.join(',')}`);
++        if (guided.length) appendTrace(trace, world.getVersion(), 'path-follow', 'commit', `路线方向速度 ${guided.map(id => {
++          const cfg = world.getComponent<PathFollow>(id, 'PathFollow')!;
++          const v = world.getComponent<Velocity>(id, 'Velocity')!;
++          return `${id}:${cfg.index}:L${cfg.lookAhead}:${v.vx},${v.vy}`;
++        }).join(';')}`);
+       },
+     },
+   ],
+diff --git a/src/skills/tier2/pathfind.ts b/src/skills/tier2/pathfind.ts
+index 446c7d1f0..b889aad9f 100644
+--- a/src/skills/tier2/pathfind.ts
++++ b/src/skills/tier2/pathfind.ts
+@@ -5,6 +5,9 @@ import type { IWorld } from '@engine/core/types.js';
+ import type { NavGraph, NavAgent, NavPath, Transform, Velocity, Relation, Status } from '@engine/protocol/components.js';
+ import { astar } from '@engine/spatial/astar.js';
+ import { dist } from '@engine/math/vec2.js';
++import { findDebugTrace, appendTrace } from '../debug-trace.js';
++import { selectPatrolGoal } from './pathfind-patrol.js';
++import { exactGraphKey, clearGraphKeyCache, validExplicitGraph } from './pathfind-graph-key.js';
+ 
+ // ═══════════════════════════════════════════════════════════════
+ //  pathfind —— 连续自由空间寻路（航点图 NavGraph + 通用 A* + 沿路跟随）。grid-move（六格离散）的连续坐标对偶。
+@@ -27,6 +30,10 @@ import { dist } from '@engine/math/vec2.js';
+ //  hitbox/over-time（读「上一拍」Status 做 CC·冻结延迟一帧·与 Condition→Effect 同纪律）。
+ // ═══════════════════════════════════════════════════════════════
+ 
++// Pure derived graph cache: exact serialized keys, bounded; clearing is semantically inert.
++const preparedGraphs = new Map<string, ReturnType<typeof buildAdjacency>>();
++export function clearPathfindGraphCache(): void { preparedGraphs.clear(); clearGraphKeyCache(); }
++
+ const TARGET = 'target';
+ 
+ // 两点 Euclidean（确定性 IEEE sqrt）= @engine/math/vec2 `dist`（同序 dx = bx − ax, dy = by − ay）。
+@@ -58,18 +65,32 @@ export function buildAdjacency(nav: NavGraph): { adj: number[][]; edgeKey: (a: n
+   return { adj, edgeKey, edgeCost };
+ }
+ 
++/** Generated grids require the actual cell, never nearest-point snapping through walls. */
++export function graphCell(nav: NavGraph, x: number, y: number): number {
++  const g = nav.grid;
++  if (!g || !Number.isFinite(x) || !Number.isFinite(y)) return -1;
++  const c = Math.floor((x - g.originX) / g.cellSize), r = Math.floor((y - g.originY) / g.cellSize);
++  if (c < 0 || r < 0 || c >= g.cols || r >= g.rows || g.blocked[r * g.cols + c]) return -1;
++  return r * g.cols + c;
++}
++function nodeInCell(nav: NavGraph, x: number, y: number): number {
++  const ci = graphCell(nav, x, y);
++  if (ci < 0) return -1;
++  return nav.nodes.findIndex(n => graphCell(nav, n.x, n.y) === ci);
++}
+ export const pathfindCapability = defineCapability({
+   id: 't2-pathfind',
+   version: '1.0.0',
+ 
+   describe: {
+     name: 'pathfind',
+-    summary: '连续自由空间寻路：读单例 NavGraph(航点+连边·摆放数据) + Relation(target) → 通用 A* 求航点路径 → 沿路 steer 写 Velocity → 末段直奔目标。grid-move(六格) 的连续坐标对偶；动态避让复用 collision-resolve。',
++    summary: '连续自由空间寻路：NavGraph + Relation(target) 或固定 patrol 航点 → A* 求航点路径 → 沿路写 Velocity。巡逻到点才切下一目标；动态避让可接 crowd-avoidance。',
+     semantic: ['tier2', 'movement', 'pathfind', 'navigation'],
+     whenToUse:
+       '连续坐标自由空间寻路（绕障走向目标·非网格）：世界放一个 NavGraph{nodes,edges}（在可走处布航点连边）；单位挂 NavAgent{speed,arriveRange}+Relation(target,由 aggro 写)。引擎 A* 沿航点引路、写 Velocity（motion-apply 积分、collision-resolve 避让）。网格场景用 grid-move、定点贪婪用 steering。',
+     examples: [
+       'NPC 巡游：NavAgent{speed:2,arriveRange:8} + Relation{kind:"target",targetId:门} + 世界 NavGraph → 沿航点绕墙走到门口停',
++      '往返巡逻：NavAgent{speed:0.05,arriveRange:0.15,patrol:{waypoints:[{x:0,y:0},{x:10,y:0}],loop:true}} → 每到端点才切换目标，路径仍走 A*',
+       '怪物追击：NavAgent{speed:3,arriveRange:24,haltStatusMask:FROZEN} + aggro 写 target → 沿可走航点逼近、被冻结停',
+     ],
+   },
+@@ -80,25 +101,31 @@ export const pathfindCapability = defineCapability({
+         category: 'config',
+         describe: '航点图（摆放并行数据·单例）：nodes=航点世界坐标(下标即 id)，edges=连边(下标·无向·cost 缺省 Euclidean)。在可走处布点连边 = 声明「可走拓扑」。',
+         fields: {
++          grid: { type: 'string', describe: 'Optional derived grid geometry: corner origin, cellSize/cols/rows, blocked/cost; strict point lookup and source-cell 10/14 terrain cost' },
+           nodes: { type: 'string', describe: '航点对象数组 [{x,y},…]（下标即节点 id）' },
+           edges: { type: 'string', describe: '连边对象数组 [{a,b,cost?},…]（a/b=节点下标·无向·cost 缺省=两端 Euclidean 距离）' },
+         },
+       },
+       NavAgent: {
+         category: 'config',
+-        describe: '沿 NavGraph 走向 Relation(target) 的移动意图（写 Velocity）。无目标/被 CC → 停。',
++        describe: '沿 NavGraph 走向 Relation(target) 或自身 patrol 固定航点的移动意图（写 Velocity）。无目标/被 CC → 停。',
+         fields: {
++          graphId: { type: 'string', describe: 'Optional NavGraph/profile entity id; missing/invalid/unreachable graph stops (no straight-line fallback)' },
+           speed: { type: 'number', describe: '移动速度（Velocity 模长·单位/tick）' },
+           arriveRange: { type: 'number', describe: '到终点此距离内即停' },
+           waypointRange: { type: 'number', describe: '到当前航点此距离内即推进下一航点（缺省 max(speed,arriveRange)·防一拍一停）' },
+           repathPeriod: { type: 'number', describe: '每多少 tick 强制重算路径（缺省 30）；目标移动 > arriveRange 也触发' },
+           haltStatusMask: { type: 'number', describe: '自身 Status 含这些位时停（冻结/眩晕 CC·同 Steering.haltStatusMask）' },
++          patrol: { type: 'string', describe: '可选 {waypoints:[{x,y}],index?,loop?}；到达当前固定点后才切下一个目标，仍使用本 NavGraph A*；有 patrol 时不读 Relation' },
+         },
+       },
+       NavPath: {
+         category: 'config', // 持久 per-entity 状态（同 GridMover 体例）；引擎写·游戏不手填（见 describe）。
+         describe: '引擎写的缓存路径（确定性派生·进 hash·游戏不手填）：via=待经航点下标序·gx/gy=规划目标点·age=自上次重算 tick。',
+         fields: {
++          graphId: { type: 'string', describe: 'Engine cached selected graph entity' },
++          graphKey: { type: 'string', describe: 'Exact serialized graph identity; dynamic changes invalidate path' },
++          reachable: { type: 'boolean', describe: 'Explicit graph path found; false means stop' },
+           via: { type: 'number[]', describe: '剩余待经航点下标序（引擎写）' },
+           gx: { type: 'number', describe: '规划时目标点 x' },
+           gy: { type: 'number', describe: '规划时目标点 y' },
+@@ -107,7 +134,7 @@ export const pathfindCapability = defineCapability({
+       },
+     },
+     reads: ['NavGraph', 'NavAgent', 'NavPath', 'Transform', 'Relation', 'Status'],
+-    writes: ['Velocity', 'NavPath'],
++    writes: ['Velocity', 'NavPath', 'NavAgent'],
+     consumes: [],
+   },
+ 
+@@ -120,23 +147,31 @@ export const pathfindCapability = defineCapability({
+       runsAfter: ['aggro'],                                  // 目标由 aggro 写 Relation → nav 据此寻路（同 grid-move 破环纪律）
+       runsBefore: ['motion-apply', 'hitbox', 'over-time'],   // 先定速再移动；读上一拍 Status 做 CC（同 steering/grid-move）
+       reads: ['NavGraph', 'NavAgent', 'NavPath', 'Transform', 'Relation', 'Status'],
+-      writes: ['Velocity', 'NavPath'],
++      writes: ['Velocity', 'NavPath', 'NavAgent'],
+       consumes: [],
+       execute(world: IWorld) {
+-        // NavGraph 单例。
+-        let nav: NavGraph | undefined;
+-        { const gid = world.singleton('NavGraph'); if (gid !== undefined) nav = world.getComponent<NavGraph>(gid, 'NavGraph'); } // 黑板单例（P1b）：严格模式多份即抛·生产按创建序取首个（= 旧 for…break 语义）
+-        if (!nav || nav.nodes.length === 0) return;
+-        const navG = nav;
+-
+-        const { adj, edgeKey, edgeCost } = buildAdjacency(navG);
+-        const costOf = (a: number, b: number): number =>
+-          edgeCost.get(edgeKey(a, b)) ?? dist(navG.nodes[a].x, navG.nodes[a].y, navG.nodes[b].x, navG.nodes[b].y);
+-
+-        const ids = sortedIds(world, 'NavAgent', 'Transform');
+-        for (const id of ids) {
++        // Legacy singleton is queried lazily: explicit profiles may coexist even in strict mode.
++        let legacy: NavGraph | undefined;
++        let legacyQueried = false;
++        const prepared = new Map<NavGraph, ReturnType<typeof buildAdjacency>>();
++        const validGraphs = new Map<NavGraph, boolean>();
++        const graphKeys = new Map<NavGraph, string>();
++        let replanned = 0, rejected = 0, stopped = 0;
++        const trace = findDebugTrace(world);
++        const patrolTransitions: string[] | undefined = trace ? [] : undefined;
++        let patrolTurnCount = 0;
++        for (const id of sortedIds(world, 'NavAgent', 'Transform')) {
+           const ag = world.getComponent<NavAgent>(id, 'NavAgent')!;
+           const t = world.getComponent<Transform>(id, 'Transform')!;
++          const explicit = ag.graphId !== undefined;
++          if (!explicit && !legacyQueried) {
++            legacyQueried = true;
++            const gid = world.singleton('NavGraph');
++            if (gid !== undefined) legacy = world.getComponent<NavGraph>(gid, 'NavGraph');
++          }
++          const navG = explicit ? world.getComponent<NavGraph>(ag.graphId!, 'NavGraph') : legacy;
++          if (!explicit && (!navG || navG.nodes.length === 0)) continue; // Preserve legacy missing-graph behavior.
++
+ 
+           // Velocity 确保存在。
+           let v = world.getComponent<Velocity>(id, 'Velocity');
+@@ -145,39 +180,102 @@ export const pathfindCapability = defineCapability({
+             v = world.getComponent<Velocity>(id, 'Velocity')!;
+           }
+ 
++          if (explicit && navG && !validGraphs.has(navG)) validGraphs.set(navG, validExplicitGraph(navG));
++          if (!navG || (explicit && (!validGraphs.get(navG)
++            || !Number.isFinite(ag.speed) || ag.speed < 0 || !Number.isFinite(ag.arriveRange) || ag.arriveRange < 0
++            || !Number.isFinite(t.x) || !Number.isFinite(t.y))) || navG.nodes.length === 0) {
++            v.vx = 0; v.vy = 0; world.removeComponent(id, 'NavPath'); rejected++; continue;
++          }
++          let graphKey: string | undefined;
++          if (explicit) {
++            graphKey = graphKeys.get(navG);
++            if (!graphKey) { graphKey = exactGraphKey(navG); graphKeys.set(navG, graphKey); }
++          }
++          let adjacency = prepared.get(navG) ?? (graphKey ? preparedGraphs.get(graphKey) : undefined);
++          if (!adjacency) {
++            adjacency = buildAdjacency(navG);
++            if (graphKey) {
++              if (preparedGraphs.size >= 32) preparedGraphs.delete(preparedGraphs.keys().next().value!);
++              preparedGraphs.set(graphKey, adjacency);
++            }
++          }
++          prepared.set(navG, adjacency);
++          const { adj, edgeKey, edgeCost } = adjacency;
++          const costOf = (a: number, b: number): number => {
++            if (navG.grid) {
++              const na = navG.nodes[a], nb = navG.nodes[b];
++              const ci = graphCell(navG, na.x, na.y);
++              return navG.grid.cost[ci] * (na.x !== nb.x && na.y !== nb.y ? 14 : 10);
++            }
++            return edgeCost.get(edgeKey(a, b)) ?? dist(navG.nodes[a].x, navG.nodes[a].y, navG.nodes[b].x, navG.nodes[b].y);
++          };
+           // CC 定身（冻结/眩晕）→ 停。
+           if (ag.haltStatusMask) {
+             const st = world.getComponent<Status>(id, 'Status');
+-            if (st && (st.flags & ag.haltStatusMask) !== 0) { v.vx = 0; v.vy = 0; continue; }
++            if (st && (st.flags & ag.haltStatusMask) !== 0) { v.vx = 0; v.vy = 0; stopped++; continue; }
+           }
+ 
+-          // 目标 = 自身 Relation(target) 的 Transform。无目标 → idle。
+-          const rel = world.getComponent<Relation>(id, 'Relation');
+-          const tt = rel && rel.kind === TARGET ? world.getComponent<Transform>(rel.targetId, 'Transform') : undefined;
+-          if (!tt) { v.vx = 0; v.vy = 0; continue; }
+-          const gx = tt.x, gy = tt.y;
++          // 固定巡逻目标只在真正到达航点时切换，避免追逐移动目标时在到达半径边界反复启停。
++          let gx: number, gy: number;
++          if (ag.patrol) {
++            const selected = selectPatrolGoal(ag.patrol, t.x, t.y, ag.arriveRange);
++            if (!selected) { v.vx = 0; v.vy = 0; world.removeComponent(id, 'NavPath'); rejected++; continue; }
++            if (selected.changed) {
++              ag.patrol.index = selected.index;
++              if (patrolTransitions) { patrolTurnCount++; if (patrolTransitions.length < 8) patrolTransitions.push(`${id}:${selected.index}`); }
++            }
++            gx = selected.x; gy = selected.y;
++          } else {
++            const rel = world.getComponent<Relation>(id, 'Relation');
++            const tt = rel && rel.kind === TARGET ? world.getComponent<Transform>(rel.targetId, 'Transform') : undefined;
++            if (!tt) { v.vx = 0; v.vy = 0; stopped++; continue; }
++            gx = tt.x; gy = tt.y;
++          }
++
++          if (explicit && (!Number.isFinite(gx) || !Number.isFinite(gy)
++            || (navG.grid && (graphCell(navG, t.x, t.y) < 0 || graphCell(navG, gx, gy) < 0)))) {
++            v.vx = 0; v.vy = 0; world.removeComponent(id, 'NavPath'); rejected++; continue;
++          }
+ 
+-          // 是否重算：无缓存 / 目标显著移动(> arriveRange) / 到期(repathPeriod)。
++          // 网格路径只在目标换格或定期到期时重算；同格内的移动由末段直接追踪实时目标。
++          // 避免动态目标的浮点坐标每 tick 改变时反复执行整张网格 A*。
+           let path = world.getComponent<NavPath>(id, 'NavPath');
+           const repath = ag.repathPeriod ?? 30;
+-          const needReplan = !path || dist(path.gx, path.gy, gx, gy) > ag.arriveRange || path.age >= repath;
++          const goalChanged = navG.grid
++            ? !!path && graphCell(navG, path.gx, path.gy) !== graphCell(navG, gx, gy)
++            : !!path && dist(path.gx, path.gy, gx, gy) > ag.arriveRange;
++          const needReplan = !path || goalChanged || path.age >= repath
++            || (!explicit && path.graphId !== undefined)
++            || (explicit && (path.graphId !== ag.graphId || path.graphKey !== graphKey
++              || (!navG.grid && (path.gx !== gx || path.gy !== gy))));
+           if (needReplan) {
+-            const startNode = nearestNode(navG, t.x, t.y);
+-            const goalNode = nearestNode(navG, gx, gy);
++            const startNode = navG.grid ? nodeInCell(navG, t.x, t.y) : nearestNode(navG, t.x, t.y);
++            const goalNode = navG.grid ? nodeInCell(navG, gx, gy) : nearestNode(navG, gx, gy);
+             const full = startNode >= 0 && goalNode >= 0
+-              ? astar(startNode, goalNode, (n) => adj[n], costOf, (n) => dist(navG.nodes[n].x, navG.nodes[n].y, navG.nodes[goalNode].x, navG.nodes[goalNode].y))
++              ? astar(startNode, goalNode, (n) => adj[n], costOf, (n) => {
++                if (navG.grid) {
++                  const dx = Math.abs(navG.nodes[n].x - navG.nodes[goalNode].x) / navG.grid.cellSize;
++                  const dy = Math.abs(navG.nodes[n].y - navG.nodes[goalNode].y) / navG.grid.cellSize;
++                  return 14 * Math.min(dx, dy) + 10 * Math.abs(dx - dy);
++                }
++                return explicit ? 0 : dist(navG.nodes[n].x, navG.nodes[n].y, navG.nodes[goalNode].x, navG.nodes[goalNode].y);
++              })
+               : null;
+             const via = full ? full.slice(1) : []; // 去起点(已在/近)·留待经航点；无路=空 → 末段直奔目标点近似
+             if (!path) {
+               world.addComponent(id, { type: 'NavPath', via, gx, gy, age: 0 } as NavPath);
+               path = world.getComponent<NavPath>(id, 'NavPath')!;
+             } else { path.via = via; path.gx = gx; path.gy = gy; path.age = 0; }
++            if (explicit) { path!.graphId = ag.graphId; path!.graphKey = graphKey; path!.reachable = full !== null; }
++            else { delete path!.graphId; delete path!.graphKey; delete path!.reachable; }
++            replanned++;
+           }
+           if (!path) continue; // 安全（needReplan 含 !path → 上方必建；此守卫供 TS 收窄）
+           path.age = (path.age ?? 0) + 1;
++          if (explicit && !path.reachable) { v.vx = 0; v.vy = 0; rejected++; continue; }
+ 
+           // 推进：吃掉所有已到达的航点（防一拍一停）。
+-          const wpRange = ag.waypointRange ?? Math.max(ag.speed, ag.arriveRange);
++          const wpRange = navG.grid ? 1e-8 : ag.waypointRange ?? Math.max(ag.speed, ag.arriveRange);
+           while (path.via.length > 0) {
+             const n = navG.nodes[path.via[0]];
+             if (dist(t.x, t.y, n.x, n.y) <= wpRange) path.via.shift();
+@@ -191,9 +289,13 @@ export const pathfindCapability = defineCapability({
+           const d = dist(t.x, t.y, wx, wy);
+           if (finalLeg && (d <= ag.arriveRange || d === 0)) { v.vx = 0; v.vy = 0; continue; } // 到终点停
+           if (d === 0) { v.vx = 0; v.vy = 0; continue; }
+-          v.vx = (wx - t.x) / d * ag.speed;
+-          v.vy = (wy - t.y) / d * ag.speed;
++          const speed = navG.grid ? Math.min(ag.speed, d) : ag.speed;
++          v.vx = (wx - t.x) / d * speed;
++          v.vy = (wy - t.y) / d * speed;
+         }
++        if (patrolTurnCount) appendTrace(trace, world.getVersion(), 'nav-follow', 'transition', `patrol ${patrolTurnCount}: ${patrolTransitions!.join(',')}`, 'Reached fixed waypoint');
++        if (replanned) appendTrace(trace, world.getVersion(), 'nav-follow', 'decision', `replanned ${replanned}`, 'Target, graph selection, geometry or period changed');
++        if (rejected || stopped) appendTrace(trace, world.getVersion(), 'nav-follow', 'reject', `invalid/unreachable ${rejected}; halted/no target ${stopped}`, 'Explicit graph failures stop; no straight-line fallback');
+       },
+     },
+   ],

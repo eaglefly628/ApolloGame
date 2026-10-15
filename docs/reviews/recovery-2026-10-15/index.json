@@ -1,0 +1,15 @@
+[
+  {
+    "name": "primary-worktree",
+    "base": "3e6569c260eada56d3ec4ae9f3b96390c2503301",
+    "patchBytes": 185750,
+    "purpose": "Forensic recovery only. Do not apply wholesale on current mainbranch; contains superseded engine versions."
+  },
+  {
+    "name": "game114-preupload-draft",
+    "base": "3e6569c260eada56d3ec4ae9f3b96390c2503301",
+    "patchBytes": 85531,
+    "purpose": "Forensic recovery only. Do not apply wholesale on current mainbranch; contains superseded engine versions.",
+    "workingHead": "338660e948f305596c03194bb29f23d5ed595ae7"
+  }
+]
