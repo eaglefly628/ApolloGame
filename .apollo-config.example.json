@@ -1,0 +1,8 @@
+{
+  "providers": {},
+  "features": {
+    "capgap": true,
+    "tsCarts": true,
+    "autoPush": true
+  }
+}

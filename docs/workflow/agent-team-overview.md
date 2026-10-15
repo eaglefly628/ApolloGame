@@ -56,7 +56,7 @@
 
 ## 4. 各角色初始化差异
 
-**共用 T0（自动叠加）**：SessionStart 钩子强切 `claude/mainbranch`（**唯一机器执行的一步**·仅全新启动）· CLAUDE.md 注入 · 宪法 + `llm-onboarding.md` · owner 粘贴启动词模板「角色=X · 任务=Y」→ 去 `roles/index.md` 找卡。
+**共用 T0（自动叠加）**：SessionStart 钩子安全切换至 `codex/mainbranch`（仅全新启动；工作树不净时保留现场）· CLAUDE.md 注入 · 宪法 + `llm-onboarding.md` · owner 粘贴启动词模板「角色=X · 任务=Y」→ 去 `roles/index.md` 找卡。
 
 | 角色 | 第一份增量必读 | 专属工具 | 交付前自检 / 红线 | 通道 |
 |---|---|---|---|---|

@@ -224,5 +224,5 @@ ZeroCraft 的架构天然支持 LLM 驱动的游戏生成：
 
 - **Lead（设计师助理）**：文档、工具、知识库、架构决策
 - **Programmer（主程序员）**：原子实现、Tier 涌现、测试
-- 协作方式：共享 git 分支（claude/mainbranch），文件系统 IPC
+- 协作方式：共享 git 分支（codex/mainbranch），文件系统 IPC
 - 质量守卫：vitest 全量测试 + tsc 类型检查 + 确定性哈希校验

@@ -163,7 +163,7 @@ node scripts/shoot-game.mjs game-z /tmp/game-z.png    # 任意 game id 都行
 
 ## 8. 工作规范
 
-- 分支 **`claude/mainbranch`**，直推不开 PR；每次提交前 `fetch → rebase → push`（多 session 并行）。
+- 分支 **`codex/mainbranch`**，直推不开 PR；每次提交前 `fetch → rebase → push`（多 session 并行）。
 - **tsc + vitest + build 全绿才推**；rebase 带进新提交后**必须重跑全套再推**（陈旧基线测的绿不算绿）。
 - 提交署名 `Claude <noreply@anthropic.com>`，提交信息以 session URL 结尾；不在产物里写模型标识。
 - 你的需求/被评审记 `docs/workflow/requests.md`；开工清单（本文件）随进度更新。

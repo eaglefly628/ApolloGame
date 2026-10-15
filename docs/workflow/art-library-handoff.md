@@ -64,7 +64,7 @@
 2. GitHub MCP 搜索恢复后，关键字捞像素/tileset 系列（本会话仍 502）。
 3. ~~tabler/phosphor/mdi 调大 limit 拉全~~ ✅ 已办（2026-06-19，5093/1512/7447，全绿推送）。
 4. 把 `game-g-icons.json` 接进 Game G 渲染（game 层）。
-5. 纪律：分支 `claude/mainbranch`，每次 `fetch→rebase→push`；tsc+vitest+build 全绿才推；提交署名 `Claude <noreply@anthropic.com>`、信息以 session URL 结尾。
+5. 纪律：分支 `codex/mainbranch`，每次 `fetch→rebase→push`；tsc+vitest+build 全绿才推；提交署名 `Claude <noreply@anthropic.com>`、信息以 session URL 结尾。
 
 ## 8. Agent 搜罗短名单 + 拉取波次（2026-06-20）
 

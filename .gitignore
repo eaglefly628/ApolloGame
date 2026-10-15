@@ -1,4 +1,4 @@
-node_modules/
+node_modules
 dist/
 dist-cartridge/
 platform-dist/
@@ -73,7 +73,7 @@ public/games/*/art/gen/mock/
 
 # DokiWorld 出包线（docs/playbooks/dokiworld-pack.md）：dist=构建产物不入库·依赖不入库
 dokiworld/*/dist/
-dokiworld/*/node_modules/
+dokiworld/*/node_modules
 
 # 本地 agent 工具的技能镜像（桌面端每机自生成·不进共享仓·2026-08-19 owner 确认）
 .agents/
@@ -84,3 +84,14 @@ assets/ai/pending/
 assets/ai/openai-built-in/game112-cat-toy-*.png
 assets/curated/game112-cat-toys*.png
 public/games/game112/art/ai/openai-built-in/game112-cat-toy-*.png
+
+public/games/game112/art/local-candidates/
+
+tools/see-through-workbench/deliverables/
+
+# Local provider credentials and machine-specific environment overrides.
+.env.*
+!.env.example
+
+# Recreated Python environment on a new workstation.
+/.venv/
