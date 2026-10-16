@@ -6,6 +6,10 @@
 
 ---
 
+## REQ-3D-AI-PIPELINE · AI 协同生产流程的 3D 运行时能力（E1 压缩加载 · E2 动作库 + AnimGraph3D · E3 骨骼挂点 · E4 IK · E5 场景 glb 拆实体） · [2026-10-16] · owner 立（裁 A=自研引擎·不用 Unity/Godot）→ **P3D**（E5 与主程协作） · status: open · 优先级: P1 · 类型: 能力下沉
+> 写死 spec（数据形状·验收·依赖·顺序）全文：`docs/design/ai-pipeline-engine-roadmap-2026-10.md` §1 E 层 / §2。全部 render-only·入 `NON_DETERMINISTIC`（E5 装载期展开除外·须双跑 hash 一致）。
+> 原「交互与材质补全批」③ BlendSpace 由本单拉动转正（= E2）。待 owner 判：Q1 绑骨路线（Tripo API / Blender+Auto-Rig Pro+Mixamo）· Q2 施工主体（抢锁·复查人≠施工人）。
+
 ## REQ-3D-TESTGAPS · P3D 测试面五项（测试大扫除 F 路评审转单） · [2026-08-22] · Lead 立 → **P3D** · status: open · 优先级: P2 · 类型: 测试护栏/治理
 > ① **dispose 面零覆盖**：移除测试只验场景图摘除，无一 spy geometry/material/texture.dispose()——trail:54、billboard:53、uv-anim:52、reflector:68（还持 render target）；vfx.test 无任何清理用例（vfx.ts 5 处 dispose）；models.test 仅 2 例、ModelPool 全无。长局泄漏面与 RENDERHYG 同族。② **melee 物理写回闸口无 hash 流断言**：game211 melee-demo.ts:279「读牌面→判生死→写回战役状态」是 cannon-es 非确定面进 sim 的唯一闸口，补「三跑逐拍 hash 相同」隔离（先例 game108.test.ts:1405）。③ slg-scale.bench.test.ts 墙钟绝对阈值跑在常规 vitest——CI 负载波动假红，隔离 bench 档或去绝对阈值。④ turn-combat.test.ts:66「swapsUsed 重置」断言套在 if 内可静默跳过——前置断真后无条件 expect。⑤ **game211↔game-g fork 重复面登记**：22/40 测试文件与 game-g 逐字节同（其中 clash-resolve/disha/level/sfx 连源文件也同）——双份漂移风险；game-g 战斗线已废（owner 2026-08-22），P3D 裁哪份是权威、另份清或登记 fork 基线。
 
