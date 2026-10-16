@@ -79,7 +79,7 @@
 
 <!-- REQ-PIPELINE-GUARDS（流程板规则加机器牙齿·六项）owner 2026-10-16 令**移除出池**——其中①「人门只收真人签字」并入 REQ-AIFLOW-GATES；其余五项全文查 git 历史（git log -S REQ-PIPELINE-GUARDS） -->
 
-### REQ-AIFLOW-REFGEN · T1 参考图生成（`ai-gen.mjs` 加 `--ref` / `--edit`）· [2026-10-16] · owner 立（裁 A=自研引擎·AI 协同生产流程）· **施工主体：待 Codex 抢锁** · 复查 = 另派（复查人≠施工人） · status: open · P1 · 类型: 工具链扩写（🟢）
+### REQ-AIFLOW-REFGEN · T1 参考图生成（`ai-gen.mjs` 加 `--ref` / `--edit`）· [2026-10-16] · owner 立（裁 A=自研引擎·AI 协同生产流程）· **施工主体 = Codex（2026-10-16 抢锁·本行即锁）** · 复查 = 另派（复查人≠施工人） · status: open · P1 · 类型: 工具链扩写（🟢）
 > 写死 spec：`docs/design/ai-pipeline-engine-roadmap-2026-10.md` §1 T1。路线图第 1 步首件（K1 关键图定调 / K2 补视角的地基）。**并入 R1**：新增 GPT Image 2.5 生图适配器（同现有适配器形态·key 走 env·缺 key 走 mock）。
 
 ### REQ-AIFLOW-SPLIT · T2 关键图工作区 + 拆层单 `asset-split.json`（标注图 + 推导美术台账）· [2026-10-16] · owner 立 · **施工主体：待 Codex 抢锁** · 复查 = 另派 · status: open · P1 · 类型: 工具链扩写（🟢）
