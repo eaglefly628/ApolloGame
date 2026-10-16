@@ -189,6 +189,32 @@
 
 U1 控件库同步成 Claude Design 设计系统 · U2 通用量稿 · U3 统一风格令牌（生图 + UI 同源） · U4 UI 盲审（并入 T6）——均 ⚖ 待 owner 判；UI 基座归 **PUI**，收稿线归 **PST**。
 
+## 3.7 残余缺口裁决与施工波次（owner 2026-10-16·全部判 A）
+
+| 缺口 | 去向 |
+|---|---|
+| R1 GPT Image 2.5 | 并入 `REQ-AIFLOW-REFGEN`（T1） |
+| R2 贴地行走 | `REQ-AIFLOW-GROUND`（引擎池·🔴） |
+| R3 剧情镜头 | 3D 池 `REQ-3D-AI-PIPELINE` 新增 **E6** |
+| R4 分段加载 | `REQ-AIFLOW-SCENELOAD`（引擎池） |
+| R5 动作审查 · U2 通用量稿 · U4 UI 盲审 | 并入 `REQ-AIFLOW-REVIEW`（T6） |
+| S1 拆层规程 | 随 T2 同单交付 |
+| S2 盲审规程 | 随 T6 同单交付 |
+| S3 人工回灌手册 | 随 T5 同单交付（3D 池） |
+| U1 控件库同步 | `REQ-AIFLOW-DSYNC`（PUI） |
+| U3 统一风格令牌 | `REQ-AIFLOW-STYLETOKENS`（PUI + PST） |
+
+**施工波次**（每波过复查门再开下一波）：
+
+| 波 | 内容 | 前置 |
+|---|---|---|
+| **第 1 波 · 工具链定调与审查** | T1(+R1) → T2(+S1) → T6(+U2·U4·R5·S2) → P1 | 无（不碰 3D 渲染、不碰 `src/ui/**`） |
+| 第 2 波 · 3D 资产进得来 | T7 → T3 → T4 → E1 · R4 | 施工机装 Blender LTS · Tripo key |
+| 第 3 波 · 3D 场景 | E5 → R2 | 第 2 波 |
+| 第 4 波 · 3D 人物与镜头 | T5(+S3) → E2 → E3 → E4 · E6 | Auto-Rig Pro 授权 · 第 3 波 |
+| 第 5 波 · 端到端验收 | V1「提水壶」 | 第 4 波 |
+| UI 并行波（PUI） | U3 → U1 | 无 |
+
 ## 4. 不做清单（防过度设计）
 
 - 不做运行时 AI 生成（生成只在离线工具链，产物是固定资产；sim 永不调 AI）。
