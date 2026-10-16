@@ -77,11 +77,7 @@
 
 <!-- REQ-DOKIPACK-DokiWorld 出包线（P1·owner 2026-08-12 令「以后产物都往这里打包」）首件已完结出池：手册 docs/playbooks/dokiworld-pack.md + 规范快照 docs/design/dokiworld/ 在档=常备产线；game108 首包 ✅ Lead 终审 PASS——dokiworld/game108/（manifest 生成器§5 逐条校验·SDK 薄接线零规则·toGameResult 纯函数=血差线性投影与验收剧本同口径·12 测独立复跑绿·施工方 outcome 反转验红+Lead 钳位破坏恰中边界测·无宿主等待屏与 createAppHost 真握手挂载双目击截图在档）。game108 加 setWorldObserver 只读观察口（照 setCard 形态·render-only）。**下一步触发者=owner**：整目录复制/PR 到 dokiworld-apps 仓 + 真宿主跑一遍（§12 末项·本仓无那边推送权）。**记债**：引擎两条站点绝对资产约定（/games/<slug>/art·/ui-fonts）在 iframe 子路径下逃包，现由打包层改写+复制资产兜住——「资产 URL 基准可配置」是引擎缺口候选,下个游戏出包再撞就立单下沉。后续游戏照手册,World 形态等首个剧情向产物。 -->
 
-### REQ-PIPELINE-GUARDS · 流程板三条「只写在文档里」的规则加机器牙齿 + 走查探针入场序列 · [2026-09-28] · GD/PE-112 立（game112 Codex 巡游提交复盘 `docs/design/game112/review/codex-roaming-review.md`：人门被 agent 以「Lead-Codex」自签 S2–S8；五关复查同一 agent 两分钟落账；S8 自陈全量门 5 红仍推送）· **指派：主程** · status: open · 优先级: **P1** · 类型: 流程门
-- 要做：① `signoff --by` 只收真人白名单（`docs/roles/humans.json`·agent 名拒）；② `review --by` ≠ 该关施工锁主体，同一 `--by` 10 分钟内落 ≥2 关拒并要附复跑日志；③ `scoped-gate` 红 → 推送钩子拦，「与本单无关」只能主程 `--waive` 落账；④ 台账 `approved` 只由创作台人审/`art-review --by <真人>` 写；⑤ 台账 `retired` 前 grep 消费点，有消费即拒；⑥ 剧本顶层可选 `uiEntry:["home.enter"]`，`ui-walkthrough-probe` 开跑前先点它（菜单驱动游戏现恒 0%·game112 0/17·game108 0/74·探针头注 1b 自认）。
-- 为什么：owner 问「其他模型能不能 follow 我们的 ruler」——有脚本判红的规则 Codex 全守，没牙齿的全破；病根在围栏不在模型。
-- 边界：`scripts/{game-pipeline,scoped-gate,ledger-audit,ui-walkthrough-probe,acceptance-schema}.mjs` + 测试 + 白名单文件；不碰游戏层。
-- **owner 2026-09-28 令主程来看本单**。顺带请主程 review 两处 GD/PE-112 越域小修：`scripts/scoped-gate.mjs` 台账文件归类（2026-09-24）· `scripts/ui-find.mjs`+test 读拆分后的 `gallery/*.ts`（2026-09-28·全量 3 红的根因）。
+<!-- REQ-PIPELINE-GUARDS（流程板规则加机器牙齿·六项）owner 2026-10-16 令**移除出池**——其中①「人门只收真人签字」并入 REQ-AIFLOW-GATES；其余五项全文查 git 历史（git log -S REQ-PIPELINE-GUARDS） -->
 
 ### REQ-AIFLOW-REFGEN · T1 参考图生成（`ai-gen.mjs` 加 `--ref` / `--edit`）· [2026-10-16] · owner 立（裁 A=自研引擎·AI 协同生产流程）· **施工主体：待 Codex 抢锁** · 复查 = 另派（复查人≠施工人） · status: open · P1 · 类型: 工具链扩写（🟢）
 > 写死 spec：`docs/design/ai-pipeline-engine-roadmap-2026-10.md` §1 T1。路线图第 1 步首件（K1 关键图定调 / K2 补视角的地基）。
@@ -93,7 +89,7 @@
 > 写死 spec：路线图 §1 T6。
 
 ### REQ-AIFLOW-GATES · P1 生产板 K2 / D1 人门 + R1 复查门（状态从工件推导）· [2026-10-16] · owner 立 · **施工主体：待 Codex 抢锁** · 复查 = 另派 · status: open · P1 · 类型: 流程门（🔴 跨游戏共享面·主程口径）
-> 写死 spec：路线图 §1 P1。人门防代签依赖 `REQ-PIPELINE-GUARDS` ①（真人白名单），两单可同一施工主体顺做。
+> 写死 spec：路线图 §1 P1。**并入（原 REQ-PIPELINE-GUARDS ①）**：`signoff --by` 只收真人白名单 `docs/roles/humans.json`，agent 名一律拒——否则画面定稿 / 拆层确认两道人门可被施工 agent 自签，形同虚设（game112 实证：agent 以「Lead-Codex」自签 S2–S8）。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
