@@ -91,6 +91,8 @@
 - **代码准入阶梯（owner 2026-08-03 拍板）**：产游戏按 L0→L3 逐级降落·降级必须留痕（plan 阶梯申报或
   capgap 记录）·静默用 L3/L4 = 审计红旗（game-skill-audit/cart-logic-check 现门执法）。
 
+**AI 协同生产流程（2026-10-16·owner 令并入）**：S2→S3 间插 K1 关键图定调 / K2 补视角 / D1 看图拆层（两道 owner 人门），S6→S7 间插 R1 对抗盲审（非施工 agent 比关键图）——流程图与产物见 `docs/workflow/ai-production-flow.md`。
+
 ## 查不到怎么办
 
 - 新阶段诉求 / 门要加严 / 阶段语义不合某形态 → `docs/workflow/requests.md` 提缺口等裁决，**绝不自造旁路**。
