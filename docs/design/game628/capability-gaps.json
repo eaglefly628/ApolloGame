@@ -1,0 +1,20 @@
+[
+  {
+    "id": "GAP-628-01",
+    "title": "关键图定调与拆层工具（参考图生成 + 拆层单）。实查：scripts/ai-gen.mjs 无参考图入参；无 asset-split 工件。owner 2026-10-16 判 A（AI 协同生产流程第 1 波）。设计定稿前不进 S3。",
+    "priority": "P1",
+    "route": "engine",
+    "state": "accepted",
+    "ticket": "docs/workflow/requests.md REQ-AIFLOW-REFGEN + REQ-AIFLOW-SPLIT",
+    "blocks": ["S3"]
+  },
+  {
+    "id": "GAP-628-02",
+    "title": "R1 对抗盲审工具（关键图 / UI 稿比对 + 动作帧序列）。实查：无参考图比对 harness；self-check 只比 GDD 文字。owner 2026-10-16 判 A。",
+    "priority": "P1",
+    "route": "engine",
+    "state": "accepted",
+    "ticket": "docs/workflow/requests.md REQ-AIFLOW-REVIEW",
+    "blocks": ["S7"]
+  }
+]

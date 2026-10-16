@@ -2,7 +2,7 @@
 
 > owner 2026-10-16 令：拆解《The Little Prince: Across the Stars》式 AI 制作流程，形成**我们自己的开发流程图**，并入项目开发流程。
 > 本文 = 拆解 + 分析 + 新流程图。它**不替代**八阶段生产板（`docs/playbooks/game-production.md`），而是把 AI 工具链**挂到 S1–S8 上**：每一步落在哪一关、由谁做、过哪道门。
-> 首个试用项目：game115《最后的火柴》（`docs/design/game115/brief.md`）。
+> 首个试用项目：game628《最后的火柴》（`docs/design/game628/brief.md`）。
 
 ---
 
@@ -130,7 +130,7 @@ flowchart TD
 
 ---
 
-## 6. 首个试用：game115
+## 6. 首个试用：game628
 
 - K1/K2：7 个场景各出一张主图 + 火苗强 / 弱两档变体。
 - D1：拆成 `capability-plan.md §4.5` 的六类皮肤槽（背景 / 幻象层 / 热点物件 / 小女孩姿态 / 火柴 / 相册卡）。

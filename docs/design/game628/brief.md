@@ -1,8 +1,8 @@
-# Game 115《最后的火柴》· 立项卡（S1）
+# Game 628《最后的火柴》· 立项卡（S1）
 
-> 状态：S1 立项卡初稿（2026-10-16），待 owner 签。系列《物件童话》第一章。
+> 状态：S1 立项卡初稿（2026-10-16），待 owner 签。系列《物件童话》第一章。编号：owner 2026-10-16 定为 **game628**（原暂编 game115，已迁移）。
 > 工作名：《最后的火柴》（*The Last Matches*）；最终名称待 owner 确认。
-> 能力计划见 [`capability-plan.md`](./capability-plan.md)。
+> 能力计划 [`capability-plan.md`](./capability-plan.md) · 设计文档 [`gdd.md`](./gdd.md) · 设计定稿方法 [`design-freeze.md`](./design-freeze.md) · 游戏级需求单 [`requests.md`](./requests.md)。
 
 ## 一句话
 

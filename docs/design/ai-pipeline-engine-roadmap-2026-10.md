@@ -41,7 +41,7 @@
 
 **T1 参考图生成** —— K1/K2/D1 的地基，2D 也需要
 - 目标：`ai-gen.mjs` 新增 `--ref <png>...`（风格/造型参考）与 `--edit <png>`（图生图改局部）；provenance 记参考图哈希。
-- 数据：`node scripts/ai-gen.mjs seedream "<prompt>" --ref keyart/street.png --game game115`。
+- 数据：`node scripts/ai-gen.mjs seedream "<prompt>" --ref keyart/street.png --game game628`。
 - 验收：mock 模式下参考图哈希进 provenance；真调走支持参考图的 provider；`ai-gen.test.mjs` 加用例。
 - 归属：🟢 扩写（已有适配器加可选入参）。
 
@@ -132,7 +132,7 @@
 
 | 阶段 | 项 | 解锁什么 |
 |---|---|---|
-| **第 1 步 · 定调与审查（2D 就能用）** | T1 → T2 → T6 → P1 | K1/K2/D1/R1 全流程；game115（2D）即可按新流程走 |
+| **第 1 步 · 定调与审查（2D 就能用）** | T1 → T2 → T6 → P1 | K1/K2/D1/R1 全流程；game628（2D）即可按新流程走 |
 | **第 2 步 · 3D 资产进得来** | T7 → T3 → T4 → E1 | Blender 桥打通；Tripo 生成的道具/人物经 Blender 规范化后进引擎、网页包体可控 |
 | **第 3 步 · 3D 场景** | E5 | Blender 搭的场景直接变可玩场景（碰撞/导航/拾取） |
 | **第 4 步 · 3D 人物** | T5 → E2 → E3 → E4 | 绑骨、动作库、混合、挂手、IK |

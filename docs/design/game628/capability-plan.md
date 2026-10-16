@@ -1,4 +1,4 @@
-# game115《最后的火柴》· 能力总览 Capability Plan
+# game628《最后的火柴》· 能力总览 Capability Plan
 
 > **模板**：`docs/design/capability-plan-template.md`（代码游戏·过审才动工）
 > **立项卡**：[`brief.md`](./brief.md)
@@ -69,7 +69,7 @@
 
 | 例外 | 为什么现有能力表达不了 | 预计行数 | Lead 裁决 | 偿还计划 |
 |---|---|---|---|---|
-| ① 宿主会话驱动 `game115.ts`：建 Engine · 读档 → 蓝图初值 · UI action → `QueuedInputSource` · 章节切换重装载 · 存档 | 宿主契约明许的 sim 外胶水（game112 例外② 同形） | ~150 | ⬜ | 非规则 |
+| ① 宿主会话驱动 `game628.ts`：建 Engine · 读档 → 蓝图初值 · UI action → `QueuedInputSource` · 章节切换重装载 · 存档 | 宿主契约明许的 sim 外胶水（game112 例外② 同形） | ~150 | ⬜ | 非规则 |
 | ② 装载期展开：`CHAPTERS`/`VISION_ITEMS`/`GUSTS` → 蓝图实体与 Timeline cues | 表展开 ≠ 解释器（game-103 `ringSpawnerEntities()` 先例） | ~100 | ⬜ | 无 |
 
 **没有第三条**：不申请自写状态机 / 计时器 / 命中测试 / 手写 DOM。审计红旗零申报。
@@ -78,14 +78,14 @@
 
 | 视觉实体 | 槽 | 载体 |
 |---|---|---|
-| 场景背景 ×7 | `game115/scene/<chapterId>` | Sprite / `Panel.skin` |
-| 幻象层（火炉/烤鹅/圣诞树/奶奶…） | `game115/vision/<chapterId>` | Sprite（高 zOrder·tween 透明度） |
-| 照见热点物件 | `game115/item/<itemId>` | Sprite |
-| 小女孩（剪影为主·3–4 姿态） | `game115/girl/<pose>` | Sprite |
-| 火柴 · 火柴盒 | `game115/match` · `game115/matchbox` | Sprite |
-| 相册卡 | `game115/album/<itemId>` | `Image` |
+| 场景背景 ×7 | `game628/scene/<chapterId>` | Sprite / `Panel.skin` |
+| 幻象层（火炉/烤鹅/圣诞树/奶奶…） | `game628/vision/<chapterId>` | Sprite（高 zOrder·tween 透明度） |
+| 照见热点物件 | `game628/item/<itemId>` | Sprite |
+| 小女孩（剪影为主·3–4 姿态） | `game628/girl/<pose>` | Sprite |
+| 火柴 · 火柴盒 | `game628/match` · `game628/matchbox` | Sprite |
+| 相册卡 | `game628/album/<itemId>` | `Image` |
 
-- 台账推导脚本：`scripts/game115-art-requirements.mjs`（照 `game-g-art-requirements.mjs` 样板·S3 落地）。
+- 台账推导脚本：`scripts/game628-art-requirements.mjs`（照 `game-g-art-requirements.mjs` 样板·S3 落地）。
 - 风格锚：2D 绘本 · 冷蓝雪夜 vs 暖橙火光 · 大面积留白；**只从原著文本出发，不借改编版造型**。不申请全程序化例外；S3 用成形矢量占位。
 
 ## 4.6 UI 呈现 · 华丽起手
