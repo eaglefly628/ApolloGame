@@ -2,6 +2,7 @@
 
 > **这是什么**：ZeroCraft「3D 盒庭」渲染线 + Game Z 的**需求 / 工单单一真相**（从主 `requests.md` 分出·避免 3D 条目淹没在通用 UI/游戏需求里）。
 > **归属**：3D 渲染线由 **P3D** 主管（代码边界契约见 `docs/workflow/finish/P3D-game-z-handoff.md §0.1`）。本池由 owner/主程 派单、P3D 执行、Lead 评审标状态。
+> **⭐ 3D 线定位（owner 2026-10-16 定）**：渲染**不与 Unity/Unreal 对抗**——渲染能力跟随 **three.js** 升级（自带功能 / 成熟开源库），本引擎只做数据外壳，不自研渲染算法。**3D 线的重点 = 整合业内工具链**：Tripo 生成模型 · Blender 规范化与搭建 · 生图模型定调 · 绑骨与动画流程。新 3D 工单按此准入（详 `docs/design/ai-pipeline-engine-roadmap-2026-10.md` 顶部裁决）。
 > **新 3D 需求都进这里**（不进 `requests.md`）；通用 UI 库 / 其它游戏需求仍进 `requests.md`。
 
 ---
