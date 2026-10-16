@@ -16,6 +16,7 @@ import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { deflateSync } from 'node:zlib';
+import { loadImageInputs, inputProvenance, imageDataUrls, parseGenerationArgs } from './ai-gen-inputs.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -43,13 +44,13 @@ export function mockImage(prompt, N = 128) {
 
 // ── 文生图请求构造（纯函数·可测·可回显）——owner debug「到底传了什么」。──
 // key 走 header（Authorization）不进 body，故 body 全字段可安全回显/落日志（无密钥泄漏）。
-export function seedreamRequest(prompt, { model, size }) {
+export function seedreamRequest(prompt, { model, size, inputs = [] }) {
   return {
     provider: 'seedream',
     endpoint: 'https://ark.cn-beijing.volces.com/api/v3/images/generations',
     method: 'POST',
     model, size, prompt,
-    body: { model, prompt, size, response_format: 'url', watermark: false },
+    body: { model, prompt, size, response_format: 'url', watermark: false, ...(inputs.length ? { image: imageDataUrls(inputs) } : {}) },
   };
 }
 
@@ -145,10 +146,10 @@ export const ADAPTERS = {
     // 模型默认 doubao-seedream-4-0（env ARK_SEEDREAM_MODEL 可覆盖·owner 试 4-5/5-0 免改码）；尺寸 env ARK_SEEDREAM_SIZE。
     kind: 'texture', ext: 'png', envKey: 'ARK_API_KEY', license: 'ByteDance Seedream/火山方舟 (按订阅商用授权)',
     // opts.size：调用方按行 spec 传目标尺寸（缺省回退 env·再回退 2K）——防 UI 按钮被塞进 2K 方图渲成整场景。
-    async generate(prompt, { mock, apiKey, size: sizeOpt } = {}) {
+    async generate(prompt, { mock, apiKey, size: sizeOpt, inputs = [] } = {}) {
       const model = process.env.ARK_SEEDREAM_MODEL || process.env.ARK_IMAGEGEN_MODEL || 'doubao-seedream-4-0-250828';
       const size = sizeOpt || process.env.ARK_SEEDREAM_SIZE || '2K';
-      const request = seedreamRequest(prompt, { model, size }); // 恒构造·mock 也回显「本该发的完整请求」（debug 免花 key）
+      const request = seedreamRequest(prompt, { model, size, inputs }); // 恒构造·mock 也回显「本该发的完整请求」（debug 免花 key）
       if (mock || !apiKey) { const { buffer, w, h } = mockImage(prompt); return { buffer, model: 'seedream-mock', mock: true, spec: { format: 'png', width: w, height: h, usage: 'sprite' }, request }; }
       const H = { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' };
       const res = await fetchRetry(request.endpoint, { method: 'POST', headers: H, body: JSON.stringify(request.body) }).then((r) => r.json());
@@ -160,15 +161,67 @@ export const ADAPTERS = {
   },
 };
 
+// GPT Image 2.5 Images API (official docs checked 2026-10-16):
+// https://developers.openai.com/api/reference/resources/images/methods/edit
+// API model is the 2.5 Sunburst snapshot; provider id keeps the requested family name.
+ADAPTERS['gpt-image-2.5'] = {
+  kind: 'texture', ext: 'png', envKey: 'OPENAI_API_KEY', license: 'OpenAI (按服务条款)',
+  async generate(prompt, { mock, apiKey, inputs = [], size = '1024x1024' } = {}) {
+    const model = process.env.OPENAI_IMAGE_MODEL || 'gpt-image-2.5-sunburst-2026-09-08';
+    const endpoint = `https://api.openai.com/v1/images/${inputs.length ? 'edits' : 'generations'}`;
+    const request = { provider: 'gpt-image-2.5', endpoint, model, size, prompt, inputs: inputProvenance(inputs) };
+    if (mock || !apiKey) {
+      const { buffer, w, h } = mockImage(prompt);
+      return { buffer, model: 'gpt-image-2.5-mock', mock: true, spec: { format: 'png', width: w, height: h, usage: 'sprite' }, request };
+    }
+    let body, headers = { authorization: `Bearer ${apiKey}` };
+    if (inputs.length) {
+      if (inputs.length > 16) throw new Error('GPT Image 最多 16 张输入图');
+      body = new FormData();
+      for (const [key, value] of Object.entries({ model, prompt, size, output_format: 'png', n: '1' })) body.append(key, value);
+      for (const input of inputs) body.append('image[]', new Blob([input.buffer], { type: 'image/png' }), 'input.png');
+    } else {
+      headers['content-type'] = 'application/json';
+      body = JSON.stringify({ model, prompt, size, output_format: 'png', n: 1 });
+    }
+    const response = await fetchRetry(endpoint, { method: 'POST', headers, body });
+    if (!response.ok) throw new Error(`GPT Image 请求失败 HTTP ${response.status}`);
+    const data = await response.json();
+    if (!data?.data?.[0]?.b64_json) throw new Error('GPT Image: 缺 b64_json');
+    const buffer = Buffer.from(data.data[0].b64_json, 'base64');
+    if (buffer.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') throw new Error('GPT Image: 返回非 PNG');
+    return { buffer, model, mock: false, spec: { format: 'png', usage: 'sprite' }, request };
+  },
+};
+
+// One adapter boundary for CLI and in-process callers: never silently drop images.
+for (const [name, adapter] of Object.entries(ADAPTERS)) {
+  const generate = adapter.generate;
+  adapter.generate = async (prompt, opts = {}) => {
+    const inputs = opts.inputs ?? loadImageInputs(opts);
+    if (inputs.length && !['seedream', 'gpt-image-2.5'].includes(name)) {
+      console.error(`[ai-gen] reject: ${name} 不支持参考图/编辑，请选 seedream 或 gpt-image-2.5`);
+      throw new Error(`${name} 不支持参考图/编辑`);
+    }
+    const mock = !!opts.mock || !opts.apiKey;
+    if (mock) console.warn(`[ai-gen] downgrade: ${name} ${opts.mock ? '--mock' : `缺 ${adapter.envKey}`} → mock`);
+    console.info(`[ai-gen] decision: ${name} ${inputs.length ? 'image' : 'text'} input · ${inputs.length} PNG`);
+    // Include ordered image contents in mock seed; the original prompt remains in request/provenance.
+    const result = await generate.call(adapter, prompt, { ...opts, mock, inputs });
+    if (result.mock && inputs.length) result.buffer = mockImage(prompt + JSON.stringify(inputProvenance(inputs))).buffer;
+    return { ...result, references: inputProvenance(inputs) };
+  };
+}
+
 // ── 落地：产物 → 文件 + 索引条目（带 provenance）。game 给了=游戏本地 art/ai/；否则=共享货架 assets/ai/。──
-export function buildEntry({ adapter, prompt, id, kind, spec, model, license, mock, servedPath, at }) {
+export function buildEntry({ adapter, prompt, id, kind, spec, model, license, mock, servedPath, at, references = [] }) {
   return {
     id, type: kind, description: `${prompt} · AI 生成(${adapter}${mock ? '·mock' : ''})`, status: 'filled',
     ...(servedPath ? { path: servedPath } : {}),
     category: kind === 'mesh' ? 'mesh' : 'ai-gen',
     tags: ['ai-gen', adapter, ...(mock ? ['mock'] : []), ...prompt.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 6)],
     license, source: `ai:${adapter}`, spec,
-    provenance: { generator: adapter, prompt, model, mock: !!mock, generatedAt: at ?? '' },
+    provenance: { generator: adapter, prompt, model, mock: !!mock, generatedAt: at ?? '', ...(references.length ? { references } : {}) },
   };
 }
 
@@ -220,7 +273,7 @@ export function provenanceMissing(entry) {
 }
 
 // 生成产物 → 待审区（写 pending 文件 + upsert pending.json·绝不碰 index.json）。返回机读结果（含预览 URL）。
-export function writePending({ root = ROOT, adapter, prompt, forcedId, game, buffer, spec, model, mock, at }) {
+export function writePending({ root = ROOT, adapter, prompt, forcedId, game, buffer, spec, model, mock, at, references = [] }) {
   const A = ADAPTERS[adapter];
   if (!A) return { ok: false, error: `未知适配器: ${adapter}` };
   const slug = (forcedId ?? prompt).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40) || 'asset';
@@ -231,7 +284,7 @@ export function writePending({ root = ROOT, adapter, prompt, forcedId, game, buf
   const pendingAbs = join(loc.pendingDir, base);
   mkdirSync(dirname(pendingAbs), { recursive: true });
   writeFileSync(pendingAbs, buffer);
-  const entry = buildEntry({ adapter, prompt, id, kind: A.kind, spec, model, license: A.license, mock, servedPath: loc.finalServed(finalRel), at });
+  const entry = buildEntry({ adapter, prompt, id, kind: A.kind, spec, model, license: A.license, mock, servedPath: loc.finalServed(finalRel), at, references });
   const scope = game ? `game:${game}` : 'shelf';
   const pendingEntry = { ...entry, previewPath: loc.pendingServed(base), pendingFile: base, finalRel, scope };
   const man = readPendingManifest(loc.pendingFile);
@@ -362,20 +415,14 @@ async function run(argv) {
   }
   const A = ADAPTERS[adapterName];
   if (!A) { console.error(`用法: node scripts/ai-gen.mjs <${Object.keys(ADAPTERS).join('|')}|providers> "<prompt>" [--game <g>] [--id <id>] [--mock]`); process.exit(1); }
-  const mock = argv.includes('--mock');
-  const asJson = argv.includes('--json'); // 机读：后端/UI 解析用（打印一行 JSON，压过人读行）
-  const gi = argv.indexOf('--game'), game = gi >= 0 ? argv[gi + 1] : null;
-  const ii = argv.indexOf('--id'), forcedId = ii >= 0 ? argv[ii + 1] : null;
-  const prompt = argv.slice(1).filter((a, i) => !a.startsWith('--') && argv[i] !== '--game' && argv[i] !== '--id').join(' ').trim();
-  if (!prompt) { console.error('缺 prompt'); process.exit(1); }
+  const { mock, asJson, game, forcedId, prompt, refs, edit } = parseGenerationArgs(argv.slice(1));
   const apiKey = process.env[A.envKey];
-  if (!mock && !apiKey) console.warn(`⚠ 未设 ${A.envKey}，改走 mock（真调需 key + 放宽网络）`);
-
-  const g = await A.generate(prompt, { mock, apiKey });
+  const inputs = loadImageInputs({ refs, edit });
+  const g = await A.generate(prompt, { mock, apiKey, inputs });
   // 人审门（M2.5）：生成产物落**待审区**，绝不直写 index.json。人经 /api/assets/review approve 才入库。
-  const res = writePending({ adapter: adapterName, prompt, forcedId, game, buffer: g.buffer, spec: g.spec, model: g.model, mock: g.mock, at: new Date().toISOString() });
+  const res = writePending({ adapter: adapterName, prompt, forcedId, game, buffer: g.buffer, spec: g.spec, model: g.model, mock: g.mock, at: new Date().toISOString(), references: g.references });
   if (asJson) { console.log(JSON.stringify(res)); return; }
   console.log(`✓ 生成 ${res.id}${g.mock ? ' (mock)' : ''} → 待审区（人点「入库」才登记）· 预览 ${res.previewPath}`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) run(process.argv.slice(2));
+if (import.meta.url === `file://${process.argv[1]}`) run(process.argv.slice(2)).catch(error => { console.error(`[ai-gen] reject: ${error.message}`); process.exitCode = 1; });

@@ -22,7 +22,7 @@ describe('fetchRetry 连接层重试（owner 2026-07-27「第一次连不上·�
 
 describe('ai-gen 框架 · 适配器注册表', () => {
   it('注册了 tripo·meshy(3D) + qwen·seedream(2D)，各带 kind/envKey/license', () => {
-    expect(Object.keys(ADAPTERS).sort()).toEqual(['meshy', 'qwen', 'seedream', 'tripo']);
+    expect(Object.keys(ADAPTERS).sort()).toEqual(['gpt-image-2.5', 'meshy', 'qwen', 'seedream', 'tripo']);
     expect(ADAPTERS.tripo).toMatchObject({ kind: 'mesh', ext: 'glb', envKey: 'TRIPO_API_KEY' });
     expect(ADAPTERS.meshy).toMatchObject({ kind: 'mesh', ext: 'glb', envKey: 'MESHY_API_KEY' });
     expect(ADAPTERS.qwen).toMatchObject({ kind: 'texture', ext: 'png', envKey: 'DASHSCOPE_API_KEY' });
@@ -219,4 +219,79 @@ describe('ai-gen 框架 · 人审门（待审区 + approve/reject·provenance �
     expect(reviewPending({ root, id: 'ai/qwen/nope', action: 'approve' }).ok).toBe(false);
     expect(reviewPending({ root, id: 'ai/qwen/nope', action: 'reject' }).ok).toBe(false);
   }));
+});
+
+describe('T1/R1 参考图与 GPT Image 2.5', () => {
+  it('解析多图、重复 --ref、edit，不把图路径拼进 prompt；缺值拒收', async () => {
+    const { parseGenerationArgs } = await import('./ai-gen-inputs.mjs');
+    expect(parseGenerationArgs(['a castle', '--ref', 'a.png', 'b.png', '--edit', 'base.png', '--ref', 'c.png', '--mock'])).toMatchObject({ prompt: 'a castle', refs: ['a.png', 'b.png', 'c.png'], edit: 'base.png', mock: true });
+    expect(() => parseGenerationArgs(['p', '--ref'])).toThrow('--ref');
+    expect(() => parseGenerationArgs(['p', '--edit', '--mock'])).toThrow('缺值');
+  });
+  it('PNG 原始字节 sha256 进入待审 provenance；换图真改变 mock；坏图与不支持的 provider 拒收', async () => {
+    const { writeFileSync } = await import('node:fs');
+    const { createHash } = await import('node:crypto');
+    const { loadImageInputs } = await import('./ai-gen-inputs.mjs');
+    const root = mkdtempSync(join(tmpdir(), 'aiflow-refgen-'));
+    try {
+      const file = join(root, 'ref.png'); const image = mockImage('reference', 32).buffer;
+      writeFileSync(file, image);
+      const inputs = loadImageInputs({ refs: [file], edit: file });
+      const g = await ADAPTERS['gpt-image-2.5'].generate('castle', { refs: [file] });
+      expect(g.references).toEqual([{ path: file, role: 'reference', sha256: createHash('sha256').update(image).digest('hex') }]);
+      const entry = writePending({ root, adapter: 'gpt-image-2.5', prompt: 'castle', buffer: g.buffer, model: g.model, mock: true, references: g.references }).entry;
+      expect(entry.provenance.references).toEqual(g.references);
+      expect(entry.provenance.references[0]).not.toHaveProperty('buffer');
+      expect(inputs.map(i => i.role)).toEqual(['edit', 'reference']);
+      writeFileSync(file, mockImage('other', 32).buffer);
+      const changed = await ADAPTERS['gpt-image-2.5'].generate('castle', { refs: [file], mock: true, apiKey: 'test' });
+      expect(changed.buffer.equals(g.buffer)).toBe(false);
+      await expect(ADAPTERS.qwen.generate('castle', { refs: [file], mock: true })).rejects.toThrow('不支持');
+      writeFileSync(file, 'not PNG');
+      expect(() => loadImageInputs({ refs: [file] })).toThrow('PNG');
+      expect(() => loadImageInputs({ refs: [join(root, 'missing.png')] })).toThrow();
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+  it('真实 provider 的协议用本地 fetch 替身核对：Seedream 带图，GPT 文生 JSON / 多图 multipart；HTTP 错误拒收', async () => {
+    const { createHash } = await import('node:crypto');
+    const buffer = mockImage('fixture', 32).buffer;
+    const inputs = [{ path: 'base.png', role: 'edit', buffer, sha256: createHash('sha256').update(buffer).digest('hex') }];
+    const orig = globalThis.fetch; const calls = [];
+    globalThis.fetch = async (url, opts) => { calls.push({ url, opts }); return { ok: true, json: async () => ({ data: [{ b64_json: buffer.toString('base64'), url: 'https://example.invalid/output' }] }), arrayBuffer: async () => buffer }; };
+    try {
+      await ADAPTERS.seedream.generate('edit', { apiKey: 'fixture-key', inputs });
+      expect(JSON.parse(calls[0].opts.body).image).toEqual([`data:image/png;base64,${buffer.toString('base64')}`]);
+      calls.length = 0;
+      const real = await ADAPTERS['gpt-image-2.5'].generate('edit', { apiKey: 'fixture-key', inputs: [...inputs, { ...inputs[0], role: 'reference' }] });
+      expect(real.mock).toBe(false); expect(real.buffer).toEqual(buffer);
+      expect(calls[0].url).toMatch(/\/images\/edits$/);
+      expect(calls[0].opts.body.getAll('image[]')).toHaveLength(2);
+      expect(calls[0].opts.body.get('model')).toContain('gpt-image-2.5');
+      expect(calls[0].opts.headers).not.toHaveProperty('content-type');
+      calls.length = 0;
+      await ADAPTERS['gpt-image-2.5'].generate('castle', { apiKey: 'fixture-key' });
+      expect(calls[0].url).toMatch(/\/images\/generations$/);
+      expect(JSON.parse(calls[0].opts.body)).toMatchObject({ prompt: 'castle', output_format: 'png' });
+      globalThis.fetch = async () => ({ ok: false, status: 401 });
+      await expect(ADAPTERS['gpt-image-2.5'].generate('x', { apiKey: 'fixture-key' })).rejects.toThrow('HTTP 401');
+    } finally { globalThis.fetch = orig; }
+  });
+});
+
+it('T1 CLI: --ref / --edit 的哈希穿过真实命令入口进入 pending.json', async () => {
+  const { mkdirSync, copyFileSync, writeFileSync } = await import('node:fs');
+  const { spawnSync } = await import('node:child_process');
+  const root = mkdtempSync(join(tmpdir(), 'aiflow-ref-cli-'));
+  try {
+    mkdirSync(join(root, 'scripts'));
+    for (const file of ['ai-gen.mjs', 'ai-gen-inputs.mjs']) copyFileSync(join(process.cwd(), 'scripts', file), join(root, 'scripts', file));
+    writeFileSync(join(root, 'ref.png'), mockImage('cli', 32).buffer);
+    const result = spawnSync(process.execPath, ['scripts/ai-gen.mjs', 'gpt-image-2.5', 'scene', '--edit', 'ref.png', '--ref', 'ref.png', '--mock', '--json'], { cwd: root, encoding: 'utf8' });
+    expect(result.status, result.stderr).toBe(0);
+    const json = JSON.parse(result.stdout.trim().split('\n').at(-1));
+    expect(json.entry.provenance.references.map(r => r.role)).toEqual(['edit', 'reference']);
+    expect(json.entry.provenance.references.every(r => /^[a-f0-9]{64}$/.test(r.sha256))).toBe(true);
+    expect(json.entry.provenance.prompt).toBe('scene');
+    expect(existsSync(join(root, 'assets/index.json'))).toBe(false);
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });
