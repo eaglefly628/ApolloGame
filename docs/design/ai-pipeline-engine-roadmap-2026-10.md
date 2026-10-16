@@ -2,6 +2,12 @@
 
 > **owner 2026-10-16 裁决**：走 **A = 自研引擎**，不用 Unity/Godot；目标是把《Across the Stars》式流程（`docs/workflow/ai-production-flow.md`）需要的能力**泛化进引擎**。本 session 只做分析与拆解，**不写代码**；实现由 owner 派 Codex 按本文逐项施工。
 > 顺序原则：**先引擎能力，后游戏**。每项 = 一张可直接派工的写死 spec（目标 · 实查 · 数据形状 · 归属 · 验收 · 依赖）。
+>
+> **owner 2026-10-16 追加裁决**：
+> 1. 原流程里**我们没有的部分全部在引擎侧补足**；Unity 在原流程里的角色（组装可玩场景）由我们引擎承担（E 层 + E5）。
+> 2. **与 Tripo、Blender 做正式整合**（T3 / T4 / T7）。
+> 3. **绑骨走原流程**：Blender + **Auto-Rig Pro（付费，接受）** + Mixamo（§3 Q1 判 B）。
+> 4. 目标是**把原流程完整走通**，验收 = V1 竖切。
 
 ---
 
@@ -26,7 +32,9 @@
 
 ---
 
-## 1. 能力清单（四层·共 13 项）
+## 1. 能力清单（四层·共 14 项）
+
+原流程 → 本仓对应：Image 2.5 出图 = T1 · 看图拆资产 = T2 · Tripo = T3 · Opus 操控 Blender = T7（+T4） · Auto-Rig Pro + Mixamo = T5 · Unity 组装 = E1–E5 · 独立审查 agent 多机位盲审 = T6 + R1 复查门 · Astra 修 bug = 现有施工/复查门纪律。
 
 ### T 层 · 离线工具链（`scripts/`·sim 外·产物=提交进库的固定资产）
 
@@ -51,9 +59,21 @@
 - 验收：对 3 个 Tripo 样本跑出同规格；校验器对超预算 / 轴向错的模型给可读报错；无 Blender 环境时明确跳过并提示，不静默。
 - 归属：🔴 主程（资产导入面 + 跨游戏共享）。
 
-**T5 绑骨与动作导入**（⚖ **需 owner 判路线**，见 §3 Q1）
-- 目标：给 T3/T4 产出的人物模型绑标准人形骨架，并把外部动作（Mixamo FBX 等）**重定向**到该骨架，导出为独立动作 glb（供 E2 动作库消费）。
-- 归属：🔴 主程。
+**T5 绑骨与动作导入**（✅ owner 判 B：Blender + Auto-Rig Pro + Mixamo）
+- 目标 ①·绑骨：经 T7 在 Blender 里对 T4 规范化后的人物跑 **Auto-Rig Pro Smart**：脚本按模型包围盒与四视图给出初始标记点，**标注截图交人确认/微调**后生成骨架并自动蒙皮；导出带标准人形骨骼命名的 glb。
+- 目标 ②·动作：Mixamo 无官方 API → **人工**按动作清单下载 FBX（Without Skin）放入 `assets/_inbox/mixamo/`；脚本经 T7 用 Auto-Rig Pro **Remap** 重定向到本项目骨架，每个动作导出为独立动作 glb（供 E2 动作库消费），并登记 `assets/index.json`（`type:'animation'`·`spec{skeleton, fps, frames, loop}`）。
+- 动作清单：`docs/design/<slug>/motion-list.md`（动作名 · Mixamo 搜索词 · 是否需 IK 修正）；没有现成动作的（如提水壶）选最接近的一条并标「需 E4 修正」。
+- 许可：Auto-Rig Pro 每台施工机一份授权，**不入库**；脚本检测插件缺失时**明确报错退出**，不静默跳过。Mixamo 动作按 Adobe 条款可用于商业游戏，provenance 记来源。
+- 验收：一个 Tripo 人物绑骨后在 Blender 里播 3 个重定向动作无穿模/翻折；导出的动作 glb 在引擎里经 E2 能绑到该模型。
+- 依赖：T7、T4。归属：🔴 主程。
+
+**T7 Blender 桥**（「agent 操控 Blender」·T4/T5/D1 的「直接搭」都靠它）
+- 目标 ①·无头作业：`scripts/blender-job.mjs <job.json>` 调 `blender --background --python`，job = 纯数据 `{op, inputs[], params, outputs[]}`，op 为闭集（`normalize` · `rig-arp` · `retarget-arp` · `build-scene` · `render-views`）；每次作业落日志 + 输出文件哈希，可复跑。
+- 目标 ②·搭场景：`build-scene` 吃 D1 拆层单里 `route:"build"` 的行 + Tripo 道具，由 agent 写的 bpy 脚本搭场景（脚本作为作业产物入库可审），按 **E5 节点命名约定**导出整场景 glb。
+- 目标 ③·看图反馈：`render-views` 按关键图机位出渲染图，供 agent 自查和 R1 盲审比对（Blender 侧预览，引擎侧截图仍走 T6）。
+- 可选：接 Blender MCP 做交互式搭建；无头作业是**必备主线**，MCP 只是加速。
+- 验收：同一 job 两次运行产物哈希一致（不含时间戳）；无 Blender 时明确报错；op 闭集外拒跑。
+- 归属：🔴 主程（跨游戏共享面）。
 
 **T6 R1 对抗盲审 harness**
 - 目标：`scripts/keyart-review.mjs <slug> <scene>`：按**机位预设**（2D = 固定帧；3D = `Camera3D` 预设视角列表）截图 → 与关键图并排出对比图 + 客观指标（色调直方图距离、构图分区亮度）→ 生成 `self-check/R1-keyart-review.md` 骨架，由**非施工 agent** 逐项填差异单。
@@ -112,7 +132,7 @@
 | 阶段 | 项 | 解锁什么 |
 |---|---|---|
 | **第 1 步 · 定调与审查（2D 就能用）** | T1 → T2 → T6 → P1 | K1/K2/D1/R1 全流程；game115（2D）即可按新流程走 |
-| **第 2 步 · 3D 资产进得来** | T3 → T4 → E1 | AI 生成的道具/人物模型规范地进引擎、网页包体可控 |
+| **第 2 步 · 3D 资产进得来** | T7 → T3 → T4 → E1 | Blender 桥打通；Tripo 生成的道具/人物经 Blender 规范化后进引擎、网页包体可控 |
 | **第 3 步 · 3D 场景** | E5 | Blender 搭的场景直接变可玩场景（碰撞/导航/拾取） |
 | **第 4 步 · 3D 人物** | T5 → E2 → E3 → E4 | 绑骨、动作库、混合、挂手、IK |
 | **第 5 步 · 端到端验收** | V1 | 证明整条链路可用 |
@@ -121,14 +141,13 @@
 
 ---
 
-## 3. 需要 owner 拍板的点
+## 3. 裁决记录与待办
 
-- **Q1 · 绑骨与动作来源（T5）**：
-  - **A. Tripo 自带绑骨 + 动作重定向 API**：全自动、可脚本化；动作库受 Tripo 预设限制。
-  - **B. Blender 无头 + Auto-Rig Pro + Mixamo**：原流程同款、动作最全；Auto-Rig Pro 是付费插件，Mixamo 无官方 API，需人工下载 FBX 后再由脚本重定向。
-  - Lead 推荐 **A 为主、B 补缺**：自动路径先跑通；A 没有的动作（如提水壶）再走 B 的人工下载。
-- **Q2 · 归属**：E1–E4 属 P3D 域（`src/renderer/three-*`）；T4/T5/E5/P1 属 🔴 主程面。若都派 Codex，按 CLAUDE.md「施工与复查」：Codex 先在工单上抢锁，**复查人另派，不得是施工方**。
-- **Q3 · 槽位**：引擎池 `docs/workflow/requests.md` 现 10/10 满槽。E 层登记在 3D 独立池 `docs/workflow/requests-3d.md`（已挂总条目 `REQ-3D-AI-PIPELINE`）；T/P 层要进引擎池，需先清一个槽。
+- **Q1 · 绑骨与动作来源（T5）**：✅ **owner 2026-10-16 判 B**——走原流程 Blender + Auto-Rig Pro（付费接受）+ Mixamo，目标是完整走通。（备选 A「Tripo 自带绑骨/重定向 API」不做。）
+- **Q2 · 施工主体**：owner 派 Codex 施工。E1–E4 属 P3D 域（`src/renderer/three-*`）；T4/T5/T7/E5/P1 属 🔴 主程面。按 CLAUDE.md「施工与复查」：Codex **开工第一动作是在工单上抢锁**（把施工主体改成自己并推一次）；**复查人另派，不得是施工方**，复查按四步铁律（独立复跑 · 撤修验红 · 实证复现 · 读告警）。
+- **Q3 · 登记**：3D 资产与运行时项（T3 · T4 · T5 · T7 · E1–E5 · V1）登记在 3D 独立池 `docs/workflow/requests-3d.md` 总单 `REQ-3D-AI-PIPELINE`。通用项（T1 · T2 · T6 · P1）属引擎池 `docs/workflow/requests.md`，**该池现 10/10 满槽，需 Lead/owner 先清出一个槽再登记**；在此之前以本文 §1 为写死 spec。
+- **采购口径**：owner 2026-10-16 表态可购买所需 API / 插件，或接入其他工作流；选型以「能脚本化、产物可复现、许可允许商用」为准。
+- **施工机前置**：Blender（固定一个 LTS 版本）+ Auto-Rig Pro 授权 + Tripo API key（env `TRIPO_API_KEY`，不入库）+ 图像 provider key。云端 session 网络受限，真调 API 与 Blender 作业需在放开网络、装好 Blender 的机器上跑；mock 路径保证门禁可绿。
 
 ---
 
