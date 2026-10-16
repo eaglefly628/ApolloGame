@@ -136,3 +136,58 @@ flowchart TD
 - D1：拆成 `capability-plan.md §4.5` 的六类皮肤槽（背景 / 幻象层 / 热点物件 / 小女孩姿态 / 火柴 / 相册卡）。
 - R1：每章截火苗强、中、弱三帧，与关键图比对。
 - 人物线：不触发（2D 剪影）。
+
+---
+
+## 7. 设计定稿线（UI · Claude Design）与「设计定稿包」（2026-10-16 加）
+
+> owner 2026-10-16 提：原来 UI 都在 Claude Design 里做，现在要把它并进完整的设计定稿流程，缺能力就在引擎补。
+
+### 7.1 现有设计稿线（REQ-DESIGNLINE·实查）
+
+| 环节 | 现有 | 出处 |
+|---|---|---|
+| 发：UI 需求单 | ✅ 从验收剧本 / 蓝图动作 / GDD 屏清单自动推导，带风格锚 | `scripts/ui-brief.mjs` |
+| 做：出稿 | 🔶 owner 手动在 Claude Design 网页做，再手动搬回 | — |
+| 收：收稿 + 台账 | ✅ 单文件 / zip 收稿箱 → `docs/design/<slug>/ui-refs/` + `design-ledger.json`（draft→final 真人签） + 需求单动作对账 | `main_entry/design_ingest.py` |
+| 量：稿子量盒子 | 🔶 只有 game108 专用版 | `scripts/game108-design-measure.mjs` |
+| 令牌：颜色 / 字号 / 圆角 | 🔶 手抄成代码 | `games/game108/design-tokens.ts` |
+| 复刻：结构 1:1（S4）+ 视觉 1:1（S5） | ✅ 规则在档 | `docs/playbooks/game-production.md` 两层 1:1 律 |
+| 比对：我们渲出的屏 vs 稿 | ❌ 无通用工具 | — |
+
+### 7.2 设计定稿包（每款游戏一份·S2 后、S3 前一次定稿）
+
+| 件 | 内容 | 来源 |
+|---|---|---|
+| ① 玩法 | GDD + capability-plan | S1 / S2 |
+| ② 风格令牌 | **一份**配色 / 字体 / 圆角 / 质感，同时喂给生图提示词和 UI 主题 | 新（缺口 U3） |
+| ③ 场景关键图 | K1 / K2 | §3 |
+| ④ 角色设定 | 三视图 / T-Pose 四视图（3D） | 人物线 |
+| ⑤ UI 稿 | Claude Design 稿，**用我们的控件和令牌出**，以③为视觉参考 | 本节 |
+
+**一道人门「设计定稿」**（owner 签）：五件齐、互相不打架（UI 风格与关键图一致）才签。签后改设计 = 开变更单，不许施工方就地改数字。
+
+### 7.3 UI 线新流程
+
+```mermaid
+flowchart TD
+  T0["U1 控件库同步到 Claude Design<br/>我们的控件 + house 主题 → 设计系统"] --> B1["发需求单<br/>ui-brief.mjs + 风格令牌 + 关键图"]
+  B1 --> C1["Claude Design 出稿<br/>只用同步过去的控件"]
+  C1 --> I1["收稿<br/>design_ingest · 动作对账"]
+  I1 --> M1["U2 量稿 + 提令牌<br/>通用 design-measure"]
+  M1 --> G1{"人门：设计定稿<br/>五件齐 · 风格一致"}
+  G1 -- 否 --> C1
+  G1 -- 是 --> L1["S4 结构 1:1 · S5 视觉 1:1<br/>LayoutNode 复刻"]
+  L1 --> R2["U4 UI 盲审<br/>同一把尺子量我们的屏 vs 稿"]
+  R2 -- 有差异 --> L1
+  R2 -- 一致 --> OK["进 S6 / S7"]
+```
+
+### 7.4 缺口（⚖ 待 owner 判 A/B·UI 基座归 PUI·收稿线归 PST）
+
+| # | 缺口 | 实查 | A 补 | B 不补的代价 | Lead 推荐 |
+|---|---|---|---|---|---|
+| U1 | **控件库同步成 Claude Design 设计系统** | 稿子现在用自由 HTML 画，复刻时要翻译成闭集控件，翻不过去就报 PUI 扩控件；Claude Design 支持设计系统项目（同步需 owner 启动 `/design-sync`） | 把 UI 控件目录（`src/ui/components/catalog.ts`）+ house 主题导出成设计系统预览包，同步过去 | 稿子永远是「自由画、再翻译」，翻译失真和扩控件扯皮一直有 | **A** · PUI |
+| U2 | **通用量稿** | 只有 game108 专用版 | 把 `game108-design-measure.mjs` 泛化为 `design-measure.mjs <slug>`，产机读基准 JSON | 每款游戏重写一遍或靠目测 | **A** · PUI |
+| U3 | **统一风格令牌** | 生图风格在 `scripts/style-packs.json`，UI 主题在 UITheme，game108 令牌手抄成代码；三处各管各的 | 一份 `style-tokens.json`（每游戏）同时生成生图提示词风格段和 UITheme 覆盖；量稿时从稿子里提取 | 场景图和 UI 风格容易各走各的 | **A** · PUI + PST |
+| U4 | **UI 盲审** | 无「我们渲出的屏 vs 稿」比对 | 并入 T6：同一 harness 既比场景关键图，也按 U2 的基准逐件比盒子位置 / 尺寸 / 颜色 | 1:1 只能靠人眼 | **A** · 并入 T6 |

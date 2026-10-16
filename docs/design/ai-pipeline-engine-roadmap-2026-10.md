@@ -185,6 +185,10 @@
 | 光照观感 | `Light3D` + 局部光阴影 + IBL + `Post3D`；烘焙按 `docs/design/3d-baking-pipeline.md` 维持低优，V1 盲审若判光照不达标再开 |
 | 多模型分工（Fable 写文档 · Astra 修 bug） | 不是引擎缺口：按现有角色卡分工，复查人 ≠ 施工人照旧 |
 
+### UI 设计定稿线缺口（2026-10-16·全文 `docs/workflow/ai-production-flow.md` §7）
+
+U1 控件库同步成 Claude Design 设计系统 · U2 通用量稿 · U3 统一风格令牌（生图 + UI 同源） · U4 UI 盲审（并入 T6）——均 ⚖ 待 owner 判；UI 基座归 **PUI**，收稿线归 **PST**。
+
 ## 4. 不做清单（防过度设计）
 
 - 不做运行时 AI 生成（生成只在离线工具链，产物是固定资产；sim 永不调 AI）。
