@@ -151,6 +151,39 @@
 
 ---
 
+## 3.5 派单全做完后的残余缺口（2026-10-16 二次实查·⚖ 待 owner 逐条判 A/B）
+
+> 方法：把 owner 给的工具链逐环对照「本路线图 14 项全部落地后」的状态。**原流程里 Unity 负责的「组装 + 玩法 + 镜头 + 发布」，E5 只接住了「场景导入」这一块**——残余缺口集中在这里。
+
+### 必补候选（引擎 / 工具缺口）
+
+| # | 缺口 | 实查（为什么现有能力重组不成） | A 补 | B 不补的代价 | Lead 推荐 |
+|---|---|---|---|---|---|
+| R1 | **GPT Image 2.5 生图适配器** | `scripts/ai-gen.mjs` 只有 qwen / seedream / tripo / meshy；T1 只加参考图入参，没加这家 | 加 provider（同现有适配器形态·🟢） | 定调图只能用现有两家，画风不是原流程那套 | **A** · 并入 T1 同单 |
+| R2 | **3D 角色移动贴地**（坡道、台阶、高低地面） | sim 位置 = 平面 `Transform` + `Collider3D` 竖直分量（`overlap-detect-3d` describe）；heightfield 只存在于 render-only 物理；sim 内无地面高度采样 | 下沉确定性「可行走面高度采样」（从 E5 的 `nav_*` / `col_*` 烘成高度表·🔴 碰确定性） | 场景只能做平地；Blender 搭的起伏地形人物会浮空或穿地 | **A** |
+| R3 | **剧情镜头编排**（机位关键帧、推拉摇移、按信号切镜） | `Camera3D` 只有 orbit / follow；`t3-timeline` 的 cue 只能写 signal/flag/resource/spawn，碰不到 render-only 相机 | 下沉 render-only `CameraShot3D`（镜头表 + 信号触发 + 缓动·`docs/design/godot-vs-apollo.md` §4B 已列） | 叙事游戏没有镜头语言，只能固定跟随视角 | **A** |
+| R4 | **按场景分段加载 + 加载进度** | `src/assets/asset-manager.ts` 只有 `load(key)` / `loadAll()`，无按场景预载、卸载、进度回报 | 加场景资源组（预载 / 卸载 / 进度数据源接 LayoutNode） | 3D 网页版首屏要一次下完全部模型，包体大时白屏久 | **A** |
+| R5 | **动作审查**（穿模、滑步、IK 抖动） | T6 只出静态截图；动作问题静帧看不出 | 扩 T6：按机位录**帧序列 / 短 GIF** 给复查 agent | 动作质量只能靠人肉看 | **A** · 并入 T6 同单 |
+
+### 流程类缺口（写 skill / 手册·不占引擎池）
+
+| # | 缺口 | 说明 |
+|---|---|---|
+| S1 | **拆层 skill** | T2 只定了 `asset-split.json` 格式；还缺「agent 看图怎么拆」的操作规程：哪些给 Tripo、哪些 Blender 搭、哪些 2D 切图的判据 |
+| S2 | **盲审 skill** | T6 只出截图和指标；还缺复查 agent 的比对清单（构图 / 色调 / 光源 / 比例 / 动作）和「不读施工自陈」的执行规程 |
+| S3 | **人工步骤回灌手册** | 三处只能人做：Tripo 网页端局部重生成、Mixamo 下载动作、Auto-Rig Pro 标记点确认。要写清「人做完放哪、脚本怎么接回」，否则链路在这三处断 |
+
+### 已覆盖（重组成立·不补）
+
+| 原流程需要 | 现有能力 |
+|---|---|
+| 走近物件出现交互提示 | `d1-overlap-detect-3d` + `t2-event-when` + 世界空间 UI `WorldUI3D` |
+| 多语言 | `src/services/i18n`（`@t/key` 绑定·UI 零改动） |
+| 音效 / 配乐 | `l4-sound` + `docs/playbooks/audio.md` |
+| 网页 / Steam 发布 | `game-publisher` agent + `docs/design/steam-publish.md` |
+| 光照观感 | `Light3D` + 局部光阴影 + IBL + `Post3D`；烘焙按 `docs/design/3d-baking-pipeline.md` 维持低优，V1 盲审若判光照不达标再开 |
+| 多模型分工（Fable 写文档 · Astra 修 bug） | 不是引擎缺口：按现有角色卡分工，复查人 ≠ 施工人照旧 |
+
 ## 4. 不做清单（防过度设计）
 
 - 不做运行时 AI 生成（生成只在离线工具链，产物是固定资产；sim 永不调 AI）。
