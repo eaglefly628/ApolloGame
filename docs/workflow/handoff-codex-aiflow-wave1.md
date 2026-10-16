@@ -52,6 +52,7 @@
 - 不把任何 API key 写进仓库；全部能力必须有 mock 路径，门禁在无 key、无网络环境下也能全绿
 - 非 sim 面日志用 console 分级；凡「什么都没发生」的分支（拒收、跳过、降级）都要打一行
 - 每张工单独立提交；每次推送前跑 node scripts/scoped-gate.mjs --run，用退出码判断（不要经管道吞掉失败码），全绿才推
+- 已知基线红（2026-10-16 实查·origin/codex/mainbranch 原样即红·非本波范围）：depcruise 报 games/game113/guide-art.ts 相对导入越界，以及 vitest 里对应的「dependency-cruiser 围栏」1 例。这两项视为基线，不许为过门禁去改 game113；其余步骤必须全绿，Review 单里写明「除基线 depcruise 外全绿」并附各步退出码
 - 推送前 git fetch origin codex/mainbranch，如有新提交就 rebase 到它上面再跑门禁
 - 只提交自己的文件；不 stash、不挪动、不覆盖任何别人的改动
 - 不签任何人门（signoff），不给自己写复查 PASS
