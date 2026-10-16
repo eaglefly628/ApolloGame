@@ -10,111 +10,7 @@
 
 <!-- REQ-MOBILE-SHELL（手机客户端=WebView 壳·Capacitor 路线）owner 2026-08-22 令**暂停出池**——架构定性/四步分解/红线全文查 git 历史（git log -S REQ-MOBILE-SHELL）·重启时恢复原文 -->
 
-### REQ-FLOWFIELD · 群体流场寻路 `t2-flow-field` · [2026-08-10] · **owner 拍板**（「我想做大规模 rts」）· **施工主体 = 主程 = 本 session（2026-08-24 抢锁·owner 当面指派「你就是主程」·本行即锁）** · 复查 = 独立 agent（三轮毕） · status: **M1 + 软分离 + ORCA 全交·三轮复查毕（FAIL→CONCERNS→CONCERNS「可交 Demo」）·13 条实伤全修 → 等 game211 Demo 反馈；M2/M3/M4 未做** · P1 · 类型: 引擎能力下沉
-
-**为什么做**：`t2-pathfind`（A*-per-agent）在 RTS 规模撞墙——500 单位 / 2304 节点首拍 **534ms**、稳态 20.4ms/tick，
-且对图规模超线性。流场**铺一次服务全部单位**（2304 格 0.9ms，之后每单位 O(1) 查表），每 tick 差两个数量级。
-
-**三档开销**（同机 bench·1000/4000 单位 ms/tick）：纯流场 0.39/2.51 · 软分离 1.01/4.08 · ORCA **8.64/35.77**
-⇒ 4000 单位开 ORCA 超一帧预算；默认软分离，ORCA 留给「不许穿模」的小队面。
-
-**⚠ 对外口径已两次改口（都是复查打掉我把话说大）**
-- ~~「timeHorizon 拍内保证互不碰撞」~~ → 前提是线性规划有可行解，迎面对撞时经常没有。同场景扫一族排布（中场段）：
-  纯流场 0.047~0.100 · 软分离 0.061~0.128 · **ORCA 0.644~0.701**（半径和 0.70）⇒ **把穿模从 ~90% 压到最坏 8%，不是 0**。
-- ~~「不还礼的邻居仍有 0.603 的底」~~ → **没有下界**（2v2 0.505 · 3v3 0.187）。混装要干净 = 双方都开 ORCA。
-
-**全文别在池子里重抄**：三轮判词与 13+21+15 刀 sabotage → `docs/design/game211/orca-review{,2,3}-2026-08-25.md`；
-病根与修法 → 调研 `crowd-pathfinding-research.md` §10.5/§10.6/§10.7；消费方交接单 → `docs/design/game211/requests.md` REQ-G211-CROWDDEMO。
-
-**沉淀成全库纪律的四条**（比单子本身值钱）：
-· 「告警没出现」≠「没有告警」——可能只是没人组装到那个配置。
-· 新增的回归测试必须在被修的那一版上跑一遍确认它真会红。
-· **承重用例只钉一个初始条件本身就是缺陷形状**——尤其被测指标对初始条件混沌时（挪 0.25 就翻盘）。
-· **修 A 时新增的机制 B，B 自己也要配一刀**——三轮的新伤全是这个形态。
-
-### REQ-P3TAIL · 架构路线图 P3 收尾（宿主拆分 / 持久化收编 / 输入与 Replay / 引擎成包）· [2026-09-12] · **owner 令「第三阶段后面请你都做完」**（承独立审查 2026-09-12 的引擎演进建议） · **施工主体 = 主程 = 本 session（抢锁·本行即锁）** · 复查 = 另派独立 agent（复查人≠施工人） · status: **in-progress（M1 施工中）** · P1 · 类型: 引擎结构收尾
-
-> **spec 不在池子里重抄**：四项的「做什么 / 为什么先 / 迁移 / 风险 / 验收」全文在
-> `docs/design/engine-architecture-review-2026-09-02.md` §5（P3a / P3b / P3c / P3e），照它做。
-> 前置 P0·P1a·P1b·P1c·P2a·P2c·P2d·P2e **均已落地**（实查 git 历史），本单只做 P3 这四项。
-
-**⛔ 不在本单（域红线·CLAUDE.md 专职域例外）**：`P2b` UI repeat 原语归 **PUI**；`P3d` 渲染提取层 FrameDesc 归 **P3D**。
-别的 session 勿擅改这两片——要做走各自的池子派工，本单不碰。
-
-**分期（按「风险 × 依赖」排，不按路线图字母序）**
-
-| 期 | 内容 | 为什么排这个位置 | 验收 |
-|---|---|---|---|
-| **M1** | **P3a 的机器围栏**：`core + skills + net` 单独 tsconfig（`lib: es2022`·**无 dom**） | 这正是 P3a 的验收判据本身，且**零语义改动**——它会把"sim 里到底还有多少 DOM 依赖"一次性暴露出来，没有这份真实清单，后面的拆分只能靠猜 | sim 面不带 dom lib 过 tsc（存量违规入基线棘轮·新增即红） |
-| M2 | P3e 引擎成包（API 面棘轮先行·再收 exports） | 纯治理面·零 sim 风险；`engine.api.md` 进仓当棘轮后，后面三项的公共面漂移才有东西咬 | 仓外 `npm i` 能构建 game101 |
-| M3 | P3b 持久化收编（三套端口 → 一套 Envelope + FileBridge） | 依赖 P1c（已落）；碰存档=数据风险，放在 API 棘轮之后做 | 改组件字段名后旧档读入 hash 与续跑同轨 |
-| M4 | P3c 输入单一真相 + NetSession + Replay | 最大一项·🔴 碰 lockstep/确定性；依赖 P1a/P2c（已落），且应在存档收编后做（keyframe 复用 Envelope） | 卡牌类双端 lockstep 跑通·导出的 replay 在 vitest 里复现到拍 |
-
-**红线**：四项都**不得改变既有 golden hash**（除非同提交给出逐条理由与新基线）；碰确定性面的改动按 🔴 主程口径走。
-
-### REQ-111-AINPC · LLM NPC 三件套下沉（`NpcAgentPort` + `t2-intent-barrier`）· [2026-09-12] · **owner 判 A×2**（game111 `framework.md` §6 缺口②③）+ owner 令「game111 的需求你也做一下」 · **施工主体 = 主程 = 本 session（2026-09-12 抢锁·本行即锁）** · 复查 = 另派独立 agent（复查人≠施工人·**待派**） · status: **✅ 已交（2026-09-12·门禁全绿·已推送）·等复查** · P1 · 类型: 引擎能力下沉
-
-**捆绑不拆**（owner 判词原文「只做端口不做 barrier = 最坏组合」）：有了调模型的能力却没有把结果确定性落地的能力，
-不确定性直漏 sim。症状是「偶发 desync / 存档读出来不一样」——本仓最难查的 bug 形状。
-
-**一句话**：外部 AI 当**输入源**（不当解释器）。端口只产 `Intent[]` 不写世界；barrier 把乱序/迟到/失败的异步回包
-**收成一个确定性结果**：按 npcId 排序注入 · 超期按**整数回合数**（禁墙钟）补默认动词 · 闭集外动词当场拒收并记 `reject`。
-
-**全文别在池子里重抄**：裁决原文（实查留痕 · A/B 两路代价 · 红线）+ 交付细节 + 撤修验红记录
-→ `docs/design/game111/requests.md` REQ-111-ENG-01 / REQ-111-ENG-02；架构依据 → `framework.md` §1.2 · §2 · §6②③。
-
-**落地**：契约 `src/engine/protocol/agent.ts`（`Intent`/`AgentContext`/`NpcAgentPort`）· 端口 `src/services/npc-agent/`
-（Null 确定性桩 + Http 骨架·**绝不抛**）· 门 `src/skills/tier2/intent-barrier{,-core}.ts` = `t2-intent-barrier`（registry 已登记）。
-
-**施工中真撞出来的两条**（spec 只预警了第一条的存在，没预警它会「恰好排对」）：
-① 首版让门读 `TurnOrder.round` 当回合号 → 与 `turn-order` 组件推断边双向成立 → 真 2-环。软环**只告警不抛**，
-   平局裁决按系统 id 字典序，那次排出来**恰好是对的**——纯属碰巧，改个系统名就反过来且全绿。
-   先用显式 `runsBefore` 压住（单文件测试全绿），**但全库 SCC 棘轮照样红** → 治本是去掉那条读边：
-   回合号改由 `setBarrierTurn` 推。另：我曾误判「去掉读边就脱离了全库软环 blob」——实测没有，
-   它与 turn-order/keybind/clickable 同款（runsAfter event-when + writes Signal 必然入环），已按棘轮纪律更新基线留理由。
-② lockstep 缺一条 spec 没写的：非权威端必须 `authority:false` 永不自结算。否则权威端收真意图、对端全部超期补默认
-   → 第一回合就分叉，**而两端各自全绿**。
-
-**复查门按这几条核**：① 端口不碰 world/snapshot/hash ② `NullNpcAgentPort` 无网可跑（**全库 AI 游戏的 CI 基建**）
-③ barrier 产出与回包到达次序**无关**（乱序投递测试必须同 hash）④ 超期判据零墙钟、零浮点
-⑤ 异步暂存组件登记 `NON_DETERMINISTIC`（漏登记 = 开日志就改 hash，lockstep 当场误报）
-⑥ 定序测试断言 `topological-sort` **warn 数为零**（它成环只告警不抛 → 绿灯不等于没话说）。
-
-### REQ-111-MEMORY · 记忆能力 `t2-memory`（衰减 · 确定性 top-K 检索 · 跨实体流转）· [2026-09-12] · **owner 判 A**（game111 `framework.md` §6 缺口①） · **施工主体 = 主程 = 本 session（2026-09-12 抢锁·本行即锁）** · 复查 = 另派独立 agent（**待派**） · status: **✅ 已交（2026-09-12·门禁全绿·已推送）·等复查** · P1 · 类型: 引擎能力下沉
-
-**为什么是引擎面不是 game111 面**：「谁在何时对谁做了什么，且这件事会淡忘、会被传开」是 RPG/模拟/社交的通用原语。
-通用性证据已在库里——`docs/design/game101/`（海港绯闻）整作以「绯闻传播」为名，与记忆流转同构。判 B 则 101/108/111
-各写一套，正是 `modifier-stack` 下沉前的原样。**实查**：registry 零记忆能力；`t1-event-log` 只是平铺流水
-（无衰减/无检索/无归属，且未注册为 capability）。
-
-**红线**：检索打分**全整数**（强度/时近/标签命中均整数权重）——浮点跨端 JIT/FMA 可能 1 ULP 漂移，纳入排序即误报
-desync（`determinism.ts` 对 Camera 的同款理由）。条目进 hash → 注意快照体积与**存档兼容**，新组件要给迁移口径。
-
-**落地**：`src/skills/tier2/memory{,-core}.ts` = `t2-memory`（registry 已登记）。衰减触发二选一（具名信号 / 拍周期）·
-检索整数打分 top-K 同分按 id 兜底 · `shareMemory` 打折转述且副本 `source` 记 `share:<from>`。
-**多做一条**：`entries` 恒按 id 升序存——数组序会进 canonical 即进 hash，按插入序存等于把「谁先被记」焊进指纹。
-**存档口径**：新组件旧档缺席 → 旧档 hash 语义原样不变；加记忆属新世代存档，不做旧档原地迁移。
-
-**全文 + 撤修验红记录**：`docs/design/game111/requests.md` REQ-111-ENG-03。
-
-### REQ-UPBACKUP · 原图备份被替换图盖掉（「一键还原」的底牌丢了）· [2026-08-19] · Lead 巡检 owner 直传批带出（实证：game101 art-59 backupPath 文件与 gen/art-59-up.png 逐字节同） · **施工主体 = PST（已交·本行即锁）** · 复查 = Lead（2026-08-22·owner 点名） · status: **done·⚖ Lead 复查 PASS·余 F3 一腿归 PST（清完即出池）** · P3 · 类型: 创作台 bug（上传/替换/还原线）
-> **实证复现**（非按报告推断·样本已随 affbcd96 删除，故在临时目录上重建）：备份步骤**时序是对的**
-> （`handle_art_upload` 确实在 `write_bytes` 之前抓），真病根在**重入**——备份靠 `'orig' not in row`
-> 防重复，而这个标记会被 `derive` 重建台账行 / `handle_art_restore` 弹出 / 绕台账的直传批抹掉。
-> 一抹掉「首次替换」就又成立一次 → 拿**当时线上那张（已经是替换图）**盖掉真原图。跑出来的实况：
-> `TRUE-ORIGINAL` 被 `REPLACEMENT-1` 覆盖后**永久找不回**；再循环一次备份就与线上新图逐字节同（= 巡检报的形状）。
-> **修**：① `_backup_orig` + JS 孪生 `backupOrigFile`——**备份已在案就原样返回、绝不重拷**（重入变幂等·
-> 原图只有一张只该备份一次）；② `handle_art_restore` **把备份内容拷回原服务路径**，不再把线上别名指进
-> `orig/`——旧写法让「永不被覆盖的备份」自己变成线上文件，下一次替换就以它为源（Python 侧
-> `SameFileError` 抛穿成 500·JS 侧 copyFileSync 同路径静默 no-op）。曾另写一道「源在 orig/ 下不拷」的闸，
-> **撤修验红实测永远够不着**（闸① 全覆盖）→ 已删：测不出红的守卫不是守卫。
-> **自证**：`scripts/art-backup-smoke.py` 27 腿（① 备份=真原图≠新图 ② orig 标记丢失后再替换备份纹丝不动
-> ③ 连替 5 次恒等 ④ 还原回原路径·备份区仍在 ⑤/⑤b 还原后再替换不炸 ⑥ 程序化槽不凭空造 ⑦ JS 孪生同闸）；
-> 撤修验红三轮各按锚点转红（撤闸① → ②③ 红；撤还原拷回 → ④ 红；撤 JS 闸 → ⑦ 红）。
-> **顺带补的门**：`t2_replace.py` 不带 `art_` 前缀 → **此前任何面旗都不命中**，改它一行没有任何门在验；
-> 新增 `backupSmoke` 面旗（`t2_replace.py` / `art-replace.mjs` / 冒烟自身）+ 行为契约两例。
-> **⚖ Lead 复查判词（2026-08-22·PASS）**：27+52 腿独立复跑绿（退出码直取）；撤修验红三轮恰中锚点——撤 Python 闸①→②③红（本单病根被咬住）·撤 JS 闸→⑦红·复现主程刀（砍 docs/design 落点）→7 腿红与自陈逐字同；复原后双绿·工作树净。改判病根（时序对·真病=重入）成立；F2 留痕降级已读码核实（合「留痕即可」判词）。
-> **F3（必办·PST·复查唯一实伤）**：Lead 自选最小突变「只砍 restore 的 `copyfile`·保留新指路」**27 腿全绿存活**——④ 腿内容断言在 upload 夹具下恒真（upload 写 `NO-up.png`·从不覆盖 `gen/NO.png`），「拷回」的内容语义零钉；而 regen 流按 docstring 复用同名覆盖原文件=拷回真吃劲的现场。补一腿覆盖式夹具（先把目标文件盖成替换内容再 restore·断内容=真原图）使该突变会红。自陈锚点「撤拷回→④红」系整块回退刀型（路径断言咬）·非虚但粗，F3 落地即闭。
+<!-- REQ-P3TAIL（架构路线图 P3 收尾（M1 施工中·M2–M4 未开））owner 2026-10-16 令**暂停出池**（引擎进入新阶段·需求池清理）——全文查 git 历史（git log -S REQ-P3TAIL）·重启时恢复原文 -->
 
 <!-- REQ-AUTOSAVE-任务收工自动存档（P1·owner 2026-08-10 令「跑完的结果就没了·希望它主动去上传」）**2026-08-19 全件完结出池**：
      本体（bf820b37）先本地提交→跑门禁→绿了才推·挂 art_jobs 收工与编排器子进程退出两处·features.autoPush 开关·
@@ -154,28 +50,7 @@ desync（`determinism.ts` 对 Camera 的同款理由）。条目进 hash → 注
 
 <!-- REQ-NETGAPS（P2·测试护栏·指派主程）已完结（2026-08-27·施工=Lead 本 session·owner 2026-08-26「约束和补全所有用例」令下并批·净测试零行为变）：① AdversarialBus（批内倒序+每 3 条压后一轮）40 轮 → 双端零 desync·synced·tick>20·逐端同 tick 同 hash（lockstep-tab.test.ts）；② C1-C4 成员抖动产 5 桶 > MAX_INPUT_EPOCHS=4 + 离场超时（PEER_TIMEOUT 拍数推满）→ 幸存端仍推进仍 synced，epoch 序列锚点数组钉死；③ 盲区 canary（net.test.ts）：同内容异创建序双世界 snapshotOrder 不等而 hashSnapshot 相等——钉死声明 lockstep 对 order 盲，并 order 属设计变更另议（未立单·真要并入时对 hashWithOrder 先例）。两处撤修验红均锚点命中（①改推进断言红「expected 3 to be greater than 20」·②锚点数组红）。全文查 git 历史。 -->
 
-### REQ-GATESMOKE · 14/18 产品线冒烟不在任何门内 + python 冒烟 harness 无自证 · [2026-08-22] · Lead 立（scripts 守卫评审 D 路实证） · **指派：主程（scoped-gate 面）** · status: open · 优先级: P2 · 类型: 门禁接线
-> ① facesOf 对 main_entry/ 只认 art_*/artifacts.py/t2_replace.py——改 projects.py/design_ingest.py/packaging.py/workshop_*.py/apollo.py 判 full 但 full 不含对应冒烟（projects/pipeline/studio-*/library-api/art-review/cartridge-art/dokiworld-pack 全不跑·与 ARTPAR「冒烟不在门曾漏检一整天」同形）。修=py 面旗扩到对应 handler + 「每 *-smoke.py 都有触发面」对账测试。② 18 份手抄 check() 计数器无一自证「假失败→exit1」——任一份被误改即恒绿；抽公共 harness 或每份加演练腿。③ dokiworld host-witness 不在 npm test（build 产物对账只活在发包路径）——挂进 dokiworldPack 面或加 build 冒烟。④ **存量 bug（X 路施工对照实证·两版同红 7过/2败）**：pipeline-smoke.py L121 硬编码 `public/games/<slug>/art/art-ledger.json`——REQ-CARTART（2026-08-06）已把卡带台账挪 `library/<slug>/art/`，该 smoke 自 8-03 未再动过·一直红着没人看见（正是①的活例证）。
-
-### REQ-S3CLICK-骨架关加「点击打穿」机器门 · [2026-08-07] · owner 判 **A**（2026-08-22 复确认留） · status: **in-progress（复查 FAIL 打回·判据层·2026-08-16）** · **施工主体 = 策划 session（锁不变·按报告修）** · 复查 = 独立复查 agent（Lead 派·原复查人楚晨未接单） · 优先级: **P0（升·game211 的 S3 正被假红卡死且判词误导排查）** · 类型: 流程门
-
-> **⚖ 复查判词（FAIL 打回·全文 `docs/design/s3click-review-2026-08-16.md`）**：方向/豁免纪律/单测/bind 检查/接线全成立，但**承重断言双向失灵**——game211 假红（开场模态盖屏+点击超时被静默吞+预算按文档序烧不到真可点件·判词还误导去查 Engine.step）；game108 对历史病①假绿（后来的「玩法说明屏」改动无声腐蚀了噪声对照：对照趟不点=永远停首屏,运行态时间元素全不在噪声集）。**P0 三修**：①点击失败入 JSON 与「点了没变」分流 ②预算优先真可命中件（elementFromPoint 预筛/从顶层叠层往下） ③噪声对照治时间元素盲区。**P1**：JSON 落总数/未点名单·exit 3 前先跑 bind 检查·接线补 spawn 级锚点。**当下操作口径**：game211 的 S3 红按假红对待,别查引擎链。
-
-- **病**：S3 骨架关全程**一次都不点**（机器门 = manifest + 装载 + 空跑 2 拍 + 渲染探针）。
-  于是「按钮画得好看但点了没反应」能一路绿着过 S3——game108 实测踩到两发，都不报错：
-  ① 宿主自搓 rAF 圈直接 `world.tick()`，绕过 `Engine.step()` 里注入输入那一句 ⇒ 队列一直填、没人取；
-  ② `props.bind` 没跑 `resolveBindings` ⇒ 进度条永远画在 0，文字却是对的。
-  **单测绿（自己往队列塞）+ 渲染探针绿（只画图），只有真点才露馅。**
-- **同病史**：owner 2026-07-17「**绿门不可玩**」复盘的药方是给 S4 加验收剧本，
-  **S3 这层的洞当时没补** ⇒ 同一个病换个位置又犯。
-- **界**：S3 问「信号打得穿吗」（点一下世界动没动）；S4 问「规则对吗」（打穿之后赢的是不是该赢的）。
-  接线断了属于骨架，不属于玩法——推给 S4 发现的话，验收剧本跑不动时分不清是规则错还是线没通，排查成本翻倍。
-- **做法**（owner 判 A·最小断言）：S3 门追加通用点击探针——扫活体 DOM 的 `[data-action]` 控件逐个点，
-  断言 ① 至少有一个点完 DOM 真的变了 ② 全程零控制台 error。**不验玩法、不需要 AI、不需要结算闭环。**
-- **不回溯**（owner 2026-08-07 明示）：现存游戏进**可见的**豁免名单（照 `pipeline-registry-guard`
-  的 `LEGACY_NO_BOARD` 先例·名单带理由·非静默跳过），**新游戏受检**。
-- **边界**（复查门核对用）：`scripts/click-probe.mjs`（新）+ `scripts/game-pipeline.mjs` 的 S3 门读码一处
-  + 其单测。**不碰**别的阶段门、不碰渲染探针、不改任何游戏。
+<!-- REQ-S3CLICK（骨架关「点击打穿」机器门（复查 FAIL 后自 08-16 停滞））owner 2026-10-16 令**暂停出池**（引擎进入新阶段·需求池清理）——全文查 git 历史（git log -S REQ-S3CLICK）·重启时恢复原文 -->
 
 <!-- REQ-108-ENG-07（我 2026-08-08 开的「全局条件→扣指定一侧血」引擎缺口单）**已撤销·不占槽**：
      ① 编号撞车——该号早被「结算门下的 intent 生命周期」占用（我开单时只 grep 了本文件，没扫 gdd.md）；
@@ -202,14 +77,23 @@ desync（`determinism.ts` 对 Camera 的同款理由）。条目进 hash → 注
 
 <!-- REQ-DOKIPACK-DokiWorld 出包线（P1·owner 2026-08-12 令「以后产物都往这里打包」）首件已完结出池：手册 docs/playbooks/dokiworld-pack.md + 规范快照 docs/design/dokiworld/ 在档=常备产线；game108 首包 ✅ Lead 终审 PASS——dokiworld/game108/（manifest 生成器§5 逐条校验·SDK 薄接线零规则·toGameResult 纯函数=血差线性投影与验收剧本同口径·12 测独立复跑绿·施工方 outcome 反转验红+Lead 钳位破坏恰中边界测·无宿主等待屏与 createAppHost 真握手挂载双目击截图在档）。game108 加 setWorldObserver 只读观察口（照 setCard 形态·render-only）。**下一步触发者=owner**：整目录复制/PR 到 dokiworld-apps 仓 + 真宿主跑一遍（§12 末项·本仓无那边推送权）。**记债**：引擎两条站点绝对资产约定（/games/<slug>/art·/ui-fonts）在 iframe 子路径下逃包，现由打包层改写+复制资产兜住——「资产 URL 基准可配置」是引擎缺口候选,下个游戏出包再撞就立单下沉。后续游戏照手册,World 形态等首个剧情向产物。 -->
 
-### REQ-112-AIGP · AI 视频生成两件套（`AishePort` 扩展 + `MediaJobPort`/`MediaCachePort` 立端口）· [2026-09-24] · **owner 判 A×2**（game112 ENG-05「要做，毕竟要跟爱诗对接」· ENG-06「先立端口」要求与供应商解耦） · **施工主体 = 主程 = 本 session（2026-09-24 抢锁·本行即锁）** · 复查 = 另派独立 agent（复查人≠施工人·**待派**） · status: **✅ 已交（2026-09-24·门禁全绿·已推送）·等复查** · P1 · 类型: 引擎能力下沉
-全文与实查留痕 = `docs/design/game112/requests.md` ENG-05/ENG-06（**不在池内重抄**·池余量 2811 字符）。边界：`src/services/aigp/**` + `src/services/media-job/**` + 开发期代理脚本；纪律同 `HttpNpcAgentPort` 三条（**绝不抛 · 绝不碰 world · 只归一形状**）。配对单 **ENG-11「内嵌 AI 视频播放」本轮未抢锁**（含 `src/ui/components` = PUI 域·跨域另议）。
-
 ### REQ-PIPELINE-GUARDS · 流程板三条「只写在文档里」的规则加机器牙齿 + 走查探针入场序列 · [2026-09-28] · GD/PE-112 立（game112 Codex 巡游提交复盘 `docs/design/game112/review/codex-roaming-review.md`：人门被 agent 以「Lead-Codex」自签 S2–S8；五关复查同一 agent 两分钟落账；S8 自陈全量门 5 红仍推送）· **指派：主程** · status: open · 优先级: **P1** · 类型: 流程门
 - 要做：① `signoff --by` 只收真人白名单（`docs/roles/humans.json`·agent 名拒）；② `review --by` ≠ 该关施工锁主体，同一 `--by` 10 分钟内落 ≥2 关拒并要附复跑日志；③ `scoped-gate` 红 → 推送钩子拦，「与本单无关」只能主程 `--waive` 落账；④ 台账 `approved` 只由创作台人审/`art-review --by <真人>` 写；⑤ 台账 `retired` 前 grep 消费点，有消费即拒；⑥ 剧本顶层可选 `uiEntry:["home.enter"]`，`ui-walkthrough-probe` 开跑前先点它（菜单驱动游戏现恒 0%·game112 0/17·game108 0/74·探针头注 1b 自认）。
 - 为什么：owner 问「其他模型能不能 follow 我们的 ruler」——有脚本判红的规则 Codex 全守，没牙齿的全破；病根在围栏不在模型。
 - 边界：`scripts/{game-pipeline,scoped-gate,ledger-audit,ui-walkthrough-probe,acceptance-schema}.mjs` + 测试 + 白名单文件；不碰游戏层。
 - **owner 2026-09-28 令主程来看本单**。顺带请主程 review 两处 GD/PE-112 越域小修：`scripts/scoped-gate.mjs` 台账文件归类（2026-09-24）· `scripts/ui-find.mjs`+test 读拆分后的 `gallery/*.ts`（2026-09-28·全量 3 红的根因）。
+
+### REQ-AIFLOW-REFGEN · T1 参考图生成（`ai-gen.mjs` 加 `--ref` / `--edit`）· [2026-10-16] · owner 立（裁 A=自研引擎·AI 协同生产流程）· **施工主体：待 Codex 抢锁** · 复查 = 另派（复查人≠施工人） · status: open · P1 · 类型: 工具链扩写（🟢）
+> 写死 spec：`docs/design/ai-pipeline-engine-roadmap-2026-10.md` §1 T1。路线图第 1 步首件（K1 关键图定调 / K2 补视角的地基）。
+
+### REQ-AIFLOW-SPLIT · T2 关键图工作区 + 拆层单 `asset-split.json`（标注图 + 推导美术台账）· [2026-10-16] · owner 立 · **施工主体：待 Codex 抢锁** · 复查 = 另派 · status: open · P1 · 类型: 工具链扩写（🟢）
+> 写死 spec：路线图 §1 T2。依赖 T1。
+
+### REQ-AIFLOW-REVIEW · T6 R1 对抗盲审 harness（机位预设截图 vs 关键图 · 差异单骨架）· [2026-10-16] · owner 立 · **施工主体：待 Codex 抢锁** · 复查 = 另派 · status: open · P1 · 类型: 工具链扩写（🟢·基于 `scripts/shoot-game.mjs`）
+> 写死 spec：路线图 §1 T6。
+
+### REQ-AIFLOW-GATES · P1 生产板 K2 / D1 人门 + R1 复查门（状态从工件推导）· [2026-10-16] · owner 立 · **施工主体：待 Codex 抢锁** · 复查 = 另派 · status: open · P1 · 类型: 流程门（🔴 跨游戏共享面·主程口径）
+> 写死 spec：路线图 §1 P1。人门防代签依赖 `REQ-PIPELINE-GUARDS` ①（真人白名单），两单可同一施工主体顺做。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
@@ -228,7 +112,3 @@ desync（`determinism.ts` 对 Camera 的同款理由）。条目进 hash → 注
 ```
 
 ---
-
-### REQ-114-NAV · 通用 ORCA 与共享网格导航 · [2026-10-09] · owner 判 A · status: 本地实现/复查完成，基线门禁有阻塞 · P1
-
-施工主体：game114 当前会话（01a11e73-f648-72c3-a624-8e9dd51a430b，2026-10-09 本地领取）；独立复查已通过，交付见 docs/design/game114/navigation-delivery.md。用户确认由本会话贯穿实现，保留独立复查；2026-10-13 又授权提交并推送本轮改动以跨机器接续。规格与验收：[game114 导航需求](../design/game114/engine-navigation-request.md)。复用已有 ORCA/网格核，保持旧配置行为；本单不接管 REQ-FLOWFIELD 未完成分期。
