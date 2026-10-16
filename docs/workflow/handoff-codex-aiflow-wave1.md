@@ -41,7 +41,7 @@
    - S2：写盲审操作规程 skill（比对清单：构图/色调/光源/比例/动作；复查 agent 只拿参考图 + 截图，不读施工方自陈）
 ④ REQ-AIFLOW-GATES = 路线图 P1 + 原 PIPELINE-GUARDS ①
    - scripts/game-pipeline.mjs 生产板加 K2「画面定稿」、D1「拆层确认」两道人门 + R1 复查门；机器态从工件推导（keyart/ 在档、asset-split.json 全 approved、R1-keyart-review.md 在档）
-   - signoff --by 只收真人白名单 docs/roles/humans.json，agent 名一律拒
+   - signoff --by 只收真人白名单 docs/roles/humans.json，agent 名一律拒。该文件目前不存在：你只建结构（如 {"humans":[]}）和校验逻辑，名单本身由 owner 填，你不许往里写任何名字；名单为空时 signoff 一律拒并提示「请 owner 填 docs/roles/humans.json」
 
 【4. 边界（越界 = 打回）】
 - 允许改：scripts/**（含测试）、.claude/skills/ 新增的两份 skill、docs/workflow/requests.md 的锁行与 status、本波新增文档、docs/roles/humans.json
