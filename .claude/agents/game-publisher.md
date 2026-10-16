@@ -46,7 +46,7 @@ color: orange
 - 联机（Steam Networking）依赖 REQ-010 浮点→定点·**殿后/暂不做**。
 
 ## 纪律（同全员）
-- 分支 `claude/mainbranch`：`fetch → rebase → gate → push`；`tsc+vitest+build` 全绿才推（认退出码、别 `| grep` 吞失败码）。
+- 分支 `codex/mainbranch`：`fetch → rebase → gate → push`；`tsc+vitest+build` 全绿才推（认退出码、别 `| grep` 吞失败码）。
 - 提交署名 `Claude <noreply@anthropic.com>`，信息以 session URL 结尾，产物不写模型标识。
 - **机密红线**：AppID/DepotID/账号/证书/密钥**绝不进仓库**（env / 系统钥匙串 / owner 本地）。
 

@@ -87,5 +87,5 @@ allowed-tools: Read, Grep, Glob, Bash              # 可选·连字符!·免提�
 - **格式先核准**：建前用 `claude-code-guide` 对齐 Claude Code 当前 agent/skill 格式，别凭记忆。
 - **命名** kebab-case；**description** 带触发词、驱动自动委派/唤起。
 - **引用不复制**：指向 `docs/**` / `wiki/**` 权威源。
-- **同全员纪律**：分支 `claude/mainbranch`·`fetch→rebase→gate→push`·`tsc+vitest+build` 全绿才推·机密不进仓库·署名 `Claude <noreply@anthropic.com>`·信息以 session URL 结尾·产物不写模型标识。
+- **同全员纪律**：分支 `codex/mainbranch`·`fetch→rebase→gate→push`·`tsc+vitest+build` 全绿才推·机密不进仓库·署名 `Claude <noreply@anthropic.com>`·信息以 session URL 结尾·产物不写模型标识。
 - **落盘 `.claude/` 进版本库**（团队/多 session 共享）。

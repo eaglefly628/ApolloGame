@@ -6,7 +6,7 @@
 - **game design G = 策划**：写设计文档 + 派单 + 驻验，**不写游戏代码**。两个程序员：**甲=战斗** / **乙=菜单**。引擎归主程。
 - **数据驱动宪法**(`docs/design/data-driven-manifesto.md`)：逻辑下沉成 capability，个性全是数据。需求先评判(能组合/已覆盖→回驳；真缺口→下沉)。
 - **防跑偏**：先对愿景再看绿；看得见才算数(出帧/行为断言)；测绿≠体验对。
-- **git**：分支 `claude/mainbranch`·直推·`fetch→rebase→push`·tsc+vitest+build 全绿才推。署名 `Claude <noreply@anthropic.com>`·信息末尾 session URL·**产物不写模型标识**。
+- **git**：分支 `codex/mainbranch`·直推·`fetch→rebase→push`·tsc+vitest+build 全绿才推。署名 `Claude <noreply@anthropic.com>`·信息末尾 session URL·**产物不写模型标识**。
 
 ## 1. 游戏定型（当前真相 · owner 拍板）
 **《翻命扑克 Fateflip》= 单机优先(PvP 延后) · 回合制 deck-builder**（doc24·**取代** doc21 实时 CR）。

@@ -15,7 +15,7 @@
 // 用法：
 //   node scripts/scoped-gate.mjs               分类并打印计划 + 判词（不执行）
 //   node scripts/scoped-gate.mjs --run         按计划真跑门禁（退出码=门禁结果）
-//   node scripts/scoped-gate.mjs --base <ref>  改比较基线（默认 origin/claude/mainbranch）
+//   node scripts/scoped-gate.mjs --base <ref>  改比较基线（默认 origin/codex/mainbranch）
 // 判词 token：`SCOPED-GATE: FULL|GAME:<g>|DOCS-ONLY|NONE`（审计/日志可 grep）。
 //
 // audit 进推送门（8/4 大评审 Q1 消费路径批·2026-08-10）：改动面涉及 games/<g>/** 非文档文件时，
@@ -250,7 +250,7 @@ function main() {
   const argv = process.argv.slice(2);
   const run = argv.includes('--run');
   const bi = argv.indexOf('--base');
-  const base = bi >= 0 ? argv[bi + 1] : 'origin/claude/mainbranch';
+  const base = bi >= 0 ? argv[bi + 1] : 'origin/codex/mainbranch';
 
   const files = changedFiles(base);
   const c = classify(files);

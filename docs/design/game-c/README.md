@@ -25,7 +25,7 @@
 ## 开工词（owner 开 PE-C 施工 session 时整段粘贴·照 roles/index.md 标准模板）
 
 ```
-第一动作（先于一切）：git fetch origin claude/mainbranch && git checkout -B claude/mainbranch origin/claude/mainbranch
+第一动作（先于一切）：git fetch origin codex/mainbranch && git checkout -B codex/mainbranch origin/codex/mainbranch
 角色=PE-C · 任务=《六人德州》M1 逻辑核开工。切完分支先读 docs/roles/index.md 角色卡照办；
 立项档=docs/design/game-c/（README→gdd→capability-plan→art-script→ui-brief）——以 mainbranch 最新为准，
 你被注入的 feature 分支是旧快照、绝不在其上开工。
@@ -37,7 +37,7 @@ owner 已批本项目 TS 口径（capability-plan §4 例外表为准）；硬�
 禁手写 DOM、sim 确定性、零测试不出货。
 视觉属后续阶段：M3/M4 以 docs/design/game-c/cloud-design/*.dc.html 为 1:1 复刻基准，
 但界面必须用 LayoutNode 控件闭集重做，禁止直接挪用该 HTML/CSS/JS（art-script.md §四）。
-产出直推 claude/mainbranch（fetch→rebase→tsc+vitest+build 全绿→push），绝不推 feature 分支。
+产出直推 codex/mainbranch（fetch→rebase→tsc+vitest+build 全绿→push），绝不推 feature 分支。
 宣布「完成」必须贴 node scripts/game-pipeline.mjs board game-c 输出——不全绿只许说「做到 SN」。
 ```
 - 生产流程板：未开（`docs/playbooks/game-production.md` 八阶段）

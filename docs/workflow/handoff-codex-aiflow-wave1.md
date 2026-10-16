@@ -16,10 +16,10 @@
 5. docs/design/game108/review/REQ-108-ENG-03.md（Review 单格式样板）
 
 【1. 分支】
-- 从 origin/claude/mainbranch 新建分支 codex/aiflow-wave1：
-  git fetch origin claude/mainbranch && git checkout -B codex/aiflow-wave1 origin/claude/mainbranch
-- 只推这一个分支：git push -u origin codex/aiflow-wave1。不推 claude/mainbranch，不推 codex/mainbranch，不开 PR。
-- 不要从 codex/mainbranch 起分支：它与 claude/mainbranch 已分叉，且不含本波 spec。
+- 主干 = codex/mainbranch（claude/mainbranch 已废弃，不读、不推、不合并）。
+- 直接在主干上工作，按项目惯例直推、不开 PR：
+  git fetch origin codex/mainbranch && git checkout -B codex/mainbranch origin/codex/mainbranch
+- 推送：git push -u origin codex/mainbranch。每张工单的提交保持独立，方便复查方按提交区间核。
 
 【2. 抢锁（每张工单开工的第一个动作）】
 把该工单标题行里的「施工主体：待 Codex 抢锁」改成「施工主体 = Codex（2026-10-xx 抢锁·本行即锁）」，单独提交并推送一次，然后才写代码。除锁行与完工时的 status 字段外，不改需求池里任何别的内容。
@@ -52,12 +52,12 @@
 - 不把任何 API key 写进仓库；全部能力必须有 mock 路径，门禁在无 key、无网络环境下也能全绿
 - 非 sim 面日志用 console 分级；凡「什么都没发生」的分支（拒收、跳过、降级）都要打一行
 - 每张工单独立提交；每次推送前跑 node scripts/scoped-gate.mjs --run，用退出码判断（不要经管道吞掉失败码），全绿才推
-- 推送前 git fetch origin claude/mainbranch，如有新提交就 rebase 到它上面再跑门禁
+- 推送前 git fetch origin codex/mainbranch，如有新提交就 rebase 到它上面再跑门禁
 - 只提交自己的文件；不 stash、不挪动、不覆盖任何别人的改动
 - 不签任何人门（signoff），不给自己写复查 PASS
 
 【6. 每张工单的完工交付】
-1. 代码 + 测试，门禁全绿，已推送到 codex/aiflow-wave1
+1. 代码 + 测试，门禁全绿，已推送到 codex/mainbranch
 2. 自证「撤修验红」：撤掉关键修复，确认对应测试真变红，且断言命中锚点；把撤修方式和红灯输出写进 Review 单
 3. Review 单：docs/design/ai-pipeline/review/REQ-AIFLOW-<名>.md，格式照 REQ-108-ENG-03.md：做了什么 · 改动面（文件清单）· 逐条「怎么自己验」· 撤修验红记录 · 已知局限
 4. 工单 status 改为「已交·待复查（Claude）」
@@ -68,6 +68,6 @@
 
 ## 复查约定（给复查方 Claude）
 
-- `git fetch origin codex/aiflow-wave1`，在独立工作树里复查，不动 claude/mainbranch 现场。
+- `git fetch origin codex/mainbranch`，按 Codex 总结里给的提交哈希区间，在独立工作树（临时 clone）里复查，不动别人的现场。
 - 按 CLAUDE.md「review 四步铁律」逐张核：独立复跑 · 撤修验红（带锚点断言）· 实证复现 · 读告警。
-- 每张出判词 PASS / FAIL（附复现步骤），写回对应 Review 单末尾；全部 PASS 后由 owner 决定合入 claude/mainbranch。
+- 每张出判词 PASS / FAIL（附复现步骤），写回对应 Review 单末尾并推到 codex/mainbranch；FAIL 的打回 Codex 修，修完再复查。

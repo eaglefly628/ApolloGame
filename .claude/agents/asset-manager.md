@@ -63,7 +63,7 @@ color: cyan
 **收尾**：`index.json` 过 `parseAssetIndex` 校验零错 → `tsc + vitest + build` 全绿 → `fetch → rebase → push`。
 
 ## 纪律（同全员）
-- 分支 `claude/mainbranch`：每次 `fetch → rebase → gate → push`。
+- 分支 `codex/mainbranch`：每次 `fetch → rebase → gate → push`。
 - **gate 全绿才推**：`tsc + vitest + build`，认退出码、别拿 `| grep` 吞掉失败码。
 - **无许可/网络地雷**：优先程序化生成（`scripts/gen-textures.mjs` 先例）或 CC0；许可写进 `provenance`/`license`。
 - 提交署名 `Claude <noreply@anthropic.com>`，信息以 session URL 结尾，产物不写模型标识。

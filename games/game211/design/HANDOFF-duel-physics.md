@@ -1,6 +1,6 @@
 # game211 · 物理对决交接单（PE-211 → 新 session）
 
-> 立于 2026-08-10 · 分支 `claude/mainbranch` · 交接人 PE-211
+> 立于 2026-08-10 · 分支 `codex/mainbranch` · 交接人 PE-211
 > **读这份之前先读**：`CLAUDE.md`（分支/缺口裁决/收工律）· `games/game211/design/capability-plan.md`（本游戏能力总览·§0 记着 owner 的 B 判词）
 > **改代码之前必读**：`games/game211/duel-spike.ts` 的**文件头注**（6 条踩过的坑 + 每个魔数为什么是这个值）。头注是本项目最贵的一份文档，全部由实测事故换来。
 
@@ -16,7 +16,7 @@
 ## §1 怎么把它跑起来（照做即可·别自己猜）
 
 ```bash
-git checkout claude/mainbranch     # ⚠ 只有这条分支上有 game211。master 落后 3000+ 提交、根本没有 games/game211
+git checkout codex/mainbranch     # ⚠ 只有这条分支上有 game211。master 落后 3000+ 提交、根本没有 games/game211
 npm ci
 npm run dev                        # 或 npm run build && npm run preview
 ```
@@ -211,7 +211,7 @@ npx vitest run games/game211/duel-spike.test.ts games/game211/duel-scheduler.tes
 ```
 
 * **别用管道吞退出码**（`vitest | grep` 会吃掉失败码）。
-* 推送：`claude/mainbranch` 直推不开 PR，每次 `fetch → rebase → push -u origin claude/mainbranch`。
+* 推送：`codex/mainbranch` 直推不开 PR，每次 `fetch → rebase → push -u origin codex/mainbranch`。
 * 共享工作树：提交前 `git status` 只提自己的文件，**绝不 stash / 挪动别人在途的改动**。
 
 ---

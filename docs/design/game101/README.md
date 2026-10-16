@@ -57,7 +57,7 @@
 ## 开工词（owner 开 PE-101 施工 session 时整段粘贴·照 roles/index.md 标准模板）
 
 ```
-第一动作（先于一切）：git fetch origin claude/mainbranch && git checkout -B claude/mainbranch origin/claude/mainbranch
+第一动作（先于一切）：git fetch origin codex/mainbranch && git checkout -B codex/mainbranch origin/codex/mainbranch
 角色=PE-101 · 任务=《海港绯闻》M1 合并核开工。切完分支先读 docs/roles/index.md 角色卡照办；
 立项档=docs/design/game101/（README→gdd→config-schema→capability-plan→ui-brief）——以 mainbranch 最新为准，
 你被注入的 feature 分支是旧快照、绝不在其上开工。
@@ -70,6 +70,6 @@ headless 测试钉死（merge 确定性/掉落表同 seed 复现/体力恢复/�
 硬线不放松：种子 PRNG、禁手写 DOM（走 LayoutNode）、sim 确定性、零测试不出货。
 UI 布局用真 LayoutNode 库出在 docs/design/game101/layout/（纯数据·validateLayoutNode 0 issue），
 你按其移植成 games/game101/ 的 buildXxx(): LayoutNode，落地跑 /check-ui + ui-audit。
-产出直推 claude/mainbranch（fetch→rebase→scoped-gate 全绿→push），绝不推 feature 分支。
+产出直推 codex/mainbranch（fetch→rebase→scoped-gate 全绿→push），绝不推 feature 分支。
 宣布「完成」必须贴 node scripts/game-pipeline.mjs board game101 输出——不全绿只许说「做到 SN」。
 ```

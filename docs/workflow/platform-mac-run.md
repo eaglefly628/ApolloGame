@@ -10,7 +10,7 @@
 侧验过什么」）。拿法：
 
 1. 打开仓库 GitHub 页面 → **Actions** → **Build Platform (macOS)** workflow。
-2. 点 **Run workflow**（`workflow_dispatch` 手动触发·分支选 `claude/mainbranch`）。
+2. 点 **Run workflow**（`workflow_dispatch` 手动触发·分支选 `codex/mainbranch`）。
    可选填两个输入（不填就用默认值，已验证真实存在的一组 `python-build-standalone` release）：
    - `pybuild_python_series`（默认 `3.11`）
    - `pybuild_release_tag`（默认 `20250626`）
@@ -25,10 +25,10 @@ python + `pip install`（`scripts/bundle-python-mac.mjs`）→ 零 key 门禁（
 
 ## 1.5 本地一键出包（自己就有 Apple 芯片 Mac·不想走 CI）
 
-不必开 GitHub。在你自己的 M 系列 Mac 上，克隆仓库到 `claude/mainbranch` 后一条命令搞定：
+不必开 GitHub。在你自己的 M 系列 Mac 上，克隆仓库到 `codex/mainbranch` 后一条命令搞定：
 
 ```
-git clone -b claude/mainbranch <仓库地址> ApolloGame   # 已经有就跳过，进目录 git pull
+git clone -b codex/mainbranch <仓库地址> ApolloGame   # 已经有就跳过，进目录 git pull
 cd ApolloGame
 bash scripts/build-mac-dmg.sh
 ```

@@ -176,4 +176,4 @@ PE 只负责 play-field 与 UI 的**信号对接**（写世界=action 信号入�
 - 游戏层**零 system 自由代码**：机制=数据+现有能力（Lead 裁①）；撞墙→ `requests.md` 报缺口升级引擎池（spec 由 Lead 亲笔·Opus 施工），**在此之前不游戏层自写编排**。
 - 禁手写 DOM（UI 走 LayoutNode·play-field 走渲染器）· 禁裸 `Math.random` · 禁零测试出货 · 禁虚胖数据（填了没解释器的表）。
 - 域边界：`games/game102/**` = PE；`src/ui/**` = PUI；引擎 = Lead。跨域改走 `requests.md`。
-- 提交署名 `Claude <noreply@anthropic.com>`·信息以 session URL 结尾·不写模型标识·推 `claude/mainbranch`（fetch→rebase→scoped-gate 全绿→push）。
+- 提交署名 `Claude <noreply@anthropic.com>`·信息以 session URL 结尾·不写模型标识·推 `codex/mainbranch`（fetch→rebase→scoped-gate 全绿→push）。
