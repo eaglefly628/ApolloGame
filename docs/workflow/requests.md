@@ -80,16 +80,28 @@
 <!-- REQ-PIPELINE-GUARDS（流程板规则加机器牙齿·六项）owner 2026-10-16 令**移除出池**——其中①「人门只收真人签字」并入 REQ-AIFLOW-GATES；其余五项全文查 git 历史（git log -S REQ-PIPELINE-GUARDS） -->
 
 ### REQ-AIFLOW-REFGEN · T1 参考图生成（`ai-gen.mjs` 加 `--ref` / `--edit`）· [2026-10-16] · owner 立（裁 A=自研引擎·AI 协同生产流程）· **施工主体：待 Codex 抢锁** · 复查 = 另派（复查人≠施工人） · status: open · P1 · 类型: 工具链扩写（🟢）
-> 写死 spec：`docs/design/ai-pipeline-engine-roadmap-2026-10.md` §1 T1。路线图第 1 步首件（K1 关键图定调 / K2 补视角的地基）。
+> 写死 spec：`docs/design/ai-pipeline-engine-roadmap-2026-10.md` §1 T1。路线图第 1 步首件（K1 关键图定调 / K2 补视角的地基）。**并入 R1**：新增 GPT Image 2.5 生图适配器（同现有适配器形态·key 走 env·缺 key 走 mock）。
 
 ### REQ-AIFLOW-SPLIT · T2 关键图工作区 + 拆层单 `asset-split.json`（标注图 + 推导美术台账）· [2026-10-16] · owner 立 · **施工主体：待 Codex 抢锁** · 复查 = 另派 · status: open · P1 · 类型: 工具链扩写（🟢）
-> 写死 spec：路线图 §1 T2。依赖 T1。
+> 写死 spec：路线图 §1 T2。依赖 T1。**同单交付 S1**：拆层操作规程 skill（agent 看图怎么拆：给 Tripo / Blender 搭 / 2D 切图的判据·输出 `asset-split.json`）。
 
 ### REQ-AIFLOW-REVIEW · T6 R1 对抗盲审 harness（机位预设截图 vs 关键图 · 差异单骨架）· [2026-10-16] · owner 立 · **施工主体：待 Codex 抢锁** · 复查 = 另派 · status: open · P1 · 类型: 工具链扩写（🟢·基于 `scripts/shoot-game.mjs`）
-> 写死 spec：路线图 §1 T6。
+> 写死 spec：路线图 §1 T6。**并入**：U2 通用量稿（把 `scripts/game108-design-measure.mjs` 泛化为 `design-measure.mjs <slug>`）· U4 UI 盲审（同一把尺子比我们的屏 vs Claude Design 稿）· R5 动作审查（按机位录帧序列 / 短 GIF）。**同单交付 S2**：盲审操作规程 skill（比对清单 + 复查 agent 不读施工自陈）。
 
 ### REQ-AIFLOW-GATES · P1 生产板 K2 / D1 人门 + R1 复查门（状态从工件推导）· [2026-10-16] · owner 立 · **施工主体：待 Codex 抢锁** · 复查 = 另派 · status: open · P1 · 类型: 流程门（🔴 跨游戏共享面·主程口径）
 > 写死 spec：路线图 §1 P1。**并入（原 REQ-PIPELINE-GUARDS ①）**：`signoff --by` 只收真人白名单 `docs/roles/humans.json`，agent 名一律拒——否则画面定稿 / 拆层确认两道人门可被施工 agent 自签，形同虚设（game112 实证：agent 以「Lead-Codex」自签 S2–S8）。
+
+### REQ-AIFLOW-GROUND · R2 3D 角色贴地行走（确定性可行走面高度采样）· [2026-10-16] · owner 判 A · **施工主体：待抢锁** · 复查 = 另派 · status: open · P1 · 类型: 引擎能力下沉（🔴 碰确定性 / 快照 hash·主程口径）
+> 实查：sim 位置 = 平面 `Transform` + `Collider3D` 竖直分量；heightfield 只在 render-only 物理里。要做：从场景（E5 的 `nav_*` / `col_*` 节点）烘出确定性高度表，sim 内按位置采样地面高度；整数 / 定点口径，双跑 hash 一致。全文：路线图 §3.5 R2。依赖 3D 池 E5。
+
+### REQ-AIFLOW-SCENELOAD · R4 按场景分段加载 + 加载进度 · [2026-10-16] · owner 判 A · **施工主体：待抢锁** · 复查 = 另派 · status: open · P1 · 类型: 引擎能力下沉（资产层·主程）
+> 实查：`src/assets/asset-manager.ts` 只有 `load(key)` / `loadAll()`。要做：场景资源组（预载 / 卸载 / 进度回报），进度经 UI 数据源可被 LayoutNode 绑定。全文：路线图 §3.5 R4。
+
+### REQ-AIFLOW-STYLETOKENS · U3 统一风格令牌（生图 + UI 同源）· [2026-10-16] · owner 判 A · **指派：PUI**（UI 主题面）+ PST（生图提示词面） · status: open · P1 · 类型: 基座扩写
+> 每游戏一份 `docs/design/<slug>/style-tokens.json`（配色 / 字体 / 圆角 / 质感），同时生成生图提示词风格段与 UITheme 覆盖；U2 量稿时可从稿子提取回填。全文：`docs/workflow/ai-production-flow.md` §7.4 U3。
+
+### REQ-AIFLOW-DSYNC · U1 控件库同步成 Claude Design 设计系统 · [2026-10-16] · owner 判 A · **指派：PUI** · status: open · P1 · 类型: 基座扩写
+> 把 `src/ui/components/catalog.ts` 控件目录 + house 主题导出成设计系统预览包（每控件一张预览 HTML），供 owner 启动 `/design-sync` 推到 Claude Design 设计系统项目，让稿子只用我们的控件出。全文：`docs/workflow/ai-production-flow.md` §7.4 U1。依赖 U3。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
