@@ -104,7 +104,7 @@ flowchart TD
 
 ---
 
-## 4. 引擎分支（待 owner 裁 A/B/C）
+## 4. 引擎分支（✅ owner 2026-10-16 裁 A：自研引擎·不用 Unity/Godot）
 
 | | A. ZeroCraft（自研） | B. Unity | C. Godot |
 |---|---|---|---|
@@ -113,11 +113,11 @@ flowchart TD
 | S3–S8 门禁 | ✅ 全套现成 | ❌ 需另建 | ❌ 需另建 |
 | 推荐用途 | **2D 项目 · 系列首章** | 必须 3D 且求快 | 不推荐（两头不占） |
 
-Lead 推荐：game115 走 **A + 2D**（人物线不触发）；人物线缺口留给系列后续 3D 章，届时再裁。
+裁决：走 A，并把流程所需能力泛化进引擎（人物线也补）。逐项 spec 与实施顺序见 `docs/design/ai-pipeline-engine-roadmap-2026-10.md`。
 
 ---
 
-## 5. 缺口清单（未入池·待 owner 判 A/B）
+## 5. 缺口清单（owner 已判补·拆解见路线图）
 
 > 引擎池 `requests.md` 现 10/10 满槽；以下按缺口裁决协议先摆路，owner 判后再入对应池。
 
