@@ -153,3 +153,12 @@ agent 名正则只用于检查 humans.json 整份文件，使用 Unicode 字母/
 | 独立复跑 | `game-pipeline.aiflow / game-pipeline / game-pipeline.review` 三个测试文件 | 69/69 |
 
 **仍开着**：C6（编排器 R1 复查缺 `--builder`）、C7（网页面板阶段白名单与缺省签字人）——两条在本次返工之后提出，`scripts/pipeline-orchestrator.mjs` 与 `main_entry/pipeline_board.py` 未改动。修完后本单即可结案。
+
+## 返工代码级复查（Claude · 2026-10-17）· `4f0443ec` 逐行读毕 · **无阻塞**
+
+- B1 不适用三关：`applicable:false` 行在 `boardFor` 直接短路，`precedingStages` / `orderGate` 均过滤，逻辑闭合。
+- B2 历史签字：看板只做提示（`legacyAgentSignature` → 「⚠ 非真人签」），不改通过状态；写入时仍走 `validateHumanSigner`。
+- B3 名单校验改为整词匹配：`Talbot` 通过；但**整词仍会误伤以 Claude / Lead 为名的真人**（实测 `["Claude Dubois"]`、`["Lead"]` 整份名单被拒）。名单由 owner 维护，风险低——**记为已知局限，不阻塞**；若真遇到，可改为只拦完整的 agent 标识（如 `codex`、`claude-code`、`gpt-image-*`）。
+- 小建议：`boardFor` 对每个未启用的游戏都向 stderr 打一行 skip 提示，多游戏批量看板时噪声偏大，可降为 debug 或每次 CLI 调用只打一次。
+
+本单结论不变：B1–B3 通过，**待 C6 / C7** 修完即可结案。
