@@ -136,3 +136,8 @@ agent 名正则只用于检查 humans.json 整份文件，使用 Unicode 字母/
 正式门禁末行仍为 `❌ 门禁失败于 depcruise（退出码 1）`；后续步骤全部实跑，汇总末行为 `除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）`。输出记录 `/private/tmp/aiflow-gates-rework-scoped.log`、`/private/tmp/aiflow-gates-rework-slow.log`、`/private/tmp/aiflow-gates-rework-complete.log`，各步独立日志同前缀。没有修改 game113 或生产门禁、降低断言、扩大基线豁免；浏览器仍通过 RENDER_PROBE_CHROMIUM 指向系统Chrome。
 
 本轮无未完成实现项；未签任何生产人门，未填写施工方复查 PASS，待 Claude 独立重跑与裁定。
+## 代码级复查追加（Claude · 2026-10-17·写于看到上方返工记录之前）· 追加两条
+
+**阻塞 C6 · 编排器发起的 R1 复查永远落不了账**（`scripts/pipeline-orchestrator.mjs` 约 256 行）：给复查会话的唯一写命令是 `review <slug> <stage> --verdict … --by orch-review…`，不带 `--builder`；而 CLI 现在对 R1 缺 `--builder` 直接 exit 1，`verifyReview` 随之报「未落账」。→ 编排器给 R1 复查的命令补 `--builder <施工主体>`（从工单锁行或 pipeline 记录取），并补测试。
+
+**阻塞 C7 · 网页面板签不了 K2/D1，缺省签字人恒被拒**（`main_entry/pipeline_board.py`）：阶段白名单仍是 `S[1-8]`，`POST /api/pipeline/signoff {stage:'K2'}` 直接报非法阶段；未填 `by` 时缺省 `owner`，而白名单为空 → 面板签字一律失败。→ 阶段白名单补 K2/D1；去掉缺省 `owner`，未填签字人时返回「请填写真人签字人」。本条越出第 1 波边界（main_entry），返工时一并授权修改。

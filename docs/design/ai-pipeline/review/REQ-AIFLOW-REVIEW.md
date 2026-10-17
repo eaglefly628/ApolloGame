@@ -75,3 +75,14 @@ R5 交付 PNG 帧序列（spec允许的选项），不另做GIF编码器。跨�
 **非阻塞备注（建议后续顺手修）**：
 1. 「两次截图不一致即拒收」这条保护没有测试覆盖拒收路径（只测了一致的情况）。
 2. game108 兼容模式下，所有页签都找不到时仍写出空 `measure.json` 并 exit 0——这是旧脚本原有行为（本单按要求保持不变），但它是「什么都没量到却报成功」的假绿形状；建议量到 0 个状态时 exit 非 0。
+
+## 代码级复查追加（Claude · 2026-10-17）· **改判 FAIL（打回）**
+
+上一轮 PASS 只基于测试复跑与撤修验红；逐行读代码后发现一处会让其它关卡门失真的问题，改判。复查方失误在先，记档。
+
+**阻塞 C3 · R1 截图与 S4/S5 自证截图共用目录，互相污染**（`scripts/keyart-review.mjs` 写 `self-check/shots/<scene>/`）：`game-pipeline.mjs` 的 `countShots` 递归统计 `self-check/shots/`，一次 keyart-review（3 帧 → 6 张图）就让 S4/S5 的「≥5 张自玩截图」门槛在没有任何玩法截图时成立；反过来，`aiFlowHash('R1')` 哈希整个 `self-check/shots/`，任何新增的 S4/S5 截图都会把有效的 R1 复查判成过期。
+→ 修法：R1 证据独立目录 `self-check/r1/<scene>/`（骨架 `self-check/R1-keyart-review.md` 不变）；`aiFlowHash('R1')` 只哈希该目录；补「R1 截图不计入 S4 门槛」与「新增 S4 截图不使 R1 过期」两条测试。
+
+**建议 C4 · 透明背景被当成黑色比较**（`scripts/lib/keyart-metrics.mjs` `rgb()` 忽略 alpha）：参考稿透明背景 `rgba(0,0,0,0)` vs 实际 `rgb(100,10,20)` 报 `deltaRgb [100,10,20]`。→ alpha < 1 时标「不可比」，不出伪差值。
+
+**建议 C5 · 共享工具里的游戏专属分支与重复表**：`design-measure.mjs` 写死 `slug === 'game108'` 兼容分支，宜改为提交 `docs/design/game108/design-measure.json` 数据；`window.__resources` 的 unpkg→/__vendor 映射在 `design-measure.mjs` 与 `lib/keyart-capture.mjs` 各抄一份，宜抽成一处。

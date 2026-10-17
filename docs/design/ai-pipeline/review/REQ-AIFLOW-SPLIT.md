@@ -71,3 +71,15 @@
 | ④ 读告警 | skip / downgrade / commit 日志齐全 | — |
 
 **非阻塞备注**：台账行 `kind` 一律写 `sprite`，`route:"build"`（Blender 搭）与 `character` 行进 3D 项目时需要区分资产类型——留到第 2 波（T7/T4）接 3D 时再定，不阻塞 2D 项目。
+
+## 代码级复查追加（Claude · 2026-10-17）· **改判 FAIL（打回）**
+
+上一轮 PASS 只基于测试复跑与撤修验红；逐行读代码后发现两处实伤，改判。复查方失误在先，记档。
+
+**阻塞 C1 · 拆层推导会把游戏已有台账行打成作废**（`scripts/asset-split.mjs` `deriveSplitLedger` → `mergeLedger(safePrevious, fresh)` 未传 manifest）：`mergeLedger` 对「上一版有、本次 fresh 没有、状态为 needs-art/placeholder/generated」的行一律写 `retired`。拆层的 fresh 只含拆层行，于是同一 `art-ledger.json` 里由 manifest / 游戏推导脚本产生的未完成行全部作废；下次 `art-replace derive` 又把拆层行作废——两条工具互相抹掉对方的行。
+复现：上一版台账一行 `game628/scene/stove`（needs-art·无 splitIds）+ 一条 approved 拆层行 → 输出 `art-01 game628/scene/stove retired | art-02 game628/item/lamp needs-art`。
+→ 修法：拆层推导**只增改带 `splitIds` 的行**，不经全量 `mergeLedger` 收尾；非拆层来源的行原样保留。`art-replace derive` 侧同样不得作废带 `splitIds` 的行。补两条双向测试。
+
+**须修 C2 · 悬空符号链接绕过越界保护**（`scripts/lib/aiflow-paths.mjs` `inside()`）：`existsSync` 对悬空链接返回 false，祖先回溯越过链接本身，realpath 校验通过，随后 `mkdirSync`/`writeFileSync` 顺着链接写到工作区外。
+复现：`keyart/mock` 为指向外部不存在目录的悬空链接，`inside(base,'keyart/mock/x.png')` 被放行。
+→ 修法：回溯时用 `lstatSync` 识别链接（含悬空），遇到任何解析出界或悬空的链接一律拒收；补测试。
