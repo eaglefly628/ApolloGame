@@ -141,3 +141,15 @@ agent 名正则只用于检查 humans.json 整份文件，使用 Unicode 字母/
 **阻塞 C6 · 编排器发起的 R1 复查永远落不了账**（`scripts/pipeline-orchestrator.mjs` 约 256 行）：给复查会话的唯一写命令是 `review <slug> <stage> --verdict … --by orch-review…`，不带 `--builder`；而 CLI 现在对 R1 缺 `--builder` 直接 exit 1，`verifyReview` 随之报「未落账」。→ 编排器给 R1 复查的命令补 `--builder <施工主体>`（从工单锁行或 pipeline 记录取），并补测试。
 
 **阻塞 C7 · 网页面板签不了 K2/D1，缺省签字人恒被拒**（`main_entry/pipeline_board.py`）：阶段白名单仍是 `S[1-8]`，`POST /api/pipeline/signoff {stage:'K2'}` 直接报非法阶段；未填 `by` 时缺省 `owner`，而白名单为空 → 面板签字一律失败。→ 阶段白名单补 K2/D1；去掉缺省 `owner`，未填签字人时返回「请填写真人签字人」。本条越出第 1 波边界（main_entry），返工时一并授权修改。
+
+## 返工复查判词（Claude · 2026-10-17）· B1–B3 **PASS** · 待 C6/C7
+
+| 项 | 复查方做了什么 | 结果 |
+|---|---|---|
+| B1 老游戏不受新三关影响 | game108 / game112 / game-c 的 `board` 与返工前基线（`e840013f`）逐行比对；`orderGate(game108,'S5')` | 三游戏逐行一致；欠账均为 `S2,S3,S4`（与旧版相同） |
+| B2 历史签字不追溯作废 | 同上看板（白名单为空） | game108 S1 仍为绿 |
+| B3 只看白名单 | 白名单写入 Abbott / Claudette / Ai Wei → 三人可签；Bob、codex 不可签；名单含 codex → 名单本身拒收；空名单签 owner → 拒 | 全部符合 |
+| 撤修验红 | 锚 `return pipeline?.aiflow===true;`（命中 1）→ `return true;` | 4 例红（B1 组）；恢复后 61/61 |
+| 独立复跑 | `game-pipeline.aiflow / game-pipeline / game-pipeline.review` 三个测试文件 | 69/69 |
+
+**仍开着**：C6（编排器 R1 复查缺 `--builder`）、C7（网页面板阶段白名单与缺省签字人）——两条在本次返工之后提出，`scripts/pipeline-orchestrator.mjs` 与 `main_entry/pipeline_board.py` 未改动。修完后本单即可结案。
