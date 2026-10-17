@@ -35,8 +35,8 @@ import { spawnSync } from 'node:child_process';
 // scripts/lib/golden-ledger.mjs（而非 golden-shot.mjs 本体）import，避免跟 golden-shot.mjs
 // （它反过来要 import 本文件的 detectForm/gameHash）互相 import 成环。
 import { blessedStates } from './lib/golden-ledger.mjs';
-import { readHumans, validateHumanSigner, aiFlowArtifacts, aiFlowHash, identity } from './lib/aiflow-gates.mjs';
-export { readHumans, validateHumanSigner, aiFlowArtifacts, aiFlowHash };
+import { readHumans, validateHumanSigner, aiFlowArtifacts, aiFlowHash, identity, aiFlowEnabled, legacyAgentSignature } from './lib/aiflow-gates.mjs';
+export { readHumans, validateHumanSigner, aiFlowArtifacts, aiFlowHash, aiFlowEnabled };
 
 // ROOT=仓库根（默认）。ZEROCRAFT_PIPELINE_ROOT（旧名 APOLLO_PIPELINE_ROOT 过渡期仍读）仅供测试
 // 注入临时根（跑 CLI 端到端·不碰真仓库）——生产不设此环境变量，行为逐字节同旧版。
@@ -416,7 +416,13 @@ export function boardFor(root, slug) {
   const gapEval = evalCapabilityGaps(gapsRes);
   const gapsNow = gapsHash(root, slug);   // S2 复查记录的新鲜度锚（台账不入 gameHash·见 gapsHash）
 
+  const aiflow = aiFlowEnabled(root, slug, pf);
+  if (!aiflow) console.warn(`[aiflow-gates] skip: ${slug} 未启用 AI 流程，K2/D1/R1 — 不适用`);
   const stages = STAGES.map((st) => {
+    if (!aiflow && ['K2','D1','R1'].includes(st.id)) {
+      const skipped = () => ({ state: 'ok', detail: '— 不适用' });
+      return { ...st, applicable: false, machine: skipped(), review: skipped(), human: skipped(), status: 'ok', outOfOrder: null, blockedBy: [] };
+    }
     let machine;
     switch (st.id) {
       case 'K2': case 'D1': case 'R1':
@@ -503,9 +509,8 @@ export function boardFor(root, slug) {
         : { state: 'dim', detail: '待人审（signoff 落账）' };
     if (st.id === 'R1') human = { state: 'ok', detail: '此关为独立复查门，不另签人门' };
     else if (st.id !== 'S6' && so) {
-      const signer = validateHumanSigner(root, so.by);
-      if (!signer.ok) human = { state: 'fail', detail: signer.error };
-      else if (['K2','D1'].includes(st.id) && so.artifactHash !== aiFlowHash(root, slug, st.id)) human = { state: 'stale', detail: '工件已变动，请真人重新 signoff' };
+      if (legacyAgentSignature(so.by)) human.detail += ' · ⚠ 非真人签';
+      if (['K2','D1'].includes(st.id) && so.artifactHash !== aiFlowHash(root, slug, st.id)) human = { state: 'stale', detail: '工件已变动，请真人重新 signoff' };
     }
     const reviewExempt = ['S1', 'S6', 'S7', 'K2', 'D1'].includes(st.id);
     const status = machine.state === 'fail' || review.state === 'fail' || human.state === 'fail' ? 'fail'
@@ -529,7 +534,7 @@ export function boardFor(root, slug) {
 /** 目标阶段之前（S1..S(N-1)）里所有非绿（status≠ok）的关，连同各关欠的门（机器/复查/人）。
  *  空数组=前置全绿·可直跑。导出供 CLI 与单测共用（纯函数·不碰盘）。 */
 function precedingStages(board, stage) {
-  const stages = board?.stages || [];
+  const stages = (board?.stages || []).filter(s => s.applicable !== false);
   const idx = stages.findIndex((s) => s.id === stage);
   if (idx >= 0) return stages.slice(0, idx);
   // 部分 board 也须保留前置约束：目标未列出不等于前置已完成。
@@ -572,6 +577,10 @@ export function reviewPrereqGaps(board, stage) {
  *  产出方式就是在游戏层写逃生代码（手写 system / 手写 DOM / 自造解释器）——正是宪法要治的病。
  *  等不了就把缺口降级/回驳（state=wontfix，附等价数据写法），那是裁决，不是放行。 */
 export function orderGate(board, stage, reason) {
+  if (board?.stages?.some(s => s.id === stage && s.applicable === false)) {
+    console.warn(`[aiflow-gates] skip: ${stage} — 不适用，不进入顺序闸`);
+    return { allowed: true, gaps: [] };
+  }
   const blockedBy = blockingGaps(board, stage);
   const reviewGaps = reviewPrereqGaps(board, stage);
   const gaps = priorGaps(board, stage);
@@ -812,7 +821,7 @@ if (isMain) {
     for (const s of b.stages) {
       const oooTag = s.outOfOrder ? '\x1b[33m⚠乱序\x1b[0m ' : '';
       const lockTag = s.blockedBy?.length ? '\x1b[31m🔒缺口\x1b[0m ' : '';
-      console.log(`${dot[s.status]} ${lockTag}${oooTag}${s.id} ${s.title}  〔手册: ${s.handbook}〕`);
+      console.log(`${s.applicable === false ? '—' : dot[s.status]} ${lockTag}${oooTag}${s.id} ${s.title}  〔手册: ${s.handbook}〕`);
       console.log(`   机器门: ${s.machine.detail}`);
       console.log(`   复查门: ${s.review.detail}`);
       console.log(`   人  门: ${s.human.detail}`);
@@ -857,6 +866,7 @@ if (isMain) {
     if (!by || !by.trim()) { console.error('复查必须带 --by（复查人身份·复查人≠施工人）'); process.exit(1); }
     const builder = opt('--builder');
     if (stage === 'R1') {
+      if (!aiFlowEnabled(ROOT, slug)) { console.error('[aiflow-gates] reject: R1 — 不适用（未启用 AI 流程）'); process.exit(1); }
       if (!identity(builder) || identity(builder) === identity(by)) { console.error('R1 review 必须带 --builder，且复查人≠施工人'); process.exit(1); }
       const artifact = aiFlowArtifacts(ROOT, slug, 'R1');
       if (artifact.state !== 'ok') { console.error('[aiflow-gates] reject: ' + artifact.detail); process.exit(1); }
@@ -899,6 +909,9 @@ if (isMain) {
   if (cmd === 'gate') {
     const stage = a3;
     if (!GATE_STAGES.includes(stage)) { console.error(`gate 只认 ${GATE_STAGES.join('/')}（其余阶段是纯推导或纯人门）`); process.exit(1); }
+    if (['K2','D1','R1'].includes(stage) && !aiFlowEnabled(ROOT, slug)) {
+      console.info(`[aiflow-gates] skip: ${slug} ${stage} — 不适用（未启用 AI 流程，不落证据）`); process.exit(0);
+    }
     // 设计态（只有 docs/design/<slug>/·没有实现体）跑 S3+ 的门：**当场拒绝，不落证据，排在顺序闸之前**。
     // · 排在顺序闸之前：「你还没有实现体」比「前面几关没绿」更根本，先说那句才有用——
     //   否则作者看到的是一串顺序闸欠项，照着去补，补完再撞这道，白跑一趟。
@@ -972,6 +985,7 @@ if (isMain) {
     const by = opt('--by');
     const signer = validateHumanSigner(ROOT, by);
     if (!signer.ok) { console.error('[aiflow-gates] reject: ' + signer.error); process.exit(1); }
+    if (['K2','D1'].includes(stage) && !aiFlowEnabled(ROOT, slug)) { console.error('[aiflow-gates] reject: '+stage+' — 不适用（未启用 AI 流程）'); process.exit(1); }
     if (['K2','D1'].includes(stage)) { const artifact = aiFlowArtifacts(ROOT, slug, stage); if (artifact.state !== 'ok') { console.error('[aiflow-gates] reject: ' + artifact.detail); process.exit(1); } }
     const pf = readJson(pipelineFile(ROOT, slug), { version: 1, slug, concept: {}, signoffs: {}, evidence: {} });
     const so = { by: by.trim(), note: note.trim().slice(0, 500), at: new Date().toISOString(), ...(['K2','D1'].includes(stage) ? { artifactHash: aiFlowHash(ROOT, slug, stage) } : {}) };

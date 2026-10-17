@@ -6,12 +6,13 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { encodePngRGBA } from './asset-matte.mjs';
-import { STAGES, GATE_STAGES, REVIEW_STAGES, boardFor, pipelineFile, gameHash, readHumans, validateHumanSigner, aiFlowArtifacts, aiFlowHash } from './game-pipeline.mjs';
+import { STAGES, GATE_STAGES, REVIEW_STAGES, boardFor, pipelineFile, gameHash, readHumans, validateHumanSigner, aiFlowArtifacts, aiFlowHash, priorGaps, orderGate } from './game-pipeline.mjs';
 
 const roots = [];
-function fixture() {
+function fixture({ enabled = true } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'aiflow-gates-')); roots.push(root);
   mkdirSync(join(root, 'docs/design/demo'), { recursive: true });
+  if (enabled) mkdirSync(join(root, 'docs/design/demo/keyart'));
   return root;
 }
 function put(root, path, data) {
@@ -131,15 +132,39 @@ describe('human whitelist — deny by default, no agent signatures', () => {
     const root = fixture(); humans(root, [by]);
     expect(validateHumanSigner(root, by).ok).toBe(false);
   });
-  it('rejects old agent-signed board records even with machine and reviewer evidence', () => {
-    const root = fixture(); humans(root, ['Ada', 'Codex']);
-    writePipeline(root, {
-      concept: { name: 'Demo', pitch: 'p' },
-      signoffs: { S1: { by: 'Codex', note: 'old agent signature', at: '2026-01-01' } },
-    });
-    expect(stage(root, 'S1').machine.state).toBe('ok');
-    expect(stage(root, 'S1').human.state).not.toBe('ok');
-    expect(stage(root, 'S1').status).not.toBe('ok');
+  it('B2 legacy signoffs remain valid without the current whitelist and only agent roles gain a warning', () => {
+    const root = fixture();
+    for (const by of ['Lead-Codex', 'Past Human']) {
+      writePipeline(root, {
+        concept: { name: 'Demo', pitch: 'p' },
+        signoffs: { S1: { by, note: 'historical signature', at: '2026-01-01' } },
+      });
+      for (const list of [undefined, '{broken', { humans: [] }, { humans: ['Codex'] }]) {
+        if (list !== undefined) put(root, 'docs/roles/humans.json', list);
+        const s1 = stage(root, 'S1');
+        expect(s1.machine.state).toBe('ok');
+        expect(s1.human.state).toBe('ok');
+        expect(s1.status).toBe('ok');
+        if (by === 'Lead-Codex') expect(s1.human.detail).toContain('⚠ 非真人签');
+        else expect(s1.human.detail).not.toContain('⚠ 非真人签');
+      }
+    }
+  });
+  it.each(['codex', 'claude', 'gpt-image'])('B3 whole whitelist rejects agent entry %s even when signer Ada is valid', by => {
+    const root = fixture(); humans(root, ['Ada', by]);
+    expect(readHumans(root).ok).toBe(false);
+    expect(validateHumanSigner(root, 'Ada').ok).toBe(false);
+    const result = sign(root, 'S1', 'Ada');
+    expect(result.status).not.toBe(0);
+    expect(existsSync(pipelineFile(root, 'demo'))).toBe(false);
+  });
+  it.each(['Abbott', 'Claudette', 'Ai Wei', '王 AI'])('B3 whole word guard allows real name %s and CLI writes only the temporary ledger', by => {
+    const root = fixture(); humans(root, [by]);
+    expect(readHumans(root)).toMatchObject({ ok: true, humans: [by] });
+    expect(validateHumanSigner(root, by).ok).toBe(true);
+    const result = sign(root, 'S1', by);
+    expect(result.status, result.stdout + result.stderr).toBe(0);
+    expect(readPipeline(root).signoffs.S1.by).toBe(by);
   });
   it('rejects signoff without --by and leaves the pipeline absent', () => {
     const root = fixture(); humans(root);
@@ -239,5 +264,89 @@ describe('K2/D1 signature freshness and independent R1 review CLI', () => {
     expect(existsSync(pipelineFile(root, 'demo'))).toBe(false);
     expect(stage(root, 'K2').status).not.toBe('ok');
     expect(stage(root, 'D1').status).not.toBe('ok');
+  });
+});
+
+
+describe('B1 opt-in preserves the historical production board', () => {
+  it('B1 disabled board rows are explicitly inapplicable and do not add next or order debt', () => {
+    const root = fixture({ enabled: false });
+    writePipeline(root, { concept: { name: 'Demo', pitch: 'p' }, signoffs: { S1: { by: 'Past Human', note: 'historical' } } });
+    const board = boardFor(root, 'demo');
+    for (const id of ['K2', 'D1', 'R1']) {
+      const st = board.stages.find(s => s.id === id);
+      expect(st.applicable).toBe(false);
+      expect(st.status).toBe('ok');
+      for (const gate of ['machine', 'review', 'human']) expect(st[gate]).toEqual({ state: 'ok', detail: '— 不适用' });
+      expect(orderGate(board, id)).toEqual({ allowed: true, gaps: [] });
+    }
+    expect(board.next).toBe('S2');
+    expect(priorGaps(board, 'S5').map(g => g.id)).toEqual(['S2', 'S3', 'S4']);
+    expect(orderGate(board, 'S5').gaps.map(g => g.id)).toEqual(['S2', 'S3', 'S4']);
+  });
+  it('B1 enabling uses keyart directory OR explicit aiflow true, and false flag does not override directory', () => {
+    const root = fixture({ enabled: false });
+    expect(stage(root, 'K2').applicable).toBe(false);
+    writePipeline(root, { aiflow: true });
+    expect(stage(root, 'K2').applicable).not.toBe(false);
+    expect(stage(root, 'K2').machine.state).toBe('fail');
+    writePipeline(root, { aiflow: false });
+    expect(stage(root, 'K2').applicable).toBe(false);
+    mkdirSync(join(root, 'docs/design/demo/keyart'));
+    for (const id of ['K2', 'D1', 'R1']) {
+      expect(stage(root, id).applicable).not.toBe(false);
+      expect(stage(root, id).machine.state).toBe('fail');
+    }
+  });
+  it.each(['K2', 'D1', 'R1'])('B1 disabled %s CLI gate skips without creating evidence or a ledger', id => {
+    const root = fixture({ enabled: false });
+    const result = cli(root, 'gate', 'demo', id);
+    expect(result.status, result.stdout + result.stderr).toBe(0);
+    expect(result.stdout + result.stderr).toContain('不适用');
+    expect(existsSync(pipelineFile(root, 'demo'))).toBe(false);
+  });
+  it('B1 disabled R1 review and K2/D1 signatures cannot enable the flow through a side effect', () => {
+    const root = fixture({ enabled: false }); humans(root);
+    for (const id of ['K2', 'D1']) expect(sign(root, id).status).not.toBe(0);
+    expect(review(root).status).not.toBe(0);
+    expect(existsSync(pipelineFile(root, 'demo'))).toBe(false);
+    expect(stage(root, 'K2').applicable).toBe(false);
+  });
+
+  // Captured by executing 7304e4bab^:scripts/game-pipeline.mjs against these real,
+  // unchanged game files on 2026-10-17. Do not infer the expected rows from new STAGES.
+  // No production file is written; the snapshots also pin all existing S1-S8 debts.
+  const legacy = {
+    game108: [
+      ['S1', 'ok', 'ok', 'ok', 'ok'], ['S2', 'warn', 'ok', 'stale', 'ok'],
+      ['S3', 'warn', 'stale', 'stale', 'ok'], ['S4', 'warn', 'stale', 'stale', 'ok'],
+      ['S5', 'warn', 'stale', 'stale', 'dim'], ['S6', 'warn', 'warn', 'ok', 'dim'],
+      ['S7', 'warn', 'stale', 'dim', 'dim'], ['S8', 'dim', 'dim', 'dim', 'dim'],
+    ],
+    game112: [
+      ['S1', 'ok', 'ok', 'ok', 'ok'], ['S2', 'warn', 'ok', 'stale', 'ok'],
+      ['S3', 'warn', 'stale', 'stale', 'ok'], ['S4', 'warn', 'stale', 'stale', 'ok'],
+      ['S5', 'warn', 'stale', 'stale', 'ok'], ['S6', 'warn', 'warn', 'ok', 'dim'],
+      ['S7', 'warn', 'stale', 'dim', 'ok'], ['S8', 'warn', 'dim', 'stale', 'ok'],
+    ],
+  };
+  it.each(['game108', 'game112'])('B1 real %s S1-S8 and S5 order debt equal the pre-wave baseline snapshot', slug => {
+    const root = fileURLToPath(new URL('..', import.meta.url));
+    const board = boardFor(root, slug);
+    expect(board.ok).toBe(true);
+    const oldRows = board.stages.filter(s => /^S[1-8]$/.test(s.id));
+    expect(oldRows.map(s => [s.id, s.status, s.machine.state, s.review.state, s.human.state])).toEqual(legacy[slug]);
+    expect(board.next).toBe('S2');
+    expect(priorGaps(board, 'S5').map(g => ({ id: g.id, owes: g.owes }))).toEqual([
+      { id: 'S2', owes: ['复查门(stale)'] },
+      { id: 'S3', owes: ['机器门(stale)', '复查门(stale)'] },
+      { id: 'S4', owes: ['机器门(stale)', '复查门(stale)'] },
+    ]);
+    const order = orderGate(board, 'S5');
+    expect(order.allowed).toBe(false);
+    expect(order.gaps).toHaveLength(3);
+    expect(order.gaps.map(g => g.id)).toEqual(['S2', 'S3', 'S4']);
+    expect(order.reviewGaps.map(g => ({ id: g.id, state: g.state }))).toEqual([{ id: 'S2', state: 'stale' }]);
+    for (const id of ['K2', 'D1', 'R1']) expect(board.stages.find(s => s.id === id).applicable).toBe(false);
   });
 });

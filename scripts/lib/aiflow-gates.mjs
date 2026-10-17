@@ -5,12 +5,27 @@ import { createHash } from 'node:crypto';
 import { validateSplit } from '../asset-split.mjs';
 import { inside, slugName } from './aiflow-paths.mjs';
 export const identity = name => typeof name==='string'?name.normalize('NFKC').trim().toLowerCase():'';
-const AGENT=/(codex|claude|gpt|openai|opus|astra|fable|gemini|agent|bot|copilot|\blead\b|\bai\b|自动|代理|机器人|施工方|主程)/iu;
+const AGENT_WORDS = ['codex','claude','gpt','openai','opus','astra','fable','gemini','agent','bot','copilot','lead'];
+const AGENT = /(?:^|[^\p{L}\p{N}_])(codex|claude|gpt|openai|opus|astra|fable|gemini|agent|bot|copilot|lead)(?=$|[^\p{L}\p{N}_])|^(自动|代理|机器人|施工方|主程)$/iu;
+// 历史签字只作提示，不用当前名单决定旧签字效力。
+export const legacyAgentSignature = name => identity(name).split(/[\s-]+/u).some(word => AGENT_WORDS.includes(word))
+ || ['自动','代理','机器人','施工方','主程'].includes(identity(name));
+export function aiFlowEnabled(root, slug, pipeline) {
+ slugName(slug);
+ const dir=join(root,'docs/design',slug,'keyart');
+ if(existsSync(dir)&&statSync(dir).isDirectory())return true;
+ if(pipeline===undefined){const file=join(root,'public/games',slug,'pipeline.json');
+  try{pipeline=existsSync(file)?JSON.parse(readFileSync(file,'utf8')):{};}
+  catch(e){console.warn('[aiflow-gates] reject: 无法读取流程启用标志: '+e.message);return false;}
+ }
+ return pipeline?.aiflow===true;
+}
 const fill='请 owner 填 docs/roles/humans.json';
 export function readHumans(root){
  try{const file=join(root,'docs/roles/humans.json');if(!existsSync(file))throw new Error(fill);const data=JSON.parse(readFileSync(file,'utf8'));
   if(!data||!Array.isArray(data.humans)||data.humans.some(n=>typeof n!=='string'||!n.trim())||new Set(data.humans.map(identity)).size!==data.humans.length)throw new Error('humans.json 格式错误；'+fill);
   if(!data.humans.length)throw new Error(fill);
+  if(data.humans.some(n=>AGENT.test(identity(n))))throw new Error('humans.json 含 agent 名，拒收整个名单；'+fill);
   return {ok:true,humans:data.humans};
  }catch(e){console.warn('[aiflow-gates] reject: '+e.message);return{ok:false,humans:[],error:e.message.includes('humans.json')?e.message:'humans.json 无法解析；'+fill};}
 }
@@ -18,7 +33,6 @@ export function validateHumanSigner(root,by){
  const list=readHumans(root);if(!list.ok)return{ok:false,error:list.error};
  const id=identity(by);let error;
  if(!id)error='人门需要显式 --by 真人白名单姓名';
- else if(AGENT.test(id))error='agent 名不可签人门: '+by;
  else if(!list.humans.some(n=>identity(n)===id))error='--by 不在 docs/roles/humans.json 真人白名单';
  if(error){console.warn('[aiflow-gates] reject: '+error);return{ok:false,error};}
  return{ok:true};
