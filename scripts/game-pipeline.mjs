@@ -11,17 +11,18 @@
 //    · 台账=public/games/<slug>/pipeline.json——新 session 先 board 再干活，只做第一个非绿阶段。
 //
 //  八阶段（每阶段一本手册·≤80 行·弱模型也读得完）：
-//    S1 立项卡 → S2 能力计划 → S3 骨架关 → S4 玩法关 → S5 UI 关 → S6 美术关 → S7 品质关 → S8 终检关
+//    S1 立项卡 → S2 能力计划 → K2 画面定稿 → D1 拆层确认 → S3 骨架关 → S4 玩法关 → S5 UI 关 → S6 美术关 → R1 关键图复查 → S7 品质关 → S8 终检关
 //
 //  用法：
 //    node scripts/game-pipeline.mjs board <slug> [--json]      看板（推导态·不跑重活）
-//    node scripts/game-pipeline.mjs gate <slug> <S2|S3|S4|S5|S8>  跑该阶段机器门→记证据
+//    node scripts/game-pipeline.mjs gate <slug> <S2|K2|D1|S3|S4|S5|R1|S8>  跑该阶段机器门→记证据
 //                                                （S2=gap-check·纯 fs 秒回；其余可能真跑重活）
 //    node scripts/game-pipeline.mjs checklist <slug> <SN>      打印该阶段复查清单（复查 session 开工第一命令）
-//    node scripts/game-pipeline.mjs review <slug> <S2|S3|S4|S5|S8> --verdict PASS|CONCERNS|FAIL --note "…" --by 复查人   复查门落账（REQ-QC-三门）
+//    node scripts/game-pipeline.mjs review <slug> <S2|S3|S4|S5|R1|S8> --verdict PASS|CONCERNS|FAIL --note "…" --by 复查人   复查门落账（REQ-QC-三门）
 //    node scripts/game-pipeline.mjs scorecard <slug> --scores "艺术方向:2,…八维" --by 复查人 --note 证据   S7 评分卡落账（全维≥2=premium·任一 0 分=红）
-//    node scripts/game-pipeline.mjs signoff <slug> <SN> --note "…" [--by 名]   人门落账
+//    node scripts/game-pipeline.mjs signoff <slug> <SN> --note "…" --by 真人白名单姓名   人门落账（白名单由 owner 填 docs/roles/humans.json）
 //    node scripts/game-pipeline.mjs concept <slug> --name "…" --pitch "…" [--refs …] [--style …] [--plan-waiver 理由]
+//    R1 review 额外必填 --builder 施工主体；复查人必须不同。K2/D1/R1 gate 仅作工件检查，不代签。
 //  线手册：docs/playbooks/game-production.md + docs/playbooks/review-gates.md（三门制·复查清单）。
 // ═══════════════════════════════════════════════════════════════
 
@@ -34,6 +35,8 @@ import { spawnSync } from 'node:child_process';
 // scripts/lib/golden-ledger.mjs（而非 golden-shot.mjs 本体）import，避免跟 golden-shot.mjs
 // （它反过来要 import 本文件的 detectForm/gameHash）互相 import 成环。
 import { blessedStates } from './lib/golden-ledger.mjs';
+import { readHumans, validateHumanSigner, aiFlowArtifacts, aiFlowHash, identity } from './lib/aiflow-gates.mjs';
+export { readHumans, validateHumanSigner, aiFlowArtifacts, aiFlowHash };
 
 // ROOT=仓库根（默认）。ZEROCRAFT_PIPELINE_ROOT（旧名 APOLLO_PIPELINE_ROOT 过渡期仍读）仅供测试
 // 注入临时根（跑 CLI 端到端·不碰真仓库）——生产不设此环境变量，行为逐字节同旧版。
@@ -131,10 +134,13 @@ export const STAGES = [
   // 合法且**全部已裁决**（state≠open）。此前 gate=null＝S2 只看「plan 文件在不在」，于是
   // 「识别出 6 条引擎缺口→无处对齐→带着未裁决的缺口一路生成下去」是合法路径（owner 实撞）。
   { id: 'S2', title: '能力计划', handbook: 'docs/design/capability-plan-template.md', gate: 'gap-check' },
+  { id: 'K2', title: '画面定稿', handbook: 'docs/workflow/ai-production-flow.md', gate: 'keyart-check' },
+  { id: 'D1', title: '拆层确认', handbook: 'docs/workflow/ai-production-flow.md', gate: 'split-check' },
   { id: 'S3', title: '骨架关', handbook: 'docs/playbooks/index.md', gate: 'manifest-check' },
   { id: 'S4', title: '玩法关', handbook: 'docs/playbooks/testing.md', gate: 'walkthrough' },
   { id: 'S5', title: 'UI 关', handbook: 'docs/playbooks/ui.md', gate: 'audit' },
   { id: 'S6', title: '美术关', handbook: 'docs/playbooks/art-pipeline.md', gate: null },
+  { id: 'R1', title: '关键图复查', handbook: 'docs/playbooks/review-gates.md', gate: 'keyart-review-check' },
   { id: 'S7', title: '品质关', handbook: 'docs/playbooks/visual-scorecard.md', gate: null },
   { id: 'S8', title: '终检关', handbook: 'docs/playbooks/testing.md', gate: 'full-suite' },
 ];
@@ -334,8 +340,9 @@ export function artSubState(root, slug) {
 // ── 复查门（REQ-QC-三门·owner 2026-07-15「每步要有其他 session 复查/自检，品质比预期低」）──
 // 三门制：机器门（真跑）→ 复查门（另一 session 按 checklist 对抗性复核·落账）→ 人门（owner 签）。
 // 复查适用 S2-S5/S8；S1 免（owner 亲提）；S6 免（人审内嵌美术平台逐行复核）；S7 的复查形态=评分卡（见下）。
-export const REVIEW_STAGES = ['S2', 'S3', 'S4', 'S5', 'S8'];
+export const REVIEW_STAGES = ['S2', 'S3', 'S4', 'S5', 'R1', 'S8'];
 export const REVIEW_CHECKLISTS = {
+  R1: ['复查人≠施工主体，先只拿关键图和截图/帧序列盲判，不读施工自陈', '逐项核构图/色调/光源/层次/比例；动作看穿模、滑步、接触点和抖动', 'UI 模式逐件核位置/尺寸/颜色，指标只作参考，不是通过阈值', '需改关键图回 K2 真人重签；差异未闭合返回 S6'],
   S2: ['能力清单逐条对 registry 实名核真（无幻觉能力）', '规则面全有现成解释器（无「数据表+待写解释器」虚胖）', '游戏层代码例外逐条有 Lead 裁决', '§4.5 美术接入已答（纯程序化须申请例外）'],
   S3: ['manifest 纯 JSON（无代码走私）',
     '参考样例只用来学结构：说得出读了**哪几个文件、为什么读**（学蓝图组织/数据形状/测试写法），且蓝图里**没有从样例继承来的玩法**——抄结构可以、抄玩法不行；「没有同品类样例」不是缺件也不是缩减需求的理由（index.md 使用铁律 5）', '实体/组件用途与 plan 一致（无 plan 外私加系统性机制）', '落盘门真跑过（load+2tick 证据新鲜）', '组件字段无「填了但没人解释」的死数据'],
@@ -412,6 +419,9 @@ export function boardFor(root, slug) {
   const stages = STAGES.map((st) => {
     let machine;
     switch (st.id) {
+      case 'K2': case 'D1': case 'R1':
+        machine = aiFlowArtifacts(root, slug, st.id);
+        break;
       case 'S1':
         machine = c.name && c.pitch
           ? { state: 'ok', detail: `${c.name} —— ${String(c.pitch).slice(0, 40)}` }
@@ -474,19 +484,31 @@ export function boardFor(root, slug) {
         machine = { state: 'dim', detail: '' };
     }
     // 复查门（REQ-QC-三门）：S2-S5/S8=另一 session 按 checklist 复核落账；S1/S6/S7 各有豁免语义。
-    const review = st.id === 'S1' ? { state: 'ok', detail: '免（立项=owner 亲提·无需复查）' }
+    let review = st.id === 'S1' ? { state: 'ok', detail: '免（立项=owner 亲提·无需复查）' }
       : st.id === 'S6' ? { state: 'ok', detail: '免（复核已内嵌美术平台逐行 ☑）' }
         : st.id === 'S7' ? { state: machine.state === 'ok' || machine.state === 'warn' ? 'ok' : 'dim', detail: '复查形态=评分卡本身（复查人打分·机器门即其判词）' }
           : evalReview(pf.reviews?.[st.id], hashNow, st.id === 'S2' ? gapsNow : undefined);
+    if (['K2', 'D1'].includes(st.id)) review = { state: 'ok', detail: '此关由真人 signoff，不设重复复查门' };
+    if (st.id === 'R1' && pf.reviews?.R1) {
+      const rv = pf.reviews.R1;
+      if (!identity(rv.by) || !identity(rv.builder) || identity(rv.by) === identity(rv.builder) || !['PASS','CONCERNS','FAIL'].includes(rv.verdict)) review = { state: 'fail', detail: 'R1 复查须声明施工主体，且复查人≠施工人' };
+      else if (rv.artifactHash !== aiFlowHash(root, slug, 'R1')) review = { state: 'stale', detail: 'R1 工件已变动，须独立重查' };
+    }
     const so = pf.signoffs?.[st.id];
     // S6 人门已内嵌美术平台逐行 approve（不设重复签核）；其余阶段一律要 signoff。
-    const human = st.id === 'S6'
+    let human = st.id === 'S6'
       ? { state: machine.state === 'ok' ? 'ok' : 'dim', detail: '人门=平台逐行 ☑ 复核（已内嵌·不另签）' }
       : so
         ? { state: 'ok', detail: `✓ ${so.by || '人审'} @ ${(so.at || '').slice(0, 10)}${so.note ? ' · ' + String(so.note).slice(0, 60) : ''}` }
         : { state: 'dim', detail: '待人审（signoff 落账）' };
-    const reviewExempt = ['S1', 'S6', 'S7'].includes(st.id);
-    const status = machine.state === 'fail' || review.state === 'fail' ? 'fail'
+    if (st.id === 'R1') human = { state: 'ok', detail: '此关为独立复查门，不另签人门' };
+    else if (st.id !== 'S6' && so) {
+      const signer = validateHumanSigner(root, so.by);
+      if (!signer.ok) human = { state: 'fail', detail: signer.error };
+      else if (['K2','D1'].includes(st.id) && so.artifactHash !== aiFlowHash(root, slug, st.id)) human = { state: 'stale', detail: '工件已变动，请真人重新 signoff' };
+    }
+    const reviewExempt = ['S1', 'S6', 'S7', 'K2', 'D1'].includes(st.id);
+    const status = machine.state === 'fail' || review.state === 'fail' || human.state === 'fail' ? 'fail'
       : machine.state === 'ok' && review.state === 'ok' && human.state === 'ok' ? 'ok'
         : machine.state === 'dim' && human.state === 'dim' && (reviewExempt || review.state === 'dim') ? 'dim' : 'warn';
     // 乱序放行痕（F·REQ-GATE-硬化）：该关曾在前置未全绿时被 --out-of-order 放行——板上显 ⚠乱序标。
@@ -506,11 +528,18 @@ export function boardFor(root, slug) {
 // ── 阶段顺序闸（F·REQ-GATE-硬化·owner「跳关可以，但从悄悄跳变记录在案」）─────────────
 /** 目标阶段之前（S1..S(N-1)）里所有非绿（status≠ok）的关，连同各关欠的门（机器/复查/人）。
  *  空数组=前置全绿·可直跑。导出供 CLI 与单测共用（纯函数·不碰盘）。 */
+function precedingStages(board, stage) {
+  const stages = board?.stages || [];
+  const idx = stages.findIndex((s) => s.id === stage);
+  if (idx >= 0) return stages.slice(0, idx);
+  // 部分 board 也须保留前置约束：目标未列出不等于前置已完成。
+  const rank = STAGES.findIndex((s) => s.id === stage);
+  if (rank < 0) return [];
+  return stages.filter((s) => { const n = STAGES.findIndex((v) => v.id === s.id); return n >= 0 && n < rank; });
+}
 export function priorGaps(board, stage) {
-  const idx = STAGES.findIndex((s) => s.id === stage);
-  if (idx <= 0) return []; // S1 或未知阶段：无前置
   const gaps = [];
-  for (const st of (board?.stages || []).slice(0, idx)) {
+  for (const st of precedingStages(board, stage)) {
     if (st.status === 'ok') continue;
     const owes = [];
     if (st.machine?.state !== 'ok') owes.push(`机器门(${st.machine?.state ?? '?'})`);
@@ -527,10 +556,8 @@ export function priorGaps(board, stage) {
  *  不能由施工方自己豁免的门（game108 曾 S2-S5 复查全空跑到 S7 的通道就是自助跳关）。
  *  未施工的前置（machine dim/fail）仍走老规矩：跳关可以但记账（「从悄悄跳变记录在案」不动）。导出供单测。 */
 export function reviewPrereqGaps(board, stage) {
-  const idx = STAGES.findIndex((s) => s.id === stage);
-  if (idx <= 0) return [];
   const gaps = [];
-  for (const st of (board?.stages || []).slice(0, idx)) {
+  for (const st of precedingStages(board, stage)) {
     const built = st.machine?.state === 'ok' || st.machine?.state === 'warn';
     if (built && st.review?.state !== 'ok') gaps.push({ id: st.id, title: st.title, state: st.review?.state ?? '?', detail: st.review?.detail ?? '' });
   }
@@ -648,6 +675,7 @@ function withGoldenGate(slug, base) {
 }
 
 function gateRun(slug, stage, form) {
+  if (['K2','D1','R1'].includes(stage)) { const artifact = aiFlowArtifacts(ROOT, slug, stage); return { exit: artifact.state === 'ok' ? 0 : 1, summary: artifact.detail }; }
   if (stage === 'S2') {
     // gap-check（REQ-S18PANEL②）：纯 fs·秒回·不 spawn 任何重活。与 board 的 S2 分支同一只嘴
     // （evalCapabilityGaps），故「面板上按一下」与「板上看一眼」永远不会给出两种说法。
@@ -827,10 +855,17 @@ if (isMain) {
     if (!['PASS', 'CONCERNS', 'FAIL'].includes(verdict)) { console.error('复查判词限 PASS|CONCERNS|FAIL（闭集）'); process.exit(1); }
     if (!note || !note.trim()) { console.error('复查必须带 --note（逐条结论落账·不许空查）'); process.exit(1); }
     if (!by || !by.trim()) { console.error('复查必须带 --by（复查人身份·复查人≠施工人）'); process.exit(1); }
+    const builder = opt('--builder');
+    if (stage === 'R1') {
+      if (!identity(builder) || identity(builder) === identity(by)) { console.error('R1 review 必须带 --builder，且复查人≠施工人'); process.exit(1); }
+      const artifact = aiFlowArtifacts(ROOT, slug, 'R1');
+      if (artifact.state !== 'ok') { console.error('[aiflow-gates] reject: ' + artifact.detail); process.exit(1); }
+    }
     const pf = readJson(pipelineFile(ROOT, slug), { version: 1, slug, concept: {}, signoffs: {}, evidence: {} });
     const rv = { verdict, note: note.trim().slice(0, 500), by: by.trim(), at: new Date().toISOString(), gameHash: gameHash(ROOT, slug),
       // S2 的复查对象里有缺口台账（不入 gameHash）——单独记一枚，台账一动这条复查即过期。
-      ...(stage === 'S2' ? { gapsHash: gapsHash(ROOT, slug) } : {}) };
+      ...(stage === 'S2' ? { gapsHash: gapsHash(ROOT, slug) } : {}),
+      ...(stage === 'R1' ? { builder: builder.trim(), artifactHash: aiFlowHash(ROOT, slug, 'R1') } : {}) };
     pf.reviews = { ...(pf.reviews || {}), [stage]: rv };
     (pf.history ||= []).push({ action: 'review', stage, verdict, at: rv.at });
     writeJson(pipelineFile(ROOT, slug), pf);
@@ -869,9 +904,9 @@ if (isMain) {
     //   否则作者看到的是一串顺序闸欠项，照着去补，补完再撞这道，白跑一趟。
     // · 不落证据：落一条红证据等于说「这关跑过而且没过」，可它根本无从跑起；那条红还会一直挂在板上逼人日后手动清。
     // · exit 2（用法错）与真·门失败（exit 1）区分开，编排器据此不把它当「门红」重派会话。
-    if (isDesignOnly(form) && stage !== 'S2') {
+    if (isDesignOnly(form) && !['S2','K2','D1','R1'].includes(stage)) {
       console.error(`✗ ${DESIGN_ONLY_NOTE(slug)}`);
-      console.error(`  → 现在能跑的是 S1（立项卡 concept）与 S2（能力计划 gap-check）；实现体落地后本关自然可跑。`);
+      console.error(`  → 现在能跑的是 S1（立项卡 concept）、S2（能力计划 gap-check）及 K2/D1/R1 工件检查；实现体落地后本关自然可跑。`);
       process.exit(2);
     }
     // F·阶段顺序闸：前置阶段（S1..S(N-1)）非全绿则拒跑，除非带 --out-of-order "<理由>" 记账放行。
@@ -882,7 +917,7 @@ if (isMain) {
     // 只剩 `--out-of-order` 一条歪路（还要给一个根本没乱序的关永久盖上 ⚠乱序 章）。
     // 判据：gap-check 是**纯 fs 校验**（不施工、不写游戏、秒回），它回答的是「缺口裁完没有」，
     // 拿「立项卡签了没有」挡它没有任何安全收益。其余 gate 关（真施工/真跑重活）一律照旧过闸。
-    const decision = stage === 'S2' ? { allowed: true, gaps: [] } : orderGate(boardFor(ROOT, slug), stage, oooReason);
+    const decision = ['S2','K2','D1','R1'].includes(stage) ? { allowed: true, gaps: [] } : orderGate(boardFor(ROOT, slug), stage, oooReason);
     if (!decision.allowed) {
       if (decision.blockedBy?.length) {
         console.error(`✗ 能力缺口闸：${stage} 被 ${decision.blockedBy.length} 条未交付的 P0/P1 引擎缺口锁住——`
@@ -932,10 +967,14 @@ if (isMain) {
   if (cmd === 'signoff') {
     const stage = a3;
     const note = opt('--note');
-    if (!STAGES.some((s) => s.id === stage) || stage === 'S6') { console.error('signoff 阶段非法（S6 人门=美术平台逐行复核·不另签）'); process.exit(1); }
+    if (!STAGES.some((s) => s.id === stage) || ['S6','R1'].includes(stage)) { console.error('signoff 阶段非法（S6 平台逐行复核，R1 独立复查，不另签人门）'); process.exit(1); }
     if (!note || !note.trim()) { console.error('人门必须带 --note（review 内容落账·不许空签）'); process.exit(1); }
+    const by = opt('--by');
+    const signer = validateHumanSigner(ROOT, by);
+    if (!signer.ok) { console.error('[aiflow-gates] reject: ' + signer.error); process.exit(1); }
+    if (['K2','D1'].includes(stage)) { const artifact = aiFlowArtifacts(ROOT, slug, stage); if (artifact.state !== 'ok') { console.error('[aiflow-gates] reject: ' + artifact.detail); process.exit(1); } }
     const pf = readJson(pipelineFile(ROOT, slug), { version: 1, slug, concept: {}, signoffs: {}, evidence: {} });
-    const so = { by: opt('--by') || 'owner', note: note.trim().slice(0, 500), at: new Date().toISOString() };
+    const so = { by: by.trim(), note: note.trim().slice(0, 500), at: new Date().toISOString(), ...(['K2','D1'].includes(stage) ? { artifactHash: aiFlowHash(ROOT, slug, stage) } : {}) };
     pf.signoffs = { ...(pf.signoffs || {}), [stage]: so };
     (pf.history ||= []).push({ action: 'signoff', stage, at: so.at });
     writeJson(pipelineFile(ROOT, slug), pf);

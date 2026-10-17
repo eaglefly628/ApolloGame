@@ -1,7 +1,7 @@
 // 生产流程板自检（owner 2026-07-10「N 步拆分·每步 review·不能只靠手册」）：
 // 形态识别 · 内容指纹（排除 pipeline.json/gen-mock·变更即过期）· 看板推导（机器门×人门双验语义）。
 import { describe, it, expect } from 'vitest';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,11 +13,11 @@ const put = (root, rel, content) => { const p = join(root, rel); mkdirSync(join(
 
 const MANIFEST = { name: 'G', capabilities: [], entities: { hero: { Sprite: { textureKey: 'art:knight' } } } };
 
-describe('阶段表（八阶段·每阶段一本手册）', () => {
-  it('8 阶段·手册列全非空·机器门阶段=S2/S3/S4/S5/S8（S2=gap-check·REQ-S18PANEL②）', () => {
-    expect(STAGES).toHaveLength(8);
+describe('阶段表（十一阶段·每阶段一本手册）', () => {
+  it('11 阶段·手册列全非空·含 K2/D1/R1 机器门（S2=gap-check）', () => {
+    expect(STAGES).toHaveLength(11);
     expect(STAGES.every((s) => s.handbook)).toBe(true);
-    expect(GATE_STAGES).toEqual(['S2', 'S3', 'S4', 'S5', 'S8']);
+    expect(GATE_STAGES).toEqual(['S2', 'K2', 'D1', 'S3', 'S4', 'S5', 'R1', 'S8']);
     expect(STAGES.find((s) => s.id === 'S2').gate).toBe('gap-check'); // 面板按这个字段画「跑机器门」按钮
   });
 });
@@ -136,6 +136,7 @@ describe('美术关子状态（复用五步条口径·MOCK 不算完成）', () 
 describe('看板推导（机器门×复查门×人门三验·REQ-QC-三门）', () => {
   it('证据新鲜+复查+签核=绿；缺复查=黄；exit≠0=红；指纹变=过期黄', () => withRoot(async (root) => {
     put(root, 'public/games/g/manifest.json', MANIFEST);
+    put(root, 'docs/roles/humans.json', { humans: ['o'] });
     const h = gameHash(root, 'g');
     put(root, pipelineFile(root, 'g').slice(root.length + 1), {
       version: 1, slug: 'g',
@@ -825,6 +826,8 @@ describe('gate 顺序闸 CLI（真退出码+落痕+板 ⚠·REQ-GATE-硬化 F �
   it('S4 gate：3 场景 + 自证齐 → conformance 真判红（点名缺 adapter·非崩溃式落红）', () => {
     const root = mkFixture();
     try {
+      // 临时根复用已安装的 runner；npx 不得因找不到依赖而下载包或把网络错冒充 conformance。
+      symlinkSync(fileURLToPath(new URL('../node_modules', import.meta.url)), join(root, 'node_modules'), 'dir');
       putScenarios(root, 'g');
       putSelfCheck(root, 'g', 'S4');
       const r = runCli(root, ['gate', 'g', 'S4', '--out-of-order', '测 conformance 根对齐']);

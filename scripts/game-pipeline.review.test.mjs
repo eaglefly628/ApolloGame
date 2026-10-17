@@ -47,6 +47,8 @@ describe('boardFor — 三门合成（fixture 游戏）', () => {
   const pfPath = () => join(root, 'public', 'games', slug, 'pipeline.json');
   beforeAll(() => {
     root = mkdtempSync(join(tmpdir(), 'tri-gate-'));
+    mkdirSync(join(root, 'docs/roles'), { recursive: true });
+    writeFileSync(join(root, 'docs/roles/humans.json'), JSON.stringify({ humans: ['owner'] }));
     mkdirSync(join(root, 'public', 'games', slug), { recursive: true });
     writeFileSync(join(root, 'public', 'games', slug, 'manifest.json'), JSON.stringify({ capabilities: [], entities: {} }));
   });
@@ -96,6 +98,6 @@ describe('boardFor — 三门合成（fixture 游戏）', () => {
     writeFileSync(pfPath(), JSON.stringify({ version: 1, slug, concept: {}, signoffs: {}, evidence: {} }));
     const b = boardFor(root, slug);
     expect(b.stages.find((s) => s.id === 'S1').status).toBe('dim'); // 未填卡=灰（不受复查门影响）
-    expect(REVIEW_STAGES).toEqual(['S2', 'S3', 'S4', 'S5', 'S8']); // 复查覆盖面钉死
+    expect(REVIEW_STAGES).toEqual(['S2', 'S3', 'S4', 'S5', 'R1', 'S8']); // 复查覆盖面钉死
   });
 });
