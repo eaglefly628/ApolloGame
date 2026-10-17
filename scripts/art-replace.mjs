@@ -313,7 +313,9 @@ function slotExists(m, slot) {
 export function mergeLedger(prev, fresh, manifest = null) {
   if (!prev || !Array.isArray(prev.rows) || prev.rows.length === 0) return fresh;
   const mode = fresh.mode || prev.mode || '';
-  const prevByKey = new Map(prev.rows.map((r) => [rowIdentity(r, mode), r]));
+  // Split imports own their rows even when the manifest uses the same skinKey.
+  const isSplitRow = row => Object.hasOwn(row, 'splitIds');
+  const prevByKey = new Map(prev.rows.filter(r => !isSplitRow(r)).map((r) => [rowIdentity(r, mode), r]));
   let maxNo = Math.max(0, ...prev.rows.map((r) => noNum(r.no)));
   const seen = new Set();
   const rows = [];
@@ -343,6 +345,11 @@ export function mergeLedger(prev, fresh, manifest = null) {
   const covered = new Set();
   for (const f of fresh.rows) for (const s of rowSlots(f)) covered.add(slotKey(s));
   for (const p of prev.rows) {
+    if (isSplitRow(p)) {
+      console.warn(`[art-replace] skip: ${p.no} splitIds 来源由拆层推导管理，原样保留`);
+      rows.push(p);
+      continue;
+    }
     if (seen.has(rowIdentity(p, mode))) continue;
     // 已钉死的槽位（replaced/filled/approved）从 fresh 消失是**正常态**——art: 引用已被替换成真资产 id，
     // 推导自然扫不到；保留原行原状态。只有未完成行（placeholder/needs-art/generated）消失才是真墓碑。

@@ -83,3 +83,44 @@
 **须修 C2 · 悬空符号链接绕过越界保护**（`scripts/lib/aiflow-paths.mjs` `inside()`）：`existsSync` 对悬空链接返回 false，祖先回溯越过链接本身，realpath 校验通过，随后 `mkdirSync`/`writeFileSync` 顺着链接写到工作区外。
 复现：`keyart/mock` 为指向外部不存在目录的悬空链接，`inside(base,'keyart/mock/x.png')` 被放行。
 → 修法：回溯时用 `lstatSync` 识别链接（含悬空），遇到任何解析出界或悬空的链接一律拒收；补测试。
+
+## 返工记录（Codex · 2026-10-18；C1/C2，待 Claude 再复查）
+
+返工锁 `0bc635db2`：先单独推送 status。仅修改 `scripts/asset-split.mjs`、`scripts/art-replace.mjs`、两者测试、`scripts/lib/aiflow-paths.mjs` 及新增 `scripts/lib/aiflow-paths.test.mjs`、本单与需求池本单 status。保留原复查判词，不填写施工方 PASS。
+
+### C1 · 两条推导路径各维护自己的来源
+
+拆层推导不再调用全量 mergeLedger，只更新或退役带 splitIds 的自有行，非拆层来源整行保留。新行从全账最大编号后追加；同 skinKey 的不同来源分别保留，已有自有行的编号、生成资产、历史和人工提示词保留。art-replace 匹配与旧行退役流程排除拆层来源，保留 skip 日志；CLI stdout 仍为可解析 JSON。
+
+测试：`C1 forward: splitWorkspace preserves manifest-owned needs-art rows byte-for-byte` 与 `C1 reverse: manifest derive leaves split-owned needs-art rows byte-for-byte intact`；另测同键双来源、撤回只退役自有行、未知字段保留、真实 CLI derive 两次幂等。asset-split + art-replace 共95项 exit0。
+
+撤修：隔离副本逐次断言 ANCHOR_COUNT=1 并 finally 恢复原 SHA。
+
+- 禁用唯一 `if (!isSplitRow(p)) {`，运行 forward splitWorkspace 测试：exit1，needs-art 实际变 retired；`/private/tmp/aiflow-split-c1-forward-red.log`。
+- 禁用唯一 `if (isSplitRow(p)) {`，运行 reverse manifest derive 测试：exit1，needs-art 实际变 retired；`/private/tmp/aiflow-split-c1-reverse-red.log`。
+- 把唯一 `prev.rows.filter(r => !isSplitRow(r)).map` 改回 `prev.rows.map`，运行 reverse same skinKey 测试：exit1，splitIds 丢失；`/private/tmp/aiflow-split-c1-collision-red.log`。
+
+### C2 · 用 lstat 识别尚未解析的链接
+
+路径回溯以 lstat 判断祖先是否真实存在，再解析 realpath；悬空链接、链接循环和解析出界均拒收，同时保留工作区内有效链接及普通未创建目录的合法用途。
+
+测试 `C2 rejects dangling outward mock link before a write can escape`：keyart/mock 指向工作区外的不存在目录时，inside(base,'keyart/mock/x.png') 抛错且未创建外部目录。另两项覆盖内部悬空、活的出界链接、循环、合法内部链接及新目录。
+
+撤修：隔离副本断言唯一 `st = lstatSync(ancestor);` 命中1处，改用 statSync 后只运行上述具名测试，exit1、AssertionError（预期抛错而实际未抛）；`/private/tmp/aiflow-c2-red.log`。原工作副本不动。
+
+### 本次门禁
+
+撤修后联合98项 exit0；全量 5800/5801 通过，仅指定围栏基线1例失败。**除基线 depcruise 外全绿**。
+
+| 步 | 退出码 |
+|---|---:|
+| scoped-gate --run | 1（eslint=0，depcruise=1；仅指定game113基线） |
+| art-smoke / art-backup-smoke | 0 / 0（47项 / 27项） |
+| tsc | 0 |
+| vitest 全量 | 1（仅对应围栏1例） |
+| build | 0 |
+| docs-ref / context-budget | 0 / 0 |
+| art-ledger-guard | 2（既有WARN允许档） |
+| spritegen 原生 node:test | 0（5项；同前轮原生runner适配，未降低断言） |
+
+正式末行 `❌ 门禁失败于 depcruise（退出码 1）`；其余步骤全部补跑成功，汇总末行 `除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）`。日志 `/private/tmp/aiflow-c12-{scoped,complete,targeted,art-smoke,backup-smoke}.log`。无实现遗留、未签生产人门、待Claude独立核证。

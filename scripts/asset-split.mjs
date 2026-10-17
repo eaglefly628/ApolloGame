@@ -5,7 +5,6 @@ import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decodePng, encodePngRGBA } from './asset-matte.mjs';
 import { mockImage } from './ai-gen.mjs';
-import { mergeLedger } from './art-replace.mjs';
 import { artRoot } from './art-paths.mjs';
 import { inside, slugName } from './lib/aiflow-paths.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -56,11 +55,43 @@ export function deriveSplitLedger(rows, slug, previous = null) {
     if (existing) { existing.splitIds.push(row.id); existing.refs = [...new Set([...existing.refs,...row.refs])]; continue; }
     grouped.set(row.skinKey, { no: `art-${String(grouped.size+1).padStart(2,'0')}`, skinKey: row.skinKey, kind: 'sprite', query: row.prompt, prompt: row.prompt, desc: row.id, context: `keyart:${row.scene} route:${row.route}`, spec: { w: row.bbox[2], h: row.bbox[3], transparent: true }, refs: [...row.refs], splitIds: [row.id], status: 'needs-art', gen: null, provenance: null });
   }
-  const fresh={version:1,game:slug,mode:'requirements',count:grouped.size,rows:[...grouped.values()]};
-  // A formerly imported row that is now only proposed must not survive as an active approved asset.
-  const blocked=new Set(rows.filter(r=>r.state!=='approved'&&!grouped.has(r.skinKey)).map(r=>r.skinKey));
-  const safePrevious=previous?{...previous,rows:previous.rows.map(r=>(blocked.has(r.skinKey)||(r.splitIds&&!grouped.has(r.skinKey)))?{...r,status:'retired'}:r)}:null;
-  return mergeLedger(safePrevious,fresh);
+  // Ownership is explicit: a missing splitIds field belongs to another derivation tool.
+  // Never use full-ledger merge here: omitted manifest-owned rows are not withdrawals.
+  const previousRows = Array.isArray(previous?.rows) ? previous.rows : [];
+  const isSplitRow = row => Object.hasOwn(row, 'splitIds');
+  let maxNo = Math.max(0, ...previousRows.map(r => parseInt(String(r.no).replace(/^art-/, ''), 10) || 0));
+  const matched = new Set(), merged = [];
+  for (const p of previousRows) {
+    if (!isSplitRow(p)) {
+      console.info(`[asset-split] skip: ${p.no} 非拆层来源，原样保留`);
+      merged.push(p);
+      continue;
+    }
+    const f = grouped.get(p.skinKey);
+    if (!f) {
+      console.info(`[asset-split] ${p.status === 'retired' ? 'skip' : 'transition'}: ${p.no} 拆层批准已撤回或来源已移除，retired`);
+      merged.push(p.status === 'retired' ? p : { ...p, status: 'retired' });
+      continue;
+    }
+    matched.add(p.skinKey);
+    const edited = Array.isArray(p.history) && p.history.some(h => h.action === 'regen' && h.newQuery && h.newQuery !== h.prevQuery);
+    merged.push({
+      ...p, ...f, no: p.no, query: edited ? p.query : f.query,
+      ...(p.prompt ? { prompt: p.prompt } : {}),
+      status: p.status === 'retired' ? f.status : p.status,
+      gen: p.gen ?? null, provenance: p.provenance ?? null,
+      ...(p.history ? { history: p.history } : {}),
+    });
+  }
+  for (const [key, fresh] of grouped) {
+    if (matched.has(key)) continue;
+    if (previousRows.some(p => !isSplitRow(p) && p.skinKey === key)) {
+      console.info(`[asset-split] decision: ${key} 已有非拆层来源，追加独立拆层行`);
+    }
+    maxNo++;
+    merged.push({ ...fresh, no: `art-${String(maxNo).padStart(2, '0')}` });
+  }
+  return { version: 1, game: slug, mode: 'requirements', ...previous, count: merged.length, rows: merged };
 }
 export function splitWorkspace(root, slug, { mock = false } = {}) {
   slugName(slug);

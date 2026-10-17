@@ -484,6 +484,41 @@ describe('编号 append-only（owner 07-09「ID 错位」定案·mergeLedger）'
   });
 });
 
+describe('C1 split / manifest ledger ownership', () => {
+  const splitRow = (patch = {}) => ({ no: 'art-40', skinKey: 'g/lamp', splitIds: ['lamp'], kind: 'sprite', query: 'lamp', prompt: 'hand edited lamp', status: 'needs-art', gen: null, provenance: null, history: [{ action: 'split-import' }], custom: { owner: 'split' }, ...patch });
+  it('C1 reverse: manifest derive leaves split-owned needs-art rows byte-for-byte intact', () => {
+    const old = splitRow(), prev = { version: 1, game: 'g', rows: [old] }, snapshot = JSON.stringify(prev);
+    const merged = mergeLedger(prev, deriveForGame(MANIFEST, 'g', { allowFallback: false }), MANIFEST);
+    expect(merged.rows.find(r => r.no === old.no)).toEqual(old);
+    expect(merged.rows.filter(r => !Object.hasOwn(r, 'splitIds'))).toHaveLength(4);
+    expect(JSON.stringify(prev)).toBe(snapshot);
+  });
+  it('C1 reverse: same skinKey manifest rows cannot consume or rewrite split-owned rows', () => {
+    const old = splitRow({ no: 'art-09', status: 'generated', gen: { servedPath: 'split.png' }, slot: { entity: 'lamp', component: 'Sprite', field: 'textureKey' } });
+    const manifest = { entities: { lamp: { Sprite: { textureKey: old.skinKey } } } };
+    const merged = mergeLedger({ rows: [old] }, deriveRequirements(manifest, { game: 'g' }), manifest);
+    expect(merged.rows.find(r => r.no === old.no)).toEqual(old);
+    expect(merged.rows).toHaveLength(2);
+    expect(merged.rows.find(r => !Object.hasOwn(r, 'splitIds'))).toMatchObject({ no: 'art-10', skinKey: old.skinKey, status: 'needs-art' });
+  });
+  it('C1 reverse CLI derive preserves split rows while updating manifest-owned rows', () => withRoot(async root => {
+    const slug = 'g', old = splitRow(), manifest = { entities: { stove: { Sprite: { textureKey: 'art:old stove' } } } };
+    const directory = join(root, 'public/games/g'); mkdirSync(join(directory, 'art'), { recursive: true });
+    writeFileSync(join(directory, 'manifest.json'), JSON.stringify(manifest));
+    const manifestRow = { ...deriveLedger(manifest, { game: slug }).rows[0], no: 'art-03' };
+    const file = join(directory, 'art/art-ledger.json');
+    writeFileSync(file, JSON.stringify({ version: 1, game: slug, rows: [manifestRow, old] }));
+    manifest.entities.stove.Sprite.textureKey = 'art:new stove';writeFileSync(join(directory, 'manifest.json'), JSON.stringify(manifest));
+    const run = () => spawnSync(process.execPath, [join(__dirnameCli, 'art-replace.mjs'), 'derive', slug], { env: { ...process.env, ART_REPLACE_ROOT: root }, encoding: 'utf8' });
+    const first = run();expect(first.status, first.stderr).toBe(0);
+    expect(JSON.parse(first.stdout)).toMatchObject({ ok: true, slug }); // stdout 保持既有纯 JSON 协议
+    const ledger = JSON.parse(readFileSync(file, 'utf8'));
+    expect(ledger.rows.find(r => r.no === old.no)).toEqual(old);
+    expect(ledger.rows.find(r => r.no === 'art-03')).toMatchObject({ query: 'new stove', status: 'placeholder' });
+    const before = readFileSync(file);const repeated = run();expect(repeated.status, repeated.stderr).toBe(0);expect(readFileSync(file)).toEqual(before);
+  }));
+});
+
 describe('皮肤槽写回（编译期游戏线·R2 ①）', () => {
   const SKINNED = {
     entities: {
