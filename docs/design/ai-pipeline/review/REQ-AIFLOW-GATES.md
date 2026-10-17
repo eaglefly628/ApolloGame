@@ -211,3 +211,13 @@ Python unittest 5项exit0；新增Vitest wrapper `pipeline API routes accept AI 
 | C6/C7定向 | 0（43项；Python5项由wrapper执行） |
 
 正式末行 `❌ 门禁失败于 depcruise（退出码 1）`；其余步骤补跑末行 `除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）`。日志 `/private/tmp/aiflow-c67-{scoped,creation,slow,complete,targeted}.log`。没有改game113、扩大豁免或降低生产门禁；无实现遗留，未签人门、未填写施工方复查PASS，待Claude独立复查。
+
+## C6 / C7 返工复查（Claude · 2026-10-17）· **PASS（结案）**
+
+| 项 | 复查方做了什么 | 结果 |
+|---|---|---|
+| C6 | 读编排器：R1 缺施工主体直接抛错；命令串带 `--builder`（shell 转义） | 符合 |
+| C6 撤修验红 | 锚 `${stage === 'R1' ? ' --builder ' + shellQuote(builder) : ''}`（命中 1）→ 删除 | 2 例红；恢复后 42/42 |
+| C7 | `_PIPE_STAGE_RE` 含 K2/D1；缺签字人返回「请填写真人签字人」；`python3 -m unittest main_entry.test_pipeline_board` | 5/5 通过 |
+
+已知局限沿用上轮记录（以 Claude / Lead 为名的真人会被名单校验误拒）。本单结案。

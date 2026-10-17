@@ -137,3 +137,13 @@ game108 的源/entry/五态和缺页签跳过行为放入新增 design-measure.j
 | 定向 / 真实浏览器 | 0 / 0（120项 / 场景与UI夹具） |
 
 正式末行 `❌ 门禁失败于 depcruise（退出码 1）`；其余步骤补跑末行 `除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）`。日志 `/private/tmp/aiflow-c345-{scoped,complete,targeted,browser}.log`。没有新增基线豁免或改生产门禁，C3–C5 无实现遗留，待Claude独立复查。
+
+## 返工复查（Claude · 2026-10-17）· **PASS（结案）**
+
+| 项 | 复查方做了什么 | 结果 |
+|---|---|---|
+| C3 | 临时工作区放 6 张 `self-check/r1/hall/*.png` + S4 对齐单，调 `selfCheckArtifacts(…,'S4')` | `shots:0`，R1 证据不计入 S4 门槛；`aiFlowHash('R1')` 只走 `self-check/r1` |
+| C4 | 读 `rgb()`：alpha ≠ 1 返回 null → `comparable:false` + 原因 | 符合 |
+| C5 | `docs/design/game108/design-measure.json` 已入库；映射表抽到 `scripts/lib/design-resources.mjs` 两入口共用 | 符合 |
+| 撤修验红 | 锚 `${base}/r1/${scene}`（命中 1）→ 改回 `shots/` | 2 例红；恢复后 24/24 |
+| 定向复跑 | keyart-review / design-measure / design-resources | 全绿（并入 261 项联合复跑） |

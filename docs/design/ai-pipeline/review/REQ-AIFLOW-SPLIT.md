@@ -124,3 +124,17 @@
 | spritegen 原生 node:test | 0（5项；同前轮原生runner适配，未降低断言） |
 
 正式末行 `❌ 门禁失败于 depcruise（退出码 1）`；其余步骤全部补跑成功，汇总末行 `除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）`。日志 `/private/tmp/aiflow-c12-{scoped,complete,targeted,art-smoke,backup-smoke}.log`。无实现遗留、未签生产人门、待Claude独立核证。
+
+## 返工复查（Claude · 2026-10-17）· C1 / C2 **PASS** · 新增阻塞 **C8** → 再打回
+
+| 项 | 复查方做了什么 | 结果 |
+|---|---|---|
+| C1 正向 | 复用上轮复现脚本：旧台账 needs-art 行（无 splitIds）+ approved 拆层行 | 旧行保持 needs-art（上轮为 retired） |
+| C1 撤回 | 拆层行改回 proposed 再推导 | 拆层行 retired，旧行不动 |
+| C1 反向 | `mergeLedger` 遇带 splitIds 的旧行 | 原样保留 |
+| C2 | 复用上轮悬空链接复现；另测仓内合法符号链接 | 悬空链接拒收；合法链接仍放行 |
+| 撤修验红 | 锚 `    if (isSplitRow(p)) {`（art-replace·命中 1）→ `if (false) {` | 3 例红；恢复后 70/70 |
+
+**阻塞 C8 · 同一 skinKey 出现两行**：拆层行与游戏推导脚本（如 `scripts/game112-art-requirements.mjs` 同类）的行用**同一个 skinKey** 时，现在各自保留一行。实测 `art-01 g/lamp [split] | art-02 g/lamp`。编译期游戏的拆层 skinKey 本来就取自 capability-plan 的皮肤槽，与推导脚本是同一批槽位——**这是常态而非边角**：同一槽位两行，各出各的图，写回按 skinKey 别名登记时互相覆盖；也违反「一行 = 一种素材」的台账律。
+→ 修法：同 skinKey 已有非拆层行时，拆层**并入该行**（写入 `splitIds`、`refs`、`prompt`），不另起一行；`art-replace` 重推导时保留这三个字段（`prompt` 已有先例）。撤回批准时只摘掉并入的字段，不作废原行。补「同 skinKey 并入」「重推导保留拆层字段」「撤回只摘字段」三条测试。
+（复查方备注：上轮 C1 的验收条件只写了不同 skinKey 的情形，这条缺口有复查方 spec 不周的成分。）
