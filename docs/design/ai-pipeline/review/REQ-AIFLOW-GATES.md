@@ -162,3 +162,52 @@ agent 名正则只用于检查 humans.json 整份文件，使用 Unicode 字母/
 - 小建议：`boardFor` 对每个未启用的游戏都向 stderr 打一行 skip 提示，多游戏批量看板时噪声偏大，可降为 debug 或每次 CLI 调用只打一次。
 
 本单结论不变：B1–B3 通过，**待 C6 / C7** 修完即可结案。
+
+## 返工记录（Codex · 2026-10-18；C6/C7，待 Claude 再复查）
+
+返工锁 `720f68fa6` 先单独推送；保留上方 Claude 的 B1–B3 PASS 与代码级追加判词。本次只改 `scripts/pipeline-orchestrator.mjs`、`.test.mjs`、`main_entry/pipeline_board.py`、新增 `main_entry/test_pipeline_board.py` 与 `scripts/pipeline-board-api.test.mjs`，以及本单和需求池本单status。B1–B3及REFGEN未改。
+
+### C6 · 编排器给 R1 命令提供真实施工主体
+
+R1 命令增加 --builder，来源依次为 pipeline.json 的 builders.R1 / builder / 既有 reviews.R1.builder；缺少记录时读取本游戏 docs/design/<slug>/requests.md 的施工锁行（优先R1行，多个不同主体不猜）。没有唯一主体则在取锁和起会话之前明确拒绝，提示补记录；不取人门签字人为施工主体，也不造缺省人名。命令按shell参数引用施工主体，包含引号或美元符的姓名不会变成命令。
+
+R1 独立重验也核施工主体与工件指纹；其它阶段复查逻辑不变。
+
+测试 `C6 R1 command carries builder from %s and a real CLI review lands` 的 pipeline record / ticket lock 两例：完整dispatch，把实际生成命令交给真实game-pipeline CLI，临时R1账落地、builder正确、verifyReview exit0。另测 `C6 missing or ambiguous builder refuses before taking a lock or starting a session`。会话执行器为桩，未启动真LLM或签生产人门；带引号和美元表达式的主体未产生额外文件。
+
+撤修：隔离副本唯一 `` ${stage === 'R1' ? ' --builder ' + shellQuote(builder) : ''} `` 命中1处，删除后只跑 `-t 'C6 R1 command'`；exit1、2 failed，真实CLI报「R1 review 必须带 --builder」，期望退出0、实际1。日志 `/private/tmp/aiflow-c6-red.log`；finally恢复，原工作副本不动。
+
+### C7 · 网页签字与命令行规则对齐
+
+阶段白名单增加 K2/D1，并允许R1工件门入口；签字仍由CLI拒绝不适用的人门。by不再缺省为owner，缺失、null、空字符串、全空白均返回「请填写真人签字人」，不调用CLI；合法by显式透传，CLI白名单拒收照实返回。
+
+真实 APIHandler.do_POST 分派 + JSON 输入输出流测试（CLI为桩，无真实签字）：
+- `test_signoff_k2_d1_passes_explicit_signer`。
+- `test_signoff_missing_null_empty_whitespace_by_rejected_without_cli`。
+- `test_gate_accepts_k2_d1_r1_routes`、`test_invalid_stage_rejected_without_cli`、`test_signoff_keeps_cli_human_whitelist_rejection`。
+
+Python unittest 5项exit0；新增Vitest wrapper `pipeline API routes accept AI stages and require an explicit human signer`，确保常规全量门禁会执行这5项。联合 orchestrator + wrapper 共43项exit0（42+1），日志 `/private/tmp/aiflow-c67-targeted.log`。
+
+撤修：临时副本两处唯一锚点count1，finally恢复。
+- 从阶段正则删掉K2/D1，`test_gate_accepts_k2_d1_r1_routes` exit1，K2/D1应调用CLI实际被拒；`/private/tmp/aiflow-c7-withdraw-stage.log`。
+- 恢复 `by = str(body.get('by') or '').strip() or 'owner'`，缺签字人具名测试exit1，应拒收实际调用CLI；`/private/tmp/aiflow-c7-withdraw-owner.log`。
+- 恢复后Python5项再次exit0；`/private/tmp/aiflow-c7-withdraw-restored.log`。
+
+### 本次门禁
+
+**除基线 depcruise 外全绿**：全量5819项，5818通过，唯一失败仍为指定围栏基线。
+
+| 步 | 退出码 |
+|---|---:|
+| scoped-gate --run | 1（eslint=0，depcruise=1；仅指定game113基线） |
+| creation-loop-guard | 0（38项） |
+| slow-lane:game-pipeline | 0（69项） |
+| tsc | 0 |
+| vitest 全量 | 1（仅对应围栏1例） |
+| build | 0 |
+| docs-ref / context-budget | 0 / 0 |
+| art-ledger-guard | 2（既有WARN允许档） |
+| spritegen 原生 node:test | 0（5项，同前轮runner适配） |
+| C6/C7定向 | 0（43项；Python5项由wrapper执行） |
+
+正式末行 `❌ 门禁失败于 depcruise（退出码 1）`；其余步骤补跑末行 `除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）`。日志 `/private/tmp/aiflow-c67-{scoped,creation,slow,complete,targeted}.log`。没有改game113、扩大豁免或降低生产门禁；无实现遗留，未签人门、未填写施工方复查PASS，待Claude独立复查。

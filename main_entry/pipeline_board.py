@@ -1,4 +1,4 @@
-"""生产流程板（八阶段机器门/人门）。"""
+"""生产流程板（S1–S8 + K2/D1/R1 机器门/人门）。"""
 import subprocess
 import json
 import re
@@ -8,10 +8,10 @@ from .paths import _valid_slug
 from .sysutil import ROOT, _spawn, c
 
 # ── 生产流程板（owner 2026-07-10「N 步拆分·每步 review·不能只靠手册」）────────────
-# 大脑在 scripts/game-pipeline.mjs（八阶段·机器门证据带内容指纹·人门 signoff 落账）；
+# 大脑在 scripts/game-pipeline.mjs（十一阶段·机器门证据带内容指纹·人门 signoff 落账）；
 # 本端点薄胶水 shell 调。gate 会真跑 vitest/tsc/build（S8 最重）→ 单独长超时。
 
-_PIPE_STAGE_RE = re.compile(r'S[1-8]')
+_PIPE_STAGE_RE = re.compile(r'(?:S[1-8]|K2|D1|R1)')
 
 def _pipeline_cli(args: list, timeout: int = 120) -> dict:
     """shell scripts/game-pipeline.mjs → 解析末行 JSON。"""
@@ -28,7 +28,7 @@ def _pipeline_cli(args: list, timeout: int = 120) -> dict:
         return {'ok': False, 'error': f'解析失败: {err[:400]}'}
 
 def handle_pipeline_board(slug: str) -> dict:
-    """GET /api/pipeline?slug=<slug>。八阶段看板（纯推导·不跑重活）。"""
+    """GET /api/pipeline?slug=<slug>。十一阶段看板（纯推导·不跑重活）。"""
     if not _valid_slug(slug):
         return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
     res = _pipeline_cli(['board', slug, '--json'])
@@ -68,13 +68,16 @@ def handle_pipeline_concept(body: dict) -> dict:
     return {'success': bool(res.get('ok')), **res}
 
 def handle_pipeline_signoff(body: dict) -> dict:
-    """POST /api/pipeline/signoff {slug, stage, note, by?}。人门落账（note 必填=review 内容）。"""
+    """POST /api/pipeline/signoff {slug, stage, note, by}。人门落账（note/by 必填）。"""
     slug = str(body.get('slug', '')).strip(); stage = str(body.get('stage', '')).strip()
-    note = str(body.get('note', '')).strip(); by = str(body.get('by', '')).strip() or 'owner'
+    note = str(body.get('note', '')).strip(); by = str(body.get('by') or '').strip()
     if not _valid_slug(slug):
         return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
     if not _PIPE_STAGE_RE.fullmatch(stage):
         return {'success': False, 'error': f'非法阶段: {stage or "(空)"}'}
+    if not by:
+        print(c("  [PIPE]", 'y'), 'reject signoff: 请填写真人签字人')
+        return {'success': False, 'error': '请填写真人签字人'}
     if not note:
         return {'success': False, 'error': '人门必须带 note（review 内容落账·不许空签）'}
     if len(note) > 500 or len(by) > 40:

@@ -42,7 +42,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, openSync, w
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn, spawnSync } from 'node:child_process';
-import { STAGES, GATE_STAGES, REVIEW_STAGES, detectForm, gameHash, pipelineFile } from './game-pipeline.mjs';
+import { STAGES, GATE_STAGES, REVIEW_STAGES, detectForm, gameHash, pipelineFile, aiFlowHash } from './game-pipeline.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 /** 仓库根。ZEROCRAFT_PIPELINE_ROOT 与 game-pipeline.mjs 同名同义（仅测试注入临时根用·生产不设）。 */
@@ -246,15 +246,37 @@ export function buildSessionPrompt({ root = REPO_ROOT, slug, stage, boardText = 
 /** 复查落账人前缀（独立重验以它核对 by·复查会话署名须以它起头）。 */
 export const REVIEW_BY_PREFIX = 'orch-review';
 
+/** R1 requires a recorded construction identity; never infer it from a human signoff. */
+export function reviewBuilderFor(root, slug) {
+  let pf = {};
+  const file = pipelineFile(root, slug);
+  if (existsSync(file)) {
+    try { pf = JSON.parse(readFileSync(file, 'utf8')); }
+    catch { throw new Error('R1 无法读取 pipeline.json 施工主体记录'); }
+  }
+  const recorded = pf.builders?.R1 ?? pf.builder ?? pf.reviews?.R1?.builder;
+  if (typeof recorded === 'string' && recorded.trim()) return recorded.trim();
+  const tickets = join(root, 'docs', 'design', slug, 'requests.md');
+  const lines = existsSync(tickets) ? readFileSync(tickets, 'utf8').split('\n').filter(l => /施工主体/.test(l) && /抢锁|本行即锁/.test(l)) : [];
+  const relevant = lines.filter(l => /\bR1\b/.test(l));
+  const names = (relevant.length ? relevant : lines).map(l => l.match(/施工主体\s*[=:：]\s*([^（(*·\n]+)/)?.[1]?.trim()).filter(n => n && !/^待/.test(n));
+  const unique = new Map(names.map(n => [n.normalize('NFKC').toLowerCase(), n]));
+  if (unique.size === 1) return [...unique.values()][0];
+  throw new Error('R1 缺少唯一施工主体；请在 pipeline.json 的 builder（或 builders.R1）记录，或补齐本游戏工单锁行');
+}
+const shellQuote = value => "'" + String(value).replaceAll("'", "'\\''") + "'";
+
+
 /** 复查尾注（对标 sessionFooter 语气·**不可协商**·每次 --review dispatch 逐字相同）。 */
-export function reviewSessionFooter(slug, stage) {
+export function reviewSessionFooter(slug, stage, builder) {
+  if (stage === 'R1' && !(typeof builder === 'string' && builder.trim())) throw new Error('R1 复查命令缺 --builder 施工主体');
   return [
     '【复查尾注·不可协商】',
     '你是编排器另派的**独立复查 agent**——复查人≠施工人天然成立；施工会话的任何自陈（「全绿」「已修复」）一律不采信。',
     '逐条按 review 四步铁律核证：① 独立复跑 ② 撤修验红（sabotage 必须带锚点命中断言）③ 实证复现 ④ 读告警'
       + '（WARN/成环只打 stderr 不改退出码·绿灯不等于没话说）。结论带 file:line 或实数。',
     `只读产物：唯一允许的写 = \`node scripts/game-pipeline.mjs review ${slug} ${stage} --verdict PASS|CONCERNS|FAIL `
-      + `--note "逐条结论" --by ${REVIEW_BY_PREFIX}\`（--by 须以 ${REVIEW_BY_PREFIX} 起头·如实署名）。`,
+      + `--note "逐条结论" --by ${REVIEW_BY_PREFIX}${stage === 'R1' ? ' --builder ' + shellQuote(builder) : ''}\`（--by 须以 ${REVIEW_BY_PREFIX} 起头·如实署名）。`,
     '**FAIL 是合法结论**——打回也是合格交付，不许为了绿而绿。',
     `完成动作 = review 落账后停。注：你退出后编排器会**独立核对** pipeline.json 的复查记录`
       + `（在案·指纹对齐·by 以 ${REVIEW_BY_PREFIX} 起头）——verdict 是什么不影响交付成立，你自称查完不算数。`,
@@ -263,7 +285,7 @@ export function reviewSessionFooter(slug, stage) {
 
 /** 复查喂料三样 + 复查尾注（照 buildSessionPrompt 三样式风格·别的一律不喂）。
  *  checklistText/boardText = 对应 CLI 的实时输出（调用方现 spawn 现喂·不喂陈货）。 */
-export function buildReviewSessionPrompt({ root = REPO_ROOT, slug, stage, boardText = '', checklistText = '' }) {
+export function buildReviewSessionPrompt({ root = REPO_ROOT, slug, stage, boardText = '', checklistText = '', builder }) {
   if (!REVIEW_STAGES.includes(stage)) throw new Error(`阶段 ${stage} 不在复查闭集（${REVIEW_STAGES.join('/')}）`);
   const dir = gameDirFor(root, slug);
   return [
@@ -276,7 +298,7 @@ export function buildReviewSessionPrompt({ root = REPO_ROOT, slug, stage, boardT
     boardText.trim() || '（板输出为空——按 board 命令自查）',
     `游戏目录：${dir || `（未知形态：${slug}）`}`,
     '',
-    reviewSessionFooter(slug, stage),
+    reviewSessionFooter(slug, stage, stage === 'R1' ? builder ?? reviewBuilderFor(root, slug) : undefined),
   ].join('\n');
 }
 
@@ -342,6 +364,9 @@ export function verifyReview(root, slug, stage) {
   if (!String(rv.by || '').startsWith(REVIEW_BY_PREFIX)) {
     return { kind: 'review', exit: 1, verdict: rv.verdict ?? null,
       summary: `复查主体不符（by=${rv.by || '缺'}·编排器派的复查会话须以 ${REVIEW_BY_PREFIX} 起头如实署名）` };
+  }
+  if (stage === 'R1' && (typeof rv.builder !== 'string' || !rv.builder.trim() || rv.builder.normalize('NFKC').trim().toLowerCase() === rv.by.normalize('NFKC').trim().toLowerCase() || rv.artifactHash !== aiFlowHash(root, slug, 'R1'))) {
+    return { kind: 'review', exit: 1, verdict: rv.verdict, summary: 'R1 施工主体无效或复查工件已过期' };
   }
   return { kind: 'review', exit: 0, verdict: rv.verdict, by: rv.by, at: rv.at,
     summary: `复查落账在案：${rv.verdict} by ${rv.by}（verdict 不影响交付成立——FAIL 也是合格交付）` };
@@ -453,6 +478,11 @@ export async function dispatch(opts = {}) {
   const budget = review ? reviewBudgetFor(stage) : budgetFor(stage);
   if (!budget.ok) return { ok: false, code: budget.code, slug, stage, review, reason: budget.reason };
 
+  let builder;
+  if (review && stage === 'R1') {
+    try { builder = reviewBuilderFor(root, slug); }
+    catch (e) { console.warn('[orchestrator] reject: ' + e.message); return { ok: false, code: 'USAGE', slug, stage, review, reason: e.message }; }
+  }
   const rt = detectRuntime({ bin: claudeBin });
   if (!rt.ok) return { ok: false, code: 'NO_RUNTIME', slug, stage, reason: rt.reason };
 
@@ -468,7 +498,7 @@ export async function dispatch(opts = {}) {
   }
 
   const prompt = review
-    ? buildReviewSessionPrompt({ root, slug, stage, boardText: boardText(root, slug), checklistText: checklistText(root, slug, stage) })
+    ? buildReviewSessionPrompt({ root, slug, stage, boardText: boardText(root, slug), checklistText: checklistText(root, slug, stage), builder })
     : buildSessionPrompt({ root, slug, stage, boardText: boardText(root, slug) });
   const args = sessionArgs({ effort: budget.effort, maxTurns: budget.maxTurns, extraFlags });
   mkdirSync(logDir(root), { recursive: true });

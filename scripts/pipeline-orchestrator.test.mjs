@@ -23,7 +23,7 @@ import {
   buildSessionPrompt, sessionFooter, sessionArgs, gameDirFor, decideStatus, verifyStage,
   dispatch, statusFor, abort, IDLE_TIMEOUT_MS, MAX_ATTEMPTS, STARTUP_GRACE_MS, runSession,
   reviewBudgetFor, REVIEW_BUDGET, NO_REVIEW_STAGES, REVIEW_BY_PREFIX,
-  buildReviewSessionPrompt, reviewSessionFooter, checklistText, boardText, verifyReview,
+  buildReviewSessionPrompt, reviewSessionFooter, checklistText, boardText, verifyReview, reviewBuilderFor,
 } from './pipeline-orchestrator.mjs';
 import { gameHash as pipelineGameHash, pipelineFile as pipelinePath } from './game-pipeline.mjs';
 
@@ -655,4 +655,40 @@ describe('⑧ 复查会话共用串行锁（stage 记 SN:review）', () => {
     expect(existsSync(lockPath(root))).toBe(false);          // 跑完放锁（走既有通道）
     expect(readRuns(root)[slug].stage).toBe('S3:review');    // 台账同样记 SN:review
   }), 30000);
+});
+
+
+describe('C6 R1 orchestrated review records its construction identity', () => {
+ const EXITED=()=>({outcome:'exited',code:0,signal:null,bytes:42,error:null});
+ it.each(['pipeline record','ticket lock'])('C6 R1 command carries builder from %s and a real CLI review lands', source => withRoot(async root => {
+  const slug=fakeGame(root),builder=source==='pipeline record'?"O'Neil $(touch unexpected-marker)":'Codex';
+  put(root,`docs/design/${slug}/keyart/README.md`,'keyart workspace');
+  put(root,`docs/design/${slug}/self-check/R1-keyart-review.md`,'# Independent review fixture');
+  put(root,`docs/design/${slug}/self-check/r1/hall/metrics.json`,{frame:1});
+  if(source==='pipeline record')put(root,`public/games/${slug}/pipeline.json`,{builder});
+  else put(root,`docs/design/${slug}/requests.md`,'### REQ-R1 · **施工主体 = Codex（2026-10-18 抢锁·本行即锁）**');
+  expect(reviewBuilderFor(root,slug)).toBe(builder);
+  let received;
+  const runner=async({prompt})=>{
+   received=prompt;
+   const raw=prompt.match(/唯一允许的写 = `([^`]+)`/)[1];
+   const command=raw.replace('node scripts/game-pipeline.mjs',JSON.stringify(process.execPath)+' '+JSON.stringify(PIPELINE_CLI)).replace('PASS|CONCERNS|FAIL','CONCERNS');
+   const r=spawnSync('/bin/sh',['-c',command],{cwd:root,encoding:'utf8',env:{...process.env,ZEROCRAFT_PIPELINE_ROOT:root}});
+   expect(r.status,r.stderr).toBe(0);
+   return EXITED(0);
+  };
+  const result=await dispatch({root,slug,stage:'R1',review:true,claudeBin:process.execPath,runSessionImpl:runner});
+  expect(received).toContain('--builder');
+  expect(result).toMatchObject({ok:true,code:'DONE',verify:{exit:0,verdict:'CONCERNS'}});
+  expect(JSON.parse(readFileSync(pipelinePath(root,slug),'utf8')).reviews.R1.builder).toBe(builder);
+  expect(existsSync(join(root,'unexpected-marker'))).toBe(false);
+  expect(readLock(root)).toBe(null);
+ }));
+ it('C6 missing or ambiguous builder refuses before taking a lock or starting a session',()=>withRoot(async root=>{
+  const slug=fakeGame(root);let ran=false;
+  const result=await dispatch({root,slug,stage:'R1',review:true,claudeBin:process.execPath,runSessionImpl:async()=>{ran=true;return EXITED(0);}});
+  expect(result).toMatchObject({ok:false,code:'USAGE'});expect(result.reason).toContain('施工主体');expect(ran).toBe(false);expect(readLock(root)).toBe(null);
+  put(root,`docs/design/${slug}/requests.md`,'施工主体 = Codex（抢锁）\n施工主体 = Claude（抢锁）');
+  expect(()=>reviewBuilderFor(root,slug)).toThrow('唯一施工主体');
+ }));
 });
