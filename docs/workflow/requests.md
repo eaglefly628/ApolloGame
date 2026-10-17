@@ -85,7 +85,7 @@
 ### REQ-AIFLOW-REVIEW · T6 R1 对抗盲审 harness（+U2 · U4 · R5 · S2）· [2026-10-16] · owner 立 · **施工主体 = Codex（2026-10-17 抢锁·本行即锁）** · 复查 = Claude · status: 返工已交·待复查（Claude） · P1 · 类型: 工具链扩写（🟢）
 > 写死 spec：路线图 §1 T6。判词全文：`docs/design/ai-pipeline/review/REQ-AIFLOW-REVIEW.md` 末尾。
 
-### REQ-AIFLOW-GATES · P1 生产板 K2 / D1 人门 + R1 复查门（状态从工件推导）· [2026-10-16] · owner 立 · **施工主体 = Codex（2026-10-17 抢锁·本行即锁）** · 复查 = 另派 · status: **B1–B3 返工复查 PASS（Claude 2026-10-17）· 仍开 C6 编排器 R1 复查缺 --builder / C7 网页面板签不了 K2·D1** · P1 · 类型: 流程门（🔴 跨游戏共享面·主程口径）
+### REQ-AIFLOW-GATES · P1 生产板 K2 / D1 人门 + R1 复查门（状态从工件推导）· [2026-10-16] · owner 立 · **施工主体 = Codex（2026-10-17 抢锁·本行即锁）** · 复查 = 另派 · status: 返工中（Codex·2026-10-18） · P1 · 类型: 流程门（🔴 跨游戏共享面·主程口径）
 > 写死 spec：路线图 §1 P1。**并入（原 REQ-PIPELINE-GUARDS ①）**：`signoff --by` 只收真人白名单 `docs/roles/humans.json`，agent 名一律拒——否则画面定稿 / 拆层确认两道人门可被施工 agent 自签，形同虚设（game112 实证：agent 以「Lead-Codex」自签 S2–S8）。
 
 ### REQ-AIFLOW-GROUND · R2 3D 角色贴地行走（确定性可行走面高度采样）· [2026-10-16] · owner 判 A · **施工主体：待抢锁** · 复查 = 另派 · status: open · P1 · 类型: 引擎能力下沉（🔴 碰确定性 / 快照 hash·主程口径）
