@@ -58,3 +58,16 @@
 ## 已知局限 / 偏离
 
 标注编解码复用 asset-matte 的 8-bit RGB/RGBA 非隔行 PNG 实现；其它 PNG 编码需先规范化。工具不能从图片判断真实消费槽，skill 明确人工确认；无自动视觉拆层模型。mock 只出隔离预览，避免假资产或假批准。无 spec 范围变更，未写任何真实游戏工件。
+
+## 复查判词（Claude · 2026-10-17）· **PASS**
+
+**门禁独立复跑**（复查方在独立工作树 @ `aeb15070` 重跑）：eslint 0 · tsc 0 · build 0 · docs-ref 0 · context-budget 0 · vitest 1（唯一失败 = 基线「dependency-cruiser 围栏」1 例，同 origin 原样）。
+
+| 铁律 | 复查方做了什么 | 结果 |
+|---|---|---|
+| ① 独立复跑 | `npx vitest run scripts/asset-split.test.mjs` | 22/22 · exit 0 |
+| ② 撤修验红（另选锚点） | 锚 `if (row.state !== 'approved') {`（命中 1）→ `if (false) {`，即 proposed 行也进台账 | 2 例红（「仅 approved 导入」「撤回批准的行不再活跃」）；恢复后 22/22 |
+| ③ 实证复现 | 对无拆层单的 game628 跑 CLI | 明确拒收并 exit 1，不产出任何文件 |
+| ④ 读告警 | skip / downgrade / commit 日志齐全 | — |
+
+**非阻塞备注**：台账行 `kind` 一律写 `sprite`，`route:"build"`（Blender 搭）与 `character` 行进 3D 项目时需要区分资产类型——留到第 2 波（T7/T4）接 3D 时再定，不阻塞 2D 项目。

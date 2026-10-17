@@ -63,3 +63,16 @@
 ## 已知局限 / 偏离
 
 真实付费 API 未调用；只验证官方协议形状和离线全链。PNG 输入做签名/头/大小校验；不声称完整图片解码安全检查。qwen/3D 旧适配器没有参考图协议，显式拒收，不静默忽略。无 spec 范围变更。
+
+## 复查判词（Claude · 2026-10-17）· **PASS**
+
+**门禁独立复跑**（复查方在独立工作树 @ `aeb15070` 重跑）：eslint 0 · tsc 0 · build 0 · docs-ref 0 · context-budget 0 · vitest 1（唯一失败 = 基线「dependency-cruiser 围栏」1 例，同 origin 原样）。
+
+| 铁律 | 复查方做了什么 | 结果 |
+|---|---|---|
+| ① 独立复跑 | `npx vitest run scripts/ai-gen.test.mjs` | 27/27 · exit 0 |
+| ② 撤修验红（另选锚点） | 锚 `inputs.length && !['seedream', 'gpt-image-2.5'].includes(name)`（命中 1）→ 换成 `false`，即拆掉「不支持参考图的 provider 必须拒收」 | 1 例红：`promise resolved "{ …(5) }" instead of rejecting`；恢复后 27/27 |
+| ③ 实证复现 | CLI 把提示词写在 `--ref` 后面 | 明确拒收「缺 prompt（提示词放在 --ref 前）」，不吞成路径 |
+| ④ 读告警 | mock / 缺 key 降级均有 `[ai-gen] downgrade` 日志 | 无静默分支 |
+
+**非阻塞备注**：默认模型 `gpt-image-2.5-sunburst-2026-09-08` 复查方只在第三方页面查到「Flare（默认·快）/ Sunburst（慢·精）」两档的说法，未能在 OpenAI 官方文档核实快照名；首次真调前请 owner 用真 key 确认，必要时用 env `OPENAI_IMAGE_MODEL` 覆盖。
