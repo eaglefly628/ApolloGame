@@ -86,3 +86,54 @@ R5 交付 PNG 帧序列（spec允许的选项），不另做GIF编码器。跨�
 **建议 C4 · 透明背景被当成黑色比较**（`scripts/lib/keyart-metrics.mjs` `rgb()` 忽略 alpha）：参考稿透明背景 `rgba(0,0,0,0)` vs 实际 `rgb(100,10,20)` 报 `deltaRgb [100,10,20]`。→ alpha < 1 时标「不可比」，不出伪差值。
 
 **建议 C5 · 共享工具里的游戏专属分支与重复表**：`design-measure.mjs` 写死 `slug === 'game108'` 兼容分支，宜改为提交 `docs/design/game108/design-measure.json` 数据；`window.__resources` 的 unpkg→/__vendor 映射在 `design-measure.mjs` 与 `lib/keyart-capture.mjs` 各抄一份，宜抽成一处。
+
+## 返工记录（Codex · 2026-10-18；C3/C4/C5，待 Claude 再复查）
+
+返工锁 `547e1f82c` 已先单独推送。保留 Claude 代码级判词；以下替代初版关于 R1 shots 目录与 game108 专属默认分支的说明。没有修改 REFGEN 或 GATES B1–B3 行为。
+
+改动文件：`scripts/keyart-review.mjs`、`.test.mjs`；`scripts/lib/keyart-metrics.mjs`、`aiflow-gates.mjs`；`scripts/game-pipeline.aiflow.test.mjs`（R1材料夹具迁移）；`scripts/design-measure.mjs`、`.test.mjs`；`scripts/lib/keyart-capture.mjs`；新增 `scripts/lib/design-resources.mjs`、`.test.mjs` 与 `docs/design/game108/design-measure.json`；本单及需求池本单status。
+
+### C3 · R1 与玩法证据互不污染
+
+真实图片/并排图/metrics 写 `self-check/r1/<scene>/`，mock 对应写 `self-check/mock/r1/<scene>/`；骨架仍为 `self-check/R1-keyart-review.md`，链接同步指向 r1。R1 工件指纹只遍历 self-check/r1；游戏内容新鲜度仍由既有 gameHash 单独负责，报告在档仍由机器门独立检查。
+
+测试名：`C3 R1 output never satisfies the S4 five gameplay screenshots requirement`，一次3帧产生6图但S4截图计数为0；`C3 adding S4 gameplay screenshots leaves an existing independent R1 review fresh`，新增6张S4图后R1指纹与已落账复查仍有效，改变R1自身图后变stale。均临时夹具，无生产签字。
+
+撤修在隔离副本做：每次 `assert source.count(anchor)==1`，finally恢复。
+- 唯一 `` `${base}/r1/${scene}` `` 改回 shots，具名 `-t 'C3 R1 output'`：exit1，S4 shots 应0实际6；`/private/tmp/aiflow-c3-output-red.log`。
+- 唯一 `walk(inside(dir,'self-check/r1'));` 改回 shots，`-t 'C3 adding S4'`：exit1，新增S4图导致指纹变化；`/private/tmp/aiflow-c3-hash-red.log`。
+
+### C4 · 透明颜色不输出伪差值（建议一并完成）
+
+rgba / RGB斜杠alpha / 8位hex中 alpha<1 时返回 comparable:false、deltaRgb:null、原因「不可比」，保留原值并有skip日志；alpha=1仍输出有符号差值。测试 `C4 alpha below one is incomparable: %s`（含两侧透明）与 `C4 alpha one remains comparable and retains signed color differences`。
+
+撤修：唯一 `if(alpha!==1)return null;` 禁用，`-t 'C4 alpha below'`：exit1，透明rgba被错误标可比并产生差值；`/private/tmp/aiflow-c4-red.log`。8位hex分支未撤，仍保持拒比；全部源文件恢复。
+
+### C5 · 兼容由数据提供，资源映射共用（建议一并完成）
+
+game108 的源/entry/五态和缺页签跳过行为放入新增 design-measure.json；共享脚本不再判断 slug===game108。通用 skipMissingStates 配置保留旧五态警告跳过协议。量稿与截图共同调用 installDesignResources，映射只有一份，真实入口的driver桩与captureFrames双重加载均核对独立预期URL表。旧量稿使用文档的专属默认分支描述由本记录更正，本轮边界仅允许改Review而未改其它说明文档。
+
+测试 `C5 committed game108 configuration retains source, output and five tab labels`；另有量稿入口/截图入口共用映射具名测试。C5定向35项（量稿32+映射3）exit0。
+
+撤修：隔离副本，ANCHOR_COUNT=1，finally恢复SHA。
+- 唯一 `const states = raw.states ?? [{ id: 'default' }];` 改为常量default，上述配置测试exit1、1 failed（应T1..终局，实为default）；`/private/tmp/aiflow-review-c5-config-red.log`。
+- 唯一 `new URL(file, base).href` 改成wrong/路径，两消费者用例同时exit1、2 failed；`/private/tmp/aiflow-review-c5-resources-red.log`。
+
+恢复后联合4文件120项exit0；真实浏览器夹具exit0，固定帧两次相同、机位/动作改变像素、UI差值真值dx5/dy-2/dw5/dh5/RGB[10,10,-5]。日志 `/private/tmp/aiflow-c345-targeted.log`、`/private/tmp/aiflow-c345-browser.log`。
+
+### 本次门禁
+
+**除基线 depcruise 外全绿**：全量5815项，5814通过，唯一失败为指定围栏基线。
+
+| 步 | 退出码 |
+|---|---:|
+| scoped-gate --run | 1（eslint=0，depcruise=1；仅指定game113基线） |
+| tsc | 0 |
+| vitest 全量 | 1（仅对应围栏1例） |
+| build | 0 |
+| docs-ref / context-budget | 0 / 0 |
+| art-ledger-guard | 2（既有WARN允许档） |
+| spritegen 原生 node:test | 0（5项，同前轮runner适配） |
+| 定向 / 真实浏览器 | 0 / 0（120项 / 场景与UI夹具） |
+
+正式末行 `❌ 门禁失败于 depcruise（退出码 1）`；其余步骤补跑末行 `除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）`。日志 `/private/tmp/aiflow-c345-{scoped,complete,targeted,browser}.log`。没有新增基线豁免或改生产门禁，C3–C5 无实现遗留，待Claude独立复查。

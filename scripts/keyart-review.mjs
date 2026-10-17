@@ -45,7 +45,7 @@ export async function keyartReview(root,slug,scene,{mock=false,mode,capture=capt
  if(mock){console.warn('[keyart-review] downgrade: --mock，仅生成隔离证据，不落真实 R1 门工件');evidence={shots:config.presets.flatMap(p=>(p.frames??[p.frame]).map(frame=>({preset:p.id,frame,buffer:mockImage(`${slug}/${scene}/${p.id}/${frame}`,32).buffer,reference:p.reference??`keyart/${scene}.png`,boxes:[]}))),referenceBoxes:[],referenceImage:mockImage('reference-ui:'+scene,32).buffer};}
  else evidence=await capture(root,slug,scene,config,{measurePage});
  const base=mock?'self-check/mock':'self-check';
- const shotDir=inside(dir,`${base}/shots/${scene}`),pending=[];
+ const shotDir=inside(dir,`${base}/r1/${scene}`),pending=[];
  const metrics={version:1,mode:config.mode,mock,advisoryOnly:true,shots:[]};
  for(const shot of evidence.shots){const reference=config.mode==='ui'?evidence.referenceImage:references.get(shot.reference);if(!reference)throw new Error('截图缺对应参考图');const prefix=`${shot.preset}-${String(shot.frame).padStart(4,'0')}`;
   pending.push({path:join(shotDir,prefix+'.png'),buffer:shot.buffer},{path:join(shotDir,prefix+'-compare.png'),buffer:sideBySide(reference,shot.buffer)});
@@ -55,7 +55,7 @@ export async function keyartReview(root,slug,scene,{mock=false,mode,capture=capt
  for(const output of pending){mkdirSync(dirname(output.path),{recursive:true});writeFileSync(output.path,output.buffer);}
  mkdirSync(shotDir,{recursive:true});writeFileSync(join(shotDir,'metrics.json'),JSON.stringify(metrics,null,2)+'\n');
  const reviewFile=inside(dir,`${base}/R1-keyart-review.md`),marker=`<!-- scene:${scene} -->`;
- const section=[marker,`## ${scene} · ${config.mode} · 待独立盲审`,'','施工主体：待填写；复查人：待填写（两者必须不同）。','先只读参考图与截图/动作帧，记录第一轮差异；之后才用客观指标定位。指标只作参考，不是通过阈值。','',...metrics.shots.map(s=>`- ${s.preset} / frame ${s.frame}：参考 \`${s.reference}\`；截图 [${s.screenshot}](shots/${scene}/${s.screenshot})；[并排图](shots/${scene}/${s.comparison})（左参考，右截图）`),'','| 项 | 差异位置与证据 | 需要修改/补帧 |','|---|---|---|',...['构图/层次','色调','光源','比例','动作（穿模/滑步/抖动/接触）',...(config.mode==='ui'?['UI 逐件位置/尺寸/颜色']:[])].map(k=>`| ${k} | 待复查人填写 | 待填写 |`),'','独立结论：待复查人填写。',''];
+ const section=[marker,`## ${scene} · ${config.mode} · 待独立盲审`,'','施工主体：待填写；复查人：待填写（两者必须不同）。','先只读参考图与截图/动作帧，记录第一轮差异；之后才用客观指标定位。指标只作参考，不是通过阈值。','',...metrics.shots.map(s=>`- ${s.preset} / frame ${s.frame}：参考 \`${s.reference}\`；截图 [${s.screenshot}](r1/${scene}/${s.screenshot})；[并排图](r1/${scene}/${s.comparison})（左参考，右截图）`),'','| 项 | 差异位置与证据 | 需要修改/补帧 |','|---|---|---|',...['构图/层次','色调','光源','比例','动作（穿模/滑步/抖动/接触）',...(config.mode==='ui'?['UI 逐件位置/尺寸/颜色']:[])].map(k=>`| ${k} | 待复查人填写 | 待填写 |`),'','独立结论：待复查人填写。',''];
  if(!existsSync(reviewFile)){mkdirSync(dirname(reviewFile),{recursive:true});writeFileSync(reviewFile,['# R1 关键图复查（待独立审查）','',...section].join('\n'));}
  else if(!readFileSync(reviewFile,'utf8').includes(marker)){writeFileSync(reviewFile,readFileSync(reviewFile,'utf8')+'\n'+section.join('\n'));console.info('[keyart-review] transition: 追加新场景骨架，保留已有结论');}
  else console.info('[keyart-review] skip: 已有复查章节，不覆盖复查人文字');

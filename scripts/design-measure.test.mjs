@@ -30,6 +30,7 @@ function dom({ scaleX = 0.5, scaleY = scaleX, matches = 1, stageMatches = 1, tin
   };
   return { document: { querySelectorAll: selector => selector === '#stage' ? Array.from({ length: stageMatches }, () => stage) : [stage, item] }, getComputedStyle: () => style, console };
 }
+function game108Config(root) { return config(root, JSON.parse(readFileSync(new URL('../docs/design/game108/design-measure.json', import.meta.url), 'utf8')), 'game108'); }
 function measure(opts = {}, fixture = {}) { return runInNewContext(`(${measureDocument.toString()})(${JSON.stringify(opts)})`, dom(fixture)); }
 afterEach(() => { vi.restoreAllMocks(); for (const dir of temporary.splice(0)) rmSync(dir, { recursive: true, force: true }); });
 
@@ -73,14 +74,31 @@ describe('common browser ruler', () => {
 });
 
 describe('configuration and legacy protocol', () => {
-  it('retains game108 source, output, five tab labels and screenshot identifiers', () => {
-    const root = temp(), c = loadDesignMeasureConfig('game108', { root });
+  it('C5 committed game108 configuration retains source, output and five tab labels', () => {
+    const root = temp(); game108Config(root);
+    const c = loadDesignMeasureConfig('game108', { root });
     expect(c.source).toBe(join(root, 'games/game108/design_handoff_rule_of_three_battle'));
     expect(c.entry).toBe('design/battle-screen.dc.html');
     expect(c.out).toBe(join(root, 'docs/design/game108/design-ref'));
     expect(c.canvas).toEqual({ width: 1920, height: 1080 });
     expect(c.states).toEqual([{ id: 'T1', label: 'T1 蓄力' }, { id: 'T2', label: 'T2 出招' }, { id: 'T3', label: 'T3 对决' }, { id: 'T4', label: 'T4 结算' }, { id: '终局', label: '终局' }]);
     expect(c.items).toBeUndefined();
+    expect(c.skipMissingStates).toBe(true);
+  });
+  it('C5 an unconfigured game108 follows the same generic defaults as every other slug', () => {
+    const root = temp(), c = loadDesignMeasureConfig('game108', { root });
+    expect(c.source).toBe(join(root, 'docs/design/game108/ui-refs'));
+    expect(c.entry).toBe('index.html');
+    expect(c.states).toEqual([{ id: 'default' }]);
+    expect(c.skipMissingStates).toBe(false);
+  });
+  it('C5 five-state configuration is reusable by a different slug without any source branch', () => {
+    const root = temp();
+    const data = JSON.parse(readFileSync(new URL('../docs/design/game108/design-measure.json', import.meta.url), 'utf8'));
+    config(root, data, 'another-game');
+    expect(loadDesignMeasureConfig('another-game', { root }).states).toEqual([
+      { id: 'T1', label: 'T1 蓄力' }, { id: 'T2', label: 'T2 出招' }, { id: 'T3', label: 'T3 对决' }, { id: 'T4', label: 'T4 结算' }, { id: '终局', label: '终局' },
+    ]);
   });
   it('defaults a new slug to its ui-refs directory and accepts explicit shared-ruler settings', () => {
     const root = temp();
@@ -94,6 +112,7 @@ describe('configuration and legacy protocol', () => {
     [{ canvas: { width: 0, height: 10 } }, 'canvas'], [{ states: [] }, 'states'],
     [{ states: [{ id: '../bad' }] }, 'states'], [{ states: [{ id: 'a' }, { id: 'a' }] }, 'states'],
     [{ states: [{ id: 'a', label: 'same' }, { id: 'b', label: 'same' }] }, 'label'],
+    [{ skipMissingStates: 'yes' }, 'skipMissingStates'],
     [{ items: [] }, 'items'], [{ items: [{ id: 'a', selector: '' }] }, 'items'],
     [{ items: [{ id: 'a', selector: '#a' }, { id: 'a', selector: '#b' }] }, 'items'],
   ])('rejects invalid config %j', (value, message) => {
@@ -118,7 +137,7 @@ describe('configuration and legacy protocol', () => {
     expect(existsSync(join(r.out, 'dc-menu.png'))).toBe(false);
   });
   it('original game108 command remains an executable wrapper and mock preserves its states', () => {
-    const root = temp();
+    const root = temp(); game108Config(root);
     const result = spawnSync(process.execPath, [resolve('scripts/game108-design-measure.mjs'), '--root', root, '--mock'], { encoding: 'utf8' });
     expect(result.status, result.stderr).toBe(0);
     const data = JSON.parse(readFileSync(join(root, 'docs/design/game108/design-ref/mock/measure.json'), 'utf8'));
@@ -152,8 +171,9 @@ describe('read-only local source serving', () => {
 });
 
 describe('render driver protocol (mocked browser and listener)', () => {
-  it('game108 executes five exact labels and retains JSON shape and screenshot names', async () => {
+  it('C5 configured game108 executes five exact labels and installs the shared resource map', async () => {
     const root = temp(), source = join(root, 'games/game108/design_handoff_rule_of_three_battle/design');
+    game108Config(root);
     mkdirSync(source, { recursive: true });
     writeFileSync(join(source, 'battle-screen.dc.html'), '<div>fixture</div>');
     const clicked = [], shots = [], labels = ['T1 蓄力', 'T2 出招', 'T3 对决', 'T4 结算', '终局'];
@@ -174,6 +194,14 @@ describe('render driver protocol (mocked browser and listener)', () => {
     expect(measured['T1 蓄力'][0]).toMatchObject({ x: 200, y: 120, w: 300, h: 80 });
     expect(measured['T1 蓄力'][0]).not.toHaveProperty('id');
     expect(driver.close).toHaveBeenCalledTimes(1);
+    const [install, resources] = page.addInitScript.mock.calls[0];
+    const window = {};
+    runInNewContext(`(${install.toString()})(${JSON.stringify(resources)})`, { window });
+    expect(window.__resources).toEqual({
+      'https://unpkg.com/react@18.3.1/umd/react.production.min.js': 'http://127.0.0.1:12345/__vendor/react.js',
+      'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js': 'http://127.0.0.1:12345/__vendor/react-dom.js',
+      'https://unpkg.com/@babel/standalone@7.29.0/babel.min.js': 'http://127.0.0.1:12345/__vendor/babel.js',
+    });
   });
   it('closes the browser on missing configured tabs and does not write a false measurement', async () => {
     const root = temp();
@@ -185,5 +213,21 @@ describe('render driver protocol (mocked browser and listener)', () => {
     await expect(runDesignMeasure('demo', { root, env: { RENDER_PROBE_CHROMIUM: process.execPath } })).rejects.toThrow('页签 Missing 命中 0 件');
     expect(driver.close).toHaveBeenCalledTimes(1);
     expect(existsSync(join(root, 'docs/design/demo/design-ref/measure.json'))).toBe(false);
+  });
+});
+
+describe('C5 data-driven missing-state compatibility', () => {
+  it('C5 skipMissingStates preserves configured legacy tab skip behavior without a game branch', async () => {
+    const root = temp(); config(root, { states: [{ id: 'absent', label: 'Absent' }], skipMissingStates: true });
+    mkdirSync(join(root, 'docs/design/demo/ui-refs'));
+    writeFileSync(join(root, 'docs/design/demo/ui-refs/index.html'), 'fixture');
+    driver.newPage = vi.fn(async () => ({ addInitScript() {}, on() {}, goto() {}, waitForTimeout() {}, $$: async () => [] }));
+    driver.close = vi.fn();
+    const log = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const result = await runDesignMeasure('demo', { root, env: { RENDER_PROBE_CHROMIUM: process.execPath } });
+    expect(JSON.parse(readFileSync(join(result.out, 'measure.json'), 'utf8'))).toEqual({});
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('找不到页签 Absent，跳过'));
+    expect(driver.close).toHaveBeenCalledTimes(1);
   });
 });

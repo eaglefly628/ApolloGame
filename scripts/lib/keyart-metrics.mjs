@@ -36,13 +36,20 @@ export function sideBySide(reference,actual) {
   }
   return encodePngRGBA(w,h,rgba);
 }
-function rgb(value){const m=typeof value==='string'&&value.match(/^rgba?\(\s*([\d.]+)[, ]+([\d.]+)[, ]+([\d.]+)/);if(m)return m.slice(1).map(Number);const h=typeof value==='string'&&value.match(/^#([0-9a-f]{6})$/i);return h?[0,2,4].map(i=>parseInt(h[1].slice(i,i+2),16)):null;}
+function rgb(value){
+ if(typeof value!=='string')return null;
+ const m=value.match(/^rgba?\(\s*([\d.]+)[, ]+([\d.]+)[, ]+([\d.]+)(?:\s*[,/]\s*([\d.]+%?))?\s*\)$/i);
+ if(m){const alpha=m[4]===undefined?1:parseFloat(m[4])/(m[4].endsWith('%')?100:1);if(alpha!==1)return null;return m.slice(1,4).map(Number);}
+ const h=value.match(/^#([0-9a-f]{6})([0-9a-f]{2})?$/i);
+ if(h&&(!h[2]||h[2].toLowerCase()==='ff'))return[0,2,4].map(i=>parseInt(h[1].slice(i,i+2),16));
+ return null;
+}
 export function uiDifferences(reference,actual) {
   const map=rows=>{const out=new Map();for(const r of rows){if(!r.id||out.has(r.id))throw new Error('UI 量稿需要唯一 id');out.set(r.id,r);}return out;};
   const refs=map(reference),shots=map(actual);
   return [...new Set([...refs.keys(),...shots.keys()])].sort().map(id=>{
     const a=refs.get(id),b=shots.get(id);if(!a||!b)return{id,missing:!a?'reference':'actual'};
-    const colors={};for(const field of ['bg','color']){const x=rgb(a[field]),y=rgb(b[field]);colors[field]={reference:a[field],actual:b[field],deltaRgb:x&&y?x.map((v,i)=>round(y[i]-v)):null};if(!x||!y)console.info(`[keyart-review] skip: ${id}.${field} 无纯色可比，保留原始值`);}
+    const colors={};for(const field of ['bg','color']){const x=rgb(a[field]),y=rgb(b[field]);colors[field]={reference:a[field],actual:b[field],comparable:!!(x&&y),reason:x&&y?null:'不可比（透明或非纯色）',deltaRgb:x&&y?x.map((v,i)=>round(y[i]-v)):null};if(!x||!y)console.info(`[keyart-review] skip: ${id}.${field} 不可比（透明或非纯色），保留原始值`);}
     return{id,position:{dx:round(b.x-a.x),dy:round(b.y-a.y)},size:{dw:round(b.w-a.w),dh:round(b.h-a.h)},...colors};
   });
 }

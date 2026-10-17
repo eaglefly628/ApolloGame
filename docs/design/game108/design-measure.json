@@ -1,0 +1,13 @@
+{
+  "source": "games/game108/design_handoff_rule_of_three_battle",
+  "entry": "design/battle-screen.dc.html",
+  "canvas": { "width": 1920, "height": 1080 },
+  "skipMissingStates": true,
+  "states": [
+    { "id": "T1", "label": "T1 蓄力" },
+    { "id": "T2", "label": "T2 出招" },
+    { "id": "T3", "label": "T3 对决" },
+    { "id": "T4", "label": "T4 结算" },
+    { "id": "终局", "label": "终局" }
+  ]
+}

@@ -6,9 +6,9 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http';
 import { detectBrowserRuntime } from './lib/render-harness.mjs';
 import { inside, slugName } from './lib/aiflow-paths.mjs';
+import { installDesignResources } from './lib/design-resources.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const LEGACY_STATES = ['T1 蓄力', 'T2 出招', 'T3 对决', 'T4 结算', '终局'].map(label => ({ id: label.split(' ')[0], label }));
 
 /** Self-contained: serializable by Playwright and runnable with a DOM fixture in a VM. */
 export function measureDocument(opts = {}) {
@@ -67,17 +67,17 @@ export function loadDesignMeasureConfig(slug, options = {}) {
   slugName(slug);
   const root = resolve(options.root ?? ROOT), designDir = inside(root, `docs/design/${slug}`);
   const configPath = inside(designDir, 'design-measure.json');
-  const legacy = slug === 'game108' && !existsSync(configPath);
   const raw = existsSync(configPath) ? JSON.parse(readFileSync(configPath, 'utf8')) : {};
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('design-measure.json 必须为对象');
-  const source = inside(root, raw.source ?? (legacy ? 'games/game108/design_handoff_rule_of_three_battle' : `docs/design/${slug}/ui-refs`));
-  const entry = raw.entry ?? (legacy ? 'design/battle-screen.dc.html' : 'index.html');
+  const source = inside(root, raw.source ?? `docs/design/${slug}/ui-refs`);
+  const entry = raw.entry ?? 'index.html';
   const entryPath = inside(source, entry);
   if (!/\.html?$/i.test(entry)) throw new Error('entry 必须为 HTML 路径');
   const canvas = raw.canvas ?? { width: 1920, height: 1080 };
   if (!canvas || !Number.isInteger(canvas.width) || !Number.isInteger(canvas.height) || canvas.width <= 0 || canvas.height <= 0 || (canvas.selector !== undefined && (typeof canvas.selector !== 'string' || !canvas.selector.trim()))) throw new Error('canvas 需要正整数 width/height 和有效 selector');
-  const states = raw.states ?? (legacy ? LEGACY_STATES : [{ id: 'default' }]);
+  const states = raw.states ?? [{ id: 'default' }];
   if (!Array.isArray(states) || !states.length) throw new Error('states 必须为非空数组');
+  if (raw.skipMissingStates !== undefined && typeof raw.skipMissingStates !== 'boolean') throw new Error('skipMissingStates 必须为布尔值');
   const ids = new Set(), labels = new Set();
   for (const state of states) {
     if (!state || typeof state.id !== 'string' || !/^[\p{L}\p{N}_-]+$/u.test(state.id) || ids.has(state.id)) throw new Error('states 需要唯一且安全的 id');
@@ -94,7 +94,7 @@ export function loadDesignMeasureConfig(slug, options = {}) {
       itemIds.add(item.id);
     }
   }
-  return { root, source, entry, entryPath, legacy, canvas, states, items: raw.items, out: inside(designDir, options.mock ? 'design-ref/mock' : 'design-ref') };
+  return { root, source, entry, entryPath, skipMissingStates: raw.skipMissingStates ?? false, canvas, states, items: raw.items, out: inside(designDir, options.mock ? 'design-ref/mock' : 'design-ref') };
 }
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json', '.woff2': 'font/woff2' };
@@ -139,13 +139,7 @@ export async function runDesignMeasure(slug, options = {}) {
   try {
     browser = await chromium.launch({ executablePath: runtime.execPath });
     const page = await browser.newPage({ viewport: { width: config.canvas.width + 40, height: config.canvas.height + 320 }, deviceScaleFactor: 1 });
-    await page.addInitScript(base => {
-      window.__resources = {
-        'https://unpkg.com/react@18.3.1/umd/react.production.min.js': base + '/react.js',
-        'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js': base + '/react-dom.js',
-        'https://unpkg.com/@babel/standalone@7.29.0/babel.min.js': base + '/babel.js',
-      };
-    }, `http://127.0.0.1:${port}/__vendor`);
+    await installDesignResources(page, `http://127.0.0.1:${port}`);
     page.on('requestfailed', request => { if (request.url().includes('fonts.g')) fontErrors.push(request.url()); });
     await page.goto(`http://127.0.0.1:${port}/${config.entry.split('/').map(encodeURIComponent).join('/')}`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(1200);
@@ -155,7 +149,7 @@ export async function runDesignMeasure(slug, options = {}) {
         const matches = [];
         for (const button of await page.$$('button')) if ((await button.textContent()).trim() === state.label) matches.push(button);
         if (matches.length !== 1) {
-          if (config.legacy && !matches.length) { console.warn(`[design-measure] 找不到页签 ${state.label}，跳过`); continue; }
+          if (config.skipMissingStates && !matches.length) { console.warn(`[design-measure] 找不到页签 ${state.label}，跳过`); continue; }
           throw new Error(`页签 ${state.label} 命中 ${matches.length} 件，需要 1 件`);
         }
         await matches[0].click();

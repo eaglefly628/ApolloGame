@@ -95,6 +95,7 @@ describe('AI flow production stages and artifact gates', () => {
     split(root, [row({ prompt: 'changed input' })]);
     expect(aiFlowHash(root, 'demo', 'D1')).not.toBe(h.D1);
     reviewDoc(root, '# Changed reference evidence');
+    put(root, 'docs/design/demo/self-check/r1/yard/metrics.json', '{"changed":true}');
     expect(aiFlowHash(root, 'demo', 'R1')).not.toBe(h.R1);
   });
   it('does not follow escaped symlink artifacts into another workspace', () => {
@@ -246,6 +247,7 @@ describe('K2/D1 signature freshness and independent R1 review CLI', () => {
     expect(stage(root, 'R1').human.state).toBe('ok');
     expect(stage(root, 'R1').status).toBe('ok');
     reviewDoc(root, '# Updated R1 evidence\n');
+    put(root, 'docs/design/demo/self-check/r1/yard/metrics.json', '{"changed":true}');
     expect(stage(root, 'R1').review.state).toBe('stale');
     expect(stage(root, 'R1').status).not.toBe('ok');
   });

@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { createDesignRequestHandler } from '../design-measure.mjs';
 import { detectBrowserRuntime } from './render-harness.mjs';
 import { inside } from './aiflow-paths.mjs';
+import { installDesignResources } from './design-resources.mjs';
 async function bounded(promise,label){let timer;try{return await Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+' 超时（30s）')),30000);})]);}finally{clearTimeout(timer);}}
 const EPOCH=Date.UTC(2026,0,1);
 // Applied only by the capture server, only around render sync, only to Camera3D fields.
@@ -29,7 +30,7 @@ Engine.prototype.attachRenderer = function(renderer, container) {
 }
 async function prepare(page,url,preset,config){
   await page.clock.install({time:EPOCH});await page.clock.pauseAt(EPOCH);
-  await page.addInitScript(base=>{window.__resources={'https://unpkg.com/react@18.3.1/umd/react.production.min.js':base+'/react.js','https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js':base+'/react-dom.js','https://unpkg.com/@babel/standalone@7.29.0/babel.min.js':base+'/babel.js'};},new URL(url).origin+'/__vendor');
+  await installDesignResources(page,new URL(url).origin);
   await page.addInitScript(({camera})=>{window.__aiflowCapture={camera};let seed=123456789;Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};},{camera:preset.camera??null});
   await page.route('**/*',route=>{const u=route.request().url();if(u.startsWith(new URL(url).origin+'/')||u.startsWith('data:')||u.startsWith('blob:'))return route.continue();console.warn('[keyart-review] skip: 外部网络请求已阻止 '+new URL(u).hostname);return route.abort();});
   await page.goto(url,{waitUntil:'load',timeout:30000});

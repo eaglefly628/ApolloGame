@@ -48,12 +48,11 @@ export function aiFlowArtifacts(root,slug,stage){
 }
 export function aiFlowHash(root,slug,stage){
  slugName(slug);const dir=join(root,'docs/design',slug),files=[];
- if(stage==='K2'||stage==='R1'){files.push(...keyartFiles(root,slug));const readme=inside(dir,'keyart/README.md');if(existsSync(readme))files.push(readme);}
- if(stage==='D1'||stage==='R1'){const split=inside(dir,'asset-split.json');if(existsSync(split))files.push(split);}
+ if(stage==='K2'){files.push(...keyartFiles(root,slug));const readme=inside(dir,'keyart/README.md');if(existsSync(readme))files.push(readme);}
+ if(stage==='D1'){const split=inside(dir,'asset-split.json');if(existsSync(split))files.push(split);}
  if(stage==='R1'){
-  const report=inside(dir,'self-check/R1-keyart-review.md');if(existsSync(report))files.push(report);
   const walk=path=>{if(!existsSync(path))return;for(const name of readdirSync(path).sort()){const f=inside(path,name);if(statSync(f).isDirectory())walk(f);else files.push(f);}};
-  walk(inside(dir,'self-check/shots'));
+  walk(inside(dir,'self-check/r1'));
  }
  const hash=createHash('sha256');hash.update(stage+'\0');for(const f of [...new Set(files)].sort()){hash.update(relative(root,f)+'\0');hash.update(readFileSync(f));hash.update('\0');}return hash.digest('hex').slice(0,16);
 }
