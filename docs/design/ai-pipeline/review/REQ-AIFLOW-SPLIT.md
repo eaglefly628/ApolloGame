@@ -186,3 +186,36 @@
 正式末行 `❌ 门禁失败于 depcruise（退出码 1）`；补跑末行 `除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）`。日志 `/private/tmp/aiflow-c8-final-{scoped,complete,art-smoke,backup-smoke}.log`。浏览器/本地端口测试在具备相应权限的环境重跑；沙箱端口拒绝未计作通过。
 
 已知局限：不替人裁决历史重复行中的资产取舍；保留游戏原行当前资产，另一资产记录到 history。未改真实游戏台账、未签人门。REFGEN/REVIEW/GATES已结案内容及B1–B3未动。
+
+
+## 正式复查（独立复查代理·2026-10-18）· C8 **PASS**
+
+受审施工提交：`6f39cb87fa0af6cee023614c7ca59bca4b081e91`。复查方未参与施工；在独立 clone `/private/tmp/apollo-c8-independent-20261018` fetch 并检出该提交，四个受审脚本与提交逐字节一致，未修改施工目录或原用户工作区。本判词仅结案 SPLIT 工具链，不签任何真实游戏生产人门。
+
+### 四律独立证据
+
+| 铁律 | 复查方实跑内容 | 结果 |
+|---|---|---|
+| ① 独立复跑 | 两个主测试文件105项，加 C2 路径回归3项；确切提交另跑独立对抗6项；完整门禁另起进程执行 | 定向108/108、对抗6/6；全量仅指定基线1例红 |
+| ② 撤修验红 | 三个另选唯一锚点：原字段快照去掉 prompt；freshRows 绕过 coalesce；asset-split 不输出 maxNo 水位 | 每次先断言锚点命中1次，各有1条断言红；finally 恢复并校验 SHA，恢复后108/108及6/6 |
+| ③ 实证复现 | 多个不同名实体共用 skinKey；旧双来源行迁移后 JSON 落盘再新增素材；缺字段/null/空串恢复；refs 更新不残留；逆序旧数据迁移；异 key 保护及纯拆层撤回 | 首轮曾独立打回“fresh 同键重复发号”“迁移后重用旧号”两项，修复后原脚本全部转绿；聚合 slots 保全所有消费者，空 rows 的历史水位仍生效 |
+| ④ 读告警与逐行接缝 | 检查 overlay 快照/摘除、fresh 与 prev 归一、slot 聚合、旧资产 history、两条推导的持久水位；读全量 stderr、构建及台账守卫输出 | 拒收/mock/skip/归并日志均对应测试分支；无新增阻塞。构建块大小警告为现有提示；台账死账仍为 game-a art-03、game-c art-017 |
+
+C8 写死条款均核实：同 skinKey 的拆层附加信息并入原行，保编号/状态/资产；art-replace 重推导保 splitIds、refs、prompt 及原字段快照；撤回只摘附加字段、恢复原 refs/prompt，原本缺失的字段仍删除。不同 key 的非拆层行不动，纯拆层行仍按原规则撤回退役。连续重跑幂等，旧同键双行归并后编号最高水位跨工具、跨落盘保留。
+
+### 独立完整门禁
+
+正式 `scoped-gate --base 6f39cb87f^ --run`：eslint exit0，depcruise exit1，唯一违规为 `games/game113/guide-art.ts → src/assets/asset-index.ts`。按原计划逐步补跑，没有降低生产断言或修改门禁。
+
+| 步 | 复查方结果 |
+|---|---|
+| art-smoke / art-backup-smoke | exit0 / exit0，47 / 27项 |
+| tsc / build | exit0 / exit0 |
+| vitest 全量 | exit1，5828/5829通过、0 pending、0 todo；唯一失败是 `scripts/depcruise-fence.test.mjs` 对应同一指定基线 |
+| spritegen 原生 node:test | exit0，5/5；该文件依其原生 runner 单独执行，Vitest 仅排除此文件 |
+| docs-ref / context-budget | exit0 / exit0 |
+| art-ledger-guard | exit2，既有 WARN 允许档，无新增棘轮违规 |
+
+**除基线 depcruise 外全绿**。正式末行 `❌ 门禁失败于 depcruise（退出码 1）`；独立补跑末行 `除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）`。浏览器指向本机 Chrome，本地端口测试在获准环境实跑；无真实生成 API 调用、无真实 LLM 会话、无人门代签。
+
+证据：`/private/tmp/aiflow-c8-independent-final-{scoped,complete,art-smoke,backup-smoke}.log`，分步日志和全量 JSON 同前缀；独立对抗脚本 `/private/tmp/c8-independent-adversarial.mjs`、确切提交结果 `/private/tmp/c8-independent-adversarial-6f39cb87f.log`；撤修 `/private/tmp/c8-independent-red-snapshot.log`、`/private/tmp/c8-independent-red-v2-{fresh-dedupe,watermark}.log`；稳定恢复定向 `/private/tmp/c8-independent-restored-v2.log`。
