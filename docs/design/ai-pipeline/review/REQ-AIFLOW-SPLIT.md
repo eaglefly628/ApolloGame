@@ -138,3 +138,51 @@
 **阻塞 C8 · 同一 skinKey 出现两行**：拆层行与游戏推导脚本（如 `scripts/game112-art-requirements.mjs` 同类）的行用**同一个 skinKey** 时，现在各自保留一行。实测 `art-01 g/lamp [split] | art-02 g/lamp`。编译期游戏的拆层 skinKey 本来就取自 capability-plan 的皮肤槽，与推导脚本是同一批槽位——**这是常态而非边角**：同一槽位两行，各出各的图，写回按 skinKey 别名登记时互相覆盖；也违反「一行 = 一种素材」的台账律。
 → 修法：同 skinKey 已有非拆层行时，拆层**并入该行**（写入 `splitIds`、`refs`、`prompt`），不另起一行；`art-replace` 重推导时保留这三个字段（`prompt` 已有先例）。撤回批准时只摘掉并入的字段，不作废原行。补「同 skinKey 并入」「重推导保留拆层字段」「撤回只摘字段」三条测试。
 （复查方备注：上轮 C1 的验收条件只写了不同 skinKey 的情形，这条缺口有复查方 spec 不周的成分。）
+
+
+## 返工记录（Codex · 2026-10-18；C8，待独立复查）
+
+返工锁 `ce22843d6` 已先独立推送。按 owner 本轮授权持续推进，后续改由独立复查代理核证；施工方不填写 PASS。改动仅为 `scripts/asset-split.mjs`、`scripts/art-replace.mjs`、两者测试、本单及 requests.md 本单状态。
+
+### 做了什么 / 怎么自己验
+
+同 skinKey 表示一种素材：拆层并入游戏原行，保留编号、状态、生成资产及历史；追加 splitIds、refs、prompt，以 splitBase 保存原有 refs/prompt（包含“字段原本不存在”的区别）。art-replace 重推导刷新消费槽及规格，保留拆层附加字段。撤回批准只去掉附加字段、还原原字段；没有游戏来源的纯拆层行仍按原规则退役。历史同键双行会合并；不同生成资产保存在合并历史中供追溯，不覆盖现用资产。多个实体共用一个 skinKey 时合并全部 slots，保留一行。迁移摘除旧重复编号后，根级 maxNo 水位跨落盘保留，后续编号不复用。
+
+运行 `npx vitest run scripts/asset-split.test.mjs scripts/art-replace.test.mjs`，105项 exit0。三条核心测试：
+
+- `C8 same skinKey merges into one existing game row while preserving its asset and numbering`：原行 art-19 保号、保资产、只剩一行，refs 去重且原提示词快照在档。
+- `C8 re-derive retains splitIds refs prompt and splitBase while refreshing game-derived fields`：游戏重推导更新槽位和尺寸，拆层三个字段及快照仍在。
+- `C8 withdrawal only removes attachment fields and restores original refs and prompt without retiring the game row`：撤回后原行状态/资产不变，原 refs/prompt 恢复。
+
+另测缺省字段摘除、拆层先出现、历史重复迁移、CLI 双向连续推导幂等、多实体同键保全消费槽，以及跨工具 JSON 落盘后新号 art-21。独立复查期间另发现“多个 fresh 消费行重复发号”“迁移后落盘丢最高编号”两处阻塞，均已修复并补永久回归测试；复查判词由复查方另记。
+
+### 撤修验红（三条逐项）
+
+在隔离副本从最终源码撤修；每次都断言锚点恰好命中1次，执行具名测试，并 finally 恢复原字节/SHA；施工工作区不受撤修影响。
+
+| 条目 | 唯一锚点及撤修方式 | 红灯输出 |
+|---|---|---|
+| 同键并入 | `if (f && (!isSplitRow(p) || Object.hasOwn(p, 'splitBase'))) {` → `if (false) {` | exit1，AssertionError：expected length 1 but got 2 |
+| 重推导保留 | `rows.push(isSplitRow(p) ? attachSplitFields(merged, p, p.splitBase ?? splitBaseFields(f)) : merged);` → `rows.push(merged);` | exit1，AssertionError：splitIds / refs / splitBase 缺失 |
+| 撤回只摘字段 | `merged.push(stripSplitFields(p));` → `merged.push({ ...p, status: 'retired' });` | exit1，AssertionError：原行与预期不符（误退役且拆层字段未摘） |
+
+日志 `/private/tmp/aiflow-c8-final-{merge,retain,withdraw}-red.log`，三次均 `ANCHOR_COUNT=1 exit=1 AssertionError`。独立复查方另选锚点验红，不以本记录替代复查。
+
+### 最终门禁（稳定源码）
+
+全量5828/5829通过，唯一失败是指定game113围栏基线。**除基线 depcruise 外全绿**。
+
+| 步 | 退出码 |
+|---|---:|
+| scoped-gate --run | 1（eslint=0，depcruise=1；仅game113相对导入基线） |
+| art-smoke / art-backup-smoke | 0 / 0（47 / 27项） |
+| tsc | 0 |
+| vitest 全量 | 1（仅对应围栏1例；无跳过测试） |
+| build | 0 |
+| docs-ref / context-budget | 0 / 0 |
+| art-ledger-guard | 2（既有WARN允许档：game-a art03、game-c art017缺servedPath） |
+| spritegen 原生 node:test | 0（5项；原生runner适配，未降低断言） |
+
+正式末行 `❌ 门禁失败于 depcruise（退出码 1）`；补跑末行 `除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）`。日志 `/private/tmp/aiflow-c8-final-{scoped,complete,art-smoke,backup-smoke}.log`。浏览器/本地端口测试在具备相应权限的环境重跑；沙箱端口拒绝未计作通过。
+
+已知局限：不替人裁决历史重复行中的资产取舍；保留游戏原行当前资产，另一资产记录到 history。未改真实游戏台账、未签人门。REFGEN/REVIEW/GATES已结案内容及B1–B3未动。

@@ -79,7 +79,7 @@
 
 <!-- REQ-PIPELINE-GUARDS（流程板规则加机器牙齿·六项）owner 2026-10-16 令**移除出池**——其中①「人门只收真人签字」并入 REQ-AIFLOW-GATES；其余五项全文查 git 历史（git log -S REQ-PIPELINE-GUARDS） -->
 
-### REQ-AIFLOW-SPLIT · T2 关键图工作区 + 拆层单 `asset-split.json`（标注图 + 推导美术台账）· [2026-10-16] · owner 立 · **施工主体 = Codex（2026-10-17 抢锁·本行即锁）** · 复查 = Claude · status: 返工中（Codex·2026-10-18） · P1 · 类型: 工具链扩写（🟢）
+### REQ-AIFLOW-SPLIT · T2 关键图工作区 + 拆层单 `asset-split.json`（标注图 + 推导美术台账）· [2026-10-16] · owner 立 · **施工主体 = Codex（2026-10-17 抢锁·本行即锁）** · 复查 = Claude · status: 返工已交·待复查（独立复查） · P1 · 类型: 工具链扩写（🟢）
 > 写死 spec：路线图 §1 T2（含 S1 skill）。判词全文：`docs/design/ai-pipeline/review/REQ-AIFLOW-SPLIT.md` 末尾。
 
 ### REQ-AIFLOW-GROUND · R2 3D 角色贴地行走（确定性可行走面高度采样）· [2026-10-16] · owner 判 A · **施工主体：待抢锁** · 复查 = 另派 · status: open · P1 · 类型: 引擎能力下沉（🔴 碰确定性 / 快照 hash·主程口径）

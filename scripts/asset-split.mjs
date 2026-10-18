@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { attachSplitFields, stripSplitFields, coalesceSplitRows } from './art-replace.mjs';
 // T2: one split list -> deterministic numbered PNG annotations + existing art ledger.
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
@@ -57,17 +58,29 @@ export function deriveSplitLedger(rows, slug, previous = null) {
   }
   // Ownership is explicit: a missing splitIds field belongs to another derivation tool.
   // Never use full-ledger merge here: omitted manifest-owned rows are not withdrawals.
-  const previousRows = Array.isArray(previous?.rows) ? previous.rows : [];
+  const originalRows = Array.isArray(previous?.rows) ? previous.rows : [];
+  const previousRows = coalesceSplitRows(originalRows);
   const isSplitRow = row => Object.hasOwn(row, 'splitIds');
-  let maxNo = Math.max(0, ...previousRows.map(r => parseInt(String(r.no).replace(/^art-/, ''), 10) || 0));
+  let maxNo = Math.max(Number.isSafeInteger(previous?.maxNo) && previous.maxNo > 0 ? previous.maxNo : 0, ...originalRows.map(r => parseInt(String(r.no).replace(/^art-/, ''), 10) || 0));
   const matched = new Set(), merged = [];
   for (const p of previousRows) {
+    const f = grouped.get(p.skinKey);
+    if (f && (!isSplitRow(p) || Object.hasOwn(p, 'splitBase'))) {
+      matched.add(p.skinKey);
+      console.info(`[asset-split] transition: ${p.no} 同 skinKey 拆层信息并入原行`);
+      merged.push(attachSplitFields(p, f));
+      continue;
+    }
     if (!isSplitRow(p)) {
       console.info(`[asset-split] skip: ${p.no} 非拆层来源，原样保留`);
       merged.push(p);
       continue;
     }
-    const f = grouped.get(p.skinKey);
+    if (!f && Object.hasOwn(p, 'splitBase')) {
+      console.info(`[asset-split] transition: ${p.no} 撤回拆层信息，保留原行`);
+      merged.push(stripSplitFields(p));
+      continue;
+    }
     if (!f) {
       console.info(`[asset-split] ${p.status === 'retired' ? 'skip' : 'transition'}: ${p.no} 拆层批准已撤回或来源已移除，retired`);
       merged.push(p.status === 'retired' ? p : { ...p, status: 'retired' });
@@ -85,13 +98,12 @@ export function deriveSplitLedger(rows, slug, previous = null) {
   }
   for (const [key, fresh] of grouped) {
     if (matched.has(key)) continue;
-    if (previousRows.some(p => !isSplitRow(p) && p.skinKey === key)) {
-      console.info(`[asset-split] decision: ${key} 已有非拆层来源，追加独立拆层行`);
-    }
     maxNo++;
     merged.push({ ...fresh, no: `art-${String(maxNo).padStart(2, '0')}` });
   }
-  return { version: 1, game: slug, mode: 'requirements', ...previous, count: merged.length, rows: merged };
+  const visibleMax = Math.max(0, ...merged.map(r => parseInt(String(r.no).replace(/^art-/, ''), 10) || 0));
+  const watermark = Object.hasOwn(previous || {}, 'maxNo') || maxNo > visibleMax ? { maxNo } : {};
+  return { version: 1, game: slug, mode: 'requirements', ...previous, ...watermark, count: merged.length, rows: merged };
 }
 export function splitWorkspace(root, slug, { mock = false } = {}) {
   slugName(slug);

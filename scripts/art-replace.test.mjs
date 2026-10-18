@@ -9,7 +9,8 @@ import { spawnSync } from 'node:child_process';
 
 const __dirnameCli = dirname(fileURLToPath(import.meta.url)); // 起子进程验 CLI 分支（见文件末）
 import { deriveLedger, batchGenerate, applyReplacements, dialectPrompt, cacheKey, paletteSnapRgb, deriveRequirements, resetRow, swapSlot, mergeLedger, deriveForGame, sizeForSpec, genSizeForTarget, resizeImageTo, errText, isPngBuffer, sniffImageFmt, backupOrigFile } from './art-replace.mjs';
-import { encodePng } from './ai-gen.mjs';
+import { encodePng, mockImage } from './ai-gen.mjs';
+import { deriveSplitLedger, splitWorkspace } from './asset-split.mjs';
 import { decodePng } from './asset-matte.mjs';
 import { STYLE_PACKS, STYLE_PACK_IDS } from './style-packs.mjs';
 
@@ -493,14 +494,86 @@ describe('C1 split / manifest ledger ownership', () => {
     expect(merged.rows.filter(r => !Object.hasOwn(r, 'splitIds'))).toHaveLength(4);
     expect(JSON.stringify(prev)).toBe(snapshot);
   });
-  it('C1 reverse: same skinKey manifest rows cannot consume or rewrite split-owned rows', () => {
-    const old = splitRow({ no: 'art-09', status: 'generated', gen: { servedPath: 'split.png' }, slot: { entity: 'lamp', component: 'Sprite', field: 'textureKey' } });
-    const manifest = { entities: { lamp: { Sprite: { textureKey: old.skinKey } } } };
-    const merged = mergeLedger({ rows: [old] }, deriveRequirements(manifest, { game: 'g' }), manifest);
-    expect(merged.rows.find(r => r.no === old.no)).toEqual(old);
-    expect(merged.rows).toHaveLength(2);
-    expect(merged.rows.find(r => !Object.hasOwn(r, 'splitIds'))).toMatchObject({ no: 'art-10', skinKey: old.skinKey, status: 'needs-art' });
+  it('C8 re-derive retains splitIds refs prompt and splitBase while refreshing game-derived fields', () => {
+    const old = splitRow({ no: 'art-09', status: 'generated', gen: { servedPath: 'split.png' }, refs: ['manual.png', 'keyart/hall.png'], splitBase: { refs: ['manual.png'], prompt: 'game prompt' }, slot: { entity: 'old', component: 'Sprite', field: 'textureKey' }, spec: { w: 10, h: 12 } });
+    const manifest = { entities: { lamp: { Sprite: { textureKey: old.skinKey }, Shape: { width: 80, height: 96 } } } };
+    const previous = { rows: [old] }, snapshot = JSON.stringify(previous);
+    const fresh = deriveRequirements(manifest, { game: 'g' });
+    const merged = mergeLedger(previous, fresh, manifest);
+    expect(merged.rows).toHaveLength(1);
+    expect(merged.rows[0]).toMatchObject({ no: old.no, status: old.status, gen: old.gen, history: old.history, splitIds: old.splitIds, refs: old.refs, prompt: old.prompt, splitBase: old.splitBase, spec: { w: 80, h: 96 }, slot: { entity: 'lamp', component: 'Sprite', field: 'textureKey' } });
+    expect(mergeLedger(merged, fresh, manifest)).toEqual(merged);
+    expect(JSON.stringify(previous)).toBe(snapshot);
   });
+  it('C8 a split-first row becomes one reversible game-backed row when the same skinKey appears later', () => {
+    const old = splitRow({ no: 'art-09', status: 'generated', gen: { servedPath: 'split.png' }, refs: ['keyart/hall.png'] });
+    const manifest = { entities: { lamp: { Sprite: { textureKey: old.skinKey }, Shape: { width: 80, height: 96 } } } };
+    const previous = { rows: [old] }, snapshot = JSON.stringify(previous);
+    const merged = mergeLedger(previous, deriveRequirements(manifest, { game: 'g' }), manifest);
+    expect(merged.rows).toHaveLength(1);
+    expect(merged.rows[0]).toMatchObject({ no: old.no, status: old.status, gen: old.gen, history: old.history, splitIds: old.splitIds, refs: old.refs, prompt: old.prompt, splitBase: {}, spec: { w: 80, h: 96 } });
+    const withdrawn = deriveSplitLedger([{ id: 'lamp', scene: 'hall', bbox: [0, 0, 8, 8], route: 'generate', skinKey: old.skinKey, prompt: 'lamp', refs: [], state: 'proposed' }], 'g', merged);
+    expect(withdrawn.rows).toHaveLength(1);expect(withdrawn.rows[0]).toMatchObject({ no: old.no, status: 'generated', gen: old.gen, spec: { w: 80, h: 96 } });
+    for (const field of ['splitIds', 'splitBase', 'refs', 'prompt']) expect(Object.hasOwn(withdrawn.rows[0], field)).toBe(false);
+    expect(JSON.stringify(previous)).toBe(snapshot);
+  });
+  it('C8 real splitWorkspace and art-replace CLI keep one slot and restore original game metadata on withdrawal', () => withRoot(async root => {
+    const slug = 'g', manifest = { entities: { lamp: { Sprite: { textureKey: 'g/lamp' }, Shape: { width: 32, height: 32 } } } };
+    const directory = join(root, 'public/games/g'), design = join(root, 'docs/design/g');
+    mkdirSync(join(directory, 'art'), { recursive: true });mkdirSync(join(design, 'keyart'), { recursive: true });
+    writeFileSync(join(directory, 'manifest.json'), JSON.stringify(manifest));writeFileSync(join(design, 'keyart/hall.png'), mockImage('hall', 32).buffer);
+    const original = { ...deriveRequirements(manifest, { game: slug }).rows[0], no: 'art-07', status: 'generated', gen: { servedPath: 'owned.png' }, history: [{ action: 'upload' }], refs: ['manual.png'], prompt: 'manual prompt' };
+    const file = join(directory, 'art/art-ledger.json');writeFileSync(file, JSON.stringify({ version: 1, game: slug, rows: [original] }));
+    const input = { id: 'lamp', scene: 'hall', bbox: [2, 3, 12, 15], route: 'generate', skinKey: 'g/lamp', prompt: 'split prompt', refs: ['keyart/hall.png'], state: 'approved' };
+    writeFileSync(join(design, 'asset-split.json'), JSON.stringify([input]));splitWorkspace(root, slug);
+    const imported = JSON.parse(readFileSync(file, 'utf8'));expect(imported.rows).toHaveLength(1);
+    expect(imported.rows[0]).toMatchObject({ no: original.no, status: original.status, gen: original.gen, history: original.history, splitIds: ['lamp'], refs: ['manual.png', 'keyart/hall.png'], prompt: 'split prompt', splitBase: { refs: ['manual.png'], prompt: 'manual prompt' } });
+    const run = () => spawnSync(process.execPath, [join(__dirnameCli, 'art-replace.mjs'), 'derive', slug], { env: { ...process.env, ART_REPLACE_ROOT: root }, encoding: 'utf8' });
+    const derived = run();expect(derived.status, derived.stderr).toBe(0);expect(JSON.parse(derived.stdout).ledger.rows).toEqual(imported.rows);
+    const saved = readFileSync(file);expect(run().status).toBe(0);expect(readFileSync(file)).toEqual(saved);
+    writeFileSync(join(design, 'asset-split.json'), JSON.stringify([{ ...input, state: 'proposed' }]));splitWorkspace(root, slug);
+    expect(JSON.parse(readFileSync(file, 'utf8')).rows).toEqual([original]);
+  }));
+  it('C8 shared skinKey across multiple game entities yields one row with every consumer slot', () => {
+    const manifest = { entities: {
+      lampLeft: { Sprite: { textureKey: 'g/lamp' }, Shape: { width: 32, height: 32 } },
+      lampRight: { Sprite: { textureKey: 'g/lamp' }, Shape: { width: 32, height: 32 } },
+    } };
+    const input = { id: 'lamp', scene: 'hall', bbox: [0, 0, 8, 8], route: 'generate', skinKey: 'g/lamp', prompt: 'split prompt', refs: ['keyart/hall.png'], state: 'approved' };
+    const attached = deriveSplitLedger([input], 'g', { rows: [{ no: 'art-07', skinKey: 'g/lamp', status: 'generated', gen: { servedPath: 'real.png' } }] });
+    const fresh = deriveRequirements(manifest, { game: 'g' }), freshSnapshot = JSON.stringify(fresh);
+    for (const previous of [null, attached]) {
+      const priorSnapshot = JSON.stringify(previous);
+      const merged = mergeLedger(previous, fresh, manifest);
+      expect(merged.rows).toHaveLength(1);expect(merged.rows[0].skinKey).toBe('g/lamp');
+      expect(merged.rows[0].slots.map(s => ({ entity: s.entity, component: s.component, field: s.field })).sort((a, b) => a.entity.localeCompare(b.entity))).toEqual([
+        { entity: 'lampLeft', component: 'Sprite', field: 'textureKey' },
+        { entity: 'lampRight', component: 'Sprite', field: 'textureKey' },
+      ]);
+      expect(merged.rows[0].slots).toContainEqual(merged.rows[0].slot);
+      expect(new Set(merged.rows.map(r => r.no)).size).toBe(merged.rows.length);
+      if (previous) expect(merged.rows[0]).toMatchObject({ no: 'art-07', status: 'generated', gen: { servedPath: 'real.png' }, splitIds: ['lamp'], refs: ['keyart/hall.png'], prompt: 'split prompt' });
+      expect(mergeLedger(JSON.parse(JSON.stringify(merged)), fresh, manifest)).toEqual(merged);
+      expect(JSON.stringify(previous)).toBe(priorSnapshot);
+    }
+    expect(JSON.stringify(fresh)).toBe(freshSnapshot);
+  });
+  it.each(['split-to-game', 'game-to-split'])('C8 persisted migration reserves removed numbers across tools (%s)', direction => withRoot(async root => {
+    const input = { id: 'lamp', scene: 'hall', bbox: [0, 0, 8, 8], route: 'generate', skinKey: 'g/lamp', prompt: 'split prompt', refs: ['keyart/hall.png'], state: 'approved' };
+    const manifest = { entities: { lamp: { Sprite: { textureKey: 'g/lamp' }, Shape: { width: 32, height: 32 } } } };
+    const base = { ...deriveRequirements(manifest, { game: 'g' }).rows[0], no: 'art-06', status: 'generated', gen: { servedPath: 'real.png' } };
+    const duplicate = { no: 'art-20', skinKey: 'g/lamp', status: 'needs-art', splitIds: ['lamp'], refs: input.refs, prompt: input.prompt };
+    const legacy = { version: 1, game: 'g', rows: [base, duplicate] }, snapshot = JSON.stringify(legacy);
+    const migrated = direction === 'split-to-game' ? deriveSplitLedger([input], 'g', legacy) : mergeLedger(legacy, deriveRequirements(manifest, { game: 'g' }), manifest);
+    expect(migrated.rows).toHaveLength(1);expect(migrated.rows[0].no).toBe('art-06');expect(migrated.maxNo).toBe(20);
+    const file = join(root, 'art-ledger.json');writeFileSync(file, JSON.stringify(migrated));
+    const persisted = JSON.parse(readFileSync(file, 'utf8')), before = JSON.stringify(persisted);
+    const nextManifest = { entities: { ...manifest.entities, wall: { Sprite: { textureKey: 'g/wall' }, Shape: { width: 64, height: 64 } } } };
+    const next = direction === 'split-to-game' ? mergeLedger(persisted, deriveRequirements(nextManifest, { game: 'g' }), nextManifest) : deriveSplitLedger([input, { ...input, id: 'wall', skinKey: 'g/wall' }], 'g', persisted);
+    expect(next.rows.find(r => r.skinKey === 'g/wall').no).toBe('art-21');expect(next.maxNo).toBe(21);
+    expect(new Set(next.rows.map(r => r.no)).size).toBe(next.rows.length);
+    expect(JSON.stringify(persisted)).toBe(before);expect(JSON.stringify(legacy)).toBe(snapshot);
+  }));
   it('C1 reverse CLI derive preserves split rows while updating manifest-owned rows', () => withRoot(async root => {
     const slug = 'g', old = splitRow(), manifest = { entities: { stove: { Sprite: { textureKey: 'art:old stove' } } } };
     const directory = join(root, 'public/games/g'); mkdirSync(join(directory, 'art'), { recursive: true });

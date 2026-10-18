@@ -310,13 +310,57 @@ function slotExists(m, slot) {
   return !!(comp && typeof comp === 'object' && !Array.isArray(comp) && field in comp);
 }
 
+/** Snapshot only fields overlaid by the split tool; absence remains absence on withdrawal. */
+export function splitBaseFields(row) {
+  return Object.fromEntries(['refs', 'prompt'].filter(k => Object.hasOwn(row, k)).map(k => [k, row[k]]));
+}
+export function attachSplitFields(base, split, original = base.splitBase ?? splitBaseFields(base)) {
+  return { ...base, splitBase: original, splitIds: [...split.splitIds],
+    refs: [...new Set([...(Array.isArray(original.refs) ? original.refs : []), ...(split.refs || [])])], prompt: split.prompt };
+}
+export function stripSplitFields(row) {
+  const { splitIds, refs, prompt, splitBase, ...base } = row;
+  return { ...base, ...splitBase };
+}
+/** Repair older dual-producer rows, retaining the game row as the canonical identity. */
+export function coalesceSplitRows(input) {
+  const groups = new Map();
+  input.forEach((row, i) => {
+    const key = typeof row.skinKey === 'string' && row.skinKey ? row.skinKey : Symbol(i);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(row);
+  });
+  return [...groups.values()].flatMap(group => {
+    const splits = group.filter(r => Object.hasOwn(r, 'splitIds'));
+    if (group.length < 2) return group;
+    const base = group.find(r => !Object.hasOwn(r, 'splitIds')) ?? group.find(r => Object.hasOwn(r, 'splitBase')) ?? group[0];
+    let canonical = { ...base };
+    if (splits.length) {
+      const split = { splitIds: [...new Set(splits.flatMap(r => r.splitIds))], refs: [...new Set(splits.flatMap(r => r.refs || []))], prompt: splits.at(-1).prompt };
+      canonical = Object.hasOwn(base, 'splitIds') && !Object.hasOwn(base, 'splitBase')
+        ? { ...base, ...split } : attachSplitFields(base, split);
+    } else if (group.some(r => Array.isArray(r.refs))) {
+      canonical.refs = [...new Set(group.flatMap(r => r.refs || []))];
+    }
+    const slots = [...new Map(group.flatMap(rowSlots).map(slot => [slotKey(slot), slot])).values()];
+    if (slots.length) canonical.slots = slots;
+    const alternatives = group.filter(r => r !== base && r.gen && JSON.stringify(r.gen) !== JSON.stringify(base.gen));
+    if (alternatives.length) canonical = { ...canonical, history: [...(canonical.history || []), ...alternatives.map(r => ({ action: 'split-coalesce', fromNo: r.no, gen: r.gen, provenance: r.provenance ?? null }))] };
+    console.warn(`[art-ledger] transition: ${base.skinKey} ${group.length} 行并入 ${base.no}，保留原行身份与状态`);
+    return [canonical];
+  });
+}
+
 export function mergeLedger(prev, fresh, manifest = null) {
-  if (!prev || !Array.isArray(prev.rows) || prev.rows.length === 0) return fresh;
+  const freshRows = coalesceSplitRows(fresh.rows);
+  fresh = { ...fresh, ...(fresh.count != null ? { count: freshRows.length } : {}), rows: freshRows };
+  if (!prev || !Array.isArray(prev.rows) || (prev.rows.length === 0 && !prev.maxNo)) return fresh;
   const mode = fresh.mode || prev.mode || '';
-  // Split imports own their rows even when the manifest uses the same skinKey.
+  // A skinKey identifies one material, including rows shared with split imports.
   const isSplitRow = row => Object.hasOwn(row, 'splitIds');
-  const prevByKey = new Map(prev.rows.filter(r => !isSplitRow(r)).map((r) => [rowIdentity(r, mode), r]));
-  let maxNo = Math.max(0, ...prev.rows.map((r) => noNum(r.no)));
+  const previousRows = coalesceSplitRows(prev.rows);
+  const prevByKey = new Map(previousRows.map((r) => [rowIdentity(r, mode), r]));
+  let maxNo = Math.max(Number.isSafeInteger(prev.maxNo) && prev.maxNo > 0 ? prev.maxNo : 0, ...prev.rows.map((r) => noNum(r.no)));
   const seen = new Set();
   const rows = [];
   for (const f of fresh.rows) {
@@ -327,13 +371,14 @@ export function mergeLedger(prev, fresh, manifest = null) {
       // 旧数据兼容：REQ-ARTPROMPT（2026-08-16）前的 regen 把编辑文字写进 query（history 留 newQuery）→ 那些行
       // 人改的 query 仍赢；新编辑一律落 row.prompt（下行展开保留），query 恒随最新推导刷新（身份/查询词语义）。
       const edited = Array.isArray(p.history) && p.history.some((h) => h.action === 'regen' && h.newQuery && h.newQuery !== h.prevQuery);
-      rows.push({
+      const merged = {
         ...f, no: p.no, query: edited ? p.query : f.query,
         ...(p.prompt ? { prompt: p.prompt } : {}),
         status: p.status === 'retired' ? f.status : p.status,
         gen: p.gen ?? null, provenance: p.provenance ?? null,
         ...(p.history ? { history: p.history } : {}),
-      });
+      };
+      rows.push(isSplitRow(p) ? attachSplitFields(merged, p, p.splitBase ?? splitBaseFields(f)) : merged);
     } else {
       maxNo += 1;
       rows.push({ ...f, no: 'art-' + String(maxNo).padStart(2, '0') });
@@ -344,13 +389,13 @@ export function mergeLedger(prev, fresh, manifest = null) {
   // 都已被覆盖才吸收（旧数据兼容读——单值 slot 时等价原判据，不改变既有行为）。
   const covered = new Set();
   for (const f of fresh.rows) for (const s of rowSlots(f)) covered.add(slotKey(s));
-  for (const p of prev.rows) {
+  for (const p of previousRows) {
+    if (seen.has(rowIdentity(p, mode))) continue;
     if (isSplitRow(p)) {
       console.warn(`[art-replace] skip: ${p.no} splitIds 来源由拆层推导管理，原样保留`);
       rows.push(p);
       continue;
     }
-    if (seen.has(rowIdentity(p, mode))) continue;
     // 已钉死的槽位（replaced/filled/approved）从 fresh 消失是**正常态**——art: 引用已被替换成真资产 id，
     // 推导自然扫不到；保留原行原状态。只有未完成行（placeholder/needs-art/generated）消失才是真墓碑。
     if (['replaced', 'filled', 'approved'].includes(p.status)) { rows.push({ ...p }); continue; }
@@ -366,7 +411,9 @@ export function mergeLedger(prev, fresh, manifest = null) {
   }
   rows.sort((a, b) => noNum(a.no) - noNum(b.no));
   const artStyle = prev.artStyle ?? fresh.artStyle;
-  return { ...fresh, ...(artStyle ? { artStyle } : {}), ...(fresh.count != null ? { count: rows.length } : {}), rows };
+  const visibleMax = Math.max(0, ...rows.map(r => noNum(r.no)));
+  const watermark = Object.hasOwn(prev, 'maxNo') || maxNo > visibleMax ? { maxNo } : {};
+  return { ...fresh, ...(artStyle ? { artStyle } : {}), ...(fresh.count != null ? { count: rows.length } : {}), ...watermark, rows };
 }
 
 // ═══ ③④ 风格方言 + 缓存 + 后处理（工作流档 §四·§二④）═══
