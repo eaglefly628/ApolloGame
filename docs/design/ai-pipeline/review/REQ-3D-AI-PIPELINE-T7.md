@@ -73,3 +73,34 @@ T7先于T4/T5；normalize入口明确报T4执行器未就绪，rig-arp/retarget-
 | T7定向 / 真实Blender integration | 0 / 0（91项 / 双跑真实模型及图片） |
 
 本面没有新增art-smoke/backupSmoke触发。正式末行`❌ 门禁失败于 depcruise（退出码 1）`；剩余计划逐步补跑末行`除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）`。日志`/private/tmp/aiflow-t7-final-{scoped,complete}.log`与`/private/tmp/aiflow-t7-targeted-final.log`。浏览器及Blender真实验证在具备本地执行权限的环境运行，沙箱Metal探测崩溃不计作测试通过；未修改系统配置。
+
+
+## 正式复查（独立复查代理·2026-10-18）· T7 **PASS**
+
+受审提交 `916631f97299ecba64e7a1e3c2dbb023e0641dc2`；复查方未参与施工，在独立 clone `/private/tmp/apollo-t7-independent-20261018` fetch 后锁定确切源码，逐行核查桥、固定 worker、集成及91项测试。早期验证使用的 worker SHA 与提交一致；最终桥的分级 stderr 和目标路径判断变更已核对并在确切提交重跑。本判词只通过 T7 作业桥、搭场景和预览阶段，3D 总单继续施工，不签任何游戏生产人门。
+
+| 四律 | 独立证据 | 结果 |
+|---|---|---|
+| ① 独立复跑 | 确切提交定向91项、复查方自建8项对抗、真实4.5.14 LTS integration 与另写的几何/渲染双跑；另起完整门禁 | 91/91、8/8、真实验证exit0；全量5919/5920，仅指定围栏基线1例 |
+| ② 撤修验红 | 另选三处锚：payload直接消费原输入路径；D1取消approved拒收；worker取消完整矩阵的Y-up/Z-up基变换 | 每处断言命中恰1次，分别红于快照哈希不符、proposed未抛错、GLB世界矩阵偏差12；均finally恢复原字节与SHA，恢复后91/91、8/8及真实几何/双跑全绿 |
+| ③ 实证复现 | 初轮独立发现并打回祖先输出覆盖、证据符号链接别名、双路径指向同一物理产物三处问题；修后复用原脚本原断言 | 三项预拒且旧文件/旧证据不变；另核未知op/自由字段、子进程失败/缺新产物、输入快照同源、出界/悬空链接、D1批准及显式三维数据 |
+| ④ 读告警与接缝 | 检查完整stderr、Blender逐跑job.log、PNG chunks、全部发布前物理目标校验、输入/worker哈希及每次独立快照 | 预期reject/mock/skip分支可解释；真实成功支无新Warning/Error。构建块大小提示及game-a art-03/game-c art-017台账死账均为现有告警 |
+
+独立几何实证直接解 GLB 节点世界矩阵和 POSITION 数据，不以名字存在代替正确性：`col_* / nav_* / pick_* / spawn_*` 全保留；含平移、非零三轴旋转和缩放的矩阵逐项对 Three XYZ，最大误差 `4.38e-7`；box实际尺寸 `[2,4,6]`、XZ plane `[8,0,4]`，Y-up米制不丢。独立job的两次GLB SHA同为 `586631cb371ddc1bbc6563480d2b619c4579ec83cdfb595c6a41b3b5c3624fc8`，两个机位分别双跑字节相同、彼此不同；PNG保留IDAT及尺寸/色彩相关chunks，原字节快照和报告哈希对应。真实integration也独立双跑通过，normalize命中T4执行器未就绪，rig/retarget命中ARP缺失并非零，未用崩溃冒充拒收成功。
+
+### 独立完整门禁
+
+`scoped-gate --base 916631f97^ --run` 的完整计划为 eslint → depcruise → tsc → vitest → build → docs-ref → context-budget → art-ledger-guard。eslint exit0；depcruise exit1，实证唯一违规 `games/game113/guide-art.ts → src/assets/asset-index.ts`，与已批准基线完全相同。按原计划独立补跑后：
+
+| 步 | 结果 |
+|---|---|
+| tsc / build | exit0 / exit0 |
+| vitest全量 | exit1，5919/5920通过，0 pending/todo；唯一失败为同一 `depcruise-fence.test.mjs` 基线，JSON确认T7全部91项在内且通过 |
+| spritegen原生node:test | exit0，5/5；仅将该原生文件从Vitest排除并独立执行，不删断言 |
+| docs-ref / context-budget | exit0 / exit0 |
+| art-ledger-guard | exit2，既有WARN允许档，无新增棘轮违规 |
+| T7定向 / 自建对抗 / 固定Blender真实验证 | exit0 / exit0 / exit0 |
+
+本次改动面无 artSmoke/backupSmoke 触发。**除基线 depcruise 外全绿**：正式末行 `❌ 门禁失败于 depcruise（退出码 1）`，逐步补跑末行 `除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）`。浏览器端口及Blender在获准环境真实运行；固定程序4.5.14，未改系统规避Metal探测、未使用真实ARP、未调用付费生成API或真实LLM会话。
+
+证据：完整门禁 `/private/tmp/aiflow-t7-independent-final-{scoped,complete}.log`，同前缀分步日志和Vitest JSON；确切提交与恢复后测试 `/private/tmp/t7-independent-916631f97-{targeted,adversarial,real,geometry,restored-targeted,restored-adversarial,restored-geometry}.log`；另选撤修 `/private/tmp/t7-independent-916631f97-red-{snapshot,d1-approved,yup-basis}.log`，总记录 `/private/tmp/t7-independent-916631f97-sabotage.log`。独立脚本 `/private/tmp/t7-independent-early.mjs`、`/private/tmp/t7-independent-real-geometry.mjs`；恢复后真实证据 `/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/t7-independent-real-geometry-UuOriq/`，integration证据 `/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-blender-real-ofI2Af/`。
