@@ -74,3 +74,40 @@
 | T4真实Blender/Draco及T7真实回归 | 0 / 0 |
 
 本面未触发其它face guards。正式末行`❌ 门禁失败于 depcruise（退出码 1）`；余计划实际逐步补跑末行`除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）`。最终日志`/private/tmp/aiflow-t4-final4-{scoped,complete}.log`、各步日志及Vitest JSON；较早轮次不冒充法线修复后的最终证明。只缺真实Tripo三样本另补，未调用付费服务或签任何生产门；正式独立判词另填。
+
+## 独立复查判词（2026-10-20）
+
+**PASS：T4约定闭集内实现通过独立复查；整库门禁仍保留指定的既有depcruise基线红，不称全绿。** 复查主体为T4独立复查代理，未参与生产实现或永久测试施工；本段只记录复查门，不签人门、不批准资产、不改3D总单或宣称后续波次完成。
+
+被审提交为`36e76a0a95c4502d6ef133bea8b8ee0e4826ea4b`。在全新隔离clone`/private/tmp/apollo-t4-review-final-20261020`逐项复跑，核对17个变更文件均在施工声明范围；运行后`scripts/`与`src/`对被审SHA零diff。破坏验证另用`/private/tmp/apollo-t4-sabotage-final-20261020`，未撤改施工树或被审副本。
+
+### 独立复跑与真实量测
+
+- `scoped-gate --base 36e76a0a9^ --run`：eslint退出0，depcruise退出1，唯一违规为`games/game113/guide-art.ts → src/assets/asset-index.ts`。该文件、围栏配置和对应测试在被审提交前后均无diff；没有把既有红改成通过。
+- 用本机Chrome运行剩余完整计划：tsc、build、docs-ref、context-budget均退出0；Vitest为5996/5997、0 pending/todo，唯一失败为`depcruise-fence.test.mjs`的既有“真仓零违规”断言。全量JSON另核T4/T7/index三文件分别41/90/30项，全部通过。原生spritegen的5项测试另由原生runner退出0，未删断言或以Vitest收集失败冒替。
+- 固定Blender 4.5.14 LTS运行T4真实integration退出0，证据`/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-normalize-real-XhEqXL`。三个离线形状GLB和JSON各自双跑哈希一致；本地Draco WASM实际解码后，高度约2.4米、Y底为0、XZ居中、世界变换已烘焙、三角面数保持12/4/8。Z源轴不对称形状的Y层为`[0,0.8,2.4]`，区分正反上轴。PNG真实内嵌且3072×768缩为2048×512。
+- 同一真实验收还独立核对反射/非均匀父子变换下的显式NORMAL，解码方向与逆转置期望dot均为`0.9999991718558691`；骨架、动画、静态非零morph、混合线面、非默认或错类型sampler、超预算均给出具名拒收，不用崩溃冒充失败路径。
+- T7真实integration退出0，证据`/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-blender-real-OHRzmd`。建场景GLB与两个机位PNG各双跑一致，四类E5节点保留；rig/retarget明确命中ARP缺失并正常退出1。
+
+完整日志前缀为`/private/tmp/aiflow-t4-independent-final-`，包括`scoped.log`、`complete.log`、`vitest.json`、`real.log`、`t7-real.log`和各步日志。没有调用Tripo或任何付费API；上述三个模型仍是明确标记的离线模拟夹具，真实Tripo三样本须待凭据/样本就绪另补。
+
+### 独立反例与修后复现
+
+早期未提交源码的反例由复查方独立造GLB、运行真实Blender并解析产物，证据保存在`/private/tmp/apollo-t4-independent-20261020`：静态morph被烘焙丢失、混合LINES被丢弃、ORM/AO不同sampler被合并、authored NORMAL经`mesh.transform`改变四项均真实复现后打回。修后用各自原样本复跑：前三项正常退出1并具名拒收；正负缩放两份显式法线均保留，dot分别为`0.9999976661`和`0.9999992323`。该副本最终worker与被审提交worker字节相同。
+
+额外独立几何量测包含层级旋转、非均匀父缩放、负子缩放和Z→Y完整手性：顶点相对独立矩阵计算最大误差`4.15e-6`米，法线与三角绕序dot最低`0.99999884`。同图跨albedo/normal/ORM/AO/emissive用途的默认采样样本保留五槽，3072×1536缩为2048×1024，四象限RGBA与逐顶点UV绑定保持。对应脚本为`review-probes.mjs`、`check-probes.mjs`、`sampler-probe.mjs`和`custom-normal*-probe.mjs`，不是施工方自证转述。
+
+### 独立撤修验红与告警
+
+另选六个精确锚点，先断言原文恰命中1次、再断言已改中，逐例运行后在finally恢复原字节；末尾整个`scripts/`目录与被审副本diff为零。脚本`/private/tmp/apollo-t4-sabotage-final-20261020/independent-red.mjs`，汇总`/private/tmp/aiflow-t4-independent-red-results.json`，各例日志`/private/tmp/aiflow-t4-independent-<名称>-red.log`。
+
+| 名称 | 独立撤修 | 预期断言实证 |
+|---|---|---|
+| bytes | 禁用实际GLB字节与spec.bytes一致性判断 | 坏bytes子产物不再抛错，协议测试exit1 |
+| license | 候选合并把原license覆盖为SABOTAGE | 来源保留测试显示CC0不符，exit1 |
+| authored-normal | 禁用custom-normal捕获分支 | 真实Draco逆转置方向断言exit1 |
+| morph | 禁用shape_keys条件 | 真实morph拒收断言Missing expected exception，exit1 |
+| topology | 禁用源primitive.mode守卫 | 真实lines拒收断言Missing expected exception，exit1 |
+| sampler | 把sampler验证遍历置空 | 真实sampler拒收断言Missing expected exception，exit1 |
+
+六例均正常退出1、命中各自指定断言，无signal/段错冒证。已逐读真实Blender日志中的拒收原因；早期“多image node将取首sampler”的WARNING曾对应真实材质变化，故采用显式默认采样闭集，未笼统忽略。完整门禁另有构建大chunk提示、happy-dom本地3000连接拒绝/teardown Abort日志，未产生额外失败；美术台账退出2是既有允许WARN（game-a/game-c旧死账），没有新增棘轮。当前无未解决的T4实证缺陷。
