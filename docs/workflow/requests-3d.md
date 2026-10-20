@@ -12,7 +12,7 @@
 > 原「交互与材质补全批」③ BlendSpace 由本单拉动转正（= E2）。复查人 ≠ 施工人。
 > **2026-10-16 owner 追加（判 A）**：**E6 剧情镜头编排**（render-only `CameraShot3D`·镜头表 + 信号触发 + 缓动·路线图 §3.5 R3）并入本单；**T5 同单交付 S3**「人工步骤回灌手册」（Tripo 网页局部重生成 · Mixamo 下载 · Auto-Rig Pro 标记确认：人做完放哪、脚本怎么接回）。
 
-## REQ-3D-LIGHT-DIRECTION · 兑现Light3D既有方向归一化契约 · [2026-10-21] · V1光照实测发现 → **P3D** · 施工主体 = Codex（2026-10-21 抢锁·本行即锁） · status: 施工中 · 优先级: P1 · 类型: 既有能力缺陷修复
+## REQ-3D-LIGHT-DIRECTION · 兑现Light3D既有方向归一化契约 · [2026-10-21] · V1光照实测发现 → **P3D** · 施工主体 = Codex（2026-10-21 抢锁·本行即锁） · status: 已交·待独立复查 · 优先级: P1 · 类型: 既有能力缺陷修复
 
 > 架构判断：render.ts的dirX注释已承诺directional/spot由renderer归一化；单位化JSON能绕过，但不能代替兑现既有契约。不增字段/capability/渲染算法，不重开暂停工单。Sky独立复查另收尾，不改其已冻源码与V1数据。
 > 已实查协议/LightRig/native shadow camera/WebGLLights/3D手册：同向单位向量的主灯到中心距离3.2、中心NDC.z=-.44144/在视锥；乘8后距离25.6、NDC.z=3.59459/出视锥，projection相同。额外directional/spot对1e-300/1e300有限非零方向亦有平方下溢/上溢或target加法舍入。证据 `/private/tmp/apollo-light-direction-research-20261021/report.json`。

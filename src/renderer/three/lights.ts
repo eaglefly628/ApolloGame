@@ -35,6 +35,8 @@ export class LightRig {
   private readonly localLights = new Map<string, THREE.PointLight | THREE.SpotLight>(); // 动态 point/spot 局部光（池管理）
   shadowDir?: { x: number; y: number; z: number }; // 主阴影灯朝向提示（Light3D 给·缺省盒庭暖侧光向）
   lightSig = 'default'; // 灯光签名（供脏标）
+  private readonly directionWarnings = new Map<string, string>(); // One current invalid value state per active light.
+  private directionScene?: THREE.Scene;
 
   constructor(scene: THREE.Scene, shadowMapSize = 2048) {
     // 暖白主光（投柔和阴影·盒庭模式每帧随场景重定位）。
@@ -57,10 +59,31 @@ export class LightRig {
     releaseShadowTargets(this.key); // three 下次渲染按新边长重建，包括可选 VSM 中间目标
   }
 
+  private direction(id: string, go: { x: number; y: number; z: number }, seen: Set<string>): { x: number; y: number; z: number } {
+    seen.add(id);
+    const scale = Math.max(Math.abs(go.x), Math.abs(go.y), Math.abs(go.z));
+    if ([go.x, go.y, go.z].every(Number.isFinite) && scale > 0) {
+      this.directionWarnings.delete(id);
+      // Scaling first keeps both subnormal and near-MAX finite input representable.
+      const x = go.x / scale, y = go.y / scale, z = go.z / scale;
+      const length = Math.hypot(x, y, z);
+      return { x: x / length, y: y / length, z: z / length };
+    }
+    const state = [go.x, go.y, go.z].map(value => Object.is(value, -0) ? '-0' : String(value)).join(',');
+    if (this.directionWarnings.get(id) !== state) {
+      this.directionWarnings.set(id, state);
+      console.warn(`[LightRig] ${id}: skip direction normalization for zero/non-finite value (${state}); preserving legacy values`);
+    }
+    return go; // Keep the previous native behavior; this does not declare invalid data usable.
+  }
+
   // 据 Light3D 数据驱动灯（首盏 castShadow 平行光=主阴影灯；其余平行光 + point/spot 局部光池管理；ambient 补亮）。
   // 无 → 引擎默认暖冷光。dir=「光的去向」→ 取反作主光位置方向（喂 placeShadow）。同时维护 lightSig（含局部光位姿）。
   sync(scene: THREE.Scene, lights: ReadonlyArray<readonly [string, Light3D]>, world: IWorld): void {
+    if (this.directionScene !== scene) { this.directionWarnings.clear(); this.directionScene = scene; }
+    const directionSeen = new Set<string>();
     if (lights.length === 0) {
+      this.directionWarnings.clear();
       this.lightSig = 'default';
       this.key.color.setHex(0xfff1d6); this.key.intensity = 1.5;
       this.ambient.color.setHex(0xbfd2ff); this.ambient.intensity = 0.4;
@@ -104,7 +127,7 @@ export class LightRig {
         if (isSpot) {
           const s = l as THREE.SpotLight;
           s.angle = lt.angle ?? 0.5; s.penumbra = lt.penumbra ?? 0.3;
-          const go = { x: lt.dirX ?? 0, y: lt.dirY ?? -1, z: lt.dirZ ?? 0 };
+          const go = this.direction(id, { x: lt.dirX ?? 0, y: lt.dirY ?? -1, z: lt.dirZ ?? 0 }, directionSeen);
           s.target.position.set(p.x + go.x, p.y + go.y, p.z + go.z); s.target.updateMatrixWorld();
         }
         // 局部光阴影（REQ-3D-LOCAL-SHADOW）：castShadow + 预算内 → 投影（point=立方 6 面·spot=单张透视）。
@@ -125,9 +148,9 @@ export class LightRig {
         continue;
       }
       // directional
-      const go = (lt.dirX !== undefined || lt.dirY !== undefined || lt.dirZ !== undefined)
+      const go = this.direction(id, (lt.dirX !== undefined || lt.dirY !== undefined || lt.dirZ !== undefined)
         ? { x: lt.dirX ?? -0.78, y: lt.dirY ?? -0.62, z: lt.dirZ ?? -0.5 }
-        : { x: -0.78, y: -0.62, z: -0.5 };
+        : { x: -0.78, y: -0.62, z: -0.5 }, directionSeen);
       if (!shadowAssigned && (lt.castShadow ?? true)) {
         this.key.color.setHex(lt.color & 0xffffff);
         this.key.intensity = lt.intensity;
@@ -146,6 +169,7 @@ export class LightRig {
     }
     for (const [id, l] of this.extraLights) if (!live.has(id)) { scene.remove(l); scene.remove(l.target); this.extraLights.delete(id); }
     for (const [id, l] of this.localLights) if (!liveLocal.has(id)) { killLocalShadow(l); scene.remove(l); if ((l as THREE.SpotLight).target) scene.remove((l as THREE.SpotLight).target); this.localLights.delete(id); }
+    for (const id of this.directionWarnings.keys()) if (!directionSeen.has(id)) this.directionWarnings.delete(id);
     this.lightSig = sig.join('|');
   }
 
@@ -165,6 +189,7 @@ export class LightRig {
   }
 
   dispose(scene: THREE.Scene): void {
+    this.directionWarnings.clear(); this.directionScene = undefined;
     releaseShadowTargets(this.key);
     scene.remove(this.key); scene.remove(this.key.target); scene.remove(this.ambient);
     for (const [, l] of this.extraLights) { scene.remove(l); scene.remove(l.target); }
