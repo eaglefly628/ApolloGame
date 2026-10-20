@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
-import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D, AnimState3D, AnimGraph3D, Glow3D, Transform3D, Pivot3D, Pickable3D, FaceDir, Velocity } from '@engine/protocol/components.js';
+import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D, AnimState3D, AnimGraph3D, Attach3D, Glow3D, Transform3D, Pivot3D, Pickable3D, FaceDir, Velocity } from '@engine/protocol/components.js';
 import type { AssetManager, MaterialSpec } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
 import { getCamera3D, getSky3D, getLights3D, getPost3D, getFog3D } from '@engine/protocol/camera-view.js';
@@ -14,6 +14,7 @@ import { buildPbrMesh3D, buildPbrGeoMat, pbrTransmissive, pbrSig, applyMaterialR
 import { hashPoses, camSig, postSig } from './three/stats.js';
 import { LightRig } from './three/lights.js';
 import { PostPipeline, FlashDecay } from './three/post.js';
+import { SkeletalAttachments } from './three/skeletal-attachments.js';
 import { ModelPool, modelSelectorSig } from './three/models.js';
 import { readAnimGraphParams } from './three/animation-graph-params.js';
 import { modelYawFromFaceDir, turnModelYaw, modelMotionSpeed } from './three/model-motion.js';
@@ -91,6 +92,7 @@ export class ThreeRenderer implements RendererBackend {
   private lights!: LightRig;
   private post!: PostPipeline;
   private models!: ModelPool;
+  private readonly attachments = new SkeletalAttachments();
   private readonly batches = new InstancedBatches();
   private readonly colliderDebug = new ColliderDebug(); // 碰撞体线框（debug·开关见 setDebugColliders）
   private debugColliders = false;
@@ -137,6 +139,7 @@ export class ThreeRenderer implements RendererBackend {
   private readonly modelPickBounds = new THREE.Box3();
   private readonly groundConflictWarnings = new Set<string>();
   private readonly animationConflictWarnings = new Set<string>();
+  private readonly attachmentSkippedWarnings = new Set<string>();
   // W1-C 脏标跳渲 + profiler
   private cpuMs = 0;
   private rendered = false;
@@ -266,9 +269,13 @@ export class ThreeRenderer implements RendererBackend {
     const t0 = performance.now();
     const turnStep = this.lastModelYawMs ? Math.min(0.05, (t0 - this.lastModelYawMs) / 1000) * 6 : Infinity;
     this.lastModelYawMs = t0;
+    this.attachments.beginFrame(); // Restore managed flags before writing this frame's ordinary poses.
     this.gl.info.reset(); // 手动重置 → calls/triangles 跨 scene+post 全 pass 累加（真·每帧 draw 数）
     const seen = new Set<string>();
     const seenModels = new Set<string>();
+    const seenStandalone = new Set<string>();
+    const attachmentIds = new Set(world.queryEntities('Attach3D'));
+    const poseOf = new Map<string, Pose3D>();
     const poses: Pose3D[] = [];
     const modelSigs: string[] = [];
     const groundSigs: string[] = [];
@@ -385,7 +392,7 @@ export class ThreeRenderer implements RendererBackend {
           }
           seenModels.add(r.entityId);
           seen.add(r.entityId);
-          poses.push(pose);
+          poses.push(pose); if (attachmentIds.size > 0) poseOf.set(r.entityId, pose);
           if (r.entityId === followTarget) followPose = pose;
         }
         continue;
@@ -393,7 +400,7 @@ export class ThreeRenderer implements RendererBackend {
       // 3D 物件（Mesh3D）：有 Material3D → PBR 单 mesh（特征物件）；否则不透明归批实例化、透明走 fallback。
       if (r.mesh3d) {
         const pose = pivotPose(r.entityId, r.groundBaseY === undefined ? mesh3dPose(r, r.mesh3d, cam3d, this.zStep) : groundMeshPose(r, r.mesh3d));
-        poses.push(pose);
+        poses.push(pose); if (attachmentIds.size > 0) poseOf.set(r.entityId, pose);
         seen.add(r.entityId);
         if (r.entityId === followTarget) followPose = pose;
         const pk = pickSet.get(r.entityId); // 可拾取 → 捕获世界 AABB（半尺寸取 Mesh3D·球=直径的一半）
@@ -407,9 +414,22 @@ export class ThreeRenderer implements RendererBackend {
             signal: pk.signal,
           });
         }
-        if (r.mesh3d.dieFaces) {
-          const mesh = this.ensureDieMesh3D(r, r.mesh3d);
+        if (attachmentIds.has(r.entityId)) {
+          // A bone carries one object. Reuse the existing factories/material paths;
+          // never move an entire instanced batch to one entity's hand.
+          const mesh = r.mesh3d.dieFaces ? this.ensureDieMesh3D(r, r.mesh3d)
+            : r.mesh3d.voxelTex ? this.ensureVoxelMesh3D(r, r.mesh3d)
+              : r.material3d ? this.ensurePbrMesh(r, r.mesh3d, r.material3d)
+                : this.ensureMesh3D(r, r.mesh3d);
           applyPose(mesh, pose);
+          if (!r.mesh3d.dieFaces && !r.mesh3d.voxelTex && !r.material3d) {
+            mesh.castShadow = true; mesh.receiveShadow = true;
+            this.paintMesh3D(mesh, r.mesh3d, r.color?.alpha ?? 1);
+          }
+          seenStandalone.add(r.entityId);
+        } else if (r.mesh3d.dieFaces) {
+          const mesh = this.ensureDieMesh3D(r, r.mesh3d);
+          applyPose(mesh, pose); seenStandalone.add(r.entityId);
         } else if (r.mesh3d.voxelTex) {
           // 体素（voxelTex 提速块贴图）：不透明 → 按 voxelMode 签名**归批实例化**（同款体素 1 draw call·
           //   game102 大立方几百体素只剩 ~几批·「又大又细」·REQ-3D-RENDER-EFFICIENCY 3D 半场）；透明 → 单 mesh。
@@ -420,7 +440,7 @@ export class ThreeRenderer implements RendererBackend {
             g.push({ r, pose });
           } else {
             const mesh = this.ensureVoxelMesh3D(r, r.mesh3d);
-            applyPose(mesh, pose);
+            applyPose(mesh, pose); seenStandalone.add(r.entityId);
           }
         } else if (r.material3d) {
           // PBR/Material3D（REQ-3D-PBR-INSTANCING）：不透明 + 无描边 + 非透明材质 → **按材质签名归批实例化**
@@ -436,7 +456,7 @@ export class ThreeRenderer implements RendererBackend {
             g.push({ r, pose });
           } else {
             const mesh = this.ensurePbrMesh(r, r.mesh3d, r.material3d);
-            applyPose(mesh, pose);
+            applyPose(mesh, pose); seenStandalone.add(r.entityId);
           }
         } else if ((r.color?.alpha ?? 1) >= 1) {
           const key = mesh3dBatchKey(r.mesh3d);
@@ -445,7 +465,7 @@ export class ThreeRenderer implements RendererBackend {
           g.push({ r, pose });
         } else {
           const mesh = this.ensureMesh3D(r, r.mesh3d);
-          applyPose(mesh, pose);
+          applyPose(mesh, pose); seenStandalone.add(r.entityId);
           mesh.castShadow = true;
           mesh.receiveShadow = true;
           this.paintMesh3D(mesh, r.mesh3d, r.color?.alpha ?? 1);
@@ -458,17 +478,53 @@ export class ThreeRenderer implements RendererBackend {
       if (mode === 'none') continue;
       seen.add(r.entityId);
       const mesh = this.ensureMesh(r, mode);
+      seenStandalone.add(r.entityId);
       const pose = renderablePose(r, this.zStep);
       mesh.position.set(pose.x, pose.y, pose.z);
       mesh.rotation.z = pose.rotZ;
       mesh.scale.set(pose.sx, pose.sy, 1);
       this.paint(mesh, r, mode);
-      poses.push(pose);
+      poses.push(pose); if (attachmentIds.size > 0) poseOf.set(r.entityId, pose);
       if (r.entityId === followTarget) followPose = pose;
     }
 
     // 骨骼动画推进（render-only·壁钟 delta·须在 applyAnim 后）：活跃混合器 >0 → 折进 renderSig 持续重渲 + 刷骨骼阴影。
     const animLive = this.models.update(performance.now());
+    const parentModels = new Map<string, THREE.Object3D>();
+    if (attachmentIds.size > 0) for (const id of seenModels) { const object = this.models.instance(id); if (object) parentModels.set(id, object); }
+    const bindings: { id: string; config: unknown; object: THREE.Object3D }[] = [];
+    for (const id of this.attachmentSkippedWarnings) if (!attachmentIds.has(id)) this.attachmentSkippedWarnings.delete(id);
+    for (const id of attachmentIds) {
+      const object = !seen.has(id) ? undefined : seenModels.has(id) ? this.models.instance(id) : this.meshes.get(id);
+      if (object) {
+        this.attachmentSkippedWarnings.delete(id);
+        bindings.push({ id, object, config: world.getComponent<Attach3D>(id, 'Attach3D') });
+      } else if (!this.attachmentSkippedWarnings.has(id)) {
+        this.attachmentSkippedWarnings.add(id);
+        console.warn(`[renderer] Attach3D ${id}: no current drawable; skip attachment`);
+      }
+    }
+    const attachmentFrame = this.attachments.sync(bindings, parentModels);
+    const hiddenPoses = new Set<Pose3D>();
+    for (const id of attachmentFrame.hidden) {
+      const pose = poseOf.get(id); if (pose) hiddenPoses.add(pose);
+      this.pickables.delete(id);
+      if (id === followTarget) followPose = undefined;
+    }
+    for (const [id, attachedPose] of attachmentFrame.poses) {
+      const pose = poseOf.get(id); if (pose) Object.assign(pose, attachedPose);
+      if (id === followTarget && !attachmentFrame.hidden.has(id)) followPose = pose;
+      const pk = pickSet.get(id), object = seenModels.has(id) ? parentModels.get(id) : this.meshes.get(id);
+      if (pk && object && !attachmentFrame.hidden.has(id)) {
+        const bounds = this.modelPickBounds.setFromObject(object, true);
+        if (!bounds.isEmpty()) this.pickables.set(id, {
+          cx: (bounds.min.x + bounds.max.x) / 2, cy: (bounds.min.y + bounds.max.y) / 2, cz: (bounds.min.z + bounds.max.z) / 2,
+          hx: (bounds.max.x - bounds.min.x) / 2, hy: (bounds.max.y - bounds.min.y) / 2, hz: (bounds.max.z - bounds.min.z) / 2, signal: pk.signal,
+        });
+      }
+    }
+    const visiblePoses = hiddenPoses.size ? poses.filter(pose => !hiddenPoses.has(pose)) : poses;
+
     // 材质 UV 动画（Material3D.uvAnim·render-only·须在 mesh 建好后）：逐帧改克隆贴图 offset/repeat（滚动/序列帧）。活跃 >0 → 持续重渲。
     const uvLive = this.uvAnim.sync(world, this.meshes, performance.now());
     const dissolveLive = this.dissolve.sync(world, this.meshes, performance.now()); // 溶解每帧推进 progress/time uniform
@@ -476,7 +532,7 @@ export class ThreeRenderer implements RendererBackend {
     // W1-C 脏标跳渲：渲染签名（投影体姿 + 相机 + 灯 + 后处理 + 天空云飘帧 + 粒子/物理/骨骼动画活跃帧）。与上帧一致 → 跳过
     // instanceMatrix 上传 + 阴影 + render（画面不变·省 CPU/GPU/带宽）——「低开销」最大单点。
     const post = getPost3D(world);
-    const ph = `${hashPoses(poses)}|models:${modelSigs.join(';')}|ground:${groundSigs.join(';')}`;
+    const ph = `${hashPoses(visiblePoses)}|attached:${attachmentFrame.signature}|models:${modelSigs.join(';')}|ground:${groundSigs.join(';')}`;
     // 震屏：先算 trauma 偏移（据壁钟衰减）——active 时折进 renderSig 持续重渲直至回正。
     const shakeOff = this.camShake.update(cam3d?.shake, performance.now());
     // 跟随柔化：follow 模式对 target 位做指数平滑 + lookAhead 预读——settling(未收敛) 时折进 renderSig 持续重渲直至贴合。
@@ -503,7 +559,7 @@ export class ThreeRenderer implements RendererBackend {
     //   ② 否则原俯视自适配（向后兼容）。follow 模式注视点 = target 实体位（收集期捕获的 followPose）。
     const aspect = this.width / this.height;
     if (cam3d) {
-      const b = poseBounds3D(poses);
+      const b = poseBounds3D(visiblePoses);
       const bc = bounds3DCenter(b);
       const center = followCenter
         ? { x: followCenter.x, y: followCenter.y, z: followCenter.z } // 柔化后（follow·含 lag/lookAhead）
@@ -515,7 +571,7 @@ export class ThreeRenderer implements RendererBackend {
       this.cameras.applyOrbit(cam3d, center, dist, aspect, radius, this.fov, SKY_RADIUS, shakeOff);
       this.lights.placeShadow(center, radius);
     } else {
-      this.cameras.applyFlat(poseBounds(poses), this.fov, aspect);
+      this.cameras.applyFlat(poseBounds(visiblePoses), this.fov, aspect);
     }
 
     // W1-C 阴影门：autoUpdate=false → 仅投影体/灯变才重算阴影贴图（相机/云飘不触发·大省）。骨骼动画在动 → 也刷（蒙皮影跟动）。
@@ -524,7 +580,7 @@ export class ThreeRenderer implements RendererBackend {
 
     // 消失实体释放（2D 扁平层 + 模型实例）。
     for (const [id, mesh] of this.meshes) {
-      if (!seen.has(id)) {
+      if (!seenStandalone.has(id)) {
         this.scene.remove(mesh);
         disposeMesh(mesh);
         this.meshes.delete(id);
@@ -651,8 +707,10 @@ export class ThreeRenderer implements RendererBackend {
   destroy(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.attachments.clear();
     this.groundConflictWarnings.clear();
     this.animationConflictWarnings.clear();
+    this.attachmentSkippedWarnings.clear();
     if (!this.gl) return; // Constructed but never initialized (or WebGL creation failed).
     this.resizeObserver?.disconnect(); this.resizeObserver = undefined; // 断开容器观察者·防泄漏
     if (this.sky) { this.scene.remove(this.sky); (this.sky.material as THREE.MeshBasicMaterial).map?.dispose(); disposeMesh(this.sky); this.sky = null; }

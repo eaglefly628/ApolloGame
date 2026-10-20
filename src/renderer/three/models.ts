@@ -226,6 +226,9 @@ export class ModelPool {
     return this.instances.size;
   }
 
+  /** Renderer-only lookup; never loads or pins an asset. */
+  instance(entityId: string): THREE.Object3D | undefined { return this.instances.get(entityId); }
+
   // 建/复用实例：modelKey 不变则复用；变了拆旧建新。模板未就绪 → null（本帧不画）。tint 每帧由调用方设。
   ensure(scene: THREE.Scene, entityId: string, m: Model3D): THREE.Object3D | null {
     this.subscribeEviction();

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // W1-A 实例化批（含 voxelTex 体素批·REQ-3D-RENDER-EFFICIENCY 3D 半场·大立方又大又细）：N 同款 → 1 InstancedMesh。
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import * as THREE from 'three';
 
 // happy-dom 无 canvas 2d 实现 → 给 voxelTex 贴图生成打个 no-op 2d 上下文桩（只测批逻辑·非贴图像素）。
@@ -98,5 +98,52 @@ describe('InstancedBatches PBR 批（材质签名归批·REQ-3D-PBR-INSTANCING·
     expect(b.count).toBe(5);        // 5 材质 = 5 批（非 250 draw call）
     expect(b.instances).toBe(250);
     b.dispose(scene);
+  });
+});
+
+
+describe('E3 attachment return to instanced batches: texture ownership', () => {
+  it.each(['remove', 'grow', 'destroy'] as const)('releases owned voxel maps and repeated face materials exactly once on %s', operation => {
+    const scene = new THREE.Scene(), batches = new InstancedBatches(), spec = voxBox(0x8b8f98);
+    const groups = (n: number): InstGroups => new Map([['vox|owned', Array.from({ length: n }, (_, i) => item(spec, i))]]);
+    batches.sync(scene, groups(1));
+    const mesh = scene.children[0] as THREE.InstancedMesh, materials = [...new Set(mesh.material as THREE.MeshStandardMaterial[])];
+    const textures = [...new Set(materials.flatMap(m => m.map ? [m.map] : []))];
+    expect(textures).toHaveLength(2);
+    const releases = textures.map(t => vi.spyOn(t, 'dispose')), matReleases = materials.map(m => vi.spyOn(m, 'dispose'));
+    if (operation === 'remove') batches.sync(scene, new Map());
+    else if (operation === 'grow') batches.sync(scene, groups(9));
+    else batches.dispose(scene);
+    for (const release of [...releases, ...matReleases]) expect(release).toHaveBeenCalledOnce();
+    expect(mesh.parent).toBeNull(); batches.dispose(scene);
+    for (const release of [...releases, ...matReleases]) expect(release).toHaveBeenCalledOnce();
+  });
+
+  it('keeps cached PBR textures alive across a batch removal and rebuild', () => {
+    const scene = new THREE.Scene(), batches = new InstancedBatches(), texture = new THREE.Texture(); texture.userData.shared = true;
+    const disposed = vi.spyOn(texture, 'dispose');
+    const builders = new Map<string, PbrBatchBuild>([['pbr|shared', () => ({ geo: new THREE.BoxGeometry(), material: new THREE.MeshStandardMaterial({ map: texture }) })]]);
+    const groups: InstGroups = new Map([['pbr|shared', [item(box(0xffffff), 0)]]]);
+    batches.sync(scene, groups, builders); batches.sync(scene, new Map());
+    batches.sync(scene, groups, builders); expect((scene.children[0] as THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>).material.map).toBe(texture);
+    batches.dispose(scene); expect(disposed).not.toHaveBeenCalled(); texture.dispose(); expect(disposed).toHaveBeenCalledOnce();
+  });
+});
+
+
+describe('E3 batch lifetime: native instance attributes', () => {
+  it.each(['remove', 'grow', 'destroy'] as const)('disposes the InstancedMesh owner exactly once on %s', operation => {
+    const scene = new THREE.Scene(), batches = new InstancedBatches(), spec = box(0xffffff);
+    const groups = (n: number): InstGroups => new Map([['box|native', Array.from({ length: n }, (_, i) => item(spec, i))]]);
+    batches.sync(scene, groups(1)); const mesh = scene.children[0] as THREE.InstancedMesh;
+    mesh.setColorAt(0, new THREE.Color(0xff00ff)); // Both native instance attributes have an owner.
+    const disposeEvent = vi.fn(); mesh.addEventListener('dispose', disposeEvent);
+    expect(mesh.instanceMatrix).toBeInstanceOf(THREE.InstancedBufferAttribute);
+    expect(mesh.instanceColor).toBeInstanceOf(THREE.InstancedBufferAttribute);
+    if (operation === 'remove') batches.sync(scene, new Map());
+    else if (operation === 'grow') batches.sync(scene, groups(9));
+    else batches.dispose(scene);
+    expect(disposeEvent).toHaveBeenCalledOnce(); expect(mesh.parent).toBeNull();
+    batches.dispose(scene); expect(disposeEvent).toHaveBeenCalledOnce();
   });
 });

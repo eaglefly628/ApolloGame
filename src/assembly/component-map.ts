@@ -16,6 +16,7 @@ import type {
   AnimState,
   AnimState3D,
   AnimGraph3D,
+  Attach3D,
   Billboard3D,
   BlockGrid,
   BlockTrayPiece,
@@ -188,6 +189,7 @@ export interface ComponentDataMap {
   AnimState: Omit<AnimState, 'type'>;
   AnimState3D: Omit<AnimState3D, 'type'>;
   AnimGraph3D: Omit<AnimGraph3D, 'type'>;
+  Attach3D: Omit<Attach3D, 'type'>;
   Billboard3D: Omit<Billboard3D, 'type'>;
   BoardCell: Omit<BoardCell, 'type'>;
   Bounds: Omit<Bounds, 'type'>;

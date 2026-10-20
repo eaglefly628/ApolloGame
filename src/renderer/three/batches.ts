@@ -2,11 +2,12 @@ import * as THREE from 'three';
 import type { Mesh3D } from '@engine/protocol/components.js';
 import type { Renderable } from '../renderable.js';
 import type { Pose3D } from '../three-projection.js';
-import { applyPose, buildInstancedMesh3DGeometry, buildVoxelGeoMats } from './geometry.js';
+import { applyPose, buildInstancedMesh3DGeometry, buildVoxelGeoMats, disposeMeshMat } from './geometry.js';
 
-// 释放 InstancedMesh 的材质（单个或六面数组·voxelTex 走数组）。
+// Same ownership rules as standalone objects: voxel maps belong to the batch,
+// AssetManager/renderer cache textures remain shared and must survive it.
 function disposeMat(mat: THREE.Material | THREE.Material[]): void {
-  if (Array.isArray(mat)) for (const m of mat) m.dispose(); else mat.dispose();
+  disposeMeshMat(mat);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -49,6 +50,7 @@ export class InstancedBatches {
     for (const [key, b] of this.batches) {
       if (!groups.has(key)) {
         scene.remove(b.mesh);
+        b.mesh.dispose(); // Releases native instanceMatrix/instanceColor attributes.
         b.mesh.geometry.dispose();
         disposeMat(b.mesh.material); // voxel 批材质是六面数组，单材质 .dispose() 会 TypeError → 之后每脏帧连环崩
         this.batches.delete(key);
@@ -59,6 +61,7 @@ export class InstancedBatches {
   dispose(scene: THREE.Scene): void {
     for (const [, b] of this.batches) {
       scene.remove(b.mesh);
+      b.mesh.dispose(); // Native instance attributes are not geometry attributes.
       b.mesh.geometry.dispose();
       disposeMat(b.mesh.material);
     }
@@ -70,7 +73,7 @@ export class InstancedBatches {
   private ensure(scene: THREE.Scene, key: string, sample: Mesh3D, needed: number, pbrBuild?: PbrBatchBuild): { mesh: THREE.InstancedMesh; cap: number } {
     const existing = this.batches.get(key);
     if (existing && needed <= existing.cap) return existing;
-    if (existing) { scene.remove(existing.mesh); existing.mesh.geometry.dispose(); disposeMat(existing.mesh.material); }
+    if (existing) { scene.remove(existing.mesh); existing.mesh.dispose(); existing.mesh.geometry.dispose(); disposeMat(existing.mesh.material); }
     const cap = Math.max(needed, existing ? existing.cap * 2 : 8);
     // 三类批：① PBR/Material3D（材质签名归批·渲染器传闭包建真材质·REQ-3D-PBR-INSTANCING）；
     //   ② voxelTex 体素（六面贴图材质数组）；③ 平色盒/图元（逐面色烤进 vertexColors 的哑光材质·原路）。

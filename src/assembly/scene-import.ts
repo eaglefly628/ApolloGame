@@ -5,6 +5,7 @@ import type { EntityBlueprint } from './demo.assembly.js';
 import { expandEntities } from './entity-templates.js';
 import { validateGroundWalkers } from './ground-walkers.js';
 import { validateAnimationGraphs } from './animation-graphs.js';
+import { validateSkeletalAttachments } from './skeletal-attachments.js';
 
 type V3 = readonly [number, number, number];
 type V2 = readonly [number, number];
@@ -435,6 +436,7 @@ export function sceneImportKeys(raw: unknown): readonly string[] {
  * have no SceneImport3D marker, so Engine.load can safely apply this again. */
 export function expandSceneImports<T extends Record<string, unknown>>(entities: T, catalog?: SceneImportCatalog): T {
   validateAnimationGraphs(entities);
+  validateSkeletalAttachments(entities);
   if (!Object.values(entities).some(c => obj(c) && own(c, 'SceneImport3D'))) { validateGroundWalkers(entities); return entities; }
   const out: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
   for (const [id, comps] of Object.entries(entities)) out[id] = comps;
@@ -485,5 +487,6 @@ export function expandSceneImports<T extends Record<string, unknown>>(entities: 
   }
   validateGroundWalkers(out);
   validateAnimationGraphs(out);
+  validateSkeletalAttachments(out);
   return out as T;
 }

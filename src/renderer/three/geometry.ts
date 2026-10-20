@@ -316,9 +316,9 @@ export function disposeMesh(mesh: THREE.Mesh): void {
 // **跳过共享缓存贴图**（`pbrMapTexture`/`texCache` 返回的·打了 `userData.shared` 标）——否则会把其他活网格
 // 正在用的贴图一起 dispose → 画面损坏比泄漏更糟（RENDERHYG fix①·源头标记法·补漏 map/emissiveMap/ao/metal）。
 export function disposeMeshMat(m: THREE.Material | THREE.Material[]): void {
-  (Array.isArray(m) ? m : [m]).forEach((x) => {
+  const seen = new Set<THREE.Texture>(); // Also deduplicate maps shared by array materials.
+  [...new Set(Array.isArray(m) ? m : [m])].forEach((x) => {
     const sm = x as THREE.MeshStandardMaterial;
-    const seen = new Set<THREE.Texture>(); // 去重：ORM 打包图同挂 ao/rough/metal 三槽 → 只算一次
     for (const t of [sm.map, sm.normalMap, sm.roughnessMap, sm.aoMap, sm.metalnessMap, sm.emissiveMap]) {
       if (t && !seen.has(t)) { seen.add(t); if (!(t.userData && t.userData['shared'])) t.dispose(); }
     }

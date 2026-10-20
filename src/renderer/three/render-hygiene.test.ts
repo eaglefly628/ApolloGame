@@ -26,6 +26,15 @@ describe('fix① disposeMeshMat：释放 per-mesh 独占贴图·**跳过共享�
     expect(shared.disposed()).toBe(false); // ★ 正面用例：共享图未被误毁（否则其他活网格画面损坏）
     expect(owned.disposed()).toBe(true);   // 独占图释放（撤掉修复=emissiveMap 不释放→泄漏·此断言转红）
   });
+  it('deduplicates repeated face materials and an owned texture across different materials', () => {
+    const texture = new THREE.Texture(), shared = tex(true);
+    const a = new THREE.MeshStandardMaterial({ map: texture, emissiveMap: shared.t });
+    const b = new THREE.MeshStandardMaterial({ normalMap: texture });
+    let textureDisposals = 0, aDisposals = 0, bDisposals = 0;
+    texture.addEventListener('dispose', () => textureDisposals++); a.addEventListener('dispose', () => aDisposals++); b.addEventListener('dispose', () => bDisposals++);
+    disposeMeshMat([a, a, b, a]);
+    expect(textureDisposals).toBe(1); expect(aDisposals).toBe(1); expect(bDisposals).toBe(1); expect(shared.disposed()).toBe(false);
+  });
   it('两网格共用同一共享贴图：销毁其一，另一个仍持有可渲的贴图', () => {
     const shared = tex(true);
     const a = new THREE.MeshStandardMaterial(); a.map = shared.t;
