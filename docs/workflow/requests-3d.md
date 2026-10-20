@@ -12,14 +12,6 @@
 > 原「交互与材质补全批」③ BlendSpace 由本单拉动转正（= E2）。复查人 ≠ 施工人。
 > **2026-10-16 owner 追加（判 A）**：**E6 剧情镜头编排**（render-only `CameraShot3D`·镜头表 + 信号触发 + 缓动·路线图 §3.5 R3）并入本单；**T5 同单交付 S3**「人工步骤回灌手册」（Tripo 网页局部重生成 · Mixamo 下载 · Auto-Rig Pro 标记确认：人做完放哪、脚本怎么接回）。
 
-## REQ-3D-LIGHT-DIRECTION · 兑现Light3D既有方向归一化契约 · [2026-10-21] · V1光照实测发现 → **P3D** · 施工主体 = Codex（2026-10-21 抢锁·本行即锁） · status: 已交·待独立复查 · 优先级: P1 · 类型: 既有能力缺陷修复
-
-> 架构判断：render.ts的dirX注释已承诺directional/spot由renderer归一化；单位化JSON能绕过，但不能代替兑现既有契约。不增字段/capability/渲染算法，不重开暂停工单。Sky独立复查另收尾，不改其已冻源码与V1数据。
-> 已实查协议/LightRig/native shadow camera/WebGLLights/3D手册：同向单位向量的主灯到中心距离3.2、中心NDC.z=-.44144/在视锥；乘8后距离25.6、NDC.z=3.59459/出视锥，projection相同。额外directional/spot对1e-300/1e300有限非零方向亦有平方下溢/上溢或target加法舍入。证据 `/private/tmp/apollo-light-direction-research-20261021/report.json`。
-> 最窄范围：src/renderer/three/lights.ts及点名CPU测试，scripts隔离原生GPU方向/阴影验证工具及测试、本单Review/说明、3D手册与本状态。复用three原生光照，maxAbs缩放后求单位向量只在已有分量缺省填齐之后，对有限非零方向工作；主directional/额外directional/spot三路共用。无Light3D缺省路径逐值保留；显式Light3D未填dir仍用原方向，按已有归一化承诺得到单位长度（主灯距离因此改变须记录）。
-> zero/非有限方向本次保留原值与原有原生行为，不新增reject/fallback政策，跳过归一化须有有界console诊断；不宣称它们是有效方向。point/ambient、符号朝向、强度和预算不变；spot签名遗漏等尚无主renderer实证的疑点不混修。
-> 验收：三路正比例缩放的native有效方向一致，主shadow视图/裁剪及实际阴影不随长度失效；极小/大有限值不溢出/退化，输入与World hash/writeSequence/dirty不变；无Light缺省矩阵逐值不变。CPU+原生GPU、各关键unique-hit撤修红/恢复、最终完整门禁全绿、独立复查；回归已结案ENV三路与V1五节奏。不改游戏/PUI/sim/公共协议。
-
 <!-- REQ-3D-TESTGAPS（P3D 测试面五项）owner 2026-10-16 令**暂停出池**——全文查 git 历史（git log -S REQ-3D-TESTGAPS）·重启时恢复原文 -->
 
 ## REQ-3D-RB-MATERIAL · `RigidBody3D.restitution` / `.friction` 声明了但 `spawn()` 从不读 —— 全库游戏的每张「弹性/摩擦」旋钮都是死的 · [2026-08-10] · PE-211 提（game211 大样本物理验证时撞出）→ **P3D** · status: open · 优先级: **P2（不吃表现·但会持续制造错误归因·见下方实测）** · 类型: 3D 线契约缺口（契约声明 ≠ 实现）

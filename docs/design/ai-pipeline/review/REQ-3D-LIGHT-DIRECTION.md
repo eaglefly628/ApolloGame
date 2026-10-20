@@ -55,3 +55,49 @@ GPU最终probe只增加显式pre-forceContextLoss收据与spot双RT所有者观�
 - 原ENV三路`.../apollo-environment-browser-dGbgyX/report.json` exit0；Sky/Room/HDRI反射、脏标、缓存与销毁不回退。
 - 原V1五节奏`.../apollo-v1-browser-Xcvg0A/report.json` exit0；提水壶原始manifest/CPU/browser与fixture工具不改，仍是原动作、IK、挂点、镜头数据。
 - 完整施工证据持久目录：`/Users/junbaili/.codex/visualizations/2026/10/16/01a1423a-1952-7952-a2c0-8ae2faac621b/light-direction-final-20261021/`，含冻结4文件、旧/新同版13场景PNG与report、CPU19/GPU5撤修、原ENV/V1回归、完整门禁与告警收据。截图为技术测试场景，不能作生产美术或人门通过声明。
+
+---
+
+### REQ-3D-LIGHT-DIRECTION 独立复查判词（2026-10-21）
+
+独立结论：本单既有 Light3D 方向归一化契约修复通过独立交叉复查。审查提交 `281cc2a5044427f1b815087e6c8eb7a2d57cebbe`，父提交 `4890f18c6a7490cf3bed28f9026ddf3d48dd78d1`。复查人未参与产品或探针施工；本次在 `/private/tmp/apollo-light-independent-20261021` 及另一个自有旧源码副本中完成独立复跑、撤修、原反例和告警审读。未写施工/用户工作区，未提交、推送、启动 Blender、调用付费服务或签真人门。施工 Review 和收据仅用于导航，没有代替我的执行结果。
+
+不可变提交中全部 1181 个 src/scripts 文件的集合及逐项 Git blob 与实测副本完全一致，无多余、缺失或漂移；产品、CPU测试、GPU入口、browser 四项冻结 SHA 均一致。契约、Review、3D手册和 requests-3d 四文档从该提交读取并核原文，最终 docs-ref/context-budget 又独立运行各 exit0。对账原文在 `independent-proof/final-immutable-commit-audit.json`，原生回归结束后再次核对仍一致。变更面为一个既有 LightRig、专属测试/探针及文档，没有公共协议、capability、sim、游戏或 PUI 修改。
+
+**CPU 与自选边界。** 我独立运行新增37例、既有 Light8、ENV11、Camera25，再加自己编写的8例，共5文件89/89，failed/pending/todo=0，报告 `logs/apollo-light-independent-restored-focused.json`。原生 WebGLLights、ShadowCamera、Frustum 和 Float32 矩阵均实际参与；没有用 mock 方向函数替代。新增37例中两实际 World 共20k次更新的 snapshot/full与incremental hash/writeSequence/dirty不变，partial/default、MIN子正规数、近MAX、无效值及诊断清理均已亲跑。
+
+我的8例另核：三路单轴 MIN/MAX、全MAX、MAX与MIN混合，在旋转相机下与原生参考方向/阴影矩阵一致且有限；从数据光回到无Light，在三组平移中心/半径上与不可变旧 LightRig 的位置、矩阵、光色、强度和子对象类型逐值相同；zero/NaN/±Infinity包括原生NaN矩阵与旧版一致；无效spot掉出局部灯预算时清诊断记录、重新进入时只再记当前一次。测试及不可变旧源码保存于 `independent-proof/light-boundary.test.ts.evidence`、`legacy-lights.ts`。自己的8例没有混进下述正式全量计数。
+
+兼容口径分别核过：完全没有 Light3D 的历史暖主光/冷补光精确保留；显式 directional 没填dir时，仍先补原 `(-.78,-.62,-.5)`，再兑现单位化承诺，因此主灯距离改为3.2×radius，这是实际兼容变化，不能写成所有既有画面逐值不变。部分分量也先补原缺省。zero/非有限输入只跳过归一化并有界WARN，仍保留旧数值及可能无效的原生结果，未被当成有效方向或悄悄加fallback；point/ambient与原预算未变。
+
+**自行选择的唯一锚点撤修。** 在自有副本将唯一 `return { x: x / length, y: y / length, z: z / length };` 撤为 `return go;`，先断言hit=1。CPU点名8倍主灯用例真实 AssertionError：距离25.6应为3.2，exit1；精确恢复产品 SHA `ffd63b749bc8e739f0abdad56662e800d5eba844b486e2e4c29c39fa5483ef17` 后89/89绿。第一次名称过滤漏掉展开标题中的引号，实际全跳过/exit0，未计为红灯；原记录保留，纠正过滤后才计上述真实红，见 `independent-proof/normalization-withdrawal.json`。
+
+同一锚点再做真实GPU撤修：正式13场景先绿；hit=1撤修后 `native-withdrawal-red/report.json` 实测 main8 的深度占用0、关影像素差0、中心出阴影视锥，cameraView/frustum/depth/pixels/actualShadow比较拒收，report.ok=false且进程exit1。不是编译错误、TypeError、Chrome缺失或超时。精确恢复同一SHA，再完整13场景绿且旧无Light逐字段相同，证明 `independent-proof/native-unit-withdrawal.json`。这是我自己执行的同一锚点CPU和GPU闭环，不冒称重跑施工方全部19/5锚点。
+
+**不可变旧源码反例与正式原生恢复。** 我另建 `/private/tmp/apollo-light-independent-old-native-20261021`，旧 LightRig 来自父提交 Git blob（SHA `a79ab2023804354772ba40745947222daa73b76927c6ce5913ec890220d3ced7`），只装相同最终探针。报告 `old-native-counterexample/report.json`（原目录 `apollo-light-direction-browser-ikA3qa`）实测：main单位输入PCF深度占用48179、实际关影差10569像素；同向8倍变为占用0/影差0，中心NDC.z约3.590705、出锥，但有效方向uniform未变。三路1e-300/1e300的上传方向都退成0，报告7项比较失败、进程exit1。该夹具的中心/半径与施工CPU研究不同，以上数字取我自己的报告。旧版单位与8倍主灯PNG已目击，有影→无影的实际差异成立。
+
+最终源码正式报告 `native-final/report.json`（`apollo-light-direction-browser-kN7TUD`）exit0；撤修精确恢复后的完整报告 `native-restored/report.json`（`apollo-light-direction-browser-ekrFmP`）亦exit0。全部原生运行首步即使用授权宿主环境和显式固定Chrome `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`，没有改阈值或超时。三路×unit/8/1e-300/1e300，加无Light共13个独立场景、12项跨比例比较全真：实际上传方向uniform、原生朝向、阴影view/projection/裁剪、实际PCF depthTexture采样和主画面像素符合预期。MIN/MAX/partial的实际WebGLLights与shadow边界在CPU层验证，未冒称它们都是这13个GPU输入。
+
+主灯四种比例均PCF占用48179、关影差10569像素；spot均22603、25746。额外directional只验证它的uniform/照明像素；它原本不投影，报告中该路线的shadow来自主灯对照，未误读成额外灯投影。深度证据来自原生PCF depthTexture的sampler2DShadow观察，不是颜色附件；观察着色器没有替换产品灯光/阴影输出。已目击恢复后的main8真实阴影、extra极大方向光照和spot极小方向阴影。无Light与我自己旧源报告的 uniform/nativeRay/shadow/pixels/shadowPixels/camera 六字段逐项精确相同。
+
+13场景26次renderer.sync纯读检查，并在完整World仍加载时直接destroy、重复destroy；每次 `beforeForceContextLoss` 明确contextLost=false、GPU geometry/texture=0、四类native live=0且create=delete。合计init后buffer195/195、texture60/60、framebuffer30/30、renderbuffer0/0；spot两个shadow RT各dispose1，其余对应主RT各dispose1，context-loss各只调用一次。它们是init后被跟踪分配的回收，不是全进程物理显存承诺。13个有效场景的console/page诊断均为空。
+
+**原工具共享回归。** 原ENV入口/browser SHA未变，我独立跑 `env-regression/report.json`（`apollo-environment-browser-NiFKYa`）三路exit0，105次纯读，Sky/Room/HDR四类handle依次为68/16/1/0、61/6/3/1、334/45/29/1创建并全部删除，所有者各一次；完整World直接destroy的既有pre-loss断言通过。ENV三张PNG与我前次独立终验 `oYvuzp` 逐字节同，本次再次目击。唯一WARN为刻意坏HDR在hdr-bad-first的bad initial token，重试/steady/destroy没有重复，完整栈已读。
+
+V1原manifest/两探针SHA未变，我独立跑 `v1-regression/report.json`（`apollo-v1-browser-0mfhTA`）exit0。五种节奏各2000tick，完整/incremental hash序列逐项相同；销毁后五次GPU0/0、native buffer113/113/live0（带五次重载）或28/28/live0。七张PNG与前次自己独立报告 `8Srl3R` 逐字节同。20条诊断均为load/reload尚未ready时既有Attach/IK各一次，ready=false与阶段逐条核过，没有ready后新增告警。不把V1夹具owned maps=0代替ENV或Light原生资源覆盖。
+
+**完整门禁与告警。** 自有Git副本按父提交实际改动面分类为FULL，ESLint、depcruise都独立实际全跑，没有无Git副本scoped0替代。strict=1、宿主环境显式fixedChrome，Vitest maxWorkers4/minWorkers1。`logs/apollo-light-independent-full-steps.json`记录：
+
+| 步骤 | actual exit / 结果 |
+|---|---|
+| ESLint / depcruise / sim-DOM | 0 / 0 / 0；1461 modules、5251 dependencies，零越界 |
+| spritegen独立node:test | 0，5/5，无failed/cancelled/skipped/todo |
+| TypeScript / Vitest | 0 / 0；665文件7115/7115，failedFiles=[]、failed/pending/todo=0 |
+| build / docs-ref / context-budget | 0 / 0 / 0；提交后四文档最终guards另跑0/0 |
+| art-ledger | 2，仅既有允许档；缺来源0，旧黑户5/死账2如实保留 |
+
+没有旧game113红例外，也没有NoSuite/EPERM/NO_BROWSER当通过。每步日志已读取。全量221个stderr段、399条去重提取行（含并发子进程交错的info）与我已阅ENV日志对照；367行语义一致，其余32行已逐行读，均为临时路径/job hash或交错的mock/fixture commit/decision消息，无Light新增运行时WARN。故意L/P定序环、Mock降级/坏输入拒收、人门拒收、存储配额注入、HappyDOM取消/localhost拒连仍按原负例语义保留，无Unhandled/uncaught汇总。build三个>500kB chunk提醒，以及game-a art-03、game-c art-017旧缺文件WARN2未消音。告警原文与对照保存在 `logs/apollo-light-independent-warning-audit.json`；CPU无效方向日志由具名测试核内容、次数及缓存清理，不把spy静音当作无日志证据。
+
+本单没有剩余实证阻塞。通过范围限于既有有限非零方向的归一化、三路原生接线和上述兼容/生命周期回归；极大世界坐标造成target加单位向量不可表示，以及spot只改方向/角度/penumbra的既有跳渲签名疑点，不因本次比例输入独立renderer测试而获通过声明，也未混修。技术夹具没有生产美术质量结论；`realTripoValidated/realMixamoValidated/realArpValidated/productionApproved/formalV1Validated/humanR1Validated`仍false。
+
+独立证据持久总收据：`/Users/junbaili/.codex/visualizations/2026/10/16/01a1423a-1952-7952-a2c0-8ae2faac621b/light-direction-independent-20261021/independent-receipt.json`。文中短路径均相对此目录，含实际全量日志、独立测试与撤修literal/命中证明、原生旧红/正式/撤红/恢复报告、PNG、原ENV/V1回归、冻结源码及不可变提交指纹。复查署名：独立交叉复查agent，非本单施工人。
