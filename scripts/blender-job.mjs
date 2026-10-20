@@ -9,6 +9,7 @@ import { inside, slugName } from './lib/aiflow-paths.mjs';
 import { validateSplit } from './asset-split.mjs';
 import { encodePng } from './ai-gen.mjs';
 import { decodePng } from './asset-matte.mjs';
+import { validateNormalizationResult } from './lib/model-normalization.mjs';
 
 export const BLENDER_OPS = Object.freeze(['normalize', 'rig-arp', 'retarget-arp', 'build-scene', 'render-views']);
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -68,9 +69,16 @@ export function validateJob(job) {
       number(v.fov,'fov',0.001,179.999);
       for(const k of ['width','height'])if(!Number.isInteger(v[k])||v[k]<16||v[k]>4096)reject(`${k} 必须是16..4096整数`);
     }
+  } else if(job.op==='normalize') {
+    object(job.params,['sourceUp','targetHeightMeters','maxTris','maxTextureSize'],'normalize params');
+    if(!['Y','Z'].includes(job.params.sourceUp))reject('sourceUp 必须显式声明Y或Z，不能猜源轴向');
+    number(job.params.targetHeightMeters,'targetHeightMeters',0.000001,100000);
+    if(!Number.isSafeInteger(job.params.maxTris)||job.params.maxTris<1)reject('maxTris 必须是正整数面数预算');
+    if(!Number.isSafeInteger(job.params.maxTextureSize)||job.params.maxTextureSize<1||job.params.maxTextureSize>2048)reject('maxTextureSize 必须是1..2048整数');
+    if(job.inputs.length!==1||extname(job.inputs[0]).toLowerCase()!=='.glb'||job.outputs.length!==2||extname(job.outputs[0]).toLowerCase()!=='.glb'||extname(job.outputs[1]).toLowerCase()!=='.json')reject('normalize 需要一个GLB输入和GLB、JSON两个有序输出');
   } else {
-    // T4/T5 own the downstream parameter contracts. Recognized is not executable yet.
-    object(job.params,[],`${job.op} params（下游T4/T5尚未交付）`);
+    // T5 owns rig/retarget parameter contracts. Recognized is not executable yet.
+    object(job.params,[],`${job.op} params（下游T5尚未交付）`);
     if(job.inputs.length<(job.op==='retarget-arp'?2:1)||job.outputs.length!==1||extname(job.outputs[0]).toLowerCase()!=='.glb')reject(`${job.op} 桥入口需要${job.op==='retarget-arp'?2:1}个以上输入和一个GLB输出`);
   }
   return job;
@@ -85,6 +93,7 @@ function validArtifact(file,kind) {
     try{const j=JSON.parse(b.toString('utf8',20,20+n));if(j.asset?.version!=='2.0')reject('GLB asset.version无效');
       if([...(j.buffers||[]),...(j.images||[])].some(r=>r.uri&&!r.uri.startsWith('data:')))reject('GLB必须自包含，外部资源请先嵌入（不能遗漏哈希或暗中联网）');}catch(e){reject(`GLB JSON损坏: ${e.message}`);}
   } else if(kind==='.png'){try{decodePng(b);}catch(e){reject(`输出不是有效PNG ${file}: ${e.message}`);}}
+  else if(kind==='.json'){try{JSON.parse(b.toString('utf8'));}catch(e){reject(`输出不是有效JSON ${file}: ${e.message}`);}}
   return b;
 }
 function mockGlb(hash) {
@@ -175,7 +184,8 @@ export function runBlenderJob(jobFile,{mock=false,blender=process.env.BLENDER_BI
       diagnostics.warn('[blender-job] downgrade: --mock，仅隔离产物，不代表Blender/T4/T5真实成功');
       for(let i=0;i<stageOutputs.length;i++) {
         const v=job.params.views?.[i];
-        writeFileSync(stageOutputs[i],extname(stageOutputs[i])==='.png'?mockPng(jobHash,v.width,v.height):mockGlb(jobHash));
+        const kind=extname(stageOutputs[i]);
+        writeFileSync(stageOutputs[i],kind==='.png'?mockPng(jobHash,v.width,v.height):kind==='.json'?JSON.stringify({mock:true,spec:null,normalization:null})+'\n':mockGlb(jobHash));
       }
       finishLog('downgrade explicit mock; no Blender execution');
     } else {
@@ -190,6 +200,7 @@ export function runBlenderJob(jobFile,{mock=false,blender=process.env.BLENDER_BI
       if(job.op==='render-views') {const v=job.params.views[i];if(b.readUInt32BE(16)!==v.width||b.readUInt32BE(20)!==v.height)reject(`输出PNG尺寸与view ${v.id}不符`);}
       return {path:mock?inside(evidenceDir,`out/${relative(base,targets[i])}`):targets[i],snapshotPath:file,sha256:sha(b),bytes:b.length};
     });
+    if(job.op==='normalize')validateNormalizationResult(JSON.parse(readFileSync(stageOutputs[1],'utf8')),readFileSync(stageOutputs[0]),job.params,{mock});
     // Revalidate the complete physical destination set before publishing any output.
     if(!mock)validateDestinations(base,job,jobFile,inputs);
     for(let i=0;i<outputs.length;i++) {

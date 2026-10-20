@@ -86,7 +86,7 @@ afterEach(() => { vi.restoreAllMocks(); for (const dir of roots.splice(0)) rmSyn
 describe('T7 closed job schema', () => {
   it('exposes only five operations and validates data without reading files or mutating it', () => {
     expect(BLENDER_OPS).toEqual(['normalize', 'rig-arp', 'retarget-arp', 'build-scene', 'render-views']);
-    const jobs = [build(), render(), ...['normalize', 'rig-arp', 'retarget-arp'].map(op => ({ op, inputs: op === 'retarget-arp' ? ['absent-a.glb', 'absent-b.glb'] : ['absent.glb'], params: {}, outputs: ['out.glb'] }))];
+    const jobs = [build(), render(), { op: 'normalize', inputs: ['absent.glb'], params: { sourceUp: 'Y', targetHeightMeters: 1.8, maxTris: 30000, maxTextureSize: 2048 }, outputs: ['out.glb', 'spec.json'] }, ...['rig-arp', 'retarget-arp'].map(op => ({ op, inputs: op === 'retarget-arp' ? ['absent-a.glb', 'absent-b.glb'] : ['absent.glb'], params: {}, outputs: ['out.glb'] }))];
     for (const job of jobs) { const before = clone(job); expect(validateJob(job)).toBe(job); expect(job).toEqual(before); }
   });
   it.each([
@@ -229,7 +229,7 @@ describe('T7 isolated deterministic mock evidence', () => {
     f.job.params.objects[0].position[0] = 5; rewrite(f); const changedJob = runBlenderJob(f.file, { mock: true });
     expect(changedJob.jobHash).not.toBe(changedInput.jobHash);
   });
-  it.each(['normalize', 'rig-arp', 'retarget-arp'])('reserved %s mock is explicit and isolated without claiming real implementation', op => {
+  it.each(['rig-arp', 'retarget-arp'])('reserved %s mock is explicit and isolated without claiming real implementation', op => {
     const f = fixture({ op, inputs: op === 'retarget-arp' ? ['scene.glb', 'prop.glb'] : ['scene.glb'], params: {}, outputs: ['result.glb'] });
     const report = runBlenderJob(f.file, { mock: true }); expect(report.mock).toBe(true);
     expect(existsSync(join(f.dir, 'result.glb'))).toBe(false); expect(readFileSync(report.logPath, 'utf8')).toContain('no Blender execution');

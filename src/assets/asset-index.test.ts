@@ -180,6 +180,15 @@ describe('asset-index — spec 闭集 schema（REQ-Resource ③）', () => {
     expect(idx.assets[0].type).toBe('mesh');
   });
 
+  it('T4 normalized mesh spec validates units/pivot and measured positive integer counts', () => {
+    const spec = { scale: 1, up: 'Y', pivot: 'bottom-center', tris: 12, bytes: 2048 };
+    const index = (value: Record<string, unknown>) => ({ version: 1, assets: [{ id: 'normalized', type: 'mesh', description: 'candidate', status: 'tbf', spec: value }] });
+    expect(parseAssetIndex(index(spec)).assets[0].spec).toEqual(spec);
+    for (const patch of [{ up: 'Z' }, { pivot: 'center' }, { tris: 0 }, { tris: 1.5 }, { bytes: -1 }, { bytes: Infinity }])
+      expect(() => parseAssetIndex(index({ ...spec, ...patch }))).toThrow(/spec\.(up|pivot|tris|bytes)/);
+    expect(parseAssetIndex(index({ scale: 2, genCollision: 'box' })).assets[0].spec).toEqual({ scale: 2, genCollision: 'box' });
+  });
+
   it('旧 texture 条目（无 usage/colorSpace·带 freeform format）照常通过（向后兼容）', () => {
     const idx = parseAssetIndex({ version: 1, assets: [{ id: 'x', type: 'texture', description: 'a', status: 'tbf', spec: { format: 'png', width: 64, transparent: true } }] });
     expect(idx.assets).toHaveLength(1);

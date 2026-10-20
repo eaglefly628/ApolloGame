@@ -53,6 +53,237 @@ def import_glb(path):
     return objects
 
 
+def glb_document(path):
+    data = Path(path).read_bytes()
+    if len(data) < 20 or struct.unpack_from('<4sII', data) != (b'glTF', 2, len(data)):
+        raise ValueError('normalize requires a valid GLB 2.0 container')
+    length, kind = struct.unpack_from('<II', data, 12)
+    if kind != 0x4E4F534A or length > len(data) - 20:
+        raise ValueError('GLB is missing its JSON chunk')
+    document = json.loads(data[20:20 + length])
+    for item in document.get('buffers', []) + document.get('images', []):
+        if 'uri' in item and not item['uri'].startswith('data:'):
+            raise ValueError('normalize requires a self-contained GLB; external URI found')
+    return document, len(data)
+
+
+def mesh_bounds(meshes, matrix):
+    minimum, maximum = [math.inf] * 3, [-math.inf] * 3
+    count = 0
+    for mesh, world in meshes:
+        conversion = matrix @ world
+        for vertex in mesh.vertices:
+            point = conversion @ vertex.co
+            if not all(math.isfinite(value) for value in point):
+                raise ValueError('mesh contains nonfinite world coordinates')
+            for axis in range(3):
+                minimum[axis] = min(minimum[axis], point[axis])
+                maximum[axis] = max(maximum[axis], point[axis])
+            count += 1
+    if not count:
+        raise ValueError('GLB input contains no vertices')
+    return [minimum, maximum]
+
+
+def validate_normalize_samplers(document, stage):
+    supported = {'wrapS': 10497, 'wrapT': 10497, 'magFilter': 9729, 'minFilter': 9987}
+    for index, sampler in enumerate(document.get('samplers', [])):
+        if not isinstance(sampler, dict):
+            raise ValueError(f'normalize rejects unsupported sampler: {stage} samplers[{index}] must be an object')
+        for field, expected in supported.items():
+            if field in sampler and (type(sampler[field]) is not int or sampler[field] != expected):
+                raise ValueError(f'normalize rejects unsupported sampler: {stage} samplers[{index}].{field}={sampler[field]!r}; supported value is {expected} or omitted default')
+
+
+def normalize(job):
+    params = job['params']
+    if len(job['inputs']) != 1 or len(job['outputs']) != 2:
+        raise ValueError('normalize requires one GLB input and outputs [GLB, JSON]')
+    if Path(job['outputs'][0]).suffix.lower() != '.glb' or Path(job['outputs'][1]).suffix.lower() != '.json':
+        raise ValueError('normalize outputs must be [GLB, JSON]')
+    if set(params) != {'sourceUp', 'targetHeightMeters', 'maxTris', 'maxTextureSize'}:
+        raise ValueError('normalize requires exactly sourceUp, targetHeightMeters, maxTris, maxTextureSize')
+    source_up, height = params['sourceUp'], params['targetHeightMeters']
+    max_tris, max_texture = params['maxTris'], params['maxTextureSize']
+    if source_up not in {'Y', 'Z'}:
+        raise ValueError('sourceUp must be Y or Z; source semantic up is never guessed')
+    if isinstance(height, bool) or not isinstance(height, (int, float)) or not math.isfinite(height) or height <= 0:
+        raise ValueError('targetHeightMeters must be a finite positive number')
+    if type(max_tris) is not int or max_tris <= 0:
+        raise ValueError('maxTris must be a positive integer')
+    if type(max_texture) is not int or not 1 <= max_texture <= 2048:
+        raise ValueError('maxTextureSize must be an integer from 1 to 2048')
+    document, _ = glb_document(job['inputs'][0])
+    validate_normalize_samplers(document, 'input')
+    for mesh in document.get('meshes', []):
+        for primitive_data in mesh.get('primitives', []):
+            mode = primitive_data.get('mode', 4)
+            if type(mode) is not int or mode != 4:
+                raise ValueError(f'normalize rejects unsupported topology: primitive mode={mode!r}; only TRIANGLES (mode=4) is supported')
+    if document.get('skins') or document.get('animations'):
+        raise ValueError('normalize rejects armature/animation input; use the T5 rig/animation pipeline')
+    from io_scene_gltf2 import is_draco_available
+    if not is_draco_available():
+        raise RuntimeError('Draco encoder missing; normalize refuses an uncompressed export')
+    log('decision', f'normalize sourceUp={source_up} height={height}m; Draco level=6 position=20 normal=10 texcoord=12 color=10 generic=12')
+    reset_scene()
+    previous_images = set(bpy.data.images)
+    imported = import_glb(job['inputs'][0])
+    images = sorted(set(bpy.data.images) - previous_images, key=lambda image: image.name)
+    if any(obj.type == 'ARMATURE' or obj.animation_data is not None for obj in imported):
+        raise ValueError('normalize rejects imported armature/animation; use T5')
+    if any(obj.type == 'MESH' and obj.data.shape_keys is not None for obj in imported):
+        raise ValueError('normalize rejects morph targets/shape keys, including static weights; explicit morph handling is required')
+    bpy.context.view_layer.update()
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    meshes = []
+    for obj in imported:
+        if obj.type == 'MESH' and len(obj.data.vertices):
+            evaluated = obj.evaluated_get(depsgraph)
+            mesh = bpy.data.meshes.new_from_object(evaluated, preserve_all_data_layers=True, depsgraph=depsgraph)
+            mesh.calc_loop_triangles()
+            meshes.append((obj, mesh, obj.matrix_world.copy()))
+    triangles_in = sum(len(mesh.loop_triangles) for _, mesh, _ in meshes)
+    if triangles_in <= 0:
+        raise ValueError('normalize requires triangle geometry')
+    if triangles_in > max_tris:
+        raise ValueError(f'triangle budget exceeded: {triangles_in} > maxTris={max_tris}; automatic decimation is disabled')
+    source_bounds = mesh_bounds([(mesh, world) for _, mesh, world in meshes], BASIS.inverted())
+    # Input is encoded as glTF Y-up, but sourceUp describes the model's semantic up.
+    rotation = (Matrix.Identity(4) if source_up == 'Y'
+                else Matrix(((1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, 0, 0, 1))))
+    bounds = mesh_bounds([(mesh, world) for _, mesh, world in meshes], rotation @ BASIS.inverted())
+    source_height = bounds[1][1] - bounds[0][1]
+    if source_height <= 0:
+        raise ValueError(f'model has zero height along sourceUp={source_up}')
+    applied_scale = height / source_height
+    if not math.isfinite(applied_scale) or applied_scale <= 0:
+        raise ValueError('normalization scale is not finite and positive')
+    pivot = Vector(((bounds[0][0] + bounds[1][0]) / 2, bounds[0][1], (bounds[0][2] + bounds[1][2]) / 2))
+    conversion = BASIS @ Matrix.Scale(applied_scale, 4) @ Matrix.Translation(-pivot) @ rotation @ BASIS.inverted()
+    members = {obj for obj, _, _ in meshes}
+    custom_normal_meshes = 0
+    for obj, mesh, world in meshes:
+        baked = conversion @ world
+        corner_normals = None
+        if mesh.has_custom_normals:
+            # Mesh.transform changes the geometry-relative custom-normal encoding
+            # without preserving authored directions, even for positive scales.
+            # Retain each polygon corner before baking and use the normal matrix.
+            try:
+                normal_matrix = baked.to_3x3().inverted().transposed()
+            except ValueError as error:
+                raise ValueError(f'cannot preserve authored normals under singular mesh transform: {obj.name}') from error
+            corner_normals = {
+                (polygon.index, mesh.loops[index].vertex_index):
+                    (normal_matrix @ mesh.corner_normals[index].vector).normalized()
+                for polygon in mesh.polygons for index in polygon.loop_indices
+            }
+            custom_normal_meshes += 1
+        mesh.transform(baked)
+        if baked.to_3x3().determinant() < 0:
+            mesh.flip_normals()
+        mesh.update()
+        if corner_normals is not None:
+            # flip_normals reorders loops; polygon + vertex identity keeps split
+            # normals attached to their original corners after winding reversal.
+            mesh.normals_split_custom_set([
+                corner_normals[(polygon.index, mesh.loops[index].vertex_index)]
+                for polygon in mesh.polygons for index in polygon.loop_indices
+            ])
+            mesh.update()
+        obj.parent = None
+        obj.matrix_parent_inverse = Matrix.Identity(4)
+        obj.matrix_world = Matrix.Identity(4)
+        obj.data = mesh
+    omitted = [obj for obj in list(bpy.context.scene.objects) if obj not in members]
+    for obj in omitted:
+        bpy.data.objects.remove(obj, do_unlink=True)
+    log('transition', f'baked {len(meshes)} meshes to metres, identity transforms and bottom-center pivot; tris={triangles_in}; preserved custom-normal meshes={custom_normal_meshes}; omitted nonmesh nodes={len(omitted)}')
+    texture_sizes = []
+    resized = 0
+    for image in images:
+        width, image_height = image.size[:]
+        if width <= 0 or image_height <= 0:
+            raise ValueError(f'texture has no decodable pixels: {image.name}')
+        ratio = min(1, max_texture / max(width, image_height))
+        if ratio < 1:
+            width, image_height = max(1, round(width * ratio)), max(1, round(image_height * ratio))
+            image.scale(width, image_height)
+            # scale() alone does not mark dirty (Blender T95616); otherwise the
+            # exporter may reuse the original oversized packed PNG/JPEG bytes.
+            image.pixels[0] = image.pixels[0]
+            image.update()
+            if not image.is_dirty:
+                raise RuntimeError(f'cannot mark resized texture dirty: {image.name}')
+            resized += 1
+        texture_sizes.append({'name': image.name, 'width': width, 'height': image_height})
+    log('transition', f'textures={len(images)} resized={resized} unchanged={len(images) - resized}; limit={max_texture}; material nodes and color spaces preserved')
+    bpy.context.view_layer.update()
+    finished(bpy.ops.export_scene.gltf(
+        filepath=job['outputs'][0], export_format='GLB', export_yup=True,
+        export_cameras=False, export_lights=False, export_animations=False,
+        export_extras=False, export_apply=False, use_selection=False,
+        export_materials='EXPORT', export_image_format='AUTO', export_keep_originals=False,
+        use_mesh_edges=False, use_mesh_vertices=False,
+        export_draco_mesh_compression_enable=True, export_draco_mesh_compression_level=6,
+        export_draco_position_quantization=20, export_draco_normal_quantization=10,
+        export_draco_texcoord_quantization=12, export_draco_color_quantization=10,
+        export_draco_generic_quantization=12,
+    ), 'normalized Draco GLB export')
+    exported, byte_count = glb_document(job['outputs'][0])
+    validate_normalize_samplers(exported, 'output')
+    extension = 'KHR_draco_mesh_compression'
+    if extension not in exported.get('extensionsUsed', []):
+        raise RuntimeError('Draco export missing KHR_draco_mesh_compression declaration; refusing uncompressed output')
+    triangles_out = 0
+    primitives = 0
+    for mesh in exported.get('meshes', []):
+        for primitive_data in mesh.get('primitives', []):
+            if primitive_data.get('mode', 4) != 4:
+                raise RuntimeError('normalized export contains unsupported nontriangle geometry')
+            compressed = primitive_data.get('extensions', {}).get(extension)
+            if not isinstance(compressed, dict) or 'bufferView' not in compressed or not compressed.get('attributes'):
+                raise RuntimeError('normalized triangle primitive is missing actual Draco compression')
+            if 'indices' not in primitive_data:
+                raise RuntimeError('normalized Draco primitive is missing triangle indices')
+            count = exported['accessors'][primitive_data['indices']]['count']
+            if count <= 0 or count % 3:
+                raise RuntimeError('normalized export has invalid triangle index count')
+            triangles_out += count // 3
+            primitives += 1
+    if not primitives or triangles_out != triangles_in or triangles_out > max_tris:
+        raise RuntimeError(f'export triangle count changed or exceeded budget: in={triangles_in} out={triangles_out} budget={max_tris}')
+    if any('bufferView' not in image or 'uri' in image for image in exported.get('images', [])):
+        raise RuntimeError('normalized GLB did not embed all material textures')
+    # Import the result to exercise the real Draco decoder and measure the final
+    # glTF geometry, including compression quantization rather than only intent.
+    reset_scene()
+    previous_images = set(bpy.data.images)
+    decoded = import_glb(job['outputs'][0])
+    for image in set(bpy.data.images) - previous_images:
+        if min(image.size) <= 0 or max(image.size) > max_texture:
+            raise RuntimeError(f'exported texture violates size limit: {image.name} {tuple(image.size)} > {max_texture}')
+    bpy.context.view_layer.update()
+    bounds = mesh_bounds([(obj.data, obj.matrix_world) for obj in decoded if obj.type == 'MESH'], BASIS.inverted())
+    tolerance = max(1e-6, height * 1e-5)
+    if (abs(bounds[0][1]) > tolerance or abs(bounds[1][1] - height) > tolerance
+            or abs(bounds[0][0] + bounds[1][0]) > 2 * tolerance
+            or abs(bounds[0][2] + bounds[1][2]) > 2 * tolerance):
+        raise RuntimeError(f'Draco-decoded bounds fail height/pivot contract: {bounds}')
+    report = {
+        'spec': {'scale': 1, 'up': 'Y', 'pivot': 'bottom-center', 'tris': triangles_out, 'bytes': byte_count},
+        'normalization': {
+            'sourceUp': source_up, 'targetHeightMeters': height, 'appliedScale': applied_scale,
+            'sourceBounds': source_bounds, 'bounds': bounds,
+            'trianglesIn': triangles_in, 'trianglesOut': triangles_out,
+            'maxTextureSize': max_texture, 'textureSizes': texture_sizes, 'compression': 'draco',
+        },
+    }
+    Path(job['outputs'][1]).write_text(json.dumps(report, sort_keys=True, indent=2, allow_nan=False) + '\n')
+    log('commit', f'normalized and Draco-decoded primitives={primitives} tris={triangles_out} bytes={byte_count}; report emitted')
+
+
 def primitive(data):
     name, source = data['name'], data['source']
     kind = source['primitive']
@@ -222,8 +453,6 @@ def main():
     if op not in OPS:
         raise ValueError(f'unknown op: {op}')
     log('decision', f'op={op}; inputs={len(job["inputs"])} outputs={len(job["outputs"])}')
-    if op == 'normalize':
-        raise RuntimeError('normalize executor not ready: implement normalization/budget/compression in T4')
     if op in {'rig-arp', 'retarget-arp'}:
         if not arp_available():
             raise RuntimeError('Auto-Rig Pro plugin missing; install licensed plugin for T5')
@@ -234,7 +463,7 @@ def main():
         raise ValueError('views/output count mismatch')
     for output in job['outputs']:
         Path(output).parent.mkdir(parents=True, exist_ok=True)
-    (build_scene if op == 'build-scene' else render_views)(job)
+    {'normalize': normalize, 'build-scene': build_scene, 'render-views': render_views}[op](job)
     for output in job['outputs']:
         path = Path(output)
         if not path.is_file() or path.stat().st_size == 0:

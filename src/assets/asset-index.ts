@@ -155,10 +155,15 @@ export interface TextureSpec {
   wrap?: TextureWrap; // 缺省：sprite=clamp·材质贴图=repeat（渲染线消费·当前 PBR 恒 repeat）
   tiling?: number; // UV 重复次数（材质平铺·渲染线后期消费）
 }
-/** mesh 语义 spec：scale/genCollision（genCollision 接 Collider3D·后期）。 */
+/** mesh spec：可选T4规范化实测元数据；genCollision消费另行实现。 */
 export interface MeshSpec {
   scale?: number;
   genCollision?: MeshCollision;
+  /** T4 baked normalization metadata; absent on legacy assets. */
+  up?: 'Y';
+  pivot?: 'bottom-center';
+  tris?: number;
+  bytes?: number;
 }
 /** material 语义 spec（材质成索引资产·Phase 4·当前仅校验形状）：预设 + 覆盖参数 + 引 texture key。 */
 export interface MaterialSpec {
@@ -241,6 +246,11 @@ function validateSpec(type: AssetType, spec: Record<string, unknown> | undefined
   } else if (type === 'mesh') {
     mustNum('scale');
     if (spec.genCollision !== undefined && !inSet(MESH_COLLISIONS, spec.genCollision)) badEnum('genCollision', MESH_COLLISIONS);
+    if (spec.up !== undefined && spec.up !== 'Y') badEnum('up', ['Y']);
+    if (spec.pivot !== undefined && spec.pivot !== 'bottom-center') badEnum('pivot', ['bottom-center']);
+    for (const f of ['tris', 'bytes'])
+      if (spec[f] !== undefined && (!Number.isSafeInteger(spec[f]) || (spec[f] as number) <= 0))
+        fail(`assets[${i}] "${id}".spec.${f} 必须是正整数`);
   } else if (type === 'material') {
     for (const f of ['preset', 'map', 'normalMap', 'roughnessMap', 'aoMap', 'metalnessMap', 'emissiveMap', 'ormMap']) mustStr(f);
     for (const f of ['color', 'roughness', 'metalness', 'emissive']) mustNum(f);

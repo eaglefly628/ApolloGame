@@ -3,7 +3,7 @@
 `node scripts/blender-job.mjs <job.json> [--mock] [--blender <executable>] [--timeout-ms <n>]`。
 可执行文件取 CLI、`BLENDER_BIN` 或 PATH 中的 `blender`。生产固定同一 LTS 补丁版本；当前真实验收固定 Blender 4.5.14 LTS。程序缺失明确失败，不自动降级；`--mock` 才生成隔离模拟产物。所有工作在引擎外离线进行，不改 sim、不自动登记资产或签生产门。
 
-T7 首阶段交付作业桥、建场景和预览链路；五个 op 的闭集入口是 `normalize`、`rig-arp`、`retarget-arp`、`build-scene`、`render-views`。前三个 op 的下游实现分别属于后续 T4/T5；当前实际执行须非零退出、不给成功记录或假模型。ARP 入口区分“插件未安装”和“已安装但 T5 执行器未就绪”，不以桥存在冒充绑骨已完成。
+T7 首阶段交付作业桥、建场景和预览链路；五个 op 的闭集入口是 `normalize`、`rig-arp`、`retarget-arp`、`build-scene`、`render-views`。normalize已由T4接通米制/轴心/预算/贴图与Draco，数据契约见`docs/design/ai-pipeline/model-normalization.md`。rig-arp/retarget-arp仍由T5交付，当前实际执行须非零退出、不给成功记录或假模型。ARP 入口区分“插件未安装”和“已安装但 T5 执行器未就绪”，不以桥存在冒充绑骨已完成。
 
 ## 输入与证据
 
@@ -66,6 +66,6 @@ position/target 仍为 Y-up米制，fov 是度；width/height 为16..4096整数�
 
 普通无 key/无网络环境：`npx vitest run scripts/blender-job.test.mjs`，使用显式 mock 与临时假可执行程序，检查作业协议及失败传播。
 
-真实离线：`BLENDER_BIN=<固定LTS完整程序路径> node scripts/blender-job.integration.mjs`。双跑真实场景 GLB、双机位 PNG 比较哈希，校验四类 E5 节点，确认 T4/T5 未就绪不能成功。`BLENDER_KEEP_EVIDENCE=1` 可保留临时证据。没有 Blender 时此真实验收明确失败，不能当作已通过。
+真实离线：`BLENDER_BIN=<固定LTS完整程序路径> node scripts/blender-job.integration.mjs`。双跑真实场景 GLB、双机位 PNG 比较哈希，校验四类 E5 节点，确认 T5 未就绪不能成功（normalize另跑T4真实集成）。`BLENDER_KEEP_EVIDENCE=1` 可保留临时证据。没有 Blender 时此真实验收明确失败，不能当作已通过。
 
 本机验证工具来自[官方4.5发行目录](https://download.blender.org/release/Blender4.5/)，4.5.14 macOS arm64 DMG SHA256=`65134d9b07b20e2fa8d3c9e44f6f44ffb5c9774dd521b95f50387310241ca170`。命令行和导出参数依据[4.5命令行文档](https://docs.blender.org/manual/en/4.5/advanced/command_line/arguments.html)、[4.5 glTF导出API](https://docs.blender.org/api/4.5/bpy.ops.export_scene.html)。程序可放临时工具目录，保留完整应用资源，不要求安装进系统目录。

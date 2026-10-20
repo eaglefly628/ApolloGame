@@ -40,7 +40,7 @@ try {
   assert.deepEqual(c.outputs.map(o=>o.sha256),d.outputs.map(o=>o.sha256),'同render job两跑PNG必须同hash');
   assert.notEqual(c.outputs[0].sha256,c.outputs[1].sha256,'不同机位应给出不同证据');
   for(let i=0;i<views.length;i++){const p=readFileSync(c.outputs[i].path);assert.equal(p.readUInt32BE(16),views[i].width);assert.equal(p.readUInt32BE(20),views[i].height);}
-  for(const op of ['normalize','rig-arp','retarget-arp']) {
+  for(const op of ['rig-arp','retarget-arp']) {
     const job={op,inputs:op==='retarget-arp'?['prop.glb','prop.glb']:['prop.glb'],params:{},outputs:[`out/${op}.glb`]};
     // Duplicate input paths are rejected by schema; make a distinct fixture for retarget.
     if(op==='retarget-arp'){copyFileSync(join(dir,'prop.glb'),join(dir,'motion.glb'));job.inputs[1]='motion.glb';}
@@ -48,12 +48,12 @@ try {
     assert.throws(()=>runBlenderJob(p),e=>{
       assert.match(e.message,/Blender退出码/);assert(e.logPath,'失败必须有作业日志');
       const log=readFileSync(e.logPath,'utf8');
-      assert.match(log,op==='normalize'?/normalize executor not ready.*T4/:/Auto-Rig Pro plugin missing|T5 executor not ready/,'必须命中下游拒收原因，崩溃不能冒充通过');
+      assert.match(log,/Auto-Rig Pro plugin missing|T5 executor not ready/,'必须命中下游拒收原因，崩溃不能冒充通过');
       return true;
     },`${op} 下游未就绪必须明确失败`);assert(!existsSync(join(dir,job.outputs[0])));
   }
   console.log(JSON.stringify({ok:true,buildHash:a.outputs[0].sha256,views:c.outputs.map(o=>({sha256:o.sha256,bytes:o.bytes})),nodeNames:names,artifactDir:dir}));
-  console.log('BLENDER-REAL: 同job两跑GLB/PNG哈希一致；四类E5节点保留；T4/T5未就绪明确拒收');
+  console.log('BLENDER-REAL: 同job两跑GLB/PNG哈希一致；四类E5节点保留；T5未就绪明确拒收；T4实测由model-normalize.integration覆盖');
 } finally {
   if(process.env.BLENDER_KEEP_EVIDENCE==='1')console.error(`[blender-real] evidence retained: ${dir}`);
   else rmSync(dir,{recursive:true,force:true});
