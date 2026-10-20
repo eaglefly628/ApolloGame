@@ -83,3 +83,52 @@ Q=10000/米；空间桶加 BigInt 重心采高、精确整段覆盖。台阶分�
 日志 `/private/tmp/aiflow-r2-final-{complete,tsc,vitest-full,build,docs-ref,context-budget,art-ledger-guard,native,skill-shape,sim-dom}.log` 与 `aiflow-r2-final-vitest.json`；实际scoped原始 `/private/tmp/aiflow-r2-delivery-scoped.log`。构建仅既有chunk>500k提示，台账仅game-a art-03/game-c art-017缺文件在案WARN。实际scoped末行 `❌ 门禁失败于 depcruise（退出码 1）`；余步骤末行 `除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）`。没有改game113、PUI或任何游戏层文件。
 
 待独立复查另写最终判词；这里不自判通过。
+
+
+## 正式独立复查判词（2026-10-20）
+
+**结论：PASS。** 被审施工提交 `5a6a7ed4b210fadbb88a01e248bf54b9f825837e`；复查人与施工人分离。独立副本 `/private/tmp/apollo-r2-review-final-20261020`，未改构造源码、工单状态或人门。以下均为复查方实际执行，不采信上文自证替代证据。已完成四步铁律。
+
+### ① 独立复跑与完整门禁
+
+实际执行 `node scripts/scoped-gate.mjs --run`：eslint=0，depcruise=1，仅 `games/game113/guide-art.ts → src/assets/asset-index.ts` 原基线。再补完整计划，Vitest 使用原断言/原5000ms超时、`--maxWorkers=4 --minWorkers=1`，排除原生 node:test 文件并单独执行它，没有增加基线或延长测试超时。
+
+| 步骤 | 独立退出码与结果 |
+|---|---|
+| scoped-gate | 1；仅指定 depcruise 基线 |
+| native spritegen node:test | 0；5项通过 |
+| tsc / build | 0 / 0 |
+| Vitest 全量 | 1；6303/6304，pending/todo=0，唯一失败文件/断言是指定 game113 围栏 |
+| skill-shape / sim-dom-fence | 0 / 0；存量shape WARN，无新增，sim零DOM |
+| docs-ref / context-budget | 0 / 0 |
+| art-ledger-guard | 2；仅既有game-a art-03、game-c art-017缺文件WARN |
+| Blender / raw Chrome / Draco Chrome | 0 / 0 / 0 |
+| E1 / R4真实回归 | 0 / 0 |
+
+核对 JSON `testResults` 的630个文件，只有1个failed文件、1个failed断言；顶层 `numFailedTestSuites=2` 按 describe 层级统计（总2229），不是第二个失败文件。没有NoSuite、取消或跳过的测试冒充绿灯。完整日志 `/private/tmp/aiflow-r2-review-{scoped,complete,tsc,vitest-full,build,docs-ref,context-budget,art-ledger-guard,native,skill-shape,sim-dom}.log`，机读结果 `aiflow-r2-review-vitest.json`。31项冻结源码SHA在全部实证后再次逐字节核对不变。
+
+### ② 自选锚点撤修验红
+
+只在另一个独立副本 `/private/tmp/apollo-r2-independent-20261020` 撤修，未触碰正式完整门禁的冻结树。每处先断言唯一锚点恰命中1次，finally逐字节恢复。
+
+| 独立撤修 | 命中用例与实际红灯 |
+|---|---|
+| 将ground-init执行改成no-op | `acquires the initial support before motion and cannot jump a first-tick hole`：AssertionError，x实际2.5、应0.5；exit1，证明初始化并非无关装饰 |
+| 摘掉LightRig.dispose的主阴影释放 | `disposes main/local map and mapPass once, removes owned lights, and retains unrelated scene assets`：AssertionError，dispose实际0次、应1次；exit1 |
+
+恢复后runtime17、lights8、自选对抗6共31项通过，exit0；日志 `/private/tmp/r2-review-red-{init,cleanup}.log`、`r2-review-restored.log`，汇总 `r2-review-red-summary.json`。早期另自选低阶接触豁免锚点撤修，真实胶囊被卡x=-0.28284248、应>0.3，exit1；记录 `r2-independent-red.log`，同样已恢复。
+
+### ③ 对抗与真实链路实证
+
+- 独立新增实际碰撞对抗六例：合法0.2米低阶往返、1Q洞后低阶、高于上限1Q的立面、无关竖墙、动态障碍、不新增拓扑WARN，全部通过。永久定向早期71项及旧碰撞/prefab17项独立通过；最终live桶/尺寸安全检查、17项runtime、初始化具体拒绝原因均纳入冻结全量重跑。
+- 冻结源码对照锁前源码：旧game-z 180拍历史SHA `23c1d073789b68652a43ccd7470ab69224675b84561e7a067759791278f631ae`、末hash `006d3754`；prefab新生3D碰撞逐拍快照、系统顺序/相位及WARN与旧版完全相同。证据 `/private/tmp/r2-review-legacy-current.json`、`r2-independent-legacy-before.json`。
+- **自己重跑固定Blender 4.5.14**双导出及raw/Draco真编解码、实际字节SHA目录、sync/async/direct × trace开关，共12组180拍；历史均为 `a1816f08f8ce68c175c6d1251d7b17eba311fd319bcac1fa26b099e52388c6d8`。真实坡往返、合法阶精确返回、高阶/洞拒绝、墙推开后的同拍脚高、快照+order恢复、无输入变异均成立。自己的报告 `/private/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-r2-ground-YBsTZ7/report.json`，日志 `/private/tmp/r2-review-real.{log,stderr}`。
+- **自己重跑固定Chrome**：raw报告 `/private/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-r2-render-uVBpB6/report.json`；Draco报告同目录族 `apollo-r2-render-yP7w5w/report.json`。两种压缩均有开发根路径与构建子路径，实际GPU顶点脚底、坡/台阶往返、静止XZ只改sim脚高后的真像素变化、渲染前后完整hash不变均通过，diagnostics=[]。
+- 资源清理独立实证：主画布destroy后geometry/texture/worker/Blob均0。A先关闭时真实contextLost且旧GPU handle失效，历史counter1如实保留；B共享handle/program/material版本不变，强制真实draw像素 `1466462763 → 40202966 → 1466462763`。最后B、新C、原A同实例重开后均销毁归零；无未初始化/失败构造/重复destroy造成的多次释放。未伪写计数，未用dirty-skip代替B继续可用的证据。
+- E1真实旧链重跑 `/private/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-e1-real-6TGSTI/report.json`：开发/构建各压缩像素max/mean0，取消与释放后的workers/Blob0。R4自己的报告 `.../apollo-r4-real-oUZ2ue/report.json`：两部署各两代共享保留/归零成立。日志 `/private/tmp/r2-review-{render-raw,render-draco,e1-real,r4-real}.log`。
+
+### ④ 告警与边界核对
+
+读过全量与真实运行日志：实际R2严格组合、Blender→Engine runtime/topology无新WARN；只有manifest既有表现组件provider提示。全量出现的软环 `[L,P]` 来自topological-sort自己的故意告警测试；SCC基线未扩大。构建仅既有chunk体积提示，shape与台账仅在案WARN。
+
+单值高度场、≤45°、固定Q/预算、默认0.25米导航步高、无重力/跳跃/全足迹支撑保证等限制已在契约公开，独立实证与其吻合。自产夹具没有冒称Tripo样本、没有付费API或授权插件执行声明，没有游戏层/PUI/game113改动。没有新增阻塞；本判词只认可R2交付，不代签任何人门。
