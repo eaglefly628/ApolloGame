@@ -92,3 +92,51 @@ T7 typed/实际结构/帧数/rest/单 clip/Mock 拒收/真实失败另9处：`/p
 ## 交叉复查
 
 待另一位复查人对冻结提交执行四步。可独立认定离线工具范围的结果，真实 ARP/Mixamo 整链验收保持待补，不由施工方给自己判词。
+
+
+## 正式独立复查判词（2026-10-20）
+
+**PASS，仅限本次约定的离线工具、Mock、人工回灌格式校验和已知原生启动防护范围。真实ARP Smart/Remap、Mixamo/Tripo来源与整链验收仍待补，未将整张T5生产验收结案。** 被审施工提交 `43970e051aad190af231f3cafe2c3c2d05cdcd62`，复查人与施工人分离。新的独立副本 `/private/tmp/apollo-character-review-final-20261021`，17项源码/测试/夹具SHA与冻结清单逐字节吻合；未改构造源码、工单或人门。以下是复查方实际执行的四步记录。
+
+### ① 独立复跑
+
+先核CLI实际支持 `--base`，执行 `node scripts/scoped-gate.mjs --base ada24193d --run`，正确识别22文件/full范围；eslint退出0，depcruise退出1，仅指定 `games/game113/guide-art.ts → src/assets/asset-index.ts` 原基线。独立阅读续跑器后补原full计划，使用原断言、原超时、maxWorkers4/minWorkers1；原生spritegen文件从Vitest排除，交原生node:test执行，没有新增NoSuite基线。
+
+| 步骤 | 独立退出码 / 结果 |
+|---|---|
+| actual scoped --run | 1，eslint0 / 指定depcruise1 |
+| spritegen原生node:test | 0，5项 |
+| tsc / build | 0 / 0 |
+| Vitest全量 | 1，6556/6557；pending/todo=0；635个实际文件中仅指定围栏1文件/1断言失败 |
+| docs-ref / context-budget | 0 / 0 |
+| art-ledger-guard | 2，仅game-a art-03、game-c art-017在案缺文件WARN |
+
+日志 `/private/tmp/aiflow-t5-independent-{scoped,complete,tsc,vitest-full,build,docs-ref,context-budget,art-ledger-guard,native}.log`，机读 `aiflow-t5-independent-vitest.json`、`aiflow-t5-independent-steps.json`。完整续跑器退出0，末行“除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）”。
+
+### ② 自选不同锚点撤修验红
+
+只在自己的另一个隔离副本 `/private/tmp/apollo-character-review-fixed` 撤修。该副本17项源码先与正式冻结点逐字节匹配，每处先断言锚点恰命中1，再baseline0→撤修1→恢复0；没有改正式门禁树。
+
+| 独立撤修 | 实际红灯 |
+|---|---|
+| return发布从原已验证Buffer改成await后重读磁盘结果文件 | 自己的并发篡改探针命中AssertionError：写出的SHA实际 `2d01a723…`，应为原快照 `c2552e15…`。恢复后源/结果在await期间实际改变，发布仍是原已验字节、8份输入快照SHA均吻合 |
+| 原生启动保护误去掉sandbox条件，使正常授权环境也被拦 | `does not mistake unrelated fake-process unit fixtures or other platforms for this observed failure` 命中AssertionError：正常darwin/sandbox=null应为null，实际返回拦截理由；恢复后通过 |
+
+日志 `/private/tmp/t5-independent-red-{immutable-return,authorized-launch}.log`、`t5-independent-restored-{immutable-return,authorized-launch}.log`，汇总 `t5-independent-red-summary.json`。第一处是自选TOCTOU断言，不靠另一门提前拒收冒称验红；第二处仅纯函数与harmless Node替身，**验红没有启动原生Blender或再次制造崩溃弹窗**。
+
+### ③ 对抗与实证
+
+- 早期独立发现并打回的三个漏洞，已用自己的原探针对最终源码再次验证：多clip回灌由单clip门拒；默认scene不含skin mesh由实际可达几何门拒；非FBX纯文本由binary结构门拒。前两项使用有效binary FBX，确保未被FBX门提前遮住。另明确带mock的源rig不能进入真实候选。最终报告 `/private/tmp/t5-independent-final-adversarial.log`（输入证据目录 `t5-independent-adversarial-oxNDcR`），stderr同名。
+- 早期另发现PATH别名漏口；最终绝对路径、物理symlink、PATH别名均已独立复验。9项专门测试通过，实际断言假进程未启动；源SHA匹配正式提交。纯函数正常授权环境返回null，不清环境变量、不绕过权限、不声称所有Blender崩溃已修。
+- 定向早期177项、修复轮97项及9项启动保护已独立运行；最终全部纳入上述6557项全量。独立TOCTOU探针使用自己临时目录中的测试白名单/确认记录，不触碰真人名单、不签真实人门；严格验证发布消费同一份已验输入快照。
+- **真实Blender证据来自本复查人在早期轮亲自执行的双跑**：`/private/tmp/apollo-character-independent-real-20261020/report.json`，不是施工人的报告。两轮各idle/walk/reach共6个实际GLB，三种播放pose不同，最大蒙皮顶点变化分别0.16327356 / 0.53469896 / 0.77072907米，重复导出semantic/pose一致；统一骨架SHA `d978ae66d7bc3e72a8a846741ab3a946c1d9578d327cf80c7631f4bcea8d46a2`。
+- 早期真实执行后，Blender夹具源码逐字节未变，direct runner差异仅新增启动guard的import/call，原播放/复现逻辑未变。正式轮用最终GLB校验器重新读取上述6个真实文件，全部通过默认scene实际可达、蒙皮、单clip、31采样与骨架指纹；记录 `/private/tmp/t5-independent-final-existing-glbs.json`。**正式轮没有再次启动原生Blender**。这些报告source为generic-blender-fixture、realArpValidated/realMixamoValidated为false，不是ARP/Mixamo生产证据。
+- 正式轮另独立解析已有 `/private/tmp/t5-official-blender-motion.fbx`，得到binary7400、254对象、307连接、162曲线、5022采样、1秒；记录 `/private/tmp/t5-independent-existing-fbx.json`。这里只独立验证该文件格式，没有重新导出或将作者给的来源说明当许可/Remap证明。T4→真实四图的作者实证仅作导航，未冒充本复查人的独立重跑；本轮可判范围的prepare/render接线由确定性Mock与既有T7协议覆盖。
+
+### ④ 读取告警、崩溃栈与边界
+
+已读完整门禁和自己的实证日志。唯一拓扑软环日志来自topological-sort故意测试的既有 `[L,P]`，不是本改动引入；构建仅既有chunk大小提示；台账仅上述两项在案WARN。缺ARP/缺适配器、proposed未确认、Mock降级与结构拒收均有明确日志和非零/模拟域区分，不能被读成真实生产成功。
+
+只读实际诊断 `/private/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/blender.crash.txt`，确认 `_platform_strstr → supports_barycentric_whitelist → MTLBackend::metal_is_supported → GPU_backend_type_selection_detect → wm_homefile_read_ex → WM_init`，Python backtrace为空。未重演启动崩溃、未删除诊断或改变用户系统设置。保护仅覆盖已识别的Mac seatbelt/已知Blender入口；任意自定义wrapper与其它原生崩溃不在保证内。
+
+S3手册公开了人工文件落点、SHA失效、标记确认/版本归档、Mixamo逐clip下载与回灌入口；没有代做确认、下载付费插件、写入真人姓名、发布资产或签生产门。本次离线工具范围没有剩余阻塞。**真实ARP受测版本适配器、真实Tripo人物与Mixamo动作、许可及人工动作质量/E2实际绑定继续保留待验，不以本判词关闭。**
