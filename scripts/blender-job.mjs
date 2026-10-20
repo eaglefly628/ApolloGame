@@ -10,6 +10,10 @@ import { validateSplit } from './asset-split.mjs';
 import { encodePng } from './ai-gen.mjs';
 import { decodePng } from './asset-matte.mjs';
 import { validateNormalizationResult } from './lib/model-normalization.mjs';
+import { assertBlenderLaunchAllowed } from './lib/blender-runtime.mjs';
+import { validateCharacterInputs } from './lib/character-inputs.mjs';
+import { inspectCharacterGlb } from './lib/character-glb.mjs';
+import { makeMockCharacterGlb } from './fixtures/character-pipeline/mock-character.mjs';
 
 export const BLENDER_OPS = Object.freeze(['normalize', 'rig-arp', 'retarget-arp', 'build-scene', 'render-views']);
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -77,9 +81,26 @@ export function validateJob(job) {
     if(!Number.isSafeInteger(job.params.maxTextureSize)||job.params.maxTextureSize<1||job.params.maxTextureSize>2048)reject('maxTextureSize 必须是1..2048整数');
     if(job.inputs.length!==1||extname(job.inputs[0]).toLowerCase()!=='.glb'||job.outputs.length!==2||extname(job.outputs[0]).toLowerCase()!=='.glb'||extname(job.outputs[1]).toLowerCase()!=='.json')reject('normalize 需要一个GLB输入和GLB、JSON两个有序输出');
   } else {
-    // T5 owns rig/retarget parameter contracts. Recognized is not executable yet.
-    object(job.params,[],`${job.op} params（下游T5尚未交付）`);
-    if(job.inputs.length<(job.op==='retarget-arp'?2:1)||job.outputs.length!==1||extname(job.outputs[0]).toLowerCase()!=='.glb')reject(`${job.op} 桥入口需要${job.op==='retarget-arp'?2:1}个以上输入和一个GLB输出`);
+    const rig=job.op==='rig-arp';
+    object(job.params,rig?['profile','markersInput']:['profile','clipId','fps','frames','loop','inPlace','provenanceInput'],`${job.op} params`);
+    if(!Object.keys(job.params).length) {
+      // T7 legacy recognition is intentionally retained; only typed T5 jobs have character semantics.
+      if(job.inputs.length<(rig?1:2)||job.outputs.length!==1||extname(job.outputs[0]).toLowerCase()!=='.glb')reject(`${job.op} 桥入口需要${rig?1:2}个以上输入和一个GLB输出`);
+    } else {
+      if(job.params.profile!=='apollo-humanoid-v1')reject('profile 必须是 apollo-humanoid-v1');
+      if(job.outputs.length!==1||extname(job.outputs[0]).toLowerCase()!=='.glb')reject(`${job.op} 需要一个GLB输出`);
+      if(rig) {
+        if(job.params.markersInput!==1)reject('markersInput 必须是1');
+        if(job.inputs.length!==6||extname(job.inputs[0]).toLowerCase()!=='.glb'||extname(job.inputs[1]).toLowerCase()!=='.json'||job.inputs.slice(2).some(p=>extname(p).toLowerCase()!=='.png'))reject('rig-arp 需要model.glb、markers.json及四个PNG有序输入');
+      } else {
+        if(job.params.provenanceInput!==2)reject('provenanceInput 必须是2');
+        if(typeof job.params.clipId!=='string'||!/^[a-z][a-z0-9-]*$/.test(job.params.clipId))reject('clipId 需要稳定的小写字母数字连字符标识');
+        if(!Number.isInteger(job.params.fps)||job.params.fps<1||job.params.fps>120)reject('fps 必须是1..120整数');
+        if(!Number.isInteger(job.params.frames)||job.params.frames<2||job.params.frames>36001)reject('frames 必须是2..36001整数');
+        for(const field of ['loop','inPlace'])if(typeof job.params[field]!=='boolean')reject(`${field} 必须是boolean`);
+        if(job.inputs.length!==3||extname(job.inputs[0]).toLowerCase()!=='.glb'||extname(job.inputs[1]).toLowerCase()!=='.fbx'||extname(job.inputs[2]).toLowerCase()!=='.json')reject('retarget-arp 需要targetRig.glb、sourceMotion.fbx、provenance.json有序输入');
+      }
+    }
   }
   return job;
 }
@@ -151,6 +172,9 @@ export function runBlenderJob(jobFile,{mock=false,blender=process.env.BLENDER_BI
   const inputs=job.inputs.map(p=>realpathSync(resolve(base,p)));
   const buffers=inputs.map((p,i)=>{if(!statSync(p).isFile())reject(`输入不是文件 ${job.inputs[i]}`);return readFileSync(p);});
   for(let i=0;i<inputs.length;i++)if(extname(job.inputs[i]).toLowerCase()==='.glb')validArtifact(inputs[i],'.glb');
+  const typedCharacter=['rig-arp','retarget-arp'].includes(job.op)&&job.params.profile==='apollo-humanoid-v1';
+  const characterInputs=typedCharacter?validateCharacterInputs(job,buffers,{mock}):null;
+  const targetCharacter=typedCharacter&&job.op==='retarget-arp'?inspectCharacterGlb(buffers[0]):null;
   const targets=validateDestinations(base,job,jobFile,inputs);
   checkSplit(job,buffers);
   const worker=readFileSync(join(HERE,'blender','worker.py'));
@@ -182,14 +206,17 @@ export function runBlenderJob(jobFile,{mock=false,blender=process.env.BLENDER_BI
     diagnostics.info(`[blender-job] decision: ${job.op} ${mock?'mock':'Blender'} job=${jobHash}`);
     if(mock) {
       diagnostics.warn('[blender-job] downgrade: --mock，仅隔离产物，不代表Blender/T4/T5真实成功');
+      if(['rig-arp','retarget-arp'].includes(job.op)&&!job.params.profile)finishLog('downgrade legacy T7 recognized-only empty mock; T5 character capability requires the typed contract');
+      const characterBytes=typedCharacter?makeMockCharacterGlb(job.op==='retarget-arp'?{clipName:job.params.clipId,fps:job.params.fps,frames:job.params.frames}:{}):null;
       for(let i=0;i<stageOutputs.length;i++) {
         const v=job.params.views?.[i];
         const kind=extname(stageOutputs[i]);
-        writeFileSync(stageOutputs[i],kind==='.png'?mockPng(jobHash,v.width,v.height):kind==='.json'?JSON.stringify({mock:true,spec:null,normalization:null})+'\n':mockGlb(jobHash));
+        writeFileSync(stageOutputs[i],kind==='.png'?mockPng(jobHash,v.width,v.height):kind==='.json'?JSON.stringify({mock:true,spec:null,normalization:null})+'\n':characterBytes||mockGlb(jobHash));
       }
       finishLog('downgrade explicit mock; no Blender execution');
     } else {
       const args=['--background','--factory-startup','--disable-autoexec','--python-exit-code','1','--python',scriptPath,'--',payloadPath];
+      assertBlenderLaunchAllowed(blender);
       const r=spawnSync(blender,args,{encoding:'utf8',timeout:timeoutMs,maxBuffer:16*1024*1024,windowsHide:true});
       finishLog(`Blender stdout:\n${r.stdout||''}\nBlender stderr:\n${r.stderr||''}`);
       if(r.error)reject(r.error.code==='ENOENT'?`找不到Blender，请安装固定LTS版本或设置BLENDER_BIN；仅显式--mock可模拟`:`Blender执行失败 ${r.error.code}: ${r.error.message}`);
@@ -201,6 +228,15 @@ export function runBlenderJob(jobFile,{mock=false,blender=process.env.BLENDER_BI
       return {path:mock?inside(evidenceDir,`out/${relative(base,targets[i])}`):targets[i],snapshotPath:file,sha256:sha(b),bytes:b.length};
     });
     if(job.op==='normalize')validateNormalizationResult(JSON.parse(readFileSync(stageOutputs[1],'utf8')),readFileSync(stageOutputs[0]),job.params,{mock});
+    if(typedCharacter) {
+      const characterOutput=inspectCharacterGlb(readFileSync(stageOutputs[0]),job.op==='retarget-arp'?{clipName:job.params.clipId,fps:job.params.fps,frames:job.params.frames}:{});
+      if(job.op==='retarget-arp') {
+        if(characterOutput.skeletonHash!==targetCharacter.skeletonHash)reject('retarget-arp 输出骨架rest/bind与targetRig不一致');
+        if(characterOutput.animations.length!==1)reject('retarget-arp 每个输出必须恰好一个动作');
+      }
+      if(!mock&&characterOutput.mock)reject('真实T5不接受mock标记工件');
+      finishLog(`transition typed T5 ${job.op} output verified: skinned apollo-humanoid-v1${job.op==='retarget-arp'?`; clip=${job.params.clipId} fps=${job.params.fps} frames=${job.params.frames}`:''}`);
+    }
     // Revalidate the complete physical destination set before publishing any output.
     if(!mock)validateDestinations(base,job,jobFile,inputs);
     for(let i=0;i<outputs.length;i++) {
@@ -212,7 +248,7 @@ export function runBlenderJob(jobFile,{mock=false,blender=process.env.BLENDER_BI
       copyFileSync(stageOutputs[i],temporary,constants.COPYFILE_EXCL);
       try{renameSync(temporary,p);}finally{rmSync(temporary,{force:true});}
     }
-    const report={ok:true,op:job.op,mock:!!mock,jobHash,inputs:refs,outputs,evidenceDir,logPath,scriptPath};
+    const report={ok:true,op:job.op,mock:!!mock,jobHash,inputs:refs,outputs,evidenceDir,logPath,scriptPath,...(characterInputs?.sourceEvidence?{sourceEvidence:characterInputs.sourceEvidence}:{})};
     finishLog(`commit ${outputs.map(o=>`${o.sha256} ${o.path}`).join('\n')}`);
     writeFileSync(resultPath,JSON.stringify(report,null,2)+'\n');
     diagnostics.info(`[blender-job] commit: ${outputs.length} 产物与hash已落档 ${resultPath}`);

@@ -233,6 +233,9 @@ describe('T7 isolated deterministic mock evidence', () => {
     const f = fixture({ op, inputs: op === 'retarget-arp' ? ['scene.glb', 'prop.glb'] : ['scene.glb'], params: {}, outputs: ['result.glb'] });
     const report = runBlenderJob(f.file, { mock: true }); expect(report.mock).toBe(true);
     expect(existsSync(join(f.dir, 'result.glb'))).toBe(false); expect(readFileSync(report.logPath, 'utf8')).toContain('no Blender execution');
+    expect(readFileSync(report.logPath, 'utf8')).toContain('T5 character capability requires the typed contract');
+    const bytes=readFileSync(report.outputs[0].path),doc=JSON.parse(bytes.toString('utf8',20,20+bytes.readUInt32LE(12)));
+    expect(doc.skins).toBeUndefined();expect(doc.animations).toBeUndefined();
   });
 });
 

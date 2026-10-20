@@ -3,7 +3,9 @@
 `node scripts/blender-job.mjs <job.json> [--mock] [--blender <executable>] [--timeout-ms <n>]`。
 可执行文件取 CLI、`BLENDER_BIN` 或 PATH 中的 `blender`。生产固定同一 LTS 补丁版本；当前真实验收固定 Blender 4.5.14 LTS。程序缺失明确失败，不自动降级；`--mock` 才生成隔离模拟产物。所有工作在引擎外离线进行，不改 sim、不自动登记资产或签生产门。
 
-T7 首阶段交付作业桥、建场景和预览链路；五个 op 的闭集入口是 `normalize`、`rig-arp`、`retarget-arp`、`build-scene`、`render-views`。normalize已由T4接通米制/轴心/预算/贴图与Draco，数据契约见`docs/design/ai-pipeline/model-normalization.md`。rig-arp/retarget-arp仍由T5交付，当前实际执行须非零退出、不给成功记录或假模型。ARP 入口区分“插件未安装”和“已安装但 T5 执行器未就绪”，不以桥存在冒充绑骨已完成。
+**macOS Codex 启动守卫（2026-10-20）**：本机已复现 seatbelt 沙箱启动原生 Blender 在 Metal 初始化崩溃（脚本尚未执行）。T7 与 T5 直接夹具入口复用 `scripts/lib/blender-runtime.mjs`，在识别 `CODEX_SANDBOX=seatbelt` 的 macOS 已知 Blender 程序/真实链接（含PATH别名解析）时，先明确拒收，绝不先启动试错；Fake Node 单测不受影响，显式 Mock 不启动 Blender。真实验证须通过宿主授权的正常执行环境串行执行；**禁止删除环境标识绕过权限，禁止子代理自行再次在沙箱里重试**。此守卫覆盖已知程序入口，不声称修复所有 Blender/macOS 崩溃；未识别的自定义 shell 包装器须由调用方同样遵守此规则。
+
+T7 首阶段交付作业桥、建场景和预览链路；五个 op 的闭集入口是 `normalize`、`rig-arp`、`retarget-arp`、`build-scene`、`render-views`。normalize已由T4接通米制/轴心/预算/贴图与Draco，数据契约见`docs/design/ai-pipeline/model-normalization.md`。T5给rig-arp/retarget-arp补了类型化参数、输入快照校验和真实蒙皮/动作结构Mock，契约及人工回灌见`docs/design/ai-pipeline/character-rigging.md`；旧空params只保留T7桥识别兼容，不代表T5能力。当前真实ARP执行仍非零退出：区分“插件未安装”和“已安装但缺受测Smart/Remap版本适配器”，不给成功记录或假模型。
 
 ## 输入与证据
 

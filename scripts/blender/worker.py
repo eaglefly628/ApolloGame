@@ -454,9 +454,12 @@ def main():
         raise ValueError(f'unknown op: {op}')
     log('decision', f'op={op}; inputs={len(job["inputs"])} outputs={len(job["outputs"])}')
     if op in {'rig-arp', 'retarget-arp'}:
-        if not arp_available():
-            raise RuntimeError('Auto-Rig Pro plugin missing; install licensed plugin for T5')
-        raise RuntimeError('Auto-Rig Pro plugin found; T5 executor/configuration not ready')
+        contract = 'typed apollo-humanoid-v1' if job.get('params', {}).get('profile') == 'apollo-humanoid-v1' else 'legacy T7 recognized-only'
+        message = (f'{contract}: Auto-Rig Pro plugin missing; install licensed plugin for T5; real execution pending'
+                   if not arp_available() else
+                   f'{contract}: Auto-Rig Pro plugin found; T5 executor not ready; tested Smart/Remap adapter not ready; real execution pending')
+        print(f'[blender-worker] reject: {message}', file=sys.stderr, flush=True)
+        raise RuntimeError(message)
     if not job['outputs'] or (op == 'build-scene' and len(job['outputs']) != 1):
         raise ValueError('invalid output count')
     if op == 'render-views' and len(job['params']['views']) != len(job['outputs']):
