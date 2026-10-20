@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFLoader, type GLTFParser } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import type { Model3D, AnimState3D } from '@engine/protocol/components.js';
 import type { AssetManager } from '@assets/index.js';
 import { isModelHandle } from '@assets/index.js';
-import { disposeObject } from './geometry.js';
+import { ModelCodecs } from './model-codecs.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  three/ModelPool —— 导入式 glTF 模型 + **骨骼动画** 子系统。
@@ -13,8 +13,110 @@ import { disposeObject } from './geometry.js';
 //  未就绪本帧不画（向后兼容·同 sprite 先例）。纯表现·不写 sim/hash。
 // ═══════════════════════════════════════════════════════════════
 
-interface Tpl { scene: THREE.Object3D; clips: THREE.AnimationClip[]; } // 模板：场景图 + glTF 动画
+interface Tpl { scene: THREE.Object3D; clips: THREE.AnimationClip[]; resources: ModelResources; } // 模板：场景图 + glTF 动画
 interface Anim { mixer: THREE.AnimationMixer; clips: THREE.AnimationClip[]; clip?: string; action?: THREE.AnimationAction; }
+
+// Own parser resources before the full scene is ready: a failed/cancelled parse
+// may already have decoded geometry or textures while another dependency waits.
+class ModelResources {
+  private closed = false;
+  private readonly resources = new Set<THREE.BufferGeometry | THREE.Material | THREE.Texture | THREE.Skeleton>();
+  private readonly released = new WeakSet<object>();
+  private readonly images = new WeakSet<object>();
+  private readonly imageURLs = new Set<string>();
+
+  private revokeImageURL(url: string): void {
+    if (this.imageURLs.delete(url)) URL.revokeObjectURL(url);
+  }
+
+  private remember(resource: THREE.BufferGeometry | THREE.Material | THREE.Texture | THREE.Skeleton): void {
+    if (this.closed) this.release(resource);
+    else this.resources.add(resource);
+  }
+
+  private material(material: THREE.Material): void {
+    for (const value of Object.values(material)) if (value?.isTexture) this.remember(value as THREE.Texture);
+    this.remember(material);
+  }
+
+  capture(object: THREE.Object3D): void {
+    object.traverse((node) => {
+      const mesh = node as THREE.Mesh;
+      if (mesh.geometry) this.remember(mesh.geometry);
+      if (mesh.material) for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) this.material(material);
+      const skeleton = (node as THREE.SkinnedMesh).skeleton;
+      if (skeleton) this.remember(skeleton);
+    });
+  }
+
+  observe(parser: GLTFParser): void {
+    const geometries = parser.loadGeometries.bind(parser);
+    parser.loadGeometries = (...args) => geometries(...args).then((result) => {
+      for (const geometry of result) this.remember(geometry);
+      return result;
+    });
+    const material = parser.loadMaterial.bind(parser);
+    parser.loadMaterial = (...args) => material(...args).then((result) => { this.material(result); return result; });
+    const image = parser.loadImageSource.bind(parser);
+    parser.loadImageSource = (sourceIndex, loader) => {
+      const source = parser.json.images[sourceIndex];
+      const pending: Promise<THREE.Texture> = source.bufferView === undefined
+        ? image(sourceIndex, loader)
+        : parser.getDependency('bufferView', source.bufferView).then((buffer: ArrayBuffer) => {
+          if (this.closed) throw new Error('ModelPool: image parse generation disposed');
+          // r184 loadImageSource only revokes its embedded Blob URL on success.
+          // Own the URL here so failure and a terminated worker's never-settled
+          // promise are both covered. Its sourceDef is read synchronously; use a
+          // parser-local copy and restore the original before any async work.
+          const url = URL.createObjectURL(new Blob([buffer], { type: source.mimeType }));
+          this.imageURLs.add(url);
+          parser.json.images[sourceIndex] = { ...source, bufferView: undefined, uri: url };
+          let result: Promise<THREE.Texture>;
+          try { result = image(sourceIndex, loader); }
+          catch (error) { this.revokeImageURL(url); throw error; }
+          finally { parser.json.images[sourceIndex] = source; }
+          return result.finally(() => this.revokeImageURL(url));
+        });
+      return pending.then((result) => { this.remember(result); return result; });
+    };
+    const dependency = parser.getDependency.bind(parser);
+    parser.getDependency = (...args) => dependency(...args).then((result) => {
+      if (result?.isObject3D) this.capture(result as THREE.Object3D);
+      if (result?.isTexture) this.remember(result as THREE.Texture);
+      return result;
+    });
+    const texture = parser.loadTextureImage.bind(parser);
+    parser.loadTextureImage = (...args) => texture(...args).then((result) => {
+      // r184's loadTextureImage catches decoder errors and returns null. BasisU
+      // must fail the model, rather than silently display an untextured mesh.
+      if (!result && parser.json.textures?.[args[0]]?.extensions?.['KHR_texture_basisu']) {
+        throw new Error('ModelPool: KTX2 texture failed to load or transcode');
+      }
+      if (result) this.remember(result);
+      return result;
+    });
+  }
+
+  private release(resource: THREE.BufferGeometry | THREE.Material | THREE.Texture | THREE.Skeleton): void {
+    if (this.released.has(resource)) return;
+    this.released.add(resource);
+    resource.dispose();
+    if ((resource as THREE.Texture).isTexture) {
+      const image: unknown = (resource as THREE.Texture).source?.data;
+      if (typeof ImageBitmap !== 'undefined' && image instanceof ImageBitmap && !this.images.has(image)) {
+        this.images.add(image);
+        image.close();
+      }
+    }
+  }
+
+  dispose(): void {
+    this.closed = true;
+    for (const url of this.imageURLs) this.revokeImageURL(url);
+    for (const resource of this.resources) this.release(resource);
+    this.resources.clear();
+  }
+}
 
 // 真正在播动画的模型数（RENDERHYG fix②）：有 clip 但 action 未播 / 已 clampWhenFinished 停 → **不算**——
 // 修「带 clip 的静态模型令 `animLive>0` 永久失效脏标跳渲 + 每帧刷阴影」。`isRunning()` 精确：循环恒 true
@@ -27,6 +129,9 @@ export function countRunningAnims(anims: Iterable<{ action?: { isRunning(): bool
 
 export class ModelPool {
   private gltf?: GLTFLoader; // 懒建
+  private codecs?: ModelCodecs;
+  private generation = 0;
+  private readonly parsing = new Set<ModelResources>();
   private readonly instances = new Map<string, THREE.Object3D>(); // 每实体已放置的实例（template 的 clone）
   private readonly mats = new Map<string, THREE.Material[]>(); // 每实例自有材质（clone 出·供染色/独立释放）
   private readonly keyOf = new Map<string, string>(); // 实体当前 modelKey（变了才重建实例）
@@ -35,7 +140,7 @@ export class ModelPool {
   private readonly anims = new Map<string, Anim>(); // 每实体骨骼动画混合器（模型有 clip 时）
   private lastMs = 0; // 上次推进的壁钟（算 mixer delta）
 
-  constructor(private readonly assets?: AssetManager) {}
+  constructor(private readonly assets?: AssetManager, private readonly renderer?: THREE.WebGLRenderer) {}
 
   get count(): number {
     return this.instances.size;
@@ -120,10 +225,17 @@ export class ModelPool {
   }
 
   dispose(scene: THREE.Scene): void {
+    this.generation++;
     for (const [id] of [...this.instances]) this.removeInstance(scene, id);
-    for (const [, tpl] of this.cache) disposeObject(tpl.scene); // 模板：释放共享几何 + 模板自带材质
+    for (const [, tpl] of this.cache) tpl.resources.dispose();
+    for (const resources of this.parsing) resources.dispose();
+    this.parsing.clear();
     this.cache.clear();
     this.state.clear();
+    this.codecs?.dispose();
+    this.codecs = undefined;
+    this.gltf = undefined;
+    this.lastMs = 0;
   }
 
   // 按 modelKey 取已解析模板（含动画 clip）。首见且字节备好 → 异步 parse 一次（标 pending 防每帧重复）。
@@ -134,12 +246,35 @@ export class ModelPool {
     const handle = this.assets?.get(key)?.handle;
     if (!isModelHandle(handle)) return null;
     this.state.set(key, 'pending');
-    (this.gltf ??= new GLTFLoader()).parse(
-      handle,
-      '',
-      (gltf) => { this.cache.set(key, { scene: gltf.scene, clips: gltf.animations ?? [] }); this.state.delete(key); },
-      () => { this.state.set(key, 'failed'); },
-    );
+    const generation = this.generation;
+    const resources = new ModelResources();
+    this.parsing.add(resources);
+    const failed = (error: unknown): void => {
+      resources.dispose();
+      this.parsing.delete(resources);
+      if (generation !== this.generation || this.state.get(key) !== 'pending') return;
+      this.state.set(key, 'failed');
+      console.error(`[ModelPool] Failed to load model "${key}"`, error);
+    };
+    try {
+      const codecs = this.codecs ??= new ModelCodecs(this.renderer);
+      if (!this.gltf) { this.gltf = new GLTFLoader(); codecs.connect(this.gltf); }
+      const loader = this.gltf;
+      const plugin = (parser: GLTFParser) => {
+        resources.observe(parser);
+        return { name: 'APOLLO_model_resources', beforeRoot: () => { codecs.prepare(parser); return null; } };
+      };
+      loader.register(plugin);
+      try {
+        loader.parse(handle, '', (gltf) => {
+          for (const scene of gltf.scenes ?? [gltf.scene]) resources.capture(scene);
+          this.parsing.delete(resources);
+          if (generation !== this.generation || this.state.get(key) !== 'pending') { resources.dispose(); return; }
+          this.cache.set(key, { scene: gltf.scene, clips: gltf.animations ?? [], resources });
+          this.state.delete(key);
+        }, failed);
+      } finally { loader.unregister(plugin); }
+    } catch (error) { failed(error); }
     return null;
   }
 }

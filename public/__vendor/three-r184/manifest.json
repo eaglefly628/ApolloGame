@@ -1,0 +1,40 @@
+{
+  "threeVersion": "0.184.0",
+  "decoders": [
+    {
+      "path": "draco/draco_wasm_wrapper.js",
+      "bytes": 58456,
+      "sha256": "8bb2952d2ba7d67e1414f8df819410cb0434a666be53f671fff75f68843d76f6",
+      "source": "node_modules/three/examples/jsm/libs/draco/gltf/draco_wasm_wrapper.js",
+      "license": "Apache-2.0"
+    },
+    {
+      "path": "draco/draco_decoder.wasm",
+      "bytes": 192420,
+      "sha256": "a680d927bed9cb864ddbd63521868891af2bfbe755092761b4837487618df8ac",
+      "source": "node_modules/three/examples/jsm/libs/draco/gltf/draco_decoder.wasm",
+      "license": "Apache-2.0"
+    },
+    {
+      "path": "draco/draco_decoder.js",
+      "bytes": 512465,
+      "sha256": "8625489da79a805f4f2a7d511c3e52d8b4085608a9d2a4d5f4f9de5db0aea04f",
+      "source": "node_modules/three/examples/jsm/libs/draco/gltf/draco_decoder.js",
+      "license": "Apache-2.0"
+    },
+    {
+      "path": "basis/basis_transcoder.js",
+      "bytes": 57529,
+      "sha256": "8478b5b6d6b74e7d3082b89f6417321d8d1dc0307f2b30d4484bb11b441696a1",
+      "source": "node_modules/three/examples/jsm/libs/basis/basis_transcoder.js",
+      "license": "Apache-2.0"
+    },
+    {
+      "path": "basis/basis_transcoder.wasm",
+      "bytes": 527333,
+      "sha256": "6cf17dc889352c42e9acf8897107978d127005fe3386c36a0e3845e27967630a",
+      "source": "node_modules/three/examples/jsm/libs/basis/basis_transcoder.wasm",
+      "license": "Apache-2.0"
+    }
+  ]
+}

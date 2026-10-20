@@ -1,0 +1,65 @@
+{
+  "authorship": "Original procedural cube and 16x16 four-color PNG authored for Apollo E1; no external model or texture.",
+  "license": "CC0-1.0 (fixture geometry and texture)",
+  "geometry": {
+    "vertices": 24,
+    "triangles": 12,
+    "bounds": [
+      [
+        -1,
+        -1,
+        -1
+      ],
+      [
+        1,
+        1,
+        1
+      ]
+    ]
+  },
+  "encoders": [
+    {
+      "name": "Draco glTF encoder bundled with three 0.184.0",
+      "source": "https://github.com/mrdoob/three.js/tree/r184/examples/jsm/libs/draco",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "meshoptimizer v0.25",
+      "source": "https://github.com/zeux/meshoptimizer/blob/v0.25/js/meshopt_encoder.module.js",
+      "license": "MIT"
+    },
+    {
+      "name": "Basis Universal 1.16.4 WASM encoder",
+      "source": "https://github.com/BinomialLLC/basis_universal/tree/1.16.4/webgl/encoder/build",
+      "license": "Apache-2.0"
+    }
+  ],
+  "encoderSha256": {
+    "meshopt_encoder.mjs": "54f67e999c6facbb946219f967e96cb6dc00a004d1c7c7ae5ca373e003600ebf",
+    "basis_encoder.cjs": "30d31fc68388341a0c3ff9fc2bbe75702c03285f3cd72e2e70b27016740837ec",
+    "basis_encoder.wasm": "62ce0364ea8f4969e1e4277ce275213dcce5b234c8c96586da06e3879010341c",
+    "draco_encoder.js": "6d4132d7b68d26d20a43a1ed59ff4b4a694fbaad41b339158db050dbd0e68f56"
+  },
+  "files": {
+    "cube-raw.glb": {
+      "bytes": 2184,
+      "sha256": "2897f1c151f53a5063313ddc14323781ecc40c35f0efcf132d4605d7882cded0"
+    },
+    "cube-draco.glb": {
+      "bytes": 1524,
+      "sha256": "24e1382b3a1e142c00bcd1f3eadb4e3b8a88e7e15a1c4522c6e40b8a6862ab09"
+    },
+    "cube-meshopt.glb": {
+      "bytes": 2496,
+      "sha256": "745fa69792c7acf6b044f3144ef27b24aabaaad0775c906a4ee9695b2a85c25f"
+    },
+    "cube-ktx2.glb": {
+      "bytes": 2420,
+      "sha256": "e935fcb117b9c3a01dbeb04a665e4e0876cda664f5f3062022c6d047c750a6f6"
+    },
+    "cube-ktx2-shared.glb": {
+      "bytes": 2764,
+      "sha256": "4cb4e313ee44bfce78b93d4e4131fbbfb6fd693c04ed54fe1f5b71b663fa88d2"
+    }
+  }
+}

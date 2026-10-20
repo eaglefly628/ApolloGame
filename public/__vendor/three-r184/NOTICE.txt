@@ -1,0 +1,18 @@
+Local model decoder distribution — copied unmodified from three 0.184.0 npm package.
+
+Draco glTF decoder: Copyright The Draco Authors. Apache License 2.0.
+Source: https://github.com/google/draco
+Upstream distribution: https://github.com/mrdoob/three.js/tree/r184/examples/jsm/libs/draco/gltf
+License text: LICENSE-DRACO.txt
+
+Basis Universal transcoder: Copyright Binomial LLC and contributors. Apache License 2.0.
+Source: https://github.com/BinomialLLC/basis_universal
+Upstream distribution: https://github.com/mrdoob/three.js/tree/r184/examples/jsm/libs/basis
+License text: LICENSE-BASIS.txt
+
+Meshopt decoder is imported from installed three/addons/libs/meshopt_decoder.module.js,
+not separately copied here. Copyright (C) 2016-2026 Arseny Kapoulkine. MIT License.
+The original module preserves its license header. Full license: LICENSE-MESHOPT.txt.
+Three.js is MIT licensed; its original notice and full license: LICENSE-THREE.txt.
+
+No decoder files have been modified. manifest.json records exact hashes and sizes.

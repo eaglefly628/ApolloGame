@@ -170,7 +170,7 @@ export class ThreeRenderer implements RendererBackend {
     this.gl.shadowMap.autoUpdate = false; // W1-C：阴影按需重算（仅投影体/灯变时置 needsUpdate）
     this.gl.info.autoReset = false; // W1-C/profiler：手动重置 → draw 计数跨全 pass 累加
     this.post = new PostPipeline(this.gl, this.width, this.height);
-    this.models = new ModelPool(this.assets);
+    this.models = new ModelPool(this.assets, this.gl);
     container.appendChild(this.gl.domElement);
     this.worldUi.init(container); // 世界 UI DOM 叠层（覆于 canvas 上·pointer-events:none）
     this.indexDebug.init(container); // 实体编号 debug 叠层（同上·默认关）

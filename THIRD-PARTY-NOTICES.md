@@ -39,3 +39,10 @@
    线性规划静默丢弃）、**不还礼的邻居**（上游假设所有 agent 都跑 ORCA，本仓允许混装单位类型）。
 
 > 上游未附 NOTICE 文件，故本仓无 NOTICE 转载义务（Apache-2.0 §4(d) 以「上游存在 NOTICE」为前提）。
+
+
+## E1 · 本地模型压缩解码器（2026-10-20）
+
+随three.js 0.184.0的官方npm包复制未修改的Draco glTF decoder与Basis Universal transcoder至`public/__vendor/three-r184/`，生产从项目本地加载。逐文件来源、字节数和SHA256见该目录`manifest.json`，完整许可与来源见`NOTICE.txt`、`LICENSE-DRACO.txt`、`LICENSE-BASIS.txt`。Draco与Basis均按其原始Apache-2.0许可分发；未修改解码器源文件。
+
+Meshopt decoder从`three/addons/libs/meshopt_decoder.module.js`直接本地打包，保留原MIT版权头（Arseny Kapoulkine / meshoptimizer）；three.js自身原MIT许可继续适用。上游链接见上述NOTICE。测试夹具的几何/贴图制作和编码工具来源另在`scripts/fixtures/compressed-models/`记录，不将工具许可与资产来源混为一谈。
