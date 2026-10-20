@@ -5,6 +5,15 @@ export interface Component {
   readonly type: ComponentType;
 }
 
+/** Passive presentation notices, independent of the live component and of tick tracing. */
+export type ComponentNotice =
+  | { readonly kind: 'add'; readonly entityId: EntityId; readonly component: Readonly<Component> }
+  | { readonly kind: 'remove'; readonly entityId: EntityId; readonly componentType: ComponentType }
+  | { readonly kind: 'destroy'; readonly entityId: EntityId }
+  | { readonly kind: 'reset' };
+
+export type ComponentListener = (notice: ComponentNotice) => void;
+
 export interface SystemDeclaration {
   readonly id: string;
   readonly reads: ComponentType[];

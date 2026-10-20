@@ -79,8 +79,8 @@ export class FollowDamper {
 // 在**世界空间的取景（眼位 eye + 注视点 target）**层面做过渡——不碰 auto 距离/pivot 解析：
 // bump trigger → 捕获上一帧已应用的取景为 from，dur 秒内 ease 到当前（目标）取景。收敛/未触发 → 直通目标。
 // 分两步用：tick(相机前·出 active 折 renderSig) → apply(applyOrbit 内·据 k 混合 from→raw)。
-type TweenEase = 'linear' | 'cubicOut' | 'inOut';
-const easeTween = (p: number, e: TweenEase): number => {
+export type TweenEase = 'linear' | 'cubicOut' | 'inOut';
+export const easeTween = (p: number, e: TweenEase): number => {
   if (e === 'linear') return p;
   if (e === 'inOut') return p * p * (3 - 2 * p); // smoothstep
   const q = 1 - p; return 1 - q * q * q;         // cubicOut（缺省·减速停靠）
@@ -149,6 +149,31 @@ export class CameraRig {
     skyRadius: number,
     shake?: ShakeOffset,
   ): THREE.Camera {
+    const cam = this.projectionFor(cam3d, dist, aspect, radius, defFov, skyRadius);
+    const pitch = clampPitch(cam3d.pitch, cam3d.pitchMin, cam3d.pitchMax);
+    const p = orbitCamera(center, dist, cam3d.yaw, pitch);
+    // 运镜过渡：在世界空间取景层混合（from 上一帧应用取景 → raw 目标取景）。未触发时直通（记录当前取景供下次 from）。
+    const eff = this.tween.apply(this.tmpEye.set(p.x, p.y, p.z), this.tmpTgt.set(center.x, center.y, center.z));
+    return this.place(cam, eff.eye, eff.tgt, shake);
+  }
+
+  /** E6 uses the same native camera/projection as orbit, picking and all post passes. */
+  applyView(
+    cam3d: Camera3D,
+    eye: readonly [number, number, number],
+    target: readonly [number, number, number],
+    aspect: number,
+    radius: number,
+    defFov: number,
+    skyRadius: number,
+    shake?: ShakeOffset,
+  ): THREE.Camera {
+    const dist = Math.hypot(eye[0] - target[0], eye[1] - target[1], eye[2] - target[2]);
+    const cam = this.projectionFor(cam3d, dist, aspect, radius, defFov, skyRadius);
+    return this.place(cam, this.tmpEye.set(...eye), this.tmpTgt.set(...target), shake);
+  }
+
+  private projectionFor(cam3d: Camera3D, dist: number, aspect: number, radius: number, defFov: number, skyRadius: number): THREE.Camera {
     const near = cam3d.near ?? 1;
     const far = cam3d.far ?? dist + skyRadius + 200; // 缺省：刚好框住天空盒
     let cam: THREE.Camera;
@@ -165,12 +190,12 @@ export class CameraRig {
       this.persp.updateProjectionMatrix();
       cam = this.persp;
     }
-    const pitch = clampPitch(cam3d.pitch, cam3d.pitchMin, cam3d.pitchMax);
-    const p = orbitCamera(center, dist, cam3d.yaw, pitch);
-    // 运镜过渡：在世界空间取景层混合（from 上一帧应用取景 → raw 目标取景）。未触发时直通（记录当前取景供下次 from）。
-    const eff = this.tween.apply(this.tmpEye.set(p.x, p.y, p.z), this.tmpTgt.set(center.x, center.y, center.z));
-    cam.position.set(eff.eye.x, eff.eye.y, eff.eye.z);
-    cam.lookAt(eff.tgt.x, eff.tgt.y, eff.tgt.z);
+    return cam;
+  }
+
+  private place(cam: THREE.Camera, eye: THREE.Vector3, target: THREE.Vector3, shake?: ShakeOffset): THREE.Camera {
+    cam.position.set(eye.x, eye.y, eye.z);
+    cam.lookAt(target.x, target.y, target.z);
     // 震屏：沿相机局部右/上轴平移眼位（保持 lookAt center → 视线轻摆 = 旋转式抖动·不晕）。
     if (shake && shake.active) {
       cam.updateMatrixWorld();

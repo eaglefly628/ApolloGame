@@ -5,6 +5,7 @@ import type { Component } from '../../core/types.js';
 export type { AnimGraph3D, AnimGraphClip, AnimGraphState, AnimGraphTransition, AnimGraphBlendPoint, AnimGraphParamSource, AnimGraphParamValue } from './anim-graph.js';
 export type { Attach3D } from './attach3d.js';
 export type { IK3D, IKTarget, IKWeight } from './ik3d.js';
+export type { CameraShot3D, CameraShot, CameraShotKeyframe, CameraShotBinding } from './camera-shot.js';
 // 仅类型（erased·无运行时环）：WorldUI3D / Diegetic3D 的富内容 = LayoutNode（UI 铁律）。
 // ⚠ **直接取 types.js，不走桶文件 index.js**（P3a 机器围栏逼出来的）：桶文件会把重度依赖 DOM 的
 // `server.ts` 一起拖进类型图，于是 protocol 这一层在「无 DOM」的 tsconfig 下编译不过——

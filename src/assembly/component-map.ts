@@ -26,6 +26,7 @@ import type {
   Bounds,
   Camera,
   Camera3D,
+  CameraShot3D,
   CameraTarget,
   CardPile,
   Caster,
@@ -197,6 +198,7 @@ export interface ComponentDataMap {
   Bounds: Omit<Bounds, 'type'>;
   Camera: Omit<Camera, 'type'>;
   Camera3D: Omit<Camera3D, 'type'>;
+  CameraShot3D: Omit<CameraShot3D, 'type'>;
   CameraTarget: Omit<CameraTarget, 'type'>;
   CardPile: Omit<CardPile, 'type'>;
   Caster: Omit<Caster, 'type'>;

@@ -1,6 +1,7 @@
-import type { EntityId, ComponentType, Component, SystemDeclaration, IWorld, TickObserver, WorldSnapshot, WorldDelta } from './types.js';
+import type { EntityId, ComponentType, Component, SystemDeclaration, IWorld, TickObserver, WorldSnapshot, WorldDelta, ComponentListener } from './types.js';
 import { topologicalSort } from './topological-sort.js';
 import { SystemView, strictByEnv, type StrictMode } from './system-view.js';
+import { ComponentObservers } from './component-observers.js';
 
 const EMPTY: readonly never[] = Object.freeze([]);
 const singletonReported = new Set<string>();
@@ -18,6 +19,7 @@ export class World implements IWorld {
   private needsSort = false;
   private version = 0;
   private observer?: TickObserver;
+  private componentObservers?: ComponentObservers;
 
   // ── 写入通道（P1a）──
   // 系统只透过 SystemView 碰世界（tick 里 execute(view)）：视图按申报做脏标 + 严格模式校验（见 system-view.ts）。
@@ -69,6 +71,7 @@ export class World implements IWorld {
     this.entityVer.delete(id);
     this.dirty.add(id);
     this.tombstones.set(id, ++this.writeSeq);
+    if (comps) this.componentObservers?.destroyed(id);
   }
 
   // ── 脏跟踪 / 版本号（P2c）──
@@ -232,12 +235,14 @@ export class World implements IWorld {
       this.typeIndex.set(component.type, owners);
     }
     owners.add(entityId);
+    this.componentObservers?.added(entityId, component);
   }
 
   removeComponent(entityId: EntityId, type: ComponentType): void {
     if (this.entities.get(entityId)?.delete(type)) {
       this.typeIndex.get(type)?.delete(entityId);
       this.touch(entityId, type);
+      this.componentObservers?.removed(entityId, type);
     }
   }
 
@@ -360,6 +365,23 @@ export class World implements IWorld {
     this.observer = observer;
   }
 
+  /** Passive component publications for presentation consumers; does not replay existing data. */
+  observeComponents(types: readonly ComponentType[], listener: ComponentListener): () => void {
+    const observers = this.componentObservers ??= new ComponentObservers();
+    let subscription: { world: World; observers: ComponentObservers; cancel: () => void } | undefined = {
+      world: this, observers, cancel: observers.subscribe(types, listener),
+    };
+    return () => {
+      const current = subscription;
+      if (!current) return;
+      subscription = undefined;
+      current.cancel();
+      if (current.observers.empty && current.world.componentObservers === current.observers) {
+        current.world.componentObservers = undefined;
+      }
+    };
+  }
+
   // ── Game loop ──
 
   tick(): void {
@@ -376,11 +398,14 @@ export class World implements IWorld {
       for (const consumeType of system.consumes) {
         const owners = this.typeIndex.get(consumeType);
         if (!owners || owners.size === 0) continue;
+        const removed = this.componentObservers?.watches(consumeType) ? [] as EntityId[] : undefined;
         for (const entityId of owners) {
-          this.entities.get(entityId)?.delete(consumeType);
+          const didRemove = this.entities.get(entityId)?.delete(consumeType);
           this.touch(entityId, consumeType);
+          if (didRemove) removed?.push(entityId);
         }
         owners.clear();
+        if (removed) for (const entityId of removed) this.componentObservers?.removed(entityId, consumeType);
       }
 
       this.observer?.onSystemEnd?.(system);
@@ -466,5 +491,6 @@ export class World implements IWorld {
     // （如 spatial-query 索引）。否则读档/回滚后缓存命中 restore 前的陈旧索引 → 返回
     // 已销毁实体或旧位置 → lockstep 分叉。version 只增不减，同 tick() 语义。
     this.version++;
+    this.componentObservers?.reset();
   }
 }

@@ -22,6 +22,7 @@ import { ModelPool, modelSelectorSig } from './three/models.js';
 import { readAnimGraphParams } from './three/animation-graph-params.js';
 import { modelYawFromFaceDir, turnModelYaw, modelMotionSpeed } from './three/model-motion.js';
 import { InstancedBatches, type InstGroups, type PbrBatchBuild } from './three/batches.js';
+import { CameraShots } from './three/camera-shots.js';
 import { CameraRig, CameraShake, FollowDamper, type DampedCenter } from './three/camera-rig.js';
 import { ColliderDebug } from './three/collider-debug.js';
 import { NavDebug } from './three/nav-debug.js';
@@ -89,6 +90,7 @@ export class ThreeRenderer implements RendererBackend {
   private frame = 0; // 帧计数（render-only·云飘等表现动画用·不进 hash）
   // 子系统
   private cameras!: CameraRig; // 相机解释器（透视/正交·REQ-3D-Camera）
+  private readonly shots = new CameraShots();
   private readonly camShake = new CameraShake(); // 震屏 trauma 解释器（Camera3D.shake·render-only·超休闲打击反馈）
   private readonly followDamp = new FollowDamper(); // 跟随柔化解释器（Camera3D.follow·lag/lookAhead·render-only）
   private readonly flash = new FlashDecay(); // 命中闪白 trauma 解释器（Post3D.flash·render-only·超休闲打击反馈）
@@ -297,6 +299,7 @@ export class ThreeRenderer implements RendererBackend {
     const instGroups: InstGroups = new Map(); // W1-A：不透明 Mesh3D 按视觉签名分批
     const pbrBuilders = new Map<string, PbrBatchBuild>(); // PBR 批构建器（REQ-3D-PBR-INSTANCING·按材质签名·渲染器持贴图解析器故在此建闭包）
     this.frame++;
+    const shot = this.shots.sync(world, t0);
     const cam3d = getCamera3D(world); // 盒庭模式开关（在场=轨道相机 + 2D 实体落地面 + 柔和阴影）
     const followTarget = cam3d?.mode === 'follow' ? cam3d.target : undefined; // mode:'follow' 注视的实体
     let followPose: Pose3D | undefined; // 收集期捕获 target 的位姿（= 相机注视点）
@@ -569,14 +572,15 @@ export class ThreeRenderer implements RendererBackend {
     const shakeOff = this.camShake.update(cam3d?.shake, performance.now());
     // 跟随柔化：follow 模式对 target 位做指数平滑 + lookAhead 预读——settling(未收敛) 时折进 renderSig 持续重渲直至贴合。
     let followCenter: DampedCenter | null = null;
-    if (cam3d && cam3d.mode === 'follow' && followPose) {
+    if (cam3d && cam3d.mode === 'follow' && followPose && !shot.frame) {
       followCenter = this.followDamp.update({ x: followPose.x, y: followPose.y, z: followPose.z }, cam3d.follow, performance.now());
     } else { this.followDamp.reset(); }
     // 运镜过渡：据 Camera3D.tween.trigger 算过渡进度——active 时折进 renderSig 持续重渲直至到位（applyOrbit 内做取景混合）。
-    const camTweenActive = this.cameras.tickTween(cam3d?.tween, performance.now());
+    if (shot.frame) this.cameras.disposeTween();
+    const camTweenActive = !shot.frame && this.cameras.tickTween(cam3d?.tween, performance.now());
     // 命中闪白：据 Post3D.flash.trigger 算衰减量——>0 时折进 renderSig 持续重渲直至归零。
     const flashAmt = this.flash.update(post?.flash, performance.now());
-    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${this.debugIndices ? 'ix' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${camTweenActive ? this.frame : 'ct0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${billboardLive > 0 ? this.frame : 'bb0'}|${uvLive > 0 ? this.frame : 'uv0'}|${dissolveLive > 0 ? this.frame : 'ds0'}|${this.lines.contentSig(world)}|${this.diegetic.contentSig(world)}|${this.reflectors.contentSig(world)}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}|ag${this.assetReady.gen}`;
+    const renderSig = `${ph}|${camSig(cam3d)}|shots:${shot.signature}|${shot.active ? this.frame : 'cs0'}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${this.debugIndices ? 'ix' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${camTweenActive ? this.frame : 'ct0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${billboardLive > 0 ? this.frame : 'bb0'}|${uvLive > 0 ? this.frame : 'uv0'}|${dissolveLive > 0 ? this.frame : 'ds0'}|${this.lines.contentSig(world)}|${this.diegetic.contentSig(world)}|${this.reflectors.contentSig(world)}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}|ag${this.assetReady.gen}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -600,7 +604,8 @@ export class ThreeRenderer implements RendererBackend {
           : { x: cam3d.pivotX ?? bc.x, y: cam3d.pivotY ?? bc.y, z: cam3d.pivotZ ?? bc.z };
       const radius = Math.max(bounds3DExtent(b), 1);
       const dist = cam3d.distance ?? fitDistance3D(radius, cam3d.fov ?? this.fov);
-      this.cameras.applyOrbit(cam3d, center, dist, aspect, radius, this.fov, SKY_RADIUS, shakeOff);
+      if (shot.frame) this.cameras.applyView(cam3d, shot.frame.eye, shot.frame.target, aspect, radius, this.fov, SKY_RADIUS, shakeOff);
+      else this.cameras.applyOrbit(cam3d, center, dist, aspect, radius, this.fov, SKY_RADIUS, shakeOff);
       this.lights.placeShadow(center, radius);
     } else {
       this.cameras.applyFlat(poseBounds(visiblePoses), this.fov, aspect);
@@ -739,6 +744,7 @@ export class ThreeRenderer implements RendererBackend {
   destroy(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.shots.clear();
     this.ik.clear(); this.lastIKMs = 0;
     this.attachments.clear();
     this.groundConflictWarnings.clear();

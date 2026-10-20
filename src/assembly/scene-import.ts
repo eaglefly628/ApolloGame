@@ -7,6 +7,7 @@ import { validateGroundWalkers } from './ground-walkers.js';
 import { validateAnimationGraphs } from './animation-graphs.js';
 import { validateSkeletalAttachments } from './skeletal-attachments.js';
 import { validateInverseKinematics } from './inverse-kinematics.js';
+import { validateCameraShots } from './camera-shots.js';
 
 type V3 = readonly [number, number, number];
 type V2 = readonly [number, number];
@@ -439,6 +440,7 @@ export function expandSceneImports<T extends Record<string, unknown>>(entities: 
   validateAnimationGraphs(entities);
   validateSkeletalAttachments(entities);
   validateInverseKinematics(entities);
+  validateCameraShots(entities);
   if (!Object.values(entities).some(c => obj(c) && own(c, 'SceneImport3D'))) { validateGroundWalkers(entities); return entities; }
   const out: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
   for (const [id, comps] of Object.entries(entities)) out[id] = comps;
@@ -491,5 +493,6 @@ export function expandSceneImports<T extends Record<string, unknown>>(entities: 
   validateAnimationGraphs(out);
   validateSkeletalAttachments(out);
   validateInverseKinematics(out);
+  validateCameraShots(out);
   return out as T;
 }
