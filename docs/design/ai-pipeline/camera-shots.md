@@ -10,6 +10,7 @@
 - at为秒，首键0，后键严格递增、≤600。eye/target为有限三元组，坐标绝对值≤1e6米（明确可绘范围，防GPU Float32溢出）；每键eye≠target。裸type可省，未知字段/访问器/洞/非POD均拒。
 - ease取现有linear/cubicOut/inOut，缺省linear，属于从该键到下一键的区间。最后键ease无额外作用。插值是相同ease下eye和target的世界空间线性插值，不承诺弧长速度。
 - 投影/fov/orthoSize/near/far继续由本体Camera3D给出；拉近/推远用eye关键帧。初版没有镜头生成、输出完成Signal、自动改剧情状态或全身跟随绑定。
+- **投影数值准入（仅带镜头表的载体）**：有限正数并不足以保证能绘制。按当前three的WebGL原计算次序检查中心透视/正交投影系数、原生稀疏余子式逆矩阵，以及Float32上传后矩阵的逆；相关非零系数不得变成0/Infinity/NaN；near/far本身只要求原有限正数且far>near，不对原参数另施Float32大小或间距门槛（例如far=1e307、near=40且far=40+7e-15，只要实际矩阵及逆可用仍接受）。极小fov、极端near/far或正交尺寸按实际计算结果拒收，不拍一套额外镜头数值区间，不静默修改lens。正交仍沿用现有orthoFrustum对半高/aspect的下限。装载时分别用规范上下文检查显式fov、orthoSize、near/far；未给出的场景半径、自定义默认fov与实际far不在装载期臆定。运行时须将真实解析的projection/near/far/fov/orthoSize/aspect交给同一纯校验器，在改原生相机之前拒绝不安全上下文（含默认far不大于显式near）；无CameraShot3D的旧相机路径不受这条准入影响。
 
 ## 播放语义
 

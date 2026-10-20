@@ -81,7 +81,7 @@ try {
   page.on('console', message => { if (['warning', 'error'].includes(message.type())) report.diagnostics.push(message.type() + ': ' + message.text()); });
   await page.goto('http://127.0.0.1:' + server.httpServer.address().port);
   await page.waitForFunction(() => !!window.e6Probe);
-  for (const stage of ['load', 'baselines', 'wide', 'closeup', 'pan', 'catchup', 'boundaries', 'soak', 'lifecycle', 'destroy']) {
+  for (const stage of ['load', 'baselines', 'nearRays', 'wide', 'closeup', 'pan', 'catchup', 'boundaries', 'soak', 'lifecycle', 'destroy']) {
     report[stage] = await page.evaluate(name => window.e6Probe[name](), stage);
     if (['load', 'wide', 'closeup', 'pan'].includes(stage)) {
       const path = join(dir, stage + '.png'); await page.screenshot({ path }); report.screenshots.push(path);
@@ -100,5 +100,5 @@ try {
   writeFileSync(join(dir, 'report.json'), JSON.stringify(report, null, 2) + '\n');
   await browser?.close(); await server?.close();
 }
-console.log(JSON.stringify({ ok: report.ok, report: join(dir, 'report.json'), error: report.error, stages: Object.keys(report).filter(key => ['load', 'baselines', 'wide', 'closeup', 'pan', 'catchup', 'boundaries', 'soak', 'lifecycle', 'destroy'].includes(key)) }, null, 2));
+console.log(JSON.stringify({ ok: report.ok, report: join(dir, 'report.json'), error: report.error, stages: Object.keys(report).filter(key => ['load', 'baselines', 'nearRays', 'wide', 'closeup', 'pan', 'catchup', 'boundaries', 'soak', 'lifecycle', 'destroy'].includes(key)) }, null, 2));
 if (!report.ok) process.exitCode = 1;

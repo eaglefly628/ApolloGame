@@ -76,3 +76,55 @@
 ## 交叉复查
 
 待另一位未参与施工的复查人对冻结提交执行独立复跑、唯一锚点撤修、实证与读告警；施工方不填写通过判词。
+
+
+## 返工记录（施工导航 · 2026-10-21）
+
+分段返工锁ac59eb057；本段替代上文初交版本的最终证据口径，等待独立复查，不自判通过。另一位复查人实际发现两类阻塞：eye=[0,0,0]、target=[1e-170,0,0]虽通过协议却被原生lookAt的长度平方下溢转向-Z；有限正fov/near/far也可能让原生投影或其Float32上传/逆矩阵产生Infinity/NaN。原GPU反例WSWsGF及独立lens日志由复查人保留，非只读代码推断。
+
+### 修了什么与验法
+
+- `camera-rig.ts`只在E6直接取景的极小非零delta（maxabs<1e-150）按最大分量缩放后单位化，交原生lookAt等价射线；原始eye、target和真实距离不变，普通取景、旧orbit/tween/shake不改。`camera-shot-rig.test.ts`新增6项 `keeps the actual native viewing direction for accepted near-point data`，覆盖正负X、MIN正Z、MIN混合轴、大平移与阈值附近；测实际方向、独立单位方向原生矩阵、有限性与输入未变。
+- `components/camera-shot.ts`新增无three依赖的纯 `validateCameraShotProjection`：按现用中心WebGL原计算顺序检查投影系数、稀疏原生逆矩阵与Float32上传矩阵的逆；相关必要非零系数必须能安全上传。载体静态准入检查显式lens；`applyView`用实际viewport/场景默认lens/原dist解析far，在改原生相机前再次校验。明确拒收，不悄悄替换lens；无Shot旧路径保持。
+- 数值准入不把raw near/far的Float32精度当额外限制：far=1e307、near=40/far=40+7e-15实测原生及上传逆安全，仍接受。契约补明仅保证矩阵数值安全，不承诺场景可见性。拒例含fov=MIN、1e-300、near=1e308/far=1.7e308及MIN/2MIN；还分开覆盖仅原生逆失败、仅上传矩阵逆失败与零缩放。协议测试由31增至52项，均用真实THREE矩阵/F32作为外部证据。
+- Rig再增7项 `rejects unsafe resolved shot projection before mutating the current native camera`：上述4坏例、自定义默认fov、极端viewport和默认far<=显式near；拒收后原生position/quaternion/projection及current身份逐值不变。新增Rig共25项，旧相机20项一并验证。
+- 正式GPU探针新增nearRays阶段，正式World表+Signal驱动原ThreeRenderer，+X1e-170/+Z MIN/对角MIN与单位参考比实际方向、view、原生上传与像素；隐藏目标marker后图像必须不同，避免空画面假等价。补实际writeSequence字段逐次比较，getVersion仍单独作tick版本检查，二者不混称。
+
+冻结后的8文件150项定向测试exit0，其中E6共130项，旧相机回归20项；记录 `/private/tmp/aiflow-e6-correction-frozen-targeted.log`。原始观测/core/net/controller装载语义不改；本次产品改动只有协议与Rig两处及对应测试、GPU证据脚本和文档。
+
+### 本次撤修验红
+
+均在额外临时副本，先断言精确锚点唯一hit=1，绿0→真实断言红1→逐字恢复绿0；正式源码及用户工作区不撤修。
+
+| 范围 | 撤修后的实际失败 | 记录 |
+|---|---|---|
+| 极小delta归一分支 | 6项中5红，正X实际dot=1e-170，断言 `expected 1e-170 to be greater than 0.9999` | `/private/tmp/apollo-e6-correction-rig-red-fjuxvht0/report.json` |
+| 实际上下文投影预检调用 | 7项真实断言红：`expected [Function] to throw an error`，坏lens/默认值未被拒收 | 同上 |
+| 协议系数/两类逆/载体接线10锚点 | 每个独立真实拒收断言红，撤原生逆与上传逆各自命中相应反例；恢复四文件88/88 | `/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-e6-lens-red-2904lge8/report.json` |
+| 正式GPU极小delta分支 | +X1e-170方向变[1e-170,0,-1]，实际direction/view/world误差1；恢复全部11阶段0 | `/private/tmp/apollo-e6-final-nearray-s85a8g7i/receipt.json`，红Yf86aW、恢复oDULeu报告 |
+
+### 最终真实GPU与冻结口径
+
+正式11阶段0：`/private/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-e6-browser-eVtl7k/report.json`。near三例方向误差<=2.22e-16、world/view误差0、实际GPU上传<=2.98e-8；可见目标像素与单位参考同hash，藏目标后不同。原十阶段仍实际执行。
+
+2145次snapshot/full+incremental hash/实际writeSequence/tick version/dirty对拍不变；2000tick与5reload资源保持。native115createBuffer=115deleteBuffer、live0，最终geometry0/texture0，旧World与destroy订阅释放。只有1条精确预期的last-matching WARN，未知WARN/error0。仍复用已有generic Blender字节，没有启动Blender、付费API或声称生产人物/水壶质量通过。
+
+最终24源码/测试/脚本SHA：`/private/tmp/aiflow-e6-correction-frozen-sources.json`。协议1cf5c2fc9aa77c857983525c14e8e1c916fbea03857c38fff0e143ecd64adef0，Rig293a03536e03f0f7dced665e34123bda4876872eb1270d4c743d59797f8270e8；探针入口5f5fd31f070efb6f048c146dc8c1b70408ad9d44b6900cfb417ef9483395b51b、browser0e94ae604ac59488124b2b7fe086d5c237a93fdbe47f6c0f40407705fcf2cca4。
+
+
+### 冻结版本门禁（返工最终）
+
+| 步骤 | 退出码 / 结果 |
+|---|---|
+| scoped --run：eslint / depcruise | 0 / 1，仅指定game113相对导入基线 |
+| sim-DOM fence / 原生node:test | 0 / 0，原生5/5 |
+| tsc | 0 |
+| full Vitest | 1，661个实际文件、7032/7033；只有指定depcruise-fence基线1例，pending/todo0 |
+| build / docs-ref / context-budget | 0 / 0 / 0 |
+| art-ledger-guard | 2，game-a art-03、game-c art-017既有WARN，黑户基线未增 |
+
+最终整套续跑器exit0；末行仍为 `除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）`。日志 `/private/tmp/aiflow-e6-correction-final-{complete,tsc,vitest-full,build,docs-ref,context-budget,art-ledger-guard,native}.log`，机读 `-steps.json`、`-vitest.json`；实际scoped末行 `❌ 门禁失败于 depcruise（退出码 1）`，`/private/tmp/aiflow-e6-correction-final-scoped.log`，simDOM `/private/tmp/aiflow-e6-correction-sim-dom.log`。修补中途第一套检查不是最终交付依据；源冻结后重跑此整套，24项SHA再次核对无漂移。
+
+已读最终全量235条WARN/stderr等相关上下文（含测试名关键词），索引 `/private/tmp/aiflow-e6-correction-final-warning-inventory.txt`；topological-sort仍只有故意互emit/listens的L/P用例，旧Mock/拒收/迁移/资源分组诊断、HappyDOM localhost:3000 ECONNREFUSED与Vite大chunk未隐藏。无Unhandled Errors汇总；正式GPU严格仅1条精确预期WARN。
+
+本次交付仍仅引擎工具能力与技术测试证据；真实Tripo/ARP/Mixamo和V1真人R1未完成，不签任何人门。待未参与施工的另一位复查人落独立判词。

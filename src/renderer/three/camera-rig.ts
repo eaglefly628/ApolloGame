@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { Camera3D } from '@engine/protocol/components.js';
+import { validateCameraShotProjection } from '@engine/protocol/components/camera-shot.js';
 import { orbitCamera, clampPitch, orthoFrustum, fitPerspective, type Bounds2D } from '../three-projection.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -169,8 +170,25 @@ export class CameraRig {
     shake?: ShakeOffset,
   ): THREE.Camera {
     const dist = Math.hypot(eye[0] - target[0], eye[1] - target[1], eye[2] - target[2]);
+    // Scene-derived defaults and the real viewport are only known here. Reject
+    // an unsafe opt-in projection before changing either shared native camera.
+    validateCameraShotProjection({
+      projection: cam3d.projection ?? 'perspective', near: cam3d.near ?? 1,
+      far: cam3d.far ?? dist + skyRadius + 200, fov: cam3d.fov ?? defFov,
+      orthoSize: cam3d.orthoSize ?? radius * 1.15, aspect,
+    });
     const cam = this.projectionFor(cam3d, dist, aspect, radius, defFov, skyRadius);
-    return this.place(cam, this.tmpEye.set(...eye), this.tmpTgt.set(...target), shake);
+    const origin = this.tmpEye.set(...eye), aim = this.tmpTgt.set(...target);
+    const dx = target[0] - eye[0], dy = target[1] - eye[1], dz = target[2] - eye[2];
+    const scale = Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz));
+    // Native lookAt squares the displacement length. Preserve the same ray when
+    // that operation could underflow, including subnormals; do not change lens distance.
+    if (scale > 0 && scale < 1e-150) {
+      const x = dx / scale, y = dy / scale, z = dz / scale;
+      const length = Math.hypot(x, y, z);
+      aim.set(eye[0] + x / length, eye[1] + y / length, eye[2] + z / length);
+    }
+    return this.place(cam, origin, aim, shake);
   }
 
   private projectionFor(cam3d: Camera3D, dist: number, aspect: number, radius: number, defFov: number, skyRadius: number): THREE.Camera {

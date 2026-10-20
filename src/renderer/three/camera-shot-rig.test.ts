@@ -83,10 +83,47 @@ describe('E6 native camera pose and legacy compatibility', () => {
     close(actual.position.toArray(), [position.x, position.y, position.z]);
   });
 
+  it.each([
+    { origin: [0, 0, 0], aim: [1e-170, 0, 0], direction: [1, 0, 0] },
+    { origin: [0, 0, 0], aim: [-1e-170, 0, 0], direction: [-1, 0, 0] },
+    { origin: [0, 0, 0], aim: [0, 0, Number.MIN_VALUE], direction: [0, 0, 1] },
+    { origin: [0, 0, 0], aim: [Number.MIN_VALUE, 2 * Number.MIN_VALUE, 0], direction: [1, 2, 0] },
+    { origin: [1e6, 0, 0], aim: [1e6, 1e-170, 0], direction: [0, 1, 0] },
+    { origin: [0, 0, 0], aim: [1e-151, 2e-151, -3e-151], direction: [1, 2, -3] },
+  ])('keeps the actual native viewing direction for accepted near-point data %s', ({ origin, aim, direction }) => {
+    const position = origin as [number, number, number], point = aim as [number, number, number];
+    const before = JSON.stringify([position, point]), expected = new THREE.Vector3(...direction).normalize();
+    const rig = new CameraRig(48, 1), camera = rig.applyView(base, position, point, 1.5, 4, 48, 2000);
+    camera.updateMatrixWorld(true);
+    expect(camera.getWorldDirection(new THREE.Vector3()).dot(expected)).toBeGreaterThan(.9999);
+    const reference = nativePose(new THREE.PerspectiveCamera(53, 1.5, .1, 500), position,
+      [position[0] + expected.x, position[1] + expected.y, position[2] + expected.z]);
+    close(camera.matrixWorld.elements, reference.matrixWorld.elements);
+    expect([...camera.matrixWorld.elements, ...camera.matrixWorldInverse.elements].every(Number.isFinite)).toBe(true);
+    expect(JSON.stringify([position, point])).toBe(before);
+  });
+
   it.each(['linear', 'cubicOut', 'inOut'] as const)('shares the original bounded endpoint easing curve %s', ease => {
     expect(easeTween(0, ease)).toBe(0); expect(easeTween(1, ease)).toBe(1);
     let before = 0;
     for (let i = 0; i <= 100; i++) { const value = easeTween(i / 100, ease); expect(value).toBeGreaterThanOrEqual(before); expect(value).toBeLessThanOrEqual(1); before = value; }
     expect(easeTween(.25, ease)).toBeCloseTo(ease === 'linear' ? .25 : ease === 'inOut' ? .15625 : .578125, 12);
+  });
+
+  it.each([
+    { camera: { ...base, fov: Number.MIN_VALUE }, aspect: 1, defaultFov: 48, sky: 2000 },
+    { camera: { ...base, fov: 1e-300 }, aspect: 1, defaultFov: 48, sky: 2000 },
+    { camera: { ...base, near: 1e308, far: 1.7e308 }, aspect: 1, defaultFov: 48, sky: 2000 },
+    { camera: { ...base, near: Number.MIN_VALUE, far: 2 * Number.MIN_VALUE }, aspect: 1, defaultFov: 48, sky: 2000 },
+    { camera: { ...base, fov: undefined }, aspect: 1, defaultFov: 1e-300, sky: 2000 },
+    { camera: base, aspect: 1e-300, defaultFov: 48, sky: 2000 },
+    { camera: { ...base, near: 3000, far: undefined }, aspect: 1, defaultFov: 48, sky: 2000 },
+  ])('rejects unsafe resolved shot projection before mutating the current native camera %s', ({ camera, aspect, defaultFov, sky }) => {
+    const rig = new CameraRig(48, 1), current = rig.applyView(base, eye, target, 1.5, 4, 48, 2000);
+    current.updateMatrixWorld(true);
+    const before = [...current.position.toArray(), ...current.quaternion.toArray(), ...current.projectionMatrix.elements];
+    expect(() => rig.applyView(camera, [0, 0, 3], [0, 0, 0], aspect, 4, defaultFov, sky)).toThrow(/CameraShot3D.*projection/);
+    expect(rig.current).toBe(current);
+    expect([...current.position.toArray(), ...current.quaternion.toArray(), ...current.projectionMatrix.elements]).toEqual(before);
   });
 });

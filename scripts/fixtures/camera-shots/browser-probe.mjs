@@ -63,9 +63,9 @@ const nativeRay = THREE.Raycaster.prototype.setFromCamera; THREE.Raycaster.proto
 for (const name of ['drawElements', 'drawArrays', 'drawElementsInstanced', 'drawArraysInstanced']) { const native = gl[name].bind(gl); gl[name] = (...args) => { native(...args); if (!activeMesh) return; const program = gl.getParameter(gl.CURRENT_PROGRAM), p = gl.getUniformLocation(program, 'projectionMatrix'), v = gl.getUniformLocation(program, 'viewMatrix'); if (p) { lastMainDrawFrame = backend.frame; drawUniforms.set(activeMesh, { frame: backend.frame, projection: Array.from(gl.getUniform(program, p)), view: v ? Array.from(gl.getUniform(program, v)) : undefined }); } }; }
 function watch() { let added = 0; backend.scene.traverse(mesh => { if (!mesh.isMesh || monitored.has(mesh)) return; monitored.add(mesh); added++; const native = mesh.onBeforeRender, shadow = mesh.onBeforeShadow; mesh.onBeforeRender = function (...args) { native.apply(this, args); activeMesh = args[1] === backend.scene ? this : undefined; if (activeMesh) ensure(args[2] === backend.cameras.current, 'Actual mesh draw received wrong camera'); }; mesh.onBeforeShadow = function (...args) { shadow.apply(this, args); activeMesh = undefined; }; }); return added; }
 function sync(dt = 0, current = renderWorld) {
-  clock += dt * 1000; watch(); const snap = JSON.stringify(current.snapshot()), full = hashSnapshot(current.snapshot()), incremental = hashWorld(current), version = current.getVersion(), dirty = JSON.stringify([...current.dirty]);
+  clock += dt * 1000; watch(); const snap = JSON.stringify(current.snapshot()), full = hashSnapshot(current.snapshot()), incremental = hashWorld(current), version = current.getVersion(), writeSequence = current.writeSequence, dirty = JSON.stringify([...current.dirty]);
   ensure(full === incremental, 'Full/incremental hash mismatch before camera sync'); backend.sync(current.readView()); if (watch() > 0) { backend.lastRenderSig = ''; backend.sync(current.readView()); }
-  ensure(snap === JSON.stringify(current.snapshot()) && full === hashSnapshot(current.snapshot()) && incremental === hashWorld(current) && version === current.getVersion() && dirty === JSON.stringify([...current.dirty]), 'Camera shots mutated snapshot/hash/writeSequence/dirty'); readOnlyChecks++;
+  ensure(snap === JSON.stringify(current.snapshot()) && full === hashSnapshot(current.snapshot()) && incremental === hashWorld(current) && version === current.getVersion() && writeSequence === current.writeSequence && dirty === JSON.stringify([...current.dirty]), 'Camera shots mutated snapshot/hash/writeSequence/dirty'); readOnlyChecks++;
   return backend.readStats().rendered;
 }
 function bothAdd(id, data) { for (const current of [world, replica]) current.addComponent(id, structuredClone(data)); }
@@ -99,6 +99,32 @@ window.e6Probe = {
     clearShot(); const orbit = cameraFrame({ eye: [0, 1, 5], target: [0, 1, 0] }); bothAdd('camera', { ...baseCamera, mode: 'follow', target: 'pick-target', distance: 4, follow: { lag: 0, lookAhead: 0 } }); sync(); const follow = cameraFrame({ eye: [0, .45, 4.5], target: [0, .45, .5] });
     bothAdd('camera', { ...baseCamera, projection: 'ortho', orthoSize: 2 }); sync(); ensure(backend.cameras.current.isOrthographicCamera, 'No-shot orthographic baseline changed'); const ortho = cameraFrame({ eye: [0, 1, 5], target: [0, 1, 0] }); services();
     bothAdd('camera', { ...baseCamera }); sync(); bothAdd('camera', { ...baseCamera, yaw: Math.PI / 2, tween: { trigger: 1, dur: 1, ease: 'linear' } }); sync(); const tweenStart = cameraFrame({ eye: [0, 1, 5], target: [0, 1, 0] }); sync(.25); const tweenMid = cameraFrame({ eye: [1.25, 1, 3.75], target: [0, 1, 0] }); sync(.75); const tweenEnd = cameraFrame({ eye: [5, 1, 0], target: [0, 1, 0] }); clearShot(); installTable(); sync(); return record('baselines', { orbit, follow, ortho, tweenStart, tweenMid, tweenEnd });
+  },
+  nearRays() {
+    // The raw target may be subnormal; compare the equivalent ray, not literal lookAt arguments.
+    const cases = [
+      { name: 'positive-X-1e-170', tiny: [1e-170, 0, 0], unit: [1, 0, 0] },
+      { name: 'positive-Z-MIN', tiny: [0, 0, Number.MIN_VALUE], unit: [0, 0, 1] },
+      { name: 'diagonal-MIN', tiny: [Number.MIN_VALUE, Number.MIN_VALUE, Number.MIN_VALUE], unit: [1, 1, 1] },
+    ], results = [];
+    for (const test of cases) {
+      const direction = new THREE.Vector3(...test.unit).normalize();
+      for (const current of [world, replica]) { current.createEntity('near-ray-marker'); current.addComponent('near-ray-marker', { type: 'Transform3D', x: direction.x * 2, y: direction.y * 2, z: direction.z * 2 }); current.addComponent('near-ray-marker', { type: 'Mesh3D', shape: 'box', width: .6, height: .6, depth: .6, frontTint: 0xff5533, backTint: 0xff5533, edgeTint: 0xff5533 }); }
+      const nearTable = { type: 'CameraShot3D', shots: { reference: { keyframes: [{ at: 0, eye: [0, 0, 0], target: test.unit }] }, tiny: { keyframes: [{ at: 0, eye: [0, 0, 0], target: test.tiny }] } }, onSignal: [{ signal: 'near-unit', shot: 'reference' }, { signal: 'near-tiny', shot: 'tiny' }] };
+      installTable(nearTable); sync(); pulse('near-unit'); ensure(sync(), 'Unit near-ray reference did not draw');
+      const referenceCamera = cameraFrame({ eye: [0, 0, 0], target: test.unit }), camera = backend.cameras.current;
+      const reference = { direction: camera.getWorldDirection(new THREE.Vector3()).toArray(), view: camera.matrixWorldInverse.toArray(), world: camera.matrixWorld.toArray(), pixels: pixels() };
+      bothAdd('near-ray-marker', { type: 'Visibility', visible: false }); sync(); const absentPixels = pixels(); ensure(absentPixels !== reference.pixels, 'Near-ray reference fixture was not visible in real pixels: ' + test.name); bothRemove('near-ray-marker', 'Visibility'); sync();
+      pulse('near-tiny'); ensure(sync(), 'Tiny near-ray shot signal did not draw: ' + test.name);
+      const actual = { direction: camera.getWorldDirection(new THREE.Vector3()).toArray(), view: camera.matrixWorldInverse.toArray(), world: camera.matrixWorld.toArray(), pixels: pixels(), lookAtArgument: nativeLooks.get(camera) };
+      const directionError = maxError(actual.direction, direction.toArray()), viewError = maxError(actual.view, reference.view), worldError = maxError(actual.world, reference.world);
+      ensure(directionError < 1e-12 && viewError < 1e-12 && worldError < 1e-12, 'Near-ray native direction/view differs from unit reference: ' + JSON.stringify({ name: test.name, tiny: test.tiny, expected: direction.toArray(), actual, directionError, viewError, worldError }));
+      let gpuError = 0, gpuSamples = 0; backend.scene.traverse(mesh => { const uploaded = drawUniforms.get(mesh); if (!uploaded || uploaded.frame !== lastMainDrawFrame) return; gpuSamples++; gpuError = Math.max(gpuError, maxError(uploaded.projection, camera.projectionMatrix.elements)); if (uploaded.view) gpuError = Math.max(gpuError, maxError(uploaded.view, reference.view)); });
+      ensure(gpuSamples > 0 && gpuError < 3e-5, 'Near-ray GPU camera upload differs from unit reference: ' + JSON.stringify({ name: test.name, gpuError, gpuSamples })); ensure(actual.pixels === reference.pixels, 'Near-ray actual pixels differ from visible unit-ray reference: ' + test.name);
+      results.push({ name: test.name, tinyTarget: test.tiny, unitTarget: test.unit, referenceCamera, reference, absentPixels, actual, directionError, viewError, worldError, gpuError, gpuSamples });
+      for (const current of [world, replica]) current.destroyEntity('near-ray-marker');
+    }
+    clearShot(); installTable(); sync(); return record('nearRays', { formalShotSignal: true, literalTinyTargetRequired: false, results });
   },
   wide() { pulse('wide'); const rendered = sync(); ensure(rendered, 'First hard-cut frame did not render'); return record('wide', { camera: cameraFrame(wideFrame), services: services(), rendered, pixels: pixels() }); },
   closeup() {
