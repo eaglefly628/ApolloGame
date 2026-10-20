@@ -128,3 +128,46 @@
 已读最终全量235条WARN/stderr等相关上下文（含测试名关键词），索引 `/private/tmp/aiflow-e6-correction-final-warning-inventory.txt`；topological-sort仍只有故意互emit/listens的L/P用例，旧Mock/拒收/迁移/资源分组诊断、HappyDOM localhost:3000 ECONNREFUSED与Vite大chunk未隐藏。无Unhandled Errors汇总；正式GPU严格仅1条精确预期WARN。
 
 本次交付仍仅引擎工具能力与技术测试证据；真实Tripo/ARP/Mixamo和V1真人R1未完成，不签任何人门。待未参与施工的另一位复查人落独立判词。
+
+
+### 独立交叉复查判词（2026-10-21·E6）
+
+复查人：Codex 独立复查代理，未参与 E6 施工。审查从原提交 `7066cb03c9407096fa150d7a3acff56902136e0d` 延续到修补提交 `3730f2f6602ffde5ec56cf31c928806d9125ebe0`；分段锁 `90d165f1e`，返工锁 `ac59eb057`。已先读 AGENTS→CLAUDE、工单/R3、镜头契约与施工导航；导航及施工自陈不作为通过证据。所有复制、对抗、撤修和执行均在新的独立临时副本，未改施工树或用户工作区，未提交/推送、未启动 Blender、未签人门。
+
+**判定：经两类实证问题修补并独立复验，最终提交的 E6 通用镜头表、被动组件观测接缝及原生相机接线独立复查通过。** 保留指定 game113 依赖基线和既有美术台账 WARN；原提交的官方测试/GPU绿灯没有被直接当作最终通过。
+
+1. **最终源码与完整复跑。** 本段24个源码/测试/脚本对照 `/private/tmp/aiflow-e6-correction-frozen-sources.json` 及最终提交 Git blob；全部 `src/`、`scripts/` 1,167个文件亦逐项核 Git blob，全量结束后字节未变。独立记录 `/private/tmp/apollo-e6-independent-final-all-blob-check.json`、`/private/tmp/apollo-e6-independent-final-source-sha.json`。执行根为 `/private/tmp/apollo-e6-independent-20261021`；额外对抗副本为 `/private/tmp/apollo-e6-adversarial-20261021`。没有用无Git副本的 scoped 零改动冒充 full；eslint、depcruise、sim-DOM及完整计划均实际独立执行。
+
+   | 独立最终步骤 | actual exit / 实测 |
+   |---|---|
+   | 原生 spritegen `node --test` | 0，5/5；该node:test文件从Vitest排除 |
+   | eslint / depcruise / sim-DOM | 0 / 1 / 0；dep唯一 `games/game113/guide-art.ts → src/assets/asset-index.ts` |
+   | tsc | 0 |
+   | full Vitest | 1，661实际文件，7032/7033；唯一失败文件 `scripts/depcruise-fence.test.mjs`，唯一失败断言“绿腿：真仓零违规”；pending=0、todo=0 |
+   | build / docs-ref / context-budget | 0 / 0 / 0 |
+   | art-ledger-guard | 2；既有game-a art-03、game-c art-017缺文件，旧黑户基线未增 |
+
+   每轮实际使用宿主授权环境、固定 `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`，full maxWorkers4/minWorkers1，未改原断言/超时，未豁免NO_BROWSER、EPERM或NoSuite。原提交独立首轮6998/6999同样只有旧基线，但没有替代修补后的最终全量。最终逐步退出码与失败项在 `/private/tmp/apollo-e6-independent-full-steps.json`、`/private/tmp/apollo-e6-independent-full-vitest.json`；各步日志同名前缀，原轮另存 `apollo-e6-independent-original-full-*`。
+
+2. **先实证、再修补、同反例复验。**
+
+   - 原协议接受单键 `eye=[0,0,0]`、`target=[1e-170,0,0]`，原生相机实际方向却为 `[1e-170,0,-1]`。独立CPU断言红；独立真实GPU报告 `/private/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-e6-browser-WSWsGF/report.json` 退出1：与等价正常+X视线相比，实际native view差1、5次GPU上传view差1，pixels由 `61b30738` 变成 `890435b6`。该错误不是只比较lookAt参数字面值。施工方在E6极小视线分支稳定归一化，保原镜头距离和普通/legacy路径；独立重跑同CPU和GPU反例均绿，原GPU修后记录 `apollo-e6-browser-Abbhqc/report.json` 的native/GPU view差均0、pixels相同。另96组MIN/1e-170混合轴与平移，最大方向dot误差 `4.999999969612645e-9`；原生local-shake等价对照矩阵误差0。
+   - 原载体校验接受的四个数值组合不能安全绘制：`fov=Number.MIN_VALUE`、`fov=1e-300`、`near=1e308/far=1.7e308`、`near=MIN/far=2*MIN`。独立实际原生projection或Float32上传数据出现Infinity/NaN，记录 `/private/tmp/apollo-e6-independent-lens-expanded.log`，4项断言红；`orthoSize=MIN`因旧frustum clamp原本有限，没有误报。修后按实际native投影系数、逆矩阵及Float32结果做opt-in校验，四个反例拒收，Engine.load前后snapshot/hash/writeSequence/version/dirty/tickRate均保原状；运行时实际上下文在改动原生相机前预检。也独立核实 `far=1e307` 和 `near=40/far=40.00000000000001` 的原生及Float32矩阵可用，促使修补去掉过保守的raw裁面范围/精度限制；这两个正例最终仍可用。无Shot旧Camera3D装载、原MIN ortho clamp均保持。
+
+   最终官方8文件150项与自写3文件13项合计11文件163/163、exit0、pending/todo0，记录 `/private/tmp/apollo-e6-independent-final-focused.json`。原红与修后结果均保留；独立没有修产品源。复查夹具曾因restore起始写序不同、及误按注释假设shake会重新瞄准目标而各有伪红，实查既有行为后分别改为同起点增量/原生等价对照；这两项未被当作产品缺陷或豁免。
+
+3. **自选 unique-hit 撤修。** 另选最终字节未变的 `component-observers.ts` 深冻结步骤 `for (const { copy } of pending) Object.freeze(copy);`，先断言hit=1。自写两项选择范围先exit0；只撤深冻结后exit1、1绿1红，实际断言为冻结状态 expected true、received false；精确恢复后exit0。该选择过滤了另一个近点用例，不将被过滤项算通过；另完整重跑观测两文件17/17、pending0，以及上述最终163/163。恢复SHA `28460c7b9bcf9c97ae1309c008f3fed4704763690add4125f40d430783668530` 与最终源码相同。记录 `/private/tmp/apollo-e6-independent-mutation-report.json`，不是编译失败或超时验红。
+
+   自选观测对抗实际发布/立即移除20,000次完全同payload Signal，独立冻结快照、发布次数、一个pending、消费起点及取消后注册表释放均通过；同次交付内取消另一监听/新增监听的次序也独立验证。官方实际World回归另覆盖add/replace、remove/consumes索引完成后通知、destroy/restore/applyDelta、getter与异常隔离、10k取消，以及Tracer/Recorder原tick槽。2k双World观测对拍检查snapshot/full+incremental hash/writeSequence/delta/version/dirty及query顺序相同；Signal仍对hash敏感，没有为通过测试排除Signal。未加入或改动sim系统、相位或执行顺序。
+
+4. **最终真实GPU与纯读/生命周期。** 独立在最终冻结副本重跑正式脚本十一阶段，报告 `/private/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-e6-browser-C2PgLg/report.json`，探针entry SHA `5f5fd31f070efb6f048c146dc8c1b70408ad9d44b6900cfb417ef9483395b51b`、browser SHA `0e94ae604ac59488124b2b7fe086d5c237a93fdbe47f6c0f40407705fcf2cca4`。硬切/三ease/末键、同payload重播/中断、144Hz不误重启、legacy orbit/follow/ortho/tween、等值替换/改表/删除、同id/换World/restore均实际通过。末帧真实绘制，三种曲线各随后3帧hold均skip。
+
+   相机eye/world矩阵最大误差约 `2.354e-14`，真实上传view/projection最大误差 `2.1022432239448108e-7`；公开pick、screenToWorld、post、WorldUI与实际渲染使用同一CameraRig.current。WorldUI最大CSS坐标误差 `.0003366915347982058px`，低于既有序列化精度对应的`.001px`阈值。新增三个近视线GPU场景包含可见marker与隐藏对照，真实方向误差≤`2.221e-16`，native world/view差0、单位视线pixels完全相同；不是空画面相等。
+
+   实际timeline5tick catch-up、同系统瞬生即灭/consumes和动态加表后发Signal均切到预期镜头，旧tick observer完整保留。2k双World完整/增量hash对照一致；最终2145次渲染前后直接检查snapshot/hash/version/writeSequence/dirty不变。原探针曾只检查version却在错误文本写writeSequence，独立核读指出后补实际写序号断言；另自建直接写序号探针 `apollo-e6-browser-dGtLOx/report.json` 亦完整通过2145次，不把version冒称seq。
+
+   steady及5轮reload均6geometry/7texture/26native buffers，不增长；销毁前保留活镜头表确认订阅在场，destroy后真实取消且再发布Signal不复活。原生buffer实际115创建/115删除、live0，geometry0/texture0/contextlost=true。已逐张目击同目录load/wide/closeup/pan四张实机PNG，机位/构图和既有WorldUI标签随真实相机变化；该目击不冒充正式角色美术或V1审美验收。
+
+5. **告警及遗留口径。** 正式最终GPU仅一条精确预期“last matching publication wins”诊断，已读；其余WARN/error仍会失败。独立全量stderr整理为 `/private/tmp/apollo-e6-independent-full-warning-inventory.txt`，535条归一去重行对照本轮原提交与前段独立已读清单，仅模块/依赖数量统计为新增。故意L/P topo环来自system-graph互emit/listens用例；Mock降级/坏输入、人门拒收、模拟迁移配额、HappyDOM localhost:3000连接拒绝/清理和Vite大chunk均已核读，未出现Unhandled Errors汇总。没有新增语义告警被默许。art WARN2仍是game-a art-03及game-c art-017缺文件，依赖基线只保指定一条及对应Vitest一例。
+
+通过范围仍为世界空间eye/target闭集关键帧、绘制消费时计时、同绘制间隔最后一个匹配决定；不承诺亚帧/音频同步、骨骼跟拍、自由轨道、镜头生成或完成Signal。未提供观测的自定义IWorld按契约明确WARN回基础相机。实际投影上下文不安全时拒收，不静默夹成另一镜头；无Shot旧相机语义未扩改。角色/道具均为现有T5 generic-blender-fixture与简化测试物，不是生产人物/水壶/院落。`realArpValidated=false`、`realMixamoValidated=false`、`realTripoValidated=false`、`blenderStarted=false`；真实来源、授权、付费流程和动作质量仍待验，真人门未签，V1另段处理。
