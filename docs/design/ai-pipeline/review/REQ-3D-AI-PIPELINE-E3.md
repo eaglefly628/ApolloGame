@@ -62,7 +62,7 @@ ThreeRenderer沿原几何/材质工厂创建挂接Mesh3D单对象；退出挂点
 
 日志 `/private/tmp/aiflow-e3-final3-scoped.log`、`/private/tmp/aiflow-e3-final2-{complete,tsc,vitest-full,build,docs-ref,context-budget,art-ledger-guard,native}.log`，机读 `aiflow-e3-final2-vitest.json`、`aiflow-e3-final2-steps.json`；完整续跑器自身0，末行 `除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）`。原测试/超时未改，Vitest maxWorkers4/minWorkers1，simDOM面另实跑。资源原生泄漏被独立复查发现后，修补源码再次完整重跑才得到此最终记录。
 
-最终施工GPU证据 `/private/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-e3-browser-P17wKk/report.json`、同目录load/follow/visibility/removal截图。Apple M5 Metal WebGL2，135组CPU矩阵误差0、GPU矩阵最大约3.19e-7；TRS丢剪切反证最大0.283。14帧屏幕hash14种、阴影13种；8阶段通过。2000tick完整双世界hash一致、2074次渲染只读检查；5轮驱逐重载资源有界。
+最终施工GPU证据 `/private/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-e3-browser-P17wKk/report.json`、同目录load/follow/visibility/removal截图。Apple M5 Metal WebGL2，135组CPU矩阵误差0、GPU矩阵最大约3.19e-7；TRS丢剪切反证最大0.283。14帧屏幕hash14种、阴影13种；8阶段通过。2000tick完整双世界hash一致、2094次渲染只读检查；5轮驱逐重载资源有界。
 
 原生buffer观察没有代替GL操作：createBuffer/deleteBuffer真实调用，204创建/204删除，destroy live0、geometry0/texture0；五轮Attach→batch真实上传instanceColor→18实例扩容→Attach，每轮live50→49→47，旧matrix/color/grownMatrix句柄gl.isBuffer=false，2000稳态buffer47不增、5reload34/42固定。12自有map（dice6、单体voxel4、batchvoxel2）各dispose1且nativeGPUAllocated=false。
 
@@ -77,3 +77,36 @@ ThreeRenderer沿原几何/材质工厂创建挂接Mesh3D单对象；退出挂点
 ## 交叉复查
 
 待独立复查人对冻结提交执行独立复跑、撤修验红、实证和读取告警；施工方不填写自己的通过判词。
+
+
+### 独立交叉复查判词（2026-10-21·E3）
+
+**结论：E3 在本单声明的骨骼挂接与资源生命周期范围内通过独立复查。** 复查主体为单独的交叉复查会话，未参与产品施工；下列退出码、反例与原生GPU观测均由复查方自己执行。全库仍保留 owner 已允许的 game113 围栏基线，不能称全库零红。
+
+审查对象为 `1a13629430d149e769d9eb91f38f50230b9812b0`，分段锁 `d15dcef60`。独立树 `/private/tmp/apollo-e3-independent-20261021` 复制施工副本的源码、脚本、配置、游戏、文档与资产，仅复用已安装依赖；正式全量前逐文件核对1139个src/scripts指纹，22个本段改动源码/测试/脚本再与提交Git blob逐字节相等。核对记录 `/private/tmp/apollo-e3-independent-commit-source-check.json`。未改施工树或用户主工作区，未自行提交/推送，未启动原生Blender。
+
+1. **独立复跑。** 最终15文件195项定向/回归退出0：Attach闭集与装载、原生Bone/Mixer完整矩阵/剪切、嵌套与环、迟到/替换/隐藏恢复、纹理与batch owner、20k双World纯读/hash，以及E2控制器、参数、模型池、R4/E5/旧模型路径。日志 `/private/tmp/apollo-e3-independent-targeted-final.log`；随后独立执行完整full计划并加sim-DOM面守卫，未把无Git副本的零改动分类冒充scoped全量。
+2. **自选撤修验红。** 在独立树将唯一 `object.matrix.copy(local);` 改为identity，先断言 `hit=1`；最终helper27项实际18红/9绿、退出1，红灯来自真实位姿/剪切/层级断言。恢复原字节SHA256 `d3a0c1969adf2cb2fffefeeb5ff5193e1cfb4682d5513ff3172adbe2470bc635` 后，最终定向中27/27恢复绿。红灯日志 `/private/tmp/apollo-e3-independent-matrix-revert-red.log`，没有用编译错误或超时充数。
+3. **先实证、同例复验。** 复查方新增真实WebGL缓冲探针，20轮创建→绘制→移空实例批，实际createBuffer/deleteBuffer每轮6/5，geometry计数虽归零，instanceMatrix缓冲却累计遗留20个；实际setColorAt上传instanceColor后遗留40个。两个断言均退出1，日志 `/private/tmp/apollo-e3-independent-buffer-red.log`、`/private/tmp/apollo-e3-independent-color-buffer-red.log`，原始观测 `/private/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-e3-independent-buffers-plL1hE/report.json`。施工方补三条InstancedMesh本体dispose路径后，复查方原探针分别量得120创建/120删除与140/140，20轮每轮live=0、退出0；结果为同前缀的 `-buffer-fixed.log`、`-color-buffer-fixed.log`，报告分别在 `apollo-e3-independent-buffers-QXXwFy`、`apollo-e3-independent-buffers-8VxfI9` 目录。修补batches源码SHA256 `53c0747d24d6041d3139f2345cc6172ca8eec691987d0f696d6b0fdd375be9a5` 已与提交对账，永久三路径owner测试也独立复跑。没有以geometry计数或contextLost替代原生buffer释放。
+4. **读告警。** 定向、全量stdout/stderr、构建与守卫均核读；重复诊断对照本会话已读的E2清单，未发现新的产品告警。mock降级/坏输入拒收来自相应反例，`[L,P]` 拓扑环是system-graph的互emit/listens用例。Vite大chunk提示、HappyDOM localhost:3000连接拒绝仍保留，没有称零告警；Vitest无Unhandled Errors汇总。E3浏览器83行诊断的13种消息逐条核对，仅为预期缺父/缺骨/迟到drawable，稳定缺失不逐帧刷屏，没有额外warning/error。
+
+正式全量首轮即显式固定Chrome并正常申请宿主本地端口权限；Vitest maxWorkers4/minWorkers1，不改断言或超时。Spritegen的node:test单独执行，没有把NoSuite当产品失败或跳过测试。
+
+| 独立检查 | 实际结果 |
+|---|---|
+| 原生Spritegen node:test | 5/5，退出0 |
+| eslint / sim-DOM / tsc | 各退出0 |
+| dependency-cruiser | 退出1，恰一条已授权 `games/game113/guide-art.ts → src/assets/asset-index.ts` |
+| full Vitest | 647文件、6809/6810；仅对应depcruise-fence「绿腿：真仓零违规」基线1例，退出1，pending/todo0 |
+| build / docs-ref / context-budget | 各退出0 |
+| art-ledger-guard | 退出2，既有允许WARN；game-a/game101基线黑户及game-a/game-c两条死账，无新增棘轮失败 |
+
+逐步退出码 `/private/tmp/apollo-e3-independent-full-steps.json`，完整日志同前缀 `apollo-e3-independent-full-*`，告警清单另存 `-warning-inventory.txt`。未采信施工方的full退出码作为此结果。
+
+**原生GPU接线由复查方重新产生。** 最终正式探针SHA256为verify `6bd5e82156d30106f47cfdcba77301f352af98062712a2a82ce5f571895c6745`、fixture `694d4ed59c514b0c0b24705d76acf869ba2a96ee8a52e0e9ca551d264a057f88`。固定Chrome、Apple M5/ANGLE WebGL2，经正式AssetIndex/AssetManager/ModelPool/ThreeRenderer，独立报告 `/private/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-e3-browser-vEOHlm/report.json`；load/follow/visibility/removal四截图均已目击。135组实际CPU/原生draw矩阵CPU误差0、GPU最大约3.19e-7，TRS重建的剪切对照确实不等；plain/PBR outline/可归批PBR/透明/dice/voxel/Model与嵌套路径均工作。当前挂接位置可拾取、旧base无ghost；父隐藏/销毁/换key/迟到/驱逐后恢复、缺骨一次回根、移除Attach回base并归批、sameid Mesh→Model清理均通过。
+
+最终正式探针额外真实观测五轮Attach→batch（已上传instanceColor）→18实例扩容→Attach，每轮native live50→49→47，旧matrix/color/grownMatrix的gl.isBuffer均false；2000 tick完整双World hash逐帧一致，steady buffer47不增，5轮驱逐/重载34/42有界。销毁前204创建/204删除且live0，12自有纹理各dispose1/nativeGPUAllocated=false，销毁后geometry0/texture0、contextLost=true；总计2094次渲染纯读检查。该buffer结论在context loss之前已经成立。
+
+复查方另补相机实证，不修改正式探针或产品：`Camera3D.mode=follow,target=plain` 时相机中心等于最终挂接原点；把被替代的base移到万级坐标不挪相机；父隐藏后挂件不再影响相机取景/拾取，再次改变其base仍不挪相机，父恢复后继续跟随。独立报告 `/private/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-e3-browser-o8MQzc/report.json`，load/camera/destroy退出0，资源也清零。
+
+本判词只确认E3闭集解释器及本段实际触发的资源释放修补；ModelPool.instance为无加载/pin的查询，未增加模拟反馈或改变既有E2语义。来源仍为已有T5自产GLB与测试标记/静态雕像，不是生产水壶；ARP/Mixamo/Tripo真实flag均false、blenderStarted=false。真实付费输入、T5真实Smart/Remap、真人动作质量和后续E4/E6/V1继续待验，人门未签；本段没有其余实证阻塞。
