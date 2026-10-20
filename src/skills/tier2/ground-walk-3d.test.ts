@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { World } from '@engine/core/world.js';
 import { topologicalSort } from '@engine/core/topological-sort.js';
 import type { SystemDeclaration } from '@engine/core/types.js';
-import type { Collider3D, DebugTrace, GroundContact3D, GroundSurface3D, Transform, Velocity } from '@engine/protocol/components.js';
+import type { Collider3D, DebugTrace, GroundContact3D, GroundSurface3D, GroundTeleport3D, Transform, Velocity } from '@engine/protocol/components.js';
 import { bakeGroundSurface, type GroundPointQ, type GroundTriangleInput } from '@engine/spatial/ground-surface.js';
 import { hashSnapshot, hashWithOrder } from '../../net/determinism.js';
 import { groundWalk3dCapability as ground } from './ground-walk-3d.js';
@@ -189,6 +189,7 @@ describe('movement combinations and deterministic ground state', () => {
     const warn = vi.spyOn(console, 'warn');
     const systems = [...common, ...extra];
     const ids = topologicalSort(systems, { softCycle: 'throw' }).map(system => system.id);
+    expect(ids.indexOf('ground-teleport-3d')).toBeLessThan(ids.indexOf('ground-init-3d'));
     expect(ids.indexOf('ground-init-3d')).toBeLessThan(ids.indexOf('motion-apply'));
     expect(ids.indexOf('motion-apply')).toBeLessThan(ids.indexOf('ground-pre-3d'));
     expect(ids.indexOf('ground-pre-3d')).toBeLessThan(ids.indexOf('overlap-detect-3d'));
@@ -234,5 +235,107 @@ describe('movement combinations and deterministic ground state', () => {
     }
     expect(log.events.some(event => event.kind === 'reject' && event.why?.includes('hole'))).toBe(true);
     const idle = setup(); const idleLog = trace(idle); idle.tick(); expect(idleLog.events).toEqual([]);
+  });
+});
+
+describe('explicit GroundTeleport3D relocation', () => {
+  // Two islands separated by a 1m hole; the far island is 3m higher than any legal step.
+  const islands = () => bakeGroundSurface([...patch(0, 10000), ...patch(20000, 30000, 0, 10000, 30000)]);
+  const teleport = (w: World, x: number, y = .5, id = 'actor'): void => w.addComponent(id, { type: 'GroundTeleport3D', x, y } as GroundTeleport3D);
+  const actorState = (w: World, id = 'actor') => JSON.stringify(['Transform', 'Collider3D', 'Velocity', 'GroundContact3D'].map(type => w.getComponent(id, type)));
+
+  it('relocates across a hole to a high island, consumes the intent and is not rolled back afterwards', () => {
+    const w = setup(islands()); actor(w, .5, 0); const log = trace(w); w.tick();
+    // A bare Transform write is still judged as a walk and rolled back.
+    position(w).x = 2.5; w.tick();
+    expect(position(w).x).toBe(.5);
+    teleport(w, 2.5); w.tick();
+    expect(position(w)).toMatchObject({ x: 2.5, y: .5 });
+    expect(body(w).baseY).toBe(3);
+    expect(contact(w)).toMatchObject({ acceptedXQ: 25000, acceptedZQ: 5000, acceptedHeightQ: 30000, heightQ: 30000, supported: true, rejected: false });
+    expect(w.hasComponent('actor', 'GroundTeleport3D')).toBe(false);
+    expect(log.events.some(event => event.system === 'ground-teleport-3d' && event.kind === 'commit' && event.why?.includes('actor@25000,5000/30000'))).toBe(true);
+    for (let i = 0; i < 3; i++) w.tick();
+    expect(position(w).x).toBe(2.5);
+    velocity(w).vx = .1; w.tick();
+    expect(position(w).x).toBeCloseTo(2.6, 12);
+    expect(body(w).baseY).toBe(3);
+  });
+  it('applies before motion in the same tick, so the first walk starts from the target', () => {
+    const w = setup(islands()); actor(w, .5, .1); w.tick();
+    teleport(w, 2.5); w.tick();
+    expect(position(w).x).toBeCloseTo(2.6, 12);
+    expect(contact(w)).toMatchObject({ acceptedXQ: 26000, acceptedHeightQ: 30000 });
+    expect(velocity(w).vx).toBe(.1);
+  });
+  it('rejects unsupported, out-of-budget and malformed targets whole: zero writes, intent still consumed', () => {
+    for (const target of [1.5, 3.5, -.5, Number.NaN, 2e6]) {
+      const w = setup(islands()); actor(w, .5, 0); const log = trace(w); w.tick();
+      const before = actorState(w);
+      // Observe right after the teleport system too: ground-pre would otherwise mask a
+      // partial write by rolling it back later in the same tick.
+      let afterTeleport: string | undefined;
+      w.setObserver({ onSystemEnd: system => { if (system.id === 'ground-teleport-3d') afterTeleport = actorState(w); } });
+      teleport(w, target);
+      expect(() => w.tick()).not.toThrow();
+      expect(afterTeleport).toBe(before);
+      expect(actorState(w)).toBe(before);
+      expect(w.hasComponent('actor', 'GroundTeleport3D')).toBe(false);
+      expect(log.events.some(event => event.system === 'ground-teleport-3d' && event.kind === 'reject' && event.what.includes('actors unchanged'))).toBe(true);
+    }
+  });
+  it('rejects an intent on a non-walker without touching that entity', () => {
+    const w = setup(islands()); actor(w, .5, 0); const log = trace(w);
+    w.createEntity('prop'); w.addComponent('prop', xf(.5)); teleport(w, 2.5, .5, 'prop');
+    w.tick();
+    expect(position(w, 'prop').x).toBe(.5);
+    expect(w.hasComponent('prop', 'GroundTeleport3D')).toBe(false);
+    expect(w.hasComponent('prop', 'GroundContact3D')).toBe(false);
+    expect(log.events.some(event => event.kind === 'reject' && event.why?.includes('prop:not a valid ground walker'))).toBe(true);
+  });
+  it('rescues an unsupported spawn onto real support, after which ordinary walking resumes', () => {
+    const w = setup(islands()); actor(w, 1.5, .1); w.tick();
+    expect(contact(w).supported).toBe(false);
+    expect(position(w).x).toBe(1.5);
+    velocity(w).vx = .1; teleport(w, .5); w.tick();
+    expect(contact(w)).toMatchObject({ supported: true, acceptedXQ: 6000 });
+    expect(position(w).x).toBeCloseTo(.6, 12);
+  });
+  it('keeps the authored Transform target exact and samples at the collider offset', () => {
+    const w = setup(); actor(w, .5, 0, 'actor', { offsetX: .75, offsetZ: -.25 }); w.tick();
+    teleport(w, 2.25, .75); w.tick();
+    expect(position(w)).toMatchObject({ x: 2.25, y: .75 });
+    expect(contact(w)).toMatchObject({ acceptedXQ: 30000, acceptedZQ: 5000, heightQ: 15000 });
+    expect(body(w).baseY).toBe(1.5);
+  });
+  it('an intent added after the Input phase waits one tick deterministically', () => {
+    const late: SystemDeclaration = {
+      id: 'test-late-teleport', reads: [], writes: ['GroundTeleport3D'], consumes: [],
+      execute: world => { if (world.getVersion() === 1) world.addComponent('actor', { type: 'GroundTeleport3D', x: 2.5, y: .5 }); },
+    };
+    const w = setup(islands(), [...baseSystems, late]); actor(w, .5, 0);
+    w.tick(); w.tick();
+    expect(position(w).x).toBe(.5);
+    expect(w.hasComponent('actor', 'GroundTeleport3D')).toBe(true);
+    w.tick();
+    expect(position(w).x).toBe(2.5);
+  });
+  it('equal per-tick hashes, snapshot with a pending intent restores the same future, trace does not change hashes', () => {
+    const make = () => { const w = setup(islands()); actor(w, .5, .05, '10'); actor(w, 1.5, 0, '2'); return w; };
+    const a = make(), b = make(), log = trace(b);
+    for (let i = 0; i < 12; i++) {
+      if (i === 3) for (const w of [a, b]) { teleport(w, 2.5, .5, '10'); teleport(w, .25, .5, '2'); }
+      a.tick(); b.tick();
+      expect(hashSnapshot(a.snapshot())).toBe(hashSnapshot(b.snapshot()));
+    }
+    expect(log.events.some(event => event.system === 'ground-teleport-3d')).toBe(true);
+    teleport(a, .25, .5, '10');
+    const saved = JSON.parse(JSON.stringify(a.snapshot())), order = [...a.snapshotOrder()];
+    const restored = make(); restored.restore(saved, order);
+    for (let i = 0; i < 6; i++) {
+      a.tick(); restored.tick();
+      expect(hashWithOrder(a.snapshot(), a.snapshotOrder())).toBe(hashWithOrder(restored.snapshot(), restored.snapshotOrder()));
+    }
+    expect(position(restored, '10').x).toBeCloseTo(.25 + 6 * .05, 12);
   });
 });

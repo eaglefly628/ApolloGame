@@ -149,7 +149,9 @@ describe('相位落桶棘轮 — 非缺省相位成员点名（根因①·A1 探
 
 /** 相位基线（2026-08-16 实测灌入）。改动纪律同 SCC 基线：挪相位 = 同提交带理由更新本表。 */
 const PHASE_BASELINE: string[] = [
-  'p-20:ground-init-3d', // R2 acquires authored support before first motion; opt-in only.
+  // R2 acquires authored support before first motion; REQ-GROUND-TELEPORT applies explicit
+  // relocation intents just before it (runsBefore), so a moved actor skips authored acquisition.
+  'p-20:ground-init-3d,ground-teleport-3d',
   // REQ-114-NAV: capture actual velocity before Update navigation overwrites it
   // with the preferred velocity; the ORCA oracle independently verifies this order.
   'p-10:crowd-capture',

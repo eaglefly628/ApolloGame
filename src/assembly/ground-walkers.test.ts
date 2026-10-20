@@ -51,6 +51,28 @@ describe('atomic ground walker load validation', () => {
       expect(() => validateGroundWalkers(e)).toThrow(/render pivot/);
     } finally { warn.mockRestore(); }
   });
+  it('accepts an authored GroundTeleport3D, applies it on the first tick, and rejects malformed or orphan intents', () => {
+    const e = fixture(); e.actor.GroundTeleport3D = { x: .1, y: .6 };
+    const engine = new Engine(); engine.load({ entities: e, capabilities: [groundWalk3dCapability] } as never);
+    engine.world.tick();
+    expect(engine.world.getComponent('actor', 'Transform')).toMatchObject({ x: .1, y: .6 });
+    expect(engine.world.getComponent('actor', 'GroundContact3D')).toMatchObject({ acceptedXQ: 1000, acceptedZQ: 6000, supported: true });
+    expect(engine.world.hasComponent('actor', 'GroundTeleport3D')).toBe(false);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const cases: Array<[(e: ReturnType<typeof fixture>) => void, RegExp]> = [
+        [e => { e.terrain.GroundTeleport3D = { x: .1, y: .1 }; }, /requires GroundWalker3D/],
+        [e => { e.actor.GroundTeleport3D = { x: .1, y: .1, z: 0 }; }, /expected GroundTeleport3D/],
+        [e => { e.actor.GroundTeleport3D = { x: '0.1', y: .1 }; }, /expected GroundTeleport3D/],
+        [e => { e.actor.GroundTeleport3D = { x: Infinity, y: .1 }; }, /expected GroundTeleport3D/],
+        [e => { e.actor.GroundTeleport3D = { x: 2e6, y: .1 }; }, /coordinate budget/],
+      ];
+      for (const [change, message] of cases) {
+        const bad = fixture(); change(bad);
+        expect(() => validateGroundWalkers(bad)).toThrow(message);
+      }
+    } finally { warn.mockRestore(); }
+  });
   it('rejects forged bucket entries and table type without touching caller data', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {

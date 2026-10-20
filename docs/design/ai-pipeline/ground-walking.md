@@ -13,6 +13,12 @@
 - 引擎烘焙 `GroundSurface3D{originXQ,originZQ,cellSizeQ,cols,rows,triangles,supportIds,offsets,indices}`：triangles 每9项是一个世界 XYZ 三角（整数Q），每三角 supportIds 是匹配的静态碰撞实体 id 数组；格桶只缩小候选，不把地形压成一个格中心高度。默认格边5000Q。上限4096三角、65536格、262144桶引用，超限拒收，绝不静默裁掉。
 - 引擎生成 `GroundContact3D{surfaceId,heightQ,triangleId,acceptedXQ,acceptedZQ,acceptedHeightQ,acceptedTriangleId,supported,rejected?}`：最后接受位置属于世界状态，随快照/hash恢复；pre候选与最终接受点分开，防碰撞推开失败时回退进墙。rejected是本拍pre拒移标记，由final停速后清除。无模块级角色状态。初始无支撑明确拒收移动并停速；不暗加重力或传送到远处地面。
 
+## 显式传送（REQ-GROUND-TELEPORT·owner 判 A）
+
+- 任何对 walker Transform 的跳变写入仍按「上次接受点 → 当前点」整段行走验收，跨洞/越高台即回滚——这是防穿墙的本意，不放宽。要合法地瞬移/复活/过传送门，给 walker 自身挂一次性意图 `GroundTeleport3D{x,y}`（平面 Transform 米坐标，与 `Transform.x/y` 同口径）。
+- `ground-teleport-3d`（Input 相位·显式 runsBefore `ground-init-3d`·consumes 该意图）：目标点（加 Collider offset）在 walker 自己的 surface 上 `sampleGroundSurface` 有支撑 → 写 `Transform.x/y=目标`、`baseY=支撑高`、整份覆盖 `GroundContact3D`（accepted=目标·supported·rejected=false）；之后同拍 motion 从目标点起走。无支撑/越界/非有限/超坐标预算/非 walker → 整体拒收：本系统零写入、意图照常消费、trace `reject`。不吸附最近点、不改 Velocity、不换 surface。
+- 初始无支撑而冻在出生点的 walker 可被传送救回。Update 及以后相位新挂的意图在下一拍 Input 生效（确定性一拍延迟·挂起意图随快照/hash）。装载期允许作者直接写该意图（首拍生效），字段闭集 `{x,y}`、须同实体有 `GroundWalker3D`，否则原子拒收。
+
 ## 采样与通行
 
 坐标按 E5 的 Math.round(x*10000) 量化并归一 -0；格索引用 floor，出界不 clamp。三角覆盖与重心高度使用临时 BigInt，向上取整为Q；世界只存JSON整数，不存BigInt。台阶各保留自己的平面分片，不跨台阶双线性插值。稳定三角序与上一三角优先解决共边平局。正面积重叠而高度不同的表面拒收，多层桥下桥上不在本轮平面导航契约内。

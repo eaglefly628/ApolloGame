@@ -24,6 +24,15 @@ export interface GroundWalker3D extends Component {
   maxStepDownQ?: number;
 }
 
+/** One-shot relocation intent on the walker itself, in planar Transform metres
+ * (x = Transform.x, y = Transform.y). Consumed by ground-teleport-3d; a target
+ * without walkable support is rejected whole, never snapped to a nearby point. */
+export interface GroundTeleport3D extends Component {
+  readonly type: 'GroundTeleport3D';
+  x: number;
+  y: number;
+}
+
 /** Last accepted position is serialized: restore does not depend on hidden caches. */
 export interface GroundContact3D extends Component {
   readonly type: 'GroundContact3D';

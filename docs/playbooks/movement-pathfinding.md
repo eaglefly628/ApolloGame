@@ -8,7 +8,7 @@
 | 任务 | 能力实名 | 怎么接（一句） |
 |---|---|---|
 | 按速度移动 | `t1-motion-apply` | 实体挂 `Velocity`；读 Transform+Velocity 写 Transform |
-| 3D坡地/台阶贴地 | `t2-ground-walk-3d` | 角色挂 `GroundWalker3D{surfaceId}` +竖直 `Collider3D`，场景启用 `SceneImport3D.ground`；量化高度表与整段通行检查，缺地/过高阶拒移停速，不加重力。契约 `docs/design/ai-pipeline/ground-walking.md` |
+| 3D坡地/台阶贴地 | `t2-ground-walk-3d` | 角色挂 `GroundWalker3D{surfaceId}` +竖直 `Collider3D`，场景启用 `SceneImport3D.ground`；量化高度表与整段通行检查，缺地/过高阶拒移停速，不加重力；传送/复活挂 `GroundTeleport3D{x,y}`（裸写 Transform 会被回滚）。契约 `docs/design/ai-pipeline/ground-walking.md` |
 | 持续加速度（重力/推进） | `t1-accel-apply` | 挂 `Acceleration`；读 Velocity+Acceleration 写 Velocity |
 | 表现字段平滑过渡 | `t1-tween` | 挂 `Tween{target,from,to,duration,easing}`（滑入/淡入/镜头）；不驱动被 Condition 读的值 |
 | 朝/背目标移动（AI） | `t2-steering` | 挂 `Steering{mode,speed,stopRange}`；配 `t3-aggro` 写 target + motion-apply |

@@ -8,6 +8,7 @@ import type {
   GroundSurface3D,
   GroundWalker3D,
   GroundContact3D,
+  GroundTeleport3D,
   SceneImport3D,
   Acceleration,
   Action,
@@ -184,6 +185,7 @@ export interface ComponentDataMap {
   GroundSurface3D: Omit<GroundSurface3D, 'type'>;
   GroundWalker3D: Omit<GroundWalker3D, 'type'>;
   GroundContact3D: Omit<GroundContact3D, 'type'>;
+  GroundTeleport3D: Omit<GroundTeleport3D, 'type'>;
   Acceleration: Omit<Acceleration, 'type'>;
   Action: Omit<Action, 'type'>;
   Anim3D: Omit<Anim3D, 'type'>;

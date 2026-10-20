@@ -2,7 +2,7 @@ import { defineCapability } from '@engine/core/define-capability.js';
 import { defineComponent } from '@engine/core/define-component.js';
 import { t } from '@engine/core/schema.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { Collider3D, GroundWalker3D, GroundSurface3D, GroundContact3D, Transform, Velocity } from '@engine/protocol/components.js';
+import type { Collider3D, GroundWalker3D, GroundSurface3D, GroundContact3D, GroundTeleport3D, Transform, Velocity } from '@engine/protocol/components.js';
 import { sampleGroundSurface, walkGroundSurface } from '@engine/spatial/ground-surface.js';
 import { findDebugTrace, appendTrace } from '../debug-trace.js';
 
@@ -24,6 +24,9 @@ export function validGroundBody(c: Collider3D | undefined): c is Collider3D {
   if (c.kind === 'sphere') return Number.isFinite(c.radius) && c.radius! > 0;
   if (c.kind === 'capsule') return Number.isFinite(c.radius) && c.radius! > 0 && Number.isFinite(c.height ?? 2 * c.radius!) && (c.height ?? 2 * c.radius!) >= 2 * c.radius!;
   return c.kind === 'box' && [c.halfX, c.halfY, c.halfZ].every(v => Number.isFinite(v) && v! > 0);
+}
+export function validGroundTeleport(v: GroundTeleport3D): boolean {
+  return typeof v.x === 'number' && typeof v.y === 'number' && Number.isFinite(v.x) && Number.isFinite(v.y);
 }
 
 const fields = {
@@ -66,6 +69,48 @@ function initializeGroundContacts(world: IWorld, system = 'ground-init-3d'): voi
   }
   if (trace) {
     if (initialized || rejected) appendTrace(trace, world.getVersion(), system, rejected ? 'reject' : 'commit', `${initialized} supports acquired; ${rejected} initial positions unsupported`, rejected ? failures.join('; ') : 'At the actual authored/spawn position');
+  }
+}
+
+/** An explicit relocation is not a walk: without this intent any discontinuous
+ * Transform write is checked as one continuous segment and rolled back. The target
+ * acquires only the support under it. Rejection writes nothing (no nearest-point
+ * snap, no partial move); velocity is never touched. Runs before ground-init, so a
+ * relocated actor also skips the authored-position acquisition. */
+function applyGroundTeleports(world: IWorld): void {
+  const ids = world.query('GroundTeleport3D').map(([id]) => id).sort();
+  if (!ids.length) return;
+  const trace = findDebugTrace(world);
+  let accepted = 0, rejected = 0;
+  const moved: string[] = [], failures: string[] = [];
+  for (const id of ids) {
+    const intent = world.getComponent<GroundTeleport3D>(id, 'GroundTeleport3D')!;
+    try {
+      const walker = world.getComponent<GroundWalker3D>(id, 'GroundWalker3D');
+      const transform = world.getComponent<Transform>(id, 'Transform');
+      const body = world.getComponent<Collider3D>(id, 'Collider3D');
+      if (!walker || !validGroundWalker(walker)) throw new Error('not a valid ground walker');
+      if (!transform || !validGroundBody(body)) throw new Error('missing transform or invalid/trigger body');
+      if (!validGroundTeleport(intent)) throw new Error('target must be finite planar metres');
+      const surface = world.getComponent<GroundSurface3D>(walker.surfaceId, 'GroundSurface3D');
+      if (!surface) throw new Error(`missing ground surface ${walker.surfaceId}`);
+      const xQ = groundCoordinateQ(intent.x + (body.offsetX ?? 0)), zQ = groundCoordinateQ(intent.y + (body.offsetZ ?? 0));
+      const hit = sampleGroundSurface(surface, xQ, zQ);
+      if (!hit) throw new Error('target is outside walkable coverage');
+      transform.x = intent.x; transform.y = intent.y;
+      body.baseY = hit.heightQ / GROUND_Q;
+      world.addComponent(id, { type: 'GroundContact3D', surfaceId: walker.surfaceId, heightQ: hit.heightQ, triangleId: hit.triangleId,
+        acceptedXQ: xQ, acceptedZQ: zQ, acceptedHeightQ: hit.heightQ, acceptedTriangleId: hit.triangleId, supported: true, rejected: false } as GroundContact3D);
+      accepted++;
+      if (moved.length < 3) moved.push(`${id}@${xQ},${zQ}/${hit.heightQ}`);
+    } catch (error) {
+      rejected++;
+      if (failures.length < 3) failures.push(`${id}:${error instanceof Error ? error.message : 'invalid teleport'}`);
+    }
+  }
+  if (trace) {
+    if (accepted) appendTrace(trace, world.getVersion(), 'ground-teleport-3d', 'commit', `${accepted} teleports accepted`, moved.join('; '));
+    if (rejected) appendTrace(trace, world.getVersion(), 'ground-teleport-3d', 'reject', `${rejected} teleports rejected; actors unchanged`, failures.join('; '));
   }
 }
 
@@ -152,8 +197,9 @@ export const groundWalk3dCapability = defineCapability({
   describe: {
     name: 'ground-walk-3d', summary: 'Deterministic fixed-point height sampling and continuous supported walking on imported terrain.',
     semantic: ['tier2', 'movement', 'ground', '3d'],
-    whenToUse: 'Opt-in 3D walkers on E5 ground surfaces; slopes, steps and holes with rollback-safe accepted position.',
-    examples: ['GroundWalker3D:{surfaceId:"scene"}; SceneImport3D:{modelKey:"scene",rules:"default",ground:{source:"navigation"}}'],
+    whenToUse: 'Opt-in 3D walkers on E5 ground surfaces; slopes, steps and holes with rollback-safe accepted position. Relocate (teleport/respawn) with a GroundTeleport3D intent, never a bare Transform write.',
+    examples: ['GroundWalker3D:{surfaceId:"scene"}; SceneImport3D:{modelKey:"scene",rules:"default",ground:{source:"navigation"}}',
+      'Checkpoint respawn: add GroundTeleport3D:{x:2.5,y:0.5} to the walker; applied next Input phase, rejected whole if unsupported'],
   },
   config: {},
   components: {
@@ -165,11 +211,22 @@ export const groundWalk3dCapability = defineCapability({
         triangles: t.arr(t.num()), supportIds: t.arr(t.arr(t.entity())), offsets: t.arr(t.num()), indices: t.arr(t.num()) },
         { category: 'config', describe: 'Canonical load-time integer triangle height table and bounded spatial buckets; participates in hash.' }),
       GroundContact3D: defineComponent('GroundContact3D', fields, { category: 'marker', describe: 'Current support and last final accepted point. Serialized, never a hidden cache.' }),
+      GroundTeleport3D: defineComponent('GroundTeleport3D', { x: t.num(), y: t.num() },
+        { category: 'intent', describe: 'One-shot relocation on the walker itself, planar Transform metres. Applied at the next Input phase if the target has walkable support; otherwise rejected whole. Always consumed.',
+          refine: v => validGroundTeleport(v as unknown as GroundTeleport3D) ? [] : [{ path: '', message: 'Teleport target must be finite planar metres', severity: 'error' }] }),
     },
-    reads: ['GroundWalker3D', 'GroundSurface3D', 'GroundContact3D', 'Transform', 'Collider3D', 'Velocity'],
-    writes: ['GroundContact3D', 'Transform', 'Collider3D', 'Velocity'], consumes: [],
+    reads: ['GroundWalker3D', 'GroundSurface3D', 'GroundContact3D', 'GroundTeleport3D', 'Transform', 'Collider3D', 'Velocity'],
+    writes: ['GroundContact3D', 'Transform', 'Collider3D', 'Velocity'], consumes: ['GroundTeleport3D'],
   },
   systems: [{
+    id: 'ground-teleport-3d', phase: -20,
+    // Same Input bucket as ground-init: explicit edge overrides the inferred
+    // Collider3D/GroundContact3D back-edge so the pair never forms a soft cycle.
+    runsBefore: ['ground-init-3d'],
+    reads: ['GroundTeleport3D', 'GroundWalker3D', 'GroundSurface3D', 'Transform', 'Collider3D'],
+    writes: ['GroundContact3D', 'Transform', 'Collider3D'], consumes: ['GroundTeleport3D'],
+    execute: world => applyGroundTeleports(world),
+  }, {
     id: 'ground-init-3d', phase: -20,
     reads: ['GroundWalker3D', 'GroundSurface3D', 'GroundContact3D', 'Transform', 'Collider3D'],
     writes: ['GroundContact3D', 'Collider3D'], consumes: [], execute: world => initializeGroundContacts(world),

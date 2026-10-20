@@ -1,6 +1,6 @@
-import type { GroundSurface3D, GroundWalker3D, Collider3D } from '@engine/protocol/components.js';
+import type { GroundSurface3D, GroundWalker3D, GroundTeleport3D, Collider3D } from '@engine/protocol/components.js';
 import { assertGroundSurface } from '@engine/spatial/ground-surface.js';
-import { validGroundBody, validGroundWalker, groundCoordinateQ } from '@skills/tier2/ground-walk-3d.js';
+import { validGroundBody, validGroundWalker, validGroundTeleport, groundCoordinateQ } from '@skills/tier2/ground-walk-3d.js';
 
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 function reject(message: string): never {
@@ -17,6 +17,13 @@ export function validateGroundWalkers(entities: Record<string, unknown>): void {
       if (raw.GroundSurface3D.type !== undefined && raw.GroundSurface3D.type !== 'GroundSurface3D') reject(`${id}: invalid GroundSurface3D type`);
       try { assertGroundSurface({ ...raw.GroundSurface3D, type: 'GroundSurface3D' } as unknown as GroundSurface3D); }
       catch (error) { reject(`${id}: ${error instanceof Error ? error.message : 'invalid height table'}`); }
+    }
+    if (raw.GroundTeleport3D !== undefined) {
+      const teleport = raw.GroundTeleport3D;
+      if (raw.GroundWalker3D === undefined) reject(`${id}: GroundTeleport3D requires GroundWalker3D on the same entity`);
+      if (!object(teleport) || Object.keys(teleport).some(k => !['type', 'x', 'y'].includes(k)) || !validGroundTeleport(teleport as unknown as GroundTeleport3D)) reject(`${id}: expected GroundTeleport3D{x,y} finite planar metres`);
+      try { groundCoordinateQ(teleport.x as number); groundCoordinateQ(teleport.y as number); }
+      catch { reject(`${id}: GroundTeleport3D target exceeds the ground coordinate budget`); }
     }
     if (raw.GroundWalker3D === undefined) continue;
     if (!object(raw.GroundWalker3D) || !validGroundWalker(raw.GroundWalker3D as unknown as GroundWalker3D)) reject(`${id}: invalid GroundWalker3D`);
