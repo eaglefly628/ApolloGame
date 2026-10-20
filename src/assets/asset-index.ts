@@ -1,6 +1,7 @@
 import type { AssetManager } from './asset-manager.js';
-import type { TextureDescriptor, AtlasDescriptor, SpriteSheetDescriptor, Rect } from './asset-types.js';
+import type { TextureDescriptor, AtlasDescriptor, SpriteSheetDescriptor, Rect, AssetGroups } from './asset-types.js';
 import { generatorSpecOf, resolveGeneratedSrc } from './texture-generators.js';
+import { parseAssetGroups } from './asset-groups.js';
 
 // 原始资产存储索引（`assets/index.json`）的读取/校验/桥接。
 //
@@ -51,10 +52,26 @@ export interface AssetIndexEntry {
 export interface AssetIndex {
   readonly version: number;
   readonly assets: readonly AssetIndexEntry[];
+  readonly groups?: AssetGroups;
+  readonly initialGroup?: string;
 }
 
 function fail(msg: string): never {
   throw new Error(`asset-index: ${msg}`);
+}
+
+function groupMetadata(raw: { groups?: unknown; initialGroup?: unknown }, assets: readonly AssetIndexEntry[]): { groups?: AssetGroups; initialGroup?: string } {
+  if (raw.groups === undefined) {
+    if (raw.initialGroup !== undefined) fail('initialGroup 需要groups配置');
+    return {};
+  }
+  const groups = parseAssetGroups(raw.groups);
+  const physical = new Set(assets.filter(e => e.status === 'filled' && (e.type === 'texture' || e.type === 'mesh')).map(e => e.id));
+  for (const [group, keys] of Object.entries(groups)) for (const key of keys)
+    if (!physical.has(key)) fail(`groups.${group} 引用未filled或非物理资产 "${key}"`);
+  if (raw.initialGroup !== undefined && (typeof raw.initialGroup !== 'string' || !Object.hasOwn(groups, raw.initialGroup)))
+    fail('initialGroup 必须命中groups');
+  return { groups, ...(raw.initialGroup !== undefined ? { initialGroup: raw.initialGroup as string } : {}) };
 }
 
 /** 校验并归一化原始 JSON → AssetIndex。结构非法即抛错（构建期早失败）。 */
@@ -109,7 +126,7 @@ export function parseAssetIndex(raw: unknown): AssetIndex {
     };
   });
 
-  return { version: obj.version, assets };
+  return { version: obj.version, assets, ...groupMetadata(obj, assets) };
 }
 
 /** 待填充清单（status='tbf'）—— 填充工具/预览器的工作面入口。 */
@@ -279,6 +296,7 @@ function sheetSpecOf(spec: Readonly<Record<string, unknown>> | undefined): Sheet
  * `baseUrl` 一般为资产根（如 `/assets/`），拼到条目 path 前；path 已是站点绝对路径时用空 baseUrl。
  */
 export function registerAssetIndex(manager: AssetManager, index: AssetIndex, baseUrl = ''): void {
+  const { groups } = groupMetadata(index, index.assets);
   // 防御性拼接：baseUrl 非空且不以 '/' 结尾时补一个，避免 "assets/tex" + "hero.png" = "assets/texhero.png"（Gemini code review）。
   const sep = baseUrl && !baseUrl.endsWith('/') ? '/' : '';
   for (const e of index.assets) {
@@ -305,6 +323,7 @@ export function registerAssetIndex(manager: AssetManager, index: AssetIndex, bas
     }
     // material（数据型·无文件）不进 AssetManager 加载路径 → 走 buildMaterialCatalog；sound/… 后续增量。
   }
+  if (groups) manager.registerGroups(groups);
 }
 
 /**

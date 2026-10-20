@@ -11,7 +11,7 @@ import { CanvasRenderer } from '@renderer/index.js';
 import { QueuedInputSource, canvasPointerToScreen } from '@net/host/index.js';
 import { parseManifest } from '../assembly/manifest.js';
 import { resolveArtRefs } from '../assembly/resolve-art-refs.js';
-import { AssetManager, ImageAssetLoader, parseAssetIndex, registerAssetIndex, artlibRecords } from '@assets/index.js';
+import { AssetManager, ImageAssetLoader, loadGameArtInto, artlibRecords } from '@assets/index.js';
 
 const W = 640;
 const H = 400;
@@ -22,6 +22,8 @@ export function mountManifestGame(slug: string) {
     let engine: Engine | null = null;
     let onDown: ((e: PointerEvent) => void) | null = null;
     let canvas: HTMLCanvasElement | null = null;
+    let ownedAssets: AssetManager | null = null;
+    const artAbort = new AbortController();
 
     void (async () => {
       // 1) manifest（tracked 纯数据=游戏本体）
@@ -43,13 +45,10 @@ export function mountManifestGame(slug: string) {
       if (dead) return;
       // 3) 皮肤资产：本地 index（gen/ 生成物 + 上传物）——就绪即换装，缺失=Shape 回退（观感承诺同已删 game-q 先例）
       const assets = new AssetManager(new ImageAssetLoader());
-      try {
-        const r = await fetch(`/games/${slug}/art/index.json`, { cache: 'no-store' });
-        if (r.ok) {
-          registerAssetIndex(assets, parseAssetIndex(await r.json()));
-          void assets.loadAll();
-        }
-      } catch { /* 无本地美术 → 回退观感 */ }
+      ownedAssets = assets;
+      // The shared data loader honors optional groups/initialGroup, retaining
+      // legacy eager loading for indexes without a scene grouping declaration.
+      void loadGameArtInto(assets, slug, { indexSignal: artAbort.signal });
       if (dead) return;
       // 4) 引擎 + 渲染 + 指针
       const input = new QueuedInputSource(slug);
@@ -88,6 +87,8 @@ export function mountManifestGame(slug: string) {
 
     return () => {
       dead = true;
+      artAbort.abort();
+      ownedAssets?.clear();
       if (canvas && onDown) canvas.removeEventListener('pointerdown', onDown);
       engine?.stop();
       container.innerHTML = '';

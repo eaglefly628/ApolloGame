@@ -1,4 +1,4 @@
-// 游戏本地美术索引装载（render-only · 失败静默回退）——REQ-SHELL-公共壳三件 ②。
+// 游戏本地美术索引装载（render-only · 失败回退并记日志）——REQ-SHELL-公共壳三件 ②。
 //
 // 当时六家宿主逐字重复的那段「拉 /games/<slug>/art/index.json」在此收编（game-q.ts:117-125 一家已随
 // REQ-RETRO 引擎大扫除 2026-08-03 删除，仅留出处）：
@@ -6,11 +6,11 @@
 //   （以上=注册进 AssetManager 形态）· game-a/art-overrides.ts:39-57 · game-c/art-overrides.ts:77-95
 //   （以上=skinKey→URL 覆盖表形态·两份近逐字）· game-c/art-overrides.ts:54-64（loadSkinIndex）。
 // 两形态同源一条链，故一件两出口：
-//   ① `loadGameArtInto(manager, slug)` —— 注册进 AssetManager 并 loadAll（渲染器按 **key** 取图）。
+//   ① `loadGameArtInto(manager, slug)` —— 注册进 AssetManager，按 groups/initialGroup 预载（旧索引 loadAll）（渲染器按 **key** 取图）。
 //   ② `loadGameArtOverrides(slug)`     —— 返回 { skinKey: url } 覆盖表（DOM/UI 侧按 **URL** 消费）。
 //
 // 共识铁律（各家原注释一致·此处成为唯一真相）：
-//   · **失败静默回退**——无索引 / 非 200 / 解析失败 / headless 无 fetch，一律不抛，退回程序化观感。
+//   · **失败回退并记日志**——无索引 / 非 200 / 解析失败 / headless 无 fetch，一律不抛，退回程序化观感。
 //     美术是**增量不是依赖**：真图未到 = 观感零字节变化。
 //   · 索引里的 path 已是站点绝对路径（`/games/<g>/art/...`）→ `registerAssetIndex` 的 baseUrl 传 ''。
 //   · 覆盖表只收**真图替换**条目：id 以 `<slug>/` 开头（art-replace 写回的 skinKey 别名命名空间）
@@ -29,6 +29,10 @@ export function gameArtIndexUrl(slug: string): string {
 export interface GameArtLoadOptions {
   /** fetch 缓存策略（默认 'no-store'：工坊换图后刷新即见新图）。 */
   cache?: RequestCache;
+  /** Explicit initial resource group; omitted uses index.initialGroup. */
+  group?: string;
+  /** Cancels the index fetch; resource ownership is released through manager.clear/releaseGroup. */
+  indexSignal?: AbortSignal;
 }
 
 /**
@@ -37,17 +41,24 @@ export interface GameArtLoadOptions {
  */
 async function fetchArtIndex(slug: string, opts?: GameArtLoadOptions): Promise<unknown | null> {
   try {
-    if (typeof fetch !== 'function') return null; // node/测试环境：无美术目录=回退程序化
-    const r = await fetch(gameArtIndexUrl(slug), { cache: opts?.cache ?? 'no-store' });
-    if (!r.ok) return null;
+    if (typeof fetch !== 'function') {
+      console.info(`[game-art-load] skip: ${slug} fetch unavailable`);
+      return null;
+    }
+    const r = await fetch(gameArtIndexUrl(slug), { cache: opts?.cache ?? 'no-store', ...(opts?.indexSignal ? { signal: opts.indexSignal } : {}) });
+    if (!r.ok) {
+      console.info(`[game-art-load] skip: ${slug} index HTTP ${r.status}`);
+      return null;
+    }
     return (await r.json()) as unknown;
-  } catch {
+  } catch (error) {
+    if (!opts?.indexSignal?.aborted) console.warn(`[game-art-load] skip: ${slug} index unavailable`, error);
     return null;
   }
 }
 
 /**
- * 形态①：把本游戏美术索引注册进 AssetManager 并 loadAll（渲染器/Material3D 按 **key** 解析真图）。
+ * 形态①：把本游戏美术索引注册进 AssetManager，按 groups/initialGroup 预载（旧索引 loadAll）（渲染器/Material3D 按 **key** 解析真图）。
  * 返回是否真装上了（无索引/失败=false·调用方通常不必看——回退路径已由渲染器的占位模式兜住）。
  */
 export async function loadGameArtInto(
@@ -56,12 +67,24 @@ export async function loadGameArtInto(
   opts?: GameArtLoadOptions,
 ): Promise<boolean> {
   const raw = await fetchArtIndex(slug, opts);
+  if (opts?.indexSignal?.aborted) {
+    console.info(`[game-art-load] skip: ${slug} index fetch cancelled`);
+    return false;
+  }
   if (raw === null) return false;
   try {
-    registerAssetIndex(manager, parseAssetIndex(raw)); // path 已是站点绝对路径 → baseUrl ''
-    await manager.loadAll();
+    const index = parseAssetIndex(raw);
+    if (opts?.group !== undefined && (!index.groups || !Object.hasOwn(index.groups, opts.group)))
+      throw new Error(`unknown asset group ${opts.group}`);
+    registerAssetIndex(manager, index); // path 已是站点绝对路径 → baseUrl ''
+    if (index.groups) {
+      const group = opts?.group ?? index.initialGroup;
+      if (group !== undefined) await manager.preloadGroup(group);
+      else console.info(`[game-art-load] skip: ${slug} groups registered; no initialGroup selected`);
+    } else await manager.loadAll();
     return true;
-  } catch {
+  } catch (error) {
+    console.warn(`[game-art-load] reject: ${slug} asset registration/load failed`, error);
     return false; // 索引 schema 不合法 / 图加载失败 → 回退程序化观感·不炸游戏
   }
 }

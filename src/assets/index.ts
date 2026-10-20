@@ -15,8 +15,13 @@ export type {
   ResolvedFrame,
   FrameRef,
   AssetLoader,
+  AssetGroups,
+  AssetGroupProgress,
+  AssetEviction,
 } from './asset-types.js';
 export { AssetManager, StubAssetLoader } from './asset-manager.js';
+export { parseAssetGroups } from './asset-groups.js';
+export { createAssetGroupDataSource } from './asset-group-source.js';
 export { ftpFrames, ftpToAtlasEntry, mergeAtlasIntoIndex, normalizeFrameName, type FtpAtlasJson } from './pack-atlas.js';
 export { ImageAssetLoader, isImageHandle, type ImageAssetHandle } from './image-loader.js';
 // 游戏本地美术索引装载（两形态·失败静默回退·REQ-SHELL ②）

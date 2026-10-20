@@ -130,8 +130,10 @@ export function countRunningAnims(anims: Iterable<{ action?: { isRunning(): bool
 export class ModelPool {
   private gltf?: GLTFLoader; // 懒建
   private codecs?: ModelCodecs;
-  private generation = 0;
-  private readonly parsing = new Set<ModelResources>();
+  private unsubscribeEviction?: () => void;
+  // Resource owner identity is also the parse token. A released key can start a
+  // new parse while an old callback is still waiting on its decoder.
+  private readonly parsing = new Map<string, ModelResources>();
   private readonly instances = new Map<string, THREE.Object3D>(); // 每实体已放置的实例（template 的 clone）
   private readonly mats = new Map<string, THREE.Material[]>(); // 每实例自有材质（clone 出·供染色/独立释放）
   private readonly keyOf = new Map<string, string>(); // 实体当前 modelKey（变了才重建实例）
@@ -148,6 +150,7 @@ export class ModelPool {
 
   // 建/复用实例：modelKey 不变则复用；变了拆旧建新。模板未就绪 → null（本帧不画）。tint 每帧由调用方设。
   ensure(scene: THREE.Scene, entityId: string, m: Model3D): THREE.Object3D | null {
+    this.subscribeEviction();
     const prev = this.instances.get(entityId);
     if (prev && this.keyOf.get(entityId) === m.modelKey) return prev;
     if (prev) this.removeInstance(scene, entityId);
@@ -213,10 +216,22 @@ export class ModelPool {
     }
   }
 
-  private removeInstance(scene: THREE.Scene, id: string): void {
+  private removeInstance(scene: THREE.Object3D | undefined, id: string): void {
     const obj = this.instances.get(id);
-    if (obj) scene.remove(obj);
-    this.anims.get(id)?.mixer.stopAllAction();
+    if (obj) (obj.parent ?? scene)?.remove(obj);
+    const mixer = this.anims.get(id)?.mixer;
+    mixer?.stopAllAction();
+    if (obj) {
+      mixer?.uncacheRoot(obj);
+      // SkeletonUtils clones skeletons, while geometry and material textures
+      // remain template-owned. Bone textures belong to each cloned skeleton.
+      const skeletons = new Set<THREE.Skeleton>();
+      obj.traverse((node) => {
+        const skeleton = (node as THREE.SkinnedMesh).skeleton;
+        if (skeleton) skeletons.add(skeleton);
+      });
+      for (const skeleton of skeletons) skeleton.dispose();
+    }
     for (const mm of this.mats.get(id) ?? []) mm.dispose();
     this.instances.delete(id);
     this.mats.delete(id);
@@ -225,10 +240,11 @@ export class ModelPool {
   }
 
   dispose(scene: THREE.Scene): void {
-    this.generation++;
+    this.unsubscribeEviction?.();
+    this.unsubscribeEviction = undefined;
     for (const [id] of [...this.instances]) this.removeInstance(scene, id);
     for (const [, tpl] of this.cache) tpl.resources.dispose();
-    for (const resources of this.parsing) resources.dispose();
+    for (const resources of this.parsing.values()) resources.dispose();
     this.parsing.clear();
     this.cache.clear();
     this.state.clear();
@@ -236,6 +252,18 @@ export class ModelPool {
     this.codecs = undefined;
     this.gltf = undefined;
     this.lastMs = 0;
+  }
+
+  private subscribeEviction(): void {
+    // Older headless consumers expose only get(); disposal still works there.
+    if (!this.unsubscribeEviction) this.unsubscribeEviction = this.assets?.onEvict?.(({ key }) => {
+      for (const [id, modelKey] of this.keyOf) if (modelKey === key) this.removeInstance(undefined, id);
+      this.cache.get(key)?.resources.dispose();
+      this.cache.delete(key);
+      this.parsing.get(key)?.dispose();
+      this.parsing.delete(key);
+      this.state.delete(key);
+    });
   }
 
   // 按 modelKey 取已解析模板（含动画 clip）。首见且字节备好 → 异步 parse 一次（标 pending 防每帧重复）。
@@ -246,13 +274,12 @@ export class ModelPool {
     const handle = this.assets?.get(key)?.handle;
     if (!isModelHandle(handle)) return null;
     this.state.set(key, 'pending');
-    const generation = this.generation;
     const resources = new ModelResources();
-    this.parsing.add(resources);
+    this.parsing.set(key, resources);
     const failed = (error: unknown): void => {
       resources.dispose();
-      this.parsing.delete(resources);
-      if (generation !== this.generation || this.state.get(key) !== 'pending') return;
+      if (this.parsing.get(key) !== resources) return;
+      this.parsing.delete(key);
       this.state.set(key, 'failed');
       console.error(`[ModelPool] Failed to load model "${key}"`, error);
     };
@@ -268,8 +295,8 @@ export class ModelPool {
       try {
         loader.parse(handle, '', (gltf) => {
           for (const scene of gltf.scenes ?? [gltf.scene]) resources.capture(scene);
-          this.parsing.delete(resources);
-          if (generation !== this.generation || this.state.get(key) !== 'pending') { resources.dispose(); return; }
+          if (this.parsing.get(key) !== resources) { resources.dispose(); return; }
+          this.parsing.delete(key);
           this.cache.set(key, { scene: gltf.scene, clips: gltf.animations ?? [], resources });
           this.state.delete(key);
         }, failed);

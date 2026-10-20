@@ -96,6 +96,25 @@ export type AssetDescriptor =
 /** 数据驱动清单：一组描述符。可由 JSON 提供。 */
 export type AssetManifest = readonly AssetDescriptor[];
 
+/** 场景资源组：纯数据，成员只引用物理资产 key。 */
+export type AssetGroups = Readonly<Record<string, readonly string[]>>;
+
+/** 表现层装载进度，按 key 数量计，不进入世界或确定性快照。 */
+export interface AssetGroupProgress {
+  readonly group: string;
+  readonly status: 'unloaded' | 'loading' | 'ready' | 'failed';
+  readonly loaded: number;
+  readonly failed: number;
+  readonly total: number;
+  readonly errors: readonly { readonly key: string; readonly message: string }[];
+}
+
+/** key 即失效边界；进行中的资产也会通知，此时尚无 asset。 */
+export interface AssetEviction {
+  readonly key: string;
+  readonly asset?: LoadedAsset;
+}
+
 /**
  * 命名动画剪辑（R9 增益 B）—— 把"一组**有序的图集命名帧**"当作一个可按 index 播放的资产。
  * 自身**无图**：`frames` 是底层 `atlas` 里已命名帧的有序名字；`resolve(key, index)` 委托该 atlas 取帧矩形。
@@ -145,4 +164,6 @@ export interface AssetLoader {
     width: number;
     height: number;
   }>;
+  /** 可选同步回收；既有 loader 无需实现。 */
+  release?(asset: LoadedAsset): void;
 }
