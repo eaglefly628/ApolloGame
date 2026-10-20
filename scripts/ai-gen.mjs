@@ -1,4 +1,4 @@
-// AI 资产生成框架 —— 文本→资产。适配器：tripo·meshy(文本→3D glb)· qwen(2D png·DashScope 万相)· seedream(2D png·字节火山方舟)。
+// AI 资产生成框架 —— 文本/图像→资产。适配器：tripo(文本/单图/四视图→3D glb)·meshy(文本→3D glb)· qwen(2D png·DashScope 万相)· seedream(2D png·字节火山方舟)。
 //
 // 架构（同 src/services/aigp 端口哲学）：外部**非确定性 AI 服务**走旁路；产物 = 提交进库的**固定资产**（带
 //   provenance：厂商/prompt/模型/日期/许可），**不碰 sim/hash**（渲染层数据·确定性不受威胁）。
@@ -17,6 +17,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { deflateSync } from 'node:zlib';
 import { loadImageInputs, inputProvenance, imageDataUrls, parseGenerationArgs } from './ai-gen-inputs.mjs';
+import { prepareTripoInputs, parseTripoGenerationArgs, tripoReferences, generateTripoImage } from './tripo-generation.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -75,7 +76,9 @@ export async function fetchRetry(url, opts = {}, { tries = 3, baseDelay = 500 } 
 export const ADAPTERS = {
   tripo: {
     kind: 'mesh', ext: 'glb', envKey: 'TRIPO_API_KEY', license: 'Tripo (按订阅商用授权)',
-    async generate(prompt, { mock, apiKey }) {
+    async generate(prompt, opts) {
+      const { mock, apiKey, mode = 'text_to_model' } = opts;
+      if (mode !== 'text_to_model') return generateTripoImage(prompt, opts);
       if (mock || !apiKey) {
         const cube = join(ROOT, 'assets', 'meshes', 'cube.glb'); // 复用现成基础体作占位 glb
         return { buffer: existsSync(cube) ? readFileSync(cube) : Buffer.alloc(0), model: 'tripo-mock', mock: true, spec: { scale: 1, genCollision: 'hull' } };
@@ -198,8 +201,9 @@ ADAPTERS['gpt-image-2.5'] = {
 for (const [name, adapter] of Object.entries(ADAPTERS)) {
   const generate = adapter.generate;
   adapter.generate = async (prompt, opts = {}) => {
-    const inputs = opts.inputs ?? loadImageInputs(opts);
-    if (inputs.length && !['seedream', 'gpt-image-2.5'].includes(name)) {
+    const tripo = name === 'tripo' ? prepareTripoInputs(opts) : null;
+    const inputs = tripo ? tripo.inputs : (opts.inputs ?? loadImageInputs(opts));
+    if (inputs.length && !['tripo', 'seedream', 'gpt-image-2.5'].includes(name)) {
       console.error(`[ai-gen] reject: ${name} 不支持参考图/编辑，请选 seedream 或 gpt-image-2.5`);
       throw new Error(`${name} 不支持参考图/编辑`);
     }
@@ -207,21 +211,21 @@ for (const [name, adapter] of Object.entries(ADAPTERS)) {
     if (mock) console.warn(`[ai-gen] downgrade: ${name} ${opts.mock ? '--mock' : `缺 ${adapter.envKey}`} → mock`);
     console.info(`[ai-gen] decision: ${name} ${inputs.length ? 'image' : 'text'} input · ${inputs.length} PNG`);
     // Include ordered image contents in mock seed; the original prompt remains in request/provenance.
-    const result = await generate.call(adapter, prompt, { ...opts, mock, inputs });
-    if (result.mock && inputs.length) result.buffer = mockImage(prompt + JSON.stringify(inputProvenance(inputs))).buffer;
-    return { ...result, references: inputProvenance(inputs) };
+    const result = await generate.call(adapter, prompt, { ...opts, ...(tripo || {}), mock, inputs });
+    if (result.mock && inputs.length && adapter.kind === 'texture') result.buffer = mockImage(prompt + JSON.stringify(inputProvenance(inputs))).buffer;
+    return { ...result, references: tripo ? tripoReferences(inputs) : inputProvenance(inputs) };
   };
 }
 
 // ── 落地：产物 → 文件 + 索引条目（带 provenance）。game 给了=游戏本地 art/ai/；否则=共享货架 assets/ai/。──
-export function buildEntry({ adapter, prompt, id, kind, spec, model, license, mock, servedPath, at, references = [] }) {
+export function buildEntry({ adapter, prompt, id, kind, spec, model, license, mock, servedPath, at, references = [], generation = null }) {
   return {
     id, type: kind, description: `${prompt} · AI 生成(${adapter}${mock ? '·mock' : ''})`, status: 'filled',
     ...(servedPath ? { path: servedPath } : {}),
     category: kind === 'mesh' ? 'mesh' : 'ai-gen',
     tags: ['ai-gen', adapter, ...(mock ? ['mock'] : []), ...prompt.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 6)],
     license, source: `ai:${adapter}`, spec,
-    provenance: { generator: adapter, prompt, model, mock: !!mock, generatedAt: at ?? '', ...(references.length ? { references } : {}) },
+    provenance: { generator: adapter, prompt, model, mock: !!mock, generatedAt: at ?? '', ...(references.length ? { references } : {}), ...(generation ? { generation } : {}) },
   };
 }
 
@@ -273,7 +277,7 @@ export function provenanceMissing(entry) {
 }
 
 // 生成产物 → 待审区（写 pending 文件 + upsert pending.json·绝不碰 index.json）。返回机读结果（含预览 URL）。
-export function writePending({ root = ROOT, adapter, prompt, forcedId, game, buffer, spec, model, mock, at, references = [] }) {
+export function writePending({ root = ROOT, adapter, prompt, forcedId, game, buffer, spec, model, mock, at, references = [], generation = null }) {
   const A = ADAPTERS[adapter];
   if (!A) return { ok: false, error: `未知适配器: ${adapter}` };
   const slug = (forcedId ?? prompt).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40) || 'asset';
@@ -284,7 +288,7 @@ export function writePending({ root = ROOT, adapter, prompt, forcedId, game, buf
   const pendingAbs = join(loc.pendingDir, base);
   mkdirSync(dirname(pendingAbs), { recursive: true });
   writeFileSync(pendingAbs, buffer);
-  const entry = buildEntry({ adapter, prompt, id, kind: A.kind, spec, model, license: A.license, mock, servedPath: loc.finalServed(finalRel), at, references });
+  const entry = buildEntry({ adapter, prompt, id, kind: A.kind, spec, model, license: A.license, mock, servedPath: loc.finalServed(finalRel), at, references, generation });
   const scope = game ? `game:${game}` : 'shelf';
   const pendingEntry = { ...entry, previewPath: loc.pendingServed(base), pendingFile: base, finalRel, scope };
   const man = readPendingManifest(loc.pendingFile);
@@ -415,12 +419,15 @@ async function run(argv) {
   }
   const A = ADAPTERS[adapterName];
   if (!A) { console.error(`用法: node scripts/ai-gen.mjs <${Object.keys(ADAPTERS).join('|')}|providers> "<prompt>" [--game <g>] [--id <id>] [--mock]`); process.exit(1); }
-  const { mock, asJson, game, forcedId, prompt, refs, edit } = parseGenerationArgs(argv.slice(1));
+  const options = adapterName === 'tripo' ? parseTripoGenerationArgs(argv.slice(1)) : parseGenerationArgs(argv.slice(1));
+  const { mock, asJson, game, forcedId, prompt, refs, edit } = options;
   const apiKey = process.env[A.envKey];
-  const inputs = loadImageInputs({ refs, edit });
-  const g = await A.generate(prompt, { mock, apiKey, inputs });
+  const imageOptions = adapterName === 'tripo'
+    ? { refs, edit, mode: options.mode, views: options.views }
+    : { inputs: loadImageInputs({ refs, edit }) };
+  const g = await A.generate(prompt, { mock, apiKey, ...imageOptions });
   // 人审门（M2.5）：生成产物落**待审区**，绝不直写 index.json。人经 /api/assets/review approve 才入库。
-  const res = writePending({ adapter: adapterName, prompt, forcedId, game, buffer: g.buffer, spec: g.spec, model: g.model, mock: g.mock, at: new Date().toISOString(), references: g.references });
+  const res = writePending({ adapter: adapterName, prompt, forcedId, game, buffer: g.buffer, spec: g.spec, model: g.model, mock: g.mock, at: new Date().toISOString(), references: g.references, generation: g.generation });
   if (asJson) { console.log(JSON.stringify(res)); return; }
   console.log(`✓ 生成 ${res.id}${g.mock ? ' (mock)' : ''} → 待审区（人点「入库」才登记）· 预览 ${res.previewPath}`);
 }
