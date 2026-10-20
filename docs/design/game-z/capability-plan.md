@@ -46,7 +46,7 @@ CPU研究发现zone/event/timeline的组合形成既有软环，选用已实跑�
 
 玩法规则全部L0规范JSON/L1现有capability重组；游戏自由代码例外为零。不改games/game-z、PUI、任何sim/provider、资产公共schema或已结案能力。新增工具只能装载/采样/断言/输出证据，不藏新规则解释器；若确有缺口，先实查并提A/B等owner裁决。
 
-技术预验资产走独立临时目录的AssetIndex→AssetManager→ModelPool，model/hero、motion/idle、motion/walk、motion/reach、model/kettle、model/courtyard均是真实消费key。沿resource-manager统一路线，不运行时引共享索引，不写生产skinKey/人审批准。复用已有T5自产17骨GLB与既有Blender场景；可用three已有TeapotGeometry离线导出可辨认的壶作为显式测试替身，来源/哈希/许可记录，不能冒称Tripo或生产美术。真实生产目录、D1拆层和M2.5入库留待真实素材，不捏造approved人门。
+技术预验资产走独立临时目录的AssetIndex→AssetManager→ModelPool，model/hero、motion/idle、motion/walk、motion/reach、model/kettle、scene均是真实消费key。沿resource-manager统一路线，不运行时引共享索引，不写生产skinKey/人审批准。复用已有T5自产17骨GLB与既有Blender场景；可用three已有TeapotGeometry离线导出可辨认的壶作为显式测试替身，来源/哈希/许可记录，不能冒称Tripo或生产美术。真实生产目录、D1拆层和M2.5入库留待真实素材，不捏造approved人门。
 
 本段无主菜单/HUD/结算/新UI：只拍真实3D画面与技术记录，不手写DOM游戏界面。正式Game Z若增加UI，另按house主题/成熟控件方案经PUI复查。无敌人/NPC决策，无对手AI；既定流程不是自建AI。
 
@@ -78,3 +78,5 @@ CPU研究发现zone/event/timeline的组合形成既有软环，选用已实跑�
 后续整链验收须兑现计划已有边界：在多个 render 时钟及多 tick 追赶下，实际 GLB 动作末姿、IK 抬升、同 key 双实例首次显现、接触前/当帧/后的原生把手与挂件矩阵及像素必须证明连续，禁止接触时挪壶补齐；同时验证世界只读、生命周期与资源收敛。若实证无法用现有数据达成，先报告具体反例并由 owner 裁 A/B，不能在工具里藏规则或先修引擎。本评审未启动 Blender、付费服务、GPU 或全量门禁，也未修改施工/用户树或提交推送。
 
 独立证据：`/private/tmp/apollo-v1-plan-independent-cpu.json`、`/private/tmp/apollo-v1-plan-independent-cpu.log`、`/private/tmp/apollo-v1-plan-independent-red.json`、`/private/tmp/apollo-v1-plan-independent-red.log`；锚点与恢复指纹为独立副本中的 `v1-independent-anchor.json`，源对账为 `v1-independent-source-fingerprints.json`。
+
+施工细化：场景资产统一使用既有研究数据的key `scene`（导入实体id仍为courtyard）；计划初稿的model/courtyard仅为键名，所有实际消费同步使用scene，不增加语义或能力。

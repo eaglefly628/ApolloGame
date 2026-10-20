@@ -1,0 +1,664 @@
+{
+  "schema": 1,
+  "meta": {
+    "tickRate": 60
+  },
+  "capabilities": [
+    "t2-zone-occupancy",
+    "t2-event-when",
+    "t3-flow",
+    "t2-effect-apply",
+    "t2-pathfind",
+    "t2-navigation-grid",
+    "t2-ground-walk-3d",
+    "t2-over-time",
+    "t1-motion-apply",
+    "d1-overlap-detect-3d",
+    "d-collision-resolve-3d",
+    "a-scene-import-3d",
+    "a1-transform",
+    "b1-velocity",
+    "f2-flag",
+    "g2-relation",
+    "h1-visibility",
+    "t2-hitbox",
+    "t2-face-rotate"
+  ],
+  "entities": {
+    "courtyard": {
+      "SceneImport3D": {
+        "modelKey": "scene",
+        "rules": "default",
+        "ground": {
+          "source": "navigation"
+        }
+      }
+    },
+    "hero": {
+      "Transform": {
+        "x": -1,
+        "y": 1,
+        "rotation": 0,
+        "scaleX": 1,
+        "scaleY": 1
+      },
+      "Velocity": {
+        "vx": 0,
+        "vy": 0,
+        "angular": 0
+      },
+      "Collider3D": {
+        "kind": "capsule",
+        "radius": 0.15,
+        "height": 1.8
+      },
+      "GroundWalker3D": {
+        "surfaceId": "courtyard"
+      },
+      "NavAgent": {
+        "graphId": "courtyard",
+        "speed": 0.03,
+        "arriveRange": 0.05,
+        "haltStatusMask": 1,
+        "patrol": {
+          "waypoints": [
+            {
+              "x": -1,
+              "y": -1
+            }
+          ],
+          "index": 0,
+          "loop": false
+        }
+      },
+      "Relation": {
+        "kind": "target",
+        "targetId": "kettle-grip"
+      },
+      "Status": {
+        "flags": 1
+      },
+      "OverTime": {
+        "effects": [
+          {
+            "id": "initial-idle",
+            "period": 1,
+            "duration": 60,
+            "elapsed": 0,
+            "clearStatusOnEnd": 1
+          }
+        ]
+      },
+      "FaceRotate": {
+        "source": "target"
+      },
+      "Model3D": {
+        "modelKey": "model/hero"
+      },
+      "AnimGraph3D": {
+        "clips": {
+          "idle": {
+            "asset": "motion/idle",
+            "clip": "idle",
+            "loop": true
+          },
+          "walk": {
+            "asset": "motion/walk",
+            "clip": "walk",
+            "loop": true
+          },
+          "reach": {
+            "asset": "motion/reach",
+            "clip": "reach",
+            "loop": false
+          }
+        },
+        "states": {
+          "locomotion": {
+            "blend": {
+              "param": "move",
+              "points": [
+                {
+                  "at": 0,
+                  "clip": "idle"
+                },
+                {
+                  "at": 0.03,
+                  "clip": "walk"
+                }
+              ]
+            }
+          },
+          "reach": {
+            "clip": "reach"
+          },
+          "hold": {
+            "clip": "reach"
+          }
+        },
+        "transitions": [
+          {
+            "from": "locomotion",
+            "to": "hold",
+            "whenParam": "carry",
+            "cmp": "eq",
+            "value": true,
+            "fade": 0.2
+          },
+          {
+            "from": "locomotion",
+            "to": "reach",
+            "whenParam": "reach",
+            "cmp": "eq",
+            "value": true,
+            "fade": 0.2
+          },
+          {
+            "from": "reach",
+            "to": "hold",
+            "whenParam": "carry",
+            "cmp": "eq",
+            "value": true,
+            "fade": 0
+          }
+        ],
+        "params": {
+          "move": "speed",
+          "reach": "flag:v1.reach",
+          "carry": "flag:v1.carry"
+        }
+      },
+      "IK3D": {
+        "chains": [
+          {
+            "kind": "two-bone",
+            "root": "RightUpperArm",
+            "mid": "RightLowerArm",
+            "end": "RightHand",
+            "target": {
+              "entity": "kettle-grip",
+              "offset": [
+                0,
+                0,
+                0
+              ]
+            },
+            "pole": [
+              -1.25,
+              1.1,
+              -0.15
+            ],
+            "weight": {
+              "param": "reach",
+              "fade": 0.4
+            }
+          },
+          {
+            "kind": "two-bone",
+            "root": "RightUpperArm",
+            "mid": "RightLowerArm",
+            "end": "RightHand",
+            "target": {
+              "entity": "carry-grip",
+              "offset": [
+                0,
+                0,
+                0
+              ]
+            },
+            "pole": [
+              -1.25,
+              1.1,
+              -0.15
+            ],
+            "weight": {
+              "param": "carry",
+              "fade": 0.4
+            }
+          }
+        ]
+      }
+    },
+    "approach": {
+      "Transform": {
+        "x": -1,
+        "y": -1,
+        "rotation": 0,
+        "scaleX": 1,
+        "scaleY": 1
+      }
+    },
+    "arrival": {
+      "Zone": {
+        "outFlag": "v1.arrived",
+        "minX": -1.03,
+        "maxX": -0.97,
+        "minY": -1.03,
+        "maxY": -0.97,
+        "requiredEntities": [
+          "hero"
+        ]
+      }
+    },
+    "flow": {
+      "GameFlow": {
+        "id": "v1.teapot",
+        "current": "idle",
+        "states": [
+          {
+            "id": "idle",
+            "transitions": [
+              {
+                "after": 60,
+                "to": "walk"
+              }
+            ]
+          },
+          {
+            "id": "walk",
+            "transitions": [
+              {
+                "when": {
+                  "kind": "flag",
+                  "id": "v1.arrived"
+                },
+                "to": "reach"
+              }
+            ]
+          },
+          {
+            "id": "reach",
+            "onEnter": [
+              {
+                "kind": "set-flag",
+                "targetId": "v1.reach",
+                "value": true
+              }
+            ],
+            "transitions": [
+              {
+                "after": 60,
+                "to": "contact"
+              }
+            ]
+          },
+          {
+            "id": "contact",
+            "onEnter": [
+              {
+                "kind": "set-flag",
+                "targetId": "v1.carry",
+                "value": true
+              },
+              {
+                "kind": "set-flag",
+                "targetId": "v1.reach",
+                "value": false
+              }
+            ],
+            "transitions": [
+              {
+                "after": 30,
+                "to": "held"
+              }
+            ]
+          },
+          {
+            "id": "held",
+            "onEnter": [
+              {
+                "kind": "set-flag",
+                "targetId": "v1.held",
+                "value": true
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "floorKettle": {
+      "Visibility": {
+        "visible": true,
+        "active": true
+      },
+      "Transform3D": {
+        "x": -0.34260256290435787,
+        "y": 0.9799999970197677,
+        "z": -0.75
+      },
+      "Model3D": {
+        "modelKey": "model/kettle"
+      },
+      "Pickable3D": {
+        "signal": "v1.kettle.pick"
+      }
+    },
+    "heldKettle": {
+      "Visibility": {
+        "visible": false,
+        "active": true
+      },
+      "Transform3D": {
+        "x": -0.34260256290435787,
+        "y": 0.9799999970197677,
+        "z": -0.75
+      },
+      "Model3D": {
+        "modelKey": "model/kettle"
+      },
+      "Attach3D": {
+        "parentId": "hero",
+        "bone": "RightHand",
+        "offset": [
+          0.09203643833975672,
+          0.39773157488692756,
+          0.032739238897426415
+        ],
+        "rot": [
+          0.21997554388133359,
+          0.5373389760695758,
+          1.8163123604902345
+        ]
+      },
+      "Pickable3D": {
+        "signal": "v1.kettle.pick"
+      }
+    },
+    "hide": {
+      "Effect": {
+        "onSignal": "v1.contact",
+        "kind": "set-visible",
+        "targetId": "",
+        "targetEntity": "floorKettle",
+        "value": false
+      }
+    },
+    "show": {
+      "Effect": {
+        "onSignal": "v1.contact",
+        "kind": "set-visible",
+        "targetId": "",
+        "targetEntity": "heldKettle",
+        "value": true
+      }
+    },
+    "flag-arrived": {
+      "Flag": {
+        "id": "v1.arrived",
+        "active": false
+      }
+    },
+    "flag-reach": {
+      "Flag": {
+        "id": "v1.reach",
+        "active": false
+      }
+    },
+    "flag-carry": {
+      "Flag": {
+        "id": "v1.carry",
+        "active": false
+      }
+    },
+    "flag-held": {
+      "Flag": {
+        "id": "v1.held",
+        "active": false
+      }
+    },
+    "event-reach": {
+      "EventWhen": {
+        "signal": "v1.reach",
+        "when": {
+          "kind": "flag",
+          "id": "v1.reach"
+        },
+        "mode": "edge",
+        "armed": false
+      }
+    },
+    "event-contact": {
+      "EventWhen": {
+        "signal": "v1.contact",
+        "when": {
+          "kind": "flag",
+          "id": "v1.carry"
+        },
+        "mode": "edge",
+        "armed": false
+      }
+    },
+    "event-held": {
+      "EventWhen": {
+        "signal": "v1.held",
+        "when": {
+          "kind": "flag",
+          "id": "v1.held"
+        },
+        "mode": "edge",
+        "armed": false
+      }
+    },
+    "kettle-grip": {
+      "Transform": {
+        "x": -0.7,
+        "y": -0.75,
+        "rotation": 0,
+        "scaleX": 1,
+        "scaleY": 1
+      },
+      "Transform3D": {
+        "x": -0.7,
+        "y": 1.18,
+        "z": -0.75
+      }
+    },
+    "carry-grip": {
+      "Transform": {
+        "x": -0.7,
+        "y": -0.75,
+        "rotation": 0,
+        "scaleX": 1,
+        "scaleY": 1
+      },
+      "Transform3D": {
+        "x": -0.7,
+        "y": 1.43,
+        "z": -0.75
+      }
+    },
+    "bench-top": {
+      "Transform3D": {
+        "x": -0.3426025629043579,
+        "y": 0.9,
+        "z": -0.75
+      },
+      "Mesh3D": {
+        "shape": "box",
+        "width": 0.95,
+        "height": 0.16,
+        "depth": 0.7,
+        "frontTint": 9259575,
+        "edgeTint": 11636581
+      },
+      "Material3D": {
+        "preset": "wood",
+        "color": 11636581,
+        "roughness": 0.8
+      }
+    },
+    "bench-leg-left": {
+      "Transform3D": {
+        "x": -0.65,
+        "y": 0.41,
+        "z": -0.75
+      },
+      "Mesh3D": {
+        "shape": "box",
+        "width": 0.1,
+        "height": 0.82,
+        "depth": 0.5,
+        "frontTint": 9259575,
+        "edgeTint": 11636581
+      }
+    },
+    "bench-leg-right": {
+      "Transform3D": {
+        "x": -0.0352051258087158,
+        "y": 0.41,
+        "z": -0.75
+      },
+      "Mesh3D": {
+        "shape": "box",
+        "width": 0.1,
+        "height": 0.82,
+        "depth": 0.5,
+        "frontTint": 9259575,
+        "edgeTint": 11636581
+      }
+    },
+    "cam": {
+      "Camera3D": {
+        "yaw": -0.7,
+        "pitch": 0.55,
+        "distance": 6,
+        "pivotX": -0.9,
+        "pivotY": 0.9,
+        "pivotZ": 0,
+        "fov": 42,
+        "near": 0.05,
+        "far": 100
+      },
+      "CameraShot3D": {
+        "shots": {
+          "reach": {
+            "keyframes": [
+              {
+                "at": 0,
+                "eye": [
+                  -3.4,
+                  2.4,
+                  2.6
+                ],
+                "target": [
+                  -0.8,
+                  1,
+                  -0.7
+                ],
+                "ease": "inOut"
+              },
+              {
+                "at": 1,
+                "eye": [
+                  -2.8,
+                  2,
+                  1.9
+                ],
+                "target": [
+                  -0.7,
+                  1.1,
+                  -0.75
+                ]
+              }
+            ]
+          },
+          "contact": {
+            "keyframes": [
+              {
+                "at": 0,
+                "eye": [
+                  -2.8,
+                  2,
+                  1.9
+                ],
+                "target": [
+                  -0.7,
+                  1.1,
+                  -0.75
+                ],
+                "ease": "cubicOut"
+              },
+              {
+                "at": 0.6,
+                "eye": [
+                  -2.6,
+                  2.1,
+                  1.65
+                ],
+                "target": [
+                  -0.7,
+                  1.25,
+                  -0.75
+                ]
+              }
+            ]
+          },
+          "held": {
+            "keyframes": [
+              {
+                "at": 0,
+                "eye": [
+                  -3.6,
+                  2.7,
+                  2.5
+                ],
+                "target": [
+                  -0.75,
+                  1.2,
+                  -0.75
+                ],
+                "ease": "inOut"
+              },
+              {
+                "at": 1,
+                "eye": [
+                  -3.3,
+                  2.6,
+                  2.3
+                ],
+                "target": [
+                  -0.75,
+                  1.2,
+                  -0.75
+                ]
+              }
+            ]
+          }
+        },
+        "onSignal": [
+          {
+            "signal": "v1.reach",
+            "shot": "reach"
+          },
+          {
+            "signal": "v1.contact",
+            "shot": "contact"
+          },
+          {
+            "signal": "v1.held",
+            "shot": "held"
+          }
+        ]
+      }
+    },
+    "sun": {
+      "Light3D": {
+        "kind": "directional",
+        "color": 16773605,
+        "intensity": 2,
+        "dirX": -0.3841106397986879,
+        "dirY": -0.7682212795973759,
+        "dirZ": 0.5121475197315839,
+        "castShadow": true
+      }
+    },
+    "fill": {
+      "Light3D": {
+        "kind": "ambient",
+        "color": 13294079,
+        "intensity": 0.9
+      }
+    }
+  },
+  "name": "v1-teapot-offline-prevalidation"
+}
