@@ -7,7 +7,7 @@
 
 ---
 
-## REQ-3D-AI-PIPELINE · AI 协同生产流程的 3D 资产与运行时能力（T3 图生3D · T4 模型规范化 · T5 绑骨动作 · T7 Blender 桥 · E1 压缩加载 · E2 动作库+AnimGraph3D · E3 骨骼挂点 · E4 IK · E5 场景 glb 拆实体 · V1 提水壶竖切） · [2026-10-16] · owner 立（裁 A=自研引擎·不用 Unity/Godot·与 Tripo/Blender 正式整合·绑骨判 B=Blender+Auto-Rig Pro+Mixamo·付费 API/插件接受）→ **P3D**（T4/T5/T7/E5 主程面·协作） · 施工主体 = Codex（2026-10-18 抢锁·本行即锁） · status: E1已交·待独立复查（Codex·2026-10-20；T4已复查通过） · 优先级: P1 · 类型: 能力下沉
+## REQ-3D-AI-PIPELINE · AI 协同生产流程的 3D 资产与运行时能力（T3 图生3D · T4 模型规范化 · T5 绑骨动作 · T7 Blender 桥 · E1 压缩加载 · E2 动作库+AnimGraph3D · E3 骨骼挂点 · E4 IK · E5 场景 glb 拆实体 · V1 提水壶竖切） · [2026-10-16] · owner 立（裁 A=自研引擎·不用 Unity/Godot·与 Tripo/Blender 正式整合·绑骨判 B=Blender+Auto-Rig Pro+Mixamo·付费 API/插件接受）→ **P3D**（T4/T5/T7/E5 主程面·协作） · 施工主体 = Codex（2026-10-18 抢锁·本行即锁） · status: E5施工中（Codex·2026-10-20 抢锁·本行即锁；T7/T3/T4/E1/R4已独立复查通过） · 优先级: P1 · 类型: 能力下沉
 > 写死 spec（数据形状·验收·依赖·顺序）全文：`docs/design/ai-pipeline-engine-roadmap-2026-10.md` §1–§3。E 层全部 render-only·入 `NON_DETERMINISTIC`（E5 装载期展开除外·须双跑 hash 一致）。
 > 原「交互与材质补全批」③ BlendSpace 由本单拉动转正（= E2）。复查人 ≠ 施工人。
 > **2026-10-16 owner 追加（判 A）**：**E6 剧情镜头编排**（render-only `CameraShot3D`·镜头表 + 信号触发 + 缓动·路线图 §3.5 R3）并入本单；**T5 同单交付 S3**「人工步骤回灌手册」（Tripo 网页局部重生成 · Mixamo 下载 · Auto-Rig Pro 标记确认：人做完放哪、脚本怎么接回）。
