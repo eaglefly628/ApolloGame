@@ -66,3 +66,18 @@
 | T3+原ai-gen定向 | 0（36+27=63项） |
 
 本面未触发art-smoke/backupSmoke等额外面守卫。最终日志`/private/tmp/aiflow-t3-final2-{scoped,complete}.log`、各步日志及Vitest JSON；定向`/private/tmp/aiflow-t3-final2-targeted.log`。GLB修补前跑过一轮不作为最终证明；最终轮覆盖修后源码与新增三例。未调用真实Tripo、未签任何生产门，正式独立复查判词另填。
+
+## 独立复查判词（2026-10-20）
+
+**通过T3代码复查；除指定game113基线外门禁通过。** 复查人与施工人不同；在全新临时clone固定施工提交`204370656`独立执行，不采信上文自证。尚无真实Tripo凭据/样本，未调用付费API；本判词不签K2、D1、R1或其他生产人门，也不证明真实模型质量/商业许可。
+
+四步实证如下：
+
+1. **独立复跑**：最终提交定向63/63（新T3 36＋原ai-gen 27）通过；完整Vitest为5955/5956，0 pending/todo，唯一失败是`depcruise-fence.test.mjs`的既定game113围栏。正式`scoped-gate --base 204370656^ --run`实际exit1：eslint0，depcruise只报`games/game113/guide-art.ts → src/assets/asset-index.ts`。其余步骤实际补跑：tsc0、build0、docs-ref0、context-budget0；art-ledger-guard2为原允许WARN。spritegen原生node:test 5例另跑exit0，Vitest仅排除该原生文件，未删断言。
+2. **撤修验红**：在另一隔离副本逐个改动、每个锚点先断言恰好命中1次，再运行目标测试；①SHA换假值→`single PNG stays mesh GLB`红；②交换left/back规范顺序→`all CLI flag orders normalize`红；③pending传递去掉generation→`CLI mock preserves four view hashes`红；④移除缺BIN守卫→`missing BIN GLB rejects and creates no pending asset`红（promise错误resolve且落pending）。四次均exit1，结束均恢复源字节；最终提交的相关6个源/测试文件与恢复副本逐字节核对相同。
+3. **实证复现与修复复验**：独立构造三种provider下载：缺BIN但JSON仍引用内部buffer、4字节非法chunk尾、外部buffer URL。修补前均被标commit并进入pending；同一缺BIN产物经three的GLTFLoader实读失败。施工补全边界后，原三反例逐个重放全部在generate边界拒收；合法mock仍经GLTFLoader实读成mesh。对应三条永久测试已纳入最终36例。V3上传字节、命名token映射、task轮询和下载无API鉴权均由fetch替身实跑；四张任缺一、重复/未知view、混用及单图模式绕过均先拒。edit整体重生来源、SHA同源、pending不写index、V2文本与2D兼容均通过。
+4. **读告警**：实际读完整日志和stderr。T3的mock、拒收及edit降级均为预期分级日志；台账WARN仍指game-a/game-c旧死账，无本次新增项；build仍有大于500kB分块提示，无新增T3构建告警。首轮受限沙箱另外出现本地端口EPERM及浏览器不可见，未算作基线；获准本机权限并指向现有Chrome后完整重跑，只有指定game113一例失败，不扩大豁免。
+
+官方[上传](https://developers.tripo3d.ai/en/docs/files)、[单图](https://developers.tripo3d.ai/en/docs/generation-image-to-model/standard)、[多视图](https://developers.tripo3d.ai/en/docs/generation-multiview-to-model/standard)、[任务](https://developers.tripo3d.ai/en/docs/task-query)四页已独立打开核对，当前V3端点/模型/命名视图/状态协议相符；四视图齐备是本仓更严格的验收边界。真实服务验收仍待凭据与样本，不以替身或mock替代。
+
+证据：`/private/tmp/aiflow-t3-independent-final-scoped.log`、`/private/tmp/aiflow-t3-independent-final-targeted.log`、`/private/tmp/aiflow-t3-independent-final2-{summary,vitest-full,build,docs-ref,context-budget,art-ledger-guard,native}.log`及`/private/tmp/aiflow-t3-independent-final2-vitest.json`；撤修`/private/tmp/t3-independent-sabotage-{hash,view-order,pending-generation,glb}.log`；原反例与修后重放`/private/tmp/t3-independent-{adversarial,repaired-adversarial}.log`。复查提交只追加本文；rebase到T4锁`1d0f56ada`后核对T3源/测试零差异。
