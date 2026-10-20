@@ -79,7 +79,7 @@
 
 <!-- REQ-PIPELINE-GUARDS（流程板规则加机器牙齿·六项）owner 2026-10-16 令**移除出池**——其中①「人门只收真人签字」并入 REQ-AIFLOW-GATES；其余五项全文查 git 历史（git log -S REQ-PIPELINE-GUARDS） -->
 
-### REQ-AIFLOW-GROUND · R2 3D 角色贴地行走（确定性可行走面高度采样）· [2026-10-16] · owner 判 A · **施工主体 = Codex（2026-10-20 抢锁·本行即锁）** · 复查 = 另派 · status: 施工中（Codex·2026-10-20） · P1 · 类型: 引擎能力下沉（🔴 碰确定性 / 快照 hash·主程口径）
+### REQ-AIFLOW-GROUND · R2 3D 角色贴地行走（确定性可行走面高度采样）· [2026-10-16] · owner 判 A · **施工主体 = Codex（2026-10-20 抢锁·本行即锁）** · 复查 = 另派 · status: 已交·待独立复查（Codex·2026-10-20） · P1 · 类型: 引擎能力下沉（🔴 碰确定性 / 快照 hash·主程口径）
 > 实查：sim 位置 = 平面 `Transform` + `Collider3D` 竖直分量；heightfield 只在 render-only 物理里。要做：从场景（E5 的 `nav_*` / `col_*` 节点）烘出确定性高度表，sim 内按位置采样地面高度；整数 / 定点口径，双跑 hash 一致。全文：路线图 §3.5 R2。依赖 3D 池 E5。
 
 <!-- REQ-AIFLOW-SCENELOAD：独立复查通过，判词08ba7e0ac；施工955826af4。按完工清池规则移出，全文查git历史。 -->

@@ -7,7 +7,7 @@ import { getCamera3D, getSky3D, getLights3D, getPost3D, getFog3D } from '@engine
 import { collectRenderables, chooseRenderMode, type Renderable } from './renderable.js';
 import {
   renderablePose, poseBounds, mesh3dBatchKey, type Pose3D,
-  transform3dPose, groundPose, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D, rayAabbT,
+  transform3dPose, groundPose, groundMeshPose, mesh3dVerticalHalfSize, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D, rayAabbT,
 } from './three-projection.js';
 import { mesh3dPose, applyPose, buildMesh3D, buildDieMesh3D, dieMode, buildVoxelMesh3D, voxelMode, buildGlowTexture, buildGeometry, buildSkyTexture, disposeMesh, faceAxisSlots } from './three/geometry.js';
 import { buildPbrMesh3D, buildPbrGeoMat, pbrTransmissive, pbrSig, applyMaterialRef, type PbrMaps } from './three/material.js';
@@ -55,6 +55,12 @@ import type { RenderStats } from './three/stats.js';
 // ═══════════════════════════════════════════════════════════════
 
 const SKY_RADIUS = 2000; // 天空盒大球半径（相机 far 据此收紧）
+// r184 owns one global DFG LUT for all physical materials. Track the actual
+// compiled uniform (not a second singleton imported from three/src). Its public
+// Texture.dispose event is global, so it is safe only after the last initialized
+// ThreeRenderer closes. Each renderer still closes its own WebGL context.
+const liveThreeRenderers = new Set<ThreeRenderer>();
+const sharedPhysicalLuts = new Set<THREE.Texture>();
 
 export interface ThreeRendererOptions {
   width?: number;
@@ -71,6 +77,8 @@ export interface ThreeRendererOptions {
 }
 
 export class ThreeRenderer implements RendererBackend {
+  private disposed = false;
+  private physicalLutCaptured = false;
   private scene!: THREE.Scene;
   private gl!: THREE.WebGLRenderer;
   private frame = 0; // 帧计数（render-only·云飘等表现动画用·不进 hash）
@@ -126,6 +134,7 @@ export class ThreeRenderer implements RendererBackend {
   // 拾取包围盒（Pickable3D·render-only 输入层）：每帧 sync 捕获·pick() 射线求交。entityId → 世界 AABB + 信号名。
   private readonly pickables = new Map<string, { cx: number; cy: number; cz: number; hx: number; hy: number; hz: number; signal: string }>();
   private readonly modelPickBounds = new THREE.Box3();
+  private readonly groundConflictWarnings = new Set<string>();
   // W1-C 脏标跳渲 + profiler
   private cpuMs = 0;
   private rendered = false;
@@ -157,6 +166,9 @@ export class ThreeRenderer implements RendererBackend {
   }
 
   init(container: HTMLElement): void {
+    this.disposed = false;
+    this.physicalLutCaptured = false;
+    this.lastRenderSig = ''; this.lastShadowSig = '';
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(this.background);
     this.cameras = new CameraRig(this.fov, this.width / this.height); // 透视 + 正交两台·按 Camera3D 选
@@ -186,6 +198,7 @@ export class ThreeRenderer implements RendererBackend {
       });
       this.resizeObserver.observe(container);
     }
+    liveThreeRenderers.add(this);
   }
 
   /**
@@ -255,6 +268,14 @@ export class ThreeRenderer implements RendererBackend {
     const seen = new Set<string>();
     const poses: Pose3D[] = [];
     const modelSigs: string[] = [];
+    const groundSigs: string[] = [];
+    const groundWalkers = new Set(world.queryEntities('GroundWalker3D'));
+    const warnGroundConflict = (id: string, drivers: readonly string[]): void => {
+      if (drivers.length === 0 || this.groundConflictWarnings.has(id)) return;
+      this.groundConflictWarnings.add(id);
+      console.warn(`[ThreeRenderer] GroundWalker3D "${id}" uses sim ground pose; conflicting render drivers: ${drivers.join(', ')}`);
+    };
+    for (const id of groundWalkers) warnGroundConflict(id, ['Transform3D', 'Anim3D', 'Path3D', 'RigidBody3D', 'Hierarchy', 'Pivot3D'].filter(type => world.hasComponent(id, type)));
     const instGroups: InstGroups = new Map(); // W1-A：不透明 Mesh3D 按视觉签名分批
     const pbrBuilders = new Map<string, PbrBatchBuild>(); // PBR 批构建器（REQ-3D-PBR-INSTANCING·按材质签名·渲染器持贴图解析器故在此建闭包）
     this.frame++;
@@ -288,11 +309,15 @@ export class ThreeRenderer implements RendererBackend {
     // 无 Pivot3D → 空 map·pivotPose 恒等返回·零开销（向后兼容）。
     const pivotMap = new Map<string, THREE.Matrix4>();
     for (const [pid] of world.query('Pivot3D')) {
+      if (groundWalkers.has(pid)) continue;
       const pv = world.getComponent<Pivot3D>(pid, 'Pivot3D');
       const pt = world.getComponent<Transform3D>(pid, 'Transform3D');
       if (!pv || !pt || pv.children.length === 0) continue;
       const M = pivotMatrix({ x: pt.x, y: pt.y, z: pt.z, rotX: pt.rotX ?? 0, rotY: pt.rotY ?? 0, rotZ: pt.rotZ ?? 0, scale: pt.scale ?? 1 }, pv.centerX ?? 0, pv.centerY ?? 0, pv.centerZ ?? 0);
-      for (const c of pv.children) pivotMap.set(c, M);
+      for (const c of pv.children) {
+        if (groundWalkers.has(c)) warnGroundConflict(c, [`Pivot3D(${pid})`]);
+        else pivotMap.set(c, M);
+      }
     }
     const pivotPose = (id: string, pose: Pose3D): Pose3D => { const M = pivotMap.get(id); return M ? applyPivot(M, pose) : pose; };
 
@@ -302,6 +327,7 @@ export class ThreeRenderer implements RendererBackend {
     this.pickables.clear();
 
     for (const r of collectRenderables(world)) {
+      if (r.groundBaseY !== undefined) groundSigs.push(JSON.stringify([r.entityId, r.groundBaseY]));
       // 导入式 glTF 模型（Model3D）：圆润真模型。位姿与 Mesh3D 同套路。未就绪本帧不画（向后兼容）。
       if (r.model3d) {
         modelSigs.push(JSON.stringify([r.entityId, modelSelectorSig(r.model3d), r.model3d.scale, r.model3d.tint]));
@@ -309,10 +335,10 @@ export class ThreeRenderer implements RendererBackend {
         this.assetReady.mark(r.model3d.modelKey, !!obj); // 就绪版本号：迟到模型就绪同样迫使重绘（静态场景防吞帧）
         if (obj) {
           const ms = r.model3d.scale ?? 1;
-          const rawPose: Pose3D = (r.transform3d || cam3d)
+          const rawPose: Pose3D = r.groundBaseY !== undefined ? groundPose(r, 0) : (r.transform3d || cam3d)
             ? (r.transform3d ? transform3dPose(r.transform3d) : groundPose(r, 0))
             : renderablePose(r, this.zStep);
-          if (!r.transform3d && cam3d) {
+          if (!r.transform3d && (cam3d || r.groundBaseY !== undefined)) {
             const dir = world.getComponent<FaceDir>(r.entityId, 'FaceDir');
             if (dir) {
               const wanted = modelYawFromFaceDir(dir, rawPose.ry ?? 0);
@@ -350,7 +376,7 @@ export class ThreeRenderer implements RendererBackend {
       }
       // 3D 物件（Mesh3D）：有 Material3D → PBR 单 mesh（特征物件）；否则不透明归批实例化、透明走 fallback。
       if (r.mesh3d) {
-        const pose = pivotPose(r.entityId, mesh3dPose(r, r.mesh3d, cam3d, this.zStep));
+        const pose = pivotPose(r.entityId, r.groundBaseY === undefined ? mesh3dPose(r, r.mesh3d, cam3d, this.zStep) : groundMeshPose(r, r.mesh3d));
         poses.push(pose);
         seen.add(r.entityId);
         if (r.entityId === followTarget) followPose = pose;
@@ -360,7 +386,7 @@ export class ThreeRenderer implements RendererBackend {
           this.pickables.set(r.entityId, {
             cx: pose.x, cy: pose.y, cz: pose.z,
             hx: half * Math.abs(pose.sx),
-            hy: (m.shape === 'sphere' ? half : m.height / 2) * Math.abs(pose.sy),
+            hy: (r.groundBaseY === undefined ? (m.shape === 'sphere' ? half : m.height / 2) : mesh3dVerticalHalfSize(m)) * Math.abs(pose.sy),
             hz: (m.shape === 'sphere' ? half : (m.depth ?? m.width) / 2) * Math.abs(pose.sz ?? 1),
             signal: pk.signal,
           });
@@ -388,7 +414,7 @@ export class ThreeRenderer implements RendererBackend {
           if ((r.color?.alpha ?? 1) >= 1 && !eff.outline && !eff.dissolve && !pbrTransmissive(eff)) { // dissolve 走单 mesh（DissolveSystem 每帧驱动 uniform）
             const maps = this.resolvePbrMaps(eff);
             const mk = `${maps.map ? 'M' : ''}${maps.normalMap ? 'N' : ''}${maps.roughnessMap ? 'R' : ''}${maps.aoMap ? 'A' : ''}${maps.metalnessMap ? 'E' : ''}${maps.emissiveMap ? 'G' : ''}${maps.ormMap ? 'O' : ''}`; // 贴图就绪态入 key（迟到贴图就绪 → 换批挂上·配 AssetReadyTracker 自愈）
-            const key = `pbr|${pbrSig(r.mesh3d, eff)}|${mk}`;
+            const key = `pbr|${pbrSig(r.mesh3d, eff)}|${mk}${r.mesh3d.shape === 'torus' ? `|tube:${r.mesh3d.tube ?? 0.35}` : ''}`;
             let g = instGroups.get(key);
             if (!g) { g = []; instGroups.set(key, g); pbrBuilders.set(key, () => buildPbrGeoMat(r.mesh3d!, eff, maps)); } // 首见该签名 → 注册构建器（建一次共享材质）
             g.push({ r, pose });
@@ -434,7 +460,7 @@ export class ThreeRenderer implements RendererBackend {
     // W1-C 脏标跳渲：渲染签名（投影体姿 + 相机 + 灯 + 后处理 + 天空云飘帧 + 粒子/物理/骨骼动画活跃帧）。与上帧一致 → 跳过
     // instanceMatrix 上传 + 阴影 + render（画面不变·省 CPU/GPU/带宽）——「低开销」最大单点。
     const post = getPost3D(world);
-    const ph = `${hashPoses(poses)}|models:${modelSigs.join(';')}`;
+    const ph = `${hashPoses(poses)}|models:${modelSigs.join(';')}|ground:${groundSigs.join(';')}`;
     // 震屏：先算 trauma 偏移（据壁钟衰减）——active 时折进 renderSig 持续重渲直至回正。
     const shakeOff = this.camShake.update(cam3d?.shake, performance.now());
     // 跟随柔化：follow 模式对 target 位做指数平滑 + lookAhead 预读——settling(未收敛) 时折进 renderSig 持续重渲直至贴合。
@@ -503,6 +529,7 @@ export class ThreeRenderer implements RendererBackend {
     this.lines.build(this.scene, world, cam); // 世界折线几何：据给定点 + 相机重建「朝相机带状」（瞄准线/牵引/路径·相机就绪后）。
     if (post) this.post.render(this.scene, cam, post, flashAmt);
     else this.gl.render(this.scene, cam);
+    this.capturePhysicalLuts();
     this.worldUi.sync(world, cam, this.width, this.height); // 头顶飘字：锚点投影 + 定位 LayoutNode 宿主（相机就绪后）
     this.indexDebug.sync(world, cam, this.width, this.height, this.debugIndices); // 实体编号徽标（debug·开则画·关则清）
     this.diegetic.sync(world, cam); // UI 贴 3D 面：CSS3DObject 位姿从 Transform3D + 同相机投影渲 DOM 层（相机就绪后）
@@ -605,6 +632,10 @@ export class ThreeRenderer implements RendererBackend {
   }
 
   destroy(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.groundConflictWarnings.clear();
+    if (!this.gl) return; // Constructed but never initialized (or WebGL creation failed).
     this.resizeObserver?.disconnect(); this.resizeObserver = undefined; // 断开容器观察者·防泄漏
     if (this.sky) { this.scene.remove(this.sky); (this.sky.material as THREE.MeshBasicMaterial).map?.dispose(); disposeMesh(this.sky); this.sky = null; }
     for (const [, m] of this.meshes) { this.scene.remove(m); disposeMesh(m); }
@@ -634,13 +665,38 @@ export class ThreeRenderer implements RendererBackend {
     this.worldUi.dispose();
     this.indexDebug.dispose();
     this.diegetic.dispose();
-    this.models.dispose(this.scene);
-    this.lights.dispose(this.scene);
+    this.models?.dispose(this.scene);
+    this.lights?.dispose(this.scene);
     if (this.envTex) { this.envTex.dispose(); this.envTex = null; this.scene.environment = null; }
     if (this.hdriTex) { this.hdriTex.dispose(); this.hdriTex = null; this.hdriKey = ''; }
-    this.post.dispose();
+    this.post?.dispose();
+    if (liveThreeRenderers.delete(this) && liveThreeRenderers.size === 0) {
+      for (const lut of sharedPhysicalLuts) lut.dispose();
+      sharedPhysicalLuts.clear();
+    }
     this.gl.dispose();
+    // Closing A while B is alive must not dispatch the shared LUT's dispose
+    // event. Context loss releases A's GPU copy without resetting B. In that
+    // case A.info.memory is historical; actual context/handle checks are needed.
+    this.gl.forceContextLoss?.();
     this.gl.domElement.remove();
+  }
+
+  private capturePhysicalLuts(): void {
+    if (this.physicalLutCaptured) return;
+    const capture = (material: THREE.Material): void => {
+      const properties = this.gl.properties.get(material) as { uniforms?: { dfgLUT?: { value?: THREE.Texture } } };
+      const uniforms = properties.uniforms;
+      const lut = uniforms?.dfgLUT?.value;
+      if (lut?.isTexture) { sharedPhysicalLuts.add(lut); this.physicalLutCaptured = true; }
+    };
+    this.scene.traverse(object => {
+      if (this.physicalLutCaptured) return;
+      const material = (object as THREE.Mesh).material;
+      if (!material) return;
+      if (Array.isArray(material)) { for (const entry of material) { capture(entry); if (this.physicalLutCaptured) break; } }
+      else capture(material);
+    });
   }
 
   // 天空盒（Sky3D）：内面朝里的大球裹住盒庭，画布纹理。参数变才重建纹理；scroll 时云缓慢飘（render-only）。
@@ -821,7 +877,7 @@ export class ThreeRenderer implements RendererBackend {
     const eff = mat.materialRef ? applyMaterialRef(mat, this.materials?.get(mat.materialRef)) : mat;
     const maps = this.resolvePbrMaps(eff); // REQ-Resource ①：按 key 取真实贴图（色彩空间按用途设）
     // 贴图就绪态并入 mode：异步贴图从未就绪→就绪时 mode 变 → 重建 mesh 挂上图（同 sprite 异步先例）。
-    const mode = `${pbrSig(m, eff)}|${maps.map ? 'M' : ''}${maps.normalMap ? 'N' : ''}${maps.roughnessMap ? 'R' : ''}${maps.aoMap ? 'A' : ''}${maps.metalnessMap ? 'E' : ''}${maps.emissiveMap ? 'G' : ''}${maps.ormMap ? 'O' : ''}${maps.dissolveTex ? 'D' : ''}`; // 溶解碎片图就绪 → mode 变重建挂上（增量②·配 AssetReadyTracker）
+    const mode = `${pbrSig(m, eff)}|${maps.map ? 'M' : ''}${maps.normalMap ? 'N' : ''}${maps.roughnessMap ? 'R' : ''}${maps.aoMap ? 'A' : ''}${maps.metalnessMap ? 'E' : ''}${maps.emissiveMap ? 'G' : ''}${maps.ormMap ? 'O' : ''}${maps.dissolveTex ? 'D' : ''}${m.shape === 'torus' ? `|tube:${m.tube ?? 0.35}` : ''}`; // 溶解碎片图就绪 → mode 变重建挂上（增量②·配 AssetReadyTracker）
     const prev = this.meshes.get(r.entityId);
     if (prev && this.modeOf.get(r.entityId) === mode) return prev;
     if (prev) { this.scene.remove(prev); disposeMesh(prev); }

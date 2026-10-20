@@ -5,6 +5,9 @@
 // 放此 assembly 层：可同时 import protocol(低层) 与 skills，避免 protocol→skill 倒挂。
 // 新增组件 = 在对应域文件/skill 加 interface(extends Component) + 在此登记一行。
 import type {
+  GroundSurface3D,
+  GroundWalker3D,
+  GroundContact3D,
   SceneImport3D,
   Acceleration,
   Action,
@@ -174,6 +177,9 @@ import type { Vfx2D } from '@atom-skills/vfx2d/index.js';
 
 export interface ComponentDataMap {
   SceneImport3D: Omit<SceneImport3D, 'type'>;
+  GroundSurface3D: Omit<GroundSurface3D, 'type'>;
+  GroundWalker3D: Omit<GroundWalker3D, 'type'>;
+  GroundContact3D: Omit<GroundContact3D, 'type'>;
   Acceleration: Omit<Acceleration, 'type'>;
   Action: Omit<Action, 'type'>;
   Anim3D: Omit<Anim3D, 'type'>;

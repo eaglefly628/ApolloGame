@@ -1,5 +1,5 @@
 import type { Renderable } from './renderable.js';
-import type { Transform3D } from '@engine/protocol/components.js';
+import type { Transform3D, Mesh3D } from '@engine/protocol/components.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  three-projection —— 2D Renderable → 3D 位姿的**纯函数**（无 three / 无 WebGL 依赖 → node 可测）。
@@ -35,8 +35,31 @@ export function transform3dPose(t3: Transform3D): Pose3D {
 // 盒庭模式下「把 2D sim 实体投到地面」：Transform(x,y) → 地面 XZ（x→X、2D y→Z 景深），Y=物高/2（下沿坐地 y=0）。
 // 2D rotation → 绕 Y 的朝向。→ 让用现成 input/velocity/motion 能力驱动的 2D 实体（如可控角色）在盒庭里走来走去，
 // 即「同一份 2D sim 数据，换 3D 后端当盒庭看」。纯函数（node 可测）。
-export function groundPose(r: { x: number; y: number; rotation: number; scaleX: number; scaleY: number }, height: number): Pose3D {
-  return { x: r.x, y: height / 2, z: r.y, rotZ: 0, rx: 0, ry: -r.rotation, sx: r.scaleX, sy: r.scaleY, sz: r.scaleX };
+export function groundPose(r: { x: number; y: number; rotation: number; scaleX: number; scaleY: number; groundBaseY?: number }, height: number): Pose3D {
+  const y = r.groundBaseY === undefined ? height / 2 : r.groundBaseY + Math.abs(r.scaleY) * height / 2;
+  return { x: r.x, y, z: r.y, rotZ: 0, rx: 0, ry: -r.rotation, sx: r.scaleX, sy: r.scaleY, sz: r.scaleX };
+}
+
+// Match three/geometry.roundGeo's actual vertical extents, including its tiny
+// positive capsule cylinder when height < width. Torus lies in XY, so height is
+// its outer diameter rather than the Mesh3D.height authoring slot.
+export function mesh3dVerticalHalfSize(m: Pick<Mesh3D, 'shape' | 'width' | 'height' | 'tube'>): number {
+  const radius = Math.max(0.0001, m.width / 2), height = Math.max(0.0001, m.height);
+  switch (m.shape) {
+    case 'sphere': return radius;
+    case 'cylinder': case 'cone': return height / 2;
+    case 'capsule': return radius + Math.max(0.0001, height - m.width) / 2;
+    case 'torus': return radius + Math.abs(radius * (m.tube ?? 0.35));
+    default: return Math.abs(m.height) / 2;
+  }
+}
+
+// Only the opt-in Walker route calls this. Legacy groundPose height/2 semantics
+// stay unchanged; both batched and ordinary Mesh3D consume this same pose.
+export function groundMeshPose(r: Renderable, m: Mesh3D): Pose3D {
+  const pose = groundPose(r, 0);
+  pose.y = (r.groundBaseY ?? 0) + mesh3dVerticalHalfSize(m) * Math.abs(r.scaleY);
+  return pose;
 }
 
 export interface Bounds2D {
@@ -90,10 +113,11 @@ export function mesh3dDepth(shape: MeshShape, width: number, height: number, dep
 // 含 shape + 尺寸 + 逐面色（色烤进几何 vertexColors，故色不同=不同几何=不同批）。纯函数（node 可测）。
 export function mesh3dBatchKey(m: {
   shape: MeshShape; width: number; height: number; depth?: number;
-  frontTint: number; backTint?: number; edgeTint?: number;
+  frontTint: number; backTint?: number; edgeTint?: number; tube?: number;
 }): string {
   if (m.shape === 'plane') return `plane|${m.width}|${m.height}|${m.frontTint}`;
   if (m.shape === 'sphere') return `sphere|${m.width}|${m.frontTint}`; // 球：直径决定（height 忽略）→ 同直径同色一批
+  if (m.shape === 'torus') return `torus|${m.width}|${m.height}|${m.frontTint}|tube:${m.tube ?? 0.35}`;
   if (ROUND_SHAPES.has(m.shape)) return `${m.shape}|${m.width}|${m.height}|${m.frontTint}`; // 柱/锥/胶囊/环：形+直径+高+色 → 一批
   const depth = mesh3dDepth('box', m.width, m.height, m.depth);
   return `box|${m.width}|${m.height}|${depth}|${m.frontTint}|${m.backTint ?? m.frontTint}|${m.edgeTint ?? 0x1f2937}`;

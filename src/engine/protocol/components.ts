@@ -63,3 +63,4 @@ export type * from './components/cardboard.js';
 export type * from './components/crowd.js';
 export type * from './components/navigation-grid.js';
 export type * from './components/scene-import.js';
+export type * from './components/ground.js';

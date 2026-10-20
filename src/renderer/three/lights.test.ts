@@ -1,5 +1,5 @@
 // TA Phase 2：动态 point/spot 局部光（预算 cap + 可移动 + 池清理）。three Scene/Light 为纯 JS·无需 GL。
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import * as THREE from 'three';
 import { LightRig } from './lights.js';
 import { World } from '@engine/core/world.js';
@@ -76,5 +76,35 @@ describe('LightRig · 动态局部光（TA Phase 2）', () => {
     w.removeComponent('p', 'Light3D');
     rig.sync(scene, getLights3D(w), w);
     expect(pointCount(scene)).toBe(0);
+  });
+});
+
+describe('LightRig shadow target ownership', () => {
+  it('disposes main/local map and mapPass once, removes owned lights, and retains unrelated scene assets', () => {
+    const scene=new THREE.Scene(),rig=new LightRig(scene),world=new World();
+    world.createEntity('spot');world.addComponent<Light3D>('spot',{type:'Light3D',kind:'spot',color:0xffffff,intensity:20,castShadow:true});rig.sync(scene,getLights3D(world),world);
+    const spot=scene.children.find(child=>child instanceof THREE.SpotLight) as THREE.SpotLight;
+    const owned=[rig.key,spot].flatMap(light=>{light.shadow.map=new THREE.WebGLRenderTarget(16,16);light.shadow.map.depthTexture=new THREE.DepthTexture(16,16);light.shadow.mapPass=new THREE.WebGLRenderTarget(16,16);return [light.shadow.map,light.shadow.mapPass];});
+    const released=owned.map(target=>vi.spyOn(target,'dispose'));
+    const external=new THREE.DirectionalLight(),externalTarget=new THREE.WebGLRenderTarget(16,16);external.shadow.map=externalTarget;scene.add(external);
+    const material=new THREE.MeshStandardMaterial({map:new THREE.Texture()}),mesh=new THREE.Mesh(new THREE.BoxGeometry(),material);scene.add(mesh);
+    const kept=[vi.spyOn(externalTarget,'dispose'),vi.spyOn(material,'dispose'),vi.spyOn(material.map!,'dispose'),vi.spyOn(mesh.geometry,'dispose')];
+    rig.dispose(scene);rig.dispose(scene);
+    for(const dispose of released)expect(dispose).toHaveBeenCalledOnce();for(const dispose of kept)expect(dispose).not.toHaveBeenCalled();
+    expect(rig.key.shadow.map).toBeNull();expect(rig.key.shadow.mapPass).toBeNull();expect(spot.shadow.map).toBeNull();expect(spot.shadow.mapPass).toBeNull();expect(rig.key.parent).toBeNull();expect(rig.key.target.parent).toBeNull();expect(spot.parent).toBeNull();expect(external.parent).toBe(scene);expect(mesh.parent).toBe(scene);
+    externalTarget.dispose();mesh.geometry.dispose();material.map!.dispose();material.dispose();vi.restoreAllMocks();
+  });
+
+  it('reclaims both main shadow targets on resize, preserves casting and does not release an aliased target twice', () => {
+    const scene=new THREE.Scene(),rig=new LightRig(scene,256),target=new THREE.WebGLRenderTarget(16,16),dispose=vi.spyOn(target,'dispose');
+    rig.key.shadow.map=target;rig.key.shadow.mapPass=target;
+    rig.setShadowMapSize(512);rig.setShadowMapSize(512);rig.dispose(scene);
+    expect(dispose).toHaveBeenCalledOnce();expect(rig.key.castShadow).toBe(true);expect(rig.key.shadow.mapSize.x).toBe(512);expect(rig.key.shadow.map).toBeNull();expect(rig.key.shadow.mapPass).toBeNull();vi.restoreAllMocks();
+  });
+
+  it('releases a local mapPass when disabling its shadow and leaves the still-live light intact', () => {
+    const scene=new THREE.Scene(),rig=new LightRig(scene),world=new World();world.createEntity('spot');world.addComponent<Light3D>('spot',{type:'Light3D',kind:'spot',color:0xffffff,intensity:20,castShadow:true});rig.sync(scene,getLights3D(world),world);
+    const spot=scene.children.find(child=>child instanceof THREE.SpotLight) as THREE.SpotLight,map=new THREE.WebGLRenderTarget(16,16),pass=new THREE.WebGLRenderTarget(16,16),a=vi.spyOn(map,'dispose'),b=vi.spyOn(pass,'dispose');spot.shadow.map=map;spot.shadow.mapPass=pass;
+    world.getComponent<Light3D>('spot','Light3D')!.castShadow=false;rig.sync(scene,getLights3D(world),world);rig.sync(scene,getLights3D(world),world);expect(a).toHaveBeenCalledOnce();expect(b).toHaveBeenCalledOnce();expect(spot.parent).toBe(scene);expect(spot.castShadow).toBe(false);rig.dispose(scene);vi.restoreAllMocks();
   });
 });

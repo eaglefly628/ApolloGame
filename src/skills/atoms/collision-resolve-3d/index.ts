@@ -5,6 +5,8 @@ import type { Velocity, Transform, Collider3D, Mass, Overlap3D } from '@engine/p
 import { contact3d } from '@engine/spatial/contact3d.js';
 import { cmpStr } from '@engine/math/scalar.js';
 import { len } from '@engine/math/vec2.js';
+import { isGroundSupportContact, isGroundStepContact } from '@engine/spatial/ground-support.js';
+import { findDebugTrace, appendTrace } from '@skills/debug-trace.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  collision-resolve-3d（REQ-3D-Collision · P2 响应·确定性 sim·进 hash·rollback 安全）。
@@ -32,6 +34,7 @@ interface Manifold3 {
   aV: Velocity | undefined; bV: Velocity | undefined;
   nx: number; nz: number; // 水平单位法线（a→b·XZ）
   invA: number; invB: number;
+  ground: boolean;
 }
 
 export const collisionResolve3dCapability = defineCapability({
@@ -50,7 +53,7 @@ export const collisionResolve3dCapability = defineCapability({
 
   components: {
     provides: {},
-    reads: ['Overlap3D', 'Transform', 'Collider3D', 'Velocity', 'Mass'],
+    reads: ['Overlap3D', 'Transform', 'Collider3D', 'Velocity', 'Mass', 'GroundWalker3D', 'GroundContact3D', 'GroundSurface3D'],
     writes: ['Transform', 'Velocity'],
     consumes: [],
   },
@@ -59,10 +62,12 @@ export const collisionResolve3dCapability = defineCapability({
     {
       id: 'collision-resolve-3d',
       phase: SystemPhase.Resolve,
-      reads: ['Overlap3D', 'Transform', 'Collider3D', 'Velocity', 'Mass'],
+      reads: ['Overlap3D', 'Transform', 'Collider3D', 'Velocity', 'Mass', 'GroundWalker3D', 'GroundContact3D', 'GroundSurface3D'],
       writes: ['Transform', 'Velocity'],
       consumes: [],
       execute(world) {
+        const trace = findDebugTrace(world);
+        let supportSkips = 0;
         // 接触对（来自 overlap-detect-3d）·确定序。
         const pairs: Array<[string, string]> = [];
         for (const [oid] of world.query('Overlap3D')) {
@@ -84,15 +89,18 @@ export const collisionResolve3dCapability = defineCapability({
           const c = contact3d(aT, ac, bT, bc); // 法线 a→b
           if (!c) continue;
           const hlen = len(c.nx, c.nz);
-          if (hlen < EPS) continue; // 纯竖直接触 → 地面锁(baseY)负责·水平无从推
+          const ground = world.hasComponent(a, 'GroundWalker3D') || world.hasComponent(b, 'GroundWalker3D');
+          if (hlen < EPS && !ground) continue; // old vertical-only path unchanged
           const invA = inverseMass(world, a), invB = inverseMass(world, b);
           if (invA + invB === 0) continue; // 双静态
-          manifolds.push({ a, b, aT, bT, ac, bc, aV: world.getComponent<Velocity>(a, 'Velocity'), bV: world.getComponent<Velocity>(b, 'Velocity'), nx: c.nx / hlen, nz: c.nz / hlen, invA, invB });
+          manifolds.push({ a, b, aT, bT, ac, bc, aV: world.getComponent<Velocity>(a, 'Velocity'), bV: world.getComponent<Velocity>(b, 'Velocity'), nx: hlen < EPS ? 0 : c.nx / hlen, nz: hlen < EPS ? 0 : c.nz / hlen, invA, invB, ground });
         }
 
         // 速度求解：固定水平法线上 K 遍冲量（restitution=0），消除接近的相对法向速度（vx→X、vy→Z）。
         for (let it = 0; it < VEL_ITERS; it++) {
           for (const m of manifolds) {
+            const current = m.ground ? contact3d(m.aT, m.ac, m.bT, m.bc) : undefined;
+            if (current && (isGroundSupportContact(world, m.a, m.b, current) || isGroundStepContact(world, m.a, m.b, current))) { supportSkips++; continue; }
             const rvn = ((m.bV?.vx ?? 0) - (m.aV?.vx ?? 0)) * m.nx + ((m.bV?.vy ?? 0) - (m.aV?.vy ?? 0)) * m.nz;
             if (rvn >= 0) continue; // 正在分离
             const j = -rvn / (m.invA + m.invB);
@@ -106,6 +114,7 @@ export const collisionResolve3dCapability = defineCapability({
           for (const m of manifolds) {
             const c = contact3d(m.aT, m.ac, m.bT, m.bc);
             if (!c) continue;
+            if (m.ground && (isGroundSupportContact(world, m.a, m.b, c) || isGroundStepContact(world, m.a, m.b, c))) { supportSkips++; continue; }
             const hlen = len(c.nx, c.nz);
             if (hlen < EPS) continue;
             const hx = c.nx / hlen, hz = c.nz / hlen;
@@ -114,6 +123,7 @@ export const collisionResolve3dCapability = defineCapability({
             m.bT.x += hx * corr * m.invB; m.bT.y += hz * corr * m.invB;
           }
         }
+        if (trace && supportSkips) appendTrace(trace, world.getVersion(), 'collision-resolve-3d', 'decision', `${supportSkips} walkable responses skipped`, 'Matched upward support or connected low-step upper face with forward intent; walls still resolve');
       },
     },
   ],

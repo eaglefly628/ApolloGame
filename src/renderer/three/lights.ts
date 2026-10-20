@@ -13,9 +13,18 @@ const MAX_DYNAMIC = 4; // 预算：同时最多 4 盏动态 point/spot（原 2·
 const MAX_SHADOW_LOCAL = 2; // 投影局部光预算（point 用**立方**阴影 6× 贵·spot 单张·故单列限量）
 const LOCAL_SHADOW_SIZE = 1024; // 局部光阴影贴图边长（比主平行光 2048 小·省 cube 6 面开销）
 
+// RenderTarget owns its color/depth attachments. Release each target once and
+// clear both native slots before callbacks; do not dispose unrelated textures.
+function releaseShadowTargets(l: THREE.DirectionalLight | THREE.PointLight | THREE.SpotLight): void {
+  const targets = new Set([l.shadow.map, l.shadow.mapPass]);
+  l.shadow.map = null;
+  l.shadow.mapPass = null;
+  for (const target of targets) target?.dispose();
+}
+
 // 关掉一盏局部光的阴影（切换/移除时回收 shadow map·防显存泄漏·RENDERHYG 纪律）。
 function killLocalShadow(l: THREE.PointLight | THREE.SpotLight): void {
-  if (l.shadow.map) { l.shadow.map.dispose(); l.shadow.map = null; }
+  releaseShadowTargets(l);
   l.castShadow = false;
 }
 
@@ -45,8 +54,7 @@ export class LightRig {
   setShadowMapSize(size: number): void {
     if (this.key.shadow.mapSize.x === size) return;
     this.key.shadow.mapSize.set(size, size);
-    this.key.shadow.map?.dispose();
-    this.key.shadow.map = null; // three 下次渲染按新边长重建
+    releaseShadowTargets(this.key); // three 下次渲染按新边长重建，包括可选 VSM 中间目标
   }
 
   // 据 Light3D 数据驱动灯（首盏 castShadow 平行光=主阴影灯；其余平行光 + point/spot 局部光池管理；ambient 补亮）。
@@ -157,6 +165,8 @@ export class LightRig {
   }
 
   dispose(scene: THREE.Scene): void {
+    releaseShadowTargets(this.key);
+    scene.remove(this.key); scene.remove(this.key.target); scene.remove(this.ambient);
     for (const [, l] of this.extraLights) { scene.remove(l); scene.remove(l.target); }
     this.extraLights.clear();
     for (const [, l] of this.localLights) { killLocalShadow(l); scene.remove(l); if ((l as THREE.SpotLight).target) scene.remove((l as THREE.SpotLight).target); }

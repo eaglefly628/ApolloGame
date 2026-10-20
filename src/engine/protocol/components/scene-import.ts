@@ -5,4 +5,5 @@ export interface SceneImport3D extends Component {
   readonly type: 'SceneImport3D';
   modelKey: string;
   rules: 'default';
+  ground?: { source: 'navigation' | 'collision' };
 }

@@ -2,6 +2,7 @@
 // 跨阶段用 SystemPhase 显式定序（Update→Resolve→Commit），避免与"读位置/读速度"的系统在纯组件拓扑上成环。
 export { collisionResolveCapability } from './collision-resolve.js';
 export { groundSenseCapability } from './ground-sense.js';
+export { groundWalk3dCapability } from './ground-walk-3d.js';
 export { jumpCapability, JUMP_SPEED } from './jump.js';
 export { boundsClampCapability } from './bounds-clamp.js';
 export { triggerZoneCapability, ZONE_FLAG } from './trigger-zone.js';

@@ -12,7 +12,7 @@ export const sceneImport3dCapability = defineCapability({
   },
   components: {
     provides: {
-      SceneImport3D: defineComponent('SceneImport3D', { modelKey: t.asset('model'), rules: t.lit('default') },
+      SceneImport3D: defineComponent('SceneImport3D', { modelKey: t.asset('model'), rules: t.lit('default'), ground: t.opt(t.obj({ source: t.enum(['navigation', 'collision']) })) },
         { category: 'config', describe: 'Load-time static scene declaration; requires SHA-verified scene catalog.' }),
     },
     reads: [], writes: [], consumes: [],

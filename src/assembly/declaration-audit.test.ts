@@ -149,6 +149,7 @@ describe('相位落桶棘轮 — 非缺省相位成员点名（根因①·A1 探
 
 /** 相位基线（2026-08-16 实测灌入）。改动纪律同 SCC 基线：挪相位 = 同提交带理由更新本表。 */
 const PHASE_BASELINE: string[] = [
+  'p-20:ground-init-3d', // R2 acquires authored support before first motion; opt-in only.
   // REQ-114-NAV: capture actual velocity before Update navigation overwrites it
   // with the preferred velocity; the ORCA oracle independently verifies this order.
   'p-10:crowd-capture',
@@ -156,6 +157,7 @@ const PHASE_BASELINE: string[] = [
   'p10:collision-resolve,collision-resolve-3d,tile-collision',
   'p14:conveyor-queue,friction,gauge,hierarchy-resolve,orbit-motion,text-binding',
   'p20:anim-state,block-view-sync,bounds-clamp,cooldown,craft-recipe,effect-apply,face-rotate,facing,jump,match-view-sync,matrix-duel-announce,matrix-duel-intent,stat-bind,weighted-spawn',
+  'p21:ground-final-3d', // R2 resamples after Commit bounds; before Cleanup.
   'p30:group-gc', // 2026-09-08 G4 group 配套：Cleanup 相位（destroy-apply 之后摘除已销毁成员）
 ];
 

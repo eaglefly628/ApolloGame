@@ -1,5 +1,5 @@
 import type { IWorld } from '@engine/core/types.js';
-import type { Transform, Transform3D, Shape, Color, Sprite, Text, Visibility, Frame, Mesh3D, Model3D, Material3D, FaceDir } from '@engine/protocol/components.js';
+import type { Transform, Transform3D, Shape, Color, Sprite, Text, Visibility, Frame, Mesh3D, Model3D, Material3D, FaceDir, Collider3D } from '@engine/protocol/components.js';
 
 // 相机视图与世界↔屏幕投影已下沉为共享契约（renderer 正向投影 + clickable 逆向命中的单一真相）。
 // 此处重导出，保持既有 `@renderer/renderable` 消费者（canvas-renderer / 测试）的 import 不变。
@@ -26,6 +26,7 @@ export interface Renderable {
   model3d?: Model3D; // 可选「导入式 3D 模型」(glTF)：3D 后端据 modelKey 取资产解析显示；2D 后端无视（圆润模型，opt-in）
   transform3d?: Transform3D; // 可选「真三维位姿」：3D 后端据此把物体放进 XZ 地面 + Y 高度（盒庭）；2D 后端退化用 x,y 画正面
   material3d?: Material3D; // 可选 PBR 材质预设（TA Phase 5）：3D 后端据此用物理材质渲 Mesh3D；2D 后端无视
+  groundBaseY?: number; // GroundWalker3D opt-in：sim Collider3D 的有限脚高；只读，不由渲染回写
 }
 
 // 实体绘制模式选择（REQ-005）：**优先 Sprite** —— 有贴图且资产就绪即画贴图（给可碰撞实体"穿皮"，
@@ -76,6 +77,9 @@ export function collectRenderables(world: IWorld): Renderable[] {
     if (visibility && !visibility.visible) continue;
     const t = world.getComponent<Transform>(id, 'Transform')!;
     const sprite = world.getComponent<Sprite>(id, 'Sprite');
+    const walker = world.hasComponent(id, 'GroundWalker3D');
+    const collider = walker ? world.getComponent<Collider3D>(id, 'Collider3D') : undefined;
+    const baseY = collider?.baseY ?? 0;
     seen.add(id);
     out.push({
       entityId: id,
@@ -94,12 +98,14 @@ export function collectRenderables(world: IWorld): Renderable[] {
       mesh3d: world.getComponent<Mesh3D>(id, 'Mesh3D'),
       material3d: world.getComponent<Material3D>(id, 'Material3D'),
       model3d: world.getComponent<Model3D>(id, 'Model3D'),
-      transform3d: world.getComponent<Transform3D>(id, 'Transform3D'),
+      transform3d: walker ? undefined : world.getComponent<Transform3D>(id, 'Transform3D'),
+      ...(collider && Number.isFinite(baseY) ? { groundBaseY: baseY } : {}),
     });
   }
   // 纯 3D 实体（有 Transform3D、无 Transform）：x,y 取 3D 的 (x,y) 作 2D 后端退化位（3D 后端走 transform3d 真位姿）。
   for (const [id] of world.query('Transform3D')) {
     if (seen.has(id)) continue;
+    if (world.hasComponent(id, 'GroundWalker3D')) continue; // 坏 world 缺 sim Transform 时不借表现 T3 代替
     const visibility = world.getComponent<Visibility>(id, 'Visibility');
     if (visibility && !visibility.visible) continue;
     const t3 = world.getComponent<Transform3D>(id, 'Transform3D')!;

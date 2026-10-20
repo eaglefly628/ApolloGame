@@ -6,6 +6,7 @@ import type { CapabilityLoader } from './capability-index.js';
 
 export const CAPABILITY_LOADERS: readonly CapabilityLoader[] = [
   { id: 'a-scene-import-3d', provides: ['SceneImport3D'], load: () => import('@atom-skills/scene-import-3d/index.js').then((m) => m.sceneImport3dCapability) },
+  { id: 't2-ground-walk-3d', provides: ['GroundWalker3D', 'GroundSurface3D', 'GroundContact3D'], load: () => import('@skills/tier2/ground-walk-3d.js').then((m) => m.groundWalk3dCapability) },
   { id: 'a1-transform', provides: ['Transform'], load: () => import('@atom-skills/transform/index.js').then((m) => m.transformCapability) },
   { id: 'a2-hierarchy', provides: ['Hierarchy'], load: () => import('@atom-skills/hierarchy/index.js').then((m) => m.hierarchyCapability) },
   { id: 'b1-velocity', provides: ['Velocity'], load: () => import('@atom-skills/velocity/index.js').then((m) => m.velocityCapability) },
