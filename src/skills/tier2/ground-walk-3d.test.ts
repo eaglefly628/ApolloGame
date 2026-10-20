@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { World } from '@engine/core/world.js';
 import { topologicalSort } from '@engine/core/topological-sort.js';
 import type { SystemDeclaration } from '@engine/core/types.js';
-import type { Collider3D, DebugTrace, GroundContact3D, GroundSurface3D, GroundTeleport3D, Transform, Velocity } from '@engine/protocol/components.js';
+import type { Collider3D, DebugTrace, GroundContact3D, GroundSurface3D, GroundTeleport3D, GroundWalker3D, Transform, Velocity } from '@engine/protocol/components.js';
 import { bakeGroundSurface, type GroundPointQ, type GroundTriangleInput } from '@engine/spatial/ground-surface.js';
 import { hashSnapshot, hashWithOrder } from '../../net/determinism.js';
 import { groundWalk3dCapability as ground } from './ground-walk-3d.js';
@@ -243,13 +243,27 @@ describe('explicit GroundTeleport3D relocation', () => {
   const islands = () => bakeGroundSurface([...patch(0, 10000), ...patch(20000, 30000, 0, 10000, 30000)]);
   const teleport = (w: World, x: number, y = .5, id = 'actor'): void => w.addComponent(id, { type: 'GroundTeleport3D', x, y } as GroundTeleport3D);
   const actorState = (w: World, id = 'actor') => JSON.stringify(['Transform', 'Collider3D', 'Velocity', 'GroundContact3D'].map(type => w.getComponent(id, type)));
+  // Same-tick ground-pre/final re-walk from whatever the teleport wrote, which can
+  // mask a wrong write on continuous ground. Read the system's own output directly.
+  const atTeleportEnd = (w: World, id = 'actor') => {
+    const seen: { state?: string; baseY?: number; contact?: GroundContact3D } = {};
+    w.setObserver({ onSystemEnd: system => {
+      if (system.id !== 'ground-teleport-3d') return;
+      seen.state = actorState(w, id); seen.baseY = w.getComponent<Collider3D>(id, 'Collider3D')?.baseY;
+      seen.contact = structuredClone(w.getComponent<GroundContact3D>(id, 'GroundContact3D'));
+    } });
+    return seen;
+  };
 
   it('relocates across a hole to a high island, consumes the intent and is not rolled back afterwards', () => {
     const w = setup(islands()); actor(w, .5, 0); const log = trace(w); w.tick();
     // A bare Transform write is still judged as a walk and rolled back.
     position(w).x = 2.5; w.tick();
     expect(position(w).x).toBe(.5);
+    const seen = atTeleportEnd(w);
     teleport(w, 2.5); w.tick();
+    expect(seen.baseY).toBe(3);
+    expect(seen.contact).toMatchObject({ acceptedXQ: 25000, acceptedZQ: 5000, acceptedHeightQ: 30000, supported: true, rejected: false });
     expect(position(w)).toMatchObject({ x: 2.5, y: .5 });
     expect(body(w).baseY).toBe(3);
     expect(contact(w)).toMatchObject({ acceptedXQ: 25000, acceptedZQ: 5000, acceptedHeightQ: 30000, heightQ: 30000, supported: true, rejected: false });
@@ -268,20 +282,27 @@ describe('explicit GroundTeleport3D relocation', () => {
     expect(contact(w)).toMatchObject({ acceptedXQ: 26000, acceptedHeightQ: 30000 });
     expect(velocity(w).vx).toBe(.1);
   });
-  it('rejects unsupported, out-of-budget and malformed targets whole: zero writes, intent still consumed', () => {
-    for (const target of [1.5, 3.5, -.5, Number.NaN, 2e6]) {
+  it('rejects unsupported, out-of-budget, malformed and ineligible teleports whole: zero writes, intent still consumed', () => {
+    const cases: Array<[string, number, (w: World) => void, string]> = [
+      ['hole', 1.5, () => {}, 'outside walkable coverage'],
+      ['beyond the grid', 3.5, () => {}, 'outside walkable coverage'],
+      ['negative', -.5, () => {}, 'outside walkable coverage'],
+      ['NaN', Number.NaN, () => {}, 'finite planar metres'],
+      ['over budget', 2e6, () => {}, 'coordinate'],
+      ['invalid walker units', 2.5, w => { w.getComponent<GroundWalker3D>('actor', 'GroundWalker3D')!.maxStepUpQ = .5; }, 'not a valid ground walker'],
+      ['trigger body', 2.5, w => { body(w).trigger = true; }, 'invalid/trigger body'],
+      ['missing surface', 2.5, w => { w.removeComponent('surface', 'GroundSurface3D'); }, 'missing ground surface surface'],
+    ];
+    for (const [name, target, spoil, reason] of cases) {
       const w = setup(islands()); actor(w, .5, 0); const log = trace(w); w.tick();
-      const before = actorState(w);
-      // Observe right after the teleport system too: ground-pre would otherwise mask a
-      // partial write by rolling it back later in the same tick.
-      let afterTeleport: string | undefined;
-      w.setObserver({ onSystemEnd: system => { if (system.id === 'ground-teleport-3d') afterTeleport = actorState(w); } });
+      spoil(w);
+      const before = actorState(w), seen = atTeleportEnd(w);
       teleport(w, target);
-      expect(() => w.tick()).not.toThrow();
-      expect(afterTeleport).toBe(before);
-      expect(actorState(w)).toBe(before);
-      expect(w.hasComponent('actor', 'GroundTeleport3D')).toBe(false);
-      expect(log.events.some(event => event.system === 'ground-teleport-3d' && event.kind === 'reject' && event.what.includes('actors unchanged'))).toBe(true);
+      expect(() => w.tick(), name).not.toThrow();
+      expect(seen.state, name).toBe(before);
+      expect(actorState(w), name).toBe(before);
+      expect(w.hasComponent('actor', 'GroundTeleport3D'), name).toBe(false);
+      expect(log.events.some(event => event.system === 'ground-teleport-3d' && event.kind === 'reject' && event.what.includes('actors unchanged') && event.why?.includes(reason)), name).toBe(true);
     }
   });
   it('rejects an intent on a non-walker without touching that entity', () => {
@@ -303,7 +324,10 @@ describe('explicit GroundTeleport3D relocation', () => {
   });
   it('keeps the authored Transform target exact and samples at the collider offset', () => {
     const w = setup(); actor(w, .5, 0, 'actor', { offsetX: .75, offsetZ: -.25 }); w.tick();
+    const seen = atTeleportEnd(w);
     teleport(w, 2.25, .75); w.tick();
+    expect(seen.contact).toMatchObject({ acceptedXQ: 30000, acceptedZQ: 5000, heightQ: 15000 });
+    expect(seen.baseY).toBe(1.5);
     expect(position(w)).toMatchObject({ x: 2.25, y: .75 });
     expect(contact(w)).toMatchObject({ acceptedXQ: 30000, acceptedZQ: 5000, heightQ: 15000 });
     expect(body(w).baseY).toBe(1.5);

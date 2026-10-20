@@ -41,6 +41,22 @@
 | S3 把 Transform 写入挪到支撑检查前（部分写入） | 恰 1 红 `rejects unsupported…`：`expected '[{"type":"Transform","x":1.5…' to be '…"x":0.5…'`。**首轮这刀没咬住**——拍末状态会被同拍 ground-pre 回滚掩盖；已把断言加到 `onSystemEnd(ground-teleport-3d)` 时刻，再撤即红 |
 | S4 装载校验分支改 `if (false)` | 恰 1 红 `accepts an authored GroundTeleport3D…` |
 
+### 追加：定向变异复查（施工后自查·撤修验红之外的第二轮）
+
+对 `applyGroundTeleports` / `validGroundTeleport` 做 10 个定向变异（隔离 worktree，跑 `ground-walk-3d.test.ts` + `ground-walkers.test.ts`）。首轮 **5 个存活**，说明原测试有洞：
+
+| 变异 | 首轮 | 原因 | 补测后 |
+|---|---|---|---|
+| T2 不校验 walker 步高单位 | 存活 | 没有「非法 walker 传送」用例 | 杀（rejects… `invalid walker units`） |
+| T3 采样不加 Collider offset | 存活 | 同拍 ground-final 在连续坡上从错误接受点走到正确点，拍末自愈把错误掩盖 | 杀（在 `onSystemEnd(ground-teleport-3d)` 时刻断言 accepted 30000） |
+| T4 不写 baseY | 存活 | 同拍 ground-pre 重采高覆盖 | 杀（同上时刻断言 baseY） |
+| T8 不校验 trigger/非法 body | 存活 | 没有「trigger body 传送」用例 | 杀（`trigger body`） |
+| T10 去掉缺 surface 守卫 | 存活 | 采样照样抛错，只是理由不同 | 杀（拒收理由逐条点名 `missing ground surface`） |
+| T1/T5/T6/T9 | 杀 | — | 杀 |
+| T7 不按 id 排序处理意图 | 存活 | 各实体意图互不影响，只改 trace 文本顺序；sim 等价 | 记为等价变异 |
+
+教训：本能力的拍末状态会被同拍 pre/final「自愈」，只看拍末断言会放过写错的中间值——系统自身契约要在它刚跑完的时刻断言。
+
 ## 四、请重点判的三处
 
 1. **落相位 Input、晚挂意图延迟一拍**。好处：motion 之前就到位，同拍走路从目标点起；不碰 Update 里那串 runsAfter。代价：Update/Commit 产生的传送下一拍才生效。另一条路是在 `ground-pre-3d` 里也消费，但那会让同一意图有两个消费点，并碰 Update 定序。请核这个取舍。
