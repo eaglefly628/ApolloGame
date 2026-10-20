@@ -12,6 +12,14 @@
 > 原「交互与材质补全批」③ BlendSpace 由本单拉动转正（= E2）。复查人 ≠ 施工人。
 > **2026-10-16 owner 追加（判 A）**：**E6 剧情镜头编排**（render-only `CameraShot3D`·镜头表 + 信号触发 + 缓动·路线图 §3.5 R3）并入本单；**T5 同单交付 S3**「人工步骤回灌手册」（Tripo 网页局部重生成 · Mixamo 下载 · Auto-Rig Pro 标记确认：人做完放哪、脚本怎么接回）。
 
+## REQ-3D-ENV-LIFECYCLE · 修复既有Sky/Room/HDRI资源所有权 · [2026-10-21] · AI整链实测发现 → **P3D** · 施工主体 = Codex（2026-10-21 抢锁·本行即锁） · status: 施工中 · 优先级: P1 · 类型: 既有能力缺陷修复
+
+> 架构判断：修复已声明Sky3D/IBL的销毁/替换接线，不增capability或游戏逻辑。V1施工74cdf9619已交独立复查，本单独立锁、提交与复查，不改其冻结配置或替V1签人门。
+> 实证：`v1-construction-evidence-20261021/old-sky-failures/sky-env-room.json` 保留destroy时1texture/1native buffer；env0反例map.dispose=2。完整原路径在V1 Review。原生three源码/CPU分派核实：天空显式map.dispose重复disposeMesh所有权；PMREM返回output RT丢失；RoomEnvironment.dispose不释放临时InstancedMesh的instanceMatrix。
+> 最小范围：src/renderer/three-renderer.ts及必要的私有资源释放helper/测试；scripts中的隔离真实GPU生命周期探针/测试；本单Review、3D手册与本状态。沿用three原生转换，不更改Sky/Light协议、sim、游戏、PUI或旧暂停工单。
+> 验收：env0天空更改/移除/重建/重复destroy的独占map恰好dispose一次；Room PMREM保留output RT所有权并释放临时InstancedMesh；HDRI缺资源后到达、同key命中、A→B、成功→坏输入回退与destroy均释放拥有的eq/generator/旧新RT。保持缓存平台有界，日志准确记录拒收/回退，不能以forceContextLoss掩盖未delete资源。
+> 证据：CPU测试+每个关键修复unique-hit撤修验红；真实Chrome分别复现旧缺陷并验证修复后native buffer/texture/framebuffer/renderbuffer在context loss前收敛；完整门禁按当前主干全绿（game113旧基线已由fcbfe2f76修复）；另一位独立复查。上游PMREM未返回输出前的GPU内部异常不能在未实测时声称全面恢复。
+
 <!-- REQ-3D-TESTGAPS（P3D 测试面五项）owner 2026-10-16 令**暂停出池**——全文查 git 历史（git log -S REQ-3D-TESTGAPS）·重启时恢复原文 -->
 
 ## REQ-3D-RB-MATERIAL · `RigidBody3D.restitution` / `.friction` 声明了但 `spawn()` 从不读 —— 全库游戏的每张「弹性/摩擦」旋钮都是死的 · [2026-08-10] · PE-211 提（game211 大样本物理验证时撞出）→ **P3D** · status: open · 优先级: **P2（不吃表现·但会持续制造错误归因·见下方实测）** · 类型: 3D 线契约缺口（契约声明 ≠ 实现）
