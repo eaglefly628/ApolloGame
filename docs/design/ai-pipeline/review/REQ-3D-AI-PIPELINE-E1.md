@@ -70,3 +70,37 @@ ModelPool懒接本地Draco、内嵌WASM的meshopt模块和按GPU能力检测的K
 | E1定向 / 真实Chrome integration | 0 / 0（21项 / dev及build子路径） |
 
 本面未触发其它face guards。正式末行`❌ 门禁失败于 depcruise（退出码 1）`；余计划实际补跑末行`除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）`。完整日志`/private/tmp/aiflow-e1-final-{scoped,complete}.log`、各步及Vitest JSON。未签任何人门，独立复查另写最终判词。
+
+## 独立最终复查判词（2026-10-20）
+
+**PASS（E1范围）**。复查人与本阶段施工方分离；在独立目录`/private/tmp/apollo-e1-final-review-20261020`核验施工提交`685a3cd666c88efe2ee0add5acb0baf22dd59a60`，未以施工自证代替复跑。共享门禁的既有game113违规仍为红，不能据此宣称全库全绿；本判词不签生产人门，也不关闭3D总单或代验R4。
+
+### 独立复跑与实证
+
+- 21项定向测试全部通过（codec12、旧models2、vendor7）；逐文件版本、字节及SHA/许可完整性通过。
+- 真实Chrome`155.0.8059.85`运行正式integration，开发根路径和生产`/e1-subpath/`均exit0。raw/Draco/meshopt/KTX2每模型12三角形，三种压缩对raw的RGBA最大差均为0；目击截图为非空四色立方体。KTX2确为16×16 GPU compressed texture，共享同图片的两材质保留不同sampler。网络仅本地、BASE_URL正确，5个decoder构建分发字节不变。
+- 在冻结提交上另跑独立对抗：Draco/KTX2初始化WASM延迟后取消、实际decode/transcode任务发出后取消、重建新世代、KTX2 404与raw/Draco/meshopt并发。各取消后worker/Blob均0；404在pool.dispose前已无embedded KTX2 URL，坏模型不入缓存，另外三模型成功，ModelPool具名错误恰1次，无pageerror。
+- 旧`new ModelPool(assets)`真实加载raw/Draco/meshopt成功；KTX2明确报缺少WebGLRenderer，释放后worker/Blob均0。
+- 早期发现的244B `image/ktx2` URL泄漏已真实修复；未以忽略非decoder Blob或只等error回调替代永久无回调取消路径的清理。
+
+正式浏览器证据`/private/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-e1-real-6vaskI/report.json`及同目录8张截图；独立日志`/private/tmp/aiflow-e1-independent-final-{targeted,real,adversarial,legacy}.log`。普通mock仅作协议覆盖，以上压缩解码及失败/释放判据均实际执行本地three解码器。
+
+### 独立撤修验红
+
+只改独立副本，每项锚点断言恰命中1次、目标断言必须命中，finally恢复原字节；最终`git diff 685a3cd66 -- src scripts public`为空。
+
+| 独立撤修 | 命中证据 | 结果 |
+|---|---|---|
+| 删除Draco loader接线 | 定向测试`loader.draco`应为真实loader替身 | exit1，AssertionError，实际undefined |
+| 关闭KTX2 null纹理提升整模型失败 | 正式真实integration的404场景 | exit1，`failed real KTX2 must not cache an untextured model`，实际true而期望false |
+| 撤掉embedded KTX2 URL的scope所有权 | 原独立初始化取消复现 | exit1，`no embedded image or decoder Blob URL may survive disposal`，精确重现244B `image/ktx2`残留1、worker0 |
+
+撤修脚本`/private/tmp/e1-independent-final-red.mjs`；汇总`/private/tmp/e1-independent-final-withdrawal.{log,json}`及`/private/tmp/e1-independent-final-{draco-wiring,ktx-fail-closed,embedded-blob-cleanup}-red.log`。未撤改父施工树，未改测试断言来制造红灯。
+
+### 门禁与告警复核
+
+独立执行`scoped-gate --base 685a3cd66^ --run`确认为full，eslint0、depcruise1；唯一违规是既有`games/game113/guide-art.ts → src/assets/asset-index.ts`。继续完整补跑所得：原生node:test5项通过；tsc0、build0；全量Vitest **6015/6016通过，0 pending/todo**，唯一失败为对应`depcruise-fence`真仓零违规断言；docs-ref0、context-budget0、art-ledger-guard2（允许的既有WARN，无新增棘轮）。未跳过或改写失败断言，也未借普通mock替真实integration。
+
+已读告警：台账game-a/game-c死账及既有黑户、构建chunk>500kB；全量测试中的`[L,P]`定序环来自点名的system-graph成环fixture，happy-dom有localhost:3000拒连/teardown AbortError，均保留在日志且未冒充E1成功诊断。真实KTX2故障/取消保留three原生`Couldn't load texture`，正常路径无console/page错误、无Multiple active KTX2 loader警告，旧世代无新增ModelPool具名错误。未发现新增E1阻塞。
+
+门禁日志`/private/tmp/aiflow-e1-independent-final-{scoped,complete}.log`、各步日志与`/private/tmp/aiflow-e1-independent-final-vitest.json`。本结论只覆盖离线自产夹具和当前桌面Chrome；真实Tripo样本、移动设备性能及后续分组卸载不在此冒称通过。
