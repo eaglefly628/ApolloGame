@@ -50,4 +50,7 @@
 ## 五、门禁
 
 - 全量计划：`audit:game113 → inert-comp:game113 → eslint → depcruise → skill-shape-guard → sim-dom-fence → tsc → vitest:full → build → docs-ref → context-budget → art-ledger-guard`。
-- `audit:game113` 是 game113 自身存量红（React 屏×16·createElement×3·引擎同形手写×13·无基线），本次只改它一行 import，触发了这一步但没有改变判词——前后对照见提交说明。其余各步结果同见提交说明。
+- 除两步 game113 专属外全部按退出码通过（施工 HEAD `fcbfe2f7`）：eslint 0 · depcruise 0（施工前主干此步为红：game113 相对越界）· skill-shape 0 · sim-dom 0 · tsc 0 · **vitest 全量 661/661 文件·7043/7043 用例**（施工前主干 2 文件红：depcruise-fence 绿腿 + spritegen NoSuite）· build 0 · docs-ref 0 · context-budget 0 · art-ledger 2（存量死账·allowExit 放行档）。
+- 读告警：全量输出 `topological-sort` 仅 2 行，均为既有夹具环 `[L, P]`；无任何 ground/teleport 相关 WARN。
+- 两步 game113 专属是存量红：只要改动面碰 game113 就会被拉进门。本次只改它一行 import。**修改前主干隔离 worktree 对照**：`game-skill-audit game113` 输出逐字相同（RATCHET FAIL·React 屏×16·createElement×3·引擎同形手写×13·无基线）；`inert-component-guard game113` 输出逐字相同（无 blueprint.ts → 用法退出 2）。零新伤；豁免或返工归 game113 自身，不在本单。
+- 门禁当场咬住一处施工遗漏并已同提交补上：新增组件须 `component-manifest-guard --update` 更新共同零件基线（161→162）。
