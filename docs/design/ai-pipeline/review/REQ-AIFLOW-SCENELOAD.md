@@ -68,3 +68,24 @@
 本面无其它face guards。正式末行`❌ 门禁失败于 depcruise（退出码 1）`；余计划实际补跑末行`除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）`。日志`/private/tmp/aiflow-r4-scoped.log`、`/private/tmp/aiflow-r4-final-{complete,tsc,vitest-full,build,docs-ref,context-budget,art-ledger-guard,native}.log`与Vitest JSON；定向`/private/tmp/aiflow-r4-targeted.log`。
 
 正式复查人另写判词，本施工方未签任何人门。
+
+## 独立复查判词（2026-10-20）
+
+**R4 PASS；整体门禁仍有既有 game113 依赖围栏 1 例，不能称全库全绿。** 复查人与施工方及其 core/tests/renderer 子代理独立；从冻结提交 `955826af4c502f62ed52be870825a9cb12fdfc59` 建立 `/private/tmp/apollo-r4-formal-review-955826af4`，自行执行以下四步，未以施工自陈代替证据。全过程未修改施工树或原仓在途改动，最终源码及脚本 tracked diff 为 0；本次提交只追加本节。
+
+1. **独立复跑**：10 文件定向 **138/138**、另写的 observer/共享重试对抗 **5/5**，均 exit0。`scoped-gate --run --base HEAD^` 确认 FULL，eslint0，depcruise1且仅 `games/game113/guide-art.ts → src/assets/asset-index.ts`。独立完整 Vitest **6076/6077、pending/todo 均0**，唯一失败为同一 depcruise 绿腿；已核对 HEAD^ 中该 import 原已存在，R4 未改该文件或围栏配置。tsc/build/docs-ref/context-budget 均0，spritegen 原生 node:test **5/5、exit0**；art-ledger2为既有 WARN。
+   首轮完整测试受沙盒限制为6071/6077：额外3例 listen EPERM、2例浏览器探测失败。随后以 `require_escalated` 与固定 `RENDER_PROBE_CHROMIUM=/Applications/Google Chrome.app/Contents/MacOS/Google Chrome` 重跑全量，上述5例全部恢复；未删除或改写测试断言。日志 `/private/tmp/r4-independent-scoped-955826af4.log`、`/private/tmp/r4-independent-targeted-955826af4.log`、`/private/tmp/r4-independent-955826af4-{complete.json,vitest-escalated.log,vitest-escalated.json}`。
+2. **带命中断言的撤修验红**：在另一个隔离副本逐轮替换并 finally 恢复原字节；每个源码锚点均断言恰命中1次，且失败必须包含 AssertionError，未把运行故障当红灯。
+
+   | 独立撤修 | 自行量得的红灯 |
+   |---|---|
+   | 去掉 AssetManager 成功写缓存的 request identity 判断 | 晚到旧成功覆盖新代；对应测试 exit1、对象 identity 断言失败 |
+   | 去掉 ModelPool 成功回调的 parse identity 判断 | 旧 A 提前被接纳/覆盖新 A；两项对应测试 exit1、`old-a` 不等于 `new-a` |
+   | 对同一 parse 锚点运行独立真实 worker 竞态 probe | 旧真实 Draco 结果放回后，强制重建实例取到旧模板；exit1、`recreatedGeometrySame` 为 false |
+
+   撤修脚本 `/private/tmp/r4-independent-red-955826af4.mjs`；结果 `/private/tmp/r4-independent-955826af4-red.json`，各轮日志同前缀 `*-red.log`。恢复后与冻结源逐字节比较一致，正常独立5例及真实竞态重新通过。
+3. **实证复现**：独立5例覆盖 loading 通知内 clear并同名换组（旧I/O未启动）、逐key eviction 通知内重启多key组、成功进度通知内释放并立即重载、failed通知内重试、两失败组并发重试共享key且保留direct pin。既有真实 World/resolveBindings 的 ProgressBar/Label、fallback 私有this、initialGroup零多余I/O、旧API驻留、取消/clear世代测试亦自行复跑通过。
+   真实 Chrome `155.0.8059.85` 另跑三套：R4 raw/Draco/KTX2在dev根路径与build子路径各两代，共享组及几何/材质/纹理精确dispose通过；独立probe分别延迟真实Draco decode与Basis transcode回调，evict/reload单key时另一key照常完成，新代ready后放回旧回调，再sweep并重建实例，仍取新代geometry，最终worker/Blob均0；既有E1完整真实回归也exit0，压缩对raw像素max/mean均0，取消/失败清理通过。证据分别为 `/private/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-r4-real-kfMDSI/report.json`、`/private/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-r4-independent-race-5MTun4/report.json`、`/private/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-e1-real-WinXL9/report.json`。
+4. **读告警**：逐项查看定向/全量stderr、真实浏览器诊断及构建/台账输出。R4拒收、模拟失败、取消与stale丢弃日志均对应主动对抗输入；真实浏览器诊断无error，未见新增未处理异步错误。构建只有既有chunk体积提示；台账存量WARN与上述game113围栏明确保留，未隐去或扩大成R4免责项。
+
+结论仅覆盖已写R4契约：显式资源组、成功key数进度及现有UI数据源接线；不宣称自动推断世界切场景、字节进度或真实Tripo付费样本验收。本复查不签任何人审门；工单收口由施工负责人依据本独立结论处理。
