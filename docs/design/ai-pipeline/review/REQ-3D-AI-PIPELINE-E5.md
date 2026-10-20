@@ -84,3 +84,45 @@
 | 阴影修后E1 / R4真实回归 | 0 / 0 |
 
 构建仅既有chunk>500k提示；资产台账仅game-a art-03/game-c art-017在案缺文件WARN，未忽略其它失败。实际scoped末行`❌ 门禁失败于 depcruise（退出码 1）`；余计划实际补跑末行`除基线 depcruise 外全绿（含对应 vitest 围栏基线 1 例；其余退出码 0，台账 WARN=2 为既有允许档）`。完整输出`/private/tmp/aiflow-e5-delivery-{scoped,complete,tsc,vitest-full,build,docs-ref,context-budget,art-ledger-guard,skill-shape,sim-dom,native}.log`及Vitest JSON。所有恢复后的源码已冻结，正式复查另写判词。
+
+## 独立复查判词（2026-10-20）
+
+**E5 PASS；整体门禁仍被既有 game113 依赖围栏阻断，不能称全库全绿。** 复查方未参与施工，从精确提交 `f929ff38a85da8d3ea2eb80a6486a838a3bb9d84` 新建 `/private/tmp/apollo-e5-formal-review-f929ff38a`，撤修另用 `/private/tmp/apollo-e5-red-f929ff38a`。以下均为自行运行和读取的证据；未以施工自陈代替复跑，未改施工源码、工单状态或生产人门，本次提交只追加本节。
+
+1. **独立复跑与门禁**：14文件 **164/164**，包含154项永久测试及10项独立对抗；撤修恢复后再次164/164。独立对抗保留早期真实失败输入，覆盖重叠/内嵌/T形导航接缝、tetra球/盒/胶囊接触、SHA计算期间clear重载及metadata重登记；另外500个sphere和500个AABB固定样本，与经父旋转及非均匀缩放后的真实三角形最近点/相交参照分类一致。
+   正确双runner的新进程完整Vitest **6211/6212**、pending/todo均0，唯一failed suite为 `scripts/depcruise-fence.test.mjs` 的game113绿腿；原生 `node --test tools/spritegen-export.test.mjs` **5/5、exit0**。首轮误让Vitest收集该原生文件，另报NoSuite，属于运行方式错误，未作为可放行基线；已保留首轮日志并完整重跑。核对HEAD^确认game113导入、依赖规则及原生文件均未被E5修改。
+
+   | 独立门禁 | 实际退出码 |
+   |---|---:|
+   | scoped-gate FULL | 1：eslint0，depcruise1且仅game113旧越界 |
+   | tsc / build | 0 / 0 |
+   | skill-shape / sim-dom | 0 / 0：shape存量WARN无新增，sim零DOM |
+   | docs-ref / context-budget | 0 / 0 |
+   | art-ledger | 2：存量WARN |
+   | 正确runner完整Vitest / 原生node:test | 1（上述唯一围栏）/ 0 |
+
+   日志及JSON：`/private/tmp/e5-formal-f929ff38a-{scoped,complete,targeted,restored,vitest-correct-runner,native}.log`、同前缀 `complete.json` 与 `vitest-correct-runner.json`。首轮错误runner记录为同前缀 `vitest.log/json`，未覆盖。
+
+2. **带锚点命中的撤修验红**：12处源码锚点均断言恰命中1次，每轮finally逐字恢复；未修改测试断言，成功计入的变体均exit1且包含AssertionError。
+
+   | 独立撤修 | 实际红灯 |
+   |---|---|
+   | 去掉GLB SHA比较 / 去掉SHA完成后的request identity | 坏字节被接纳 / 旧代覆盖新代 |
+   | 去掉真实顶点父矩阵应用 | 世界顶点不再符合实际父层变换 |
+   | 把导航所有候选边当外边界 | 原重叠、内嵌、T形样例重新封路 |
+   | 去掉排除子树移除 / 去掉实例阴影材质归属 | 背景多出独立pick / 两实例不再拥有独立shadow材质 |
+   | 去掉启动catalog等待 / 去掉Engine装载前展开 | 首世界提前创建 / 未满足导入未原子拒收 |
+   | 球恢复旧nearest-vertex候选 / 去掉poly真实edge叉积 | 原tetra边外球、AABB分别恢复误碰 |
+   | 胶囊恢复centroid球近似 / 深穿退成交集宽度 | 原底帽接触恢复漏碰 / 包含形状退出深度错误 |
+
+   单独删除一组edge候选时，剩余候选仍覆盖该球样例，未转红，因此该尝试未计入有效撤修；随后撤回旧nearest-vertex候选集合才实红。脚本 `/private/tmp/e5-formal-f929ff38a-red.py`，有效12项汇总 `red.json`，逐项 `*-red.log`，原始过程 `red.log` 与 `red-last4.log`。恢复后源码tracked diff为0，并已重跑上述164项。
+
+3. **真实接缝复现**：在本独立副本重新运行固定Blender 4.5.14，两次真实作业GLB字节一致、两次候选字节一致，raw/真实Draco节点、矩阵及几何一致。新证据 `/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-scene-import-real-oMk9Kc`；raw SHA `5c78102c4184f39e4887021a0164c38e8095edbb6c02aaf23854b9e2dd6c6f66`，Draco SHA `e459eb269f7520d60779b951181989327c8041774e748e26574876f0616ba141`。
+   同两份文件各经真实bytes SHA→catalog→sync/async/direct各两世界，**12路×180tick** historySHA均 `21e4a70ba79393d6d48c1141b1b99839bffa4d1c35bbd7de79e2f50069adea6c`，末hash `16ca5bb2`。墙体首tick推出0.1m、末穿透0，路径额外绕行1m且到达误差0，真实spawn(-1,1)生成prefab一次，输入不变。错配Draco文件与raw候选明确SHA拒收、exit1。报告为同前缀 `engine-{raw,draco,stale-sha}.log`。
+   Chrome **155.0.8059.85** 在开发根路径和生产子路径分别运行raw及Draco，均用已验证catalog和同一expand产物；真实拾取arg固定 `imported-background/node-5`。载入/销毁后的像素hash分别为1162324544/4208641605，已实际查看前后截图；背景只留地板与墙，最终驱逐模型和几何均归零。四路CPU/render bounds误差约4.97e-5m、顶点误差约5.22e-5m，**warning/error均为空**。独立报告：raw `/private/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-e5-render-3Zb0oq/report.json`，Draco同父目录 `apollo-e5-render-u59I2s/report.json`。
+   阴影修补后的既有真实E1及R4也自行重跑exit0：`apollo-e1-real-REgPAY/report.json`、`apollo-r4-real-2NZucf/report.json`（同上述临时父目录）。E1三种压缩对raw像素差0，故障/取消后worker与Blob归零；R4两代共享组释放及几何/材质/纹理恰释放一次，最终memory归零，正常diagnostics为空。
+
+4. **读告警与成本核验**：已读取定向、完整测试、真实脚本、构建和守卫输出。完整测试的 `[L,P]` 成环来自点名system-graph成环fixture；happy-dom的localhost:3000拒连与teardown AbortError仍保留。实际Engine仅有原有Transform3D/Model3D/Pickable3D缺provider登记提示，runtime/topology新WARN为空；早期Caster.originEntity伪unknown-field已不出现。E1主动KTX2失败/取消仍有原生 `Couldn't load texture`，没有把它冒充正常路径告警。构建保留chunk>500kB提示，shape保留在案大壳/底层回收WARN，台账保留game-a/game-c死账及既有黑户，未扩大白名单。
+   独立测试侧还核验136/520/4104点的等价共面盒，SAT接触不变，坐标读取分别20268/71100/545532，均低于150次/点；没有退回所有顶点对的组合爆炸。该机观测约0.27/0.46/3.21ms每对，tetra胶囊约16µs；只是有限样本成本记录，不宣称高面碰撞体免费。脚本与日志为 `/private/tmp/e5-formal-f929ff38a-budget.ts`、同前缀 `budget.log`，sim未加入计时或随机。
+
+真实样例为自产离线Blender/Draco夹具，未消费付费Tripo，亦未代验Auto-Rig Pro授权插件或真实服务。结论限于已写E5契约：最终静态GLB确定性导入、已验证资产接线及碰撞/水平导航/拾取/出生/显示闭环。导航仍是同一水平面、cell0.5米、radius0、占据高1.8米；坡面和多层导航明确拒收，真实三角留给R2，不宣称贴地或第3波全部完成。本复查不签资产/生产人门，不关闭3D总单；R2由主程依据本独立结论另行抢锁。
