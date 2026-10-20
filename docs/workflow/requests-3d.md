@@ -12,7 +12,7 @@
 > 原「交互与材质补全批」③ BlendSpace 由本单拉动转正（= E2）。复查人 ≠ 施工人。
 > **2026-10-16 owner 追加（判 A）**：**E6 剧情镜头编排**（render-only `CameraShot3D`·镜头表 + 信号触发 + 缓动·路线图 §3.5 R3）并入本单；**T5 同单交付 S3**「人工步骤回灌手册」（Tripo 网页局部重生成 · Mixamo 下载 · Auto-Rig Pro 标记确认：人做完放哪、脚本怎么接回）。
 
-## REQ-3D-ENV-LIFECYCLE · 修复既有Sky/Room/HDRI资源所有权 · [2026-10-21] · AI整链实测发现 → **P3D** · 施工主体 = Codex（2026-10-21 抢锁·本行即锁） · status: 施工中 · 优先级: P1 · 类型: 既有能力缺陷修复
+## REQ-3D-ENV-LIFECYCLE · 修复既有Sky/Room/HDRI资源所有权 · [2026-10-21] · AI整链实测发现 → **P3D** · 施工主体 = Codex（2026-10-21 抢锁·本行即锁） · status: 已交·待独立复查 · 优先级: P1 · 类型: 既有能力缺陷修复
 
 > 架构判断：修复已声明Sky3D/IBL的销毁/替换接线，不增capability或游戏逻辑。V1施工74cdf9619已交独立复查，本单独立锁、提交与复查，不改其冻结配置或替V1签人门。
 > 实证：`v1-construction-evidence-20261021/old-sky-failures/sky-env-room.json` 保留destroy时1texture/1native buffer；env0反例map.dispose=2。完整原路径在V1 Review。原生three源码/CPU分派核实：天空显式map.dispose重复disposeMesh所有权；PMREM返回output RT丢失；RoomEnvironment.dispose不释放临时InstancedMesh的instanceMatrix。

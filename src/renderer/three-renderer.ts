@@ -130,10 +130,12 @@ export class ThreeRenderer implements RendererBackend {
   private skySig = '';
   private fogSig = '';
   // 环境光照（IBL·PMREM 中性影室·懒建一次）：金属/玻璃反射用。强度由 Sky3D.env 数据驱动。
-  private envTex: THREE.Texture | null = null;
+  private envTarget: THREE.WebGLRenderTarget | null = null; // Own the PMREM output, including its framebuffer/depth attachment.
   private envIntensity = -1; // 当前已设强度（脏标·变才写 scene.environmentIntensity）
-  private hdriTex: THREE.Texture | null = null; // 真 HDRI PMREM 环境贴图（REQ-3D ⑤·区别中性影室 envTex）
-  private hdriKey = ''; // 当前已装 HDRI 资产 key（脏标·变/就绪才重建）
+  private hdriTarget: THREE.WebGLRenderTarget | null = null; // Own the current HDRI PMREM output.
+  private hdriKey = '';
+  private hdriSource: ArrayBuffer | null = null; // A reloaded resource can reuse the same key.
+  private hdriWaitingKey = ''; // Log missing bytes once per waiting transition, without negative-caching them.
   // 2D-in-3D 扁平层（sprite/text/shape + 透明 Mesh3D fallback）
   private readonly meshes = new Map<string, THREE.Mesh>();
   private readonly glows = new Map<string, THREE.Sprite>(); // Glow3D 加性辉光精灵池
@@ -580,7 +582,7 @@ export class ThreeRenderer implements RendererBackend {
     const camTweenActive = !shot.frame && this.cameras.tickTween(cam3d?.tween, performance.now());
     // 命中闪白：据 Post3D.flash.trigger 算衰减量——>0 时折进 renderSig 持续重渲直至归零。
     const flashAmt = this.flash.update(post?.flash, performance.now());
-    const renderSig = `${ph}|${camSig(cam3d)}|shots:${shot.signature}|${shot.active ? this.frame : 'cs0'}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${this.debugIndices ? 'ix' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${camTweenActive ? this.frame : 'ct0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${billboardLive > 0 ? this.frame : 'bb0'}|${uvLive > 0 ? this.frame : 'uv0'}|${dissolveLive > 0 ? this.frame : 'ds0'}|${this.lines.contentSig(world)}|${this.diegetic.contentSig(world)}|${this.reflectors.contentSig(world)}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}|ag${this.assetReady.gen}`;
+    const renderSig = `${ph}|${camSig(cam3d)}|shots:${shot.signature}|${shot.active ? this.frame : 'cs0'}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${this.debugIndices ? 'ix' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${camTweenActive ? this.frame : 'ct0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${billboardLive > 0 ? this.frame : 'bb0'}|${uvLive > 0 ? this.frame : 'uv0'}|${dissolveLive > 0 ? this.frame : 'ds0'}|${this.lines.contentSig(world)}|${this.diegetic.contentSig(world)}|${this.reflectors.contentSig(world)}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}|sky:${this.skySig}|env:${this.scene.environment?.uuid ?? ''}:${this.scene.environmentIntensity}|ag${this.assetReady.gen}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -752,7 +754,7 @@ export class ThreeRenderer implements RendererBackend {
     this.attachmentSkippedWarnings.clear();
     if (!this.gl) return; // Constructed but never initialized (or WebGL creation failed).
     this.resizeObserver?.disconnect(); this.resizeObserver = undefined; // 断开容器观察者·防泄漏
-    if (this.sky) { this.scene.remove(this.sky); (this.sky.material as THREE.MeshBasicMaterial).map?.dispose(); disposeMesh(this.sky); this.sky = null; }
+    if (this.sky) { this.scene.remove(this.sky); disposeMesh(this.sky); this.sky = null; }
     for (const [, m] of this.meshes) { this.scene.remove(m); disposeMesh(m); }
     this.meshes.clear();
     for (const [, sp] of this.glows) { this.scene.remove(sp); (sp.material as THREE.SpriteMaterial).dispose(); }
@@ -782,8 +784,10 @@ export class ThreeRenderer implements RendererBackend {
     this.diegetic.dispose();
     this.models?.dispose(this.scene);
     this.lights?.dispose(this.scene);
-    if (this.envTex) { this.envTex.dispose(); this.envTex = null; this.scene.environment = null; }
-    if (this.hdriTex) { this.hdriTex.dispose(); this.hdriTex = null; this.hdriKey = ''; }
+    this.scene.environment = null;
+    this.envTarget?.dispose(); this.envTarget = null;
+    this.hdriTarget?.dispose(); this.hdriTarget = null;
+    this.hdriKey = ''; this.hdriSource = null; this.hdriWaitingKey = ''; this.envIntensity = -1;
     this.post?.dispose();
     if (liveThreeRenderers.delete(this) && liveThreeRenderers.size === 0) {
       for (const lut of sharedPhysicalLuts) lut.dispose();
@@ -817,12 +821,12 @@ export class ThreeRenderer implements RendererBackend {
   // 天空盒（Sky3D）：内面朝里的大球裹住盒庭，画布纹理。参数变才重建纹理；scroll 时云缓慢飘（render-only）。
   private syncSky(sky: Sky3D | null): void {
     if (!sky) {
-      if (this.sky) { this.scene.remove(this.sky); (this.sky.material as THREE.MeshBasicMaterial).map?.dispose(); disposeMesh(this.sky); this.sky = null; this.skySig = ''; }
+      if (this.sky) { this.scene.remove(this.sky); disposeMesh(this.sky); this.sky = null; this.skySig = ''; }
       return;
     }
     const sig = `${sky.top}|${sky.bottom}|${sky.clouds ? 1 : 0}|${sky.cloudTint ?? 0xffffff}`;
     if (!this.sky || this.skySig !== sig) {
-      if (this.sky) { this.scene.remove(this.sky); (this.sky.material as THREE.MeshBasicMaterial).map?.dispose(); disposeMesh(this.sky); }
+      if (this.sky) { this.scene.remove(this.sky); disposeMesh(this.sky); }
       const mat = new THREE.MeshBasicMaterial({ map: buildSkyTexture(sky), side: THREE.BackSide, depthWrite: false, fog: false, toneMapped: false });
       this.sky = new THREE.Mesh(new THREE.SphereGeometry(SKY_RADIUS, 32, 16), mat);
       this.scene.add(this.sky);
@@ -847,39 +851,57 @@ export class ThreeRenderer implements RendererBackend {
 
   // 程序化中性影室 PMREM 环境贴图（懒建一次·RoomEnvironment·与 sky 色彩解耦·稳定可预期）。HDRI 缺省/未就绪的 fallback。
   private roomEnv(): THREE.Texture {
-    if (!this.envTex) {
+    if (!this.envTarget) {
       const pmrem = new THREE.PMREMGenerator(this.gl);
       const room = new RoomEnvironment();
-      this.envTex = pmrem.fromScene(room, 0.04).texture; // 0.04=轻微模糊·柔反射
-      room.dispose();
-      pmrem.dispose();
+      try {
+        this.envTarget = pmrem.fromScene(room, 0.04); // 0.04=轻微模糊·柔反射
+      } finally {
+        // RoomEnvironment.dispose owns shared geometry/material, but not the
+        // InstancedMesh's separate instanceMatrix GPU buffer (three r184).
+        room.traverse(object => { if (object instanceof THREE.InstancedMesh) object.dispose(); });
+        room.dispose();
+        pmrem.dispose();
+      }
     }
-    return this.envTex;
+    return this.envTarget.texture;
   }
 
   // 真 HDRI 环境贴图（REQ-3D ⑤）：从 AssetManager 取 .hdr 字节（equirect）→ RGBELoader.parse → PMREM → 环境贴图。
   // 字节未就绪 → null（本帧回退程序化·就绪后自动切）。解析失败容错回退（不崩画面）。按 key 缓存·变才重建。
   private hdriEnv(key: string): THREE.Texture | null {
-    if (this.hdriKey === key) return this.hdriTex; // 此 key 已处理（成功=tex·**失败=null 也直接回**·别每帧重 parse 坏图·RENDERHYG 尾）
     const res = this.assets?.get(key);
-    if (!res || !isModelHandle(res.handle)) return null; // .hdr 以字节资产(ArrayBuffer)登记·未就绪则回退
+    if (!res || !isModelHandle(res.handle)) {
+      if (this.hdriWaitingKey !== key) console.debug('[renderer] HDRI bytes unavailable → fallback RoomEnvironment', key);
+      this.hdriWaitingKey = key;
+      return null; // Do not cache absence: bytes can arrive under this same key.
+    }
+    this.hdriWaitingKey = '';
+    const source = res.handle;
+    if (this.hdriKey === key && this.hdriSource === source) return this.hdriTarget?.texture ?? null;
+    let eq: THREE.DataTexture | undefined;
+    let pmrem: THREE.PMREMGenerator | undefined;
     try {
-      const hdr = new HDRLoader().parse(res.handle as ArrayBuffer); // equirect HDR → { data,width,height,type }
-      const eq = new THREE.DataTexture(hdr.data, hdr.width, hdr.height, THREE.RGBAFormat, hdr.type);
+      const hdr = new HDRLoader().parse(source);
+      eq = new THREE.DataTexture(hdr.data, hdr.width, hdr.height, THREE.RGBAFormat, hdr.type);
       eq.needsUpdate = true;
-      const pmrem = new THREE.PMREMGenerator(this.gl);
-      const tex = pmrem.fromEquirectangular(eq).texture;
-      eq.dispose();
-      pmrem.dispose();
-      if (this.hdriTex) this.hdriTex.dispose();
-      this.hdriTex = tex;
-      this.hdriKey = key;
-      return tex;
+      pmrem = new THREE.PMREMGenerator(this.gl);
+      const target = pmrem.fromEquirectangular(eq);
+      this.hdriTarget?.dispose();
+      this.hdriTarget = target;
+      this.hdriKey = key; this.hdriSource = source;
+      console.debug('[renderer] HDRI PMREM ready', key);
+      return target.texture;
     } catch (e) {
-      console.warn('[renderer] HDRI 环境贴图解析失败 → 回退程序化影室（纯表现·不影响玩法）', e);
-      this.hdriKey = key; // 记下·别每帧重试同一坏图
-      this.hdriTex = null;
+      this.hdriTarget?.dispose(); this.hdriTarget = null;
+      this.hdriKey = key; this.hdriSource = source; // Only memoize this failed byte object, not every future resource with its key.
+      console.warn('[renderer] HDRI 环境贴图解析失败 → 回退程序化影室（纯表现·不影响玩法）', key, e);
       return null;
+    } finally {
+      eq?.dispose();
+      pmrem?.dispose();
+      // Native PMREM does not expose an output if conversion throws before
+      // returning it. Its internal GPU-failure recovery is an upstream boundary.
     }
   }
 
