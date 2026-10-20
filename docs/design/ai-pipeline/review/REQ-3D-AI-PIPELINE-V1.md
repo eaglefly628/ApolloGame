@@ -72,3 +72,34 @@ CPU撤修使用制作期校准前快照f91e2bac…；收据明确记录该SHA，
 ## 交叉复查
 
 待未参与本段施工的独立复查方完成自己的复跑、撤修、实证与告警核对。本文不代表正式V1结案。
+
+
+### V1 离线整链独立复查判词（2026-10-21）
+
+复查人：独立复查代理，未参与本段施工。审查提交 `74cdf9619fd2fc54daf83c0dea56cb18344c94aa`，基底 `551c17e99360a4a6a14b439a2c7c608168065f5b`。**结论：该冻结配置的离线整链技术预验独立复查通过，无本段遗留阻塞；正式 V1、真实付费/授权来源、生产美术与真人 R1 仍未验证。** 施工 Review 仅作导航，本判词依据以下独立证据。
+
+在自有 Git 副本 `/private/tmp/apollo-v1-final-independent-20261021` 复查；全部 src/scripts 共1175项内容逐项与审查提交 Git blob 一致，8项冻结清单全吻合，最终manifest为 `2cede7f38b4b283580b136e46cd401ba1a84fe519d8bc4ac770c7a96ed18308a`。独立 full 以551c基底上的实际12文件delta分类为FULL，再完整执行门禁；不是无改动副本的空scoped。提交后的5份文档亦已复制Git原文字节，另跑docs/context均0。本段提交未改src、games或PUI；新基底的GroundTeleport及game113围栏修复均已纳入独立验证，不沿用旧dep/fence豁免。
+
+独立定向两文件24/24，exit0，failed/pending/todo均0。19个显式provider、6个实际资产key、停步后134tick reach、195tick发布后Commit显隐、独立导航与朝向、外部动作/IK/镜头及2000tick双World检查均复跑。另独立CLI复用现存真实T5/场景字节生成 `/private/tmp/apollo-v1-independent-real-bundle-20261021`，六份GLB与施工包逐字节一致，SHA与原骨架/外部动作保持，paid/production字段均false。自选9个坏输入：四项来源/批准旗标分别用true或字符串false，以及保留SHA却改导航几何的候选，全部在写输出前拒收。新基底上的自选实证还包括133/195tick恢复后重播到360保持snapshot/full与incremental hash一致，以及越界GroundTeleport意图只消费、完整结果等于正常V1对照。
+
+独立撤修有两处，均唯一锚点hit=1且精确恢复：①撤掉资产工具的paid/production输入守卫，原approval拒收断言实际变为promise resolved，exit1；恢复源SHA `a916955a…` 后24项再exit0。②只在自有manifest副本把held Attach.offset.x增加.05，真实浏览器在194→195tick、dt0、手位移0时测得把手跳 `.0499999936m`，原生连续性断言直接exit1，无TypeError或超时；副本精确恢复最终manifest SHA后，完整五节奏再exit0。canonical源码未被该数据对抗改动。
+
+最终独立真实GPU恢复报告为 `/private/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-v1-browser-XBIPAc/report.json`；首次全量重放为同目录上层的 `apollo-v1-browser-ndqOsI/report.json`，红灯为 `apollo-v1-browser-8pT1Hf/report.json`。使用固定Chrome、宿主授权环境，实际ANGLE Metal Apple M5。30/60/120Hz及每render追赶2/5tick均完成；五条2000tick哈希序列逐项相同，累计8695次sync纯读核对未改snapshot/full/incremental hash/writeSequence/version/dirty。60Hz零时间交接矩阵差 `5.960e-8`、把手位移 `2.079e-8m`；precontact手端误差 `4.174e-8m`、carry误差 `3.933e-8m`，实际抬升约.25m。骨纹理真实FLOAT读回误差0，最终挂件原生矩阵误差0，GPU矩阵最大误差约 `1.71e-7`。正常时间流逝下按逐render连续性断言验收，不将其位移冒称为0。
+
+真实PCF depthTexture经sampler2DShadow观察，idle深度hash `6798b29f` 至walk `9de068b8`（120Hz为 `e2607bdf`），骨纹理/像素亦确实变化；没有将阴影color attachment当深度证据。公开pick只命中当前可见壶，相机实际矩阵与Signal镜头独立采样一致。5次驱逐重载后稳定为7geometry/4texture/28个跟踪native buffer；含重载销毁113创建/113删除/live0，其余四次28/28/0，最终GPU geometry/texture与模型/动作/解析缓存均0。当前material-owned maps数量为0，不将空条件冒充纹理dispose或Sky/IBL覆盖。
+
+已实际目击自己的idle/walk/reach/precontact/contact/carry/held七张PNG：台面接触前后连续，壶最终明显离台；恢复重放七张PNG与已目击版本逐字节相同。方块替身、动作自然度和地面阴影条纹均不能作为生产画面质量通过。截图是阶段采样，不是连续录像。
+
+| 独立完整门禁 | actual exit / 结果 |
+|---|---|
+| eslint / depcruise / sim-DOM / tsc | 0 / 0 / 0 / 0 |
+| 原生spritegen node:test | 0；5/5，未混入Vitest |
+| 标准full Vitest（workers4/min1） | 0；663文件7067/7067，failedFiles空、failed/pending/todo均0 |
+| build / docs-ref / context-budget | 0 / 0 / 0 |
+| art-ledger-guard | 2；既有5黑户/2死账，缺来源0；game-a art-03及game-c art-017文件缺失仍保留 |
+
+已读完整定向日志、全量221个stderr上下文的167种去重正文/368条去重诊断，以及build/台账和GPU告警。L/P拓扑环属于具名定序负例；其余为Mock降级、坏输入/人门拒收、存储故障注入与HappyDOM localhost连接拒绝；build保留大于500kB chunk提示。无Unhandled/NoSuite/EPERM/NO_BROWSER汇总。GPU20条仅为5次初载和5次重载各自的Attach无drawable/IK模型未就绪两条，逐条核阶段与未就绪事实，steady无新增，未放宽告警断言。
+
+执行审计保留：最初一次轻量测试误设施工cwd，已剔除其独立证据资格并在自有树完整重跑；自写对抗脚本的输出目录与strict启动设置错误亦在修正验证环境后原样复跑，不作为产品基线或撤修红灯。最终所有正式验证均在独立树、正确strict与宿主环境完成。未修改施工/用户树，未提交推送、启动Blender、付费服务或填写真人批准。
+
+证据索引：独立副本 `.independent/final-review-evidence.json`、`commit-blob-verification.json`、`final-withdrawal.json`、`gpu-manifest-withdrawal.json`；`/private/tmp/apollo-v1-independent-full-steps.json`及各步日志、`/private/tmp/apollo-v1-final-independent-focused.json`、`/private/tmp/apollo-v1-final-independent-red.json`、`/private/tmp/apollo-v1-independent-warning-audit.json`、`/private/tmp/apollo-v1-independent-gpu-{red,restored}.log`。固定配置不启用Sky，导航记录的Sky/IBL旧生命周期缺陷仍须另单修复，本判词不覆盖它。正式V1、realArp/realMixamo/realTripo、productionApproved、humanR1均false。
