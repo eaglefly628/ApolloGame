@@ -138,6 +138,11 @@ describe('scoped-gate × game-skill-audit（audit 进推送门·只扫改动游�
 // ③ 美术面（scripts/art-replace*/main_entry/art_*）→ art-replace-smoke.py 步（红=拦）；
 // 未触发的面绝不进计划（不给无关改动加时长）。
 describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门）', () => {
+  it('facesOf：tools/spritegen-export 工具或其原生测试被改 → spritegenTest 命中·别的 tools 不触发', () => {
+    expect(facesOf(['tools/spritegen-export.mjs']).spritegenTest).toBe(true);
+    expect(facesOf(['tools/spritegen-export.test.mjs']).spritegenTest).toBe(true);
+    expect(facesOf(['tools/ui-audit.mjs', 'src/engine/core/world.ts']).spritegenTest).toBe(false);
+  });
   it('facesOf：dokiworld/<app>/** 非 .md → dokiApps 命中·纯 .md 与游戏目录不触发·去重排序（DOKI-APPS 后续①）', () => {
     expect(facesOf(['dokiworld/game108/src/main.ts', 'dokiworld/game108/tests/x.test.mjs', 'dokiworld/shared/src/a.mjs']).dokiApps).toEqual(['game108', 'shared']);
     expect(facesOf(['dokiworld/game108/README.md']).dokiApps).toEqual([]);
@@ -181,7 +186,7 @@ describe('scoped-gate × REQ-GUARDGATE（面触发守卫按改动面点名进门
   });
 
   it('facesOf：守卫脚本自身被改也触发各自守卫（改守卫先自证跑绿）', () => {
-    expect(facesOf(['games/game-a/rules.ts', 'docs/workflow/requests.md'])).toEqual({ artSmoke: false, syncSmoke: false, backupSmoke: false, platformStatic: false, workshopProvider: false, distStale: false, skillShape: false, creationLoop: false, simDom: false, dokiApps: [], slowLane: [] });
+    expect(facesOf(['games/game-a/rules.ts', 'docs/workflow/requests.md'])).toEqual({ artSmoke: false, syncSmoke: false, backupSmoke: false, platformStatic: false, workshopProvider: false, distStale: false, skillShape: false, creationLoop: false, simDom: false, spritegenTest: false, dokiApps: [], slowLane: [] });
     expect(facesOf(['main_entry/server.py']).platformStatic).toBe(true); // 蓝屏面（2026-08-25）：server.py 不带 art_ 前缀·此前零旗命中
     // 假产物面（2026-08-26）：工作台选供应商那段与 generate_api 此前同样零旗命中——
     // 改一行「兜底可以落 mock」就能让全站生成变成同一份固定样例，而没有任何门在验。
@@ -307,6 +312,7 @@ describe('scoped-gate 接线补牙（slowLane 正向 · docs-only 全量对账 �
       skillShape: { value: true, steps: ['skill-shape-guard'] },
       creationLoop: { value: true, steps: ['creation-loop-guard'] },
       simDom: { value: true, steps: ['sim-dom-fence'] },
+      spritegenTest: { value: true, steps: ['spritegen-node-test'] },
       dokiApps: { value: ['game108'], steps: ['doki-test:game108'] },
       slowLane: { value: ['acceptance'], steps: ['slow-lane:acceptance'] },
     };

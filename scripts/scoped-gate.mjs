@@ -158,6 +158,8 @@ export function facesOf(files) {
       || list.some((f) => f === 'tsconfig.sim.json' || f === 'types/sim-env.d.ts' || f === 'scripts/sim-dom-fence.mjs'),
     // dokiworld/** 的 node --test 没有别的门在验（DOKI-APPS 后续①·「写了测试没人跑」与 game108 恒石同形）：
     // 改动命中哪个 app 目录就跑哪个（.md 不算——纯文档改不了测试结果）。
+    // spritegenTest：tools/spritegen-export 的原生 node:test（vitest 已排除·见 vite.config）——改工具或测试即原生跑。
+    spritegenTest: list.some((f) => f.startsWith('tools/spritegen-export')),
     dokiApps: [...new Set(list.map((f) => { const m = f.match(/^dokiworld\/([a-z0-9-]+)\//); return m && !f.endsWith('.md') ? m[1] : null; }).filter(Boolean))].sort(),
     // 慢车道点名补跑（S18PANEL 交回件①·Lead 裁 B 案）：改动命中被快车道 exclude 的目标之被测物/测试本身
     // → 点名跑该目标（slow-lane-guard 警告态基线棘轮·存量红响亮放行不挡门·新红硬拦）。目标表住 guard 文件。
@@ -232,6 +234,7 @@ export function planFor(c, auditGames = [], faces = {}) {
       { name: 'art-sync-smoke', cmd: ['python3', ['scripts/art-sync-smoke.py']] },
       { name: 'auto-sync-smoke', cmd: ['python3', ['scripts/auto-sync-smoke.py']] },
     ] : []),
+    ...(faces.spritegenTest ? [{ name: 'spritegen-node-test', cmd: ['node', ['--test', 'tools/spritegen-export.test.mjs']] }] : []),
     // dokiworld app 测试（各包自跑 node --test·缺依赖由 runner 先 npm ci——同出包 job 口径）。
     ...(faces.dokiApps || []).map((app) => ({ name: `doki-test:${app}`, cmd: ['node', ['scripts/doki-app-test.mjs', app]] })),
     // 慢车道点名补跑（交回件①·B 案）：命中目标一次点名跑一批（guard 内部对基线棘轮判红/警）。
