@@ -11,7 +11,9 @@ import { CanvasRenderer } from '@renderer/index.js';
 import { QueuedInputSource, canvasPointerToScreen } from '@net/host/index.js';
 import { parseManifest } from '../assembly/manifest.js';
 import { resolveArtRefs } from '../assembly/resolve-art-refs.js';
-import { AssetManager, ImageAssetLoader, loadGameArtInto, artlibRecords } from '@assets/index.js';
+import { AssetManager, loadGameArtInto, artlibRecords } from '@assets/index.js';
+import { createManifestAssets, loadManifestSceneCatalog } from './scene-game-assets.js';
+import type { RendererBackend } from '@engine/core/types.js';
 
 const W = 640;
 const H = 400;
@@ -23,7 +25,13 @@ export function mountManifestGame(slug: string) {
     let onDown: ((e: PointerEvent) => void) | null = null;
     let canvas: HTMLCanvasElement | null = null;
     let ownedAssets: AssetManager | null = null;
+    let mountedRenderer: RendererBackend | null = null;
     const artAbort = new AbortController();
+    const destroyRenderer = (): void => {
+      const renderer = mountedRenderer; mountedRenderer = null;
+      try { renderer?.destroy(); }
+      catch (error) { console.error('[manifest-game] renderer cleanup failed', error); }
+    };
 
     void (async () => {
       // 1) manifest（tracked 纯数据=游戏本体）
@@ -41,14 +49,16 @@ export function mountManifestGame(slug: string) {
         const idx = await fetch('/assets/FreeArtLib/index.json').then((r) => (r.ok ? r.json() : null));
         if (idx) raw = resolveArtRefs(raw, artlibRecords(idx)).manifest;
       } catch { /* 无素材索引 → Shape 回退观感 */ }
-      const bp = parseManifest(raw);
-      if (dead) return;
+      if (dead) { console.info('[manifest-game] skip: startup cancelled'); return; }
       // 3) 皮肤资产：本地 index（gen/ 生成物 + 上传物）——就绪即换装，缺失=Shape 回退（观感承诺同已删 game-q 先例）
-      const assets = new AssetManager(new ImageAssetLoader());
+      const assets = createManifestAssets();
       ownedAssets = assets;
       // The shared data loader honors optional groups/initialGroup, retaining
       // legacy eager loading for indexes without a scene grouping declaration.
-      void loadGameArtInto(assets, slug, { indexSignal: artAbort.signal });
+      const sceneImports = await loadManifestSceneCatalog(assets, raw, slug, artAbort.signal);
+      if (dead) return;
+      const bp = parseManifest(raw, { sceneImports });
+      if (!sceneImports) void loadGameArtInto(assets, slug, { indexSignal: artAbort.signal });
       if (dead) return;
       // 4) 引擎 + 渲染 + 指针
       const input = new QueuedInputSource(slug);
@@ -57,8 +67,12 @@ export function mountManifestGame(slug: string) {
       // 渲染后端选择：缺省 CanvasRenderer；`?renderer=webgl2` → WebGL2 实例化批渲原型（REQ-3D-RENDER-EFFICIENCY
       //   增量②·上千同类实体 draw 坍缩）。动态 import 让 GL 代码只在 opt-in 时进包（不拖累缺省 canvas 消费者）。
       const wantWebgl = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('renderer') === 'webgl2';
-      let renderer;
-      if (wantWebgl) {
+      let renderer: RendererBackend & { pick?: (x: number, y: number) => { signal: string; arg: string } | null };
+      if (sceneImports) {
+        const { ThreeRenderer } = await import('@renderer/three-renderer.js');
+        if (dead) return;
+        renderer = new ThreeRenderer({ width: W, height: H, assets });
+      } else if (wantWebgl) {
         try {
           const { WebGLRenderer } = await import('@renderer/webgl/webgl-renderer.js');
           if (dead) return;
@@ -70,10 +84,17 @@ export function mountManifestGame(slug: string) {
       } else {
         renderer = new CanvasRenderer({ width: W, height: H, background: 'transparent', assets });
       }
+      mountedRenderer = renderer;
       engine.attachRenderer(renderer, container);
       canvas = container.querySelector('canvas');
       if (canvas) {
         onDown = (e: PointerEvent) => {
+          if (renderer.pick) {
+            const hit = renderer.pick(e.clientX, e.clientY);
+            if (hit) input.enqueueAction(hit.signal, { arg: hit.arg });
+            else console.info('[manifest-game] skip: pointer hit no pickable model');
+            return;
+          }
           const c = canvas!;
           const rect = c.getBoundingClientRect();
           const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
@@ -83,7 +104,14 @@ export function mountManifestGame(slug: string) {
         canvas.addEventListener('pointerdown', onDown);
       }
       engine.start();
-    })();
+    })().catch(error => {
+      ownedAssets?.clear();
+      destroyRenderer();
+      engine?.stop();
+      if (dead || artAbort.signal.aborted) { console.info('[manifest-game] skip: startup cancelled'); return; }
+      console.error('[manifest-game] reject: startup failed', error);
+      container.textContent = '场景资源未就绪，请检查资源记录。';
+    });
 
     return () => {
       dead = true;
@@ -91,6 +119,7 @@ export function mountManifestGame(slug: string) {
       ownedAssets?.clear();
       if (canvas && onDown) canvas.removeEventListener('pointerdown', onDown);
       engine?.stop();
+      destroyRenderer();
       container.innerHTML = '';
     };
   };

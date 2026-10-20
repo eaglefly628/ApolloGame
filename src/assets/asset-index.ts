@@ -1,3 +1,4 @@
+import { parseSceneImportData, type SceneImportData } from './scene-import-data.js';
 import type { AssetManager } from './asset-manager.js';
 import type { TextureDescriptor, AtlasDescriptor, SpriteSheetDescriptor, Rect, AssetGroups } from './asset-types.js';
 import { generatorSpecOf, resolveGeneratedSrc } from './texture-generators.js';
@@ -174,6 +175,8 @@ export interface TextureSpec {
 }
 /** mesh spec：可选T4规范化实测元数据；genCollision消费另行实现。 */
 export interface MeshSpec {
+  /** E5 generated from the final GLB, never hand-authored geometry. */
+  scene?: SceneImportData;
   scale?: number;
   genCollision?: MeshCollision;
   /** T4 baked normalization metadata; absent on legacy assets. */
@@ -262,6 +265,7 @@ function validateSpec(type: AssetType, spec: Record<string, unknown> | undefined
     }
   } else if (type === 'mesh') {
     mustNum('scale');
+    if (spec.scene !== undefined) parseSceneImportData(spec.scene);
     if (spec.genCollision !== undefined && !inSet(MESH_COLLISIONS, spec.genCollision)) badEnum('genCollision', MESH_COLLISIONS);
     if (spec.up !== undefined && spec.up !== 'Y') badEnum('up', ['Y']);
     if (spec.pivot !== undefined && spec.pivot !== 'bottom-center') badEnum('pivot', ['bottom-center']);
@@ -319,7 +323,7 @@ export function registerAssetIndex(manager: AssetManager, index: AssetIndex, bas
       }
       manager.register(descriptor);
     } else if (e.type === 'mesh') {
-      manager.register({ kind: 'model', key: e.id, src });
+      manager.register({ kind: 'model', key: e.id, src, ...(e.spec?.scene !== undefined ? { scene: parseSceneImportData(e.spec.scene) } : {}) });
     }
     // material（数据型·无文件）不进 AssetManager 加载路径 → 走 buildMaterialCatalog；sound/… 后续增量。
   }

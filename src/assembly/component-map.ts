@@ -5,6 +5,7 @@
 // 放此 assembly 层：可同时 import protocol(低层) 与 skills，避免 protocol→skill 倒挂。
 // 新增组件 = 在对应域文件/skill 加 interface(extends Component) + 在此登记一行。
 import type {
+  SceneImport3D,
   Acceleration,
   Action,
   Anim3D,
@@ -172,6 +173,7 @@ import type { IntentBarrier, IntentInbox } from '@skills/tier2/intent-barrier-co
 import type { Vfx2D } from '@atom-skills/vfx2d/index.js';
 
 export interface ComponentDataMap {
+  SceneImport3D: Omit<SceneImport3D, 'type'>;
   Acceleration: Omit<Acceleration, 'type'>;
   Action: Omit<Action, 'type'>;
   Anim3D: Omit<Anim3D, 'type'>;

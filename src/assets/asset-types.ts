@@ -1,3 +1,5 @@
+import type { SceneImportData } from './scene-import-data.js';
+
 // 资产(美术)类型层 —— 表现层概念，不是 skill、不进确定性 sim。
 //
 // 设计铁律：sim 侧只持有 `textureKey`(字符串，可哈希、可回滚)；真实像素/模型只在
@@ -82,6 +84,8 @@ export interface PrerenderedSequenceDescriptor {
  */
 export interface ModelDescriptor {
   readonly kind: 'model';
+  /** E5 generated scene data; source bytes are verified before assembly use. */
+  readonly scene?: SceneImportData;
   readonly key: string;
   readonly src: string; // 模型文件地址（相对 baseUrl）或 data: URI
 }
@@ -136,6 +140,8 @@ export type AssetHandle = unknown;
 
 /** 已加载资产：句柄 + 内在像素尺寸(供整图帧 / 渲染缩放用)。 */
 export interface LoadedAsset {
+  /** Present only after the model bytes passed scene SHA256 verification. */
+  readonly scene?: SceneImportData;
   readonly descriptor: AssetDescriptor;
   readonly handle: AssetHandle;
   readonly width: number;

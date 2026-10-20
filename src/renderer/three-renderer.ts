@@ -14,7 +14,7 @@ import { buildPbrMesh3D, buildPbrGeoMat, pbrTransmissive, pbrSig, applyMaterialR
 import { hashPoses, camSig, postSig } from './three/stats.js';
 import { LightRig } from './three/lights.js';
 import { PostPipeline, FlashDecay } from './three/post.js';
-import { ModelPool } from './three/models.js';
+import { ModelPool, modelSelectorSig } from './three/models.js';
 import { modelYawFromFaceDir, turnModelYaw, modelMotionSpeed } from './three/model-motion.js';
 import { InstancedBatches, type InstGroups, type PbrBatchBuild } from './three/batches.js';
 import { CameraRig, CameraShake, FollowDamper, type DampedCenter } from './three/camera-rig.js';
@@ -125,6 +125,7 @@ export class ThreeRenderer implements RendererBackend {
   private readonly textSig = new Map<string, string>();
   // 拾取包围盒（Pickable3D·render-only 输入层）：每帧 sync 捕获·pick() 射线求交。entityId → 世界 AABB + 信号名。
   private readonly pickables = new Map<string, { cx: number; cy: number; cz: number; hx: number; hy: number; hz: number; signal: string }>();
+  private readonly modelPickBounds = new THREE.Box3();
   // W1-C 脏标跳渲 + profiler
   private cpuMs = 0;
   private rendered = false;
@@ -253,6 +254,7 @@ export class ThreeRenderer implements RendererBackend {
     this.gl.info.reset(); // 手动重置 → calls/triangles 跨 scene+post 全 pass 累加（真·每帧 draw 数）
     const seen = new Set<string>();
     const poses: Pose3D[] = [];
+    const modelSigs: string[] = [];
     const instGroups: InstGroups = new Map(); // W1-A：不透明 Mesh3D 按视觉签名分批
     const pbrBuilders = new Map<string, PbrBatchBuild>(); // PBR 批构建器（REQ-3D-PBR-INSTANCING·按材质签名·渲染器持贴图解析器故在此建闭包）
     this.frame++;
@@ -302,6 +304,7 @@ export class ThreeRenderer implements RendererBackend {
     for (const r of collectRenderables(world)) {
       // 导入式 glTF 模型（Model3D）：圆润真模型。位姿与 Mesh3D 同套路。未就绪本帧不画（向后兼容）。
       if (r.model3d) {
+        modelSigs.push(JSON.stringify([r.entityId, modelSelectorSig(r.model3d), r.model3d.scale, r.model3d.tint]));
         const obj = this.models.ensure(this.scene, r.entityId, r.model3d);
         this.assetReady.mark(r.model3d.modelKey, !!obj); // 就绪版本号：迟到模型就绪同样迫使重绘（静态场景防吞帧）
         if (obj) {
@@ -324,6 +327,16 @@ export class ThreeRenderer implements RendererBackend {
           if (pose.quat) obj.quaternion.set(pose.quat[0], pose.quat[1], pose.quat[2], pose.quat[3]);
           else obj.rotation.set(pose.rx ?? 0, pose.ry ?? 0, pose.rotZ);
           obj.scale.set(pose.sx * ms, pose.sy * ms, (pose.sz ?? 1) * ms);
+          const pk = pickSet.get(r.entityId);
+          if (pk) {
+            obj.updateWorldMatrix(true, true);
+            const bounds = this.modelPickBounds.setFromObject(obj, true);
+            if (!bounds.isEmpty()) this.pickables.set(r.entityId, {
+              cx: (bounds.min.x + bounds.max.x) / 2, cy: (bounds.min.y + bounds.max.y) / 2, cz: (bounds.min.z + bounds.max.z) / 2,
+              hx: (bounds.max.x - bounds.min.x) / 2, hy: (bounds.max.y - bounds.min.y) / 2, hz: (bounds.max.z - bounds.min.z) / 2,
+              signal: pk.signal,
+            });
+          }
           if (r.model3d.tint !== undefined) this.models.tint(r.entityId, r.model3d.tint);
           const anim = world.getComponent<AnimState3D>(r.entityId, 'AnimState3D'); // 骨骼动画（render-only·播 glTF clip）
           if (anim) this.models.applyAnim(r.entityId, anim.speedAtVelocity === undefined ? anim : {
@@ -421,7 +434,7 @@ export class ThreeRenderer implements RendererBackend {
     // W1-C 脏标跳渲：渲染签名（投影体姿 + 相机 + 灯 + 后处理 + 天空云飘帧 + 粒子/物理/骨骼动画活跃帧）。与上帧一致 → 跳过
     // instanceMatrix 上传 + 阴影 + render（画面不变·省 CPU/GPU/带宽）——「低开销」最大单点。
     const post = getPost3D(world);
-    const ph = hashPoses(poses);
+    const ph = `${hashPoses(poses)}|models:${modelSigs.join(';')}`;
     // 震屏：先算 trauma 偏移（据壁钟衰减）——active 时折进 renderSig 持续重渲直至回正。
     const shakeOff = this.camShake.update(cam3d?.shake, performance.now());
     // 跟随柔化：follow 模式对 target 位做指数平滑 + lookAhead 预读——settling(未收敛) 时折进 renderSig 持续重渲直至贴合。

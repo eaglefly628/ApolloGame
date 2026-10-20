@@ -1,5 +1,5 @@
 import type { Transform, Collider3D } from '@engine/protocol/components.js';
-import { boxToPoly, satPolyPoly3, satPolySphere3, type Poly, type V3 } from './sat3d.js';
+import { boxToPoly, satPolyPoly3, satPolySphere3, satPolyCapsule3, type Poly, type V3 } from './sat3d.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  3D 逻辑碰撞 · 接触几何（REQ-3D-Collision · P1 + P2·hull）。
@@ -115,9 +115,9 @@ function contactHull(a: C3, b: C3): Contact3 | null {
   const poly = aP ?? bP!;
   // 非多面体的那个 = pt 或 seg（box/hull 已被 asPoly 吸收·此处必为球/段）。
   const small = (aP ? b : a) as Extract<C3, { t: 'pt' | 'seg' }>;
-  // 段（胶囊）→ 取段上离多面体心最近的 Y 的单球（轻量·够角色站台/撞墙·保守）。
-  const cy = small.t === 'seg' ? clamp(poly.c.y, small.y0, small.y1) : small.y;
-  const sep = satPolySphere3(poly, { x: small.x, y: cy, z: small.z }, small.r); // 法线 = 多面体→球
+  const sep = small.t === 'seg'
+    ? satPolyCapsule3(poly, { x: small.x, y: small.y0, z: small.z }, { x: small.x, y: small.y1, z: small.z }, small.r)
+    : satPolySphere3(poly, { x: small.x, y: small.y, z: small.z }, small.r); // 法线 = 多面体→球/胶囊
   if (!sep) return null;
   // satPolySphere3 给的是 poly→球。poly 就是 a → 已是 A→B；否则 poly 是 b → 取反成 A→B。
   return aP ? sep : { nx: -sep.nx, ny: -sep.ny, nz: -sep.nz, depth: sep.depth };

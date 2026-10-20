@@ -20,7 +20,7 @@ function indexOf(loaders: readonly CapabilityLoader[]): CapabilityIndex {
 
 /** 校验 + 按需装载能力 → 可运行 WorldBlueprint（带推断/告警信息）。loaders 可注入（测试/子集）。 */
 export async function parseManifestDetailedAsync(raw: unknown, opts: ParseOptions = {}, loaders: readonly CapabilityLoader[] = CAPABILITY_LOADERS): Promise<ParseResult> {
-  const prep = prepareManifest(raw, indexOf(loaders));
+  const prep = prepareManifest(raw, indexOf(loaders), opts);
   const caps = await loadCapabilities(prep.capIds, loaders);
   return finishManifest(prep, caps, opts);
 }

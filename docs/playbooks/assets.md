@@ -21,7 +21,7 @@
 | 加贴图/模型/图集/精灵表 | `asset-manager` agent | 维护 `assets/index.json` 单一真相 + 按类型填 spec |
 | AI 序列帧制作、切帧和 GIF 预览 | `.claude/skills/spritegen/SKILL.md` + `tools/spritegen-export.mjs` | 离线生成与人审；导出已有 `AssetIndex.spec.sheet` / 单行 `Image.sprite` 数据。不新增运行时依赖，不保证动作质量；上游许可记录见 THIRD-PARTY-NOTICES |
 | 批量灌入共享货架（图标/emoji 系列） | `scripts/import-art-pack.mjs` · `import-emoji.mjs` | 整包从 GitHub 拉取→sniff→盖 style/license/source/provenance→并入 `assets/index.json`（加一个包=加一条 PACKS 配置，纯数据）；细节见 `docs/workflow/art-library-handoff.md` |
-| 贴图/网格 spec 元数据 | spec 闭集 | usage/colorSpace/wrap/genCollision（贴图）· scale/up/pivot/tris/bytes（T4规范化模型）——闭集，非自由字段 |
+| 贴图/网格 spec 元数据 | spec 闭集 | usage/colorSpace/wrap/genCollision（贴图）· scale/up/pivot/tris/bytes（T4规范化模型）·scene（E5最终GLB自动烘焙，装载先验SHA；见scene-import契约）——闭集，非自由字段 |
 | 3D 材质数据资产 | `Material3D`（type:'material'） | 引 texture key（走上面 art:/index），非硬编码预设 |
 | 消费端接线 | `Sprite`/`Frame`/`Material3D` | 渲染组件的 key 指向已登记资产（见 rendering-fx.md / 3d.md） |
 

@@ -12,7 +12,7 @@ export * from './manifest-core.js';
 
 /** 校验 + 加载规范 manifest → 可运行 WorldBlueprint（带推断/告警信息）。 */
 export function parseManifestDetailed(raw: unknown, opts: ParseOptions = {}): ParseResult {
-  const prep = prepareManifest(raw, CAPABILITY_INDEX);
+  const prep = prepareManifest(raw, CAPABILITY_INDEX, opts);
   return finishManifest(prep, resolveCapabilities(prep.capIds), opts);
 }
 

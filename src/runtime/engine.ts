@@ -1,6 +1,8 @@
 import { World } from '@engine/core/world.js';
 import type { Component, RendererBackend, IWorld } from '@engine/core/types.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
+import { expandSceneImports } from '../assembly/scene-import.js';
+import type { SceneImportCatalog } from '@assets/scene-import-data.js';
 // 直指本体模块而非 @net/index 桶：桶再导出 mp-world → playground.assembly → 十几个原子能力的静态 import，
 // 会把它们全部拖进每个卡带外壳（P2e 摇树实证：桶一换本体，10 能力卡带少 ~60 KB 源码）。
 import { FixedStepClock } from '@net/fixed-step.js';
@@ -41,7 +43,13 @@ export class Engine {
     return this._tickRate;
   }
 
-  load(blueprint: WorldBlueprint): void {
+  load(blueprint: WorldBlueprint, options: { sceneImports?: SceneImportCatalog } = {}): void {
+    // Validate/expand the whole import before tick rate, systems or entities change.
+    const entities = expandSceneImports(blueprint.entities, options.sceneImports);
+    const existing = new Set(this.world.query().map(([id]) => id));
+    for (const id of Object.keys(entities)) {
+      if (existing.has(id)) throw new Error(`engine.load: entity id conflict "${id}"`);
+    }
     if (blueprint.meta?.tickRate !== undefined) this._tickRate = blueprint.meta.tickRate; // 蓝图是游戏的数据·它说了算
     for (const cap of blueprint.capabilities) {
       for (const system of cap.systems) {
@@ -49,7 +57,7 @@ export class Engine {
       }
     }
 
-    for (const [entityId, components] of Object.entries(blueprint.entities)) {
+    for (const [entityId, components] of Object.entries(entities)) {
       this.world.createEntity(entityId);
       for (const [type, data] of Object.entries(components)) {
         this.world.addComponent(entityId, { ...data, type } as Component);

@@ -3,6 +3,7 @@ import { World } from '@engine/core/world.js';
 import type { Caster, Signal, SpawnRequest, Transform, Tag, InputQueue, PrefabLibrary, PrefabTemplate } from '@engine/protocol/components.js';
 import { casterCapability } from './caster.js';
 import { prefabCapability } from './prefab.js';
+import { validateComponentData } from '@assembly/validate-manifest.js';
 
 const ENEMY = 1 << 2;
 const xf = (x: number, y: number): Transform => ({ type: 'Transform', x, y, rotation: 0, scaleX: 1, scaleY: 1 });
@@ -25,6 +26,10 @@ function caster(w: World, id: string, c: Omit<Caster, 'type'>, t?: Transform): v
 }
 
 describe('caster — 元数据 / 定序', () => {
+  it('authoring schema accepts the existing originEntity anchor contract without a spurious field warning', () => {
+    const report = validateComponentData([casterCapability], { binding: { Caster: { onSignal: 'deploy', template: 'actor', at: 'self', originEntity: 'spawn-anchor' } } });
+    expect(report.errors).toEqual([]); expect(report.warnings).toEqual([]);
+  });
   it('id 正确 + runsAfter event-when/clickable（信号已就绪后再读）', () => {
     expect(casterCapability.id).toBe('t3-caster');
     expect(casterCapability.systems[0].runsAfter).toEqual(expect.arrayContaining(['event-when', 'clickable']));

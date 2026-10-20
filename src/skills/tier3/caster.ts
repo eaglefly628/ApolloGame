@@ -65,6 +65,7 @@ export const casterCapability = defineCapability({
         describe: '声明「onSignal 信号到达时，按 at 算坐标产出 SpawnRequest{template}」。at=self/pointer/target；target 用 targetTag 索敌。',
         fields: {
           onSignal: { type: 'string', describe: '触发释放的信号名（clickable/event-when/输入绑定产出）' },
+          originEntity: { type: 'EntityId', describe: '可选生成/索敌锚点实体；缺省使用施法者自身' },
           template: { type: 'string', describe: 'PrefabLibrary 里的模板 id' },
           at: { type: 'string', describe: "生成位置：'self'|'pointer'|'target'" },
           targetTag: { type: 'number', describe: "at:'target' 时索敌的阵营位（Tag.flags & targetTag；缺省找最近任意）" },

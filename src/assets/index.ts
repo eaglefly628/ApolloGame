@@ -109,3 +109,5 @@ export {
   type PlanAction,
 } from './import/normalize.js';
 export { gridDims, gridCells, sheetSpec, atlasFrames, type GridParams } from './import/slice.js';
+
+export { parseSceneImportData, verifySceneImportBytes, type SceneImportKind, type SceneImportNode, type SceneImportData, type SceneImportCatalog } from './scene-import-data.js';

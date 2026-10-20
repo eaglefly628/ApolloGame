@@ -3,6 +3,10 @@
 import { describe, it, expect } from 'vitest';
 import { contact3d, aabb3dOf, aabb3Overlap } from './contact3d.js';
 import type { Transform, Collider3D } from '@engine/protocol/components.js';
+import { World } from '@engine/core/world.js';
+import { hashSnapshot } from '@net/index.js';
+import { overlapDetect3dCapability } from '@atom-skills/overlap-detect-3d/index.js';
+import { collisionResolve3dCapability } from '@atom-skills/collision-resolve-3d/index.js';
 
 const T = (x: number, z: number): Transform => ({ type: 'Transform', x, y: z, rotation: 0, scaleX: 1, scaleY: 1 });
 const sphere = (radius: number, baseY = 0): Collider3D => ({ type: 'Collider3D', kind: 'sphere', radius, baseY });
@@ -106,8 +110,8 @@ describe('contact3d · hull(凸多面体·P2)', () => {
     const tilted = hullBox(5, 1, 5, YAW45, 0); // 扁平斜台：y∈[-1,1]（顶面 y=1）·XZ 菱形半宽 5
     const onTop = contact3d(T(0, 0), tilted, T(1, 1), capsule(2, 7, -1)); // 角色压在台上
     expect(onTop).not.toBeNull();
-    // 分离轴朝向（几何摆位可推）：胶囊(r=2,h=7,baseY=-1) 核心段 y∈[1,4]，代理球取段上离台心
-    // (y=0) 最近的 y=1 → 球心 (1,1,1)。SAT 各轴穿透：台面法线 +Y 轴 = (顶面1) - (球底-1) = 2；
+    // 分离轴朝向（几何摆位可推）：胶囊(r=2,h=7,baseY=-1) 核心段 y∈[1,4]。
+    // SAT 各轴穿透：台面法线 +Y 轴 = (顶面1) - (胶囊底-1) = 2；
     // 两水平菱形轴 = 5+2-|投影| ≈ 4/5.6 —— 最小轴是 +Y（角色站台=竖直分离半空间），A(hull)→B(胶囊) 朝上。
     expect(onTop!.ny).toBeCloseTo(1);
     expect(onTop!.nx).toBeCloseTo(0);
@@ -121,5 +125,34 @@ describe('contact3d · hull(凸多面体·P2)', () => {
     const h1 = contact3d(T(0, 0), t, T(2.3, 1.7), sphere(1.5, -1));
     const h2 = contact3d(T(0, 0), t, T(2.3, 1.7), sphere(1.5, -1));
     expect(JSON.stringify(h1)).toBe(JSON.stringify(h2));
+  });
+});
+
+describe('contact3d · hull capsule integration and rollback', () => {
+  const tetra: Collider3D = {type:'Collider3D',kind:'hull',verts:[0,0,0,2,0,0,0,2,0,0,0,2],axes:[1,0,0,0,1,0,0,0,1,1,1,1]};
+  it('zero length capsule equals sphere through Collider3D, and A/B swaps reverse normals', () => {
+    for (const [x,y,z] of [[.2,.3,.4],[1.1,1.1,-.1],[2.1,-.1,-.1],[.7,.7,.7]]) {
+      const s=sphere(.2,y!-.2),c=capsule(.2,.4,y!-.2);
+      const a=contact3d(T(0,0),tetra,T(x!,z!),s),b=contact3d(T(0,0),tetra,T(x!,z!),c);
+      expect(a).toEqual(b);
+      const reverse=contact3d(T(x!,z!),c,T(0,0),tetra);
+      expect(reverse!.depth).toBe(b!.depth);
+      expect(reverse!.nx).toBeCloseTo(-b!.nx,12);expect(reverse!.ny).toBeCloseTo(-b!.ny,12);expect(reverse!.nz).toBeCloseTo(-b!.nz,12);
+    }
+  });
+  it('real hull/capsule overlap and response replay to the same snapshot hash after rollback', () => {
+    const world=new World();
+    world.addSystem(overlapDetect3dCapability.systems[0]!);world.addSystem(collisionResolve3dCapability.systems[0]!);
+    world.createEntity('a-hero');world.addComponent('a-hero',T(1.8,.1));world.addComponent('a-hero',capsule(.15,1.8));
+    world.addComponent('a-hero',{type:'Velocity',vx:1,vy:0,angular:0});
+    world.createEntity('b-tetra');world.addComponent('b-tetra',T(0,0));world.addComponent('b-tetra',tetra);
+    const snapshot=world.snapshot(),order=world.snapshotOrder();
+    world.tick();
+    expect(world.getComponent<Transform>('a-hero','Transform')!.x).toBeGreaterThan(1.8);
+    for(let i=0;i<5;i++)world.tick();
+    const hash=hashSnapshot(world.snapshot());
+    world.restore(snapshot,order);
+    for(let i=0;i<6;i++)world.tick();
+    expect(hashSnapshot(world.snapshot())).toBe(hash);
   });
 });

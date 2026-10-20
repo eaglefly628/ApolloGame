@@ -112,6 +112,9 @@ export interface Model3D extends Component {
   modelKey: string; // 资产 key → glTF 模型（AssetManager 解析；蓝图只持 key·不塞 URL/二进制）
   scale?: number; // 等比缩放覆盖（缺省 1；与 Transform3D.scale 叠乘）
   tint?: number; // 可选整体染色 0xRRGGBB（缺省用模型自带材质）
+  nodeIndex?: number; // 原 glTF 节点 index；缺省显示整个模型（不按节点名字寻址）
+  excludeNodes?: readonly number[]; // 排除这些原节点及其整个子树
+  origin?: readonly number[]; // 从模型全局坐标减去的中心 XYZ；实体位姿在重定位之后应用
 }
 
 // ── AnimState3D（render-only，骨骼动画播放 · 3D 后端）──────────────────────────────────────

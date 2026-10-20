@@ -1,3 +1,4 @@
+import { parseSceneImportData, verifySceneImportBytes, type SceneImportCatalog } from './scene-import-data.js';
 import type {
   AssetDescriptor,
   AssetEviction,
@@ -98,7 +99,8 @@ export class AssetManager {
 
   /** 注册单个描述符(覆盖同 key)。注册不触发加载。 */
   register(descriptor: AssetDescriptor): void {
-    this.descriptors.set(descriptor.key, descriptor);
+    const owned = descriptor.kind === 'model' && descriptor.scene ? { ...descriptor, scene: parseSceneImportData(descriptor.scene) } : descriptor;
+    this.descriptors.set(descriptor.key, owned);
   }
 
   /** 注册一份清单(数据驱动，可来自 JSON)。 */
@@ -145,23 +147,32 @@ export class AssetManager {
       fail = no;
     });
     const request = {} as { promise: Promise<LoadedAsset> };
+    const acceptAsset = (asset: LoadedAsset): LoadedAsset => {
+      if (this.inflight.get(key) === request) {
+        this.loaded.set(key, asset);
+        this.inflight.delete(key);
+      } else {
+        console.info(`AssetManager: discard stale asset result ${JSON.stringify(key)}`);
+        this.releaseAsset(asset);
+      }
+      return asset;
+    };
+    const failAsset = (error: unknown): never => {
+      if (this.inflight.get(key) === request) this.inflight.delete(key);
+      else console.info(`AssetManager: discard stale asset failure ${JSON.stringify(key)}`);
+      throw error;
+    };
     const promise = io
       .then(({ handle, width, height }) => {
         const asset: LoadedAsset = { descriptor, handle, width, height };
-        if (this.inflight.get(key) === request) {
-          this.loaded.set(key, asset);
-          this.inflight.delete(key);
-        } else {
-          console.info(`AssetManager: discard stale asset result ${JSON.stringify(key)}`);
-          this.releaseAsset(asset);
+        if (descriptor.kind === 'model' && descriptor.scene) {
+          return verifySceneImportBytes(descriptor.scene, handle).then(
+            scene => acceptAsset({ ...asset, scene }),
+            error => { this.releaseAsset(asset); return failAsset(error); },
+          );
         }
-        return asset;
-      }, (error: unknown) => {
-        // 旧请求不能删除同 key 的下一代请求。
-        if (this.inflight.get(key) === request) this.inflight.delete(key);
-        else console.info(`AssetManager: discard stale asset failure ${JSON.stringify(key)}`);
-        throw error;
-      });
+        return acceptAsset(asset);
+      }, failAsset);
     request.promise = promise;
     this.inflight.set(key, request);
     // 保留旧 API 同步启动 I/O 的行为，同时把 loader 同步抛错归一成 Promise 拒绝。
@@ -368,6 +379,22 @@ export class AssetManager {
       catch (error) { console.error(`AssetManager: eviction observer failed: ${JSON.stringify(assetErrorMessage(error))}`); }
     }
     if (asset) this.releaseAsset(asset);
+  }
+
+  /** Only verified, currently loaded scene models may become assembly input. */
+  sceneImportCatalog(requiredKeys?: readonly string[]): SceneImportCatalog {
+    const result: Record<string, NonNullable<LoadedAsset['scene']>> = Object.create(null) as Record<string, NonNullable<LoadedAsset['scene']>>;
+    const keys = requiredKeys ?? [...this.loaded.keys()].filter(key => this.loaded.get(key)?.scene);
+    for (const key of keys) {
+      const asset = this.loaded.get(key), descriptor = this.descriptors.get(key);
+      if (!asset?.scene || descriptor?.kind !== 'model' || !descriptor.scene
+        || JSON.stringify(descriptor.scene) !== JSON.stringify(asset.scene)) {
+        console.warn(`AssetManager: reject unverified or stale scene ${JSON.stringify(key)}`);
+        throw new Error(`AssetManager: scene ${JSON.stringify(key)} must be loaded and SHA256 verified before assembly`);
+      }
+      result[key] = asset.scene;
+    }
+    return Object.freeze(result);
   }
 
   /** 加载所有已注册资产。 */

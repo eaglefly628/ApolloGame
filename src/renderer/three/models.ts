@@ -13,8 +13,74 @@ import { ModelCodecs } from './model-codecs.js';
 //  未就绪本帧不画（向后兼容·同 sprite 先例）。纯表现·不写 sim/hash。
 // ═══════════════════════════════════════════════════════════════
 
-interface Tpl { scene: THREE.Object3D; clips: THREE.AnimationClip[]; resources: ModelResources; } // 模板：场景图 + glTF 动画
+interface Tpl { scene: THREE.Object3D; clips: THREE.AnimationClip[]; resources: ModelResources; nodes: ReadonlyMap<number, THREE.Object3D>; } // 模板：场景图 + glTF 动画
 interface Anim { mixer: THREE.AnimationMixer; clips: THREE.AnimationClip[]; clip?: string; action?: THREE.AnimationAction; }
+
+// Instance identity is separate from modelKey resource ownership (R4).
+export function modelSelectorSig(model: Model3D): string {
+  return JSON.stringify([model.modelKey, model.nodeIndex ?? null, model.excludeNodes ?? [], model.origin ?? []]);
+}
+
+function skeletonsOf(object: THREE.Object3D): Set<THREE.Skeleton> {
+  const skeletons = new Set<THREE.Skeleton>();
+  object.traverse(node => { const skeleton = (node as THREE.SkinnedMesh).skeleton; if (skeleton) skeletons.add(skeleton); });
+  return skeletons;
+}
+
+function cloneSelection(tpl: Tpl, model: Model3D): THREE.Object3D {
+  // Clone the full tree first so SkeletonUtils can resolve all bone references.
+  const cloned = cloneSkinned(tpl.scene);
+  const clones = new Map<THREE.Object3D, THREE.Object3D>();
+  const pair = (source: THREE.Object3D, copy: THREE.Object3D): void => {
+    clones.set(source, copy);
+    source.children.forEach((child, i) => pair(child, copy.children[i]));
+  };
+  pair(tpl.scene, cloned);
+  const skeletons = skeletonsOf(cloned);
+  const node = (index: number): THREE.Object3D => {
+    const source = tpl.nodes.get(index), result = source && clones.get(source);
+    if (!result) {
+      for (const skeleton of skeletons) skeleton.dispose();
+      throw new Error(`ModelPool: model "${model.modelKey}" has no glTF node ${index} in its selected scene`);
+    }
+    return result;
+  };
+  const selected = model.nodeIndex === undefined ? cloned : node(model.nodeIndex);
+  // Resolve exclusions before pruning, since a selected node can itself be excluded.
+  const excluded = (model.excludeNodes ?? []).map(node);
+  let object = cloned;
+  if (model.nodeIndex !== undefined || model.origin !== undefined) {
+    object = new THREE.Group(); // Renderer applies entity pose only to this outer object.
+    const offset = new THREE.Group();
+    offset.position.set(-(model.origin?.[0] ?? 0), -(model.origin?.[1] ?? 0), -(model.origin?.[2] ?? 0));
+    object.add(offset);
+    if (model.nodeIndex !== undefined) {
+      const source = tpl.nodes.get(model.nodeIndex)!;
+      tpl.scene.updateWorldMatrix(true, true);
+      // Parent rotation + nonuniform scale may produce shear. Keep the complete
+      // matrix rather than decomposing it into lossy Euler/scale components.
+      const ancestors = new THREE.Group();
+      ancestors.matrixAutoUpdate = false;
+      if (source.parent) ancestors.matrix.copy(source.parent.matrixWorld);
+      offset.add(ancestors);
+      ancestors.add(selected);
+    } else offset.add(cloned);
+  }
+  for (const removed of excluded) {
+    // Excluding an ancestor of a selected node must also exclude that selection,
+    // even though it has now been detached from its cloned ancestor hierarchy.
+    const source = tpl.nodes.get(model.nodeIndex ?? -1);
+    let excludesSelection = false;
+    for (let ancestor = source; ancestor; ancestor = ancestor.parent ?? undefined) {
+      if (clones.get(ancestor) === removed) { excludesSelection = true; break; }
+    }
+    if (excludesSelection) selected.removeFromParent();
+    else removed.removeFromParent();
+  }
+  const retained = skeletonsOf(object);
+  for (const skeleton of skeletons) if (!retained.has(skeleton)) skeleton.dispose();
+  return object;
+}
 
 // Own parser resources before the full scene is ready: a failed/cancelled parse
 // may already have decoded geometry or textures while another dependency waits.
@@ -137,6 +203,7 @@ export class ModelPool {
   private readonly instances = new Map<string, THREE.Object3D>(); // 每实体已放置的实例（template 的 clone）
   private readonly mats = new Map<string, THREE.Material[]>(); // 每实例自有材质（clone 出·供染色/独立释放）
   private readonly keyOf = new Map<string, string>(); // 实体当前 modelKey（变了才重建实例）
+  private readonly selectorOf = new Map<string, string>(); // selector 改变也须重建，不改变模板按 key 的归属
   private readonly cache = new Map<string, Tpl>(); // 按 modelKey 的已解析模板（解析一次·多实例 clone）
   private readonly state = new Map<string, 'pending' | 'failed'>(); // 解析中/失败（避免每帧重复 parse）
   private readonly anims = new Map<string, Anim>(); // 每实体骨骼动画混合器（模型有 clip 时）
@@ -152,11 +219,12 @@ export class ModelPool {
   ensure(scene: THREE.Scene, entityId: string, m: Model3D): THREE.Object3D | null {
     this.subscribeEviction();
     const prev = this.instances.get(entityId);
-    if (prev && this.keyOf.get(entityId) === m.modelKey) return prev;
+    const selector = modelSelectorSig(m);
+    if (prev && this.selectorOf.get(entityId) === selector) return prev;
     if (prev) this.removeInstance(scene, entityId);
     const tpl = this.template(m.modelKey);
     if (!tpl) return null;
-    const obj = cloneSkinned(tpl.scene); // SkeletonUtils.clone：正确克隆骨架/蒙皮（每实例独立动画·共享几何）
+    const obj = cloneSelection(tpl, m);
     const mats: THREE.Material[] = [];
     const cloneMat = (src: THREE.Material): THREE.Material => { const c = src.clone(); mats.push(c); return c; };
     obj.traverse((o) => {
@@ -164,12 +232,32 @@ export class ModelPool {
       if (!mesh.isMesh) return;
       mesh.castShadow = true;
       mesh.receiveShadow = true; // 盒庭里模型与地台互投软影
+      // r184 reuses a shared shadow material whose null-map transition can keep
+      // a disposed template texture in its uniforms. Own shadow variants per
+      // instance, just like the visible clone materials. Multi-material meshes
+      // may still switch feature flags between groups, so invalidate that variant
+      // only when those shader flags change.
+      const depth = new THREE.MeshDepthMaterial(), distance = new THREE.MeshDistanceMaterial();
+      mesh.customDepthMaterial = depth; mesh.customDistanceMaterial = distance;
+      mats.push(depth, distance);
+      const signatures = new WeakMap<THREE.Material, string>();
+      const before = mesh.onBeforeShadow;
+      mesh.onBeforeShadow = function (...args) {
+        before.apply(this, args);
+        const shadow = args[5] as THREE.MeshDepthMaterial | THREE.MeshDistanceMaterial;
+        const signature = JSON.stringify([!!shadow.map, !!shadow.alphaMap, !!shadow.displacementMap, shadow.alphaTest > 0, shadow.side, ('wireframe' in shadow ? shadow.wireframe : false), shadow.clippingPlanes?.length ?? 0, shadow.clipIntersection]);
+        if (signatures.get(shadow) !== signature) {
+          shadow.needsUpdate = true;
+          signatures.set(shadow, signature);
+        }
+      };
       const src = mesh.material;
       mesh.material = Array.isArray(src) ? src.map(cloneMat) : cloneMat(src);
     });
     this.instances.set(entityId, obj);
     this.mats.set(entityId, mats);
     this.keyOf.set(entityId, m.modelKey);
+    this.selectorOf.set(entityId, selector);
     if (tpl.clips.length > 0) this.anims.set(entityId, { mixer: new THREE.AnimationMixer(obj), clips: tpl.clips });
     scene.add(obj);
     return obj;
@@ -225,17 +313,13 @@ export class ModelPool {
       mixer?.uncacheRoot(obj);
       // SkeletonUtils clones skeletons, while geometry and material textures
       // remain template-owned. Bone textures belong to each cloned skeleton.
-      const skeletons = new Set<THREE.Skeleton>();
-      obj.traverse((node) => {
-        const skeleton = (node as THREE.SkinnedMesh).skeleton;
-        if (skeleton) skeletons.add(skeleton);
-      });
-      for (const skeleton of skeletons) skeleton.dispose();
+      for (const skeleton of skeletonsOf(obj)) skeleton.dispose();
     }
     for (const mm of this.mats.get(id) ?? []) mm.dispose();
     this.instances.delete(id);
     this.mats.delete(id);
     this.keyOf.delete(id);
+    this.selectorOf.delete(id);
     this.anims.delete(id);
   }
 
@@ -297,7 +381,12 @@ export class ModelPool {
           for (const scene of gltf.scenes ?? [gltf.scene]) resources.capture(scene);
           if (this.parsing.get(key) !== resources) { resources.dispose(); return; }
           this.parsing.delete(key);
-          this.cache.set(key, { scene: gltf.scene, clips: gltf.animations ?? [], resources });
+          const nodes = new Map<number, THREE.Object3D>();
+          gltf.scene.traverse(object => {
+            const index = gltf.parser?.associations?.get(object)?.nodes;
+            if (index !== undefined) nodes.set(index, object);
+          });
+          this.cache.set(key, { scene: gltf.scene, clips: gltf.animations ?? [], resources, nodes });
           this.state.delete(key);
         }, failed);
       } finally { loader.unregister(plugin); }

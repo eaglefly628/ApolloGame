@@ -1,6 +1,7 @@
 import type { CapabilityDefinition } from '@engine/core/define-capability.js';
 import { buildCapabilityIndex, inferCapabilityIdsWith, metaOf, unknownCapabilityError } from './capability-index.js';
 import { allAtomCapabilities, extensionAtomCapabilities } from '@atom-skills/index.js';
+import { sceneImport3dCapability } from '@atom-skills/scene-import-3d/index.js';
 import {
   motionApplyCapability,
   accelApplyCapability,
@@ -85,6 +86,7 @@ import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapa
 // ═══════════════════════════════════════════════════════════════
 
 export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
+  sceneImport3dCapability,
   ...allAtomCapabilities,
   ...extensionAtomCapabilities,
   // tier1
