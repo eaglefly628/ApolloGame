@@ -82,3 +82,32 @@
 ## 交叉复查
 
 待独立复查人在冻结提交上复跑、撤修验红、实证与读告警。施工方不在此填写自己的 PASS。
+
+
+### 独立交叉复查判词（2026-10-21）
+
+**结论：E2 在本单声明的离线动作资产与通用运行时范围内通过独立复查。** 复查主体为单独的交叉复查会话，未参与产品施工；以下为复查方自己执行所得，不以施工方的退出码或撤修报告代签。全库仍有 owner 已允许的 game113 围栏基线，不能称全库零红。
+
+审查对象为施工提交 `2240c493b055c75ca4c4d8d456a6965fbf688fb0`，基线锁 `28e384aa2`。复查树 `/private/tmp/apollo-e2-independent-20261021` 独立复制源码、脚本、配置、游戏、文档及资产；仅复用已安装依赖。32 个改动源码/测试/脚本逐字节与该提交的 Git blob 相等，核对记录 `/private/tmp/apollo-e2-independent-commit-source-check.json`。未修改施工树或用户主工作区，未自行提交/推送，未启动原生 Blender。
+
+1. **独立复跑。** 先分别跑 13 文件/237 项与 14 文件/122 项定向及回归；覆盖物理资产/正式宿主、闭集装载、参数纯读、真实 GLTFLoader、骨架与模型池、旧动画语义、hash、E1/R4/E5 接缝。最终直接执行 full 计划并补 sim-DOM 面守卫，不把无 Git 元数据副本的零改动分类冒充 scoped 全量。`tools/spritegen-export.test.mjs` 独立按 node:test 执行，未混入 Vitest 制造 NoSuite。
+2. **自选撤修验红。** 仅在独立树，把 `NON_DETERMINISTIC` 中唯一锚点 `'AnimState3D', 'AnimGraph3D', 'Anim3D'` 的图排除摘掉，先断言 `hit=1`。`src/net/animation-graphs.test.ts` 实际 2 红/4 绿、退出1；恢复原字节后 6/6、退出0，恢复 SHA256 为 `83ffb5ef66f743672c26b92a4b251ed9d08f5f1a00342162b62701c412afc76d`。证据为 `/private/tmp/apollo-e2-independent-revert-red.log` 与 `/private/tmp/apollo-e2-independent-restored-green.log`。
+3. **问题先实证、原例复验。** 复查方新建两条反例：闭集合法点 `[-Number.MAX_VALUE,+Number.MAX_VALUE]`，速度0实际错出权重1/0，速度MAX/2实际出NaN/NaN，两条均断言失败。施工方修补后，复查方重跑同一原反例得到 .5/.5 与 .25/.75，实际骨骼 x 为5与7.5；永久31项（含tiny及次正规数）也全过。修补源码 SHA256 `ac0057c90ffe898f8166d37c01dd9fbe0e078d238674f5b30dad5c89bab8638b`、测试 SHA256 `8c731c14a8959090c3c1523828dadf0d76e4dd9cee4cff1b6804d98d555daf0f` 已对账。原红与复绿日志分别为 `/private/tmp/apollo-e2-independent-adversarial.log`、`/private/tmp/apollo-e2-independent-overflow-fixed.log`；原独立反例另存 `/private/tmp/apollo-e2-independent-original-adversarial.ts.txt`，未算入正式全量。
+4. **读告警。** 定向、全量 stdout/stderr、守卫与构建告警均检查；mock降级/坏输入/缺资源拒收来自对应反例，`[L,P]` 拓扑环出自 system-graph 的互 emit/listens 用例。构建仍提示既有大 chunk；HappyDOM 还打印 localhost:3000 的连接拒绝，未算作零告警，也未造成额外测试失败。Vitest 没有 Unhandled Errors 汇总；E2 实际浏览器运行的 diagnostics 为空。
+
+独立全量首轮未开放本地端口且未传固定 Chrome，量得额外3例 `listen EPERM` 与2例 `NO_BROWSER`。这些没有豁免为通过；保留 `-sandbox-first-*` 日志后，正常申请宿主执行权限、显式 `RENDER_PROBE_CHROMIUM=/Applications/Google Chrome.app/Contents/MacOS/Google Chrome` 重跑完整 Vitest（maxWorkers4/minWorkers1），未改断言或超时，再续构建与文档守卫。
+
+| 独立检查 | 实际结果 |
+|---|---|
+| node:test Spritegen | 5/5，退出0 |
+| eslint / sim-DOM / tsc | 各退出0 |
+| dependency-cruiser | 退出1；恰一条 `games/game113/guide-art.ts → src/assets/asset-index.ts` 已授权基线 |
+| full Vitest | 643 文件，6738/6739；仅对应 depcruise-fence 的「绿腿：真仓零违规」基线1例，退出1，无 pending/todo |
+| build / docs-ref / context-budget | 各退出0 |
+| art-ledger-guard | 退出2，既有允许 WARN；game-a/game101 基线黑户及 game-a/game-c 两条死账，无新增棘轮失败 |
+
+逐步退出码与完整日志前缀 `/private/tmp/apollo-e2-independent-full-*`，机器汇总 `/private/tmp/apollo-e2-independent-full-steps.json`；首轮环境失败保留在同前缀的 `-sandbox-first-*`，没有覆盖掉失败证据。
+
+**原生浏览器证据由复查方重新产生。** 最终修补源码下，正式 AssetIndex → createManifestAssets/AssetManager → ModelPool → ThreeRenderer，固定 Chrome、Apple M5/ANGLE WebGL2；最终报告 `/private/var/folders/v7/ly_tktgs5qs_fn3kc0b_yfvh0000gn/T/apollo-e2-browser-KRozZS/report.json`，load/blend/once/removal 四张截图均已目击。两个实际不同网格、同模型双实例骨架独立；六速度往返权重、蒙皮顶点、GPU帧缓冲与阴影变化成立，同源 walk/run 两个 Action 的实际时间步 .03125/.0625；一次动作最后帧真实绘制后收敛，清图恢复绑定顶点最大误差约 `1.2144e-7`，Model移除/Model→Mesh/换key清理成立。2,400 tick完整双世界hash逐帧一致，2,470次渲染纯读检查；稳态GPU geometry3/texture6、每图action4/binding51/interpolant0，5轮驱逐重载有界，销毁后GPU0/0且contextLost=true，diagnostics=[]。原资源仍来自已存在的T5 `run-1`，没有为本段重开Blender。
+
+本判词只确认同 bind/rest/IBM 骨架上的动作复用与 E2 闭集解释器，不把不同网格说成任意跨骨架重定向。run为自有walk夹具两倍速；报告中 `realArpValidated/realMixamoValidated/realTripoValidated=false`、`blenderStarted=false`。真实付费来源、真人标记/动作质量、T5真实Smart/Remap及E3/E4/E6/V1继续待验，人门未签；本段没有其余实证阻塞。
