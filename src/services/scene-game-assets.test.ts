@@ -37,6 +37,13 @@ describe('manifest scene asset startup',()=>{
     const fetcher=vi.fn();vi.stubGlobal('fetch',fetcher);const controller=new AbortController();controller.abort();
     await expect(loadManifestSceneCatalog(new AssetManager({load:vi.fn()}),raw,'test',controller.signal)).rejects.toMatchObject({name:'AbortError'});expect(fetcher).not.toHaveBeenCalled();
   });
+  it('the manifest host loads indexed skeletal animations as bytes without invoking the image loader',async()=>{
+    const {bytes}=fixture();const fetcher=vi.fn(async()=>({ok:true,arrayBuffer:async()=>bytes}));vi.stubGlobal('fetch',fetcher);
+    const image=vi.fn(() => { throw new Error('Image loader must not receive skeletal bytes'); });vi.stubGlobal('Image',image);
+    const m=createManifestAssets();m.register({kind:'skeletal-animation',key:'walk',src:'/walk.glb',skeleton:'apollo-humanoid-v1',fps:30,frames:31,loop:true});
+    const loading=m.load('walk');await expect(loading).resolves.toMatchObject({width:0,height:0});const result=await loading;expect(result.handle).toBe(bytes);expect(result.descriptor.kind).toBe('skeletal-animation');
+    expect(fetcher).toHaveBeenCalledWith('/walk.glb');expect(image).not.toHaveBeenCalled();m.clear();
+  });
   it('the generic manifest loader routes model bytes and image handles through their existing loaders',async()=>{
     const {bytes}=fixture();vi.stubGlobal('fetch',vi.fn(async()=>({ok:true,arrayBuffer:async()=>bytes})));
     class ImageStub {onload?:()=>void;naturalWidth=8;naturalHeight=4;set src(_value:string){queueMicrotask(()=>this.onload?.());}}

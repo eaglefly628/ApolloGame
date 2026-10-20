@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
-import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D, AnimState3D, Glow3D, Transform3D, Pivot3D, Pickable3D, FaceDir, Velocity } from '@engine/protocol/components.js';
+import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D, AnimState3D, AnimGraph3D, Glow3D, Transform3D, Pivot3D, Pickable3D, FaceDir, Velocity } from '@engine/protocol/components.js';
 import type { AssetManager, MaterialSpec } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
 import { getCamera3D, getSky3D, getLights3D, getPost3D, getFog3D } from '@engine/protocol/camera-view.js';
@@ -15,6 +15,7 @@ import { hashPoses, camSig, postSig } from './three/stats.js';
 import { LightRig } from './three/lights.js';
 import { PostPipeline, FlashDecay } from './three/post.js';
 import { ModelPool, modelSelectorSig } from './three/models.js';
+import { readAnimGraphParams } from './three/animation-graph-params.js';
 import { modelYawFromFaceDir, turnModelYaw, modelMotionSpeed } from './three/model-motion.js';
 import { InstancedBatches, type InstGroups, type PbrBatchBuild } from './three/batches.js';
 import { CameraRig, CameraShake, FollowDamper, type DampedCenter } from './three/camera-rig.js';
@@ -135,6 +136,7 @@ export class ThreeRenderer implements RendererBackend {
   private readonly pickables = new Map<string, { cx: number; cy: number; cz: number; hx: number; hy: number; hz: number; signal: string }>();
   private readonly modelPickBounds = new THREE.Box3();
   private readonly groundConflictWarnings = new Set<string>();
+  private readonly animationConflictWarnings = new Set<string>();
   // W1-C 脏标跳渲 + profiler
   private cpuMs = 0;
   private rendered = false;
@@ -266,6 +268,7 @@ export class ThreeRenderer implements RendererBackend {
     this.lastModelYawMs = t0;
     this.gl.info.reset(); // 手动重置 → calls/triangles 跨 scene+post 全 pass 累加（真·每帧 draw 数）
     const seen = new Set<string>();
+    const seenModels = new Set<string>();
     const poses: Pose3D[] = [];
     const modelSigs: string[] = [];
     const groundSigs: string[] = [];
@@ -365,9 +368,22 @@ export class ThreeRenderer implements RendererBackend {
           }
           if (r.model3d.tint !== undefined) this.models.tint(r.entityId, r.model3d.tint);
           const anim = world.getComponent<AnimState3D>(r.entityId, 'AnimState3D'); // 骨骼动画（render-only·播 glTF clip）
-          if (anim) this.models.applyAnim(r.entityId, anim.speedAtVelocity === undefined ? anim : {
-            ...anim, speed: modelMotionSpeed(anim, world.getComponent<Velocity>(r.entityId, 'Velocity')),
-          });
+          const graph = world.getComponent<AnimGraph3D>(r.entityId, 'AnimGraph3D');
+          if (anim) {
+            // Existing single-clip data keeps precedence and its original playback semantics.
+            if (graph && !this.animationConflictWarnings.has(r.entityId)) {
+              console.warn(`[renderer] ${r.entityId}: AnimState3D takes precedence; skip AnimGraph3D`);
+              this.animationConflictWarnings.add(r.entityId);
+            }
+            this.models.applyAnim(r.entityId, anim.speedAtVelocity === undefined ? anim : {
+              ...anim, speed: modelMotionSpeed(anim, world.getComponent<Velocity>(r.entityId, 'Velocity')),
+            });
+          } else {
+            this.animationConflictWarnings.delete(r.entityId);
+            if (graph) this.models.applyGraph(r.entityId, graph, readAnimGraphParams(world, r.entityId, graph));
+            else this.models.clearGraph(r.entityId);
+          }
+          seenModels.add(r.entityId);
           seen.add(r.entityId);
           poses.push(pose);
           if (r.entityId === followTarget) followPose = pose;
@@ -516,8 +532,9 @@ export class ThreeRenderer implements RendererBackend {
         this.textSig.delete(id);
       }
     }
-    this.models.sweep(this.scene, seen);
-    for (const id of this.modelYaw.keys()) if (!seen.has(id)) this.modelYaw.delete(id);
+    this.models.sweep(this.scene, seenModels);
+    for (const id of this.modelYaw.keys()) if (!seenModels.has(id)) this.modelYaw.delete(id);
+    for (const id of this.animationConflictWarnings) if (!seenModels.has(id)) this.animationConflictWarnings.delete(id);
 
     this.colliderDebug.sync(this.scene, world, this.debugColliders); // 碰撞体线框（debug·开则画·关则清）
     this.navDebug.sync(this.scene, world, this.debugNav); // 导航图/路径（debug·开则画·关则清）
@@ -635,6 +652,7 @@ export class ThreeRenderer implements RendererBackend {
     if (this.disposed) return;
     this.disposed = true;
     this.groundConflictWarnings.clear();
+    this.animationConflictWarnings.clear();
     if (!this.gl) return; // Constructed but never initialized (or WebGL creation failed).
     this.resizeObserver?.disconnect(); this.resizeObserver = undefined; // 断开容器观察者·防泄漏
     if (this.sky) { this.scene.remove(this.sky); (this.sky.material as THREE.MeshBasicMaterial).map?.dispose(); disposeMesh(this.sky); this.sky = null; }

@@ -1,6 +1,7 @@
 import type { CapabilityDefinition, ComponentSchema } from '@engine/core/define-capability.js';
 import { validate as validateSchema } from '@engine/core/schema.js';
 import type { EntityBlueprint } from './demo.assembly.js';
+import { validateAnimGraph3D } from '@engine/protocol/components/anim-graph.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  组件数据 schema 校验（R12）—— AI/预设/手改产出的蓝图数据的护城河。
@@ -70,6 +71,11 @@ export function validateComponentData(
 
   for (const [eid, comps] of Object.entries(entities)) {
     for (const [ctype, data] of Object.entries(comps as Record<string, unknown>)) {
+      if (ctype === 'AnimGraph3D') {
+        try { validateAnimGraph3D(data); }
+        catch (error) { errors.push({ entity: eid, component: ctype, message: error instanceof Error ? error.message : String(error) }); }
+        continue;
+      }
       const cs = schemas.get(ctype);
       if (!cs) continue; // 无 provider：字段无 schema 可比，跳过（结构层另有告警）。
       if (typeof data !== 'object' || data === null) continue;
@@ -121,12 +127,24 @@ export function validateComponentData(
 export function validateAssetRefs(
   capabilities: readonly CapabilityDefinition[],
   entities: Record<string, EntityBlueprint>,
-  assetKeys: ReadonlySet<string>,
+  assetKeys?: ReadonlySet<string>,
 ): SchemaIssue[] {
+  if (!assetKeys) return [];
   const schemas = collectFieldSchemas(capabilities);
   const errors: SchemaIssue[] = [];
   for (const [eid, comps] of Object.entries(entities)) {
     for (const [ctype, data] of Object.entries(comps as Record<string, unknown>)) {
+      if (ctype === 'AnimGraph3D' && data && typeof data === 'object') {
+        const clips = (data as Record<string, unknown>).clips;
+        if (clips && typeof clips === 'object' && !Array.isArray(clips)) for (const [alias, raw] of Object.entries(clips)) {
+          if (!raw || typeof raw !== 'object' || !Object.hasOwn(raw, 'asset')) continue;
+          const asset = (raw as Record<string, unknown>).asset;
+          if (typeof asset === 'string' && !assetKeys.has(asset)) errors.push({
+            entity: eid, component: ctype, field: `clips.${alias}.asset`,
+            message: `${ctype}.clips.${alias}.asset 引用了清单中不存在的资产 key "${asset}"（防 AI 编造）`,
+          });
+        }
+      }
       const fields = schemas.get(ctype);
       if (!fields || typeof data !== 'object' || data === null) continue;
       for (const [fname, fval] of Object.entries(data as Record<string, unknown>)) {

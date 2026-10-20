@@ -3,6 +3,7 @@ import type { AssetManager } from './asset-manager.js';
 import type { TextureDescriptor, AtlasDescriptor, SpriteSheetDescriptor, Rect, AssetGroups } from './asset-types.js';
 import { generatorSpecOf, resolveGeneratedSrc } from './texture-generators.js';
 import { parseAssetGroups } from './asset-groups.js';
+import { parseSkeletalAnimationSpec } from './skeletal-animation-data.js';
 
 // 原始资产存储索引（`assets/index.json`）的读取/校验/桥接。
 //
@@ -67,7 +68,8 @@ function groupMetadata(raw: { groups?: unknown; initialGroup?: unknown }, assets
     return {};
   }
   const groups = parseAssetGroups(raw.groups);
-  const physical = new Set(assets.filter(e => e.status === 'filled' && (e.type === 'texture' || e.type === 'mesh')).map(e => e.id));
+  const physical = new Set(assets.filter(e => e.status === 'filled' && (e.type === 'texture' || e.type === 'mesh'
+    || (e.type === 'animation' && e.spec?.skeleton !== undefined))).map(e => e.id));
   for (const [group, keys] of Object.entries(groups)) for (const key of keys)
     if (!physical.has(key)) fail(`groups.${group} 引用未filled或非物理资产 "${key}"`);
   if (raw.initialGroup !== undefined && (typeof raw.initialGroup !== 'string' || !Object.hasOwn(groups, raw.initialGroup)))
@@ -275,6 +277,9 @@ function validateSpec(type: AssetType, spec: Record<string, unknown> | undefined
   } else if (type === 'material') {
     for (const f of ['preset', 'map', 'normalMap', 'roughnessMap', 'aoMap', 'metalnessMap', 'emissiveMap', 'ormMap']) mustStr(f);
     for (const f of ['color', 'roughness', 'metalness', 'emissive']) mustNum(f);
+  } else if (type === 'animation' && spec.skeleton !== undefined) {
+    try { parseSkeletalAnimationSpec(spec); }
+    catch (error) { fail(`assets[${i}] "${id}".spec: ${error instanceof Error ? error.message : String(error)}`); }
   }
 }
 
@@ -324,11 +329,22 @@ export function registerAssetIndex(manager: AssetManager, index: AssetIndex, bas
       manager.register(descriptor);
     } else if (e.type === 'mesh') {
       manager.register({ kind: 'model', key: e.id, src, ...(e.spec?.scene !== undefined ? { scene: parseSceneImportData(e.spec.scene) } : {}) });
+    } else if (e.type === 'animation') {
+      if (e.spec?.skeleton !== undefined) {
+        manager.register({ kind: 'skeletal-animation', key: e.id, src, ...parseSkeletalAnimationSpec(e.spec) });
+      } else if (!legacyAnimationLogs.get(manager)?.has(e.id)) {
+        const logged = legacyAnimationLogs.get(manager) ?? new Set<string>();
+        logged.add(e.id); legacyAnimationLogs.set(manager, logged);
+        console.info(`asset-index: skip legacy animation without skeletal metadata ${JSON.stringify(e.id)}`);
+      }
     }
     // material（数据型·无文件）不进 AssetManager 加载路径 → 走 buildMaterialCatalog；sound/… 后续增量。
   }
   if (groups) manager.registerGroups(groups);
 }
+
+// Registration may repeat; one diagnostic per manager/key keeps legacy data explicit without frame spam.
+const legacyAnimationLogs = new WeakMap<AssetManager, Set<string>>();
 
 /**
  * 取某 `filled` 条目的可服务 src（skinKey/id → URL）——供背景皮肤槽等「按 id 要一张图 URL」的消费

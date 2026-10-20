@@ -5,7 +5,7 @@ import { sceneImportKeys } from '../assembly/scene-import.js';
 /** Shared manifest host: models follow the existing byte loader, images the image loader. */
 export function createManifestAssets(): AssetManager {
   const models = new ModelAssetLoader(), images = new ImageAssetLoader();
-  return new AssetManager({ load: d => d.kind === 'model' ? models.load(d) : images.load(d) });
+  return new AssetManager({ load: d => (d.kind === 'model' || d.kind === 'skeletal-animation') ? models.load(d) : images.load(d) });
 }
 
 /** Required scene data is a startup dependency, never an optional visual fallback. */

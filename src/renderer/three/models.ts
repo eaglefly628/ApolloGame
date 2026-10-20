@@ -1,10 +1,13 @@
 import * as THREE from 'three';
 import { GLTFLoader, type GLTFParser } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
-import type { Model3D, AnimState3D } from '@engine/protocol/components.js';
+import type { Model3D, AnimState3D, AnimGraph3D } from '@engine/protocol/components.js';
 import type { AssetManager } from '@assets/index.js';
 import { isModelHandle } from '@assets/index.js';
 import { ModelCodecs } from './model-codecs.js';
+import { AnimationGraphController } from './animation-graph.js';
+import { bindSkeletalClip, captureSkeletonRest, extractSkeletalClip, snapshotSkeletalGlb, type SkeletalClip, type SkeletonRest } from './skeletal-clips.js';
+import { validateAnimGraph3D } from '@engine/protocol/components/anim-graph.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  three/ModelPool —— 导入式 glTF 模型 + **骨骼动画** 子系统。
@@ -13,7 +16,8 @@ import { ModelCodecs } from './model-codecs.js';
 //  未就绪本帧不画（向后兼容·同 sprite 先例）。纯表现·不写 sim/hash。
 // ═══════════════════════════════════════════════════════════════
 
-interface Tpl { scene: THREE.Object3D; clips: THREE.AnimationClip[]; resources: ModelResources; nodes: ReadonlyMap<number, THREE.Object3D>; } // 模板：场景图 + glTF 动画
+interface Tpl { scene: THREE.Object3D; clips: THREE.AnimationClip[]; resources: ModelResources; nodes: ReadonlyMap<number, THREE.Object3D>; rest: SkeletonRest; } // 模板：场景图 + glTF 动画
+interface GraphAnim { signature: string; graph: AnimGraph3D; params: Readonly<Record<string, number | string | boolean | undefined>>; dependencies: ReadonlySet<string>; controller?: AnimationGraphController; failed?: boolean; }
 interface Anim { mixer: THREE.AnimationMixer; clips: THREE.AnimationClip[]; clip?: string; action?: THREE.AnimationAction; }
 
 // Instance identity is separate from modelKey resource ownership (R4).
@@ -207,6 +211,13 @@ export class ModelPool {
   private readonly cache = new Map<string, Tpl>(); // 按 modelKey 的已解析模板（解析一次·多实例 clone）
   private readonly state = new Map<string, 'pending' | 'failed'>(); // 解析中/失败（避免每帧重复 parse）
   private readonly anims = new Map<string, Anim>(); // 每实体骨骼动画混合器（模型有 clip 时）
+  private readonly graphs = new Map<string, GraphAnim>();
+  private readonly rejectedGraphs = new Map<string, unknown>();
+  private readonly motions = new Map<string, SkeletalClip>();
+  private readonly motionParsing = new Map<string, ModelResources>();
+  private readonly motionState = new Map<string, 'pending' | 'failed'>();
+  private readonly missingMotions = new Set<string>();
+  private dirty = false; // Last pose, async readiness and binding removal invalidate once.
   private lastMs = 0; // 上次推进的壁钟（算 mixer delta）
 
   constructor(private readonly assets?: AssetManager, private readonly renderer?: THREE.WebGLRenderer) {}
@@ -265,6 +276,7 @@ export class ModelPool {
 
   // 应用骨骼动画状态：clip 名变 → 淡入切新动作（旧的淡出·idle↔run 平滑过渡）；每帧设倍速/循环。模型无 clip 则 no-op。
   applyAnim(entityId: string, a: AnimState3D): void {
+    this.clearGraph(entityId);
     const an = this.anims.get(entityId);
     if (!an) return;
     if (an.clip !== a.clip) {
@@ -283,13 +295,93 @@ export class ModelPool {
     if (an.action) an.action.timeScale = a.speed ?? 1;
   }
 
-  // 每帧推进所有混合器（render-only·壁钟 delta）。返回活跃混合器数（>0 → 渲染器折进 renderSig 持续重渲 + 刷阴影）。
+  applyGraph(entityId: string, graph: AnimGraph3D, params: Readonly<Record<string, number | string | boolean | undefined>>): void {
+    if (!this.instances.has(entityId)) return;
+    let signature: string, dependencies: ReadonlySet<string>;
+    try {
+      validateAnimGraph3D(graph);
+      signature = JSON.stringify(graph);
+      dependencies = new Set(Object.values(graph.clips).flatMap(c => c.asset ? [c.asset] : []));
+      this.rejectedGraphs.delete(entityId);
+    } catch (error) {
+      this.clearGraph(entityId);
+      let rejection: unknown = graph;
+      try { rejection = JSON.stringify(graph); } catch { /* Cyclic invalid input retains identity. */ }
+      if (!this.rejectedGraphs.has(entityId) || this.rejectedGraphs.get(entityId) !== rejection) {
+        this.rejectedGraphs.set(entityId, rejection);
+        console.warn(`[ModelPool] Rejected animation graph for "${entityId}"`, error);
+      }
+      return;
+    }
+    let entry = this.graphs.get(entityId);
+    if (entry?.signature !== signature) {
+      this.clearGraph(entityId);
+      const legacy = this.anims.get(entityId);
+      legacy?.mixer.stopAllAction();
+      if (legacy) { legacy.action = undefined; legacy.clip = undefined; }
+      entry = { signature, graph, params, dependencies };
+      this.graphs.set(entityId, entry);
+    }
+    entry.params = params;
+    this.buildGraph(entityId, entry);
+  }
+
+  clearGraph(entityId: string): void {
+    const entry = this.graphs.get(entityId);
+    if (!entry) return;
+    entry.controller?.dispose();
+    this.graphs.delete(entityId);
+    this.dirty = true;
+    for (const key of entry.dependencies) if (![...this.graphs.values()].some(other => other.dependencies.has(key))) this.missingMotions.delete(key);
+  }
+
+  private buildGraph(entityId: string, entry: GraphAnim): void {
+    if (entry.controller || entry.failed) return;
+    const object = this.instances.get(entityId), template = this.cache.get(this.keyOf.get(entityId) ?? '');
+    if (!object || !template) return;
+    try {
+      validateAnimGraph3D(entry.graph);
+      const clips = new Map<string, { clip: THREE.AnimationClip; loop: boolean }>();
+      const external = new Map<string, SkeletalClip>();
+      let waiting = false;
+      for (const [alias, spec] of Object.entries(entry.graph.clips)) {
+        if (spec.asset) {
+          const source = this.motion(spec.asset);
+          if (!source) {
+            if (this.motionState.get(spec.asset) === 'failed') throw new Error(`external clip asset "${spec.asset}" was rejected`);
+            waiting = true; continue;
+          }
+          external.set(alias, source);
+        } else {
+          const clip = template.clips.find(c => c.name === spec.clip);
+          if (!clip) throw new Error(`model clip "${spec.clip}" was not found`);
+          clips.set(alias, { clip, loop: true });
+        }
+      }
+      if (waiting) return;
+      for (const [alias, source] of external) clips.set(alias, { clip: bindSkeletalClip(source, entry.graph.clips[alias].clip, object, template.rest), loop: source.loop });
+      entry.controller = new AnimationGraphController(object, entry.graph, clips);
+      this.dirty = true;
+    } catch (error) {
+      entry.failed = true;
+      console.warn(`[ModelPool] Rejected animation graph for "${entityId}"`, error);
+    }
+  }
+
+  // Native legacy mixer behavior stays intact; graphs additionally report the
+  // final changed pose so the renderer can stop only after drawing that pose.
   update(nowMs: number): number {
-    if (this.anims.size === 0) { this.lastMs = nowMs; return 0; }
     const dt = this.lastMs ? Math.min(0.1, (nowMs - this.lastMs) / 1000) : 0;
     this.lastMs = nowMs;
     for (const [, an] of this.anims) an.mixer.update(dt);
-    return countRunningAnims(this.anims.values()); // 只计**真正在播**的（RENDERHYG fix②）·非 anims.size
+    let active = countRunningAnims(this.anims.values());
+    for (const [id, entry] of this.graphs) {
+      this.buildGraph(id, entry);
+      const result = entry.controller?.update(Math.max(0, Number.isFinite(dt) ? dt : 0), entry.params);
+      if (result?.live || result?.changed) active++;
+    }
+    if (this.dirty) { active++; this.dirty = false; }
+    return active;
   }
 
   // 整体染色（每帧·tint 变即反映）：把实例自有材质的 color 设成 hex。
@@ -305,6 +397,7 @@ export class ModelPool {
   }
 
   private removeInstance(scene: THREE.Object3D | undefined, id: string): void {
+    this.clearGraph(id);
     const obj = this.instances.get(id);
     if (obj) (obj.parent ?? scene)?.remove(obj);
     const mixer = this.anims.get(id)?.mixer;
@@ -321,6 +414,7 @@ export class ModelPool {
     this.keyOf.delete(id);
     this.selectorOf.delete(id);
     this.anims.delete(id);
+    this.rejectedGraphs.delete(id);
   }
 
   dispose(scene: THREE.Scene): void {
@@ -330,12 +424,20 @@ export class ModelPool {
     for (const [, tpl] of this.cache) tpl.resources.dispose();
     for (const resources of this.parsing.values()) resources.dispose();
     this.parsing.clear();
+    for (const resources of this.motionParsing.values()) resources.dispose();
+    this.motionParsing.clear();
+    this.motionState.clear();
+    this.missingMotions.clear();
+    this.motions.clear();
+    this.graphs.clear();
+    this.rejectedGraphs.clear();
     this.cache.clear();
     this.state.clear();
     this.codecs?.dispose();
     this.codecs = undefined;
     this.gltf = undefined;
     this.lastMs = 0;
+    this.dirty = false;
   }
 
   private subscribeEviction(): void {
@@ -347,7 +449,69 @@ export class ModelPool {
       this.parsing.get(key)?.dispose();
       this.parsing.delete(key);
       this.state.delete(key);
+      this.motionParsing.get(key)?.dispose();
+      this.motionParsing.delete(key);
+      this.motionState.delete(key);
+      this.missingMotions.delete(key);
+      this.motions.delete(key);
+      for (const entry of this.graphs.values()) if (entry.dependencies.has(key)) {
+        entry.controller?.dispose(); entry.controller = undefined; entry.failed = false; this.dirty = true;
+      }
     });
+  }
+
+  private motion(key: string): SkeletalClip | null {
+    const ready = this.motions.get(key);
+    if (ready) return ready;
+    if (this.motionState.has(key)) return null;
+    const asset = this.assets?.get(key);
+    if (!asset) {
+      if (!this.missingMotions.has(key)) { this.missingMotions.add(key); console.warn(`[ModelPool] Skipped skeletal-animation "${key}": asset is not loaded`); }
+      return null;
+    }
+    this.missingMotions.delete(key);
+    if (asset.descriptor?.kind !== 'skeletal-animation' || !isModelHandle(asset.handle)) {
+      this.motionState.set(key, 'failed');
+      console.warn(`[ModelPool] Rejected skeletal-animation "${key}": expected typed GLB bytes`);
+      return null;
+    }
+    const descriptor = { ...asset.descriptor };
+    const resources = new ModelResources();
+    this.motionParsing.set(key, resources);
+    this.motionState.set(key, 'pending');
+    const failed = (error: unknown): void => {
+      resources.dispose();
+      if (this.motionParsing.get(key) !== resources) return;
+      this.motionParsing.delete(key);
+      this.motionState.set(key, 'failed');
+      console.warn(`[ModelPool] Rejected skeletal-animation "${key}"`, error);
+    };
+    try {
+      const bytes = snapshotSkeletalGlb(asset.handle);
+      const codecs = this.codecs ??= new ModelCodecs(this.renderer);
+      if (!this.gltf) { this.gltf = new GLTFLoader(); codecs.connect(this.gltf); }
+      const loader = this.gltf;
+      const plugin = (parser: GLTFParser) => {
+        resources.observe(parser);
+        return { name: 'APOLLO_motion_resources', beforeRoot: () => { codecs.prepare(parser); return null; } };
+      };
+      loader.register(plugin);
+      try {
+        loader.parse(bytes, '', gltf => {
+          for (const scene of gltf.scenes ?? [gltf.scene]) resources.capture(scene);
+          if (this.motionParsing.get(key) !== resources) { resources.dispose(); return; }
+          try {
+            const motion = extractSkeletalClip(gltf.scene, gltf.animations ?? [], descriptor, gltf.parser);
+            resources.dispose();
+            this.motionParsing.delete(key);
+            this.motionState.delete(key);
+            this.motions.set(key, motion);
+            this.dirty = true;
+          } catch (error) { failed(error); }
+        }, failed);
+      } finally { loader.unregister(plugin); }
+    } catch (error) { failed(error); }
+    return null;
   }
 
   // 按 modelKey 取已解析模板（含动画 clip）。首见且字节备好 → 异步 parse 一次（标 pending 防每帧重复）。
@@ -355,7 +519,13 @@ export class ModelPool {
     const ready = this.cache.get(key);
     if (ready) return ready;
     if (this.state.get(key)) return null; // pending / failed
-    const handle = this.assets?.get(key)?.handle;
+    const asset = this.assets?.get(key);
+    if (asset?.descriptor && asset.descriptor.kind !== 'model') {
+      this.state.set(key, 'failed');
+      console.warn(`[ModelPool] Rejected model "${key}": asset kind is ${asset.descriptor.kind}`);
+      return null;
+    }
+    const handle = asset?.handle;
     if (!isModelHandle(handle)) return null;
     this.state.set(key, 'pending');
     const resources = new ModelResources();
@@ -386,7 +556,7 @@ export class ModelPool {
             const index = gltf.parser?.associations?.get(object)?.nodes;
             if (index !== undefined) nodes.set(index, object);
           });
-          this.cache.set(key, { scene: gltf.scene, clips: gltf.animations ?? [], resources, nodes });
+          this.cache.set(key, { scene: gltf.scene, clips: gltf.animations ?? [], resources, nodes, rest: captureSkeletonRest(gltf.scene, gltf.parser) });
           this.state.delete(key);
         }, failed);
       } finally { loader.unregister(plugin); }

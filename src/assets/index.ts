@@ -7,6 +7,8 @@ export type {
   SpriteSheetDescriptor,
   PrerenderedSequenceDescriptor,
   ModelDescriptor,
+  SkeletalAnimationDescriptor,
+  SkeletalAnimationSpec,
   AssetDescriptor,
   AnimationDescriptor,
   AssetManifest,
@@ -21,6 +23,7 @@ export type {
 } from './asset-types.js';
 export { AssetManager, StubAssetLoader } from './asset-manager.js';
 export { parseAssetGroups } from './asset-groups.js';
+export { parseSkeletalAnimationSpec } from './skeletal-animation-data.js';
 export { createAssetGroupDataSource } from './asset-group-source.js';
 export { ftpFrames, ftpToAtlasEntry, mergeAtlasIntoIndex, normalizeFrameName, type FtpAtlasJson } from './pack-atlas.js';
 export { ImageAssetLoader, isImageHandle, type ImageAssetHandle } from './image-loader.js';

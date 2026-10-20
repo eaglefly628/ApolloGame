@@ -13,6 +13,7 @@ import type {
   ResolvedFrame,
 } from './asset-types.js';
 import { parseAssetGroups } from './asset-groups.js';
+import { parseSkeletalAnimationSpec } from './skeletal-animation-data.js';
 
 // AssetManager —— 表现层资产注册/加载/缓存/解析。
 //
@@ -54,6 +55,7 @@ function intrinsicSize(descriptor: AssetDescriptor): { width: number; height: nu
       return { width: cols * descriptor.frameWidth, height: rows * descriptor.frameHeight };
     }
     case 'model':
+    case 'skeletal-animation':
       return { width: 0, height: 0 }; // 模型无 2D 像素尺寸（句柄=字节，渲染线自解析包围盒）
   }
 }
@@ -99,6 +101,9 @@ export class AssetManager {
 
   /** 注册单个描述符(覆盖同 key)。注册不触发加载。 */
   register(descriptor: AssetDescriptor): void {
+    if (descriptor.kind === 'skeletal-animation') parseSkeletalAnimationSpec({
+      skeleton: descriptor.skeleton, fps: descriptor.fps, frames: descriptor.frames, loop: descriptor.loop,
+    });
     const owned = descriptor.kind === 'model' && descriptor.scene ? { ...descriptor, scene: parseSceneImportData(descriptor.scene) } : descriptor;
     this.descriptors.set(descriptor.key, owned);
   }
@@ -454,6 +459,7 @@ export class AssetManager {
       }
 
       case 'model':
+      case 'skeletal-animation':
         return undefined; // 模型不解析成 2D 帧（渲染线直接消费字节句柄）
     }
   }

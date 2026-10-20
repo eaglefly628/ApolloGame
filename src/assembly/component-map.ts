@@ -15,6 +15,7 @@ import type {
   Pivot3D,
   AnimState,
   AnimState3D,
+  AnimGraph3D,
   Billboard3D,
   BlockGrid,
   BlockTrayPiece,
@@ -186,6 +187,7 @@ export interface ComponentDataMap {
   Pivot3D: Omit<Pivot3D, 'type'>;
   AnimState: Omit<AnimState, 'type'>;
   AnimState3D: Omit<AnimState3D, 'type'>;
+  AnimGraph3D: Omit<AnimGraph3D, 'type'>;
   Billboard3D: Omit<Billboard3D, 'type'>;
   BoardCell: Omit<BoardCell, 'type'>;
   Bounds: Omit<Bounds, 'type'>;

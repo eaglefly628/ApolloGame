@@ -90,12 +90,28 @@ export interface ModelDescriptor {
   readonly src: string; // 模型文件地址（相对 baseUrl）或 data: URI
 }
 
+/** E2 metadata only; actual GLB sampling and skeleton compatibility belong to the renderer. */
+export interface SkeletalAnimationSpec {
+  readonly skeleton: 'apollo-humanoid-v1';
+  readonly fps: number;
+  readonly frames: number;
+  readonly loop: boolean;
+}
+
+/** Physical, self-contained skeletal clip GLB. Distinct from 2D atlas AnimationDescriptor. */
+export interface SkeletalAnimationDescriptor extends SkeletalAnimationSpec {
+  readonly kind: 'skeletal-animation';
+  readonly key: string;
+  readonly src: string;
+}
+
 export type AssetDescriptor =
   | TextureDescriptor
   | AtlasDescriptor
   | SpriteSheetDescriptor
   | PrerenderedSequenceDescriptor
-  | ModelDescriptor;
+  | ModelDescriptor
+  | SkeletalAnimationDescriptor;
 
 /** 数据驱动清单：一组描述符。可由 JSON 提供。 */
 export type AssetManifest = readonly AssetDescriptor[];
