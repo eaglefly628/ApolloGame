@@ -3,11 +3,24 @@
 
 import { describe, it, expect } from 'vitest';
 import { renderNode, resolveBindings } from '@zerocraft/engine/ui/components/index.js';
-import type { UIDataSource } from '@zerocraft/engine/ui/components/index.js';
+import type { UIDataSource, LayoutNode, NativeCharacterProps } from '@zerocraft/engine/ui/components/index.js';
 import { buildGallery } from './gallery.js';
 import { THEMES, onyx } from './themes.js';
+import { GAME_I_UI_INDEX } from './ui-assets.js';
 
 describe('Game I gallery', () => {
+  it('native character example uses its own registered poster, never another game art directory', () => {
+    const flatten = (node: LayoutNode): LayoutNode[] => [node, ...(node.children ?? []).flatMap(flatten)];
+    const native = flatten(buildGallery('onyx', 'mod-ui')).filter(node => node.type === 'NativeCharacter');
+    expect(native).toHaveLength(1);
+    const asset = GAME_I_UI_INDEX.assets.find(entry => entry.id === 'tex/cartoon-cat');
+    expect(asset?.status).toBe('filled'); expect(asset?.path).toBe('/games/game-i/art/undraw/playful_cat_ql3n.svg');
+    for (const node of native) {
+      const poster = (node.props as NativeCharacterProps).poster;
+      expect(poster).toBe(asset!.path); expect(poster).toMatch(/^\/games\/game-i\/art\//);
+      expect(poster).not.toContain('/games/game112/');
+    }
+  });
   it('落地展台 = 积木墙（Hub·点 Card 进模块）', () => {
     const html = renderNode(buildGallery('onyx'), onyx);
     expect(html).toContain('id="gameui-root"');     // Screen 根

@@ -45,6 +45,28 @@
     "Candidate remains tbf and user sample-play approval is separate",
     "This scoped review is not a substitute for parent full repository gate or actual deployment verification"
   ],
+  "mergeReview": {
+    "head": "fe322aba4",
+    "upstreamParent": "5960cfb6b396782c0c5dfdc573be1c064703d006",
+    "result": "PASS_SCOPED_MERGED_CODE",
+    "nativeRerun": "Original 44 official plus 8 reviewer tests: 52/52 pass after rebase; additional explicit parentAnchor/native seam test then gives 53/53 pass",
+    "anchorRerun": "parent-anchor.test 33, parent-anchor-regressions.test 10, anchor-debug.test14 all pass",
+    "anchorPreserved": "git diff 5960cfb6b reports zero changes in parent-anchor-dom.ts, layout-solver.ts, anchor-debug.ts, their regression tests and upstream browser regression fixtures",
+    "seam": "Independent happy-dom test mounts anchored NativeCharacter root, resizes 200x200 to100x120 with expected bottom-right geometry, retains iframe and one load, removes parentAnchor and restores host static positioning. This is DOM/stub evidence, not GPU resize footage.",
+    "fixtureCorrection": "Initial extra seam fixture expected happy-dom unspecified computed position to equal browser UA static. It was blank, so fixture sets explicit static precondition; no implementation was changed.",
+    "auditFix": "Only applies resolveBindings with flagOn(session.world,id) before mount, same projection as Game112 host. No layout alteration or audit exemption.",
+    "auditRerun": "2/2 actual world-projection tests pass, including real ui.hide/show actions and world hash unchanged",
+    "auditWithdrawal": "Unique projection return anchor count asserted1, only in-memory transform replaced with raw buildScene: 2/2 tests fail. Removed environment restores2/2 pass. No original source edited.",
+    "runtimeRerun": "npm test passes210 upstream hashes and fit/observer checks",
+    "tailwind": "git diff -w --exit-code returns0: changes only indentation outside vendor",
+    "warnings": "Parent-anchor30/40 minimum-size reject warnings inspected and correspond to intentional negative tests",
+    "unchangedLimits": "No independent native GPU/visual claim; no art approval or tbf promotion; parent full gate remains separate",
+    "newHashes": {
+      "tools/audits/game112-scene.audit.ts": "c5730d34e520767094f36b79493d088cf81c253269d518909209482668f715b7",
+      "tools/audits/game112-scene.audit.test.ts": "5a5cd17e51a8c8072613e0dd60a66d674f4f797f0f88719bc5bdfebc44648199",
+      "tools/native-character-runtime/tailwind.native.cjs": "52ee92003a75418ba79a0e2346ec73b776dc806e611e68dcd92aba747dcdc804"
+    }
+  },
   "sha256": {
     "src/ui/components/native-character.ts": "a20af776d75f3935b8bec24b2347dbf1c2e549706635f068d67f63823111f3ef",
     "src/ui/components/native-character-data.ts": "e74c13a58aef5628efe6113228e66cca4d97aaddb1c748ecccbf621c8f0f1add",
