@@ -24,11 +24,19 @@ const DEF_PAD = 16;
 const hasKids = (n: LayoutNode): n is LayoutNode & { children: LayoutNode[] } =>
   Array.isArray(n.children) && n.children.length > 0;
 const isAbs = (n: LayoutNode): boolean => !!n.layout?.parentAnchor || n.layout?.x !== undefined || n.layout?.y !== undefined;
+// 与 CSS min/max 相同：最小约束优先，任何阶段不能再把受限的父画布放大/缩小回原值。
+const constrain = (node: LayoutNode, size: Size): Size => {
+  const c = node.layout ?? {};
+  return { w: Math.max(c.minWidth ?? 0, Math.min(size.w, c.maxWidth ?? Infinity)), h: Math.max(c.minHeight ?? 0, Math.min(size.h, c.maxHeight ?? Infinity)) };
+};
 
 // —— 第一趟：内在尺寸（自底向上）——
 function intrinsic(node: LayoutNode, measure: MeasureFn): Size {
   const c = node.layout ?? {};
-  if (!hasKids(node)) return { w: c.width ?? measure(node).w, h: c.height ?? measure(node).h };
+  if (!hasKids(node)) {
+    const measured = measure(node);
+    return constrain(node, { w: c.width ?? measured.w, h: c.height ?? measured.h });
+  }
 
   const dir = c.direction ?? 'column';
   const gap = c.gap ?? DEF_GAP;
@@ -41,11 +49,12 @@ function intrinsic(node: LayoutNode, measure: MeasureFn): Size {
   if (dir === 'overlay') { w = 0; h = 0; }
   else if (dir === 'row') { w = sum((s) => s.w); h = max((s) => s.h); }
   else { w = max((s) => s.w); h = sum((s) => s.h); } // column 与 grid 内在同（grid 真实列数在 arrange 用分到的宽算）
-  return { w: c.width ?? w + pad * 2, h: c.height ?? h + pad * 2 };
+  return constrain(node, { w: c.width ?? w + pad * 2, h: c.height ?? h + pad * 2 });
 }
 
 // —— 第二趟：分配位置（自顶向下）——
 function arrange(node: LayoutNode, rect: Rect, measure: MeasureFn, out: Map<string, Rect>): void {
+  rect = { ...rect, ...constrain(node, rect) };
   out.set(node.id, rect);
   if (!hasKids(node)) return;
 
@@ -82,10 +91,11 @@ function arrange(node: LayoutNode, rect: Rect, measure: MeasureFn, out: Map<stri
     });
     flow.forEach(({ k, i: sourceIndex }, i) => {
       const r = Math.floor(i / cols), ci = i % cols;
-      const x = innerX + ci * (colW + gap);
+      const size = constrain(k, { w: k.layout?.width ?? colW, h: sizes[sourceIndex]!.h });
+      const x = innerX + ci * (colW + gap) + (k.layout?.maxWidth !== undefined ? Math.max(0, colW - size.w) / 2 : 0);
       let y = innerY;
       for (let rr = 0; rr < r; rr++) y += rowH[rr]! + gap;
-      arrange(k, { x, y, w: colW, h: sizes[sourceIndex]!.h }, measure, out);
+      arrange(k, { x, y, ...size }, measure, out);
     });
     return;
   }
@@ -99,18 +109,24 @@ function arrange(node: LayoutNode, rect: Rect, measure: MeasureFn, out: Map<stri
   const totalFlex = flow.reduce((s, { k }) => s + (k.layout?.flex ?? 0), 0);
   const freeMain = Math.max(0, mainAvail - totalGap - fixedMain);
 
-  const usedMain = flow.reduce((s, { k, i }) => s + ((k.layout?.flex ?? 0) > 0 ? freeMain * k.layout!.flex! / totalFlex : mainOf(sizes[i]!)), 0) + totalGap;
+  const mainSizes = flow.map(({ k, i }) => {
+    const raw = (k.layout?.flex ?? 0) > 0 ? freeMain * k.layout!.flex! / totalFlex : mainOf(sizes[i]!);
+    return mainOf(constrain(k, dir === 'row' ? { w: raw, h: sizes[i]!.h } : { w: sizes[i]!.w, h: raw }));
+  });
+  const usedMain = mainSizes.reduce((s, size) => s + size, 0) + totalGap;
   const remaining = Math.max(0, mainAvail - usedMain);
   const justify = c.justify ?? 'start';
   const leading = justify === 'center' ? remaining / 2 : justify === 'end' ? remaining : justify === 'around' ? remaining / (2 * Math.max(1, flow.length)) : justify === 'evenly' ? remaining / (flow.length + 1) : 0;
   const extraGap = justify === 'between' && flow.length > 1 ? remaining / (flow.length - 1) : justify === 'around' ? remaining / Math.max(1, flow.length) : justify === 'evenly' ? remaining / (flow.length + 1) : 0;
   let cursor = (dir === 'row' ? innerX : innerY) + leading;
-  flow.forEach(({ k, i }) => {
-    const flex = k.layout?.flex ?? 0;
-    const mainSize = flex > 0 ? (freeMain * flex) / totalFlex : mainOf(sizes[i]!);
+  flow.forEach(({ k, i }, flowIndex) => {
+    const mainSize = mainSizes[flowIndex]!;
     const intrinsicCross = dir === 'row' ? sizes[i]!.h : sizes[i]!.w;
-    const crossSize = align === 'stretch' ? crossAvail : intrinsicCross;
-    const crossOff = align === 'center' ? (crossAvail - intrinsicCross) / 2 : align === 'end' ? crossAvail - intrinsicCross : 0;
+    const explicitCross = dir === 'row' ? k.layout?.height : k.layout?.width;
+    const rawCross = align === 'stretch' && explicitCross === undefined ? crossAvail : intrinsicCross;
+    const crossSize = dir === 'row' ? constrain(k, { w: mainSize, h: rawCross }).h : constrain(k, { w: rawCross, h: mainSize }).w;
+    const centeredWidth = dir === 'column' && k.layout?.maxWidth !== undefined;
+    const crossOff = centeredWidth ? Math.max(0, crossAvail - crossSize) / 2 : align === 'center' ? (crossAvail - crossSize) / 2 : align === 'end' ? crossAvail - crossSize : 0;
     const r: Rect = dir === 'row'
       ? { x: cursor, y: innerY + crossOff, w: mainSize, h: crossSize }
       : { x: innerX + crossOff, y: cursor, w: crossSize, h: mainSize };
@@ -127,10 +143,10 @@ export function solveLayout(root: LayoutNode, viewport: Size, measure: MeasureFn
   const out = new Map<string, Rect>();
   assertParentAnchorTree(root);
   const c = root.layout ?? {};
-  const w = Math.min(c.width ?? viewport.w, c.maxWidth ?? Infinity);
+  const size = constrain(root, { w: c.width ?? viewport.w, h: c.height ?? viewport.h });
   const rect = c.parentAnchor
     ? solveParentAnchor({ x: 0, y: 0, ...viewport }, intrinsic(root, measure), c)
-    : { x: c.x ?? (c.maxWidth !== undefined ? (viewport.w - w) / 2 : 0), y: c.y ?? 0, w, h: c.height ?? viewport.h };
+    : { x: c.x ?? (c.maxWidth !== undefined ? Math.max(0, viewport.w - size.w) / 2 : 0), y: c.y ?? 0, ...size };
   arrange(root, rect, measure, out);
   return out;
 }

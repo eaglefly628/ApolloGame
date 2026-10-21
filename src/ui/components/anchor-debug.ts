@@ -4,6 +4,7 @@ import { normalizeParentAnchor } from './parent-anchor.js';
 import { parentAnchorBox } from './parent-anchor-dom.js';
 
 const occupiedSlots = new WeakMap<Document, Set<number>>();
+const inspectorChrome = new WeakMap<Document, Set<HTMLElement>>();
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 type Entry = { node: LayoutNode; ancestors: LayoutNode[] };
@@ -20,6 +21,9 @@ export function mountAnchorDebug(host: HTMLElement, getRoot: () => LayoutNode): 
 
   const chrome = doc.createElement('div');
   chrome.dataset.anchorDebug = '';
+  const chromeInstances = inspectorChrome.get(doc) ?? new Set<HTMLElement>();
+  inspectorChrome.set(doc, chromeInstances);
+  chromeInstances.add(chrome);
   const button = doc.createElement('button');
   button.type = 'button';
   button.textContent = '锚点 Debug';
@@ -56,6 +60,11 @@ export function mountAnchorDebug(host: HTMLElement, getRoot: () => LayoutNode): 
   let selectedId: string | undefined;
   let selectedUnknown: HTMLElement | undefined;
   let folded = false;
+  // Track physical holds, including holds begun before inspection. A blurred input source
+  // must not see an OS repeat as a fresh action edge when inspection closes.
+  const heldKeys = new Set<string>();
+  const quarantinedKeys = new Set<string>();
+  let hasInspected = false;
   const observed = new Set<HTMLElement>();
   const observer = win?.ResizeObserver ? new win.ResizeObserver(() => sync()) : undefined;
   function watch(elements: HTMLElement[]): void {
@@ -100,8 +109,8 @@ export function mountAnchorDebug(host: HTMLElement, getRoot: () => LayoutNode): 
       const r = rect(parent);
       const sx = parent.offsetWidth ? r.width / parent.offsetWidth : 1;
       const sy = parent.offsetHeight ? r.height / parent.offsetHeight : 1;
-      const left = r.left + parent.clientLeft * sx;
-      const top = r.top + parent.clientTop * sy;
+      const left = r.left + (parent.clientLeft - parent.scrollLeft) * sx;
+      const top = r.top + (parent.clientTop - parent.scrollTop) * sy;
       const logicalBox = parentAnchorBox(parent);
       const width = logicalBox.w * sx;
       const height = logicalBox.h * sy;
@@ -190,6 +199,13 @@ export function mountAnchorDebug(host: HTMLElement, getRoot: () => LayoutNode): 
   }
   function setOpen(value: boolean): void {
     open = value;
+    if (open) {
+      hasInspected = true;
+      heldKeys.forEach(code => quarantinedKeys.add(code));
+      // KeyboardInputSource and the browser's other blur-aware sources clear held
+      // movement here. Already queued pre-inspection commands remain owned by the input source.
+      if (win) win.dispatchEvent(new win.Event('blur'));
+    }
     button.setAttribute('aria-pressed', String(open));
     panel.hidden = !open;
     overlay.style.display = open ? 'block' : 'none';
@@ -204,6 +220,31 @@ export function mountAnchorDebug(host: HTMLElement, getRoot: () => LayoutNode): 
     fold.setAttribute('aria-expanded', String(!folded));
     instructions.textContent = folded ? '点选控件 · Esc 退出检查' : fullInstructions;
     panel.style.width = folded ? '210px' : '360px';
+  }
+  function interceptKeyboard(event: KeyboardEvent): void {
+    if (disposed) return;
+    const code = event.code || event.key;
+    const wasHeld = heldKeys.has(code);
+    const keyup = event.type === 'keyup';
+    if (event.type === 'keydown') heldKeys.add(code);
+    const target = event.target;
+    const onChrome = target instanceof doc.defaultView!.Node && [...chromeInstances].some(el => el.contains(target));
+    const nativeChromeKey = onChrome && ['Enter', ' ', 'Spacebar', 'Tab'].includes(event.key);
+    const nativeTab = open && event.key === 'Tab'; // Keep native focus navigation even after Tab leaves chrome.
+    if (open && event.type === 'keydown') quarantinedKeys.add(code);
+    if (!open && hasInspected && event.type === 'keydown' && event.repeat && !wasHeld) quarantinedKeys.add(code);
+    const quarantine = quarantinedKeys.has(code);
+    if (keyup) { heldKeys.delete(code); quarantinedKeys.delete(code); }
+    if (!open && !quarantine && !nativeChromeKey) return;
+    // Window capture runs ahead of KeyboardInputSource(window)'s bubbling listener,
+    // even when the latter was registered before this inspector and focus is outside host.
+    event.stopImmediatePropagation();
+    if (open && event.type === 'keydown' && event.key === 'Escape') {
+      event.preventDefault(); setOpen(false); button.focus(); return;
+    }
+    // stopPropagation alone leaves native button activation / focus traversal intact;
+    // preventing these defaults would make the Debug toggle unusable from the keyboard.
+    if (!nativeChromeKey && !nativeTab) event.preventDefault();
   }
   function intercept(event: Event): void {
     if (!open || disposed) return;
@@ -236,6 +277,7 @@ export function mountAnchorDebug(host: HTMLElement, getRoot: () => LayoutNode): 
   }
   const events = ['pointerdown', 'pointerup', 'pointermove', 'pointerover', 'pointerout', 'pointerenter', 'pointerleave', 'pointercancel', 'mousedown', 'mouseup', 'mousemove', 'mouseover', 'mouseout', 'mouseenter', 'mouseleave', 'click', 'dblclick', 'contextmenu', 'touchstart', 'touchmove', 'touchend', 'touchcancel', 'keydown', 'keyup', 'keypress', 'input', 'change', 'dragstart', 'dragover', 'drop'] as const;
   for (const name of events) doc.addEventListener(name, intercept, { capture: true, passive: false });
+  for (const name of ['keydown', 'keyup', 'keypress'] as const) win?.addEventListener(name, interceptKeyboard, { capture: true, passive: false });
   button.addEventListener('click', toggle);
   fold.addEventListener('click', toggleDetails);
   win?.addEventListener('resize', sync);
@@ -246,6 +288,9 @@ export function mountAnchorDebug(host: HTMLElement, getRoot: () => LayoutNode): 
       if (disposed) return;
       disposed = true;
       for (const name of events) doc.removeEventListener(name, intercept, true);
+      for (const name of ['keydown', 'keyup', 'keypress'] as const) win?.removeEventListener(name, interceptKeyboard, true);
+      heldKeys.clear(); quarantinedKeys.clear();
+      chromeInstances.delete(chrome);
       button.removeEventListener('click', toggle);
       fold.removeEventListener('click', toggleDetails);
       observer?.disconnect();

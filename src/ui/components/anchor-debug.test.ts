@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LayoutNode } from './types.js';
 import { renderNode } from './render.js';
 import { mountAnchorDebug } from './anchor-debug.js';
+import { KeyboardInputSource } from '../../net/host/local-input.js';
 
 const cleanups: Array<() => void> = [];
 afterEach(() => {
@@ -40,6 +41,82 @@ function geometry(el: HTMLElement, x: number, y: number, w: number, h: number, s
 }
 
 describe('parent anchor inspector', () => {
+  it('isolates the real window keyboard source with Debug/outside focus and releases held keys without false repeat edges', () => {
+    const source = new KeyboardInputSource('review', window, { KeyF: { action: 'review.fire' }, KeyW: { dy: -1 } });
+    cleanups.push(() => source.dispose());
+    const key = (target: EventTarget, type: string, code: string, repeat = false) => target.dispatchEvent(new KeyboardEvent(type, { key: code === 'KeyF' ? 'f' : 'w', code, repeat, bubbles: true, cancelable: true }));
+    const m = mount();
+    key(window, 'keydown', 'KeyF'); key(window, 'keydown', 'KeyW');
+    // The input owner consumes pre-inspection commands; UI never rolls back an already queued action.
+    expect(source.commandsForTick(1)[0]).toMatchObject({ move: { dy: -1 }, actions: [{ key: 'review.fire', phase: 'down' }] });
+    m.toggle.focus(); m.toggle.click();
+    expect(source.commandsForTick(2)).toEqual([]);
+    m.toggle.click();
+    key(window, 'keydown', 'KeyF', true); key(window, 'keydown', 'KeyW', true);
+    expect(source.commandsForTick(2)).toEqual([]);
+    m.toggle.click();
+    key(m.toggle, 'keyup', 'KeyF');
+    key(m.toggle, 'keydown', 'KeyF');
+    expect(source.commandsForTick(3)).toEqual([]);
+    key(m.toggle, 'keyup', 'KeyF');
+    const outside = document.createElement('button'); document.body.append(outside); outside.focus();
+    key(outside, 'keydown', 'KeyF');
+    expect(source.commandsForTick(4)).toEqual([]);
+    m.toggle.click();
+    key(window, 'keydown', 'KeyF', true);
+    expect(source.commandsForTick(5)).toEqual([]);
+    key(window, 'keyup', 'KeyF'); key(window, 'keyup', 'KeyW');
+    key(window, 'keydown', 'KeyF');
+    expect(source.commandsForTick(6)[0]?.actions).toEqual([{ source: 'review', key: 'review.fire', phase: 'down' }]);
+    key(window, 'keyup', 'KeyF');
+    m.toggle.click(); m.api.dispose();
+    key(window, 'keydown', 'KeyF');
+    expect(source.commandsForTick(7)[0]?.actions).toEqual([{ source: 'review', key: 'review.fire', phase: 'down' }]);
+  });
+
+  it('keeps native Debug Enter/Space/Tab defaults while stopping the real keyboard source and lets Escape exit', () => {
+    const source = new KeyboardInputSource('review', window, { Enter: { action: 'enter' }, Space: { jump: true }, Tab: { action: 'tab' } });
+    cleanups.push(() => source.dispose());
+    const m = mount(); m.toggle.focus(); m.toggle.click();
+    for (const [key, code] of [['Enter', 'Enter'], [' ', 'Space'], ['Tab', 'Tab']]) {
+      const down = new KeyboardEvent('keydown', { key, code, bubbles: true, cancelable: true });
+      m.toggle.dispatchEvent(down);
+      expect(down.defaultPrevented).toBe(false);
+      m.toggle.dispatchEvent(new KeyboardEvent('keyup', { key, code, bubbles: true, cancelable: true }));
+      expect(source.commandsForTick(1)).toEqual([]);
+    }
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true }));
+    expect(m.toggle.getAttribute('aria-pressed')).toBe('false');
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true }));
+    expect(source.commandsForTick(2)[0]?.actions?.[0]?.key).toBe('enter');
+  });
+
+  it.each([1, 2, .65])('draws the scrolled parent content origin with border and scale %s', scale => {
+    const tree = scene();
+    tree.children![0].layout = { width: 60, height: 20, parentAnchor: { preset: 'bottom-right', offset: { x: -12, y: -12 } } };
+    const m = mount(tree);
+    const parent = m.get('canvas'), selected = m.get('group');
+    geometry(parent, 20, 30, 400 * scale, 300 * scale, scale);
+    let scrollLeft = 0, scrollTop = 0;
+    Object.defineProperties(parent, { scrollLeft: { get: () => scrollLeft }, scrollTop: { get: () => scrollTop } });
+    const anchorX = () => 20 + (2 + 396 - scrollLeft) * scale;
+    const anchorY = () => 30 + (2 + 296 - scrollTop) * scale;
+    vi.spyOn(selected, 'getBoundingClientRect').mockImplementation(() => {
+      const right = anchorX() - 12 * scale, bottom = anchorY() - 12 * scale;
+      return { x: right - 60 * scale, y: bottom - 20 * scale, left: right - 60 * scale, top: bottom - 20 * scale, right, bottom, width: 60 * scale, height: 20 * scale, toJSON() {} };
+    });
+    m.toggle.click(); selected.click();
+    for (const [left, top] of [[0, 0], [35, 60], [0, 0]]) {
+      scrollLeft = left; scrollTop = top; parent.dispatchEvent(new Event('scroll'));
+      const range = m.overlay.querySelector('[data-debug-anchor="range"]')!;
+      const line = m.overlay.querySelector('[data-debug-anchor="link"]')!;
+      expect(Number(range.getAttribute('x'))).toBeCloseTo(anchorX(), 8);
+      expect(Number(range.getAttribute('y'))).toBeCloseTo(anchorY(), 8);
+      expect(Number(line.getAttribute('x1')) - Number(line.getAttribute('x2'))).toBeCloseTo(12 * scale, 8);
+      expect(Number(line.getAttribute('y1')) - Number(line.getAttribute('y2'))).toBeCloseTo(12 * scale, 8);
+    }
+  });
+
   it('starts closed, blocks business pointer/click/key activation while inspecting, Escape restores interaction', () => {
     const m = mount();
     const buy = m.get('buy');
@@ -66,6 +143,7 @@ describe('parent anchor inspector', () => {
     expect(m.toggle.getAttribute('aria-pressed')).toBe('false');
     expect(m.overlay.childElementCount).toBe(0);
     buy.click();
+    buy.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
     buy.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     expect(action).toHaveBeenCalledTimes(2);
     expect(key).toHaveBeenCalledTimes(1);
