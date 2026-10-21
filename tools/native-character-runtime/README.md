@@ -33,6 +33,14 @@ or model is shipped. The native canvas observes host resizing and refits its
 camera without reloading textures/restarting playback. `npm test` covers the
 resize observer, hidden zero-size protection and disconnect.
 
+Player rasterization follows screen density up to 2x in each dimension while
+camera/layout/ground coordinates stay in CSS pixels. WebGL antialiasing is
+explicitly requested; the canvas `data-native-antialias` diagnostic reports
+what the browser actually granted. Existing generated mipmaps are now sampled
+with trilinear minification to reduce fine-fur shimmer at room scale; linear
+magnification is unchanged. This does not repaint fur or apply whole-image blur.
+Anchored build adapters preserve pinned source hashes and export buffer sizing.
+
 The main app and the generated player output must be deployed together. The
 platform whitelist packer is not changed by this task; integrations using that
 packer must explicitly include this player directory before claiming support.

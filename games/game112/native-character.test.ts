@@ -24,7 +24,7 @@ describe('Game112 consumes PUI native character data', () => {
       const cat = nodes.find(n => n.id === 'hall-cat')!;
       expect(cat.type).toBe('NativeCharacter');
       expect(cat.props).toMatchObject({ assetKey: XUETUAN_NATIVE_KEY, clip: 'idle', loop: true, fit: 'contain' });
-      expect(cat.layout).toEqual({ width: room.catSpot.w, height: room.catSpot.h });
+      expect(cat.layout).toEqual({ width: room.catSpot.w, height: room.catSpot.h, fx: [{ kind: 'glow', color: 'white', intensity: 0.1 }] });
       expect(nodes.find(n => n.id === 'hall-cat-wrap')).toMatchObject({ props: { action: 'cat.greet' }, layout: { x: room.catSpot.x, y: room.catSpot.y } });
       expect(validateLayoutNode(scene), room.id).toEqual([]);
     }

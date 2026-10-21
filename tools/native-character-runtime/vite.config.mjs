@@ -6,6 +6,7 @@ import { createRequire } from 'node:module';
 import tailwindcss from 'tailwindcss';
 import autoprefixer from 'autoprefixer';
 import { readFileSync } from 'node:fs';
+import { adaptNativeRaster, adaptNativeTexture } from './render-quality.mjs';
 const root = path.dirname(fileURLToPath(import.meta.url));
 const vendor = path.join(root, 'vendor/stretchystudio');
 const require = createRequire(import.meta.url);
@@ -25,6 +26,8 @@ export default defineConfig({
   plugins: [{
     name: 'apollo-native-transparent-player', enforce: 'pre',
     transform(source, id) {
+      if (id.split('?')[0].endsWith('/renderer/scenePass.js')) return adaptNativeRaster(source);
+      if (id.split('?')[0].endsWith('/renderer/partRenderer.js')) return adaptNativeTexture(source);
       if (id.split('?')[0].endsWith('/components/timeline/TimelinePanel.jsx')) {
         const audioAnchor = 'function useAudioSync(animation, animStore) {';
         if (source.split(audioAnchor).length !== 2) throw new Error('Native audio hook changed: adapter anchor must match exactly once.');
@@ -32,7 +35,10 @@ export default defineConfig({
       }
       if (!id.split('?')[0].endsWith('/components/canvas/CanvasViewport.jsx')) return;
       if (source.split(anchor).length !== 2) throw new Error('Native viewport changed: adapter anchor must match exactly once.');
-      return source.replace(anchor, 'sceneRef.current.draw(projectRef.current, editorRef.current, isDarkRef.current, poseOverrides, { exportMode: new URLSearchParams(location.search).get("mode") === "player" });');
+      const contextAnchor = "{ alpha: true, premultipliedAlpha: false, stencil: true, preserveDrawingBuffer: true }";
+      if (source.split(contextAnchor).length !== 2) throw new Error('Native WebGL context changed: adapter anchor must match exactly once.');
+      return source.replace(contextAnchor, '{ alpha: true, antialias: true, premultipliedAlpha: false, stencil: true, preserveDrawingBuffer: true }')
+        .replace(anchor, 'sceneRef.current.draw(projectRef.current, editorRef.current, isDarkRef.current, poseOverrides, { exportMode: new URLSearchParams(location.search).get("mode") === "player" });');
     },
   }, {
     name: 'native-player-license',

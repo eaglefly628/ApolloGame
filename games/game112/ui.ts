@@ -186,7 +186,7 @@ function catLayer(v: HallView, room: RoomSpec): LayoutNode {
       // Native poster contract permits same-origin paths only. Before the
       // optional art index arrives, preserve the existing generated SVG fallback.
       v.catId === 'xuetuan' && catSrc.startsWith('/')
-        ? { type: 'NativeCharacter', id: 'hall-cat', props: { assetKey: XUETUAN_NATIVE_KEY, poster: catSrc, fit: 'contain', alt: `${v.catName}安静地陪在房间里`, clip: 'idle', loop: true }, layout: { width: w, height: h } }
+        ? { type: 'NativeCharacter', id: 'hall-cat', props: { assetKey: XUETUAN_NATIVE_KEY, poster: catSrc, fit: 'contain', alt: `${v.catName}安静地陪在房间里`, clip: 'idle', loop: true }, layout: { width: w, height: h, fx: [{ kind: 'glow', color: 'white', intensity: 0.1 }] } }
         : { type: 'Image', id: 'hall-cat', props: { src: catSrc, fit: 'contain', alt: `${v.catName}安静地陪在房间里`, meshMotion: xuetuanMotion(catSrc, room.id === 'hall' && v.itemActivity !== 'none') }, layout: { width: w, height: h } },
     ],
   };

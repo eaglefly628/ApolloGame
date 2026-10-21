@@ -144,6 +144,9 @@ export function installNativeBridge(loadRef) {
     if (destroyed) return;
     const gl = document.querySelector('canvas')?.getContext('webgl2');
     if (!gl) { console.error('[native-character] WebGL2 unavailable'); return; }
+    const antialias = gl.getContextAttributes()?.antialias ?? false;
+    document.querySelector('canvas').dataset.nativeAntialias = String(antialias);
+    console.info(`[native-character] decision: screen density ${globalThis.devicePixelRatio}; raster capped at2x; WebGL antialias=${antialias}`);
     window.parent.postMessage({ channel, type: 'ready' }, location.origin);
     if (new URLSearchParams(location.search).get('demo') === '1') {
       queue = queue.then(async () => {
