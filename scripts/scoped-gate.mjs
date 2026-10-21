@@ -216,8 +216,11 @@ export function planFor(c, auditGames = [], faces = {}) {
   // 治的病：蓝图挂了组件而它的能力没装进该游戏 capabilities 清单 → 组件静静地什么都不做、零告警
   //（2026-09-28 game102 `Tray` 实撞·「弹尽入槽」整条机制从没接通而所有门全绿）。
   // 为什么不只挂夜跑：这一轮的教训正是「慢车道红了三周没人知」——新守卫必须站在推送门上。
-  const INERT = auditGames.length
-    ? [{ name: `inert-comp:${auditGames.join('+')}`, cmd: ['npx', ['vite-node', 'scripts/inert-component-guard.mjs', ...auditGames]] }]
+  // game-i 没有守卫要求的统一 blueprint.ts 入口；内部 ECS 演示另有入口，CLI 本来不覆盖。
+  // 仍跑 audit/tsc/tests/build。将来新增统一入口须撤销此过滤；混合批次中的游戏仍受检查。
+  const inertGames = auditGames.filter(game => game !== 'game-i');
+  const INERT = inertGames.length
+    ? [{ name: `inert-comp:${inertGames.join('+')}`, cmd: ['npx', ['vite-node', 'scripts/inert-component-guard.mjs', ...inertGames]] }]
     : [];
   // 面触发守卫（REQ-GUARDGATE·见文件头）：按 facesOf 旗点名进计划、红=拦（无 allowExit 放行档）。
   // 放 AUDIT 后、TSC 前——①②是秒级静态扫描先咬省大头；③冒烟稍重但美术面改动本就该先过它

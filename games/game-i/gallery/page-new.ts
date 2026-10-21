@@ -270,7 +270,7 @@ export function buildPageNew(controls: ControlsState): LayoutNode {
         }]) },
 
       divider('d-n10'),
-      sectionTitle('t-grid', 'PANEL · cols 固定列数 grid + justify 主轴分布'),
+      sectionTitle('t-fixed-grid', 'PANEL · cols 固定列数 grid + justify 主轴分布'),
       { type: 'Panel', id: 'grid-cols', props: { title: 'grid · cols:4（严格 4 列等分·消空隙）' }, layout: { direction: 'grid', cols: 4, gap: 8, padding: 14 },
         children: [1, 2, 3, 4, 5, 6, 7, 8].map((n): LayoutNode => ({ type: 'Badge', id: `gc-${n}`, props: { text: `格 ${n}`, tone: 'dim' } })) },
       { type: 'Panel', id: 'just-row', props: { title: 'flex row · justify:between（两端对齐均分）' }, layout: { direction: 'row', justify: 'between', padding: 14 },
@@ -287,7 +287,7 @@ export function buildPageNew(controls: ControlsState): LayoutNode {
       sectionTitle('t-flip', 'PLAYINGCARD · flipOnHover 悬停翻面（鼠标悬停露背面信息子树）'),
       { type: 'Panel', id: 'flip-row', props: {}, layout: { direction: 'row', padding: 14, align: 'center' },
         children: [
-          { type: 'PlayingCard', id: 'flip-1', props: {
+          { type: 'PlayingCard', id: 'flip-legacy-hover', props: {
             rank: 'A', suit: '♠', label: '赵子龙', size: 'lg', flipOnHover: true,
             backFace: { type: 'Panel', id: 'flip-back', props: { bare: true }, layout: { direction: 'column', gap: 4 },
               children: [

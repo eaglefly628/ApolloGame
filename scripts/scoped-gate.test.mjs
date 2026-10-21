@@ -106,6 +106,17 @@ describe('scoped-gate × game-skill-audit（audit 进推送门·只扫改动游�
     expect(audit.cmd[1]).toEqual(['scripts/game-skill-audit.mjs', 'game-a', 'game-b']); // 点名传参·缺省(全库)绝不出现
   });
 
+  it('UI 展示台无 ECS blueprint：保留 audit 与构建门，混合批次仍检查真实游戏', () => {
+    const files = ['games/game-i/gallery/page-layout.ts'];
+    const plan = planFor(classify(files), auditGamesOf(files));
+    expect(plan.map(s => s.name)).toEqual(expect.arrayContaining(['audit:game-i', 'tsc', 'vitest:game-i', 'build']));
+    expect(plan.some(s => s.name.startsWith('inert-comp:'))).toBe(false);
+    const mixed = [...files, 'games/game-a/rules.ts'];
+    const inert = planFor(classify(mixed), auditGamesOf(mixed)).find(s => s.name.startsWith('inert-comp:'));
+    expect(inert.cmd).toEqual(['npx', ['vite-node', 'scripts/inert-component-guard.mjs', 'game-a']]);
+    expect(inert.allowExit).toBeUndefined();
+  });
+
   // 惰性组件守卫接线（owner 2026-09-28「引擎的问题需要改」）：与 audit 同触发、另列一步。
   // 钉它是因为「接线在、无人看守」正是本轮要治的病——不钉，将来谁把 ...INERT 从计划里删掉不会有东西变红。
   it('★ game scope：计划含 inert-comp 步·紧跟 audit·参数=改动游戏·红=拦', () => {

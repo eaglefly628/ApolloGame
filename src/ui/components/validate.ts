@@ -6,12 +6,13 @@
 
 import type { LayoutNode } from './types.js';
 import { catalogSpec } from './catalog.js';
+import { parentAnchorIssues } from './parent-anchor.js';
 
 export interface UiIssue {
   path: string;   // 节点路径（如 root/children[2]/bubble），定位用
   type: string;   // 组件 type
   kind: 'unknown-type' | 'missing-required' | 'bad-enum' | 'children-rule' | 'missing-id'
-    | 'naked-fill' | 'unsafe-style' | 'bad-repeat' | 'bad-layout-placement' | 'flatten-3d'; // ↑硬错 · ↓软建议（lintLayoutNode 专属·非阻塞）
+    | 'naked-fill' | 'unsafe-style' | 'bad-repeat' | 'bad-layout-placement' | 'flatten-3d' | 'bad-parent-anchor' | 'duplicate-id'; // ↑硬错 · ↓软建议（lintLayoutNode 专属·非阻塞）
   detail: string;
   severity?: 'error' | 'warn'; // 缺省=error（validateLayoutNode 全是硬错）；lint 的建议=warn（不进零 issue 门）
 }
@@ -22,6 +23,11 @@ const FX_COLORS = new Set(['danger', 'gold', 'jade', 'warn', 'ok', 'white']);
 
 /** 验一棵 LayoutNode 树（递归 children + node 型 props），返回全部 issue（空=合法）。 */
 export function validateLayoutNode(node: LayoutNode, path = 'root'): UiIssue[] {
+  // 新 Canvas 合同要求全树 id 唯一；旧树保持既有校验语义，避免无关历史页面被增量升级打断。
+  const usesCanvas = (n: LayoutNode): boolean => !!n && (n.layout?.parentAnchor !== undefined || n.layout?.direction === 'overlay' || !!n.children?.some(usesCanvas));
+  return validateNode(node, path, new Set(), undefined, usesCanvas(node));
+}
+function validateNode(node: LayoutNode, path: string, ids: Set<string>, parent: LayoutNode | undefined, strictIds: boolean): UiIssue[] {
   const issues: UiIssue[] = [];
   if (!node || typeof node !== 'object') {
     issues.push({ path, type: String((node as { type?: string } | null)?.type), kind: 'unknown-type', detail: '节点非对象' });
@@ -29,6 +35,9 @@ export function validateLayoutNode(node: LayoutNode, path = 'root'): UiIssue[] {
   }
   const t = node.type as string;
   if (!node.id) issues.push({ path, type: t, kind: 'missing-id', detail: '缺 id（mountUI diff / 引导锚点都需要每节点有 id）' });
+  else if (strictIds && ids.has(node.id)) issues.push({ path, type: t, kind: 'duplicate-id', detail: `重复实例 id: ${node.id}` });
+  else ids.add(node.id);
+  for (const detail of parentAnchorIssues(node, parent)) issues.push({ path, type: t, kind: 'bad-parent-anchor', detail });
   // P2b：样式逃生口 `{custom}` / 裸色串只许 CSS 色与渐变/url 字符，出现 ; " < > \\ 或 expression( / javascript: 即硬错
   //（render 侧另有 safeFill 兜底净化；这里在数据层就拒收，让弱模型的坏数据在校验环被点名而不是被静默改写）。
   for (const [k, v] of Object.entries((node.props ?? {}) as Record<string, unknown>)) {
@@ -92,12 +101,12 @@ export function validateLayoutNode(node: LayoutNode, path = 'root'): UiIssue[] {
   }
 
   // 递归：子节点 + node 型 props（backFace / bubble）
-  kids?.forEach((ch, i) => issues.push(...validateLayoutNode(ch, `${path}/children[${i}]`)));
+  kids?.forEach((ch, i) => issues.push(...validateNode(ch, `${path}/children[${i}]`, ids, node, strictIds)));
   for (const ps of spec.props) {
     if (ps.type === 'node') {
       const sub = props[ps.name] as LayoutNode | undefined;
       if (sub && typeof sub === 'object' && (sub as LayoutNode).type) {
-        issues.push(...validateLayoutNode(sub, `${path}/${ps.name}`));
+        issues.push(...validateNode(sub, `${path}/${ps.name}`, ids, undefined, strictIds));
       }
     }
   }

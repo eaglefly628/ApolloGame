@@ -4,6 +4,7 @@
 import { SHELL } from '../shell-theme.js';
 import { ART_FONT_FAMILY } from './art-fonts.js';
 import { emojifyHtml } from './emoji.js';
+import { normalizeParentAnchor } from './parent-anchor.js';
 import type {
   LayoutNode, LayoutConstraints, UITheme, VisualEffect, EffectColor, EdgeColor,
   ButtonProps, LabelProps, DropdownProps, BadgeProps, InputProps, PanelProps,
@@ -136,15 +137,24 @@ function layoutStyle(c?: LayoutConstraints, t?: UITheme): string {
   else if (c.y !== undefined) { p.push(`top:${num(c.y)}px`); p.push('position:absolute'); }
   if (c.width   !== undefined) p.push(`width:${num(c.width)}px`);
   if (c.height  !== undefined) p.push(`height:${num(c.height)}px`);
+  if (c.parentAnchor) {
+    const { pivot } = normalizeParentAnchor(c.parentAnchor);
+    // 控件皮常有 transition:all；布局重算不能被它插值成短暂错位。
+    p.push('position:absolute', 'box-sizing:border-box', 'margin:0', `transform-origin:${pivot.x * 100}% ${pivot.y * 100}%`, 'transition-property:background-color,color,border-color,box-shadow,opacity,filter,transform');
+  }
+  if (c.minWidth !== undefined) p.push(`min-width:${num(c.minWidth)}px`);
+  if (c.minHeight !== undefined) p.push(`min-height:${num(c.minHeight)}px`);
+  if (c.maxHeight !== undefined) p.push(`max-height:${num(c.maxHeight)}px`);
   if (c.flex    !== undefined) p.push(`flex:${num(c.flex)}`);
   if (c.padding !== undefined) p.push(`padding:${num(c.padding)}px`);
   if (c.margin  !== undefined) p.push(`margin:${num(c.margin)}px`);
   // maxWidth（响应式封顶 + 块居中·整页居中 chrome）：max-width 上限 + 自动外边距居中（flex item 亦生效）；
   // 无显式 width 时补 width:100% → 窄屏铺满、宽屏封顶居中。放 margin 之后，让 auto 边距覆盖 margin 简写的左右值。
-  if (c.maxWidth !== undefined) {
+  if (c.maxWidth !== undefined && !c.parentAnchor) {
     p.push(`max-width:${num(c.maxWidth)}px`, 'margin-left:auto', 'margin-right:auto');
     if (c.width === undefined) p.push('width:100%');
   }
+  if (c.maxWidth !== undefined && c.parentAnchor) p.push(`max-width:${num(c.maxWidth)}px`);
   // Transform（2D 旋转/缩放 + 3D 倾斜/景深）：声明式数据 → CSS transform。扇形手牌/选中放大/透视 UI/真 3D 翻面/景深叠层。
   // 3D：perspective() 必须最前；有 rotateX/rotateY/z 任一 → 自动补 perspective（缺省 800px）+ preserve-3d（让子层景深合成）。
   const has3d = c.rotateX !== undefined || c.rotateY !== undefined || c.z !== undefined || c.perspective !== undefined;
@@ -193,7 +203,7 @@ function layoutStyle(c?: LayoutConstraints, t?: UITheme): string {
     if (f.css) {
       // REQ-UI-BUG-fx与绝对定位不兼容：x/y 已给 position:absolute（本身即定位祖先·fx 的 ::after 照样定位）→
       // 别让 fx 的 position:relative 覆盖它（否则绝对定位失效、元素跑位）。仅无 x/y 时才需 fx 补 relative。
-      const hasAbs = c.x !== undefined || c.y !== undefined;
+      const hasAbs = !!c.parentAnchor || c.x !== undefined || c.y !== undefined;
       const css = hasAbs ? f.css.split(';').filter((s) => s !== 'position:relative').join(';') : f.css;
       if (css) p.push(css);
     }
@@ -448,7 +458,8 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
   const overflow = p.scroll ? 'overflow-y:auto;' : '';
   // grid 排布模式（卡牌格/货架）：cols=N 固定列数（严格等分·消空隙）；否则 auto-fill 自适应（minCol 定最小列宽）。非 grid 走 flex 行/列（支持 justify）。
   const gridCols = c?.cols !== undefined ? `repeat(${num(c.cols)},1fr)` : `repeat(auto-fill,minmax(${c?.minCol ?? 96}px,1fr))`;
-  const box = dir === 'grid'
+  const box = dir === 'overlay' ? 'display:block;box-sizing:border-box;min-width:0;min-height:0'
+    : dir === 'grid'
     ? `display:grid;grid-template-columns:${gridCols};gap:${gap}px;align-items:${align}`
     : `display:flex;flex-direction:${dir};gap:${gap}px;align-items:${align}${justify ? `;justify-content:${justify}` : ''}`;
   // chrome：非 bare 才画底/边框/圆角（bg 缺省主题 bg1·与 Screen.bg 同口径·令牌如 'var(--felt)'）；bare=透明无框只做分组。

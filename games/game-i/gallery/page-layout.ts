@@ -3,6 +3,7 @@
 
 import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { sectionTitle, divider, TEXTURE_URI } from './shared.js';
+import { buildParentAnchorDemo } from '../parent-anchor-demo.js';
 // ── 页 1 · 容器与布局 ────────────────────────────────────────
 // 函数（非 const）：每次渲染重建，让内部 sectionTitle 参与当次「子编号」计数（与其它 tab 页一致递增）。
 export function pageLayout(): LayoutNode { return {
@@ -11,6 +12,8 @@ export function pageLayout(): LayoutNode { return {
   props: { scroll: true },
   layout: { direction: 'column', gap: 18, padding: 20 },
   children: [
+    sectionTitle('t-parent-anchor', 'PANEL · 父锚点九宫格'),
+    buildParentAnchorDemo(),
     sectionTitle('t-row', 'PANEL · 横向 row'),
     {
       type: 'Panel',

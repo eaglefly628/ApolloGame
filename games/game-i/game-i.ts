@@ -336,7 +336,7 @@ export function mount(container: HTMLElement): () => void {
   }
 
   // 挂载一次；之后改状态都走 ui.update 局部更新（只补丁变化的子树·不整树重挂·Tab/滚动/输入态不丢·无黑屏）。
-  let ui = mountUI(galleryHost, buildTree(), handlers, theme());
+  let ui = mountUI(galleryHost, buildTree(), handlers, theme(), undefined, { debugAnchors: true });
   logUi = mountUI(logPane, buildLogPanel(), {}, theme()); // 事件日志面板：纯 LayoutNode 走 ZeroCraft Kit
   bindInputPad(); // 初次挂载后绑捕获板监听
   syncStage();    // 初次挂载：若直接进 sim 模块则挂渲染器
@@ -350,7 +350,7 @@ export function mount(container: HTMLElement): () => void {
       fresh.style.cssText = galleryHostCss;
       galleryHost.replaceWith(fresh);
       galleryHost = fresh;
-      ui = mountUI(galleryHost, buildTree(activeTab), handlers, theme()); // 挂在原停留页
+      ui = mountUI(galleryHost, buildTree(activeTab), handlers, theme(), undefined, { debugAnchors: true }); // 挂在原停留页
       if (overlayNode) showOverlay(overlayNode); // 浮层也换新皮
       reselectTab(); // 换皮后重选原 tab：程序化「点一下」逼重绘（修 M1 黑字）
     } else {

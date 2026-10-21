@@ -1,7 +1,9 @@
 export { renderNode, formatNumber, particleSimSpec, particleSize } from './render.js';
 export type { ParticleSimSpec } from './render.js';
 export { mountUI, showToast, ensureUiKeyframes, ensureWebfonts, cursorCss } from './server.js';
-export type { MountHandle } from './server.js';
+export type { MountHandle, MountOptions } from './server.js';
+export { ANCHOR_PRESETS, normalizeParentAnchor, solveParentAnchor } from './parent-anchor.js';
+export type { NormalizedParentAnchor, AnchorRect } from './parent-anchor.js';
 export { resolveBindings, isVisible, resolveDialogue } from './bindings.js';
 export type { UIDataSource, UIListItem, DialogueSource, DialogueView } from './bindings.js';
 export { UI_CATALOG, catalogSpec } from './catalog.js';
@@ -14,7 +16,7 @@ export { apolloOnyx, apolloBrocade, APOLLO_KIT } from './apollo-kit.js';
 export { solveLayout } from './layout-solver.js';
 export type { Rect, Size, MeasureFn } from './layout-solver.js';
 export type {
-  LayoutNode, LayoutConstraints, ComponentType, ComponentProps, HandlerMap, Handler, ActionSink, UITheme, UICursor, WebFont,
+  LayoutNode, LayoutConstraints, ParentAnchor, AnchorPoint, AnchorPreset, ComponentType, ComponentProps, HandlerMap, Handler, ActionSink, UITheme, UICursor, WebFont,
   VisualEffect, EffectKind, EffectColor, EdgeColor,
   ButtonProps, LabelProps, DropdownProps, BadgeProps, InputProps, PanelProps, SpriteStripProps, ImageMeshMotion,
   TableProps, TableColumn, TableRow, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps, TooltipProps,

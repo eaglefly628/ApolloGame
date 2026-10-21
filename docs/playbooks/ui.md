@@ -81,3 +81,19 @@
 
 - 做完/改完任何 LayoutNode UI → 跑 `/check-ui` 仪式（防重叠/对比度/透明度/布局卫生 + `validateLayoutNode` 零 issue + ui-audit 归零）。
 - 控件闭集里没有需要的控件 → `docs/workflow/requests.md` 提缺口，等主程扩 LayoutNode。**不手写 React。**
+
+## ⑥ 父锚点九宫格与 Debug
+
+`layout.parentAnchor` 管布局；旧 `layout.anchor` 管引导，`Float.anchorTo` 管活动目标。Gallery「容器与布局 → 父锚点九宫格」活范例：`games/game-i/parent-anchor-demo.ts`。
+```ts
+layout: { width:140, height:44, parentAnchor:{preset:'bottom-right',offset:{x:-12,y:-12}} } // 距直接父右下12
+layout: { height:44, parentAnchor:{anchorMin:{x:0,y:1},anchorMax:{x:1,y:1},pivot:{x:.5,y:1},insets:{left:12,right:12},offset:{y:-8}} } // 横伸缩、底留8
+```
+- 画布用 `Panel {bare:true}` + `direction:'overlay'`。直接子项锚到此父；根锚到 mount host。画布尺寸由显式尺寸或外层 flow 提供，绝对定位子项不撑大父画布；流式分组先包锚定 Panel，再在内部 row/column/grid 排。
+- 九点：`top-left/top-center/top-right/center-left/center/center-right/bottom-left/bottom-center/bottom-right`。预设展开为0/.5/1，默认pivot同名点；自定义默认pivot中心，可独立覆盖。预设与自定义坐标互斥。
+- 左上原点，右/下为正；参考父 padding-box，不再额外扣padding。overlay边框/标题放外层或显式子节点。min=max点轴：`位置=P+L*anchor+offset-size*pivot`；min<max伸缩轴：区间扣非负insets，再按min/max尺寸夹取、用pivot排封顶后的区间位置。
+- 点轴用width/height或内容测量；伸缩轴不填同轴width/height。支持`minWidth/minHeight/maxWidth/maxHeight`。空间不足报reject与`data-parent-anchor-error`，保留上次有效矩形，首次失败隐藏；恢复空间后重算。
+- 禁与x/y、flex、margin争夺控制；位移动画放锚定壳内部。专用浮层、props内部控件树不能冒充画布槽位。非法新契约在mount/update写DOM前拒收。
+- 浏览器ResizeObserver与`solveLayout`共享`solveParentAnchor`，保持逻辑子像素；不把缩放截图像素当输入。此能力不含自动安全区轨道、跨引擎包导入或字体一致性认证。
+- Debug：`mountUI(host,tree,handlers,theme,input,{debugAnchors:true})`；默认不开启，game-i显式开启按钮。点选时金框=选中、蓝框=父、紫线=锚点/pivot，显示声明/实际矩形/错误；flow与外层锚点分列。收起详情可继续点选，Esc/关闭恢复操作，不改布局、不派业务action。
+- 验收：`parent-anchor.test.ts`、`anchor-debug.test.ts`、`tools/audits/parent-anchor.audit.ts`。语义参考：[Unity Basic Layout](https://docs.unity3d.com/Packages/com.unity.ugui@2.0/manual/UIBasicLayout.html)、[Unreal UMG Anchors](https://dev.epicgames.com/documentation/en-us/unreal-engine/umg-anchors-in-unreal-engine-ui)；本引擎统一左上原点，不宣称资产格式兼容。

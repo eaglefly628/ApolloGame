@@ -16,8 +16,30 @@ export type ComponentType =
   | 'Float' | 'Connector'
   | 'dialog' | 'choiceList' | 'portrait';
 
+/** 九点只是父矩形归一化锚点的预设。坐标原点在左上，右/下为正。 */
+export type AnchorPreset = 'top-left' | 'top-center' | 'top-right'
+  | 'center-left' | 'center' | 'center-right'
+  | 'bottom-left' | 'bottom-center' | 'bottom-right';
+export interface AnchorPoint { x: number; y: number }
+/** 父锚点（Unity RectTransform / Unreal Canvas Slot 的几何语义）。
+ * preset 与 anchorMin/anchorMax 二选一；同轴 min=max 为定点，min<max 为伸缩。
+ * pivot 是自身对齐点，与父锚点独立；预设默认同名点，自定义默认中心。
+ * offset 用于定点轴（有符号）；insets 用于伸缩轴（向内非负）。
+ * 几何父 = 直接 LayoutNode 父 Panel 的 overlay 画布；根节点使用 mount host。
+ */
+export interface ParentAnchor {
+  preset?: AnchorPreset;
+  anchorMin?: AnchorPoint;
+  anchorMax?: AnchorPoint;
+  pivot?: AnchorPoint;
+  offset?: { x?: number; y?: number };
+  insets?: { top?: number; right?: number; bottom?: number; left?: number };
+}
+
 /** 布局约束：坐标/尺寸/弹性。x/y 触发绝对定位；flex 在父 Panel/Screen 内生效。 */
 export interface LayoutConstraints {
+  /** opt-in 父矩形锚定；不与 x/y、flex、margin 混用。原 anchor 字符串仍为引导标记。 */
+  parentAnchor?: ParentAnchor;
   x?: number;
   y?: number;
   width?: number;
@@ -25,9 +47,12 @@ export interface LayoutConstraints {
   /** 最大宽度上限 px（响应式·区别于固定 width）+ 自动外边距块居中。整页 chrome「居中圆角框」用：
    *  填一个 maxWidth 数字即得「窄屏铺满、宽屏封顶居中」（无显式 width 时填满到上限再居中）。复用面：所有页面级 UI。 */
   maxWidth?: number;
+  minWidth?: number;
+  minHeight?: number;
+  maxHeight?: number;
   flex?: number;
   gap?: number;
-  direction?: 'row' | 'column' | 'grid';
+  direction?: 'row' | 'column' | 'grid' | 'overlay';
   /** 仅 direction:'grid' 生效：单元格最小列宽 px（auto-fill 自适应列数·缺省 96）。卡牌格/货架填这一个数即得自适应网格。 */
   minCol?: number;
   /** 仅 direction:'grid' 生效：**固定列数**（覆盖 auto-fill → repeat(N,1fr)）。要「严格 N 列·格子等分父宽」时用（配 PlayingCard.fluid 让卡填满格、消卡间空隙）。 */

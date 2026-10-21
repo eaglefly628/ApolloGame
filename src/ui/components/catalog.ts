@@ -85,8 +85,9 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'shadow', type: 'object', describe: '硬边平移投影 {y:number, color?:SurfaceToken|色串}——卡通"浮空感"基件（渲 box-shadow:0 <y>px 0 <color>·硬边非模糊）。color 缺省=深墨·优先填 SurfaceToken 换皮自适应。区别 accent 柔光/press3d 交互态：这是常态投影。与 accent/skin/edge/shape 可叠' },
     ],
     sample: { type: 'Panel', id: 's-panel', props: { title: 'SECTION' }, layout: { direction: 'column', gap: 8, padding: 16 }, children: [{ type: 'Label', id: 's-panel-l', props: { text: '面板内容' } }] },
-    tags: ['面板', '框', '容器', '背景板', '分组', '卡片底', '侧栏', '牌桌'],
+    tags: ['面板', '框', '容器', '背景板', '分组', '卡片底', '侧栏', '牌桌', '父锚点', '九宫格', 'pivot', '伸缩', 'Canvas'],
     demo: [
+      { tab: 'tab-layout', section: 't-parent-anchor', note: '父矩形九点/独立 pivot/嵌套/伸缩；layout.parentAnchor，父 Panel direction:overlay bare:true' },
       { tab: 'tab-layout', section: 't-row', note: '横向 row 弹性分栏' },
       { tab: 'tab-layout', section: 't-col', note: '带标题的纵向容器' },
       { tab: 'tab-layout', section: 't-grid', note: '自适应网格货架' },

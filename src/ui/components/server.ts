@@ -10,6 +10,9 @@ import { ART_FONT_CJK_CSS } from './art-fonts-cjk.js';
 import { SHELL } from '../shell-theme.js';
 import type { LayoutNode, HandlerMap, ActionSink, UITheme, UICursor, ToastProps, VirtualListProps, WebFont, VideoProps } from './types.js';
 import { mountImageMeshMotions } from './image-mesh-motion.js';
+import { assertParentAnchorTree } from './parent-anchor.js';
+import { mountParentAnchors } from './parent-anchor-dom.js';
+import { mountAnchorDebug } from './anchor-debug.js';
 
 // ── 主题指针（REQ-STYLESET M0.6·render-only）：把 UITheme.cursor 令牌转成 CSS 光标 + 按下态 scoped 规则 ──
 /** 纯函数（可单测·无 DOM）：算 base 光标 CSS 值、按下态 CSS 值（有 press 才有）、去重键（按图内容哈希）。 */
@@ -45,6 +48,8 @@ function applyThemeCursor(host: HTMLElement, c?: UICursor): void {
 
 /** mountUI 句柄：调用即 teardown（向后兼容）；`.update(newTree, theme?)` 做局部更新（最小 diff）。 */
 export type MountHandle = (() => void) & { update: (root: LayoutNode, theme?: UITheme) => void };
+/** 调试仅显式开启；正式游戏默认不创建按钮、不拦截输入。 */
+export interface MountOptions { debugAnchors?: boolean }
 
 // 背景滚动关键帧名全局序号（多 mount 不撞名）。
 let __bgScrollSeq = 0;
@@ -353,7 +358,9 @@ export function mountUI(
   handlers: HandlerMap = {},
   theme: UITheme = SHELL,
   input?: ActionSink, // 传它 → 无本地 handler 的 action 走信号入队（UI 只发信号·逻辑入 sim 能力层·人/AI 共用动作总线）
+  options: MountOptions = {},
 ): MountHandle {
+  assertParentAnchorTree(root); // 写 DOM 前拒绝非法新契约，保留原界面。
   ensureUiKeyframes();
   ensureWebfonts(theme.webfonts);
   ensureArtFonts();
@@ -363,6 +370,8 @@ export function mountUI(
   // 当前已挂载的树与主题（update 做最小 diff 的基线·VirtualList 复绑取数据）。
   let curRoot = root;
   let curTheme = theme;
+  const parentAnchors = mountParentAnchors(host, () => curRoot);
+  const anchorDebug = options.debugAnchors ? mountAnchorDebug(host, () => curRoot) : undefined;
 
   // ── 数据驱动动效初始化（render-only·**可重入**·REQ-UICONTRACT③）────────────────────────────────
   // 把带 data-* 动效标记的元素初始化：typewriter 逐字 / tween 数字滚动 / flyto 弧线飞 / bgscroll 背景滚动。
@@ -931,6 +940,7 @@ export function mountUI(
   // 换皮（theme 变）：颜色烤进渲染串、props 不变 → diff 测不出，整根子树按新主题重渲一次
   // （替换 host 的单个子元素，非 host.innerHTML 全清）；其余情况走按 id 的 reconcile。
   const update = (newRoot: LayoutNode, newTheme?: UITheme): void => {
+    assertParentAnchorTree(newRoot);
     const themeChanged = !!(newTheme && newTheme !== curTheme);
     if (themeChanged) { curTheme = newTheme!; applyThemeCursor(host, curTheme.cursor); } // 换皮同步主题指针
     // 整根重挂条件：① 换皮（换主题令牌包·全盘换色）② **换根**（新根 id ≠ 旧根 id·如牌桌 a-play→结算 a-result）。
@@ -945,6 +955,8 @@ export function mountUI(
       reconcileNode(host, curRoot, newRoot, curTheme);
     }
     curRoot = newRoot;
+    parentAnchors.sync();
+    anchorDebug?.sync();
     bindVlists(); // 子树可能被替换 → 复绑 vlist 滚动监听
     ensureAnchorLoop(); // update 引入锚定件（Float/Connector）→ 启动跟随 rAF（幂等·game-i 从 hub .update 进模块的路径）
     ensureParticleFollowLoop(); // update 引入 Particles follow:'cursor' → 启动光标微尘 rAF（幂等）
@@ -954,6 +966,8 @@ export function mountUI(
   };
 
   const teardown = (() => {
+    anchorDebug?.dispose();
+    parentAnchors.dispose();
     host.removeEventListener('ended', onVideoEnded, true);   // capture 参数须与挂时一致，否则摘不掉
     host.removeEventListener('click',       dispatch);
     host.removeEventListener('click',       switchTab);
