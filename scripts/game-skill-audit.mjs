@@ -22,6 +22,7 @@
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { isNonGameProject } from './lib/non-game-projects.mjs';
 
 const GAMES_DIR = 'games';
 const wanted = process.argv.slice(2);
@@ -106,6 +107,11 @@ const games = readdirSync(GAMES_DIR).filter((g) => {
   } catch {
     return false;
   }
+}).filter((g) => {
+  // 非游戏项目（scripts/lib/non-game-projects.mjs·owner 2026-10-21）不按游戏审：点名也跳过。
+  if (!isNonGameProject(g)) return true;
+  console.info(`[game-skill-audit] skip: ${g} 不属于游戏（non-game-projects 名单），不适用游戏层红旗/棘轮`);
+  return false;
 });
 
 const rows = games.map(audit);

@@ -75,6 +75,13 @@ describe('scoped-gate × game-skill-audit（audit 进推送门·只扫改动游�
     expect(auditGamesOf(['games/game-b/y.ts', 'games/game-a/x.ts', 'games/game-a/z.ts'])).toEqual(['game-a', 'game-b']);
   });
 
+  it('auditGamesOf：非游戏项目（game113·non-game-projects 名单）→ 不触发游戏层 audit/惰性组件步', () => {
+    expect(auditGamesOf(['games/game113/guide-art.ts', 'games/game113/app.tsx'])).toEqual([]);
+    expect(auditGamesOf(['games/game113/app.tsx', 'games/game-a/rules.ts'])).toEqual(['game-a']);
+    expect(planFor(classify(['games/game113/app.tsx']), auditGamesOf(['games/game113/app.tsx']), facesOf(['games/game113/app.tsx'])).map((s) => s.name))
+      .toEqual(expect.arrayContaining(['tsc', 'vitest:game113', 'build']));
+    expect(planFor(classify(['games/game113/app.tsx']), auditGamesOf(['games/game113/app.tsx']), facesOf(['games/game113/app.tsx'])).some((s) => /^(audit|inert-comp):/.test(s.name))).toBe(false);
+  });
   it('auditGamesOf：纯文档/设计档/public 资产/引擎面 → 不触发（audit 只读游戏源码）', () => {
     expect(auditGamesOf(['games/game-a/README.md'])).toEqual([]);
     expect(auditGamesOf(['docs/design/game-a/gdd.md'])).toEqual([]);

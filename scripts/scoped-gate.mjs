@@ -34,6 +34,7 @@
 //   守卫脚本自身被改也触发各自守卫（改守卫先自证仍能跑绿）。
 import { execSync, spawnSync } from 'node:child_process';
 import { SLOW_TARGETS } from './slow-lane-guard.mjs';
+import { isNonGameProject } from './lib/non-game-projects.mjs';
 
 // ── 引擎/共享面前缀（碰到=full·与 CLAUDE.md 引擎域界一致）───────────────────────
 const ENGINE_PREFIXES = [
@@ -98,7 +99,8 @@ export function auditGamesOf(files) {
   const set = new Set();
   for (const f of files.filter(Boolean)) {
     const m = f.match(/^games\/([a-z0-9-]+)\//);
-    if (m && !f.endsWith('.md')) set.add(m[1]);
+    // 非游戏项目不进游戏层 audit/惰性组件步（构建健康 tsc/vitest/build 照跑）。
+    if (m && !f.endsWith('.md') && !isNonGameProject(m[1])) set.add(m[1]);
   }
   return [...set].sort();
 }

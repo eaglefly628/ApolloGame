@@ -32,6 +32,8 @@ beforeAll(() => {
   put('games/fx-clock/sim.ts', 'export const t0 = Date.now();\nexport const t1 = performance.now();\n');
   // ③ DOM 逃生两式同文件
   put('games/fx-dom/hack.ts', "document.body.insertAdjacentHTML('beforeend', '<b>x</b>');\ndocument.write('y');\n");
+  // ⑤ 非游戏项目（scripts/lib/non-game-projects.mjs）：同样的 React 屏样本，但目录名在名单里
+  put('games/game113/page.tsx', 'export const Page = () => null;\n');
 });
 afterAll(() => rmSync(TMP, { recursive: true, force: true }));
 
@@ -99,5 +101,21 @@ describe('Q1 新指标接入棘轮：Lead 批注基线覆盖 → 显示不红判
     expect(all).toContain('批注覆盖');
     expect(all).toContain('RATCHET: PASS');
     expect(all).not.toContain('AUDIT: FAIL');
+  }, 60000);
+});
+
+describe('非游戏项目（owner 2026-10-21：game113 不属于游戏）', () => {
+  it('全量扫描与点名都跳过，红旗样本不进判词也不进棘轮', () => {
+    for (const games of [[], ['game113']]) {
+      const { code, all } = runAudit(games);
+      expect(all).toContain('skip: game113 不属于游戏');
+      expect(all).not.toContain('games/game113/page.tsx');
+      if (games.length) { expect(code).toBe(0); expect(all).toContain('RATCHET: PASS'); }
+    }
+  }, 60000);
+  it('同样的样本换个游戏名照旧红判（名单之外不受影响）', () => {
+    const { code, all } = runAudit(['fx-react']);
+    expect(code).toBe(1);
+    expect(all).not.toContain('skip:');
   }, 60000);
 });
