@@ -4,6 +4,14 @@
 **新增移植代码时必须在这里登记**（Apache-2.0 第 4 条等许可证要求「随分发附带许可证正文与修改说明」，
 只在源文件里写一行 SPDX 是不够的）。
 
+## Stretchy Studio · 原生二维角色播放器
+
+- 上游：[MangoLion/stretchystudio](https://github.com/MangoLion/stretchystudio)，2026-10-10 固定归档 SHA256 `a21b4fa27078349442935f9af6c9815b95d4f7cf79dd68f73330f13b1d0b7ffc`。
+- MIT，Copyright (c) 2026 Nguyen Phan。完整正文：`tools/native-character-runtime/vendor/stretchystudio/LICENSE`，构建同时附 `LICENSE-STRETCHYSTUDIO.txt`。
+- 210 份上游文件保持逐字节不变；原工作台来源记录及哈希清单保留，发行验证只覆盖实际包含的 Stretchy Studio 子树，不声称分发/验证 See-through 推理工具。
+- 外层适配：同源消息桥、透明背景、原生音频 hook 导出、contain 投影、播放器专用入口；构建将不用的 ONNX 作者工具依赖替换成显式拒绝模块，不携带推理 WASM/模型，不修改原生渲染/网格/动画算法。并非 Cubism SDK。
+- 生成美术及 `.stretch` 候选文件仍属本机资源，许可与来源单列；不由本许可证自动批准入戏。
+
 ---
 
 ## Spritegen（离线美术技能）

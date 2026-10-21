@@ -8,7 +8,7 @@
 
 ## 待处理 / 进行中
 
-### REQ-112-UI-12 · 通用原生分层角色 LayoutNode 控件 · [2026-10-21] · owner 判 A · **施工主体 = PUI（game112 聊天委派 `pui_native_ui` · 本行即锁）** · status: in-progress（锁单，待 PUI 开工） · P1
+### REQ-112-UI-12 · 通用原生分层角色 LayoutNode 控件 · [2026-10-21] · owner 判 A · **施工主体 = PUI（game112 聊天委派 `pui_native_ui` · 本行即锁）** · status: in-progress（0700fd787已锁，实现完成，独立复查与目标GPU验收中） · P1
 - **真人判词**：「A：补通用控件，由 PUI 施工（推荐）」。复用已有 `mountNativeCharacter`，不实施 Game112 专用 iframe 例外；不扩 sim/确定性能力。
 - **实查 / A/B / 验收**：`docs/design/game112/requests.md` 同号单。现有 `ComponentType`/`ImageProps`/catalog 无原生模型消费者，Image 的 sprite/meshMotion 不能解 `.stretch`。
 - **写死边界**：PUI 只改 `src/ui/**`、`games/game-i/**`、UI 手册及本域测试；提供闭集数据控件、catalog/validate、同源播放器装载、静态 poster 回退、重载/卸载及命中透传。不得改引擎端口、sim、工作台 vendor 或其它游戏；Game112 消费/发行运行时由本聊天分别负责。

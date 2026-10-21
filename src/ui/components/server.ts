@@ -13,6 +13,8 @@ import { mountImageMeshMotions } from './image-mesh-motion.js';
 import { assertParentAnchorTree } from './parent-anchor.js';
 import { mountParentAnchors } from './parent-anchor-dom.js';
 import { mountAnchorDebug } from './anchor-debug.js';
+import { mountNativeCharacters, type NativeCharactersOptions } from './native-character.js';
+import { assertNativeCharacterTree } from './native-character-data.js';
 
 // ── 主题指针（REQ-STYLESET M0.6·render-only）：把 UITheme.cursor 令牌转成 CSS 光标 + 按下态 scoped 规则 ──
 /** 纯函数（可单测·无 DOM）：算 base 光标 CSS 值、按下态 CSS 值（有 press 才有）、去重键（按图内容哈希）。 */
@@ -49,7 +51,7 @@ function applyThemeCursor(host: HTMLElement, c?: UICursor): void {
 /** mountUI 句柄：调用即 teardown（向后兼容）；`.update(newTree, theme?)` 做局部更新（最小 diff）。 */
 export type MountHandle = (() => void) & { update: (root: LayoutNode, theme?: UITheme) => void };
 /** 调试仅显式开启；正式游戏默认不创建按钮、不拦截输入。 */
-export interface MountOptions { debugAnchors?: boolean }
+export interface MountOptions { debugAnchors?: boolean; nativeCharacters?: NativeCharactersOptions }
 
 // 背景滚动关键帧名全局序号（多 mount 不撞名）。
 let __bgScrollSeq = 0;
@@ -147,6 +149,19 @@ function reconcileNode(scope: ParentNode, oldN: LayoutNode, newN: LayoutNode, th
   const el = uiFindById(scope, newN.id);
   if (!el) return; // 上层未变才会递进到此；找不到则跳过（安全）
   if (!uiOwnSame(oldN, newN)) {
+    if (oldN.type === 'NativeCharacter' && newN.type === 'NativeCharacter' && el.hasAttribute('data-native-character')) {
+      // Keep the frame and pending player alive on data/layout updates. Asset changes
+      // are handled (and old HTTP aborted) by the centralized native lifecycle sync.
+      const template = el.ownerDocument.createElement('template');
+      template.innerHTML = renderNode(newN, theme);
+      const fresh = template.content.firstElementChild!;
+      for (const a of Array.from(el.attributes)) if (!fresh.hasAttribute(a.name) && !a.name.startsWith('data-native-')) el.removeAttribute(a.name);
+      for (const a of Array.from(fresh.attributes)) el.setAttribute(a.name, a.value);
+      const poster = el.querySelector('[data-native-poster]');
+      const newPoster = fresh.querySelector('[data-native-poster]');
+      if (poster && newPoster && poster.getAttribute('src') !== newPoster.getAttribute('src')) poster.setAttribute('src', newPoster.getAttribute('src') ?? '');
+      return;
+    }
     // 节点**自身** props/layout 变了 → 整体替换这棵最浅子树（含焦点保护）。
     if (patchVideoInPlace(el, newN)) return;   // REQ-112-ENG-11：Video 就地改属性，绝不重建（不黑帧）
     if (patchFocusedInput(el, newN)) return;
@@ -360,6 +375,7 @@ export function mountUI(
   input?: ActionSink, // 传它 → 无本地 handler 的 action 走信号入队（UI 只发信号·逻辑入 sim 能力层·人/AI 共用动作总线）
   options: MountOptions = {},
 ): MountHandle {
+  assertNativeCharacterTree(root);
   assertParentAnchorTree(root); // 写 DOM 前拒绝非法新契约，保留原界面。
   ensureUiKeyframes();
   ensureWebfonts(theme.webfonts);
@@ -372,6 +388,7 @@ export function mountUI(
   let curTheme = theme;
   const parentAnchors = mountParentAnchors(host, () => curRoot);
   const anchorDebug = options.debugAnchors ? mountAnchorDebug(host, () => curRoot) : undefined;
+  const nativeCharacters = mountNativeCharacters(host, () => curRoot, options.nativeCharacters);
 
   // ── 数据驱动动效初始化（render-only·**可重入**·REQ-UICONTRACT③）────────────────────────────────
   // 把带 data-* 动效标记的元素初始化：typewriter 逐字 / tween 数字滚动 / flyto 弧线飞 / bgscroll 背景滚动。
@@ -722,6 +739,7 @@ export function mountUI(
       b.style.color = on ? theme.gold : theme.sub;
       b.style.borderBottomColor = on ? theme.gold : 'transparent';
     });
+    nativeCharacters.sync(); // hidden tab destroys players; revisiting lazily remounts
   };
 
   // Modal 遮罩点击关闭（引擎内建）：仅当点击**落在遮罩本身**（非弹窗体内部）时触发 closeAction。
@@ -773,7 +791,10 @@ export function mountUI(
     const trigger = (e.target as HTMLElement).closest('[data-tooltip]') as HTMLElement | null;
     if (!trigger) return;
     const b = bubbleOf(trigger);
-    if (b) placeBubble(trigger, b);
+    if (b) {
+      placeBubble(trigger, b);
+      nativeCharacters.sync(); // node-valued tooltip bubbles can contain native characters
+    }
   };
   const tipHide = (e: Event): void => {
     const trigger = (e.target as HTMLElement).closest('[data-tooltip]') as HTMLElement | null;
@@ -781,7 +802,10 @@ export function mountUI(
     const to = (e as MouseEvent | FocusEvent).relatedTarget as Node | null;
     if (to && trigger.contains(to)) return; // 仍在触发元素内部 → 不隐
     const b = bubbleOf(trigger);
-    if (b) b.style.display = 'none';
+    if (b) {
+      b.style.display = 'none';
+      nativeCharacters.sync();
+    }
   };
 
   // Accordion 折叠切换（引擎内建）：点标题行 → 就地 toggle 折叠体 display + 箭头旋转（不重建·可选 action 信号另由 dispatch 发）。
@@ -796,6 +820,7 @@ export function mountUI(
     body.style.display = willOpen ? 'block' : 'none';
     const caret = head.querySelector<HTMLElement>('[data-accordion-caret]');
     if (caret) caret.style.transform = `rotate(${willOpen ? 90 : 0}deg)`;
+    nativeCharacters.sync(); // display-only toggles must share the removal/remount lifecycle
   };
 
   // Combobox 搜索下拉（引擎内建）：focus 开面板、input 过滤项、点项回填+发 action(arg=value)+合、点外合。
@@ -940,6 +965,7 @@ export function mountUI(
   // 换皮（theme 变）：颜色烤进渲染串、props 不变 → diff 测不出，整根子树按新主题重渲一次
   // （替换 host 的单个子元素，非 host.innerHTML 全清）；其余情况走按 id 的 reconcile。
   const update = (newRoot: LayoutNode, newTheme?: UITheme): void => {
+    assertNativeCharacterTree(newRoot);
     assertParentAnchorTree(newRoot);
     const themeChanged = !!(newTheme && newTheme !== curTheme);
     if (themeChanged) { curTheme = newTheme!; applyThemeCursor(host, curTheme.cursor); } // 换皮同步主题指针
@@ -955,6 +981,7 @@ export function mountUI(
       reconcileNode(host, curRoot, newRoot, curTheme);
     }
     curRoot = newRoot;
+    nativeCharacters.sync();
     parentAnchors.sync();
     anchorDebug?.sync();
     bindVlists(); // 子树可能被替换 → 复绑 vlist 滚动监听
@@ -966,6 +993,7 @@ export function mountUI(
   };
 
   const teardown = (() => {
+    nativeCharacters.dispose();
     anchorDebug?.dispose();
     parentAnchors.dispose();
     host.removeEventListener('ended', onVideoEnded, true);   // capture 参数须与挂时一致，否则摘不掉

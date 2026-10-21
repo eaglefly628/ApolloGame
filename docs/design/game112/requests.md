@@ -153,14 +153,16 @@
 ## REQ-112-UI-12 · 原生分层角色 LayoutNode 消费控件（2026-10-21）
 
 - **owner 裁决**：**A（2026-10-21）**——用户明确选择「A：补通用控件，由 PUI 施工（推荐）」。B 特例不实施；既有宿主端口复用，不新增游戏层 iframe。
-- **归属 / 锁**：**PUI · 本聊天委派的 `pui_native_ui` 施工代理**；状态 **accepted，待锁单提交推送后开工**。本聊天负责 Game112 消费数据及整体验收，独立复查另派，施工人不得自签复查。`src/ui/**` 只由 PUI 施工；不据此扩大到引擎核心或其它游戏。
+- **归属 / 锁**：**PUI · 本聊天委派的 `pui_native_ui` 施工代理**；锁已于 `0700fd787` 推送，状态 **in-progress：代码独立复查通过，样片批准与目标GPU验收待完成**。本聊天负责 Game112 消费数据及整体验收；独立复查 `native_review`，施工人不得自签复查。`src/ui/**` 只由 PUI 施工；不据此扩大到引擎核心或其它游戏。
 - **选定接入目标**：`xuetuan-face-v2.stretch`，SHA256 `3820ab47ba5d638fd92b5148af637352cc003a3aae7a04fe05e098e292518028`；与旧 `three-layer-pilot` 实验分开。隔离副本及接入契约在忽略的 `art-local/game112/native-character/integration/xuetuan-face-v2/`，不上传美术，不自动登记 filled。
 - **实查**：当前工作树 `src/ui/components/types.ts` 的 `ComponentType` 无原生角色控件，`ImageProps` 只有 src/sprite/meshMotion/bind；`catalog.ts` 的 Image 仍为图片、序列帧、单图微动。`node scripts/ui-find.mjs '分层角色' --json` 返回 `[]`（退出 1）；在本地 `codex/mainbranch` 对 `src/ui`、`src/assembly`、UI 手册及引擎池搜索 `nativeCharacter|NativeCharacter|native-character|.stretch` 无命中。源主目录的 `src/ui`、`src/assembly` 也无原生角色消费点。
 - **为何不能重组**：`games/game112/ui.ts` 的 `catLayer` 由 `mountUI` 消费 Image；已有 `mountNativeCharacter` 需要 HTMLElement 容器及同源运行时，由表现层负责异步装载、回退和销毁。把 `.stretch` 填进 Image.src 不会播放；游戏层自行插入 iframe 会绕过 LayoutNode。
 - **A（推荐）**：由 **PUI** 扩通用原生角色 LayoutNode 控件，复用现有宿主端口；统一处理布局、同源运行时、AssetIndex、参数命令、静态回退与卸载。跨游戏复用，需控件 schema/catalog/render/server/bindings/生命周期及测试；选错的代价是共享面维护与回归成本。
 - **B**：owner 明确批准 Game112 专用宿主挂载例外后，再限定文件与生命周期边界施工。不改通用控件，但布局、点击透传、房间切换、卸载和回退须单独维护，存在后续迁回通用控件的成本；未裁前不实施。
-- **控件契约与验收**：见本地 `integration-contract.json`（proposal，不是已经存在的 API）。游戏只给本地动画 key、片段/参数、poster、fit 与布局；运行时同源且不依赖 5192。必须保留 `hall-cat-wrap` 的 `cat.greet`、其它猫静态显示、各房猫位/接地点与遮挡；验证 1/.75/.5、切房销毁、丢资源/无 WebGL 回退、原有点击及真实 Game112 截图。
-- **素材限制保留**：新版眨眼/嘴部使用局部贴图渐变，没有音素同步或真实转身；接入选择不等于独立艺术验收，不能宣称已解决旧眨眼质量门。本轮仅核验/备料和留缺口记录，游戏尚未接入。
+- **现有契约**：`NativeCharacter{assetKey,poster,alt?,clip?,loop?,speed?,parameters?,fit?:'contain'}`；宿主 `mountUI` 第六参 `nativeCharacters:{index,baseUrl,runtimeUrl,timeoutMs?}`。Game112 已写 `hall-cat` 数据消费并保留外层 `cat.greet`、各房 `catSpot`；无本地图片时保留原 SVG。发行源在 `tools/native-character-runtime`，构建到忽略的 `/native-character/`（同源，不依赖5192；210份原生源码哈希保持，未携带推理WASM/候选图）。参数/超时/卸载/显隐由PUI维护，不在游戏加DOM。
+- **验证断点**：已有真实Game112待审资源回退目击、零iframe、原猫点击星砂0→1与台词更新；新版资产仍 `tbf`，尚未启用动画。独立复查抓出 Accordion/富Tooltip显隐遗漏，已返PUI修并补回归，需复查人重验；重缩放原生视口已补独立observer。首轮全量门禁暴露脚本误收/手册101行/本机Chrome探测路径问题，修正并指向实际已安装Chrome后669文件7201测试及构建退出0；最后修改后需再跑。既有美术台账game-a/game-c两处WARN未掩盖。
+- **待验收**：本机样片试玩批准未收到前不 `filled`，不替换主厅。启用后须真实GPU验证1/.75/.5、房间切换/缩放/遮挡、循环、无WebGL/HTTP回退。新版眼/嘴仍局部贴图渐变，无音素同步/真转身，不宣称艺术质量门已过或全猫完成。
+- **独立复查记录**：`review/REQ-112-UI-12.json`；44正式+8独立测试52/52、全UI/Game112/宿主639/639、tsc与发行构建退出0。参数夹取、端口销毁、三条显隐同步与fit observer分别撤修验红，恢复后通过。此记录只批准代码/测试范围，不是GPU/美术验收。
 
 ---
 

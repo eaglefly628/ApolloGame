@@ -18,6 +18,11 @@ export function pageDisplay(): LayoutNode { return {
   props: { scroll: true },
   layout: { direction: 'column', gap: 18, padding: 20 },
   children: [
+    sectionTitle('t-native-character', 'NATIVE CHARACTER · 本地分层角色 / 静态回退'),
+    { type: 'Panel', id: 'native-character-sample', props: { bare: true }, layout: { direction: 'row', gap: 16, align: 'center' }, children: [
+      { type: 'NativeCharacter', id: 'native-character-fallback', props: { assetKey: 'demo-character', poster: '/games/game112/art/placeholder/cat-xuetuan-rest.svg', alt: '分层角色静态回退样例', clip: 'controls', parameters: {} }, layout: { width: 160, height: 160 } },
+      { type: 'Label', id: 'native-character-help', props: { text: '未配置播放器时保留静态图；游戏宿主通过 mountUI 的 nativeCharacters 配置本地资源索引和同源运行时。手动参数请选无轨道 controls 片段。', color: 'sub' }, layout: { flex: 1 } },
+    ] },
     sectionTitle('t-lbl-size', 'LABEL · 字号（7 具名档 xs10…xxxl34 + 裸 px 任意档）'),
     {
       type: 'Panel',

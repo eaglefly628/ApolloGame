@@ -27,6 +27,8 @@
 - 三消棋盘玩法：`MatchBoard`（t3-match3-board·config 驱动确定性相位机）——交换/找连/消除产料 + 特殊糖（4 连条纹随 `stripedOrientation`·L/T 包装·5 连彩球·`comboTable` 组合）+ 格层（`jelly` 果冻/`blockers` 障碍/石块）+ 步数目标（`movesResource`/`jellyResource`/`blockerResource` 写 ResourceModify→现成 Condition 判胜负）；视图格 `BoardCell`+Clickable。缺口走 requests.md，勿手写消除逻辑。
 
 ## 二、3D UI 表达（CSS-3D · 2D LayoutNode · 非世界空间）
+
+- 分层二维角色：`NativeCharacter{assetKey,poster,clip?,parameters?}`，宿主配置 `mountUI(...,{nativeCharacters:{index,baseUrl,runtimeUrl}})`；复用原生 `.stretch` 端口，同源部署、失败保图、离场销毁。手动调参用无轨道 controls；game-i 数据展示 `t-native-character`（静态回退范例），接线与限制见 ui.md。
 - 变换：`layout.rotateX/rotateY/rotate/z/perspective`（真 3D 合成 preserve-3d·自动补透视）。
 - 交互：`tilt3d`（悬停立体抬起·桌面）· `press3d`（按压·触屏）· `PlayingCard.flipped`（state/点按真 3D 翻面·触屏）/ `flipOnHover`（桌面悬停翻）+ `backFace`。
 - 循环：`anim:'spin'`（匀速自旋·配 `rotate` → 幸运转盘/加载环/自旋徽章）。

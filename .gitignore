@@ -84,3 +84,7 @@ assets/ai/pending/
 assets/ai/openai-built-in/game112-cat-toy-*.png
 assets/curated/game112-cat-toys*.png
 public/games/game112/art/ai/openai-built-in/game112-cat-toy-*.png
+
+# Rebuildable native player + owner-selected local cat sample (not Git art storage).
+public/native-character/
+public/games/game112/art/animation/xuetuan-face-v2.stretch

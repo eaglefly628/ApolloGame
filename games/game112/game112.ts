@@ -19,6 +19,7 @@ import { EMPTY_CATALOG_BROWSE, sourceOf, type CatalogBrowse } from './cat-galler
 import { EMPTY_SHOP_BROWSE, shopCategoryOf, shopSortOf, shopValueOf, type ShopBrowse } from './shop-browse.js';
 import { STAR_TAIL_THEME } from './ui-theme.js';
 import { useKey, respondKey, removeKey, ITEM_CANCEL, experienceOf } from './item-data.js';
+import { GAME112_NATIVE_CHARACTERS } from './native-character.js';
 
 export const SAVE_CODEC: SaveCodec = { gameId: GAME_ID, schema: 1 };
 export const SAVE_SLOT = 'main';
@@ -136,7 +137,7 @@ export function mount(container: HTMLElement, host?: HostHooks, opts: { save?: S
       shopBrowse,
     }), { flag: (id) => (world !== undefined ? flagOn(world, id) : false) });
     if (handle) handle.update(node);
-    else handle = mountUI(container, node, handlers, STAR_TAIL_THEME);
+    else handle = mountUI(container, node, handlers, STAR_TAIL_THEME, undefined, { nativeCharacters: GAME112_NATIVE_CHARACTERS });
   };
 
   const persist = (): void => {

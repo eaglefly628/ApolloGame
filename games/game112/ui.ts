@@ -9,6 +9,7 @@ import { buildStarterHome } from '@zerocraft/engine/ui/starters/index.js';
 import { catArt, mapSkin, sceneSkin, propArt, shopkeeperArt } from './cat-art.js';
 import { ITEM_EXPERIENCES, experienceOf } from './item-data.js';
 import { shopkeeperMotion, xuetuanMotion } from './cat-motion.js';
+import { XUETUAN_NATIVE_KEY } from './native-character.js';
 import {
   SHOP_ITEMS, STARDUST_GRANTS, STARDUST_MAX, RELATIONS, CATS, TABLE_PLACEHOLDER, GAME_ID, STAGE_ONLY_FLAG, shopItemOf,
   ROOMS, roomOf, SCENE_W, SCENE_H, type RoomId, type RoomSpec,
@@ -182,7 +183,11 @@ function catLayer(v: HallView, room: RoomSpec): LayoutNode {
     type: 'Panel', id: 'hall-cat-wrap', props: { bare: true, action: 'cat.greet' },
     layout: { x: room.catSpot.x, y: room.catSpot.y, width: w, height: h, direction: 'column', align: 'center', padding: 0 },
     children: [
-      { type: 'Image', id: 'hall-cat', props: { src: catSrc, fit: 'contain', alt: `${v.catName}安静地陪在房间里`, meshMotion: xuetuanMotion(catSrc, room.id === 'hall' && v.itemActivity !== 'none') }, layout: { width: w, height: h } },
+      // Native poster contract permits same-origin paths only. Before the
+      // optional art index arrives, preserve the existing generated SVG fallback.
+      v.catId === 'xuetuan' && catSrc.startsWith('/')
+        ? { type: 'NativeCharacter', id: 'hall-cat', props: { assetKey: XUETUAN_NATIVE_KEY, poster: catSrc, fit: 'contain', alt: `${v.catName}安静地陪在房间里`, clip: 'idle', loop: true }, layout: { width: w, height: h } }
+        : { type: 'Image', id: 'hall-cat', props: { src: catSrc, fit: 'contain', alt: `${v.catName}安静地陪在房间里`, meshMotion: xuetuanMotion(catSrc, room.id === 'hall' && v.itemActivity !== 'none') }, layout: { width: w, height: h } },
     ],
   };
 }

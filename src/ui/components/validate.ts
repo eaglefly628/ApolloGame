@@ -7,12 +7,13 @@
 import type { LayoutNode } from './types.js';
 import { catalogSpec } from './catalog.js';
 import { parentAnchorIssues } from './parent-anchor.js';
+import { nativeCharacterIssues } from './native-character-data.js';
 
 export interface UiIssue {
   path: string;   // 节点路径（如 root/children[2]/bubble），定位用
   type: string;   // 组件 type
   kind: 'unknown-type' | 'missing-required' | 'bad-enum' | 'children-rule' | 'missing-id'
-    | 'naked-fill' | 'unsafe-style' | 'bad-repeat' | 'bad-layout-placement' | 'flatten-3d' | 'bad-parent-anchor' | 'duplicate-id'; // ↑硬错 · ↓软建议（lintLayoutNode 专属·非阻塞）
+    | 'naked-fill' | 'unsafe-style' | 'bad-repeat' | 'bad-layout-placement' | 'flatten-3d' | 'bad-parent-anchor' | 'duplicate-id' | 'bad-native-character'; // ↑硬错 · ↓软建议（lintLayoutNode 专属·非阻塞）
   detail: string;
   severity?: 'error' | 'warn'; // 缺省=error（validateLayoutNode 全是硬错）；lint 的建议=warn（不进零 issue 门）
 }
@@ -34,6 +35,9 @@ function validateNode(node: LayoutNode, path: string, ids: Set<string>, parent: 
     return issues;
   }
   const t = node.type as string;
+  if (t === 'NativeCharacter') for (const detail of nativeCharacterIssues(node.props)) {
+    issues.push({ path, type: t, kind: 'bad-native-character', detail });
+  }
   if (!node.id) issues.push({ path, type: t, kind: 'missing-id', detail: '缺 id（mountUI diff / 引导锚点都需要每节点有 id）' });
   else if (strictIds && ids.has(node.id)) issues.push({ path, type: t, kind: 'duplicate-id', detail: `重复实例 id: ${node.id}` });
   else ids.add(node.id);

@@ -1,0 +1,59 @@
+{
+  "request": "REQ-112-UI-12",
+  "reviewer": "/root/native_review (not implementation author)",
+  "date": "2026-10-21",
+  "workspace": "/private/tmp/game112-native-ui.I8jWaj",
+  "baseHead": "0700fd787",
+  "result": "PASS_SCOPED_CODE_AND_TESTS_ONLY",
+  "implementationEditedByReviewer": false,
+  "commitOrPushByReviewer": false,
+  "tests": [
+    { "command": "npx vitest run src/ui/components/native-character.test.ts art-local/independent-review/REQ-112-UI-12/native-regression.test.ts --config art-local/independent-review/REQ-112-UI-12/review-vitest.config.ts --no-cache", "exit": 0, "passed": 52, "details": "44 implementation tests plus 8 reviewer tests; independently rerun after removing mutation environment" },
+    { "command": "npx vitest run src/ui/components games/game112 src/engine/host/native-character.test.ts --no-cache", "exit": 0, "files": 77, "passed": 639 },
+    { "command": "npx tsc --noEmit", "exit": 0 },
+    { "command": "npm test --prefix tools/native-character-runtime", "exit": 0, "details": "210 upstream file hashes unchanged; contain projection nine dimension/viewport combinations; observer initial/resize/zero-size/disconnect" },
+    { "command": "npm run build --prefix tools/native-character-runtime", "exit": 0, "details": "1721 modules; index-DyUJlSG8.js 788.08kB, gzip253.13kB; no .wasm/.onnx/generated raster/cat bundle in output; MIT notice exists" }
+  ],
+  "independentFindingsResolved": [
+    { "finding": "Initially hidden Accordion and rich Tooltip did not mount native child when opened; Accordion close did not release player", "before": "reviewer 8 tests: 3 failures", "after": "PUI added centralized sync on display-only transitions; reviewer 8 tests and official 44 pass" },
+    { "finding": "Same-node resizing kept native camera fit from load size", "after": "Runtime ResizeObserver recomputes contain camera only, does not reload/restart, skips zero-size and disconnects" }
+  ],
+  "withdrawalTests": [
+    { "kind": "parameter clamp", "isolation": "Vite in-memory transform only", "uniqueAnchorCount": 1, "withdrawnResult": "1 failed / 36 passed", "restoredResult": "37 passed at that revision", "anchor": "values[p.id] = Math.max(p.min, Math.min(p.max, raw));" },
+    { "kind": "port destroy", "isolation": "Vite in-memory transform only", "uniqueAnchorCount": 1, "withdrawnResult": "7 failed / 30 passed", "restoredResult": "37 passed at that revision", "anchor": "e.port?.destroy();" },
+    { "kind": "display-only lifecycle sync", "isolation": "Vite in-memory transform only; original server.ts untouched", "uniqueAnchors": "3 separate anchors, each asserted exactly once", "withdrawnResult": "9 failed / 43 passed", "restoredResult": "52 passed", "coverage": "Accordion open/close and pending async; Tooltip hover/focus and pending async; nested visibility. Internal relatedTarget and ContextMenu trigger stability also independently rerun in official tests." },
+    { "kind": "native fit observer", "isolation": "own ignored copied module and check only", "uniqueAnchorCount": 1, "anchor": "const observer = new Observer(fit);", "mutation": "Observer(() => {})", "withdrawnResult": "exit 1, 200-to-100 resize fit stale", "restoredResult": "exit 0" }
+  ],
+  "checks": {
+    "closedContract": "New type rejects invalid props/duplicate native ids before DOM update; alt/path serialization escaped; arbitrary player URL not a LayoutNode prop",
+    "origin": "UI runtime/base/asset/poster resolved to current HTTP(S) origin; host messages require matching frame source, origin and channel",
+    "assets": "Only filled animation + stretch + local .stretch path mounts; unavailable/wrong type/spec/path returns poster",
+    "lifecycle": "Poster retained through ready/load/initial commands; deadline destroys and aborts; late completions guarded; update preserves iframe for same identity; removal/ancestor replacement/teardown release",
+    "parameters": "Known parameter map only, finite model ranges, all defaults reset then clamp; speed .1..4; existing tracks may override manual controls by documented contract",
+    "scope": "No new sim capability; runtime vendored source is byte-identical; Game112 consumes data control rather than private DOM insertion",
+    "game112": "Index still tbf/no path/modelReady false; this review has NOT promoted candidate. Room root id changes remount scene, while same-node resize refits through observer."
+  },
+  "warningsRead": [
+    "UI parent-anchor negative tests log insufficient stretch 30/40 below minimum100; expected rejection fixtures, not ignored new defect",
+    "Runtime main JS chunk exceeds500kB; successful build but performance/bundle-size follow-up remains",
+    "Platform whitelist packer is unchanged; README requires explicit runtime inclusion before claiming that deployment target supported"
+  ],
+  "limits": [
+    "No browser/GPU screenshot or native visual acceptance performed by this reviewer",
+    "Stub UI tests do not prove PNG quality, anatomical correctness, transitions or animation aesthetics",
+    "100MiB asset limit is checked after response buffering, not a streaming memory ceiling; this is a local approved AssetIndex bundle path, not a general untrusted archive service",
+    "Candidate remains tbf and user sample-play approval is separate",
+    "This scoped review is not a substitute for parent full repository gate or actual deployment verification"
+  ],
+  "sha256": {
+    "src/ui/components/native-character.ts": "a20af776d75f3935b8bec24b2347dbf1c2e549706635f068d67f63823111f3ef",
+    "src/ui/components/native-character-data.ts": "e74c13a58aef5628efe6113228e66cca4d97aaddb1c748ecccbf621c8f0f1add",
+    "src/ui/components/server.ts": "7967b605cae31f2f3b93b48050f2f72ae17a8a46b81531a9fe2da4a3c876bb8f",
+    "src/ui/components/native-character.test.ts": "7186446914b843956cc5da8158b4a8e8bf5ef3c4ac5e1d77904fd8b01cece207",
+    "tools/native-character-runtime/native-bridge.mjs": "2a24431b85dbb05939834a226dae6f8c3b0e66a9e072ce37c8f12c0f55f904ef",
+    "tools/native-character-runtime/fit-observer.mjs": "7dc9035c610ae93434eadf720f37da405695d58a46b97c6d78b92a0ab3707d82",
+    "tools/native-character-runtime/preview-fit.mjs": "ebd3287e09995d138c401f9c32b8e1cb2875a52238a6f7368f54e04123377152",
+    "games/game112/native-character.ts": "58d33f6a241d65fbb265d29c1614b3f8f3dcda8fed47670bf74096280ce5ffec",
+    "public/games/game112/art/index.json": "dcdb86228d76c7bd228d7ddfd87764a6d07d012d0625ffb09b0fc93b032d1436"
+  }
+}

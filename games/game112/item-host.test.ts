@@ -5,7 +5,10 @@ import { mount, SAVE_CODEC, SAVE_SLOT, REGISTRY_SLOT, normalizeState } from './g
 import { EMPTY_STATE } from './blueprint.js';
 import { TICK_MS } from './world-data.js';
 
-vi.mock('@zerocraft/engine/assets/index.js', () => ({ loadGameArtOverrides: async () => ({}) }));
+vi.mock('@zerocraft/engine/assets/index.js', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@zerocraft/engine/assets/index.js')>(),
+  loadGameArtOverrides: async () => ({}),
+}));
 
 describe('真实宿主的物件闭环', () => {
   it('空档领见面星砂 → 确认交换纸袋 → 读档后不能重复领取', async () => {

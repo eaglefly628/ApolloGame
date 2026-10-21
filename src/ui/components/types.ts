@@ -8,7 +8,7 @@ import type { EmojiConfig } from './emoji.js';
 
 export type ComponentType =
   | 'Panel' | 'Button' | 'Label' | 'Dropdown' | 'Badge' | 'Input' | 'Divider'
-  | 'Checkbox' | 'Toggle' | 'RadioGroup' | 'Image' | 'Screen' | 'Slider'
+  | 'Checkbox' | 'Toggle' | 'RadioGroup' | 'Image' | 'NativeCharacter' | 'Screen' | 'Slider'
   | 'Table' | 'Tabs' | 'ProgressBar' | 'Tag' | 'Modal' | 'Toast' | 'Tooltip'
   | 'Card' | 'PlayingCard' | 'Stepper' | 'Segmented' | 'Avatar' | 'Accordion'
   | 'Rating' | 'Combobox' | 'Drawer' | 'VirtualList' | 'ContextMenu'
@@ -370,6 +370,23 @@ export interface ImageMeshMotion {
     scale?: readonly [number, number];
     harmonic?: number;
   }>;
+}
+
+/** Native layered character presentation; host configuration owns the player and index. */
+export interface NativeCharacterProps {
+  /** Filled animation AssetIndex id, spec.format='stretch'; never a free iframe URL. */
+  assetKey: string;
+  /** Local static fallback; always retained until ready/load/play succeeds. */
+  poster: string;
+  alt?: string;
+  fit?: 'contain';
+  /** Omitted: first clip in the bundle. Use a track-free controls clip for manual parameters. */
+  clip?: string;
+  loop?: boolean;
+  /** Finite positive speed, clamped to .1..4. */
+  speed?: number;
+  /** Model parameter ids; finite values clamped to the loaded model's declared ranges. */
+  parameters?: Readonly<Record<string, number>>;
 }
 
 /** 图片/图标。fit 控制 object-fit；radius 为圆角 px；sprite 把同一张横向序列条解释成循环角色动画。 */
@@ -756,7 +773,7 @@ export interface PortraitProps {
 
 export type ComponentProps =
   | ButtonProps | LabelProps | DropdownProps | BadgeProps | InputProps | PanelProps
-  | CheckboxProps | ToggleProps | RadioGroupProps | ImageProps | ScreenProps | SliderProps
+  | CheckboxProps | ToggleProps | RadioGroupProps | ImageProps | NativeCharacterProps | ScreenProps | SliderProps
   | TableProps | TabsProps | ProgressBarProps | TagProps | ModalProps | ToastProps | TooltipProps
   | CardProps | PlayingCardProps | StepperProps | SegmentedProps | AvatarProps | AccordionProps
   | RatingProps | ComboboxProps | DrawerProps | VirtualListProps | ContextMenuProps

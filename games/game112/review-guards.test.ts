@@ -68,7 +68,8 @@ describe('game112 守卫（复查门点名·撤修必红）', () => {
     // 没有过渡帧前，摸猫不能把坐姿瞬间替换成另一张全身姿态。
     const src = (pose: 'rest' | 'lookup'): string => {
       const tree = buildScreen({ screen: 'scene', room: 'hall', view: { ...s.hall(), pose, relations: { ...s.hall().relations, mood: 0 } } });
-      return String((walk(tree).find((n) => n.id === 'hall-cat')!.props as { src: string }).src);
+      const props = walk(tree).find((n) => n.id === 'hall-cat')!.props as { src?: string; poster?: string };
+      return props.poster ?? props.src ?? '';
     };
     expect(src('lookup')).toBe(src('rest'));
     // 心光进度移到实底 HUD，避免晶球热区副标签盖住房内装饰。

@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/MangoLion/stretchystudio",
+  "archive": "https://codeload.github.com/MangoLion/stretchystudio/tar.gz/refs/heads/master",
+  "archiveSha256": "a21b4fa27078349442935f9af6c9815b95d4f7cf79dd68f73330f13b1d0b7ffc",
+  "downloadedOn": "2026-10-10",
+  "license": "MIT",
+  "sourceDirectory": "vendor/stretchystudio",
+  "distributedPinnedFiles": 210,
+  "modifiedUpstreamFiles": [],
+  "originalWorkbenchRecord": "workbench-source.json",
+  "inferenceDistributed": false,
+  "candidateArtDistributed": false,
+  "status": "code-only-player; target GPU and art acceptance are separate gates"
+}

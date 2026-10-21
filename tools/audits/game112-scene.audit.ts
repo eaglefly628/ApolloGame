@@ -1,8 +1,9 @@
-import { mountUI } from '../../src/ui/components/index.js';
+import { mountUI, resolveBindings, type LayoutNode } from '../../src/ui/components/index.js';
 import { STAR_TAIL_THEME } from '../../games/game112/ui-theme.js';
 import { HallSession } from '../../games/game112/session.js';
 import { buildScene } from '../../games/game112/ui.js';
 import { setSkinOverrides } from '../../games/game112/cat-art.js';
+import { flagOn } from '../../games/game112/project.js';
 
 setSkinOverrides({
   'game112/scene/hall': '/games/game112/art/scene/star-tail-main-hall-bg-v2.png',
@@ -13,9 +14,14 @@ setSkinOverrides({
   'game112/cat/xuetuan-turn': '/games/game112/art/cat/xuetuan-turn-v2.png',
 });
 
+/** Same pre-render world Flag projection as the real Game112 host, not a raw builder tree. */
+export function buildGame112SceneAudit(session = new HallSession(112)): LayoutNode {
+  return resolveBindings(buildScene(session.hall(), 'hall'), { flag: id => flagOn(session.world, id) });
+}
+
 mountUI(
   document.getElementById('root')!,
-  buildScene(new HallSession(112).hall(), 'hall'),
+  buildGame112SceneAudit(),
   {},
   STAR_TAIL_THEME,
 );

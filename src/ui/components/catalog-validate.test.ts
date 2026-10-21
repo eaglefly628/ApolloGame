@@ -8,7 +8,7 @@ import type { ComponentType, LayoutNode } from './types.js';
 // 全部 ComponentType（运行时取不到 union·硬列对照；新增组件须同步补目录，否则本测红）。
 const ALL_TYPES: ComponentType[] = [
   'Panel', 'Button', 'Label', 'Dropdown', 'Badge', 'Input', 'Divider', 'Checkbox', 'Toggle', 'RadioGroup',
-  'Image', 'Screen', 'Slider', 'Table', 'Tabs', 'ProgressBar', 'Tag', 'Modal', 'Toast', 'Tooltip',
+  'Image', 'NativeCharacter', 'Screen', 'Slider', 'Table', 'Tabs', 'ProgressBar', 'Tag', 'Modal', 'Toast', 'Tooltip',
   'Card', 'PlayingCard', 'Stepper', 'Segmented', 'Avatar', 'Accordion', 'Rating', 'Combobox', 'Drawer',
   'VirtualList', 'ContextMenu', 'CoinFlip', 'Versus', 'Video', 'Particles', 'LevelPath', 'Float', 'Connector',
   'dialog', 'choiceList', 'portrait',

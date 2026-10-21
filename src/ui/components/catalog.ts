@@ -146,6 +146,22 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
     ],
   },
   {
+    type: 'NativeCharacter', summary: '原生二维分层角色（本地 .stretch）', whenToUse: '播放已登记分层角色；无需游戏手写 iframe。先显示 poster，原生 ready/load/play 成功才显动画，失败保留静态图。手动参数用无轨道 controls clip；动画轨道优先于参数。', children: 'none',
+    props: [
+      { name: 'assetKey', type: 'string', required: true, describe: 'AssetIndex filled animation id，spec.format=stretch；不是 URL' },
+      { name: 'poster', type: 'string', required: true, describe: '本地静态后备图路径；动画失败仍显示' },
+      { name: 'alt', type: 'string', describe: '角色替代文本' },
+      { name: 'fit', type: 'enum', values: ['contain'], default: 'contain', describe: '保持模型完整画布比例，不裁脚/耳' },
+      { name: 'clip', type: 'string', describe: '模型片段 id；不填取首片段；手动参数测试选 controls' },
+      { name: 'loop', type: 'boolean', default: true, describe: '循环播放' },
+      { name: 'speed', type: 'number', default: 1, describe: '有限正数，运行时夹取 .1..4' },
+      { name: 'parameters', type: 'object', describe: '模型参数 id→有限数字；按模型范围夹取。动画轨道优先，非强制覆盖' },
+    ],
+    sample: { type: 'NativeCharacter', id: 's-native-character', props: { assetKey: 'demo-character', poster: '/ui/native-character-poster.png', clip: 'idle', loop: true, alt: '二维角色' }, layout: { width: 200, height: 200 } },
+    tags: ['分层', '原生角色', '猫', 'stretch', '角色动画', '骨骼', '眨眼'],
+    demo: [{ tab: 'tab-display', section: 't-native-character', note: '数据控件与未配置静态回退；运行时配置由 mountUI 提供' }],
+  },
+  {
     type: 'Divider', summary: '分隔线', whenToUse: '分隔区块。', children: 'none', props: [],
     sample: { type: 'Divider', id: 's-divider', props: {} },
     tags: ['分隔线', '分割', '横线', '分区', '隔断', '分割线'],

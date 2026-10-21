@@ -8,13 +8,14 @@ import { normalizeParentAnchor } from './parent-anchor.js';
 import type {
   LayoutNode, LayoutConstraints, UITheme, VisualEffect, EffectColor, EdgeColor,
   ButtonProps, LabelProps, DropdownProps, BadgeProps, InputProps, PanelProps,
-  CheckboxProps, ToggleProps, RadioGroupProps, ImageProps, ScreenProps, SliderProps,
+  CheckboxProps, ToggleProps, RadioGroupProps, ImageProps, NativeCharacterProps, ScreenProps, SliderProps,
   TableProps, TableColumn, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps, TooltipProps,
   CardProps, PlayingCardProps, StepperProps, SegmentedProps, AvatarProps, AccordionProps,
   RatingProps, ComboboxProps, DrawerProps, VirtualListProps, ContextMenuProps,
   CoinFlipProps, VersusProps, VideoProps, ParticlesProps, LevelPathProps, FloatProps, ConnectorProps, AnchorRef,
   DialogProps, ChoiceListProps, PortraitProps,
 } from './types.js';
+import { nativeLocalPath } from './native-character-data.js';
 
 const esc = (s: string): string =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -586,6 +587,12 @@ function renderImage(id: string, p: ImageProps, ls: string, layout?: LayoutConst
     return `<span id="${esc(id)}" role="img" aria-label="${esc(p.alt ?? '')}" data-image-mesh="${esc(JSON.stringify(p.meshMotion))}" style="display:block;position:relative;border-radius:${radius}px;${ls}"><img data-mesh-poster src="${esc(p.src)}" alt="" style="display:block;width:100%;height:100%;object-fit:contain;border-radius:inherit"><canvas data-mesh-canvas aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;border-radius:inherit"></canvas></span>`;
   }
   return `<img id="${esc(id)}" src="${esc(p.src)}" alt="${esc(p.alt ?? '')}" style="object-fit:${fit};border-radius:${radius}px;display:block;max-width:100%;${ls}">`;
+}
+
+/** Static fallback only. Native player lifecycle is centralized in mountUI. */
+function renderNativeCharacter(id: string, p: NativeCharacterProps, ls: string): string {
+  const poster = nativeLocalPath(p.poster) ? p.poster : '';
+  return `<span id="${esc(id)}" data-native-character role="img" aria-label="${esc(p.alt ?? '')}" style="display:block;position:relative;overflow:hidden;pointer-events:none;${ls}"><img data-native-poster src="${esc(poster)}" alt="" style="display:block;width:100%;height:100%;object-fit:contain;pointer-events:none"><span data-native-stage aria-hidden="true" style="position:absolute;inset:0;opacity:0;pointer-events:none"></span></span>`;
 }
 
 function renderScreen(id: string, p: ScreenProps, children: LayoutNode[], t: UITheme): string {
@@ -1353,6 +1360,7 @@ function renderDispatch(node: LayoutNode, theme: UITheme = SHELL): string {
     case 'Toggle':     return renderToggle(node.id, node.props as ToggleProps, ls, t);
     case 'RadioGroup': return renderRadioGroup(node.id, node.props as RadioGroupProps, ls, t);
     case 'Image':      return renderImage(node.id, node.props as ImageProps, ls, node.layout);
+    case 'NativeCharacter': return renderNativeCharacter(node.id, node.props as NativeCharacterProps, ls);
     case 'Screen':     return renderScreen(node.id, node.props as ScreenProps, node.children ?? [], t);
     case 'Slider':     return renderSlider(node.id, node.props as SliderProps, ls, t);
     case 'Table':      return renderTable(node.id, node.props as TableProps, ls, t);
