@@ -150,6 +150,20 @@
 
 ---
 
+## REQ-112-UI-12 · 原生分层角色 LayoutNode 消费控件（2026-10-21）
+
+- **owner 裁决**：**A（2026-10-21）**——用户明确选择「A：补通用控件，由 PUI 施工（推荐）」。B 特例不实施；既有宿主端口复用，不新增游戏层 iframe。
+- **归属 / 锁**：**PUI · 本聊天委派的 `pui_native_ui` 施工代理**；状态 **accepted，待锁单提交推送后开工**。本聊天负责 Game112 消费数据及整体验收，独立复查另派，施工人不得自签复查。`src/ui/**` 只由 PUI 施工；不据此扩大到引擎核心或其它游戏。
+- **选定接入目标**：`xuetuan-face-v2.stretch`，SHA256 `3820ab47ba5d638fd92b5148af637352cc003a3aae7a04fe05e098e292518028`；与旧 `three-layer-pilot` 实验分开。隔离副本及接入契约在忽略的 `art-local/game112/native-character/integration/xuetuan-face-v2/`，不上传美术，不自动登记 filled。
+- **实查**：当前工作树 `src/ui/components/types.ts` 的 `ComponentType` 无原生角色控件，`ImageProps` 只有 src/sprite/meshMotion/bind；`catalog.ts` 的 Image 仍为图片、序列帧、单图微动。`node scripts/ui-find.mjs '分层角色' --json` 返回 `[]`（退出 1）；在本地 `codex/mainbranch` 对 `src/ui`、`src/assembly`、UI 手册及引擎池搜索 `nativeCharacter|NativeCharacter|native-character|.stretch` 无命中。源主目录的 `src/ui`、`src/assembly` 也无原生角色消费点。
+- **为何不能重组**：`games/game112/ui.ts` 的 `catLayer` 由 `mountUI` 消费 Image；已有 `mountNativeCharacter` 需要 HTMLElement 容器及同源运行时，由表现层负责异步装载、回退和销毁。把 `.stretch` 填进 Image.src 不会播放；游戏层自行插入 iframe 会绕过 LayoutNode。
+- **A（推荐）**：由 **PUI** 扩通用原生角色 LayoutNode 控件，复用现有宿主端口；统一处理布局、同源运行时、AssetIndex、参数命令、静态回退与卸载。跨游戏复用，需控件 schema/catalog/render/server/bindings/生命周期及测试；选错的代价是共享面维护与回归成本。
+- **B**：owner 明确批准 Game112 专用宿主挂载例外后，再限定文件与生命周期边界施工。不改通用控件，但布局、点击透传、房间切换、卸载和回退须单独维护，存在后续迁回通用控件的成本；未裁前不实施。
+- **控件契约与验收**：见本地 `integration-contract.json`（proposal，不是已经存在的 API）。游戏只给本地动画 key、片段/参数、poster、fit 与布局；运行时同源且不依赖 5192。必须保留 `hall-cat-wrap` 的 `cat.greet`、其它猫静态显示、各房猫位/接地点与遮挡；验证 1/.75/.5、切房销毁、丢资源/无 WebGL 回退、原有点击及真实 Game112 截图。
+- **素材限制保留**：新版眨眼/嘴部使用局部贴图渐变，没有音素同步或真实转身；接入选择不等于独立艺术验收，不能宣称已解决旧眨眼质量门。本轮仅核验/备料和留缺口记录，游戏尚未接入。
+
+---
+
 ## 定项问询（owner 一并判）
 - **§5 竖切三环**：Loop-0（主厅静态 + 星爪牌 + 星砂/杂货铺 + 一段回忆）零媒体缺口先跑 S4 → Loop-1 逗猫 + 序列帧猫 → Loop-2 上传/生成。⬜ 准 ⬜ 按 GDD §16.1 一次到位。
 - **名字**：立项卡暂用工作名《星尾会客厅》（GDD 🟡）。
