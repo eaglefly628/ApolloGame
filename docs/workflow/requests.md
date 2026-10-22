@@ -89,10 +89,6 @@
 
 <!-- REQ-AIFLOW-SCENELOAD：独立复查通过，判词08ba7e0ac；施工955826af4。按完工清池规则移出，全文查git历史。 -->
 
-### REQ-GROUND-TELEPORT · R2 贴地角色显式传送/复活（`GroundTeleport3D` 意图）· [2026-10-21] · owner 判 A（主干代码 review 带出）· **施工主体 = Claude（2026-10-21 抢锁·本行即锁）** · 复查 = 另派（复查人≠施工人） · status: 施工完·待独立复查（Review 单 `docs/design/ai-pipeline/review/REQ-GROUND-TELEPORT.md`） · P1 · 类型: 引擎能力扩写（🔴 碰确定性 / 快照 hash·主程口径）
-> 实查：`ground-walk-3d` 把任何 Transform 跳变都当连续行走验，跨洞/高台即回滚到上次接受点（实测：瞬移到隔洞平台，下一拍被拉回 x=0.5）；初始无支撑者永冻出生点；`GroundContact3D` 运行时独占、装载拒收；全库无 teleport/set-position 动作 → 现只能销毁重生。
-> spec：意图组件 `GroundTeleport3D{x,y}`（平面 Transform 米坐标·挂 walker 自身）；系统 `ground-teleport-3d`（Input 相位·先于 `ground-init-3d`·consumes 该意图）：目标点在 walker 自己的 surface 上 `sampleGroundSurface` 有支撑 → 写 Transform（扣 Collider offset）、baseY、整份覆盖 `GroundContact3D`（accepted=目标·supported·rejected=false）；无支撑/越界/坐标非法/非 walker → 整体拒收、零写入、trace reject。不吸附最近点、不改 Velocity。装载期校验字段闭集。验收：跨洞传送生效且下一拍不被拉回 · 无支撑目标零写入 · 初始无支撑者可被救回 · 双世界逐 tick hash 一致 · snapshot 恢复 · trace 开关不改 hash · 定序零新 WARN · 撤修验红。
-
 ### REQ-AIFLOW-STYLETOKENS · U3 统一风格令牌（生图 + UI 同源）· [2026-10-16] · owner 判 A · **指派：PUI**（UI 主题面）+ PST（生图提示词面） · status: open · P1 · 类型: 基座扩写
 > 每游戏一份 `docs/design/<slug>/style-tokens.json`（配色 / 字体 / 圆角 / 质感），同时生成生图提示词风格段与 UITheme 覆盖；U2 量稿时可从稿子提取回填。全文：`docs/workflow/ai-production-flow.md` §7.4 U3。
 

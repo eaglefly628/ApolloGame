@@ -70,3 +70,21 @@
 - 读告警：全量输出 `topological-sort` 仅 2 行，均为既有夹具环 `[L, P]`；无任何 ground/teleport 相关 WARN。
 - 两步 game113 专属是存量红：只要改动面碰 game113 就会被拉进门。本次只改它一行 import。**修改前主干隔离 worktree 对照**：`game-skill-audit game113` 输出逐字相同（RATCHET FAIL·React 屏×16·createElement×3·引擎同形手写×13·无基线）；`inert-component-guard game113` 输出逐字相同（无 blueprint.ts → 用法退出 2）。零新伤；豁免或返工归 game113 自身，不在本单。
 - 门禁当场咬住一处施工遗漏并已同提交补上：新增组件须 `component-manifest-guard --update` 更新共同零件基线（161→162）。
+
+## 独立复查判词（Claude · 2026-10-22 · 非施工会话）· **PASS（结案）**
+
+| 铁律 | 复查方做了什么 | 结果 |
+|---|---|---|
+| ① 独立复跑 | `ground-walk-3d.test.ts` + `ground-walkers.test.ts` + `declaration-audit.test.ts`；全量门禁（主干 `ce807e7f`） | 34/34；全量 7226/7226，eslint/depcruise/tsc/build/docs-ref/context-budget 全 0 |
+| ② 撤修验红（自选，不同于施工方 S1–S4 与 T1–T10） | G1 `transform.x = intent.x; transform.y = intent.y;` → 漏写平面 y | 2 例红（collider offset 精确目标 · 装载首拍） |
+| | G2 传送分支（第 103 行）`supported: true` → `false` | 5 例红（跨洞 · 同拍先于 motion · 救回无支撑出生 · 双世界 hash/快照 · 装载首拍） |
+| | G3 装载闭集 `Object.keys(teleport).some(…)` → `false` | 1 例红（装载拒收畸形意图） |
+| | 恢复后 30/30，工作树干净 | — |
+| ③ 实证 | 读 `applyGroundTeleports`：全部校验与采样在任何写入之前；按 id 排序处理；拒收不写任何字段 | 与契约一致 |
+| ④ 读告警 | 全量日志 `topological-sort` 共 2 行，均为既有夹具环 `[L, P]` | 无 ground/teleport 相关告警 |
+
+**对第四节三处设计判断的意见（Lead）**：
+1. 落 Input 相位、晚挂意图延迟一拍——**认可**。确定性清楚，不碰 Update 的 runsAfter 链；需要同拍生效的场景目前没有消费者。
+2. 拒收不停速——**认可**。「整体拒收 = 零写入」最好推理，也避免与本拍正常行走的拒收逻辑耦合。
+3. 意图不带 surfaceId——**认可**（YAGNI）。跨 surface 先改 `GroundWalker3D.surfaceId` 再传送，契约文档已写明。
+
