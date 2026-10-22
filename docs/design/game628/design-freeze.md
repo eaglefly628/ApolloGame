@@ -9,8 +9,8 @@
 |---|---|---|---|---|
 | ① 玩法 | GDD v0.1 + 能力计划 | `gdd.md` · `capability-plan.md` | — | 🔶 讨论稿 |
 | ② 风格令牌 | 配色 / 字体 / 圆角 / 质感（见 §2 草案） | `style-tokens.json`（格式由 REQ-AIFLOW-STYLETOKENS 定） | REQ-AIFLOW-STYLETOKENS | ⏳ 等格式 |
-| ③ 场景关键图 | 8 场景 × 强火 / 弱火两档 + 标题图（见 §3） | `keyart/` | REQ-AIFLOW-REFGEN | ⏳ 等工具 |
-| ④ 角色设定 | 小女孩剪影 4 姿态 + 奶奶 2 姿态（三视图不需要：2D 剪影） | `keyart/characters/` | REQ-AIFLOW-REFGEN | ⏳ 等工具 |
+| ③ 场景关键图 | 8 场景主图 + **K2 俯视 / 侧视**（3D 搭景要用）+ 强火 / 弱火两档 + 标题图（见 §3） | `keyart/` | `scripts/ai-gen.mjs --ref`（已交付） | ⏳ 等风格令牌 |
+| ④ 角色设定 | **小女孩、奶奶各一套 T-Pose 四视图**（正 / 背 / 左 / 右）→ Tripo 多视图建模（2026-10-22 改 3D） | `keyart/characters/` | 生图 `--ref` + T3 多视图建模（离线已交付·真实 Tripo 未验） | ⏳ 等真实链路 |
 | ⑤ UI 稿 | GDD §4 的 7 屏，Claude Design 出稿 | `ui-refs/` + `design-ledger.json` | `ui-brief.mjs`（已有）· REQ-AIFLOW-DSYNC（可选加速） | ⏳ 等 ①② |
 
 ## 2. 风格令牌草案（待 owner 定）
@@ -44,7 +44,9 @@ UI 主题起手：`apolloOnyx`（深色）+ 本表覆盖，不自写皮（`capab
 
 **顺序**：先只出 KA-02（铁火炉）一张，owner 定稿后它就是全作的**风格锚**，其余各图都以它为参考图（`--ref`）生成。
 
-## 4. 拆层预期（D1·按 `capability-plan.md` §4.5 皮肤槽）
+## 4. 拆层预期（D1）· 2026-10-22 起按 3D 去向
+
+> 3D 版去向三类（`asset-split.json` 的 `route`）：`generate` = Tripo 单独生成的道具 · `build` = Blender 里直接搭的场景结构 · `character` = 人物线。下表为 2026-10-16 的 2D 原文，保留作参照。
 
 | 层 | 去向 | 皮肤槽 |
 |---|---|---|
@@ -59,6 +61,20 @@ UI 主题起手：`apolloOnyx`（深色）+ 本表覆盖，不自写皮（`capab
 ## 5. 审查（R1）
 
 每章截火苗强 / 中 / 弱三帧，与该章关键图比对；UI 屏与 Claude Design 稿按同一把尺子比盒子。复查 agent ≠ 施工方。
+
+## 5.5 3D 专属清单（2026-10-22）
+
+| 项 | 内容 | 工具 / 工单 |
+|---|---|---|
+| 人物 | 小女孩、奶奶：T-Pose 四视图 → Tripo 多视图建模 → 坏网格局部重生成（Tripo 网页·人工）→ Blender 规范化 | T3 · T4 · T7 |
+| 绑骨与动作 | Auto-Rig Pro 绑骨（标记点人工确认）；动作清单 `motion-list.md`：缩坐发抖 · 擦火柴 · 伸手取暖 · 仰望 · 微笑倚墙 · 奶奶伸手 · 奶奶抱起；没有现成的（如「擦火柴」手对盒）选最接近的 + IK 修正 | T5（含人工回灌手册 S3）· E2 动作库 · E4 IK |
+| 道具 | 火柴、火柴盒挂在她手上 | E3 骨骼挂点 |
+| 场景 | 每章一个 Blender 场景，按 E5 节点命名导出（`col_*` 碰撞 · `pick_*` 可点热点 · `spawn_*` 出生点） | T7 搭景 · E5 场景拆实体 |
+| 镜头 | 每章开场推镜、熄灭拉远、终章升空 | E6 剧情镜头 |
+| 分段加载 | 每章一个资源组，章节切换预载下一章 | R4 分段加载 |
+| 光与火 | 火苗点光源随火苗衰减变暗；雪与火星用 3D 粒子 | `Light3D` · `Vfx3D` |
+
+**真实链路前置（owner 侧）**：Tripo API key、Blender LTS、Auto-Rig Pro 授权、Mixamo 账号。在这些到位前，人物与场景只能走 Mock，产物不得进美术台账的「已完成」状态。
 
 ## 6. 本作的执行顺序
 

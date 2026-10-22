@@ -8,6 +8,25 @@
 > `t2-over-time`（每 period 改自身 resource）· `t2-clickable`（`onlyFlag` 相位门）· `t2-event-when`（条件树叶 = resource/flag/state，**不读 Signal**）·
 > `t3-dialogue` · `t2-gauge` · `l7-vfx2d`（`stream`/`burst`/`trail`）。
 
+> **2026-10-22 3D 改版（owner 定）**：下列 §0 取代原 §2 中所有 2D 表现项（`l1-sprite`/`l7-vfx2d`/`t1-tween`/`l5-camera` 的表现用途）与 §4.5 皮肤槽；**sim 规则面（§3 数据表、flow / timeline / over-time / event-when / effect-apply）不变**。待 Lead 重签。
+
+## 0. 3D 表现层（render-only·全部入 `NON_DETERMINISTIC`·组件名已对 `src/engine/protocol/components/*.ts` 核对）
+
+| 组件 | 用途 |
+|---|---|
+| `SceneImport3D` | 每章 Blender 场景 glb 按节点命名装载期拆实体（E5） |
+| `Model3D` + `Transform3D` | 小女孩、奶奶、火柴、火柴盒、幻象道具 |
+| `AnimGraph3D` | 小女孩 / 奶奶动作状态机与混合（E2） |
+| `Attach3D` | 火柴挂右手、火柴盒挂左手（E3） |
+| `IK3D` | 擦火柴时右手对准火柴盒侧面（E4） |
+| `Camera3D` + `CameraShot3D` | 跟随视角 + 章节剧情镜头（E6） |
+| `Light3D` | 火苗点光源（强度跟 `flame` 资源档位切换）· 冷色环境光 |
+| `Vfx3D` | 火苗、擦亮火星、雪 |
+| `Pickable3D` | 幻象里的「美丽的东西」热点（替代 2D 的 `t2-clickable`）——命中经宿主 `enqueueAction` → `t2-keybind` → Signal |
+| `Sky3D` · `Fog3D` · `Post3D` | 雪夜天空、远景雾、暖色调色与泛光 |
+
+**S3 前须实查的一处**：2D 版用 `Clickable.onlyFlag:"flame.lit"` 做「火灭不可点」；`Pickable3D` 没有同名门。候选等价写法：熄灭时由 timeline 写 flag，`t2-effect-apply` 的收录动作读 flag 条件（或隐藏热点使其不可拾取）。S3 骨架时实查，表达不了再按缺口裁决协议上报。
+
 ---
 
 ## 1. 游戏一句话
