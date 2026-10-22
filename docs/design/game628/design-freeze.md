@@ -8,7 +8,7 @@
 | 件 | 本作内容 | 产物位置 | 依赖的工具 / 工单 | 状态 |
 |---|---|---|---|---|
 | ① 玩法 | GDD v0.1 + 能力计划 | `gdd.md` · `capability-plan.md` | — | 🔶 讨论稿 |
-| ② 风格令牌 | 配色 / 字体 / 圆角 / 质感（见 §2 草案） | `style-tokens.json`（格式由 REQ-AIFLOW-STYLETOKENS 定） | REQ-AIFLOW-STYLETOKENS | ⏳ 等格式 |
+| ② 风格令牌 | 配色 / 字体 / 风格描述（见 §2 草案） | `public/games/game628/art/style-tokens.json`（status: draft·格式见 `scripts/lib/style-tokens.mjs`） | REQ-AIFLOW-STYLETOKENS | 🔶 草案已入库·待 owner 看 |
 | ③ 场景关键图 | 8 场景主图 + **K2 俯视 / 侧视**（3D 搭景要用）+ 强火 / 弱火两档 + 标题图（见 §3） | `keyart/` | `scripts/ai-gen.mjs --ref`（已交付） | ⏳ 等风格令牌 |
 | ④ 角色设定 | **小女孩、奶奶各一套 T-Pose 四视图**（正 / 背 / 左 / 右）→ Tripo 多视图建模（2026-10-22 改 3D） | `keyart/characters/` | 生图 `--ref` + T3 多视图建模（离线已交付·真实 Tripo 未验） | ⏳ 等真实链路 |
 | ⑤ UI 稿 | GDD §4 的 7 屏，Claude Design 出稿 | `ui-refs/` + `design-ledger.json` | `ui-brief.mjs`（已有）· REQ-AIFLOW-DSYNC（可选加速） | ⏳ 等 ①② |

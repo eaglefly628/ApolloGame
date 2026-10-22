@@ -43,6 +43,8 @@
 **URL 契约 `/games/<slug>/art/**` 两者共用**（引擎只认 URL·伺服层回退），故台账里的 servedPath 与游戏侧消费点**一律不用改**。
 存量搬迁：`python3 scripts/cartridge-art-migrate.py [--apply]`（缺省 dry-run·幂等·不代人提交）。
 
+- **风格令牌 = 唯一风格源（2026-10-22·REQ-AIFLOW-STYLETOKENS）**：美术根下 `style-tokens.json`（`scripts/lib/style-tokens.mjs` 校验闭集）存在时，`ai-gen --game` 与台账批量出图自动拼入同一风格段（台账头 `artStyle.stylePrompt` 让位）；UI 主题由同一文件生成。
+
 ## 红线
 
 - **禁纯色块游戏**：主体视觉实体必须有皮肤槽（art: 或 Sprite+skinKey）——没槽=不可换皮=生成线白搭（历史反面教材：已删的 game-q 初版）。

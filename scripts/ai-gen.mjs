@@ -11,6 +11,7 @@
 //   自测: node scripts/ai-gen.mjs demo      （两适配器各 mock 一个到临时目录·打印落库条目·跑完自动清理）
 //   设置: node scripts/ai-gen.mjs providers （看各 provider 的 envKey / 是否已配 key·打码）
 
+import { loadStyleTokens, stylePromptSegment } from './lib/style-tokens.mjs';
 import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -425,9 +426,16 @@ async function run(argv) {
   const imageOptions = adapterName === 'tripo'
     ? { refs, edit, mode: options.mode, views: options.views }
     : { inputs: loadImageInputs({ refs, edit }) };
-  const g = await A.generate(prompt, { mock, apiKey, ...imageOptions });
+  // REQ-AIFLOW-STYLETOKENS：--game 有风格令牌时，图像适配器的提示词自动拼上风格段（生图与 UI 同源）。
+  const styled = game && A.kind === 'texture' ? loadStyleTokens(ROOT, game) : null;
+  if (game && A.kind !== 'texture') console.info(`[ai-gen] skip: ${adapterName} 非图像适配器，不拼风格令牌`);
+  else if (game && !styled) console.info(`[ai-gen] skip: ${game} 无 style-tokens.json，按原提示词生成`);
+  const sentPrompt = styled ? `${prompt}, ${stylePromptSegment(styled.tokens, 'en')}` : prompt;
+  if (styled) console.info(`[ai-gen] decision: 拼入 ${game} 风格令牌（sha256 ${styled.sha256.slice(0, 12)}…）`);
+  const g = await A.generate(sentPrompt, { mock, apiKey, ...imageOptions });
   // 人审门（M2.5）：生成产物落**待审区**，绝不直写 index.json。人经 /api/assets/review approve 才入库。
-  const res = writePending({ adapter: adapterName, prompt, forcedId, game, buffer: g.buffer, spec: g.spec, model: g.model, mock: g.mock, at: new Date().toISOString(), references: g.references, generation: g.generation });
+  const generation = styled ? { ...(g.generation ?? {}), styleTokens: { sha256: styled.sha256, sentPrompt } } : g.generation;
+  const res = writePending({ adapter: adapterName, prompt, forcedId, game, buffer: g.buffer, spec: g.spec, model: g.model, mock: g.mock, at: new Date().toISOString(), references: g.references, generation });
   if (asJson) { console.log(JSON.stringify(res)); return; }
   console.log(`✓ 生成 ${res.id}${g.mock ? ' (mock)' : ''} → 待审区（人点「入库」才登记）· 预览 ${res.previewPath}`);
 }

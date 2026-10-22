@@ -14,6 +14,8 @@ export type { ComposedSample } from './composed-samples.js';
 export { validateLayoutNode, isValidLayoutNode, lintLayoutNode } from './validate.js';
 export type { UiIssue } from './validate.js';
 export { apolloOnyx, apolloBrocade, APOLLO_KIT } from './apollo-kit.js';
+export { parseStyleTokens, themeFromStyleTokens, loadStyleTokensTheme, STYLE_TOKEN_THEME_MAP } from './style-tokens.js';
+export type { StyleTokens } from './style-tokens.js';
 export { solveLayout } from './layout-solver.js';
 export type { Rect, Size, MeasureFn } from './layout-solver.js';
 export type {

@@ -184,7 +184,8 @@ describe('T3 compatibility and isolated CLI', () => {
   });
   it('CLI mock preserves four view hashes and generation in pending without registering index', () => {
     const { root, views } = fixture(); const source = dirname(fileURLToPath(import.meta.url)); mkdirSync(join(root, 'scripts'));
-    for (const file of ['ai-gen.mjs', 'ai-gen-inputs.mjs', 'tripo-inputs.mjs', 'tripo-generation.mjs']) copyFileSync(join(source, file), join(root, 'scripts', file));
+    mkdirSync(join(root, 'scripts', 'lib'), { recursive: true });
+    for (const file of ['ai-gen.mjs', 'ai-gen-inputs.mjs', 'tripo-inputs.mjs', 'tripo-generation.mjs', 'art-paths.mjs', 'lib/style-tokens.mjs']) copyFileSync(join(source, file), join(root, 'scripts', file));
     // The isolated source root resolves dependencies through this local link; never execute the repository CLI directly.
     symlinkSync(join(source, '..', 'node_modules'), join(root, 'node_modules'), 'dir');
     const result = spawnSync(process.execPath, ['scripts/ai-gen.mjs', 'tripo', 'four view chair', '--right', views.right, '--front', views.front, '--back', views.back, '--left', views.left, '--mock', '--json'], { cwd: root, encoding: 'utf8', env: { ...process.env, TRIPO_API_KEY: '' } });

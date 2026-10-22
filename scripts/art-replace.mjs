@@ -17,6 +17,7 @@ import { ADAPTERS, encodePng, curlFor } from './ai-gen.mjs';
 import { decodePng, encodePngRGBA } from './asset-matte.mjs';
 import { decodeJpeg } from './jpeg-decode.mjs';
 import { STYLE_PACKS, listStylePacks, saveLocalStyle, deleteLocalStyle } from './style-packs.mjs';
+import { loadStyleTokens, stylePromptSegment } from './lib/style-tokens.mjs';
 import { artRoot } from './art-paths.mjs';
 
 // 仓库根：缺省=脚本位置推导的真仓根。ART_REPLACE_ROOT 环境变量=临时根注入口（仅 hermetic 测试用·
@@ -687,7 +688,11 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
   // debug：每行回显「实际发给文生图的完整提示词 + 完整请求（含 curl 命令行·key 打码）」——owner 2026-07-22
   // 「知道我到底传了什么」。mock 也带（genRowAsset 向 adapter 要 request）→ 免花 key 就能核对。
   const summary = { total: 0, generated: 0, cached: 0, mock: 0, failed: 0, skipped: 0, probes: [], errors: [], debug: [], skippedFilled: [], previewOnly: [] };
-  const gameStyle = (ledger.artStyle && typeof ledger.artStyle.stylePrompt === 'string') ? ledger.artStyle.stylePrompt : '';
+  // REQ-AIFLOW-STYLETOKENS：有风格令牌时它是唯一风格来源（与 UI 主题同源）；台账头 stylePrompt 仅在无令牌时沿用。
+  const ledgerStyle = (ledger.artStyle && typeof ledger.artStyle.stylePrompt === 'string') ? ledger.artStyle.stylePrompt : '';
+  const styled = game ? loadStyleTokens(root, game) : null;
+  if (styled && ledgerStyle) console.warn(`[art-replace] decision: ${game} 同时有 style-tokens.json 与台账 artStyle.stylePrompt，以令牌为准`);
+  const gameStyle = styled ? stylePromptSegment(styled.tokens, pack.params.provider === 'qwen' || pack.params.provider === 'seedream' ? 'zh' : 'en') : ledgerStyle;
   // ═══ 三相执行（REQ-ARTPAR·owner 2026-08-10 令）═══
   // 原为单层 `for … await genRowAsset`（串行）。改造铁律：**只把网络调用并发化，变异顺序一字不动**——
   // byId 插入序决定 index.json 条目序（上文「不整表重排」铁律），summary 数组序=回执可读性，

@@ -11,7 +11,7 @@
 
 > **症结**：`mountUI` 缺省 `SHELL`（引擎清冷 chrome）+ 组件默认态 = 朴素；华丽件全 opt-in，不去拿就碰不到 → 新游戏都长得素。**起手三步立富底子**（ui-playbook §0 同款·此处给货架明细）。
 
-**第一步 · 起手传 house 主题**（别从零写 UITheme）：
+**第一步 · 起手传 house 主题**（别从零写 UITheme；游戏有风格令牌 `/games/<slug>/art/style-tokens.json` 时用 `loadStyleTokensTheme(slug)`=house 主题 + 令牌覆盖，生图与 UI 同源·REQ-AIFLOW-STYLETOKENS）：
 
 | house 主题 | import | 观感 | 适合 |
 |---|---|---|---|

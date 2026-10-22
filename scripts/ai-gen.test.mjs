@@ -284,7 +284,8 @@ it('T1 CLI: --ref / --edit 的哈希穿过真实命令入口进入 pending.json'
   const root = mkdtempSync(join(tmpdir(), 'aiflow-ref-cli-'));
   try {
     mkdirSync(join(root, 'scripts'));
-    for (const file of ['ai-gen.mjs', 'ai-gen-inputs.mjs', 'tripo-generation.mjs', 'tripo-inputs.mjs']) copyFileSync(join(process.cwd(), 'scripts', file), join(root, 'scripts', file));
+    mkdirSync(join(root, 'scripts', 'lib'), { recursive: true });
+    for (const file of ['ai-gen.mjs', 'ai-gen-inputs.mjs', 'tripo-generation.mjs', 'tripo-inputs.mjs', 'art-paths.mjs', 'lib/style-tokens.mjs']) copyFileSync(join(process.cwd(), 'scripts', file), join(root, 'scripts', file));
     writeFileSync(join(root, 'ref.png'), mockImage('cli', 32).buffer);
     const result = spawnSync(process.execPath, ['scripts/ai-gen.mjs', 'gpt-image-2.5', 'scene', '--edit', 'ref.png', '--ref', 'ref.png', '--mock', '--json'], { cwd: root, encoding: 'utf8' });
     expect(result.status, result.stderr).toBe(0);

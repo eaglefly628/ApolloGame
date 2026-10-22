@@ -303,3 +303,14 @@ describe('REQ-ARTPIPE2 A1 · discoverGames / auditGame 基础接线', () => {
     expect(r.blackHouseholds.sort()).toEqual(['/games/game-zero/art/x.png', '/games/game-zero/art/y.svg']);
   }));
 });
+
+describe('REQ-AIFLOW-STYLETOKENS：风格令牌是元数据不是美术资产', () => {
+  it('art/style-tokens.json 不算黑户（无台账、无索引也不报）', () => withRoot((root) => {
+    const art = join(root, 'public', 'games', 'game-x', 'art');
+    mkdirSync(art, { recursive: true });
+    writeFileSync(join(art, 'style-tokens.json'), '{}');
+    writeFileSync(join(art, 'stray.png'), 'x');
+    const bh = blackHouseholdFiles(root, 'game-x', { rows: [] });
+    expect(bh).toEqual(['/games/game-x/art/stray.png']);
+  }));
+});

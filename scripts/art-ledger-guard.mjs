@@ -142,7 +142,7 @@ export function indexCoveredPaths(index) {
 
 const NON_ASSET_NAME = (base) =>
   base.startsWith('.') ||
-  base === 'index.json' || base === 'art-ledger.json' || base === 'style-ledger.json' || base === 'pending.json' ||
+  base === 'index.json' || base === 'art-ledger.json' || base === 'style-ledger.json' || base === 'pending.json' || base === 'style-tokens.json' ||
   base.endsWith('-art-ledger.json') || base.endsWith('.md');
 
 // 备份/暂存目录（相对扫描根的路径前缀）——台账自己的历史记录，不算散件。

@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "name": "雪夜火光",
+  "status": "draft",
+  "base": "apolloOnyx",
+  "colors": {
+    "background": "#1E2A44",
+    "surface": "#26344F",
+    "surfaceRaised": "#31405F",
+    "line": "#4A5B7D",
+    "text": "#E8EEF5",
+    "textSub": "#B9C4D3",
+    "textDim": "#7F8DA3",
+    "accent": "#FFB25A",
+    "accentAlt": "#E9C46A",
+    "danger": "#C8553D",
+    "ink": "#2A1A0E"
+  },
+  "fonts": {
+    "serif": "'Noto Serif SC', 'Songti SC', serif"
+  },
+  "prompt": {
+    "zh": "低多边形手作感 3D 场景，冷蓝雪夜与暖橙火柴光强对比，大面积留白，柔和体积光，安静克制的童话气氛",
+    "en": "hand-crafted low-poly 3D diorama, cold blue snowy night contrasted with warm orange matchlight, generous negative space, soft volumetric light, quiet restrained fairy-tale mood",
+    "negativeZh": "写实照片，迪士尼或动画电影造型，血腥，杂乱背景",
+    "negativeEn": "photorealistic, Disney or animated film character designs, gore, cluttered background"
+  }
+}
