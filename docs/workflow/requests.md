@@ -89,10 +89,10 @@
 
 <!-- REQ-AIFLOW-SCENELOAD：独立复查通过，判词08ba7e0ac；施工955826af4。按完工清池规则移出，全文查git历史。 -->
 
-### REQ-AIFLOW-STYLETOKENS · U3 统一风格令牌（生图 + UI 同源）· [2026-10-16] · owner 判 A · **指派：PUI**（UI 主题面）+ PST（生图提示词面） · status: open · P1 · 类型: 基座扩写
+### REQ-AIFLOW-STYLETOKENS · U3 统一风格令牌（生图 + UI 同源）· [2026-10-16] · owner 判 A · **指派：PUI**（UI 主题面）+ PST（生图提示词面） · **施工主体 = Claude（2026-10-22 抢锁·owner 当面解除暂缓并令开工·本行即锁）** · status: in-progress · P1 · 类型: 基座扩写
 > 每游戏一份 `docs/design/<slug>/style-tokens.json`（配色 / 字体 / 圆角 / 质感），同时生成生图提示词风格段与 UITheme 覆盖；U2 量稿时可从稿子提取回填。全文：`docs/workflow/ai-production-flow.md` §7.4 U3。
 
-### REQ-AIFLOW-DSYNC · U1 控件库同步成 Claude Design 设计系统 · [2026-10-16] · owner 判 A · **指派：PUI** · status: open · P1 · 类型: 基座扩写
+### REQ-AIFLOW-DSYNC · U1 控件库同步成 Claude Design 设计系统 · [2026-10-16] · owner 判 A · **指派：PUI** · **施工主体 = Claude（2026-10-22 抢锁·owner 当面解除暂缓并令开工·本行即锁）** · status: in-progress · P1 · 类型: 基座扩写
 > 把 `src/ui/components/catalog.ts` 控件目录 + house 主题导出成设计系统预览包（每控件一张预览 HTML），供 owner 启动 `/design-sync` 推到 Claude Design 设计系统项目，让稿子只用我们的控件出。全文：`docs/workflow/ai-production-flow.md` §7.4 U1。依赖 U3。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）

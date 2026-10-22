@@ -14,7 +14,7 @@
 
 <!-- REQ-3D-TESTGAPS（P3D 测试面五项）owner 2026-10-16 令**暂停出池**——全文查 git 历史（git log -S REQ-3D-TESTGAPS）·重启时恢复原文 -->
 
-## REQ-3D-RB-MATERIAL · `RigidBody3D.restitution` / `.friction` 声明了但 `spawn()` 从不读 —— 全库游戏的每张「弹性/摩擦」旋钮都是死的 · [2026-08-10] · PE-211 提（game211 大样本物理验证时撞出）→ **P3D** · status: open · 优先级: **P2（不吃表现·但会持续制造错误归因·见下方实测）** · 类型: 3D 线契约缺口（契约声明 ≠ 实现）
+## REQ-3D-RB-MATERIAL · `RigidBody3D.restitution` / `.friction` 声明了但 `spawn()` 从不读 —— 全库游戏的每张「弹性/摩擦」旋钮都是死的 · [2026-08-10] · PE-211 提（game211 大样本物理验证时撞出）→ **P3D** · **owner 2026-10-22 判 A（接线）** · **施工主体 = Claude（2026-10-22 抢锁·owner 当面令开工·本行即锁）** · status: in-progress · 优先级: **P2（不吃表现·但会持续制造错误归因·见下方实测）** · 类型: 3D 线契约缺口（契约声明 ≠ 实现）
 
 > **实证（实查·非印象）**：
 > - `src/engine/protocol/components/render.ts:221-222` 明文声明并写了缺省值：`restitution?: number; // 弹性 0..1·缺省 0.3` / `friction?: number; // 摩擦·缺省 0.4`。
