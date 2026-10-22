@@ -36,6 +36,13 @@ export class PhysicsSystem {
   private readonly settledArmed = new Set<string>(); // 已发过 settle·待睡醒重新武装
   private readonly toppledArmed = new Set<string>(); // 已发过 topple·待回正重新武装
   private last = 0;
+  // 逐体接触材质（REQ-3D-RB-MATERIAL·owner 2026-10-22 判 A）：未声明 restitution/friction 的刚体与地面共用 worldMaterial；
+  // 声明了的按 (restitution,friction) 数值对缓存一个 Material。两种材质首次相遇才注册 ContactMaterial；
+  // worldMaterial×worldMaterial 永不注册 → 仍落 defaultContactMaterial（未声明场景行为逐位不变）。
+  private worldMaterial: CANNON.Material | null = null;
+  private worldSurface = { restitution: 0.4, friction: 0.35 };
+  private readonly materials = new Map<string, { m: CANNON.Material; restitution: number; friction: number }>();
+  private readonly pairedMaterials = new Set<string>();
 
   // 每帧步进 + 写回 Transform3D。返回活跃刚体数（>0 → 渲染器把帧号折进 renderSig 持续重渲）。nowMs=performance.now()。
   sync(world: IWorld, nowMs: number): number {
@@ -181,11 +188,14 @@ export class PhysicsSystem {
     const cw = new C!.World({ gravity: new C!.Vec3(0, cfg?.gravity ?? -42, 0) }); // 缺省 -42（世界单位大→色子下落干脆）
     cw.defaultContactMaterial.restitution = cfg?.restitution ?? 0.4; // 缺省弹一点
     cw.defaultContactMaterial.friction = cfg?.friction ?? 0.35;
+    this.worldSurface = { restitution: cw.defaultContactMaterial.restitution, friction: cw.defaultContactMaterial.friction };
+    this.worldMaterial = new C!.Material('world'); // friction/restitution 保持 -1：只靠 ContactMaterial 生效，不触发 cannon 的乘积覆盖
     cw.allowSleep = true; // 世界级睡眠开关（cannon 缺此则 per-body allowSleep 形同虚设·刚体永不入睡）——落定省算力 + 使
     //   settleSignal 落定事件 + 脏标 live 排除入睡体（REQ-3D-SETTLE-SIGNAL / RENDERHYG fix③）真正生效。
     if (cfg?.solverIterations !== undefined) (cw.solver as unknown as { iterations: number }).iterations = cfg.solverIterations; // 堆叠需 ≥40（缺省 cannon GSSolver 10·iterations 在 GSSolver 子类上）
     const ground = new C!.Body({ mass: 0, shape: new C!.Plane() }); // 地面：静态·法线朝上·y=0
     ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+    ground.material = this.worldMaterial;
     cw.addBody(ground);
     this.world = cw;
     this.last = 0;
@@ -222,8 +232,43 @@ export class PhysicsSystem {
     if (rb.avx || rb.avy || rb.avz) body.angularVelocity.set(rb.avx ?? 0, rb.avy ?? 0, rb.avz ?? 0);
     if (rb.angularFactor) body.angularFactor.set(rb.angularFactor[0], rb.angularFactor[1], rb.angularFactor[2]); // 锁转轴（[0,1,0]=只平旋永不立边·REQ-3D-RB-ANGFACTOR）
     body.allowSleep = true; body.sleepSpeedLimit = 0.6; body.sleepTimeLimit = 0.4; // 静下来就睡（省算力·色子停稳）
+    body.material = this.materialFor(id, rb);
     this.world!.addBody(body);
     this.bodies.set(id, body);
+  }
+
+  /** 逐体接触材质：未声明 → worldMaterial；声明 → 按数值对缓存，并与已知材质逐对注册 ContactMaterial。
+   *  组合规则：一侧为世界材质（地面/未声明体）→ 直接用声明方的值（填了就生效，可比世界更「死」）；
+   *  双方都声明 → Box2D 惯例：摩擦 = √(fa·fb)、弹性 = max(ra, rb)。只填一项时另一项取世界值。
+   *  非法值（非有限/负/弹性>1）拒收回落世界值并告警。 */
+  private materialFor(id: string, rb: RigidBody3D): CANNON.Material {
+    if (rb.restitution === undefined && rb.friction === undefined) return this.worldMaterial!;
+    const ok = (v: number | undefined, max: number): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= max;
+    const restitution = rb.restitution === undefined ? this.worldSurface.restitution : rb.restitution;
+    const friction = rb.friction === undefined ? this.worldSurface.friction : rb.friction;
+    if (!ok(restitution, 1) || !ok(friction, Infinity)) {
+      console.warn(`[physics] reject: ${id} RigidBody3D restitution/friction 非法（${rb.restitution}/${rb.friction}）→ 用世界接触值`);
+      return this.worldMaterial!;
+    }
+    const key = `${restitution}|${friction}`;
+    let entry = this.materials.get(key);
+    if (!entry) {
+      entry = { m: new C!.Material(`rb:${key}`), restitution, friction };
+      this.materials.set(key, entry);
+      const others = [{ k: 'world', m: this.worldMaterial!, ...this.worldSurface }, ...[...this.materials].map(([k, v]) => ({ k, ...v }))];
+      for (const o of others) this.pairMaterials(key, entry, o.k, o);
+    }
+    return entry.m;
+  }
+
+  private pairMaterials(ka: string, a: { m: CANNON.Material; restitution: number; friction: number }, kb: string, b: { m: CANNON.Material; restitution: number; friction: number }): void {
+    const pair = ka < kb ? `${ka}~${kb}` : `${kb}~${ka}`;
+    if (this.pairedMaterials.has(pair)) return;
+    this.pairedMaterials.add(pair);
+    const vsWorld = ka === 'world' ? b : kb === 'world' ? a : null;
+    this.world!.addContactMaterial(new C!.ContactMaterial(a.m, b.m, vsWorld
+      ? { friction: vsWorld.friction, restitution: vsWorld.restitution }
+      : { friction: Math.sqrt(a.friction * b.friction), restitution: Math.max(a.restitution, b.restitution) }));
   }
 
   private disposeWorld(): void {
@@ -232,6 +277,9 @@ export class PhysicsSystem {
     for (const [, b] of this.bodies) this.world.removeBody(b);
     this.bodies.clear();
     this.impulseSeen.clear();
+    this.materials.clear();
+    this.pairedMaterials.clear();
+    this.worldMaterial = null;
     this.world = null;
     this.last = 0;
   }

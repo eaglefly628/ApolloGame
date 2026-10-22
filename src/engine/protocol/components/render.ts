@@ -244,8 +244,8 @@ export interface RigidBody3D extends Component {
   elementSize?: number; // heightfield 网格点间距（缺省 1）
   hull?: ReadonlyArray<readonly [number, number, number]>; // convex 凸包顶点（局部坐标·≥4·渲染器算凸面）
   mass?: number; // 质量·缺省 1（0=静态不动）
-  restitution?: number; // 弹性 0..1·缺省 0.3
-  friction?: number; // 摩擦·缺省 0.4
+  restitution?: number; // 弹性 0..1·缺省=跟随 PhysicsWorld3D 世界接触值（不填两项 = 行为与世界默认逐位一致）
+  friction?: number; // 摩擦 ≥0·缺省同上。碰地面/未声明体时直接用本值；两个声明体相碰：摩擦 √(fa·fb)、弹性取较大者；只填一项时另一项取世界值（REQ-3D-RB-MATERIAL）
   vx?: number; vy?: number; vz?: number; // 初速度
   avx?: number; avy?: number; avz?: number; // 初角速度（翻滚）
   // 角约束/锁转轴（REQ-3D-RB-ANGFACTOR·opt-in·缺省 [1,1,1]=现行自由翻）：各轴角响应 0..1（0=锁该轴不转）。

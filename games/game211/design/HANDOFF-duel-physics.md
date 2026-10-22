@@ -123,8 +123,8 @@ node scripts/game211-throw-lab.mjs --per-body                       # 把牌上�
 | `CARD_W/H/T` | 1.55 / 2.15 / 0.085 | **别按组数缩牌**。缩牌会让碰撞盘退化成方块（引擎把盘厚钳到 `max(0.1,h)`，半高恒 0.05 不随缩放），「圆盘立不住」的性质直接失效。多组要看清就**拉远镜头**（`layoutFor` 已这么做·`scale ≡ 1` 由测试钉死）。 |
 | `Y_STAGGER` | 0.05 | **必须 < 2×0.05 = 0.1**（两盘合厚），否则牌从对方上方掠过。旧值 0.26 = 「空中没有碰撞」的真因，测试⑦钉死。 |
 | `Z_SPREAD` | 0.82 | 必须 `hypot(Y_STAGGER, Z_SPREAD) < 1.2R`。给撞击横向分量，让两牌撞完往两侧分开落地。测试④⑧钉死。 |
-| `CARD_RESTITUTION` | 0.34 | **🔴 死旋钮·2026-08-10 坐实**：`src/renderer/three/physics.ts` 的 `spawn()` **从不读 `RigidBody3D.restitution`**，尽管 `protocol/components/render.ts:221` 明文声明了它。真正生效的是 `PhysicsWorld3D.restitution = **0.22**`。此前「调到 0.52 → 弹回原处 → 未躺平 1/2→2/2」的记录**不可能由这个常量造成**（2 张牌的样本，本来就是噪声）。已提缺口单，见 §6-4。 |
-| `friction`（牌上） | 0.45 | **🔴 同上·死旋钮**。生效的是 `PhysicsWorld3D.friction = **0.5**`。「0.72 试过 → 未躺平 3/40→8/40」同样归因错误。对照实测：把两个值真接成 cannon Material 跑 8000 张，未躺平 0.95% vs 0.92%（z=1.3·p≈0.19，**不显著**）——所以这个缺口目前**不吃表现**，是契约/文档缺陷，不是性能事故。 |
+| `CARD_RESTITUTION` | 0.34 | **✅ 2026-10-22 已接线（REQ-3D-RB-MATERIAL 判 A）——此前为死旋钮（2026-08-10 坐实，下述历史原文保留）**：`src/renderer/three/physics.ts` 的 `spawn()` **从不读 `RigidBody3D.restitution`**，尽管 `protocol/components/render.ts:221` 明文声明了它。真正生效的是 `PhysicsWorld3D.restitution = **0.22**`。此前「调到 0.52 → 弹回原处 → 未躺平 1/2→2/2」的记录**不可能由这个常量造成**（2 张牌的样本，本来就是噪声）。已提缺口单，见 §6-4。 |
+| `friction`（牌上） | 0.45 | **✅ 2026-10-22 已接线（同上）——此前为死旋钮**。生效的是 `PhysicsWorld3D.friction = **0.5**`。「0.72 试过 → 未躺平 3/40→8/40」同样归因错误。对照实测：把两个值真接成 cannon Material 跑 8000 张，未躺平 0.95% vs 0.92%（z=1.3·p≈0.19，**不显著**）——所以这个缺口目前**不吃表现**，是契约/文档缺陷，不是性能事故。 |
 | `EDGE_CLEARANCE` | **6.0**（⇒ 最外道离围栏内表面恒 6.6） | **别调小**。这是「牌不许站住」的命门，曲线见 §2 复核表：低于 6.6 未躺平就开始爬，2.2 时飙到 6.42% 且 99.6% 是靠墙。回归护栏钉死（`duel-spike.test.ts` 三条）。⚠ 推远围栏**不能**顺手把镜头也拉远——`camDist` 走 `contentHalfZ`，与场地深解耦，测试钉死 1 组仍是原来的近景。 |
 | `SPIN_FLIP_MIN/MAX` | **7 / 18**（2026-08-10 owner「太强了一点点」从 9/24 收） | 下限不能再降：最慢的牌也要转过 ≥1 个半圈，否则慢牌恒正面落地。相位跨度 ≥1 半圈由测试钉死（`flipPhaseSpanHalfTurns`）。**每张牌独立随机**——镜像会让一对的结果相关。 |
 | `SPIN_SELF` | 4 | 纯观感（绕牌面法线·不改变正反）。 |
@@ -197,7 +197,7 @@ game211: 裸Math.random×8 · innerHTML×29 · createElement×34 · React屏×1
 
 ### 4) 引擎缺口已报单（不阻塞·排期即可）
 
-**`REQ-3D-RB-MATERIAL`**（`docs/workflow/requests-3d.md`·P2·open·→ P3D）：`RigidBody3D.restitution` / `.friction` 在契约里声明了，但 `three/physics.ts` 的 `spawn()` 从不读 → 全库游戏写的这两个旋钮都是**静默 no-op**。
+**`REQ-3D-RB-MATERIAL`**（`docs/workflow/requests-3d.md`·P2·**2026-10-22 owner 判 A 已接线**：碰地面/未声明体直接用本值，两声明体相碰摩擦 √(fa·fb)、弹性取较大者）：`RigidBody3D.restitution` / `.friction` 在契约里声明了，但 `three/physics.ts` 的 `spawn()` 从不读 → 全库游戏写的这两个旋钮都是**静默 no-op**。
 实测对照证明**现在补上不改变表现**（8000 张牌·p≈0.19 不显著），所以不急；但它会持续制造错误归因（本文件 §5 就中过招）。单里摆了 A（接线）/ B（删字段）两条路 + Lead 推荐，等 P3D/owner 判。
 
 ---

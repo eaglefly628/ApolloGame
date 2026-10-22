@@ -1,5 +1,5 @@
 // 真物理刚体（cannon-es·render-only 表现·非同步）：重力下落 + 落地不穿地 + render-only 不进 hash。
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { PhysicsSystem, preloadPhysics } from './physics.js';
 import { World } from '@engine/core/world.js';
 import { hashSnapshot } from '@net/index.js';
@@ -371,5 +371,118 @@ describe('RigidBody3D 物理事件出口（REQ-3D-SETTLE-SIGNAL·落定/失稳�
     w.addComponent('e', { type: 'RigidBody3D', shape: 'box', settleSignal: 'x', toppleSignal: 'y' } as RigidBody3D);
     expect(hashSnapshot(w.snapshot())).toBe(h0);              // 加物理事件字段不改 hash
     expect(NON_DETERMINISTIC.has('RigidBody3D')).toBe(true);  // 走既有 render-only 通路·无新组件
+  });
+});
+
+describe('RigidBody3D 逐体弹性/摩擦（REQ-3D-RB-MATERIAL·owner 2026-10-22 判 A）', () => {
+  beforeAll(async () => { await preloadPhysics(); });
+  type Rb = Partial<RigidBody3D>;
+  const scene = (bodies: Record<string, { t: Partial<Transform3D>; m: Partial<Mesh3D>; rb: Rb }>) => {
+    const w = new World();
+    for (const [id, b] of Object.entries(bodies)) {
+      w.createEntity(id);
+      w.addComponent(id, { type: 'Transform3D', x: 0, y: 0, z: 0, ...b.t } as Transform3D);
+      w.addComponent(id, { type: 'Mesh3D', frontTint: 0xffffff, ...b.m } as Mesh3D);
+      w.addComponent(id, { type: 'RigidBody3D', ...b.rb } as RigidBody3D);
+    }
+    return w;
+  };
+  const tf = (w: World, id: string): Transform3D => w.getComponent<Transform3D>(id, 'Transform3D')!;
+
+  it('未声明 restitution/friction 的场景：逐帧坐标与改动前逐位一致（金标准轨迹）', () => {
+    const golden: Record<string, number[]> = {"a@45":[4.482707131111763,7.954609423162486,0,0,0,0.6794767417318223,0.7336970474559008],"b@45":[3,17.95460942316249,-1.241353565555882,0,0,0,1],"c@45":[-1.9099818290235666,1.430368047398137,-0.6235986194712014,0.9997472588803458,-0.0023043506146284017,0.01985800812080976,0.010284349418097423],"a@90":[15.850157604622716,2.853150666052159,-0.3928559037130805,-0.03690197221731597,0.08509276761725146,-0.852801499628731,0.5139329407390586],"b@90":[3,5.974739030718781,-3.074978002171103,-0.1942008379855475,0,0,0.9809617905533891],"c@90":[-1.1565134804751185,2.091853395725369,-3.9148165273632287,0.6400863635249372,-0.12320865517158708,-0.03107924012703152,0.7577223471386844],"a@135":[21.128581584608803,3.1870567157013734,0.5432872150383679,0.1432369335673883,0.17138699401048577,-0.9292227452335672,-0.29437182080976115],"b@135":[3,1.8736149106300588,-4.404452302190927,-0.5928557175114277,0,0,0.8053086974657669],"c@135":[-0.4499989623328104,2.0615585980201727,-5.36914456058747,0.3337928909178993,-0.25089550981906733,-0.08773674221368954,0.9043981497056649],"a@180":[23.59319620679961,2.287587326052527,0.653144872528842,0.11728241876713141,0.10769881615032258,-0.7329981979876463,-0.6613315666099823],"b@180":[3,1.4965331616764166,-5.719211008784343,-0.8785539064298965,0,0,0.4776432073177307],"c@180":[-0.35054617284144435,0.9999556050135329,-6.6484475692884075,-0.0000012585294075302542,-0.2843290387180515,7.878256368215412e-7,0.9587267586437046]};
+    const w = scene({
+      a: { t: { x: 0, y: 20, z: 0 }, m: { shape: 'box', width: 4, height: 4, depth: 4 }, rb: { shape: 'box', mass: 1, vx: 6, avz: 2 } },
+      b: { t: { x: 3, y: 30, z: 1 }, m: { shape: 'sphere', width: 3, height: 3 }, rb: { shape: 'sphere', mass: 2, vz: -3 } },
+      c: { t: { x: -2, y: 12, z: 0 }, m: { shape: 'cylinder', width: 4, height: 2 }, rb: { shape: 'cylinder', mass: 1, avx: 5 } },
+    });
+    const phys = new PhysicsSystem();
+    for (let i = 1; i <= 180; i++) {
+      phys.sync(w, i * 16.7);
+      if (i % 45 === 0) for (const id of ['a', 'b', 'c']) { const t = tf(w, id); expect([t.x, t.y, t.z, ...(t.quat ?? [])]).toEqual(golden[`${id}@${i}`]); }
+    }
+    phys.dispose();
+  });
+
+  const peakAfterFirstBounce = (restitution: number | undefined): number => {
+    const w = scene({ ball: { t: { y: 20 }, m: { shape: 'sphere', width: 2, height: 2 }, rb: { shape: 'sphere', mass: 1, ...(restitution === undefined ? {} : { restitution }) } } });
+    const phys = new PhysicsSystem();
+    let falling = true, peak = 0, prev = 20;
+    for (let i = 1; i <= 240; i++) {
+      phys.sync(w, i * 16.7);
+      const y = tf(w, 'ball').y;
+      if (falling && y > prev) falling = false; // 第一次触地后开始上升
+      if (!falling) peak = Math.max(peak, y);
+      prev = y;
+    }
+    phys.dispose();
+    return peak;
+  };
+
+  it('restitution 真接线：0.95 弹得比 0 高，且与不填（世界值 0.4）不同', () => {
+    const bouncy = peakAfterFirstBounce(0.95), dead = peakAfterFirstBounce(0), dflt = peakAfterFirstBounce(undefined);
+    expect(bouncy).toBeGreaterThan(dflt + 1);
+    expect(dead).toBeLessThan(dflt);
+  });
+
+  const slide = (friction: number | undefined): number => {
+    const w = scene({ crate: { t: { y: 2 }, m: { shape: 'box', width: 4, height: 4, depth: 4 }, rb: { shape: 'box', mass: 1, vx: 12, restitution: 0, ...(friction === undefined ? {} : { friction }) } } });
+    const phys = new PhysicsSystem();
+    for (let i = 1; i <= 120; i++) phys.sync(w, i * 16.7);
+    const x = tf(w, 'crate').x;
+    phys.dispose();
+    return x;
+  };
+
+  it('friction 真接线：摩擦 0 滑得比摩擦 2 远（只填一项时另一项取世界值）', () => {
+    expect(slide(0)).toBeGreaterThan(slide(2) + 3);
+  });
+
+  it('非法值（负/NaN/弹性>1）拒收：告警并回落世界接触值，轨迹与未声明一致', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const run = (rb: Rb): number => {
+        const w = scene({ ball: { t: { y: 20 }, m: { shape: 'sphere', width: 2, height: 2 }, rb: { shape: 'sphere', mass: 1, ...rb } } });
+        const phys = new PhysicsSystem();
+        for (let i = 1; i <= 150; i++) phys.sync(w, i * 16.7);
+        const y = tf(w, 'ball').y; phys.dispose(); return y;
+      };
+      const base = run({});
+      for (const bad of [{ restitution: -0.1 }, { restitution: 1.5 }, { friction: -1 }, { friction: Number.NaN }]) expect(run(bad)).toBe(base);
+      expect(warn.mock.calls.filter(c => String(c[0]).includes('[physics] reject')).length).toBe(4);
+    } finally { warn.mockRestore(); }
+  });
+
+  it('同值刚体共用一个材质；每对材质只注册一次接触材质', () => {
+    const w = scene(Object.fromEntries(Array.from({ length: 6 }, (_, i) => [`d${i}`, { t: { x: i * 5, y: 10 }, m: { shape: 'box', width: 2, height: 2, depth: 2 }, rb: { shape: 'box', mass: 1, restitution: i % 2 ? 0.8 : 0.1, friction: 0.5 } }])));
+    const phys = new PhysicsSystem();
+    phys.sync(w, 16.7);
+    const cw = (phys as unknown as { world: { contactmaterials: unknown[] } }).world;
+    // 两种声明值 → 2 个材质；配对：A×world, A×A, B×world, B×A, B×B = 5
+    expect(cw.contactmaterials.length).toBe(5);
+    phys.dispose();
+  });
+});
+
+describe('RigidBody3D 逐体材质·两个声明体相碰的组合规则', () => {
+  beforeAll(async () => { await preloadPhysics(); });
+  it('声明体×声明体：摩擦 √(fa·fb)、弹性 max；声明体×世界：直接用声明值', () => {
+    const w = new World();
+    for (const [id, rb] of [['p', { restitution: 0.2, friction: 0.9 }], ['q', { restitution: 0.7, friction: 0.1 }]] as const) {
+      w.createEntity(id);
+      w.addComponent(id, { type: 'Transform3D', x: id === 'p' ? 0 : 10, y: 5, z: 0 } as Transform3D);
+      w.addComponent(id, { type: 'Mesh3D', shape: 'box', width: 2, height: 2, depth: 2, frontTint: 0xffffff } as Mesh3D);
+      w.addComponent(id, { type: 'RigidBody3D', shape: 'box', mass: 1, ...rb } as RigidBody3D);
+    }
+    const phys = new PhysicsSystem();
+    phys.sync(w, 16.7);
+    const cms = (phys as unknown as { world: { contactmaterials: { materials: { name: string }[]; friction: number; restitution: number }[] } }).world.contactmaterials;
+    const find = (a: string, b: string) => cms.find(c => { const n = c.materials.map(m => m.name).sort().join('+'); return n === [a, b].sort().join('+'); })!;
+    const P = 'rb:0.2|0.9', Q = 'rb:0.7|0.1';
+    expect(find(P, Q).friction).toBeCloseTo(Math.sqrt(0.9 * 0.1), 12);
+    expect(find(P, Q).restitution).toBe(0.7);
+    expect(find(P, 'world')).toMatchObject({ friction: 0.9, restitution: 0.2 });
+    expect(find(Q, 'world')).toMatchObject({ friction: 0.1, restitution: 0.7 });
+    phys.dispose();
   });
 });
