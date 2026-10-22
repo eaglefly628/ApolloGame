@@ -231,7 +231,7 @@ function reconcileChildrenKeyed(el: HTMLElement, oldN: LayoutNode, newN: LayoutN
  * @returns        - teardown()：移除 DOM + 解绑事件
  */
 // 动画关键帧预设（引擎内建·一次注入 document·LayoutConstraints.anim 引用）。
-const APOLLO_KEYFRAMES = `
+export const APOLLO_KEYFRAMES = `
 @keyframes apollo-fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes apollo-slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes apollo-pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}

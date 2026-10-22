@@ -187,7 +187,7 @@ flowchart TD
 
 | # | 缺口 | 实查 | A 补 | B 不补的代价 | Lead 推荐 |
 |---|---|---|---|---|---|
-| U1 | **控件库同步成 Claude Design 设计系统** | 稿子现在用自由 HTML 画，复刻时要翻译成闭集控件，翻不过去就报 PUI 扩控件；Claude Design 支持设计系统项目（同步需 owner 启动 `/design-sync`） | 把 UI 控件目录（`src/ui/components/catalog.ts`）+ house 主题导出成设计系统预览包，同步过去 | 稿子永远是「自由画、再翻译」，翻译失真和扩控件扯皮一直有 | **A** · PUI |
+| U1 | **控件库同步成 Claude Design 设计系统**（2026-10-22 落地：`npx vite-node scripts/design-system-export.mjs` 出包，owner 启动 `/design-sync` 推送） | 稿子现在用自由 HTML 画，复刻时要翻译成闭集控件，翻不过去就报 PUI 扩控件；Claude Design 支持设计系统项目（同步需 owner 启动 `/design-sync`） | 把 UI 控件目录（`src/ui/components/catalog.ts`）+ house 主题导出成设计系统预览包，同步过去 | 稿子永远是「自由画、再翻译」，翻译失真和扩控件扯皮一直有 | **A** · PUI |
 | U2 | **通用量稿** | 只有 game108 专用版 | 把 `game108-design-measure.mjs` 泛化为 `design-measure.mjs <slug>`，产机读基准 JSON | 每款游戏重写一遍或靠目测 | **A** · PUI |
 | U3 | **统一风格令牌**（2026-10-22 落地：美术根下 `style-tokens.json`，非 docs 目录——游戏运行时要能 fetch） | 生图风格在 `scripts/style-packs.json`，UI 主题在 UITheme，game108 令牌手抄成代码；三处各管各的 | 一份 `style-tokens.json`（每游戏）同时生成生图提示词风格段和 UITheme 覆盖；量稿时从稿子里提取 | 场景图和 UI 风格容易各走各的 | **A** · PUI + PST |
 | U4 | **UI 盲审** | 无「我们渲出的屏 vs 稿」比对 | 并入 T6：同一 harness 既比场景关键图，也按 U2 的基准逐件比盒子位置 / 尺寸 / 颜色 | 1:1 只能靠人眼 | **A** · 并入 T6 |
