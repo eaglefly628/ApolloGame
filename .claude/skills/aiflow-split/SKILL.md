@@ -13,10 +13,10 @@ description: 从已定稿关键图制定 D1 拆层单，选择 Tripo、Blender �
 
 | 图中对象 / 制作约束 | route | 去向与提示词要求 |
 |---|---|---|
-| 可独立复用的三维道具，如水壶、树、椅子；轮廓或表面细节不适合基础体搭建 | `generate` | 给 Tripo。描述完整主体、材质、尺度、朝向，refs 附裁切或补视角；被遮挡部分不臆造为定稿，先补参考。 |
-| 规则空间、地面、墙体、台阶、重复建筑模块；需精确尺寸与拼接关系 | `build` | 给 Blender 搭建。prompt 写尺寸、轴向、相邻关系与材质要求；有机装饰物另拆到 Tripo。 |
-| 固定视角二维背景、前景遮挡、透明贴层或图标，参考图已包含可用像素 | `build` | 二维切图 / 拼层。prompt 明写“2D 切图”、透明边缘、遮挡补洞与叠放关系，不送 Tripo；bbox 是原图裁区依据。需重新生成缺失像素时另用 `generate`，prompt 明写“2D 图生图”。 |
-| 需要骨骼与动作的三维角色 | `character` | 先补 T-Pose 前后左右四视图，再交人物线 Tripo → 规范化 → 绑骨 → 动作；当前单只登记需求，不声称已完成人物链。二维角色仍按切图或二维生成处理。 |
+| 可独立复用的三维道具，如水壶、树、椅子；轮廓或表面细节不适合基础体搭建 | `generate` | `asset:"model3d"`，给 Tripo。描述完整主体、材质、尺度、朝向，refs 附裁切或补视角；被遮挡部分不臆造为定稿，先补参考。 |
+| 规则空间、地面、墙体、台阶、重复建筑模块；需精确尺寸与拼接关系 | `build` | `asset:"model3d"`，给 Blender 搭建，不进出图台账。prompt 写尺寸、轴向、相邻关系与材质要求；有机装饰物另拆到 Tripo。 |
+| 固定视角二维背景、前景遮挡、透明贴层或图标，参考图已包含可用像素 | `build` | `asset:"sprite"`，二维切图 / 拼层，不进出图台账。prompt 明写“2D 切图”、透明边缘、遮挡补洞与叠放关系，不送 Tripo；bbox 是原图裁区依据。需重新生成缺失像素时另用 `generate`，prompt 明写“2D 图生图”。 |
+| 需要骨骼与动作的三维角色 | `character` | `asset:"model3d"`，先补 T-Pose 前后左右四视图，再交人物线 Tripo → 规范化 → 绑骨 → 动作；当前单只登记需求，不声称已完成人物链。二维角色仍按切图或二维生成处理。 |
 
 路线不确定、消费槽未落实或遮挡信息不足时保留 `proposed`，向 owner 说明待决定点。不得为凑全批准而擅改路线或关键图。
 
@@ -31,6 +31,7 @@ description: 从已定稿关键图制定 D1 拆层单，选择 Tripo、Blender �
     "scene": "hall",
     "bbox": [120, 240, 180, 220],
     "route": "generate",
+    "asset": "model3d",
     "skinKey": "example/props/kettle",
     "prompt": "独立三维旧铜水壶，保留左侧暖光与右向壶嘴，完整把手，落地轴心；交 Tripo。",
     "refs": ["keyart/hall.png"],
@@ -40,6 +41,8 @@ description: 从已定稿关键图制定 D1 拆层单，选择 Tripo、Blender �
 ```
 
 示例 skinKey 只是形状示意，使用前换成项目中真实消费的槽。逐行查 manifest `art:` / skinMap / Sprite / 背景装载点，向人确认清单附上“skinKey → 文件与消费位置”证据；schema 没有证据字段，不另塞自由字段。无真实槽先报告缺口，不把假 key 当已接线。任何缺 `skinKey` 行都会被脚本拒收，包括 `proposed` 行。
+
+`asset` 为可选闭集 `sprite` / `model3d`，缺省 `sprite`，不把旧单自动升级为三维。三维道具与人物必须显式填 `model3d`；二维重生成填 `sprite`。`route` 决定制作路线，`asset` 决定资产类型，不能靠 prompt 里的“3D”替代字段。同一 skinKey 的出图项类型必须一致；并入已有游戏台账时显式类型必须与原行 kind 一致，矛盾会拒收并提示核对消费槽，不偷偷换类型。
 
 `id` 唯一且稳定；scene 对应 `keyart/<scene>.png`。bbox 是该原图左上原点的整数像素 `[x,y,w,h]`，宽高大于零且不越图界。refs 是相对 `docs/design/<slug>/` 的本地文件路径，文件必须存在，禁远程 URL 和目录外路径。prompt 写清主体、特征、颜色、视角与制作目标，不能只有裸名词。
 
@@ -53,4 +56,4 @@ node scripts/asset-split.mjs <slug>
 
 测试可用 `node scripts/asset-split.mjs <slug> --root <fixtureRoot> --mock`。mock 只写 `keyart/mock/<scene>-split.png`，缺主图时明确记录降级并合成 mock 预览；不写真实 `art-ledger.json`、不写 `asset-split.md`、不改 state，也不能作为定稿依据。refs 仍须存在：若引用缺失主图会拒收；不需要额外参考时可用空 refs 测试降级。
 
-先展示关键图、标注图、逐行路线和消费槽证据。只有收到真人逐项确认后，才按确认范围记录 `state: "approved"` 并重跑；agent 不代 owner 签 D1，不通过 mock 自动批准。只有 approved 且有 skinKey 的行进入对应 `artRoot` 的 `art-ledger.json`，proposed 会被跳过并输出日志；由 `mergeLedger` 保持旧编号与历史。拆层 approved 表示需求确认，不等于资产质量 approved：生成、接线与美术人审仍走原管线。
+先展示关键图、标注图、逐行路线和消费槽证据。只有收到真人逐项确认后，才按确认范围记录 `state: "approved"` 并重跑；agent 不代 owner 签 D1，不通过 mock 自动批准。只有 approved、有 skinKey 且 route 非 build 的行进入对应 `artRoot` 的 `art-ledger.json`：asset 为 model3d → kind:model3d，选择 3D 供应商（Tripo / Meshy，遵循风格包或显式 provider；选择 Tripo 可用 art-replace 的 --provider tripo）；缺省或 sprite → kind:sprite。proposed 和 build 会打 skip 日志。build 仍留在标注图和拆层单，交给搭建 / 切图，不触发批量生图；Blender 的 build 行仍要求 primitive 来源，asset:model3d 不放宽校验。编号和历史保持；同 skinKey 并入已有游戏行，撤回批准 / 改为 build 只摘拆层附加字段；纯拆层行则 retired，不作废其它来源。拆层 approved 表示需求确认，不等于资产质量 approved：生成、接线与美术人审仍走原管线。

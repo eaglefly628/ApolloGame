@@ -10,6 +10,7 @@ import { artRoot } from './art-paths.mjs';
 import { inside, slugName } from './lib/aiflow-paths.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const FIELDS = ['id', 'scene', 'bbox', 'route', 'skinKey', 'prompt', 'refs', 'state'];
+const OPTIONAL_FIELDS = ['asset'];
 const nonempty = s => typeof s === 'string' && !!s.trim();
 function reject(message) { console.error(`[asset-split] reject: ${message}`); throw new Error(message); }
 export function validateSplit(rows) {
@@ -17,13 +18,14 @@ export function validateSplit(rows) {
   if (!Array.isArray(rows) || !rows.length) reject('asset-split.json 必须为非空数组');
   for (const [i, row] of rows.entries()) {
     if (!row || typeof row !== 'object' || Array.isArray(row)) reject(`行 ${i}: 需要对象`);
-    if (Object.keys(row).some(k => !FIELDS.includes(k)) || FIELDS.some(k => !(k in row))) reject(`行 ${i}: 字段必须为 ${FIELDS.join(',')}`);
+    if (Object.keys(row).some(k => !FIELDS.includes(k) && !OPTIONAL_FIELDS.includes(k)) || FIELDS.some(k => !(k in row))) reject(`行 ${i}: 必填字段为 ${FIELDS.join(',')}；可选 ${OPTIONAL_FIELDS.join(',')}`);
     if (!nonempty(row.id) || ids.has(row.id)) reject(`行 ${i}: id 缺失或重复`);
     ids.add(row.id);
     try { slugName(row.scene); } catch (e) { reject(e.message); }
     if (!nonempty(row.skinKey)) reject(`行 ${row.id}: 缺 skinKey，禁止孤儿行入台账`);
     if (!nonempty(row.prompt)) reject(`行 ${row.id}: 缺 prompt`);
     if (!['generate', 'build', 'character'].includes(row.route)) reject(`行 ${row.id}: route 非闭集`);
+    if (Object.hasOwn(row, 'asset') && !['sprite', 'model3d'].includes(row.asset)) reject(`行 ${row.id}: asset 必须为 sprite 或 model3d`);
     if (!['proposed', 'approved'].includes(row.state)) reject(`行 ${row.id}: state 非闭集`);
     if (!Array.isArray(row.bbox) || row.bbox.length !== 4 || row.bbox.some(v => !Number.isSafeInteger(v)) || row.bbox[0] < 0 || row.bbox[1] < 0 || row.bbox[2] <= 0 || row.bbox[3] <= 0) reject(`行 ${row.id}: bbox 必须为原图整数像素 [x,y,w,h]`);
     if (!Array.isArray(row.refs) || row.refs.some(r => !nonempty(r))) reject(`行 ${row.id}: refs 必须为路径数组`);
@@ -51,10 +53,12 @@ export function deriveSplitLedger(rows, slug, previous = null) {
   validateSplit(rows);
   const grouped = new Map();
   for (const row of rows) {
+    if (row.route === 'build') { console.info(`[asset-split] skip: ${row.id} route=build 交搭建/切图，不进出图台账`); continue; }
     if (row.state !== 'approved') { console.info(`[asset-split] skip: ${row.id} state=${row.state}`); continue; }
     const existing = grouped.get(row.skinKey);
+    if (existing && existing.kind !== (row.asset ?? 'sprite')) reject(`${row.id}: 同 skinKey ${row.skinKey} 的 asset 不一致`);
     if (existing) { existing.splitIds.push(row.id); existing.refs = [...new Set([...existing.refs,...row.refs])]; continue; }
-    grouped.set(row.skinKey, { no: `art-${String(grouped.size+1).padStart(2,'0')}`, skinKey: row.skinKey, kind: 'sprite', query: row.prompt, prompt: row.prompt, desc: row.id, context: `keyart:${row.scene} route:${row.route}`, spec: { w: row.bbox[2], h: row.bbox[3], transparent: true }, refs: [...row.refs], splitIds: [row.id], status: 'needs-art', gen: null, provenance: null });
+    grouped.set(row.skinKey, { no: `art-${String(grouped.size+1).padStart(2,'0')}`, skinKey: row.skinKey, kind: row.asset ?? 'sprite', query: row.prompt, prompt: row.prompt, desc: row.id, context: `keyart:${row.scene} route:${row.route}`, spec: { w: row.bbox[2], h: row.bbox[3], transparent: true }, refs: [...row.refs], splitIds: [row.id], status: 'needs-art', gen: null, provenance: null });
   }
   // Ownership is explicit: a missing splitIds field belongs to another derivation tool.
   // Never use full-ledger merge here: omitted manifest-owned rows are not withdrawals.
@@ -66,6 +70,10 @@ export function deriveSplitLedger(rows, slug, previous = null) {
   for (const p of previousRows) {
     const f = grouped.get(p.skinKey);
     if (f && (!isSplitRow(p) || Object.hasOwn(p, 'splitBase'))) {
+      // The consuming game owns this row's type. Refuse a contradictory explicit
+      // split type rather than silently send a 3D request through a 2D producer.
+      const explicit = rows.find(r => r.skinKey === p.skinKey && r.state === 'approved' && r.route !== 'build' && Object.hasOwn(r, 'asset'));
+      if (explicit && explicit.asset !== p.kind) reject(`${explicit.id}: asset=${explicit.asset} 与原台账 kind=${p.kind} 不一致，请核对消费槽`);
       matched.add(p.skinKey);
       console.info(`[asset-split] transition: ${p.no} 同 skinKey 拆层信息并入原行`);
       merged.push(attachSplitFields(p, f));

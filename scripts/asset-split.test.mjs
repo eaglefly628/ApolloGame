@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -6,9 +6,79 @@ import { createHash } from 'node:crypto';
 import { validateSplit, annotateSplit, deriveSplitLedger, splitWorkspace } from './asset-split.mjs';
 import { mockImage } from './ai-gen.mjs';
 import { decodePng } from './asset-matte.mjs';
+import { batchGenerate } from './art-replace.mjs';
+import { runBlenderJob } from './blender-job.mjs';
 const row=(patch={})=>({id:'lamp',scene:'hall',bbox:[2,3,12,15],route:'generate',skinKey:'example/lamp',prompt:'warm brass lamp',refs:['keyart/hall.png'],state:'approved',...patch});
 function fixture(fn){const root=mkdtempSync(join(tmpdir(),'aiflow-split-'));try{const dir=join(root,'docs/design/example');mkdirSync(join(dir,'keyart'),{recursive:true});writeFileSync(join(dir,'keyart/hall.png'),mockImage('hall',32).buffer);writeFileSync(join(dir,'asset-split.json'),JSON.stringify([row(),row({id:'wall',skinKey:'example/wall',route:'build',state:'proposed'})]));return fn(root,dir);}finally{rmSync(root,{recursive:true,force:true});}}
 describe('T2 split contract',()=>{
+ it.each(['sprite','model3d'])('SPLIT-3D accepts optional asset=%s without mutating input',asset=>{
+  const rows=[row({asset})],snapshot=JSON.stringify(rows);
+  expect(validateSplit(rows)).toBe(rows);expect(JSON.stringify(rows)).toBe(snapshot);
+ });
+ it.each([null,undefined,'mesh','',{},['sprite']])('SPLIT-3D rejects explicitly invalid asset %j',asset=>{
+  expect(()=>validateSplit([row({asset})])).toThrow('asset');
+ });
+ it('SPLIT-3D model3d prop reaches Tripo batch as mock GLB while legacy sprite stays 2D',async()=>{
+  const root=mkdtempSync(join(tmpdir(),'aiflow-split3d-'));
+  try {
+   const ledger=deriveSplitLedger([row({asset:'model3d'}),row({id:'icon',skinKey:'example/icon',asset:'sprite'}),row({id:'hero',route:'character',skinKey:'example/hero',asset:'model3d'})],'example');
+   expect(ledger.rows.map(r=>r.kind)).toEqual(['model3d','sprite','model3d']);
+   const out=await batchGenerate(ledger,'pixel-retro',{root,game:'example',mock:true,provider:'tripo',at:'2026-10-23T00:00:00.000Z'});
+   expect(out.ok).toBe(true);
+   for(const r of ledger.rows.filter(r=>r.kind==='model3d')) {
+    expect(r.gen).toMatchObject({provider:'tripo',mock:true});expect(r.gen.servedPath).toMatch(/\.glb$/);
+    expect(readFileSync(join(root,'public',r.gen.servedPath)).subarray(0,4).toString()).toBe('glTF');
+   }
+   expect(ledger.rows.find(r=>r.kind==='sprite').gen.provider).toBe('qwen');
+  } finally {rmSync(root,{recursive:true,force:true});}
+ });
+ it('SPLIT-3D build rows never create generation entries and log skip even when approved',()=>fixture((root,dir)=>{
+  const log=vi.spyOn(console,'info');
+  try {
+   const rows=[row({route:'build',asset:'model3d'}),row({id:'cut',skinKey:'example/cut',route:'build',asset:'sprite'})];
+   writeFileSync(join(dir,'asset-split.json'),JSON.stringify(rows));
+   const out=splitWorkspace(root,'example');expect(out.ledger.rows).toEqual([]);
+   expect(JSON.parse(readFileSync(join(root,'public/games/example/art/art-ledger.json'),'utf8')).count).toBe(0);
+   expect(log.mock.calls.map(args=>args.join(' '))).toEqual(expect.arrayContaining([
+    expect.stringContaining('[asset-split] skip: lamp route=build'),expect.stringContaining('[asset-split] skip: cut route=build')
+   ]));
+   expect(readFileSync(join(dir,'asset-split.md'),'utf8')).toContain('| build |');
+   expect(existsSync(out.outputs[0])).toBe(true);expect(JSON.parse(readFileSync(join(dir,'asset-split.json'),'utf8'))).toEqual(rows);
+  } finally {log.mockRestore();}
+ }));
+ it('SPLIT-3D rerouting to build withdraws only split ownership and preserves game rows',()=>{
+  const foreign={no:'art-07',skinKey:'example/lamp',kind:'model3d',status:'filled',gen:{servedPath:'lamp.glb'},refs:['owner.png'],prompt:'owner'};
+  const generated=deriveSplitLedger([row({asset:'model3d'}),row({id:'other',skinKey:'example/other',asset:'model3d'})],'example',{rows:[foreign]});
+  const withdrawn=deriveSplitLedger([row({asset:'model3d',route:'build'}),row({id:'other',skinKey:'example/other',asset:'model3d',route:'build'})],'example',generated);
+  expect(withdrawn.rows[0]).toEqual(foreign);expect(withdrawn.rows[1].status).toBe('retired');
+  expect(withdrawn.rows.filter(r=>r.status!=='retired')).toEqual([foreign]);
+ });
+ it('SPLIT-3D conflicting types for one skinKey reject instead of silently generating the wrong asset',()=>{
+  expect(()=>deriveSplitLedger([row(),row({id:'second',asset:'model3d'})],'example')).toThrow('asset 不一致');
+  const previous={rows:[{no:'art-01',skinKey:'example/lamp',kind:'sprite',status:'filled',gen:{servedPath:'original.png'}}]};
+  const before=JSON.stringify(previous);
+  expect(()=>deriveSplitLedger([row({asset:'model3d'})],'example',previous)).toThrow('原台账 kind=sprite');
+  expect(JSON.stringify(previous)).toBe(before);
+ });
+ it('SPLIT-3D Blender still requires primitive for build even when asset is model3d',()=>fixture((_root,dir)=>{
+  writeFileSync(join(dir,'asset-split.json'),JSON.stringify([row({route:'build',asset:'model3d'})]));
+  const job={op:'build-scene',inputs:['asset-split.json'],params:{scene:'hall',objects:[{splitId:'lamp',name:'col_lamp',source:{primitive:'box',size:[1,1,1]},position:[0,0,0],rotation:[0,0,0],scale:1}]},outputs:['out/hall.glb']};
+  const jobFile=join(dir,'job.json');writeFileSync(jobFile,JSON.stringify(job));
+  const report=runBlenderJob(jobFile,{mock:true});
+  expect(report.mock).toBe(true);
+  // Valid GLB input from the accepted mock job still must not replace a build primitive.
+  writeFileSync(join(dir,'prop.glb'),readFileSync(report.outputs[0].path));
+  job.inputs.push('prop.glb');job.params.objects[0].source={input:1};job.outputs=['out/another.glb'];
+  writeFileSync(jobFile,JSON.stringify(job));
+  expect(()=>runBlenderJob(jobFile,{mock:true})).toThrow('route=build 与source不符');
+ }));
+ it('SPLIT-3D legacy fixture produces byte-identical pre-change ledger and explicit sprite is equivalent',()=>fixture((root)=>{
+  // Recorded before this change from the existing fixture, not regenerated from the implementation under test.
+  const golden={version:1,game:'example',mode:'requirements',count:1,rows:[{no:'art-01',skinKey:'example/lamp',kind:'sprite',query:'warm brass lamp',prompt:'warm brass lamp',desc:'lamp',context:'keyart:hall route:generate',spec:{w:12,h:15,transparent:true},refs:['keyart/hall.png'],splitIds:['lamp'],status:'needs-art',gen:null,provenance:null}]};
+  splitWorkspace(root,'example');const actual=readFileSync(join(root,'public/games/example/art/art-ledger.json'));
+  expect(actual).toEqual(Buffer.from(JSON.stringify(golden,null,2)+'\n'));
+  expect(deriveSplitLedger([row({asset:'sprite'})],'example')).toEqual(golden);
+ }));
  it.each([undefined,null,'', '  '])('无 skinKey 行拒收，包括 proposed (%s)',skinKey=>{expect(()=>validateSplit([row({skinKey,state:'proposed'})])).toThrow('skinKey');});
  it.each([{bbox:[-1,0,2,2]},{bbox:[0,0,0,2]},{bbox:[0.5,0,2,2]},{route:'tripo'},{state:'done'},{scene:'../escape'},{refs:'x'},{prompt:''},{extra:true}])('无效字段拒收 %j',patch=>expect(()=>validateSplit([row(patch)])).toThrow());
  it('空表和重复id拒收',()=>{expect(()=>validateSplit([])).toThrow('非空');expect(()=>validateSplit([row(),row()])).toThrow('重复');});
