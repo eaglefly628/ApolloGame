@@ -31,5 +31,23 @@
     "blocks": [
       "S6"
     ]
+  },
+  {
+    "id": "GAP-628-04",
+    "title": "游戏逻辑驱动 3D 渲染参数（火苗资源→点光强度 / 信号→幻象材质溶解淡入淡出 / 资源→火苗粒子发射率 / 悬停→发光）。实查：Light3D.intensity、Material3D.dissolve、Vfx3D.rate 都是 render-only 字段，t3-timeline 的 cue 只能写 signal/flag/resource/spawn，t2-effect-apply 不能写渲染组件；Anim3D 只动 Transform3D 字段；全仓唯一「渲染侧读 sim 信号」先例是 CameraShot3D（只管镜头）。A=下沉通用 render-only 绑定组件（读 Resource 比例 / Flag / Signal → 写闭集渲染字段·带缓动）；B=game628 宿主每帧手写胶水改渲染字段（游戏专属代码·每个游戏重写）。Lead 推荐 A。全文 engine-readiness-2026-10-23.md G1",
+    "priority": "P1",
+    "route": "requests-3d",
+    "state": "open",
+    "blocks": [
+      "S5"
+    ]
+  },
+  {
+    "id": "GAP-628-05",
+    "title": "玩家拖拽环视幻象场景（指针拖拽→Camera3D yaw/pitch·限角）。实查：camera-rig 只按 Camera3D 数据算矩阵，全仓无指针→yaw/pitch 输入通路（requests-3d 路线图「可旋转交互」一直是待长项）。A=下沉相机环视输入能力；B=改设计，只用固定机位 + E6 剧情镜头（GDD「可环视」一句删除）。Lead 推荐 B（YAGNI：点选热点不需要自由环视，网页 / 手机操作也更简单）。全文 engine-readiness-2026-10-23.md G2",
+    "priority": "P2",
+    "route": "requests-3d",
+    "state": "open",
+    "blocks": []
   }
 ]

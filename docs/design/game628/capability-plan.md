@@ -25,7 +25,9 @@
 | `Pickable3D` | 幻象里的「美丽的东西」热点（替代 2D 的 `t2-clickable`）——命中经宿主 `enqueueAction` → `t2-keybind` → Signal |
 | `Sky3D` · `Fog3D` · `Post3D` | 雪夜天空、远景雾、暖色调色与泛光 |
 
-**S3 前须实查的一处**：2D 版用 `Clickable.onlyFlag:"flame.lit"` 做「火灭不可点」；`Pickable3D` 没有同名门。候选等价写法：熄灭时由 timeline 写 flag，`t2-effect-apply` 的收录动作读 flag 条件（或隐藏热点使其不可拾取）。S3 骨架时实查，表达不了再按缺口裁决协议上报。
+**原「S3 前实查」项已解（2026-10-23·重组成立）**：「火灭后热点不可点」用 `t2-effect-apply` 的 `set-visible-tagged` 在熄灭时把本章热点（同一 Tag）隐藏；隐藏实体不进渲染收集（`src/renderer/renderable.ts` 按 Visibility 过滤），拾取只在已渲染物体上命中（`three-renderer.ts` 拾取循环跳过不可见对象）→ 不需要给 `Pickable3D` 加门。S3 骨架时补一条用例钉住。
+
+**引擎缺口（2026-10-23 实查·待 owner 判 A/B）**：见 [`engine-readiness-2026-10-23.md`](./engine-readiness-2026-10-23.md) G1 / G2；机读见 `capability-gaps.json` GAP-628-04 / 05。
 
 ---
 
