@@ -14,27 +14,6 @@
 
 <!-- REQ-3D-TESTGAPS（P3D 测试面五项）owner 2026-10-16 令**暂停出池**——全文查 git 历史（git log -S REQ-3D-TESTGAPS）·重启时恢复原文 -->
 
-## REQ-3D-RB-MATERIAL · `RigidBody3D.restitution` / `.friction` 声明了但 `spawn()` 从不读 —— 全库游戏的每张「弹性/摩擦」旋钮都是死的 · [2026-08-10] · PE-211 提（game211 大样本物理验证时撞出）→ **P3D** · **owner 2026-10-22 判 A（接线）** · **施工主体 = Claude（2026-10-22 抢锁·owner 当面令开工·本行即锁）** · status: 施工完·待独立复查（Review 单 `docs/design/ai-pipeline/review/REQ-3D-RB-MATERIAL.md`） · 优先级: **P2（不吃表现·但会持续制造错误归因·见下方实测）** · 类型: 3D 线契约缺口（契约声明 ≠ 实现）
-
-> **实证（实查·非印象）**：
-> - `src/engine/protocol/components/render.ts:221-222` 明文声明并写了缺省值：`restitution?: number; // 弹性 0..1·缺省 0.3` / `friction?: number; // 摩擦·缺省 0.4`。
-> - `src/renderer/three/physics.ts` 的 `spawn()`（194-227 行）读了 `shape/heights/elementSize/hull/mass/vx..vz/avx..avz/angularFactor`，**唯独没有 `rb.restitution` / `rb.friction`**。全库 `grep -rn restitution src/` 只有 182-183 行的 `cw.defaultContactMaterial`（世界级·来自 `PhysicsWorld3D`）。**没有任何 per-body `CANNON.Material` / `ContactMaterial` 通路。**
-> - 后果：游戏在牌/骰/筹码上写的每一个 `restitution`/`friction` 都是**静默 no-op**——不报错、不告警、TS 还照收（契约里有）。这正是 CLAUDE.md 日志基准守则点名的「什么都没发生」那类分支形状。
->
-> **实测这个缺口目前吃掉了多少表现**（`scripts/game211-throw-lab.mjs --per-body`·8000 张牌对照）：把 game211 牌上声明的 `0.34/0.45` 真接成 cannon `ContactMaterial` 后 —— 正面率 50.63% vs 50.50%、未躺平 0.95% vs 0.92%（z=1.3·**p≈0.19 不显著**）。**即：现在补上不会改变已有表现**，所以这是契约/可信度缺陷，不是性能事故，不必急着热修。
->
-> **但它已经在造成实害**：`games/game211/design/HANDOFF-duel-physics.md` §5 曾把两条「实测调参结论」（`restitution 0.5+ → 弹回原处`、`friction 0.72 → 未躺平 3/40→8/40`）归因到这两个死旋钮上。旋钮根本没接线，那些观察只能是小样本噪声。**旋钮是死的，但基于它写下的经验会被后人当真去遵守。** 已在该文档标红更正。
->
-> **两条路（Lead 给推荐·不下裁决·owner/P3D 判）**：
-> - **A｜接线**：`spawn()` 里按 `(restitution, friction)` 做 `CANNON.Material` 缓存池 + 惰性 `addContactMaterial`（键 = 数对，避免 N² 组合爆炸）。代价：P3D 域改动，需回归掷骰/叠叠乐/筹码三处已调好的手感（世界级值不变 ⇒ 未声明 per-body 的实体行为逐位不变，回归面可控）。收益：契约兑现，游戏侧调参从此可信。
-> - **B｜删字段**：从 `RigidBody3D` 契约里删掉这两个字段，游戏一律走 `PhysicsWorld3D` 世界级档。代价：game211 等已写了这两个字段的游戏要清（TS 会报错，找得全）；失去 per-body 差异化能力（同场「弹的骰子 + 不弹的牌」表达不了）。收益：契约与实现一致，零歧义。
->
-> **Lead 推荐 A**——已经有 `angularFactor` 这种 per-body 物理旋钮的先例，且「同场不同材质」是真实需求（牌不弹 / 骰子弹）；B 会把能力削掉去迁就实现。但**不阻塞**：实测证明现状不吃表现，可排期做。
->
-> **同族**：`REQ-3D-CARD-FACE-AXIS` 的「顺手记的 3 处口径」里已有一条同形的 —— `spawn()` 不读 `Transform3D.quat`。建议一并处理（都是 spawn() 漏读契约字段）。
-
----
-
 <!-- REQ-3D-RENDER-EFFICIENCY（渲染效率（部分已交·待 V1 实测再开））owner 2026-10-16 令**暂停出池**——全文查 git 历史（git log -S REQ-3D-RENDER-EFFICIENCY）·重启时恢复原文 -->
 
 <!-- REQ-3D-W1高效引擎（W1 高效引擎（W1-E 健壮未做·与渲染效率合并重开））owner 2026-10-16 令**暂停出池**——全文查 git 历史（git log -S REQ-3D-W1高效引擎）·重启时恢复原文 -->

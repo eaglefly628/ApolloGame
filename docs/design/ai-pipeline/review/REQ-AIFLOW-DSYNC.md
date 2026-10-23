@@ -47,3 +47,53 @@
 
 - 包内预览是**静态 HTML**：交互态（悬停流光、粒子循环）只保留 CSS 关键帧能表达的部分，依赖 `mountUI` 运行时的动效不在预览里。
 - 未做：从设计系统项目**反向拉取**（Claude Design 改了组件后回写引擎）。当前方向只有「引擎 → Claude Design」，引擎控件闭集仍是唯一真相。
+
+
+## 独立复查判词（Codex · 2026-10-23）
+
+**FAIL，两条 P2；退 Claude / DSYNC 导出器返工。** 固定审查 `cafa0c60e7ae73e86311d9f6666ee3dc510b6187`，施工为 Claude，本复查未参与。隔离 fixed / withdraw clone，恢复后均 clean，未修产品。以下均实际复现，未用施工自陈代替证据。
+
+### DS1（P2）：NativeCharacter 三套主题的预览均坏图
+
+新接缝 `scripts/lib/design-system-pack.mjs:21–34` 将本地 poster 换为 data SVG；现有 `render.ts:594–595` 仍用 `nativeLocalPath`（`native-character-data.ts:8–12`）拒收带 URI scheme 的路径。结果导出 `<img data-native-poster src="">`，三张舞台图像 naturalWidth / naturalHeight 均0。
+
+最小复现：`npx vite-node scripts/design-system-export.mjs --out /private/tmp/dsync-repro`，真实 Chrome 打开 `components/NativeCharacter.html`，逐个 `[data-native-poster]` 读取 src、currentSrc、complete、naturalWidth；三份均 src/currentSrc空、complete=true、naturalWidth=0，截图有坏图图标。没有外部请求不代表图片有效。
+
+修复归属：导出器的预览适配；可用现有 Image 的 export-only 静态 fallback 或兼容本地路径约束的自包含占位方案。不要为了导出放松 NativeCharacter 生产路径安全。补最终 HTML / 真浏览器 naturalWidth 验收，不能只检查输入 props 被替换。
+
+### DS2（P2）：一个 JSON 语法错阻断所有正常游戏出包
+
+`gameTokenThemes` 注释承诺非法令牌跳过并告警，但 `scripts/lib/design-system-pack.mjs:96` 的 JSON.parse 在拒收分支之外。
+
+实跑 CLI：仅合法 game628 时 exit **0**；增加 `public/games/zz-review-bad-json/art/style-tokens.json` 内容 `{"version":1,` 后，同命令 exit **1**，`SyntaxError: Expected double-quoted property name in JSON at position 13`，无 slug reject 日志，输出目录和合法 Brand 都不存在。删除坏 fixture 后 exit **0**，game628 Brand 与先前逐字节相同。独立2条缺陷契约断言均真红，exit1。
+
+修复归属：逐文件捕获读取 / JSON parse 错误，记录 slug 的 reject 并继续正常游戏导出。语法错也属于非法文件；现有单测只覆盖 JSON 对象 schema 非法，未覆盖语法错误。
+
+### 独立复跑与浏览器逐卡结果
+
+- `npx vitest run scripts/lib/design-system-pack.test.mjs`：7/7、exit0；额外独立结构测试3/3、exit0。
+- 真正跑 `npx vite-node scripts/design-system-export.mjs --out <临时目录>`：exit0，47文件、45张HTML（42控件、2基础、1游戏Brand）。不是仅调用内存构造函数。
+- 真实已安装 Google Chrome 逐一打开全部45张：pageerror **0**、外部请求 **0**、failed request **0**、首行 `@dsCard` 不合格 **0**、空body **0**。126组件舞台均有子节点；Divider为374×1正常线。6张 img 中 **3坏图**，全是 DS1；因此浏览器过程脚本 exit0 不表示图像验收通过。
+- 外链 script / CSS 为0；未定义 CSS 动画名为0。APOLLO_KEYFRAMES 与父版内容8478字节相同，SHA `ef10644d85fe82dab9620f5bb4ea60adddec20f66c0af78751034deaa041a294`，仅增加导出声明。
+- README 确有只用包内闭集控件、data-ui、data-action 对账、令牌颜色字体、S4结构 / S5视觉1:1规则；每卡首行标记完整。仅审静态出包，不冒充 mountUI 交互运行时审查，也未替 owner 执行 `/design-sync`。
+
+### 独立撤修验红（不同于施工方 S1–S3）
+
+先断言锚点原串唯一命中1；仅在 withdraw clone 动手，逐次恢复：
+
+| 锚点 / 撤法 | 测试 | 真红与恢复 |
+|---|---|---|
+| `if (Array.isArray(value)) return value.map(swapImages);` → 原样返回数组 | `nested arrays replace image fields and clear media fields without mutating input` | 真 AssertionError exit1，恢复 exit0；撤前独立3例绿 |
+| `const SITE_MEDIA = /^\/(?!\/).*\.(mp4|webm|ogg|mp3|wav|m4a)$/i;` → 永不匹配 `/$^/` | `media cleanup clears nested audio and video paths for every supported format` | 音视频路径未清空 AssertionError exit1，恢复 exit0 |
+
+恢复源码 SHA256 均 `9622efe4d6e19d5eab6ccddd5426c4fdaf2cded6f6d964d3ec583ede93962e8a`，工作树 clean。两次红灯不是编译 / Chrome 缺失 / 超时；原始输出与 unique-hit JSON 均保存。
+
+### 全量门禁、告警与证据
+
+实际宿主运行 `node scripts/scoped-gate.mjs --run --base cafa0c60^`，显式真实 Chrome 路径：总 exit **0**，673文件 / 7254测试通过；eslint、depcruise、tsc、vitest:full、build、docs-ref、context-budget 各 **0**；art-ledger **2**（允许的旧WARN：黑户5、死账2、缺来源0），末行 `✅ 门禁全绿（scope=full）`。新增缺陷不在既有全量测试断言内，故全绿不改变 FAIL。
+
+读完228个stderr块，226归一行；与既有完整基线比较，新增仅负例拒收与令牌优先决策。唯一 topological-sort 是既有 system-graph 的 `[L,P]` fixture，无新增环；无 Unhandled 汇总。构建3大chunk与台账旧WARN均已读。**真实 Tripo / ARP / Mixamo 链路未验**。
+
+完整证据 `/Users/junbaili/.codex/visualizations/2026/10/16/01a1423a-1952-7952-a2c0-8ae2faac621b/review-trio-split3d-20261023/dsync/review-summary.json`、`browser.json`、`browser-summary.json`、`screenshots/components-NativeCharacter.html.png`、`bad-json-cli-summary.json`、`defect-contracts.log`、`withdraw-summary.json`、`scoped-gate-full.log`。证据根见本节末。
+
+证据根（本机持久目录）：`/Users/junbaili/.codex/visualizations/2026/10/16/01a1423a-1952-7952-a2c0-8ae2faac621b/review-trio-split3d-20261023`。
