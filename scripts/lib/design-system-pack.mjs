@@ -27,6 +27,12 @@ function swapImages(value) {
   return value;
 }
 export function previewSample(node) {
+  // NativeCharacter 的静态兜底只认站内路径 poster（生产安全边界不放宽）→ 导出预览换成同尺寸 Image 占位，等价于它的海报兜底。
+  if (node.type === 'NativeCharacter') {
+    const p = node.props ?? {};
+    console.info(`[design-system] decision: ${node.id} NativeCharacter 预览换为海报占位 Image（导出包无原生播放器与站内资源）`);
+    return { ...node, type: 'Image', props: { src: PLACEHOLDER, ...(p.alt !== undefined ? { alt: p.alt } : {}), fit: ['cover', 'contain', 'fill'].includes(p.fit) ? p.fit : 'contain' } };
+  }
   let props = node.props;
   if (props) {
     const swapped = swapImages(props);
@@ -93,7 +99,9 @@ export function gameTokenThemes(root = ROOT) {
     for (const slug of readdirSync(base).sort()) {
       const file = join(base, slug, 'art', 'style-tokens.json');
       if (!existsSync(file)) continue;
-      const parsed = parseStyleTokens(JSON.parse(readFileSync(file, 'utf8')));
+      let raw;
+      try { raw = JSON.parse(readFileSync(file, 'utf8')); } catch (e) { console.warn(`[design-system] reject: ${slug} style-tokens JSON 解析失败（${e.message}），不导出`); continue; }
+      const parsed = parseStyleTokens(raw);
       if (!parsed.ok) { console.warn(`[design-system] reject: ${slug} style-tokens 非法（${parsed.error}），不导出`); continue; }
       out.push([slug, `${slug} · ${parsed.tokens.name}（${parsed.tokens.status}）`, themeFromStyleTokens(parsed.tokens)]);
     }

@@ -42,23 +42,48 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 export const STYLE_TOKEN_TOP_KEYS = ['version', 'name', 'status', 'base', 'colors', 'fonts', 'prompt'] as const;
 const TOP_KEYS: readonly string[] = STYLE_TOKEN_TOP_KEYS;
 
-/** 闭集校验（与 scripts/lib/style-tokens.mjs 同口径的 UI 侧子集：只管 UI 消费的字段）。 */
+const PROMPT_KEYS: readonly string[] = ['zh', 'en', 'negativeZh', 'negativeEn'];
+const text = (v: unknown, max: number): v is string => typeof v === 'string' && v.trim().length > 0 && v.length <= max;
+const isPlainObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+
+/** 完整闭集校验：与 scripts/lib/style-tokens.mjs `validateStyleTokens` 逐条同口径（两侧由同一组完整有效/无效对象钉住）。任何一处不合法整份拒收。 */
+export function validateStyleTokens(raw: unknown): { ok: boolean; errors: string[] } {
+  if (!isPlainObject(raw)) return { ok: false, errors: ['必须是对象'] };
+  const errors: string[] = [];
+  for (const k of Object.keys(raw)) if (!TOP_KEYS.includes(k)) errors.push(`未知字段 ${k}`);
+  if (raw.version !== 1) errors.push('version 必须为 1');
+  if (!text(raw.name, 60)) errors.push('name 必须为 1–60 字');
+  if (!['draft', 'final'].includes(raw.status as string)) errors.push('status 必须为 draft | final');
+  if (!(STYLE_TOKEN_BASES as readonly unknown[]).includes(raw.base)) errors.push(`base 必须为 ${STYLE_TOKEN_BASES.join(' | ')}`);
+  const colors = raw.colors;
+  if (!isPlainObject(colors)) errors.push('colors 必须是对象');
+  else {
+    for (const [k, v] of Object.entries(colors)) {
+      if (!(STYLE_TOKEN_COLOR_KEYS as readonly string[]).includes(k)) errors.push(`colors.${k} 不在闭集`);
+      else if (typeof v !== 'string' || !HEX.test(v)) errors.push(`colors.${k} 必须是 #RRGGBB`);
+    }
+    for (const k of ['background', 'text', 'accent']) if (!(k in colors)) errors.push(`colors.${k} 必填`);
+  }
+  if (raw.fonts !== undefined) {
+    if (!isPlainObject(raw.fonts)) errors.push('fonts 必须是对象');
+    else for (const [k, v] of Object.entries(raw.fonts)) {
+      if (!(STYLE_TOKEN_FONT_KEYS as readonly string[]).includes(k)) errors.push(`fonts.${k} 不在闭集`);
+      else if (!text(v, 200) || /[;{}<>]/.test(v)) errors.push(`fonts.${k} 必须是字体栈字符串（不含 ; { } < >）`);
+    }
+  }
+  const prompt = raw.prompt;
+  if (!isPlainObject(prompt)) errors.push('prompt 必须是对象');
+  else {
+    for (const k of Object.keys(prompt)) if (!PROMPT_KEYS.includes(k)) errors.push(`prompt.${k} 不在闭集`);
+    for (const k of ['zh', 'en']) if (!text(prompt[k], 400)) errors.push(`prompt.${k} 必须为 1–400 字`);
+    for (const k of ['negativeZh', 'negativeEn']) if (prompt[k] !== undefined && !text(prompt[k], 300)) errors.push(`prompt.${k} 必须为 1–300 字`);
+  }
+  return { ok: errors.length === 0, errors };
+}
+
 export function parseStyleTokens(raw: unknown): { ok: true; tokens: StyleTokens } | { ok: false; error: string } {
-  const r = raw as Partial<StyleTokens> | null;
-  if (!r || typeof r !== 'object' || Array.isArray(r) || r.version !== 1) return { ok: false, error: 'version 必须为 1' };
-  for (const k of Object.keys(r)) if (!TOP_KEYS.includes(k)) return { ok: false, error: `未知字段 ${k}` };
-  if (!STYLE_TOKEN_BASES.includes(r.base as StyleTokens['base'])) return { ok: false, error: `base 非法: ${String(r.base)}` };
-  if (!r.colors || typeof r.colors !== 'object') return { ok: false, error: 'colors 缺失' };
-  for (const [k, v] of Object.entries(r.colors)) {
-    if (!(STYLE_TOKEN_COLOR_KEYS as readonly string[]).includes(k)) return { ok: false, error: `colors.${k} 不在闭集` };
-    if (typeof v !== 'string' || !HEX.test(v)) return { ok: false, error: `colors.${k} 必须是 #RRGGBB` };
-  }
-  for (const k of ['background', 'text', 'accent'] as const) if (!r.colors[k]) return { ok: false, error: `colors.${k} 必填` };
-  for (const [k, v] of Object.entries(r.fonts ?? {})) {
-    if (!(STYLE_TOKEN_FONT_KEYS as readonly string[]).includes(k)) return { ok: false, error: `fonts.${k} 不在闭集` };
-    if (typeof v !== 'string' || !v.trim() || /[;{}<>]/.test(v)) return { ok: false, error: `fonts.${k} 非法` };
-  }
-  return { ok: true, tokens: r as StyleTokens };
+  const v = validateStyleTokens(raw);
+  return v.ok ? { ok: true, tokens: raw as StyleTokens } : { ok: false, error: v.errors.join('；') };
 }
 
 /** 起手 house 主题 + 令牌覆盖。未出现的令牌保留起手主题原值。 */

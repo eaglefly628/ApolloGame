@@ -97,3 +97,31 @@
 完整证据 `/Users/junbaili/.codex/visualizations/2026/10/16/01a1423a-1952-7952-a2c0-8ae2faac621b/review-trio-split3d-20261023/dsync/review-summary.json`、`browser.json`、`browser-summary.json`、`screenshots/components-NativeCharacter.html.png`、`bad-json-cli-summary.json`、`defect-contracts.log`、`withdraw-summary.json`、`scoped-gate-full.log`。证据根见本节末。
 
 证据根（本机持久目录）：`/Users/junbaili/.codex/visualizations/2026/10/16/01a1423a-1952-7952-a2c0-8ae2faac621b/review-trio-split3d-20261023`。
+
+## 返工（Claude · 2026-10-24）· DS1 / DS2 → 待独立复查（复查人 ≠ Claude）
+
+**DS1**：`previewSample` 遇到 `NativeCharacter` 时，整节点换成同 id、同 layout 的 `Image`（`src` = 内联占位 SVG，保留 alt，fit 取 cover|contain|fill 之一，默认 contain），并打 `[design-system] decision` 日志。这等价于它的海报静态兜底；`render.ts` 与 `nativeLocalPath` 一字未动，生产安全边界不放宽。卡片仍标 `data-ui="NativeCharacter"`（由卡片外壳打，现有用例钉住）。原用例断言「poster 变 data:」，钉住的正是这个缺陷，已改为断言换成 Image。
+
+**DS2**：`gameTokenThemes` 逐文件 `try { JSON.parse } catch` → `[design-system] reject: <slug> style-tokens JSON 解析失败（…），不导出` 后继续。
+
+**新增用例**（`scripts/lib/design-system-pack.test.mjs`，9/9 exit 0）：
+- `最终 HTML：所有 <img> 都有可显示的内联 src…`：扫整包最终 HTML，每个 `<img>` 的 src 必须是 `data:image/`，NativeCharacter 卡必须含占位 img。这检查的是最终产物，不是输入 props。
+- `风格令牌 JSON 语法错只跳过该游戏并告警，其余游戏照常导出`：broken（`{ "version": 1, `）+ good 两个游戏，结果只剩 good，告警含 `reject: broken` 与 JSON，整包含 `brand/good.html`。
+
+**真浏览器**（Playwright Chromium 逐张 file:// 打开，检查脚本在 scratchpad，不入库）：
+
+| 版本 | 卡 | img | naturalWidth=0 | pageerror | 外部请求 |
+|---|---|---|---|---|---|
+| 修前 2c9dae03 | 45 | 6 | **3**（全在 NativeCharacter） | 0 | 0 |
+| 修后 | 45 | 6 | **0**（NativeCharacter 三张均 160） | 0 | 0 |
+
+**施工自证撤修验红**（复查人请另选）：
+
+| 锚点（命中 = 1） | 撤法 | 红灯 |
+|---|---|---|
+| `if (node.type === 'NativeCharacter') {` | → `if (false) {` | exit 1：替换用例 + 最终 HTML 用例 |
+| `try { raw = JSON.parse(readFileSync(file, 'utf8')); } catch (e) {` | 去掉 try 与 catch | exit 1：语法错用例 |
+
+两次均 cmp 恢复、exit 0。
+
+**全量门禁（STYLETOKENS + DSYNC 返工同一提交）**：`node scripts/scoped-gate.mjs --run`，scope=full，**exit 0**；673 文件 / **7294** 测试（基线 7268 + 本次新增 26）；docs-ref PASS、context-budget PASS、art-ledger-guard 为既有 WARN；topological-sort 仍只有 `[L,P]` 负例 fixture 一条，无新增环。

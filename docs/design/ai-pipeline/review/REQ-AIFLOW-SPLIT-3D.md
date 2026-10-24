@@ -79,3 +79,40 @@ node scripts/scoped-gate.mjs --run
 
 证据根（本机持久目录）：
 `/Users/junbaili/.codex/visualizations/2026/10/16/01a1423a-1952-7952-a2c0-8ae2faac621b/review-trio-split3d-20261023/split-3d/`：`targeted.log`、`targeted.exit`、`withdraw-summary.json`、`W1-asset-kind-*.log`、`W2-build-skip-*.log`、`scoped-gate-full.log`、`scoped-gate-full.exit`、`scoped-gate-exit.json`、`warning-audit.json`、`warning-messages.txt`、`legacy-comparison.json`。
+
+## 独立复查判词（Claude · 2026-10-24）
+
+**FAIL（1 条 P2），退 Codex 返工。** 其余验收全部复现通过。固定审查 `2c9dae03`，在隔离 worktree 内跑，共享依赖只读链接，未改产品代码；恢复后 worktree clean。
+
+### SP1（P2）：纯拆层行生成后改 asset，类型被静默改写，旧 2D 生成物冒充 3D 已完成
+
+位置 `scripts/asset-split.mjs` `deriveSplitLedger` 纯拆层行合并分支（`merged.push({ ...p, ...f, … status: p.status …, gen: p.gen ?? null })`）。显式类型冲突的拒收只写在「并入游戏行」分支（`explicit.asset !== p.kind`），纯拆层行没有同等保护。
+
+最小复现（隔离 worktree 内临时测试，跑完即删）：
+1. `deriveSplitLedger([row()], 'example')`，得 sprite 行；把它置 `status:'filled'`、`gen:{servedPath:'games/example/art/lamp.png', provider:'qwen'}`（即已出过 2D 图）。
+2. 同一行改 `asset:'model3d'` 再推导，传入上一步台账。
+3. 实得：`{"kind":"model3d", …, "status":"filled", "gen":{"servedPath":"games/example/art/lamp.png","provider":"qwen"}}`，**没有拒收，也没有任何日志**。
+
+后果：`batchGenerate` 跳过 filled 行，该 3D 槽永远拿着一张 PNG，台账却显示「已完成」。这违背本单文档自己写的不变量（「一个出图槽的 asset 必须一致……显式矛盾时拒收」「不把消费槽默默改类型」）。场景现实：game628 正是 2026-10-22 从 2D 改 3D，先出过 2D 图的拆层行改 asset 就会撞上。
+
+修复归属：Codex，本单范围。纯拆层行 kind 变化时，与游戏行同口径拒收（或显式重置为 needs-art、gen 置 null 并记 transition 日志，二选一，写进文档）。补「生成后改类型」用例并撤修验红。复查不代修。
+
+### 其余验收（独立复跑）
+
+- **定向**：`npx vitest run scripts/asset-split.test.mjs scripts/art-replace.test.mjs scripts/blender-job.test.mjs` → 3 文件 **209/209**，exit 0（与施工自陈一致，但为自跑结果）。
+- **全量**：`node scripts/scoped-gate.mjs --base de12c3e8 --run`（scope=full）→ **exit 0**，673 文件 / **7268** 测试，末行 `✅ 门禁全绿（scope=full）`。
+- **撤修验红**（避开施工方两个锚点；均先断言原串命中 = 1，撤后真红，恢复后 SHA 相同、exit 0）：
+
+| 锚点 | 撤法 | 红灯 |
+|---|---|---|
+| `if (explicit && explicit.asset !== p.kind) reject(` | → `if (false) reject(` | exit 1：`SPLIT-3D conflicting types for one skinKey reject instead of silently generating the wrong asset` |
+| `if (Object.hasOwn(row, 'asset') && !['sprite', 'model3d'].includes(row.asset))` | → `if (false)` | exit 1：`rejects explicitly invalid asset` null / undefined / "mesh" / "" 等 |
+
+- **实证**：未声明 asset 时并入 model3d 游戏行，保留游戏行 kind，这是文档写明的行为，接受。旧夹具字节不变用的是施工前录下的字面量，不是用实现生成的 expected，接受。
+- **读告警**：topological-sort 仍只有 `system-graph` 的 `[L,P]` 负例 fixture；`[blender-job] reject: Blender退出码 …` 均为假可执行文件负例；art-ledger-guard 为既有 WARN。无新增环，无 Unhandled。
+
+### 非阻断观察（不算 FAIL）
+
+- model3d 拆层行的 `spec` 仍是 2D 的 `{w,h,transparent:true}`（来自 bbox），游戏推导的 model3d 行是 `{polyBudget, scale}`。已核 `dialectPrompt` 不读 spec，不影响提示词，只是字段语义不一致。可随 SP1 一并改，也可不改。
+- 拆层行带的 `refs`（关键图）在生成路径上无人消费，3D 行只走文生 3D。这不是本单 spec 的范围，已作为新缺口 **GAP-AIFLOW-REFS** 报 owner（`docs/design/ai-pipeline/gap-review-2026-10-24.md` §二）。
+- **真实 Tripo / Blender / Auto-Rig Pro / Mixamo 链路未验。**

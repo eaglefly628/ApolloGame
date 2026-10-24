@@ -88,3 +88,19 @@ WARN 已读并比父版：唯一 `[L,P]` topological-sort fixture 原文相同�
 完整证据 `/Users/junbaili/.codex/visualizations/2026/10/16/01a1423a-1952-7952-a2c0-8ae2faac621b/review-trio-split3d-20261023/style-tokens/review-result.json`、`withdrawal-summary.json`、`14-scoped-gate-full.log`、`14-step-exits.json`、`15-warning-audit.json`、`16-deployment.json`。证据根见本节末。
 
 证据根（本机持久目录）：`/Users/junbaili/.codex/visualizations/2026/10/16/01a1423a-1952-7952-a2c0-8ae2faac621b/review-trio-split3d-20261023`。
+
+## 返工（Claude · 2026-10-24）· ST1 → 待独立复查（复查人 ≠ Claude）
+
+**改了什么**：`src/ui/components/style-tokens.ts` 新增导出 `validateStyleTokens(raw) → { ok, errors[] }`，与 `scripts/lib/style-tokens.mjs::validateStyleTokens` 逐条同口径：对象 / 数组 / null、未知顶层键、version、name 1–60、status draft|final、base、colors 对象 + 闭集 + #RRGGBB + 三必填、fonts（存在时必须是对象，值 1–200 且不含 `; { } < >`）、prompt 对象 + 键闭集 + zh/en 1–400 必填 + negative 1–300 可选。`parseStyleTokens` 改为调用它；`loadStyleTokensTheme` 不变（非法 → `[style-tokens] reject` + null）。src 不能 import scripts（depcruise 边界），所以两份实现由同一组完整对象钉住，而不是只比键表。
+
+**同源夹具**（`scripts/lib/style-tokens.test.mjs`·`同源夹具 %s → 两侧判词一致且符合预期`，23 例）：合法 5（草案、无 fonts、final、带 negative、fonts 恰 200）+ 非法 18（null、数组、fonts:null、fonts:[]、fonts 201、fonts 空白、缺 name、name 61、status approved、缺 prompt、prompt:null、prompt 数组、prompt.extra、缺 zh、en 401、negativeEn 空串、colors 数组、colors:null）。每例断言 mjs 判词 = 预期，**TS `{ok, errors}` 与 mjs 逐字段相等**，`parseStyleTokens` 同判。另一例把 23 个对象逐个经 stub fetch 送进 `loadStyleTokensTheme`：合法出主题，非法回落 null，reject 告警条数 = 非法条数（18）。复查给的最小复现 `fonts:null` 是其中一例。
+
+**施工自证**（复查人请另选锚点）：定向 `npx vitest run scripts/lib/style-tokens.test.mjs` 38/38 exit 0。
+
+| 锚点（命中均 = 1） | 撤法 | 红灯 | 恢复 |
+|---|---|---|---|
+| `if (!isPlainObject(raw.fonts)) errors.push('fonts 必须是对象');` | 换成 `if (false)` | exit 1：`fonts:null`、`fonts:[]`、运行时回落例 | cmp 相同·exit 0 |
+| `for (const k of Object.keys(prompt)) if (!PROMPT_KEYS.includes(k)) …` | 删整行 | exit 1：`prompt.extra`、运行时回落例 | cmp 相同·exit 0 |
+| 整文件换回 8a94300f 版 | — | exit 1，24 例红（含缺新导出的 TypeError，只作参考，不算有效红灯） | — |
+
+全量门禁见下方 DSYNC 返工节（两单同一提交、同一次 scope=full 门禁）。

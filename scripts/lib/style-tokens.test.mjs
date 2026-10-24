@@ -31,6 +31,50 @@ describe('U3 令牌闭集', () => {
     expect(mjs.validateStyleTokens(tokens(patch)).ok).toBe(false);
     expect(ts.parseStyleTokens(tokens(patch)).ok).toBe(false);
   });
+  // ST1 返工：同一组「完整对象」两侧必须给出相同判词（不靠只比键表）。
+  const without = (k) => { const t = structuredClone(GAME628); delete t[k]; return t; };
+  const promptPatch = (p) => tokens({ prompt: { ...GAME628.prompt, ...p } });
+  const SHARED = [
+    ['合法·草案', GAME628, true],
+    ['合法·无 fonts', without('fonts'), true],
+    ['合法·status final', tokens({ status: 'final' }), true],
+    ['合法·带 negative', promptPatch({ negativeZh: '无文字', negativeEn: 'no text' }), true],
+    ['合法·fonts 恰 200', tokens({ fonts: { ui: 'x'.repeat(200) } }), true],
+    ['非对象·null', null, false],
+    ['非对象·数组', [GAME628], false],
+    ['fonts:null', tokens({ fonts: null }), false],
+    ['fonts:[]', tokens({ fonts: [] }), false],
+    ['fonts 超 200', tokens({ fonts: { ui: 'x'.repeat(201) } }), false],
+    ['fonts 空白', tokens({ fonts: { ui: '  ' } }), false],
+    ['缺 name', without('name'), false],
+    ['name 超 60', tokens({ name: 'n'.repeat(61) }), false],
+    ['status 非闭集', tokens({ status: 'approved' }), false],
+    ['缺 prompt', without('prompt'), false],
+    ['prompt:null', tokens({ prompt: null }), false],
+    ['prompt 数组', tokens({ prompt: ['a'] }), false],
+    ['prompt.extra', promptPatch({ extra: 'x' }), false],
+    ['prompt.zh 缺', promptPatch({ zh: undefined }), false],
+    ['prompt.en 超 400', promptPatch({ en: 'e'.repeat(401) }), false],
+    ['negativeEn 空串', promptPatch({ negativeEn: '' }), false],
+    ['colors 数组', tokens({ colors: [] }), false],
+    ['colors:null', tokens({ colors: null }), false],
+  ];
+  it.each(SHARED)('同源夹具 %s → 两侧判词一致且符合预期', (_name, raw, expected) => {
+    const m = mjs.validateStyleTokens(raw), t = ts.validateStyleTokens(raw);
+    expect(m.ok).toBe(expected);
+    expect(t).toEqual(m);
+    expect(ts.parseStyleTokens(raw).ok).toBe(expected);
+  });
+  it('同源夹具：非法令牌运行时一律告警并回落起手主题（不默默采用）', async () => {
+    const warn = console.warn; const calls = []; console.warn = (...a) => calls.push(a.join(' '));
+    try {
+      for (const [name, raw, expected] of SHARED) {
+        const theme = await ts.loadStyleTokensTheme('game628', async () => ({ ok: true, json: async () => raw }));
+        expect(theme === null, name).toBe(!expected);
+      }
+      expect(calls.filter(c => c.includes('[style-tokens] reject')).length).toBe(SHARED.filter(([, , e]) => !e).length);
+    } finally { console.warn = warn; }
+  });
   it('两侧键表逐项一致（防漂移）', () => {
     expect([...ts.STYLE_TOKEN_COLOR_KEYS]).toEqual(mjs.STYLE_TOKEN_COLOR_KEYS);
     expect([...ts.STYLE_TOKEN_FONT_KEYS]).toEqual(mjs.STYLE_TOKEN_FONT_KEYS);

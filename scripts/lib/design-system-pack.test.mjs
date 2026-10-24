@@ -46,10 +46,32 @@ describe('U1 设计系统包', () => {
     expect(out.children[0].props.sprite).toBeUndefined();
     expect(out.children[0].props.fit).toBe('contain');
     expect(out.children[1].props.src).toBe('data:image/png;base64,AA');
-    const nc = previewSample({ type: 'NativeCharacter', id: 'n', props: { assetKey: 'k', poster: '/ui/p.png', clip: 'idle' } });
-    expect(nc.props.poster.startsWith('data:image/svg+xml,')).toBe(true);
-    expect(nc.props.assetKey).toBe('k');
+    // DS1 返工：NativeCharacter 静态兜底拒收 data: poster（生产安全边界）→ 预览换为同尺寸占位 Image。
+    const nc = previewSample({ type: 'NativeCharacter', id: 'n', props: { assetKey: 'k', poster: '/ui/p.png', clip: 'idle', alt: '角色' }, layout: { width: 200, height: 200 } });
+    expect(nc).toMatchObject({ type: 'Image', id: 'n', layout: { width: 200, height: 200 }, props: { alt: '角色', fit: 'contain' } });
+    expect(nc.props.src.startsWith('data:image/svg+xml,')).toBe(true);
   });
+  it('最终 HTML：所有 <img> 都有可显示的内联 src（无空 src·无站内路径），NativeCharacter 卡也不例外', () => {
+    for (const [file, content] of Object.entries(pack)) {
+      for (const m of content.matchAll(/<img\b[^>]*>/gi)) {
+        const src = /\bsrc="([^"]*)"/.exec(m[0])?.[1];
+        expect(src, `${file}: ${m[0].slice(0, 80)}`).toMatch(/^data:image\//);
+      }
+    }
+    expect(pack['components/NativeCharacter.html']).toMatch(/<img\b[^>]*src="data:image\/svg\+xml,/);
+  });
+  it('风格令牌 JSON 语法错只跳过该游戏并告警，其余游戏照常导出', () => withRoot((root) => {
+    mkdirSync(join(root, 'public/games/broken/art'), { recursive: true });
+    writeFileSync(join(root, 'public/games/broken/art/style-tokens.json'), '{ "version": 1, ');
+    mkdirSync(join(root, 'public/games/good/art'), { recursive: true });
+    writeFileSync(join(root, 'public/games/good/art/style-tokens.json'), readFileSync(join(process.cwd(), 'public/games/game628/art/style-tokens.json')));
+    const warn = console.warn; const calls = []; console.warn = (...a) => calls.push(a.join(' '));
+    let themes;
+    try { themes = gameTokenThemes(root); } finally { console.warn = warn; }
+    expect(themes.map(([slug]) => slug)).toEqual(['good']);
+    expect(calls.some((c) => c.includes('[design-system] reject: broken') && c.includes('JSON'))).toBe(true);
+    expect(Object.keys(buildDesignSystemPack(root))).toContain('brand/good.html');
+  }));
   it('非法风格令牌不导出 Brand 卡并告警；写盘与构建结果一致', () => withRoot((root) => {
     mkdirSync(join(root, 'public/games/bad/art'), { recursive: true });
     writeFileSync(join(root, 'public/games/bad/art/style-tokens.json'), JSON.stringify({ version: 1, base: 'shell' }));
