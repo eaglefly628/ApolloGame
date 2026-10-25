@@ -125,3 +125,38 @@
 两次均 cmp 恢复、exit 0。
 
 **全量门禁（STYLETOKENS + DSYNC 返工同一提交）**：`node scripts/scoped-gate.mjs --run`，scope=full，**exit 0**；673 文件 / **7294** 测试（基线 7268 + 本次新增 26）；docs-ref PASS、context-budget PASS、art-ledger-guard 为既有 WARN；topological-sort 仍只有 `[L,P]` 负例 fixture 一条，无新增环。
+
+
+## 独立复查判词（Codex · 2026-10-25）
+
+**PASS，DS1 / DS2 已修复，结案出池。** 固定审查 `e89b51508441cac15cc0c59a3eeeeb6029e2dc93`，父版 `2c9dae0331a9251c7b1064dd5ae42cc49b9c75f5`；复查未参与 Claude 施工。新建 fixed / withdraw / parent 隔离副本，不触碰原共享树，不代修产品。
+
+### ① 独立复跑 / ③ 实证复现
+
+- `npx vitest run scripts/lib/design-system-pack.test.mjs`：**9/9，exit0**；上轮独立3项结构探针与2项缺陷契约均重新跑过，合计 **14/14，exit0**。运行完整门禁前已把 scratch测试移出fixed执行树，未让探针虚增正式全量测试数。
+- 实际 `npx vite-node scripts/design-system-export.mjs --out <独立临时目录>`：exit0，47文件 /45HTML（42控件、2基础、1Brand）；真实 Google Chrome 逐张 file:// 打开，**pageerror=0、意外请求=0、failed request=0、坏图=0**。首行@dsCard、README闭集控件 / data-ui / data-action / 令牌规则均核实；126舞台均有子节点，未定义CSS动画、外链script / CSS均0。
+- **DS1前后对照**：父版真浏览器 NativeCharacter 3坏图；返工版全包6张图都有效，Native三张 naturalWidth=160 / naturalHeight=120 /complete=true，三套主题根尺寸均200×200。已核其静态 fallback 保留原id与layout，生产 `render.ts`、`native-character-data.ts`、`server.ts` 相对父版逐字节未变。没有放宽生产 nativeLocalPath 安全边界。
+- **DS2实际CLI对照**：合法 game628 与 `zzbad/art/style-tokens.json`（不完整JSON）共存，父版exit1、无输出/无Brand/无reject；返工版exit0、有效Brand在档、坏Brand缺席，明确slug+JSON reject后继续。不是只测内存对象构造。
+
+### ② 两处独立撤修验红（避开 Claude 的 if分支 / trycatch整块）
+
+先断言原串唯一命中1，撤修只在独立副本进行，具名 AssertionError 后精确恢复，重新运行转绿：
+
+| 唯一锚点 / 撤法 | 测试与真红输出 | 退出码 |
+|---|---|---|
+| `type: 'Image', props: { src: PLACEHOLDER,` → src空串 | `NativeCharacter exported static preview retains a usable nonempty image source`：最终HTML `expected '<img … src="" …' not to contain 'src=""'` | 0→1→0 |
+| JSON catch里 `（${e.message}），不导出` 后的 `continue;` → `throw e;`（精确原串见anchor JSON） | `malformed token JSON is rejected with a warning while the valid token still exports`：`expected [Function] to not throw … SyntaxError …` | 0→1→0 |
+
+恢复 `design-system-pack.mjs` SHA256 均 `8e9e3d7c726a2149835eb86908092a760afb63f8432cc6255375f50084c877b0`；7个被审源前后SHA相等，fixed / withdraw最终tracked clean。
+
+### ④ 全量门禁与告警
+
+实际宿主运行 `node scripts/scoped-gate.mjs --base e89b51508^ --run`，原sandbox标记保留，显式真实Chrome和canonicalTMPDIR：**总 exit0，673文件 /7294测试通过**。eslint、depcruise、tsc、vitest:full、build、docs-ref、context-budget 各 **0**；art-ledger-guard **2**（既有WARN允许），末行 `✅ 门禁全绿（scope=full）`。
+
+读236个stderr块并对冻结父版2c9dae033和本次同SHA的ST1独立完整日志：唯一 `[L,P]` topological-sort 原文未变；相对父版新增 / 替换为两条预期DSYNC负例拒收及happy-dom卸载AbortError。相对同SHA独立运行无新增归一诊断 / context / warning，无Unhandled汇总；不隐去该AbortError，也不谎称父版出现过。3个大chunk、art黑户5 /死账2 /缺来源0保留。
+
+### 范围与证据
+
+结论仅覆盖静态导出卡片。check-ui适用部分查最终内容、尺寸、图片和CSS；没有新制作游戏LayoutNode屏，不声称mounted交互UI / 原生播放器已验收。未执行 owner 的 /design-sync，不签真人门，不验证真实付费资产链路。
+
+完整证据根 `/Users/junbaili/.codex/visualizations/2026/10/16/01a1423a-1952-7952-a2c0-8ae2faac621b/rework-review-20261025/dsync/`：`review-summary.json`、`browser.json` / `browser-summary.json`、逐卡浏览器记录与抽样截图、`json-coexist-summary.json`、`withdraw-summary.json` / anchor与red日志、`scoped-gate-full.log`、`scoped-gate-exit.json`、`warning-audit.json`、`source-fingerprints-before.json` / `source-fingerprints-after.json`。

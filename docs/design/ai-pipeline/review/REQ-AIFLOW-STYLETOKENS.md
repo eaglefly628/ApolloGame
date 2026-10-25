@@ -104,3 +104,37 @@ WARN 已读并比父版：唯一 `[L,P]` topological-sort fixture 原文相同�
 | 整文件换回 8a94300f 版 | — | exit 1，24 例红（含缺新导出的 TypeError，只作参考，不算有效红灯） | — |
 
 全量门禁见下方 DSYNC 返工节（两单同一提交、同一次 scope=full 门禁）。
+
+
+## 独立复查判词（Codex · 2026-10-25）
+
+**PASS，ST1 已修复，结案出池。** 本复查未参与 Claude 返工施工，固定审查 `e89b51508441cac15cc0c59a3eeeeb6029e2dc93`，父版 `2c9dae0331a9251c7b1064dd5ae42cc49b9c75f5`。全新隔离 clone 与独立撤修副本运行；不修改产品、不代签真人门。Review 自陈未当证据。
+
+### ① 独立复跑 / ③ 实证复现
+
+- `TMPDIR=/private/tmp npx vitest run scripts/lib/style-tokens.test.mjs`：**38/38，exit0**。23个完整对象同源矩阵逐一比较 TS / mjs 的完整 `{ok,errors}`，运行时合法对象出主题、非法对象回落 null；非仅比闭集常量。
+- 相关旧四文件 **163/163，exit0**；独立边界探针 **11/11，exit0**（命令及完整文件名见 `02-old-related-exit.json`、`03-independent-boundary-exit.json`）。
+- 原七项最小复现逐项重新执行：缺 name、非法 status、缺 prompt、prompt.extra、fonts:null、fonts:[]、201字字体；现在两侧 `{ok:false,errors}` 逐字段相同，parse 拒收，stub fetch 的 loadStyleTokensTheme 返回 null，每次明确记录1条 reject。
+- 额外合并13条错误的完整对象按顺序比较 errors，验证聚合不漏项 / 不乱序；404、fetch抛错、JSON解析失败仍回落。没有用编译通过代替真实消费路径。
+- game628令牌仍 draft；构建后的令牌文件与源 SHA 相同：`65a3b615c246873c4899a920b63b1b520027f8f3e32d7d90ab5872254982abbe`。美术根位置的先前接受意见不变。
+
+### ② 两处独立撤修验红（不同于 Claude 的 fonts对象 / prompt键锚点）
+
+每处先对固定源码原串断言命中恰1，撤前绿，撤后真 AssertionError，恢复固定字节并核 SHA，再跑完整38例绿。
+
+| 唯一锚点 / 撤法 | 点名测试 / 红灯原文 | 退出码 |
+|---|---|---|
+| `if (!text(raw.name, 60)) errors.push('name 必须为 1–60 字');` → 上限600 | `同源夹具 name 超 60`：`expected { ok:true, errors:[] } to deeply equal { ok:false, … }` | 0→1→0 |
+| `const v = validateStyleTokens(raw);` → 假定 `{ok:true,errors:[]}` | `同源夹具 fonts:null`：parse断言 `expected true to be false` | 0→1→0 |
+
+两次恢复 UI 源 SHA256 均 `99c7b39cea9457b8c15e6a4cd7bb45f91f31caed6db108c3ad63aeb16558e10d`，固定 / 撤修副本最终 tracked clean，9个被审源文件前后指纹不变。独立探针初次的错误总条数人工计数笔误已纠正，初次日志保留，未当作产品红灯。
+
+### ④ 全量门禁与读告警
+
+宿主授权、真实Chrome路径、canonical TMPDIR 下实际执行 `node scripts/scoped-gate.mjs --base e89b51508^ --run`（完整scope，缓存位于自己的 clone）：**总 exit0，673文件 / 7294测试通过**。eslint、depcruise、tsc、vitest:full、build、docs-ref、context-budget 各 **0**；art-ledger-guard **2**（脚本允许的既有黑户5 / 死账2 / 缺来源0），末行 `✅ 门禁全绿（scope=full）`。
+
+独立读234个stderr块，对冻结父版233块原始日志：唯一 topological-sort 为既有 `[L,P]` fixture，原文相同，SHA `94055bdf974cd269e765e3e848be9e1cb7351c135d7febd0e515c125d0ba25e7`。新 / 替换的两条 DSYNC 负例拒收诊断符合本提交修法；旧台账WARN、3个大chunk仍在。
+
+非阻断观察：本轮有 happy-dom 卸载时 AbortError 的11种新增归一行（同一 Fetch.onError 块两份stack），冻结父版本次记录没有这些行；无 Unhandled 汇总，不能写成父版原文完全相同或直接删日志。其来源为未改的依赖卸载路径，未复现 ST1 产品故障，保留在 warning-audit 中。
+
+完整证据根 `/Users/junbaili/.codex/visualizations/2026/10/16/01a1423a-1952-7952-a2c0-8ae2faac621b/rework-review-20261025/style-tokens/`：`review-result.json`、`independent-observations.json`、`withdrawal-summary.json`、两锚点 before / withdrawn / restored38 日志、`04-scoped-gate-full.log` / exit、`05-warning-audit.json`、`06-final-source-verification.json`。复查不等于真人风格定稿；真实生图 / Tripo / ARP / Mixamo 链路未验。
