@@ -95,7 +95,7 @@
 ### REQ-AIFLOW-DSYNC · U1 控件库同步成 Claude Design 设计系统 · [2026-10-16] · owner 判 A · **指派：PUI** · **施工主体 = Claude（2026-10-22 抢锁·owner 当面解除暂缓并令开工·本行即锁）** · status: 返工已交·待独立复查（非 Claude；2026-10-24 DS1/DS2 修复，Review 单 `docs/design/ai-pipeline/review/REQ-AIFLOW-DSYNC.md` 末节） · P1 · 类型: 基座扩写
 > 把 `src/ui/components/catalog.ts` 控件目录 + house 主题导出成设计系统预览包（每控件一张预览 HTML），供 owner 启动 `/design-sync` 推到 Claude Design 设计系统项目，让稿子只用我们的控件出。全文：`docs/workflow/ai-production-flow.md` §7.4 U1。依赖 U3。
 
-### REQ-AIFLOW-SPLIT-3D · 拆层单进 3D：资产类型按行声明 · build 行不进出图台账 · [2026-10-23] · Lead 立（game628 定 3D 后实查带出·属已裁 A 的 REQ-AIFLOW-SPLIT 范围内修补·🟢） · **施工主体 = Codex（2026-10-23·本行即锁）** · 复查 = 另派 · status: 返工中（Codex·2026-10-25·SP1） · P1 · 类型: 工具链扩写
+### REQ-AIFLOW-SPLIT-3D · 拆层单进 3D：资产类型按行声明 · build 行不进出图台账 · [2026-10-23] · Lead 立（game628 定 3D 后实查带出·属已裁 A 的 REQ-AIFLOW-SPLIT 范围内修补·🟢） · **施工主体 = Codex（2026-10-23·本行即锁）** · 复查 = 另派 · status: 返工已交·待独立复查（Claude·SP1·2026-10-25） · P1 · 类型: 工具链扩写
 > 实查：`scripts/asset-split.mjs` 推导台账时 `kind` 写死 `'sprite'`；`art-replace` 按 kind 选供应商（`model3d` → tripo/meshy，其余 → 2D 生图），故 3D 项目里 `route:generate/character` 的道具 / 人物会被当成 2D 图批量出图；`route:build` 行由 T7 `blender-job` 用图元搭建（`checkSplit` 要求 build 行 source 为 primitive），不该进出图台账。
 > 要做：拆层行加可选字段 `asset: 'sprite' | 'model3d'`（缺省 sprite，旧拆层单不变）；`model3d` 行推导为 `kind:'model3d'`；`route:build` 行不进台账（打 skip 日志）；`blender-job` 校验口径不变。验收：3D 道具行进台账为 model3d 且 art-replace 选 tripo；build 行不进台账；旧拆层单推导结果逐字节不变；撤修验红。
 

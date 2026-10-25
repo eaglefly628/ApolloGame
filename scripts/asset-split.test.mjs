@@ -11,6 +11,44 @@ import { runBlenderJob } from './blender-job.mjs';
 const row=(patch={})=>({id:'lamp',scene:'hall',bbox:[2,3,12,15],route:'generate',skinKey:'example/lamp',prompt:'warm brass lamp',refs:['keyart/hall.png'],state:'approved',...patch});
 function fixture(fn){const root=mkdtempSync(join(tmpdir(),'aiflow-split-'));try{const dir=join(root,'docs/design/example');mkdirSync(join(dir,'keyart'),{recursive:true});writeFileSync(join(dir,'keyart/hall.png'),mockImage('hall',32).buffer);writeFileSync(join(dir,'asset-split.json'),JSON.stringify([row(),row({id:'wall',skinKey:'example/wall',route:'build',state:'proposed'})]));return fn(root,dir);}finally{rmSync(root,{recursive:true,force:true});}}
 describe('T2 split contract',()=>{
+ it.each([
+  ['sprite','model3d','filled'],['sprite','model3d','needs-art'],['sprite','model3d','retired'],
+  ['model3d','sprite','filled'],['model3d','sprite','needs-art'],['model3d','sprite','retired'],
+ ])('SP1 refuses pure split kind changes %s -> %s even when status=%s', (from,to,status)=>{
+  const previous=deriveSplitLedger([row({asset:from})],'example');
+  Object.assign(previous.rows[0],{status,gen:{servedPath:from==='sprite'?'lamp.png':'lamp.glb',provider:from==='sprite'?'qwen':'tripo'},provenance:{source:'original'},history:[{action:'upload'}]});
+  const before=JSON.stringify(previous),log=vi.spyOn(console,'error');
+  try {
+   expect(()=>deriveSplitLedger([row({asset:to})],'example',previous)).toThrow(`原台账 kind=${from}`);
+   expect(log.mock.calls.map(args=>args.join(' '))).toContain(`[asset-split] reject: art-01: 拆层 asset=${to} 与原台账 kind=${from} 不一致，禁止自动改类型；请使用新消费槽`);
+   expect(JSON.stringify(previous)).toBe(before);
+  } finally {log.mockRestore();}
+ });
+ it.each(['sprite','model3d'])('SP1 same-kind %s refresh retains approved asset and history without mutation',asset=>{
+  const previous=deriveSplitLedger([row({asset})],'example');
+  Object.assign(previous.rows[0],{status:'approved',gen:{servedPath:asset==='sprite'?'lamp.png':'lamp.glb'},provenance:{source:'original'},history:[{action:'upload'}]});
+  const snapshot=JSON.stringify(previous);
+  const next=deriveSplitLedger([row({asset,refs:['keyart/other.png']})],'example',previous);
+  expect(next.rows[0]).toEqual({...previous.rows[0],refs:['keyart/other.png']});
+  expect(JSON.stringify(previous)).toBe(snapshot);
+ });
+ it('SP1 legacy partial split row without kind keeps previous merge behavior',()=>{
+  const previous={rows:[{no:'art-19',skinKey:'example/lamp',splitIds:['old-id'],status:'filled',gen:{servedPath:'old.png'}}]};
+  const snapshot=JSON.stringify(previous);
+  expect(()=>deriveSplitLedger([row()],'example',previous)).not.toThrow();
+  expect(deriveSplitLedger([row()],'example',previous).rows[0]).toMatchObject({no:'art-19',kind:'sprite',status:'filled',gen:{servedPath:'old.png'},splitIds:['lamp']});
+  expect(JSON.stringify(previous)).toBe(snapshot);
+ });
+ it('SP1 workspace type change rejects before disk output and preserves the prior ledger bytes',()=>fixture((root,dir)=>{
+  const file=join(root,'public/games/example/art/art-ledger.json');
+  const previous=deriveSplitLedger([row()],'example');
+  Object.assign(previous.rows[0],{status:'filled',gen:{servedPath:'original.png',provider:'qwen'},provenance:{source:'approved-old-image'}});
+  mkdirSync(join(file,'..'),{recursive:true});const bytes=JSON.stringify(previous,null,2)+'\n';writeFileSync(file,bytes);
+  writeFileSync(join(dir,'asset-split.json'),JSON.stringify([row({asset:'model3d'})]));
+  expect(()=>splitWorkspace(root,'example')).toThrow('原台账 kind=sprite');
+  expect(readFileSync(file)).toEqual(Buffer.from(bytes));
+  expect(existsSync(join(dir,'keyart/hall-split.png'))).toBe(false);expect(existsSync(join(dir,'asset-split.md'))).toBe(false);
+ }));
  it.each(['sprite','model3d'])('SPLIT-3D accepts optional asset=%s without mutating input',asset=>{
   const rows=[row({asset})],snapshot=JSON.stringify(rows);
   expect(validateSplit(rows)).toBe(rows);expect(JSON.stringify(rows)).toBe(snapshot);

@@ -116,3 +116,52 @@ node scripts/scoped-gate.mjs --run
 - model3d 拆层行的 `spec` 仍是 2D 的 `{w,h,transparent:true}`（来自 bbox），游戏推导的 model3d 行是 `{polyBudget, scale}`。已核 `dialectPrompt` 不读 spec，不影响提示词，只是字段语义不一致。可随 SP1 一并改，也可不改。
 - 拆层行带的 `refs`（关键图）在生成路径上无人消费，3D 行只走文生 3D。这不是本单 spec 的范围，已作为新缺口 **GAP-AIFLOW-REFS** 报 owner（`docs/design/ai-pipeline/gap-review-2026-10-24.md` §二）。
 - **真实 Tripo / Blender / Auto-Rig Pro / Mixamo 链路未验。**
+
+
+## 返工记录（Codex · 2026-10-25）
+
+**SP1 已修，待 Claude 独立复查；施工方不判 PASS。** 返工锁 `a5ec52d44` 已先单独推送；基线 Claude 返工/判词提交 `e89b51508441cac15cc0c59a3eeeeb6029e2dc93`。本轮仅改 asset-split 脚本及测试、拆层契约与 skill、本 Review 与本工单 status；未修参考图接缝、G1/G2 或其它游戏。
+
+### 复现与修法
+
+先在未修实现上原样复现 Claude 的输入：sprite 拆层行已 `filled`、`gen.servedPath=games/example/art/lamp.png`；把 asset 改 model3d 后，确实得到 kind:model3d + filled + 原PNG，且无拒收日志。新用例在修前 **7红/2绿**，均真实 AssertionError，原输出已保存。
+
+选择 Review 允许的**拒收**方案：纯拆层来源行只要原台账含 kind，重推导的 kind 不同就 `[asset-split] reject` 并抛错；在修改状态、生成物、历史或落盘前停止。双向 sprite↔model3d 都一致，needs-art / filled / retired 都拒收；省略 asset 仍按 sprite 参与比较，不能让 model3d 静默降级。已有游戏行的保护与 C8 所有权策略不变，历史不含 kind 的部分旧台账仍按既有逻辑合并。
+
+这是类型不变量修复，不提供自动重置或迁移工具。真正改消费类型时需由游戏制作者落实新的真实消费槽、新 skinKey 后重新登记，旧行按既有撤回机制停用。没有清空旧生成物、偷偷把已有资产标成待做，也没有替 owner 改游戏。
+
+### 怎么自己验
+
+```sh
+TMPDIR=/private/tmp npx vitest run scripts/asset-split.test.mjs scripts/art-replace.test.mjs scripts/blender-job.test.mjs --maxWorkers=3 --minWorkers=1
+node scripts/scoped-gate.mjs --run
+```
+
+| 测试名（asset-split.test.mjs） | 断言 / 最终施工自证 |
+|---|---|
+| `SP1 refuses pure split kind changes %s -> %s even when status=%s`（6例） | sprite/model3d 双向 × filled/needs-art/retired；明确拒收，含原/新类型与 art 编号的日志；输入台账 JSON 不变 |
+| `SP1 same-kind %s refresh retains approved asset and history without mutation`（2例） | 同类型可更新 refs，保留 approved、gen、provenance、history；输入不变 |
+| `SP1 legacy partial split row without kind keeps previous merge behavior` | 旧无 kind 行仍能保号、保生成物 / 状态并刷新拆层来源，不误伤旧单 |
+| `SP1 workspace type change rejects before disk output and preserves the prior ledger bytes` | 真实临时工作区调用拒收，磁盘台账 Buffer 不变，未写标注 PNG / 人读清单 |
+| 原有 SPLIT-3D / C1 / C8 / Tripo Mock / Blender 测试 | 原209项通过；新10项通过，总 **3文件219/219，exit0** |
+
+### 两处撤修验红（均先断言唯一命中1，复查请另选）
+
+| 锚点 / 撤法 | 真实红灯 | 恢复 |
+|---|---|---|
+| `p.kind !== f.kind` → `false` | 6个类型变更用例 exit1：`AssertionError: expected [Function] to throw an error`；重新允许 PNG 冒充完成模型 | 0→1→0 |
+| `Object.hasOwn(p, 'kind')` → `true` | 旧无 kind 用例 exit1：`expected [Function] to not throw an error but Error: art-19 ... kind=undefined ... was thrown` | 0→1→0 |
+
+恢复源码 SHA256 两次均 `3d505fac8a3f41687f59fda91bf277b71dbbf475118cc756a9eddd3a007f706e`；撤修前后整个 tracked diff 原样，未动别人文件。两次红均具名行为断言，不用编译错误或环境失败代替。
+
+### 门禁与告警
+
+宿主授权、canonical TMPDIR、真实Chrome显式路径下，实际执行 `node scripts/scoped-gate.mjs --run`（原 sandbox 标记保留，缓存隔离在自己的 clone）。scope=full，总 **exit0**；**673文件 /7304测试通过**（Claude返工基线7294 + 本轮10）。eslint、depcruise、tsc、vitest:full、build、docs-ref、context-budget 各 **0**；art-ledger-guard **2**（门禁允许的旧黑户5 /死账2 /缺来源0）。末行 `✅ 门禁全绿（scope=full）`。
+
+242个stderr块与同基线ST1完整门禁234块对账：新增仅本单双向类型冲突负例的reject诊断，以及既有happy-dom卸载stack中的runNextTicks一行。唯一topological-sort仍是既有 `[L,P]` fixture，原文未变；无Unhandled汇总。保留旧大chunk、台账缺图与happy-dom告警，不声称警告归零、不将其作为产品修复。收据 `scoped-gate-full.log` / `.exit`、`scoped-gate-exit.json`、`warning-audit.json`。
+
+证据（本机持久目录）：`/Users/junbaili/.codex/visualizations/2026/10/16/01a1423a-1952-7952-a2c0-8ae2faac621b/rework-review-20261025/split-3d/`，含 `before-reproduction.json`、`before-tests.log`、`targeted-final.log` / `.exit`、`withdraw-summary.json` 与两锚点原文日志。
+
+### 仍在范围外
+
+SP1 不改变 model3d spec 中的 bbox 信息（Claude 已判非阻断），不补 GAP-AIFLOW-REFS、G1/G2 的未裁能力。真实 Tripo / ARP / Mixamo 链路仍未验；已有本地 Blender 自有夹具与真实 GPU 技术验证不能被概括为全是 Mock，也不能替代付费生产链来源验收。未签真人门。

@@ -94,6 +94,10 @@ export function deriveSplitLedger(rows, slug, previous = null) {
       merged.push(p.status === 'retired' ? p : { ...p, status: 'retired' });
       continue;
     }
+    // Pure split rows also retain their type: keeping a PNG and filled status
+    // after changing kind would make the model generation step skip this slot.
+    // Older partial ledgers without kind keep their existing merge behavior.
+    if (Object.hasOwn(p, 'kind') && p.kind !== f.kind) reject(`${p.no}: 拆层 asset=${f.kind} 与原台账 kind=${p.kind} 不一致，禁止自动改类型；请使用新消费槽`);
     matched.add(p.skinKey);
     const edited = Array.isArray(p.history) && p.history.some(h => h.action === 'regen' && h.newQuery && h.newQuery !== h.prevQuery);
     merged.push({

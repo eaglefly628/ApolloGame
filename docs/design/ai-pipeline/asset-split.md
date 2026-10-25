@@ -56,3 +56,5 @@ node scripts/asset-split.mjs <slug> --root <fixtureRoot> --mock
 先由 owner 确认关键图 K2，再核对 D1 标注、路线与消费槽并确认拆层。改关键图需回 K2，改拆层范围或路线需回 D1；agent 不代签。实际资产生成、可见占位、写回与人审继续遵守 `docs/playbooks/art-pipeline.md`。
 
 兼容验证：旧的未声明 asset 的既有测试夹具，其台账 JSON（含排版与结尾换行）与改动前逐字节相同。已有 approved build 行曾误入账者不在该兼容承诺内：它们按上述所有权规则撤出活跃生成需求，这是本单要求的修复。
+
+类型迁移（SP1）：纯拆层行已有 kind 时，同 skinKey 重推导也不得变更类型，不论原状态是 needs-art、filled、approved 或 retired；缺省 asset 按 sprite 比较，model3d 不能因省略字段被静默降成 sprite。冲突记录 `[asset-split] reject` 并在落盘前抛错，原状态、生成物、来源与历史全部保留，不清空旧资产。需要从二维迁移到三维时先落实新的真实消费槽并以新 skinKey 登记，再按原拆层撤回规则停用旧需求；不复用原槽自动换类型，也不替 owner 修改游戏。历史不含 kind 的部分台账维持原合并兼容；类型不变的需求更新不受影响。

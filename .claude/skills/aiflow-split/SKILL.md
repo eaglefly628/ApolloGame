@@ -57,3 +57,5 @@ node scripts/asset-split.mjs <slug>
 测试可用 `node scripts/asset-split.mjs <slug> --root <fixtureRoot> --mock`。mock 只写 `keyart/mock/<scene>-split.png`，缺主图时明确记录降级并合成 mock 预览；不写真实 `art-ledger.json`、不写 `asset-split.md`、不改 state，也不能作为定稿依据。refs 仍须存在：若引用缺失主图会拒收；不需要额外参考时可用空 refs 测试降级。
 
 先展示关键图、标注图、逐行路线和消费槽证据。只有收到真人逐项确认后，才按确认范围记录 `state: "approved"` 并重跑；agent 不代 owner 签 D1，不通过 mock 自动批准。只有 approved、有 skinKey 且 route 非 build 的行进入对应 `artRoot` 的 `art-ledger.json`：asset 为 model3d → kind:model3d，选择 3D 供应商（Tripo / Meshy，遵循风格包或显式 provider；选择 Tripo 可用 art-replace 的 --provider tripo）；缺省或 sprite → kind:sprite。proposed 和 build 会打 skip 日志。build 仍留在标注图和拆层单，交给搭建 / 切图，不触发批量生图；Blender 的 build 行仍要求 primitive 来源，asset:model3d 不放宽校验。编号和历史保持；同 skinKey 并入已有游戏行，撤回批准 / 改为 build 只摘拆层附加字段；纯拆层行则 retired，不作废其它来源。拆层 approved 表示需求确认，不等于资产质量 approved：生成、接线与美术人审仍走原管线。
+
+类型迁移（SP1）：纯拆层行已有 kind 时，同 skinKey 重推导也不得变更类型，不论原状态是 needs-art、filled、approved 或 retired；缺省 asset 按 sprite 比较，model3d 不能因省略字段被静默降成 sprite。冲突记录 `[asset-split] reject` 并在落盘前抛错，原状态、生成物、来源与历史全部保留，不清空旧资产。需要从二维迁移到三维时先落实新的真实消费槽并以新 skinKey 登记，再按原拆层撤回规则停用旧需求；不复用原槽自动换类型，也不替 owner 修改游戏。历史不含 kind 的部分台账维持原合并兼容；类型不变的需求更新不受影响。
