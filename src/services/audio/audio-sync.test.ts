@@ -73,4 +73,12 @@ describe('AudioSync — 消费 Sound 驱动 AudioPort', () => {
     sync.sync(w);
     expect(port.log.filter((l) => l.op === 'stop' && l.clipId === 'coin')).toHaveLength(1);
   });
+  it('reset permits an existing Sound to be replayed after a host interruption', () => {
+    const port = new NullAudioPort();
+    const sync = new AudioSync(port);
+    const world = new World(); addSound(world, 'coin', 'ding');
+    sync.sync(world); sync.reset(); expect(port.playing.size).toBe(0);
+    sync.sync(world); expect(port.log.filter((entry) => entry.op === 'play')).toHaveLength(2);
+  });
+
 });

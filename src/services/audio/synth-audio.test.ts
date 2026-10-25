@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { SynthAudioPort, type AudioCtxLike, type SfxSpec } from './synth-audio.js';
 
 // ── 假 AudioContext：记录建了哪些节点 / 起停 / 包络目标值，供断言（解释器审计）──
@@ -85,4 +85,19 @@ describe('SynthAudioPort — 数据驱动的程序化音效后端', () => {
     const p = new SynthAudioPort(SPECS); // 不注入 ctx，node 环境无 AudioContext
     expect(() => { p.play('ding'); p.stop('ding'); p.stopAll(); p.setMasterVolume(0.5); }).not.toThrow();
   });
+  it('explicit gesture unlock creates no voices, host suspension blocks play, and resume rejects observably', async () => {
+    const { ctx, log } = fakeCtx();
+    ctx.state = 'suspended';
+    ctx.resume = vi.fn(async () => { ctx.state = 'running'; });
+    ctx.suspend = vi.fn(async () => { ctx.state = 'suspended'; });
+    const port = new SynthAudioPort(SPECS, { ctx });
+    await port.unlock(); expect(ctx.resume).toHaveBeenCalledTimes(1); expect(log.started).toBe(0);
+    port.play('ding'); expect(log.started).toBe(2);
+    await port.suspend(); expect(ctx.suspend).toHaveBeenCalledTimes(1);
+    port.play('ding'); expect(log.started).toBe(2);
+    await port.resume(); port.play('ding'); expect(log.started).toBe(4);
+    ctx.state = 'suspended'; ctx.resume = vi.fn().mockRejectedValue(new Error('gesture required'));
+    await expect(port.unlock()).rejects.toThrow('gesture required');
+  });
+
 });

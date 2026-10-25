@@ -42,7 +42,10 @@
     "pack:platform:mac": "electron-builder --mac --config electron-builder.platform.yml",
     "dist": "python3 scripts/dist.py",
     "test:deep": "ZEROCRAFT_DEEP=1 vitest run",
-    "zerocraft": "node scripts/zerocraft.mjs"
+    "zerocraft": "node scripts/zerocraft.mjs",
+    "ios:prepare": "node scripts/ios-product.mjs prepare",
+    "ios:release": "node scripts/ios-release.mjs",
+    "ios:smoke": "node scripts/ios-web-smoke.mjs"
   },
   "optionalDependencies": {
     "steamworks.js": "^0.4.0"

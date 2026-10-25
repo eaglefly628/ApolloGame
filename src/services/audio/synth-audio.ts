@@ -57,6 +57,7 @@ export interface AudioCtxLike {
   readonly destination: NodeLike;
   state: string;
   resume?(): Promise<void> | void;
+  suspend?(): Promise<void> | void;
   createGain(): GainLike;
   createOscillator(): OscLike;
   createBufferSource(): BufSrcLike;
@@ -74,6 +75,7 @@ export class SynthAudioPort implements AudioPort {
   private ctx: AudioCtxLike | null;
   private disabled = false; // 无 AudioContext（headless/test）→ 永久静默 no-op
   private master: number;
+  private paused = false;
   private readonly active = new Set<SourceLike>(); // 在响的源，供 stopAll
 
   constructor(private readonly specs: Readonly<Record<string, SfxSpec>>, opts: SynthOptions = {}) {
@@ -82,9 +84,11 @@ export class SynthAudioPort implements AudioPort {
   }
 
   // 懒创建/解锁 AudioContext（autoplay 策略：首声必由用户手势触发，故首播即可 resume）。
-  private context(): AudioCtxLike | null {
+  private context(autoResume = true): AudioCtxLike | null {
     if (this.ctx) {
-      if (this.ctx.state === 'suspended') void this.ctx.resume?.();
+      if (autoResume && this.ctx.state === 'suspended') {
+        try { void Promise.resolve(this.ctx.resume?.()).catch(() => { /* next gesture retries */ }); } catch { /* next gesture retries */ }
+      }
       return this.ctx;
     }
     if (this.disabled) return null;
@@ -95,7 +99,21 @@ export class SynthAudioPort implements AudioPort {
     return this.ctx;
   }
 
+  async unlock(): Promise<void> {
+    const ctx = this.context(false);
+    if (ctx && ctx.state !== 'running') await ctx.resume?.();
+  }
+
+  async suspend(): Promise<void> {
+    this.paused = true;
+    this.stopAll();
+    await this.ctx?.suspend?.();
+  }
+
+  async resume(): Promise<void> { this.paused = false; await this.unlock(); }
+
   play(clipId: string, opts?: PlayOptions): void {
+    if (this.paused) return;
     const spec = this.specs[clipId];
     if (!spec) return; // 未知 clip → 无声（与 WebAudioPort 缺 url 同语义）
     const ctx = this.context();

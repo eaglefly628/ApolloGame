@@ -55,6 +55,7 @@ export class KeyboardInputSource implements InputSource {
   // 丢焦点时 keyup 收不到 → 清空按下集合，防止"按键卡住"持续移动。
   private readonly onBlur = () => {
     this.pressed.clear();
+    this.pendingActions = [];
   };
 
   constructor(

@@ -75,6 +75,18 @@ async function load(bytes, loadRef) {
 }
 
 export function installNativeBridge(loadRef) {
+  const local = new URL(location.href);
+  const web = local.protocol === 'http:' || local.protocol === 'https:';
+  const app = local.protocol === 'apollo:' && local.hostname === 'app' && !local.port;
+  const credentials = /^[a-z][a-z\d+.-]*:\/\/[^/?#]*@/i.test(location.href);
+  if (credentials || local.username || local.password || !(web || app) || (app && location.origin !== 'null' && location.origin !== 'apollo://app')) {
+    console.warn('[native-character] reject: invalid local host origin');
+    throw new Error('Native character bridge must use the local host origin');
+  }
+  // Registered WKWebView schemes use apollo://app; opaque implementations need
+  // '*'. This exception is confined to the validated fixed application host.
+  const messageOrigin = app ? location.origin : local.origin;
+  const targetOrigin = messageOrigin === 'null' ? '*' : messageOrigin;
   let destroyed = false;
   let queue = Promise.resolve();
   async function execute(command) {
@@ -128,14 +140,14 @@ export function installNativeBridge(loadRef) {
     return status();
   }
   function receive(event) {
-    if (event.source !== window.parent || event.origin !== location.origin || event.data?.channel !== channel || event.data?.type !== 'command' || !Number.isSafeInteger(event.data.id)) return;
+    if (!event.source || event.source !== window.parent || event.origin !== messageOrigin || event.data?.channel !== channel || event.data?.type !== 'command' || !Number.isSafeInteger(event.data.id)) return;
     const { id, command } = event.data;
     queue = queue.then(async () => {
       try {
         const value = await execute(command);
-        if (!destroyed) event.source.postMessage({ channel, type: 'reply', id, ok: true, value }, event.origin);
+        if (!destroyed) event.source.postMessage({ channel, type: 'reply', id, ok: true, value }, targetOrigin);
       } catch (error) {
-        if (!destroyed) event.source.postMessage({ channel, type: 'reply', id, ok: false, error: error.message }, event.origin);
+        if (!destroyed) event.source.postMessage({ channel, type: 'reply', id, ok: false, error: error.message }, targetOrigin);
       }
     });
   }
@@ -147,7 +159,7 @@ export function installNativeBridge(loadRef) {
     const antialias = gl.getContextAttributes()?.antialias ?? false;
     document.querySelector('canvas').dataset.nativeAntialias = String(antialias);
     console.info(`[native-character] decision: screen density ${globalThis.devicePixelRatio}; raster capped at2x; WebGL antialias=${antialias}`);
-    window.parent.postMessage({ channel, type: 'ready' }, location.origin);
+    window.parent.postMessage({ channel, type: 'ready' }, targetOrigin);
     if (new URLSearchParams(location.search).get('demo') === '1') {
       queue = queue.then(async () => {
         const assetName = new URLSearchParams(location.search).get('asset') ?? 'native-character-demo';

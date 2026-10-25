@@ -34,8 +34,13 @@ export class SaveSystem {
   // world**，与 storage-port 自述的「确定性指纹（校验/防篡改）」直接矛盾，且后果极隐蔽（世界带着
   // 坏状态继续跑，若是 lockstep 局则表现为莫名 desync）。放在 restore 前 = fail-closed：
   // 坏档一律不进 world，上层据异常提示「存档损坏」（同 envelope 的 owner 铁律：坏档报错不静默）。
-  async load(slot: string, world: World): Promise<SaveMeta | null> {
+  async load(slot: string, world: World, options: { signal?: { readonly aborted: boolean } } = {}): Promise<SaveMeta | null> {
+    const checkActive = (): void => {
+      if (options.signal?.aborted) throw Object.assign(new Error('Save restore cancelled'), { name: 'AbortError' });
+    };
+    checkActive();
     const data: SaveGame | null = await this.port.load(slot);
+    checkActive();
     if (!data) return null;
     // hashWithOrder 对「档里实际有什么」算指纹：旧档（无 order·hash 只盖快照）自然通过；
     // 新档（有 order·hash 连 order 一起盖）被改序/剥除 order 都会不符 → fail-closed（REQ-SAVEORDER）。
@@ -45,6 +50,7 @@ export class SaveSystem {
         `存档校验失败：槽位 "${slot}" 指纹不符（期望 ${data.meta.hash}，实为 ${actual}）——快照或实体序已损坏/被篡改`,
       );
     }
+    checkActive();
     world.restore(data.snapshot, data.order); // order 缺省（旧存档）→ 退回键序，见 SaveGame.order
     return data.meta;
   }

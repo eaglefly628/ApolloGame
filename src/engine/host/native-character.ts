@@ -3,6 +3,40 @@
 import type { AssetIndex } from '../../assets/asset-index.js';
 
 export const NATIVE_CHARACTER_CHANNEL = 'apollo-native-character-v1';
+
+// Check before URL parsing: WHATWG normalization erases percent-encoded dot segments.
+function validateLocalPath(value: string): void {
+  if (/[\\\u0000-\u0020\u007f]/.test(value)) throw new Error('native-character: invalid local URL traversal');
+  for (const segment of value.split(/[?#]/, 1)[0]!.split('/')) {
+    let decoded = segment;
+    for (let i = 0; i < 8 && /%[a-f0-9]{2}/i.test(decoded); i++) {
+      decoded = decodeURIComponent(decoded);
+    }
+    if (decoded === '..' || (decoded !== segment && decoded === '.') || /[/\\\u0000-\u001f\u007f]/.test(decoded) || /%[a-f0-9]{2}/i.test(decoded)) {
+      throw new Error('native-character: invalid local URL traversal');
+    }
+  }
+}
+
+/** Only ordinary same-origin Web assets or the fixed offline application host. */
+export function nativeCharacterLocalUrl(value: string, baseUrl = window.location.href): string {
+  validateLocalPath(value);
+  validateLocalPath(baseUrl);
+  const hostHref = window.location.href;
+  // URL parsing removes an empty user-info marker; reject it before parsing too.
+  const credentials = (raw: string): boolean => /^(?:[a-z][a-z\d+.-]*:)?\/\/[^/?#]*@/i.test(raw);
+  if (credentials(value) || credentials(baseUrl) || credentials(hostHref)) throw new Error('native-character: URLs must use the local host origin without credentials');
+  const host = new URL(hostHref);
+  const url = new URL(value, baseUrl);
+  const withoutCredentials = (u: URL): boolean => !u.username && !u.password;
+  const app = (u: URL): boolean => u.protocol === 'apollo:' && u.hostname === 'app' && !u.port && withoutCredentials(u);
+  const web = (u: URL): boolean => u.protocol === 'http:' || u.protocol === 'https:';
+  if (!withoutCredentials(host) || !withoutCredentials(url) || !(web(host) && web(url) && host.origin === url.origin || app(host) && app(url))) {
+    throw new Error('native-character: URLs must use the local host origin (HTTP(S) or apollo://app)');
+  }
+  return url.href;
+}
+
 export type NativeCharacterCommand =
   | { type: 'load'; bytes: ArrayBuffer }
   | { type: 'play'; clipId: string; loop?: boolean; speed?: number }
@@ -26,6 +60,8 @@ export function nativeCharacterAssetUrl(index: AssetIndex, key: string, baseUrl:
   if (!entry || entry.status !== 'filled' || entry.type !== 'animation' || entry.spec?.format !== 'stretch' || !entry.path) {
     throw new Error(`native-character: unavailable animation asset ${key}`);
   }
+  validateLocalPath(entry.path);
+  validateLocalPath(baseUrl);
   return new URL(entry.path, baseUrl).href;
 }
 
@@ -43,8 +79,14 @@ export function mountNativeCharacter(container: HTMLElement, options: {
   timeoutMs?: number;
   onTrace?: (kind: 'decision' | 'reject' | 'commit', detail: string) => void;
 }): NativeCharacterPort {
-  const url = new URL(options.runtimeUrl, window.location.href);
-  if (url.origin !== window.location.origin) throw new Error('native-character: runtime must use the host origin');
+  const url = new URL(nativeCharacterLocalUrl(options.runtimeUrl));
+  // WebKit gives registered schemes a tuple origin; other URL implementations
+  // serialize it as null. Only the validated fixed app host may need '*'.
+  const messageOrigin = url.protocol === 'apollo:' ? window.location.origin : url.origin;
+  if (url.protocol === 'apollo:' && messageOrigin !== 'null' && messageOrigin !== 'apollo://app') {
+    throw new Error('native-character: invalid local host origin');
+  }
+  const targetOrigin = messageOrigin === 'null' ? '*' : messageOrigin;
   url.searchParams.set('mode', 'player');
   const frame = document.createElement('iframe');
   frame.title = '二维角色动画';
@@ -67,7 +109,7 @@ export function mountNativeCharacter(container: HTMLElement, options: {
     rejectReady(new Error('native-character: renderer readiness timed out'));
   }, timeoutMs);
   const onMessage = (event: MessageEvent): void => {
-    if (destroyed || event.origin !== url.origin || event.source !== frame.contentWindow) return;
+    if (destroyed || !event.source || event.origin !== messageOrigin || event.source !== frame.contentWindow) return;
     const data = event.data;
     if (!data || data.channel !== NATIVE_CHARACTER_CHANNEL) return;
     if (data.type === 'ready' && !readySettled) {
@@ -106,7 +148,7 @@ export function mountNativeCharacter(container: HTMLElement, options: {
       }, timeoutMs);
       pending.set(id, { resolve: result => resolve(result as T), reject, timer });
       try {
-        frame.contentWindow!.postMessage({ channel: NATIVE_CHARACTER_CHANNEL, type: 'command', id, command: value }, url.origin);
+        frame.contentWindow!.postMessage({ channel: NATIVE_CHARACTER_CHANNEL, type: 'command', id, command: value }, targetOrigin);
       } catch (error) {
         clearTimeout(timer);
         pending.delete(id);
@@ -118,8 +160,9 @@ export function mountNativeCharacter(container: HTMLElement, options: {
     frame, ready, command,
     async loadAsset(index, key, baseUrl) {
       if (destroyed) throw new Error('native-character: destroyed');
-      const assetUrl = nativeCharacterAssetUrl(index, key, baseUrl);
-      const response = await fetch(assetUrl, { signal: abort.signal });
+      const localBase = nativeCharacterLocalUrl(baseUrl);
+      const assetUrl = nativeCharacterLocalUrl(nativeCharacterAssetUrl(index, key, localBase), localBase);
+      const response = await fetch(assetUrl, { signal: abort.signal, redirect: 'error' });
       if (!response.ok) throw new Error(`native-character: asset ${key} HTTP ${response.status}`);
       const bytes = await response.arrayBuffer();
       if (bytes.byteLength > 100 * 1024 * 1024) throw new Error('native-character: asset exceeds 100 MiB');

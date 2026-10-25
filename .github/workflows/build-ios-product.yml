@@ -1,0 +1,74 @@
+name: Build iOS Product
+on:
+  workflow_dispatch:
+    inputs:
+      product_config:
+        description: Repository product configuration JSON
+        required: true
+        default: products/examples/touch-orbit/product.json
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    env:
+      PRODUCT_CONFIG: ${{ inputs.product_config }}
+      RENDER_PROBE_CHROMIUM: /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Product validation and shared mobile regression
+        run: npx vitest run scripts/lib/ios-product-config.test.mjs scripts/lib/ios-native.test.mjs scripts/lib/ios-release.test.mjs src/services/mobile src/net/host/touch-input.test.ts src/net/host/touch-input-style.test.ts src/net/host/pointer-input-lifecycle.test.ts
+      - name: Build declared native character runtime
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { resolve } from 'node:path';
+          import { spawnSync } from 'node:child_process';
+          import { productPath, validateProductConfig } from './scripts/lib/ios-product-config.mjs';
+          const root = process.cwd();
+          const configFile = productPath(root, process.env.PRODUCT_CONFIG);
+          // Validate the closed declaration before creating its optional generated resource.
+          // prepareIOSProduct performs full file validation after this build finishes.
+          const config = validateProductConfig(JSON.parse(fs.readFileSync(configFile, 'utf8')), root, { checkFiles: false });
+          productPath(root, config.source.kind === 'manifest' ? config.source.path : config.source.entry);
+          const requiresRuntime = (config.resources ?? []).some(resource => resource === 'native-character' || resource.startsWith('native-character/'));
+          if (!requiresRuntime) {
+            console.info('Native character runtime is not declared; optional build skipped');
+          } else {
+            const tool = resolve(root, 'tools/native-character-runtime');
+            for (const argv of [['ci', '--prefix', tool], ['test', '--prefix', tool], ['run', 'build', '--prefix', tool]]) {
+              const result = spawnSync('npm', argv, { cwd: root, stdio: 'inherit', shell: false });
+              if (result.error) throw result.error;
+              if (result.status !== 0) process.exit(result.status ?? 1);
+            }
+            validateProductConfig(config, root);
+          }
+          NODE
+      - name: Prepare independent product and native project
+        run: |
+          node scripts/ios-product.mjs prepare "$PRODUCT_CONFIG"
+          node --input-type=module -e 'import fs from "node:fs"; const p=JSON.parse(fs.readFileSync(process.env.PRODUCT_CONFIG,"utf8")); fs.appendFileSync(process.env.GITHUB_ENV,"PRODUCT_ID="+p.id+"\n");'
+      - name: Browser startup and bundled resources
+        run: |
+          node scripts/ios-web-smoke.mjs "release/ios/$PRODUCT_ID"
+      - name: Touch Orbit real gestures, resizing and persistence
+        if: env.PRODUCT_ID == 'touch-orbit'
+        run: node scripts/ios-touch-smoke.mjs "release/ios/$PRODUCT_ID"
+      - name: Compile unsigned simulator and device SDK artifacts
+        run: |
+          node scripts/ios-release.mjs sdk-build "release/ios/$PRODUCT_ID" --target simulator
+          node scripts/ios-release.mjs sdk-build "release/ios/$PRODUCT_ID" --target device
+      - name: Upload unsigned artifacts and execution evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-product-unsigned
+          path: release/ios/
+          if-no-files-found: error
+          retention-days: 14

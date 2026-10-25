@@ -72,4 +72,14 @@ describe('KeyboardInputSource: 键盘 → 每 tick 命令', () => {
 
     src.dispose();
   });
+  it('blur discards queued discrete actions as well as held movement', () => {
+    const target = new EventTarget();
+    const source = new KeyboardInputSource('p', target, { KeyJ: { action: 'jump' }, KeyD: { dx: 1 } });
+    target.dispatchEvent(key('keydown', 'KeyJ')); target.dispatchEvent(key('keydown', 'KeyD'));
+    target.dispatchEvent(new Event('blur')); expect(source.commandsForTick(1)).toEqual([]);
+    target.dispatchEvent(key('keydown', 'KeyJ'));
+    expect(source.commandsForTick(2)[0].actions).toEqual([{ source: 'p', key: 'jump', phase: 'down' }]);
+    source.dispose();
+  });
+
 });

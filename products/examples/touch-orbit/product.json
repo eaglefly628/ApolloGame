@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "touch-orbit",
+  "title": "Touch Orbit",
+  "version": "1.0.0",
+  "buildNumber": 1,
+  "source": { "kind": "manifest", "path": "products/examples/touch-orbit/manifest.json" },
+  "viewport": { "width": 640, "height": 400, "orientation": "landscape" },
+  "ios": { "bundleIdentifier": "dev.zerocraft.touch-orbit", "minimumOS": "15.0" },
+  "resources": [],
+  "runtime": {
+    "touch": { "mode": "drag", "range": 64, "deadZone": 8 },
+    "save": { "slot": "touch-orbit-progress-v1", "intervalMs": 5000 },
+    "audio": { "specs": { "welcome": { "gain": 0.2, "partials": [{ "wave": "sine", "freq": 440, "freqTo": 660, "dur": 0.18, "gain": 0.25 }] } } }
+  }
+}

@@ -6,7 +6,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "node verify-runtime.mjs && node --test preview-fit.check.mjs fit-observer.check.mjs render-quality.check.mjs"
+    "test": "node verify-runtime.mjs && node --test preview-fit.check.mjs fit-observer.check.mjs render-quality.check.mjs native-bridge.check.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.6",

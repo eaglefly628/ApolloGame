@@ -19,6 +19,7 @@
 | 无原生壳降级 | `NullPlatformPort` | `isAvailable()=false`，游戏据此静默降级不报错 |
 | 成就数据同步 | `AchievementSync`/`ACHIEVEMENTS` | 从 sim Flag/Resource 派生成就解锁 |
 | 打包 / Steam 上架 | `game-publisher` agent | web/cartridge/electron + steam-publisher（AppID/Depot→VDF→上传→Set Live） |
+| iOS 独立产品 / 移动生命周期 | `scripts/ios-product.mjs` + `services/mobile` + `scripts/ios-release.mjs` | 按 `docs/playbooks/ios-publish.md` 配置、出包、设备与 TestFlight 验收；保留普通 Web/Steam 路径 |
 | 生成的库卡带打成单文件·双击即玩（离线自包含 HTML） | `scripts/package-web.mjs` + 引擎内联钩子 `cartridge-inline-run` | `node scripts/package-web.mjs <slug> [out]` → manifest 内联进 `window.__APOLLO_INLINE_CART__`·VITE_SINGLEFILE 单文件·零外链；apollo 发布屏 web 平台对库卡带自动走此路（工程游戏 e/f/g/i/x 仍走 VITE_TARGET_GAME 静态 import） |
 
 ## ② 样例指针

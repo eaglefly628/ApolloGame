@@ -14,6 +14,20 @@ function worldWith(hp: number): World {
 }
 
 describe('SaveSystem — 存/读/列/删（MemoryStoragePort）', () => {
+  it('取消异步读档后不再写入已处置的世界', async () => {
+    const memory = new MemoryStoragePort();
+    await new SaveSystem(memory).save('cancel-v1', worldWith(73));
+    const saved = await memory.load('cancel-v1');
+    let complete!: (value: typeof saved) => void;
+    const port = { save: memory.save.bind(memory), list: memory.list.bind(memory), delete: memory.delete.bind(memory), load: () => new Promise<typeof saved>(resolve => { complete = resolve; }) };
+    const controller = new AbortController(), world = worldWith(10);
+    const loaded = new SaveSystem(port).load('cancel-v1', world, { signal: controller.signal });
+    controller.abort(); complete(saved);
+    await expect(loaded).rejects.toMatchObject({ name: 'AbortError' });
+    expect(world.getComponent<Resource>('player', 'Resource')!.current).toBe(10);
+    await expect(new SaveSystem(memory).load('cancel-v1', world)).resolves.toMatchObject({ slot: 'cancel-v1' });
+    expect(world.getComponent<Resource>('player', 'Resource')!.current).toBe(73);
+  });
   it('save 后 load 恢复世界状态', async () => {
     const port = new MemoryStoragePort();
     const sys = new SaveSystem(port);

@@ -1,4 +1,4 @@
-import { mountNativeCharacter, nativeCharacterAssetUrl, type NativeCharacterPort, type NativeCharacterStatus } from '../../engine/host/native-character.js';
+import { mountNativeCharacter, nativeCharacterAssetUrl, nativeCharacterLocalUrl, type NativeCharacterPort, type NativeCharacterStatus } from '../../engine/host/native-character.js';
 import type { AssetIndex } from '../../assets/asset-index.js';
 import type { LayoutNode, NativeCharacterProps } from './types.js';
 
@@ -23,13 +23,6 @@ interface Entry {
   disposed: boolean;
   busy: boolean;
   timer?: ReturnType<typeof setTimeout>;
-}
-function localUrl(value: string, base: string): string {
-  const url = new URL(value, base);
-  if (!['http:', 'https:'].includes(url.protocol) || url.origin !== window.location.origin || url.username || url.password) {
-    throw new Error('URLs must use local host origin and HTTP(S)');
-  }
-  return url.href;
 }
 const requestKey = (p: NativeCharacterProps): string => JSON.stringify([p.clip, p.loop ?? true, p.speed ?? 1, Object.entries(p.parameters ?? {}).sort(([a], [b]) => a.localeCompare(b))]);
 
@@ -125,11 +118,11 @@ export function mountNativeCharacters(host: HTMLElement, getRoot: () => LayoutNo
       let invalid: unknown;
       try {
         if (!config) throw new Error('nativeCharacters host configuration absent; retaining poster');
-        runtime = localUrl(config.runtimeUrl, window.location.href);
-        base = localUrl(config.baseUrl, window.location.href);
-        const url = localUrl(nativeCharacterAssetUrl(config.index, props.assetKey, base), base);
+        runtime = nativeCharacterLocalUrl(config.runtimeUrl, window.location.href);
+        base = nativeCharacterLocalUrl(config.baseUrl, window.location.href);
+        const url = nativeCharacterLocalUrl(nativeCharacterAssetUrl(config.index, props.assetKey, base), base);
         if (!new URL(url).pathname.toLowerCase().endsWith('.stretch')) throw new Error('asset path must be .stretch');
-        localUrl(props.poster, window.location.href);
+        nativeCharacterLocalUrl(props.poster, window.location.href);
         identity = JSON.stringify([props.assetKey, url, runtime]);
       } catch (error) { invalid = error; }
       const previous = entries.get(node.id);

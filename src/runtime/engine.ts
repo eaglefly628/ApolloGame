@@ -9,6 +9,7 @@ import { FixedStepClock } from '@net/fixed-step.js';
 import { applyCommands } from '@net/commands.js';
 import { hashWorld } from '@net/world-hash.js';
 import type { InputSource } from '@net/commands.js';
+import { currentEngineHost } from './host-lifecycle.js';
 
 export interface EngineOptions {
   // 模拟频率（Hz）。固定步长 → 任何显示器刷新率下"一个 tick"都是同一份模拟时间。
@@ -73,13 +74,17 @@ export class Engine {
 
   // 挂一个每帧服务（如 AudioSync）。与渲染器同侧：attach 即同步一次，之后随循环每帧同步。
   // sim 外、不进 hash —— 服务只读世界 outcome-first，不回灌（守住确定性红线）。
-  attachService(service: FrameService): void {
+  attachService(service: FrameService): () => void {
     this.services.push(service);
     service.sync(this.world.readView());
+    return () => { const index = this.services.indexOf(service); if (index >= 0) this.services.splice(index, 1); };
   }
+
+  get isRunning(): boolean { return this.rafId !== null; }
 
   start(): void {
     if (this.rafId !== null) return;
+    if (currentEngineHost()?.beforeStart(this) === false) return;
 
     // 固定步长循环：用真实流逝时间累加，跑整数个模拟步；渲染每帧一次。
     const clock = new FixedStepClock(this._tickRate);
@@ -105,14 +110,21 @@ export class Engine {
   // 一个固定模拟步：先注入"本 tick 的输入命令"，再 world.tick()。
   // 这正是联机要的接缝——把 input 换成网络对端即可，循环本身不变。
   private step(): void {
-    if (this.input) {
-      const tick = this.world.getVersion() + 1; // 即将运行的 tick 编号
-      applyCommands(this.world, this.input.commandsForTick(tick));
-    }
+    const host = currentEngineHost();
+    const tick = this.world.getVersion() + 1; // 即将运行的 tick 编号
+    const original = this.input?.commandsForTick(tick);
+    const commands = host ? host.commandsForTick(this, tick, original) : original;
+    if (commands) applyCommands(this.world, commands);
     this.world.tick();
   }
 
   stop(): void {
+    currentEngineHost()?.stopped(this);
+    this.pauseForHost();
+  }
+
+  /** Host suspension preserves the game's own start/stop intent. */
+  pauseForHost(): void {
     if (this.rafId !== null) {
       cancelAnimationFrame(this.rafId);
       this.rafId = null;

@@ -1,0 +1,14 @@
+{
+  "capabilities": ["a1-transform", "b1-velocity", "c1-shape", "l2-color", "i3-controllable", "l4-sound", "t1-motion-apply", "t2-bounds-clamp"],
+  "entities": {
+    "player": {
+      "Transform": { "x": 320, "y": 200, "rotation": 0, "scaleX": 1, "scaleY": 1 },
+      "Velocity": { "vx": 0, "vy": 0, "angular": 0 },
+      "Shape": { "kind": "circle", "radius": 22 },
+      "Color": { "tint": 5621458, "alpha": 1 },
+      "Controllable": { "playerId": "p1", "speed": 3 },
+      "Bounds": { "minX": 28, "minY": 28, "maxX": 612, "maxY": 372 }
+    },
+    "welcome": { "Sound": { "clipId": "welcome", "volume": 0.3, "loop": false } }
+  }
+}

@@ -13,6 +13,9 @@ export class QueuedInputSource implements InputSource {
     this.queue.push(data);
   }
 
+  /** Host cancellation discards events that must not cross a focus/lifecycle boundary. */
+  reset(): void { this.queue = []; }
+
   /** 便捷：压入一个语义动作（如选项点击 'choice:2'）。arg=带参动作的字符串参数（买哪件/拖放 id/下拉值），透传进 Signal.arg。 */
   enqueueAction(name: string, value?: { x?: number; y?: number; arg?: string }): void {
     this.queue.push({ source: this.playerId, key: name, x: value?.x, y: value?.y, arg: value?.arg, phase: 'action' });
@@ -63,10 +66,24 @@ export function synthesizeDrag(
 // 传 worldFromScreen（用本地相机做 screenToWorld）→ 世界坐标进 Command/网络 → 多端一致；sim 内绝不再读相机/视口
 // （否则 1080p vs 720p 两端同一指令算出不同出生点 → desync）。不传则注入 canvas 像素（无相机时 = 世界，identity）。
 export class PointerInputSource extends QueuedInputSource {
+  private activePointer: number | null = null;
   private downAt: { x: number; y: number } | null = null; // REQ-F-045：拖拽起点（down 记录、up 合成）
+
+  private readonly onReset = () => this.reset();
+  private readonly onCancel = (event: PointerEvent) => {
+    if (this.activePointer === null || event.pointerId === this.activePointer) this.reset();
+  };
+  private readonly onLostCapture = (event: PointerEvent) => {
+    // Browsers release capture after a completed pointerup too. Keep that completed action queued.
+    if (this.activePointer !== null && event.pointerId === this.activePointer) this.reset();
+  };
 
   private readonly onPointer = (e: PointerEvent) => {
     const phase = e.type === 'pointerdown' ? 'down' : e.type === 'pointerup' ? 'up' : 'move';
+    if (this.activePointer !== null && e.pointerId !== this.activePointer) return;
+    if (phase === 'up' && this.activePointer === null) return;
+    if (phase === 'down') this.activePointer = e.pointerId;
+    if (phase === 'up') this.activePointer = null;
     const rect = this.canvas.getBoundingClientRect();
     // 高分屏修复：渲染器把 canvas.width 设成「逻辑尺寸×devicePixelRatio」(Retina 字糊根治, c105b92)，
     // 但 worldFromScreen 逆投影按**逻辑**尺寸算 → 必须把指针映射回逻辑像素(÷dpr)，否则落点偏 dpr 倍、点击全空。
@@ -99,9 +116,18 @@ export class PointerInputSource extends QueuedInputSource {
     canvas.addEventListener('pointerdown', this.onPointer as EventListener);
     canvas.addEventListener('pointerup', this.onPointer as EventListener);
     if (opts.move) canvas.addEventListener('pointermove', this.onPointer as EventListener);
+    canvas.addEventListener('pointercancel', this.onCancel as EventListener);
+    canvas.addEventListener('lostpointercapture', this.onLostCapture as EventListener);
+    window.addEventListener('blur', this.onReset);
   }
 
+  override reset(): void { super.reset(); this.downAt = null; this.activePointer = null; }
+
   dispose(): void {
+    this.reset();
+    this.canvas.removeEventListener('pointercancel', this.onCancel as EventListener);
+    this.canvas.removeEventListener('lostpointercapture', this.onLostCapture as EventListener);
+    window.removeEventListener('blur', this.onReset);
     this.canvas.removeEventListener('pointerdown', this.onPointer as EventListener);
     this.canvas.removeEventListener('pointerup', this.onPointer as EventListener);
     this.canvas.removeEventListener('pointermove', this.onPointer as EventListener);

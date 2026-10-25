@@ -42,6 +42,13 @@ export class AudioSync {
     }
   }
 
+  /** Forget consumed sounds after a host interruption so existing Sound instances can be retried. */
+  reset(): void {
+    this.port.stopAll();
+    this.playing.clear();
+    this.refCount.clear();
+  }
+
   // 引用计数 +1 并播放（同 clip 的多实例各自 play，最后一个释放才真停）。
   private acquire(s: Sound): void {
     this.refCount.set(s.clipId, (this.refCount.get(s.clipId) ?? 0) + 1);

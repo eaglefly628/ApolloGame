@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "game112-ios",
+  "title": "Game 112",
+  "version": "1.0.0",
+  "buildNumber": 1,
+  "source": { "kind": "module", "entry": "games/game112/game112.ts" },
+  "viewport": { "width": 720, "height": 1280, "orientation": "portrait" },
+  "ios": { "bundleIdentifier": "dev.zerocraft.game112", "minimumOS": "15.0" },
+  "resources": ["games/game112", "native-character"],
+  "runtime": {}
+}

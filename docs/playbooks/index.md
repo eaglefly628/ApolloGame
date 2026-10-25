@@ -1,8 +1,7 @@
 # ZeroCraft 生产线手册总目录（Playbooks · 唯一导航）
 
 > 2026-07-03 立（owner 拍板）· 主程维护。**任何 session、任何模型档位，动手做生产任务前，先到这里找对应线的手册。**
-> 定位：手册 = 「在**本引擎**里做 X，该用哪个基座件、数据长什么样」的**接线图**；
-> 与 `wiki/skills/`（行业知识，建新能力才读）、`capability-registry`（机读字典）分层不重复。
+> 手册管接线；知识查 `wiki/skills/`，字段查 `capability-registry`。
 
 ## 使用铁律（工作流）
 
@@ -37,6 +36,7 @@
 | **美术管线（配美术/换皮）** | `playbooks/art-pipeline.md` | 美术平台+台账 art-NN+风格包+批量生成/写回（终态档=唯一权威） | 全员（做游戏必读）；平台=PST |
 | 音频 | `playbooks/audio.md` | SynthAudioPort/SfxSpec（声音=数据） | 各游戏 PE；正样例=game-g |
 | 存档与平台 | `playbooks/save-platform.md` | storage/platform-hooks（云存档/成就） | 各游戏 PE；发布=**game-publisher agent** |
+| iOS 发布 | `playbooks/ios-publish.md` | 产品包、WKWebView、移动运行及发行证据 | 发布线 |
 | **DokiWorld 出包** | `playbooks/dokiworld-pack.md` | 产物→DokiWorld App（manifest/SDK/自包含 dist） | 出包前必读 |
 | ~~外部引擎交付（DokiWorld 卡带）~~ | `playbooks/dokiworld-export.md` | **已退役 2026-08-13**——旧协议桥形态·对方不再收 | 用上一行的出包线 |
 | 平台角色卡桥（外部数据→席位） | `playbooks/character-card.md` | `services/character-card`（normalizeCharacterCard/toSeatCard/isCardUsable）· 媒体取优 · 成年硬闸 · passthrough 对账 | 各游戏 PE（a/b/c 接卡）；桥=引擎 services |

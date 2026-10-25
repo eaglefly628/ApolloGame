@@ -212,3 +212,24 @@ describe('NativeCharacter display-only container lifecycle', () => {
     expect(ports).toHaveLength(1); expect(ports[0]!.destroy).not.toHaveBeenCalled(); expect(state()).toBe('playing');
   });
 });
+
+
+describe('NativeCharacter offline shell URL compatibility', () => {
+  it('loads relative runtime, asset and poster on the fixed apollo container', async () => {
+    vi.spyOn(window, 'location', 'get').mockReturnValue({ href: 'apollo://app/index.html', origin: 'null' } as Location);
+    mount(); await loaded();
+    expect(state()).toBe('playing');
+    expect(mountNativeCharacter).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ runtimeUrl: 'apollo://app/native-runtime/index.html' }));
+    expect(ports[0]!.loadAsset).toHaveBeenCalledWith(index, 'cat-a', 'apollo://app/characters/');
+  });
+  it.each(['file:///player', 'data:text/html,player', 'other://app/player', 'apollo://other/player', 'apollo://app:80/player', 'apollo://user@app/player', '/a/%2e%2e/player'])('retains the poster for an unsafe local runtime %s', async runtimeUrl => {
+    vi.spyOn(window, 'location', 'get').mockReturnValue({ href: 'apollo://app/index.html', origin: 'null' } as Location);
+    mount(undefined, { nativeCharacters: { ...config.nativeCharacters!, runtimeUrl } }); await flush();
+    expect(state()).toBe('fallback'); expect(mountNativeCharacter).not.toHaveBeenCalled();
+  });
+  it('rejects encoded asset traversal before URL resolution can erase it', async () => {
+    vi.spyOn(window, 'location', 'get').mockReturnValue({ href: 'apollo://app/index.html', origin: 'null' } as Location);
+    mount(undefined, { nativeCharacters: { ...config.nativeCharacters!, index: { version: 1, assets: [{ ...index.assets[0]!, path: 'art/%2e%2e/cat.stretch' }] } } });
+    await flush(); expect(state()).toBe('fallback'); expect(mountNativeCharacter).not.toHaveBeenCalled();
+  });
+});
