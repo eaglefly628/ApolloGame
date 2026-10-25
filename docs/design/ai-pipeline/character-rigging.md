@@ -39,7 +39,7 @@ Remap 新闭集入口：`{op:"retarget-arp", inputs:[rig.glb,motion.fbx,provenan
 node scripts/character-pipeline.mjs motion-list docs/design/<slug>/motion-list.md
 ```
 
-仅新建，不覆盖已有清单。初始 idle/Idle、walk/Walking、lift-kettle/Picking Up 都是搜索建议，提水壶明确需 E4 对手/壶把。人工按最终清单下载 FBX Without Skin 至 `assets/_inbox/mixamo/<clip-id>.fbx`。不自动登录或调用不存在的官方 API。
+仅新建，不覆盖已有清单。初始 idle/Idle、walk/Walking、lift-kettle/Picking Up 都是搜索建议，提水壶明确需 E4 对手/壶把。人工按最终清单下载 FBX Without Skin 至 `assets/_inbox/mixamo/<clip-id>.fbx`。不自动登录或调用不存在的官方 API。（2026-10-25 owner 另令：本机建库可用 `scripts/mixamo-fetch.mjs` 批量下载到仓库外目录，见 `mixamo-library.md`；正式回灌仍按本节。）
 
 每条 FBX 的 provenance 为：
 
