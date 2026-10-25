@@ -8,6 +8,12 @@
 
 ## 待处理 / 进行中
 
+### REQ-MOBILE-SHELL · 通用 iOS 产品发布层 · [2026-10-26] · owner 已授权补齐共享能力 · **施工主体 = 本聊天（engine dev，含委派执行与独立复查）** · status: in-progress · P1
+- **实查**：`src/cartridge-entry.ts` 仅识别旧工程游戏；`scripts/package-web.mjs` 已有数据卡带离线包；`src/services/{platform,storage,audio}` 已有可复用端口；`docs/playbooks/save-platform.md` 仅覆盖 Web/Steam。Game112 实包构建绿但启动 `Unknown game`；没有 iOS 工程或发行门。
+- **owner 判词**：本聊天先建议“通用 iOS 发布层：产品配置→独立资源包→iOS 容器→实机验收→TestFlight”，owner 明确“开始做吧”“补齐能力”。采用共享引擎方案；不实施每游戏独有壳。
+- **边界**：产品配置与离线构建、无第三方依赖 WKWebView 容器、共享触控/暂停恢复/音频/存档接线、可验证的 archive/设备与 TestFlight 门；不改 sim 定序或世界快照语义，不默认加入账号/广告/内购。App ID 暂不作为施工阻塞；签名/真机/上传必须据实记录，不伪造完成。
+- **验收**：至少两种产品源（工程入口/数据卡带）真构建启动、iOS 模拟器构建/可用设备实跑、正反及撤修回归、独立复查、全量门禁和操作手册；不可用的外部条件明确 fail/blocked，不以 dry-run 代替实发证据。相关产物只进独立施工副本，不触碰共享树在途改动。
+
 ### REQ-112-UI-12 · 通用原生分层角色 LayoutNode 控件 · [2026-10-21] · owner 判 A · **施工主体 = PUI（game112 聊天委派 `pui_native_ui` · 本行即锁）** · status: in-progress（0700fd787已锁，实现完成，独立复查与目标GPU验收中） · P1
 - **真人判词**：「A：补通用控件，由 PUI 施工（推荐）」。复用已有 `mountNativeCharacter`，不实施 Game112 专用 iframe 例外；不扩 sim/确定性能力。
 - **实查 / A/B / 验收**：`docs/design/game112/requests.md` 同号单。现有 `ComponentType`/`ImageProps`/catalog 无原生模型消费者，Image 的 sprite/meshMotion 不能解 `.stretch`。
