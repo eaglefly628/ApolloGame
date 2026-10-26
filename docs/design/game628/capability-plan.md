@@ -2,7 +2,7 @@
 
 > **模板**：`docs/design/capability-plan-template.md`（代码游戏·过审才动工）
 > **立项卡**：[`brief.md`](./brief.md)
-> **状态**：S2 初稿（2026-10-16）·待 Lead 签。**零新增引擎缺口**（`capability-gaps.json` = `[]`）。
+> **状态**：S2 初稿（2026-10-16）·待 Lead 签。原2D初稿的“零新增缺口”结论已被下方3D版§0与当前机读缺口取代。
 > **实查口径**：§2 每个能力名已对 `src/assembly/capability-registry.gen.ts` 逐条核对存在；关键语义对 describe 原文核过：
 > `t3-timeline`（cue 四闭集 signal/flag/resource/spawn·`timeline:done:<id>`）· `t3-flow`（`when` 读 Resource/Flag/State/Timer）·
 > `t2-over-time`（每 period 改自身 resource）· `t2-clickable`（`onlyFlag` 相位门）· `t2-event-when`（条件树叶 = resource/flag/state，**不读 Signal**）·
@@ -27,7 +27,7 @@
 
 **原「S3 前实查」项已解（2026-10-23·重组成立）**：「火灭后热点不可点」用 `t2-effect-apply` 的 `set-visible-tagged` 在熄灭时把本章热点（同一 Tag）隐藏；隐藏实体不进渲染收集（`src/renderer/renderable.ts` 按 Visibility 过滤），拾取只在已渲染物体上命中（`three-renderer.ts` 拾取循环跳过不可见对象）→ 不需要给 `Pickable3D` 加门。S3 骨架时补一条用例钉住。
 
-**引擎缺口（2026-10-23 实查·待 owner 判 A/B）**：见 [`engine-readiness-2026-10-23.md`](./engine-readiness-2026-10-23.md) G1 / G2；机读见 `capability-gaps.json` GAP-628-04 / 05。
+**引擎缺口（2026-10-23 实查；owner 2026-10-26 已裁 G1=A、G2=B）**：见 [`engine-readiness-2026-10-23.md`](./engine-readiness-2026-10-23.md) G1 / G2；机读见 `capability-gaps.json` GAP-628-04 / 05。
 
 ---
 
@@ -142,3 +142,7 @@
 
 - 提交人 / 日期：Claude（owner 立项指令）/ 2026-10-16
 - Lead 裁决：⬜ 待签
+
+## 2026-10-26 画面裁决执行
+
+GAP-628-04：REQ-3D-RENDER-BIND 施工中，待独立复查，S5阻塞保留。GAP-628-05：owner选择固定机位 + CameraShot3D，首版取消环视，按设计调整结案wontfix；不是补好了相机输入能力。

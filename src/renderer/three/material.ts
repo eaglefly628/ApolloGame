@@ -29,6 +29,7 @@ export interface PbrMaps {
 export function applyMaterialRef(mat: Material3D, spec: MaterialSpec | undefined): Material3D {
   if (!spec) return mat;
   return {
+    ...mat,
     type: 'Material3D',
     preset: spec.preset ?? mat.preset, // 材质资源的 preset 权威；无则用 inline 后备
     color: mat.color ?? spec.color,

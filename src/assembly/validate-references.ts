@@ -171,6 +171,14 @@ export function validateReferences(entities: Record<string, EntityBlueprint>): S
       const c = obj(data);
       if (!c) continue;
       switch (ctype) {
+        case 'RenderBinding3D':
+          for (const entry of arr(c.bindings)) {
+            const source = obj(obj(entry)?.source);
+            if (source?.kind === 'resource-ratio') checkIn(uni.resources, source.id, ctype, 'bindings[].source.id', '资源 Resource.id');
+            else if (source?.kind === 'flag') checkIn(uni.flags, source.id, ctype, 'bindings[].source.id', '旗标 Flag.id');
+            else if (source?.kind === 'signal') { checkSignal(source.on, ctype, 'bindings[].source.on'); checkSignal(source.off, ctype, 'bindings[].source.off'); }
+          }
+          break;
         case 'Effect': {
           checkSignal(c.onSignal, ctype, 'onSignal');
           const kind = str(c.kind);

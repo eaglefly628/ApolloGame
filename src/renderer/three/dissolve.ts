@@ -121,6 +121,8 @@ export function injectDissolve(mat: THREE.Material, d: Dissolve, dissolveTex?: T
     u['uDisTex'] = { value: dissolveTex };
   }
   mat.userData['dissolveUniforms'] = u;
+  const priorKey = mat.customProgramCacheKey;
+  mat.customProgramCacheKey = function () { return `${priorKey.call(this)}|dissolve:${dissolveSig(d)}:${hasTex}`; };
   const glsl = dissolveGLSL(d, hasTex);
   const frag = hasTex ? DISSOLVE_FRAG_TEX : DISSOLVE_FRAG;
   const prevOBC = mat.onBeforeCompile;
@@ -139,17 +141,18 @@ export class DissolveSystem {
 
   // 逐帧推进 dissolve 的 progress/time uniform（须在 mesh 建好后·renderSig 前）。返回**活跃 dissolve 实体数**
   // （>0 → 渲染器持续重渲·溶解动画/光点浮动在跑）。trigger 驱动=引擎自播 0→1（out）/1→0（in）；否则用显式 progress。
-  sync(world: IWorld, meshes: ReadonlyMap<string, THREE.Mesh>, nowMs: number): number {
+  sync(world: IWorld, meshes: ReadonlyMap<string, THREE.Mesh>, nowMs: number, models?: ReadonlyMap<string, readonly THREE.Material[]>): number {
     const seen = new Set<string>();
     let live = 0;
     for (const [id] of world.query('Material3D')) {
       const mat3 = world.getComponent<Material3D>(id, 'Material3D');
       const d = mat3?.dissolve;
       if (!d) continue;
-      const mesh = meshes.get(id);
-      const u = (mesh?.material as THREE.Material | undefined)?.userData?.['dissolveUniforms'] as
-        | { uDisProgress: { value: number }; uDisTime: { value: number } } | undefined;
-      if (!u) continue; // 材质未建/未注入（如首帧编译前）→ 跳过
+      const mesh = meshes.get(id), raw = mesh?.material;
+      const materials = models?.get(id) ?? (raw ? (Array.isArray(raw) ? raw : [raw]) : []);
+      const uniforms = materials.map(material => material.userData?.['dissolveUniforms'] as
+        | { uDisProgress: { value: number }; uDisTime: { value: number } } | undefined).filter(u => !!u);
+      if (!uniforms.length) continue; // 材质未建/未注入（如首帧编译前）→ 跳过
       seen.add(id);
       let reg = this.regs.get(id);
       if (!reg) { reg = { t0: nowMs }; this.regs.set(id, reg); }
@@ -168,8 +171,10 @@ export class DissolveSystem {
       } else {
         progress = Math.max(0, Math.min(1, d.progress ?? 0));
       }
-      u.uDisProgress.value = progress;
-      u.uDisTime.value = (nowMs - reg.t0) / 1000;
+      for (const u of uniforms) {
+        u.uDisProgress.value = progress;
+        u.uDisTime.value = (nowMs - reg.t0) / 1000;
+      }
       // 活跃：正在自播动画，或 voronoi 光点在浮动（0<progress<1 有可见前沿在动）。
       if (animating || (progress > 0.001 && progress < 0.999)) live++;
     }

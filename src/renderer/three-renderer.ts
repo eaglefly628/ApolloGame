@@ -32,6 +32,9 @@ import { LineSystem } from './three/line3d.js';
 import { DecalSystem } from './three/decal.js';
 import { UvAnimSystem } from './three/uv-anim.js';
 import { DissolveSystem } from './three/dissolve.js';
+import { ModelDissolves, type ModelDissolveInput } from './three/model-dissolve.js';
+import { RenderBindings } from './three/render-bindings.js';
+import { RenderHover } from './three/hover.js';
 import { BillboardSystem } from './three/billboard.js';
 import { DiegeticLayer } from './three/diegetic.js';
 import { ReflectorSystem } from './three/reflector.js';
@@ -114,6 +117,10 @@ export class ThreeRenderer implements RendererBackend {
   private readonly decals = new DecalSystem(); // 地面贴花（Decal3D·blob 阴影/环/圆·render-only）
   private readonly uvAnim = new UvAnimSystem(); // 材质 UV 动画（Material3D.uvAnim·滚动/序列帧·render-only）
   private readonly dissolve = new DissolveSystem(); // 溶解消散（Material3D.dissolve·shader 溶解 + 发光前沿·render-only·REQ-3D-DISSOLVE）
+  private readonly modelDissolves = new ModelDissolves();
+  private readonly renderBindings = new RenderBindings();
+  private readonly renderHover = new RenderHover();
+  private hoverRevision = -1;
   private readonly billboards = new BillboardSystem(); // 世界空间贴图广告牌（Billboard3D·朝相机·深度排序·render-only）
   private readonly diegetic = new DiegeticLayer(); // UI 贴进 3D 空间（Diegetic3D·CSS3DObject 真 DOM 面片·render-only）
   private readonly reflectors = new ReflectorSystem(); // 平面反射镜面（Reflector3D·RTT 倒影·render-only·REQ-3D-PLANAR-REFLECT）
@@ -276,6 +283,12 @@ export class ThreeRenderer implements RendererBackend {
 
   sync(world: IWorld): void {
     const t0 = performance.now();
+    const hoverEnabled = this.renderBindings.prepare(world);
+    if (this.hoverRevision !== this.renderBindings.revision) { this.renderHover.clear(); this.hoverRevision = this.renderBindings.revision; }
+    const hover = this.renderHover.sync(this.gl.domElement, hoverEnabled, world, (x, y) => this.pick(x, y), () => this.invalidate());
+    const bindingFrame = this.renderBindings.sync(world, t0, hover);
+    const visualWorld = bindingFrame.world;
+    const modelDissolveInputs = new Map<string, ModelDissolveInput>();
     const turnStep = this.lastModelYawMs ? Math.min(0.05, (t0 - this.lastModelYawMs) / 1000) * 6 : Infinity;
     this.lastModelYawMs = t0;
     this.ik.beginFrame(); // Restore prior IK before sampling the original animation pose.
@@ -309,14 +322,14 @@ export class ThreeRenderer implements RendererBackend {
     this.syncSky(sky);
     this.syncEnv(sky); // 环境光照(IBL)：Sky3D.env>0 → 中性影室环境贴图（金属/玻璃反射·TA Phase 5）
     this.syncFog(getFog3D(world)); // 距离雾（scene.fog·远处柔化·TA Phase 4）
-    this.syncGlow3D(world); // 加性辉光精灵（Glow3D·火盆/灯笼/门光晕·复刻原型 glowSprite）
-    this.lights.sync(this.scene, getLights3D(world), world); // 数据化光照（维护 lightSig 供脏标·含动态局部光位姿）
+    this.syncGlow3D(visualWorld); // 绑定只改本帧投影；原组件保留作者值。
+    this.lights.sync(this.scene, getLights3D(visualWorld), world); // 数据化光照（维护 lightSig 供脏标·含动态局部光位姿）
     // 真物理刚体（cannon-es·render-only·表现非同步）：先按需重掷 → 步进 → 把位置/四元数写回 Transform3D（须在 collect 前）。
     this.ensurePhysics(world); // 有 RigidBody3D 才懒加载 physics.ts（连带 cannon-es）——无刚体的游戏永不触发
     if (this.rollPending && this.physics) { this.physics.roll(world); this.rollPending = false; }
     const physLive = this.physics ? this.physics.sync(world, performance.now()) : 0;
     // VFX 粒子（TA Phase 1·render-only）：每帧 CPU 模拟推进。存活粒子数 >0 → 折进 renderSig 强制重渲（粒子在动）。
-    const vfxLive = this.vfx.sync(this.scene, world, performance.now());
+    const vfxLive = this.vfx.sync(this.scene, visualWorld, bindingFrame.signature ? t0 : performance.now());
     // 运动拖尾采样（Trail3D·render-only）：据实体世界位更新位置历史（相机后才建几何）。有位移的拖尾数 >0 → 折进 renderSig。
     const trailLive = this.trails.sample(world);
     // 地面贴花（Decal3D·render-only·不需相机·世界空间贴地）：管理贴片网格 + 跟随实体地面位。有变化 >0 → 折进 renderSig。
@@ -349,7 +362,7 @@ export class ThreeRenderer implements RendererBackend {
     for (const [pid] of world.query('Pickable3D')) { const pk = world.getComponent<Pickable3D>(pid, 'Pickable3D'); if (pk) pickSet.set(pid, pk); }
     this.pickables.clear();
 
-    for (const r of collectRenderables(world)) {
+    for (const r of collectRenderables(visualWorld)) {
       if (r.groundBaseY !== undefined) groundSigs.push(JSON.stringify([r.entityId, r.groundBaseY]));
       // 导入式 glTF 模型（Model3D）：圆润真模型。位姿与 Mesh3D 同套路。未就绪本帧不画（向后兼容）。
       if (r.model3d) {
@@ -357,6 +370,7 @@ export class ThreeRenderer implements RendererBackend {
         const obj = this.models.ensure(this.scene, r.entityId, r.model3d);
         this.assetReady.mark(r.model3d.modelKey, !!obj); // 就绪版本号：迟到模型就绪同样迫使重绘（静态场景防吞帧）
         if (obj) {
+          if (bindingFrame.dissolves?.has(r.entityId) && r.material3d?.dissolve) modelDissolveInputs.set(r.entityId, { object: obj, dissolve: r.material3d.dissolve, texture: this.resolvePbrMaps(r.material3d).dissolveTex });
           const ms = r.model3d.scale ?? 1;
           const rawPose: Pose3D = r.groundBaseY !== undefined ? groundPose(r, 0) : (r.transform3d || cam3d)
             ? (r.transform3d ? transform3dPose(r.transform3d) : groundPose(r, 0))
@@ -564,7 +578,8 @@ export class ThreeRenderer implements RendererBackend {
 
     // 材质 UV 动画（Material3D.uvAnim·render-only·须在 mesh 建好后）：逐帧改克隆贴图 offset/repeat（滚动/序列帧）。活跃 >0 → 持续重渲。
     const uvLive = this.uvAnim.sync(world, this.meshes, performance.now());
-    const dissolveLive = this.dissolve.sync(world, this.meshes, performance.now()); // 溶解每帧推进 progress/time uniform
+    const modelDissolveMaterials = this.modelDissolves.sync(modelDissolveInputs);
+    const dissolveLive = this.dissolve.sync(visualWorld, this.meshes, bindingFrame.signature ? t0 : performance.now(), modelDissolveMaterials); // 同一shader驱动图元和GLB逐实例子材质。
 
     // W1-C 脏标跳渲：渲染签名（投影体姿 + 相机 + 灯 + 后处理 + 天空云飘帧 + 粒子/物理/骨骼动画活跃帧）。与上帧一致 → 跳过
     // instanceMatrix 上传 + 阴影 + render（画面不变·省 CPU/GPU/带宽）——「低开销」最大单点。
@@ -582,7 +597,7 @@ export class ThreeRenderer implements RendererBackend {
     const camTweenActive = !shot.frame && this.cameras.tickTween(cam3d?.tween, performance.now());
     // 命中闪白：据 Post3D.flash.trigger 算衰减量——>0 时折进 renderSig 持续重渲直至归零。
     const flashAmt = this.flash.update(post?.flash, performance.now());
-    const renderSig = `${ph}|${camSig(cam3d)}|shots:${shot.signature}|${shot.active ? this.frame : 'cs0'}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${this.debugIndices ? 'ix' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${camTweenActive ? this.frame : 'ct0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${billboardLive > 0 ? this.frame : 'bb0'}|${uvLive > 0 ? this.frame : 'uv0'}|${dissolveLive > 0 ? this.frame : 'ds0'}|${this.lines.contentSig(world)}|${this.diegetic.contentSig(world)}|${this.reflectors.contentSig(world)}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}|sky:${this.skySig}|env:${this.scene.environment?.uuid ?? ''}:${this.scene.environmentIntensity}|ag${this.assetReady.gen}`;
+    const renderSig = `${ph}|${camSig(cam3d)}|bindings:${bindingFrame.signature}:${bindingFrame.active ? this.frame : 'rb0'}|shots:${shot.signature}|${shot.active ? this.frame : 'cs0'}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${this.debugIndices ? 'ix' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${camTweenActive ? this.frame : 'ct0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${billboardLive > 0 ? this.frame : 'bb0'}|${uvLive > 0 ? this.frame : 'uv0'}|${dissolveLive > 0 ? this.frame : 'ds0'}|${this.lines.contentSig(world)}|${this.diegetic.contentSig(world)}|${this.reflectors.contentSig(world)}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}|sky:${this.skySig}|env:${this.scene.environment?.uuid ?? ''}:${this.scene.environmentIntensity}|ag${this.assetReady.gen}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -771,6 +786,8 @@ export class ThreeRenderer implements RendererBackend {
     this.decals.dispose(this.scene);
     this.billboards.dispose(this.scene);
     this.uvAnim.dispose();
+    this.modelDissolves.clear();
+    this.renderBindings.clear(); this.renderHover.clear(); this.hoverRevision = -1;
     this.dissolve.dispose();
     this.reflectors.dispose(this.scene);
     this.anim3d.dispose();

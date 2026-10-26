@@ -5,6 +5,7 @@ import { validateAnimGraph3D } from '@engine/protocol/components/anim-graph.js';
 import { validateAttach3D } from '@engine/protocol/components/attach3d.js';
 import { validateIK3D } from '@engine/protocol/components/ik3d.js';
 import { validateCameraShot3D } from '@engine/protocol/components/camera-shot.js';
+import { validateRenderBinding3D } from '@engine/protocol/components/render-binding.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  组件数据 schema 校验（R12）—— AI/预设/手改产出的蓝图数据的护城河。
@@ -74,6 +75,11 @@ export function validateComponentData(
 
   for (const [eid, comps] of Object.entries(entities)) {
     for (const [ctype, data] of Object.entries(comps as Record<string, unknown>)) {
+      if (ctype === 'RenderBinding3D') {
+        try { validateRenderBinding3D(data); }
+        catch (error) { errors.push({ entity: eid, component: ctype, message: error instanceof Error ? error.message : String(error) }); }
+        continue;
+      }
       if (ctype === 'CameraShot3D') {
         try { validateCameraShot3D(data); }
         catch (error) { errors.push({ entity: eid, component: ctype, message: error instanceof Error ? error.message : String(error) }); }

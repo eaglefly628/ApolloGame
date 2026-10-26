@@ -28,6 +28,7 @@ import type {
   Camera,
   Camera3D,
   CameraShot3D,
+  RenderBinding3D,
   CameraTarget,
   CardPile,
   Caster,
@@ -201,6 +202,7 @@ export interface ComponentDataMap {
   Camera: Omit<Camera, 'type'>;
   Camera3D: Omit<Camera3D, 'type'>;
   CameraShot3D: Omit<CameraShot3D, 'type'>;
+  RenderBinding3D: Omit<RenderBinding3D, 'type'>;
   CameraTarget: Omit<CameraTarget, 'type'>;
   CardPile: Omit<CardPile, 'type'>;
   Caster: Omit<Caster, 'type'>;

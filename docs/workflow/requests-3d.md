@@ -7,7 +7,7 @@
 
 ---
 
-## REQ-3D-RENDER-BIND · 通用画面参数绑定（GAP-628-04） · [2026-10-26] · owner 判 A · **施工主体 = Codex / P3D（2026-10-26·本行即锁）** · status: in-progress · P1
+## REQ-3D-RENDER-BIND · 通用画面参数绑定（GAP-628-04） · [2026-10-26] · owner 判 A · **施工主体 = Codex / P3D（2026-10-26·本行即锁）** · status: 施工完·待独立复查（Claude） · P1
 > owner 本聊天明确选择：火光 / 幻象等效果下沉通用能力，后续故事复用。实查与 A/B 成本见 game628 的 engine-readiness-2026-10-23 G1；不是给游戏加专属 system，也不扩 effect-apply 写渲染字段。
 > spec：新增 render-only 闭集数据绑定，读 Resource 比例 / Flag / Signal，驱动同体 Light3D.intensity、Material3D.dissolve.progress、Vfx3D.rate、Glow3D.opacity；可声明缓动；hover来源为只在表现侧保存的指针状态，复用既有pick射线，移开/取消/失焦/销毁清理，不向sim发布纯视觉悬停信号。不能把DOM/游戏自由代码藏进绑定。解释器只读sim，使用独立表现覆盖，不改源组件、Signal消费或hash。materialRef重组必须保留本单绑定输出；dissolve须作用于导入GLB的逐实例材质，复用既有shader、不替换模板或误释放共享纹理。无绑定组件时保持原渲染路径。
 > 必做：原始数据拒收 / 资源缺失与异常明确日志；多tick信号不丢、重复render不重播、回档/换世界/删除重建/销毁清理；逐实体材质与实例批隔离，缓动持续脏帧；NON_DETERMINISTIC、组件字典与manifest验证齐全；CPU行为、确定性、真实WebGL和至少两处唯一锚点撤修验红。

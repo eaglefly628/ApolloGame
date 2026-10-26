@@ -61,3 +61,7 @@
 | 推设计系统到 Claude Design | owner | 跑导出命令后在会话里启动 `/design-sync` |
 | 风格令牌定稿 | owner | 看一眼草案，改 `status: final` |
 | 游戏级工单 | Codex 可做 | G628-07 文本改编、G628-09 动作清单、G628-06 UI 需求单（见 `requests.md`） |
+
+## 2026-10-26 裁决补记（不重写上方历史盘点）
+
+owner 已明确选择 G1=A、G2=B。G1转REQ-3D-RENDER-BIND并已抢锁，尚不能记交付；G2已把GDD改为固定机位+CameraShot3D剧情镜头，机读缺口标wontfix并留裁决来源。选择不等于人门签字或本作已完成。
