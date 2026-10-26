@@ -43,6 +43,8 @@ node scripts/mixamo-fetch.mjs                        # 正式下载；中断后�
 
 ## 私有存储（owner 2026-10-25 定：方案二·另建私有仓库）
 
+> **owner 2026-10-26 改：先只存本机 `~/ApolloAssets/`，不建仓库、不上传。** 下面的私有仓库步骤暂缓，等要用进游戏时再议。
+
 - 私有仓库 `eaglefly628/apollo-assets-private`（owner 在 GitHub 网页建，**Private**）；本机克隆位置就是 `~/ApolloAssets`，所以本工具缺省输出 `~/ApolloAssets/mixamo/` 直接落在私有仓库里。
 - 先下载、后入私有库都行：下载不依赖仓库是否已建。建好后在 `~/ApolloAssets` 里 `git init` → `git remote add origin <私有仓库地址>` → 提交推送。
 - 单文件超过 50 MB 的（以后的模型、贴图）走 Git LFS；Mixamo FBX 一般几 MB，不需要。
