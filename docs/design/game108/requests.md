@@ -375,3 +375,9 @@ GDD 原文登记为「卡在引擎缺口 `REQ-108-ENG-07`·等 owner 判 A/B」�
 
 ### ~~REQ-108-DOC-01~~ · 回填「对手 AI 数据化」生产线手册 · [2026-08-08] · 主程复盘指派 → 原指派 108 施工方·**owner 2026-08-10 改派手册撰写 session** · status: **✅ done（2026-08-10·同本提交交付）** · 类型: 手册回填
 > 交付：`docs/playbooks/opponent-ai.md`（49 行·≤100 行规格·工单点名六件 + 判定表同源/一级一拍共八坑逐条带出处）+ `playbooks/index.md` 挂行 + 手册头承接 owner 2026-08-10「有 AI 必须有 AI 设定」新规（capability-plan §4.65 / S4 清单同口径）。反面教材（赖皮事故/静默旗/冗余盲区/判定表 891f33d89）在手册 §②④。
+
+
+### REQ-108-ANIM-CONTINUITY · 卡牌/手部动画阶梯与反复重建 · [2026-10-26] · owner iOS试玩反馈 · 施工主体：待抢锁 · status: open · P1
+- 实证：duel-screen.ts:884–894把380ms cardGrow量化到0.1；真实Chrome开始后500ms的30帧只有8个key-rock几何状态，两只手首轮各254次outerHTML。步骤与证据见`docs/design/ios-animation-diagnosis-2026-10-26.md`。
+- 归属：本单去除不必要几何量化 / 动态SVG几何皮肤更新并保留设计外观时序；共用server.ts父树替换另交PUI的REQ-PUI-ANIM-CONTINUITY。本单不越界代改共享UI解释器。
+- 验收：实际触发开始/蓄力/出拳/震屏，逐帧记录几何连续性与animationstart，iOS对照；节点替换数不因逐帧纯位移重绘整树，输入/伤害/阶段时序不变；带唯一锚点撤修验红，相关门禁与check-ui，不把桌面60fps当iOS性能通过。

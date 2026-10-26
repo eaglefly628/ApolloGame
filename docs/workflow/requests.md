@@ -8,6 +8,10 @@
 
 ## 待处理 / 进行中
 
+### REQ-PUI-ANIM-CONTINUITY · 布局更新不得反复重启无关子树动画 · [2026-10-26] · owner iOS试玩反馈 · 指派：PUI · 施工主体：待抢锁 · status: open · P1 · 类型: 既有UI更新行为修复
+> 实证：game108掉血震屏改变duel-screen根layout，server.ts更新用outerHTML替换整树；真实Chrome约100ms内根替换7次、每次160后代，内部260ms apollo-pop对应重启7次。两游戏rAF中位/p95仍约16.7ms，不可把此问题归给模拟器。完整步骤/原始探针：docs/design/ios-animation-diagnosis-2026-10-26.md。
+> 验收：同类型/同id的可变布局/props更新应保留不受影响子树与动画连续性，输入handler不重复；父锚点、结构性替换、卸载与旧控件行为不回退；真实浏览器+至少两处锚点验红+相关/全量门禁+check-ui。边界src/ui/**及本域测试/手册，游戏量化问题另交game108维护方；不在本单重造UI框架。
+
 <!-- REQ-3D-RENDER-BIND：owner 2026-10-26 判A，P3D/本聊天抢锁；共享3D协议、component-map/registry与NON_DETERMINISTIC登记在本单授权面，主程已知会；正文见requests-3d.md。不新增sim能力或改hash算法。 -->
 
 ### REQ-112-UI-12 · 通用原生分层角色 LayoutNode 控件 · [2026-10-21] · owner 判 A · **施工主体 = PUI（game112 聊天委派 `pui_native_ui` · 本行即锁）** · status: in-progress（0700fd787已锁，实现完成，独立复查与目标GPU验收中） · P1
