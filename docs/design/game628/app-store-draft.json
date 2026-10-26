@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "status": "draft-not-for-upload",
+  "game": "game628",
+  "ownerConfirmed": {
+    "firstIOSAcceptanceProduct": true,
+    "date": "2026-10-26"
+  },
+  "localizations": {
+    "zh-Hans": {
+      "name": "最后的火柴",
+      "subtitle": "用短暂的火光，照见美丽的童话",
+      "description": "你是卖火柴的小女孩手里的一根火柴。\n\n在雪夜的街角，每一次擦亮，都打开一个短暂而温暖的幻象：铁火炉、丰盛的餐桌、圣诞树，还有记忆中的奶奶。\n\n在火光熄灭前，轻触幻象里的细节，护住微弱的火苗，把她看到的美丽东西收进相册。这里没有失败惩罚；你无法改变故事的结局，却可以让这段短暂的光更完整。\n\n一段以安徒生原著为基础改编的安静叙事体验。",
+      "keywords": "童话,叙事,探索,火柴,安徒生,故事,相册",
+      "promotionalText": "你不是卖火柴的小女孩。你是她手里的火柴。"
+    },
+    "en-US": {
+      "name": "The Last Matches",
+      "subtitle": "A quiet, playable fairy tale",
+      "description": "You are a match in a little girl’s hand.\n\nOn a snowy street corner, each small flame reveals a fleeting vision: a warm stove, a feast, a Christmas tree, and a beloved grandmother.\n\nTouch the details before the light fades. Shield the flame from the wind. Keep the beautiful things she sees in an album of memories. There is no failure penalty. You cannot change the story’s ending, but you can help her see a little more beauty.\n\nA quiet narrative experience adapted from Hans Christian Andersen’s original tale.",
+      "keywords": "fairy tale,story,narrative,exploration,matches,Andersen",
+      "promotionalText": "You are not the little match girl. You are the match in her hand."
+    }
+  },
+  "publication": {
+    "finalTitleConfirmed": false,
+    "bundleIdentifier": null,
+    "appleTeam": null,
+    "appStoreConnectAppId": null,
+    "primaryLocale": null,
+    "territories": null,
+    "businessModel": null,
+    "price": null,
+    "privacyPolicyURL": null,
+    "supportURL": null,
+    "reviewContact": null,
+    "ageRating": null,
+    "exportCompliance": null,
+    "copyrightHolder": null,
+    "appIcon": null,
+    "screenshots": []
+  },
+  "productEntry": null,
+  "notes": [
+    "文案仅为按GDD写成的目标体验草案；发布前逐句对照真实安装包删除未实现承诺。",
+    "不含定价、语音配音、完整语种、云存档或内购等未经验证承诺。",
+    "童话包含儿童死亡和贫困主题；按最终内容如实填写年龄问卷，不预定4+或儿童分类。",
+    "不是ios-product配置，不得传给prepare或直接上传；正式入口、资产、账号和材料齐备后另建真实产品配置。"
+  ]
+}
