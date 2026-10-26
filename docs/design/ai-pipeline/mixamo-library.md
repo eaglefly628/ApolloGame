@@ -41,6 +41,13 @@ node scripts/mixamo-fetch.mjs                        # 正式下载；中断后�
 
 `<out>/<id>.fbx` 加 `<out>/manifest.json`：每个动作记录 `file / sha256 / bytes / searchTerm / mixamoName / mixamoId / characterId / download{format,skin,fps,inPlace} / downloadedAt`，以及条款 URL。token 不落盘。
 
+## 私有存储（owner 2026-10-25 定：方案二·另建私有仓库）
+
+- 私有仓库 `eaglefly628/apollo-assets-private`（owner 在 GitHub 网页建，**Private**）；本机克隆位置就是 `~/ApolloAssets`，所以本工具缺省输出 `~/ApolloAssets/mixamo/` 直接落在私有仓库里。
+- 先下载、后入私有库都行：下载不依赖仓库是否已建。建好后在 `~/ApolloAssets` 里 `git init` → `git remote add origin <私有仓库地址>` → 提交推送。
+- 单文件超过 50 MB 的（以后的模型、贴图）走 Git LFS；Mixamo FBX 一般几 MB，不需要。
+- 构建时把私有资产接进游戏的那一步（缺省读 `~/ApolloAssets`，公开仓库与云端构建没有私有库时跳过并告警）另开工单，未施工前不要改游戏引用私有文件。
+
 ## 用进游戏时
 
-按 `character-rigging.md` 的 Mixamo → Remap 步骤：把选中的 FBX 复制到 `assets/_inbox/mixamo/<clip-id>.fbx`，sidecar 里的 `searchTerm`、`download` 照 manifest 填。现有来源校验只收 `source:"mixamo-manual"`；用本工具下载的动作走正式回灌前，要先决定是否新增 `mixamo-fetch` 来源值（小改，届时另开单）。注意：复制进 `assets/` 就等于进了公开仓库，私有存储方案定下来之前不要提交。
+按 `character-rigging.md` 的 Mixamo → Remap 步骤：把选中的 FBX 复制到 `assets/_inbox/mixamo/<clip-id>.fbx`，sidecar 里的 `searchTerm`、`download` 照 manifest 填。现有来源校验只收 `source:"mixamo-manual"`；用本工具下载的动作走正式回灌前，要先决定是否新增 `mixamo-fetch` 来源值（小改，届时另开单）。注意：复制进 `assets/` 就等于进了公开仓库，不要提交。
