@@ -8,6 +8,8 @@
 
 ## 待处理 / 进行中
 
+<!-- REQ-3D-RENDER-BIND：owner 2026-10-26 判A，P3D/本聊天抢锁；共享3D协议、component-map/registry与NON_DETERMINISTIC登记在本单授权面，主程已知会；正文见requests-3d.md。不新增sim能力或改hash算法。 -->
+
 ### REQ-112-UI-12 · 通用原生分层角色 LayoutNode 控件 · [2026-10-21] · owner 判 A · **施工主体 = PUI（game112 聊天委派 `pui_native_ui` · 本行即锁）** · status: in-progress（0700fd787已锁，实现完成，独立复查与目标GPU验收中） · P1
 - **真人判词**：「A：补通用控件，由 PUI 施工（推荐）」。复用已有 `mountNativeCharacter`，不实施 Game112 专用 iframe 例外；不扩 sim/确定性能力。
 - **实查 / A/B / 验收**：`docs/design/game112/requests.md` 同号单。现有 `ComponentType`/`ImageProps`/catalog 无原生模型消费者，Image 的 sprite/meshMotion 不能解 `.stretch`。

@@ -7,6 +7,12 @@
 
 ---
 
+## REQ-3D-RENDER-BIND · 通用画面参数绑定（GAP-628-04） · [2026-10-26] · owner 判 A · **施工主体 = Codex / P3D（2026-10-26·本行即锁）** · status: in-progress · P1
+> owner 本聊天明确选择：火光 / 幻象等效果下沉通用能力，后续故事复用。实查与 A/B 成本见 game628 的 engine-readiness-2026-10-23 G1；不是给游戏加专属 system，也不扩 effect-apply 写渲染字段。
+> spec：新增 render-only 闭集数据绑定，读 Resource 比例 / Flag / Signal，驱动同体 Light3D.intensity、Material3D.dissolve.progress、Vfx3D.rate、Glow3D.opacity；可声明缓动；hover来源为只在表现侧保存的指针状态，复用既有pick射线，移开/取消/失焦/销毁清理，不向sim发布纯视觉悬停信号。不能把DOM/游戏自由代码藏进绑定。解释器只读sim，使用独立表现覆盖，不改源组件、Signal消费或hash。materialRef重组必须保留本单绑定输出；dissolve须作用于导入GLB的逐实例材质，复用既有shader、不替换模板或误释放共享纹理。无绑定组件时保持原渲染路径。
+> 必做：原始数据拒收 / 资源缺失与异常明确日志；多tick信号不丢、重复render不重播、回档/换世界/删除重建/销毁清理；逐实体材质与实例批隔离，缓动持续脏帧；NON_DETERMINISTIC、组件字典与manifest验证齐全；CPU行为、确定性、真实WebGL和至少两处唯一锚点撤修验红。
+> 边界：3D协议组件与component-map/registry、确定性排除登记（不改hash算法）、3D渲染器/解释器及测试、必要的manifest校验/生成字典及纯表现输入接线、契约与3D手册。不得改game628玩法、其它游戏、2D/sim规则或UI域。实现后交非施工方复查，施工方不判PASS。
+
 ## REQ-3D-AI-PIPELINE · AI 协同生产流程的 3D 资产与运行时能力（T3 图生3D · T4 模型规范化 · T5 绑骨动作 · T7 Blender 桥 · E1 压缩加载 · E2 动作库+AnimGraph3D · E3 骨骼挂点 · E4 IK · E5 场景 glb 拆实体 · V1 提水壶竖切） · [2026-10-16] · owner 立（裁 A=自研引擎·不用 Unity/Godot·与 Tripo/Blender 正式整合·绑骨判 B=Blender+Auto-Rig Pro+Mixamo·付费 API/插件接受）→ **P3D**（T4/T5/T7/E5 主程面·协作） · 施工主体 = Codex（2026-10-18 抢锁·本行即锁） · status: V1离线整链已独立复查通过（施工74cdf9619·2026-10-21；E6已独立复查通过3730f2f66；E4已独立复查通过（施工acc1a4479）；E3已独立复查通过34199bb4f；E2已独立复查通过dd0374031；T5(+S3)离线能力已独立复查通过d137f4555，真实ARP/Mixamo/Tripo待验；T7/T3/T4/E1/R4/E5/R2已独立复查通过；V1正式付费来源与真人R1待验） · 优先级: P1 · 类型: 能力下沉
 > 写死 spec（数据形状·验收·依赖·顺序）全文：`docs/design/ai-pipeline-engine-roadmap-2026-10.md` §1–§3。E 层全部 render-only·入 `NON_DETERMINISTIC`（E5 装载期展开除外·须双跑 hash 一致）。
 > 原「交互与材质补全批」③ BlendSpace 由本单拉动转正（= E2）。复查人 ≠ 施工人。
