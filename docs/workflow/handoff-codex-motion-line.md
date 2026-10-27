@@ -60,3 +60,28 @@
 【完工回复（每单各一份）】
 提交哈希、改动面、测试名、撤修验红结果、门禁各步退出码、真实链路是否验过；然后把该单 status 改「施工完·待独立复查（Claude）」并停下等复查。M1 复查的判词与关键复现输出也一并回报。
 ```
+
+## 补充指令（2026-10-28 · owner 新令 · 优先于上面第二部分的顺序）
+
+> 背景：owner 报告 Mixamo 约 2500 个动作已全部下载到本机。下一步先补齐 **Skin（带皮角色）** 和 **Mixamo 骨骼定义**，再做 M2 入库。补全方法与 M6 待裁见 `docs/design/ai-pipeline/motion-completion.md`（M6 owner 未判前不施工）。
+
+```text
+【A. 先交代下载工具的改动】
+若你为下载全部 2500 个动作改过 scripts/mixamo-fetch.mjs 或清单：把改动（含假服务测试）提交推送，撤修验红一次、门禁绿；在 docs/design/ai-pipeline/mixamo-library.md 末尾加「全量下载实测（Codex · 日期）」：总数、失败数与原因、总大小、遇到的接口形状差异（脱敏，不含 token），status「待 Claude 复查」。FBX 与 manifest 仍不进仓库。
+
+【B. 下载全部 Skin（REQ-MOTION-M5 中「带皮角色下载」提前做）】
+- 给 mixamo-fetch 增加 --skins 模式：列出 Mixamo 全部角色，逐个导出 T-pose、带皮（skin:'true'）、FBX，落 ~/ApolloAssets/mixamo/skins/<id>.fbx，manifest 增 skins 段（id、Mixamo 角色名与 id、SHA、字节、下载参数）。接口按网页实际行为确定，并把真实响应形状（脱敏）写进假服务测试。
+- 四条安全行为不变：仓库内目录拒绝、token 不外泄、节流（间隔不低于 4 秒、单轮不超过 40）、401/403/429 立即停。
+- 开工先在 requests.md 的 REQ-MOTION-M5 行写锁（施工主体 = Codex），本项完工后 M5 其余部分继续按原 spec。
+
+【C. 抽取 Mixamo 骨骼定义（文档，可入库：只含骨名与层级、静止变换数值，不含网格和动画）】
+- 从 Y Bot 及全部已下载 Skin 读出骨骼（本机 Blender 无头或仓库内既有 FBX 解析代码均可），产出：
+  · docs/design/ai-pipeline/mixamo-skeleton.json：骨名、父骨、静止局部平移 / 旋转 / 缩放（Y Bot 为基准）；
+  · docs/design/ai-pipeline/mixamo-skeleton.md：层级树；各 Skin 的骨数变体（有无手指、有无眼骨等）与名字差异；静止姿态是否全为 T-pose；髋高分布；逐条核对 docs/workflow/motion-production-line.md §2 改名表能否把每个 Skin 映射到 apollo-humanoid-v1 的 17 根必备骨（不能的列出来）。
+- 不提交任何 FBX、GLB、贴图或网格数据。
+
+【D. 然后做 M2（2500 个动作入库）】
+按上面第二部分 ■ M2 的 spec。规模提示：标签与描述分批由 agent 起草（status: draft），每批抽样给 owner 确认；整库 validate 退出码为 0 才算完工。
+
+【完工回复】A–D 各自：提交哈希、测试名、撤修验红结果、门禁退出码、真实链路验证情况，并把对应 requests.md 行改为「施工完·待独立复查（Claude）」后停下。
+```

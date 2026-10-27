@@ -117,6 +117,9 @@
 ### REQ-MOTION-M5 · 动画库扩展（Mixamo 滑杆变体 · 带皮角色下载 · 裁剪/镜像/补循环 · 其它来源） · [2026-10-27] · owner 判 A · 🟢 工具扩写 · **施工主体：待抢锁（指派 Codex）** · status: open（依赖 M2） · P2
 > spec：派工单 ■ M5。
 
+### GAP-MOTION-M6 · 补全动作烘焙入库（基础动作 + IK + 挂点 → 新动作 GLB） · [2026-10-28] · owner 提（擦火柴等库中缺失动作） · **⚖ 待 owner 判 A/B** · 施工主体：待裁 · status: open · P1 · 类型: 工具链（🟢）
+> 实查：运行时补全可由 M4 选最近动作 + `Attach3D` + `IK3D`（权重读动作图 flag）+ 时间线重组，**不报缺口**；但 IK 只在渲染时生效，无工具把结果烘焙成新动作，补出来的动作进不了库。A = `motion-library compose` 用引擎同一套动画 / IK 代码逐帧求解烘焙入库；B = 每个游戏运行时自拼。**Lead 推荐 A**。全文：`docs/design/ai-pipeline/motion-completion.md`。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。

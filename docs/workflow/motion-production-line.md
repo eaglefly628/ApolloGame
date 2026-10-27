@@ -34,7 +34,7 @@
 
 | 步 | 工具 / 能力 | 输入 | 产出 | 把关 |
 |---|---|---|---|---|
-| ① 下载 | `scripts/mixamo-fetch.mjs`（已交付） | `docs/design/ai-pipeline/mixamo-list.json` | `~/ApolloAssets/mixamo/<id>.fbx` + `manifest.json` | owner 提供 token；Codex 执行（派工单 `handoff-codex-mixamo-download.md`） |
+| ① 下载 | `scripts/mixamo-fetch.mjs`（已交付；owner 2026-10-28 报约 2500 个动作已下完，Skin 与骨骼定义见派工单补充指令） | `docs/design/ai-pipeline/mixamo-list.json` | `~/ApolloAssets/mixamo/<id>.fbx` + `manifest.json` | owner 提供 token；Codex 执行（派工单 `handoff-codex-mixamo-download.md`） |
 | ② 入库（M2） | `scripts/motion-library.mjs ingest` | 上一步 FBX + manifest | `motion-lib/clips/<id>.glb`（标准骨架、单 clip、无皮）+ `catalog.json` 条目 | 工具自动测量；标签与描述由 AI 起草、人确认（`status: draft → confirmed`） |
 | ③ Skin（M2 + M5） | `motion-library skin-ingest`；Mixamo 角色由 M5 下载，Tripo 人物走既有 T4 + T5 | 角色 FBX / GLB | `motion-lib/skins/<id>.glb` | 骨架校验（17 根必备骨、T-pose、髋高 > 0） |
 | ④ 一库多 Skin（M1·**已施工**） | `AnimGraph3D.clips[*].retarget:'humanoid'` | 库动作 + 任一 Skin | 运行时重定向后的动作 | 预览台目视 + E4 IK 修穿插 |
@@ -76,7 +76,8 @@
 | **M2** 入库与目录 | 🟢 Codex | 第一批 Mixamo 下载完成 | 待抢锁 |
 | **M3** 预览台 | 🟢 Codex | M1 PASS、M2 | 待抢锁 |
 | **M4** 匹配 | 🟢 Codex | M2 | 待抢锁 |
-| **M5** 扩展与 Skin 下载 | 🟢 Codex | M2 | 待抢锁 |
+| **M5** 扩展与 Skin 下载 | 🟢 Codex | Skin 下载部分已提前（2026-10-28）；其余依赖 M2 | 待抢锁 |
+| **M6** 补全动作烘焙入库 | 🟢 Codex | M2、M4 | **⚖ 待 owner 判 A/B**（`docs/design/ai-pipeline/motion-completion.md`） |
 
 每单照旧：施工人 ≠ 复查人；Codex 施工的由 Claude 复查，M1 由 Codex 复查；owner 最后可以按 §4 自己验收。派工指令全文：`docs/workflow/handoff-codex-motion-line.md`。
 
