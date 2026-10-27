@@ -1,0 +1,217 @@
+{
+  "version": 1,
+  "id": "match-strike-ik-draft",
+  "base": "idle-breathing",
+  "skin": "4f5d21e1-4ccc-41f1-b35b-fb2547bd8493",
+  "fps": 30,
+  "durationS": 3,
+  "anchors": [
+    {
+      "id": "box_hold",
+      "kind": "point",
+      "position": [
+        0.1,
+        1.27,
+        0.31
+      ],
+      "rot": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "matchbox",
+      "kind": "prop",
+      "attach": {
+        "parentId": "actor",
+        "bone": "LeftHand",
+        "offset": [
+          0,
+          0,
+          0
+        ],
+        "rot": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "id": "matchbox_striker",
+      "kind": "point",
+      "attach": {
+        "parentId": "actor",
+        "bone": "LeftHand",
+        "offset": [
+          0,
+          -1.5,
+          1.5
+        ],
+        "rot": [
+          0,
+          0,
+          0
+        ]
+      },
+      "trajectory": [
+        {
+          "at": 0,
+          "position": [
+            0,
+            -1.5,
+            1.5
+          ]
+        },
+        {
+          "at": 1.2,
+          "position": [
+            0,
+            -1.5,
+            1.5
+          ]
+        },
+        {
+          "at": 1.35,
+          "position": [
+            0,
+            -1.5,
+            1.5
+          ]
+        },
+        {
+          "at": 1.65,
+          "position": [
+            0,
+            -7.5,
+            1.5
+          ]
+        },
+        {
+          "at": 1.85,
+          "position": [
+            0,
+            -7.5,
+            1.5
+          ]
+        },
+        {
+          "at": 3,
+          "position": [
+            0,
+            -7.5,
+            1.5
+          ]
+        }
+      ]
+    }
+  ],
+  "ik": {
+    "chains": [
+      {
+        "kind": "two-bone",
+        "root": "LeftUpperArm",
+        "mid": "LeftLowerArm",
+        "end": "LeftHand",
+        "target": {
+          "entity": "box_hold",
+          "offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "pole": [
+          0,
+          -1,
+          -1
+        ],
+        "weight": {
+          "param": "hold",
+          "fade": 0.3
+        }
+      },
+      {
+        "kind": "two-bone",
+        "root": "RightUpperArm",
+        "mid": "RightLowerArm",
+        "end": "RightHand",
+        "target": {
+          "entity": "matchbox_striker",
+          "offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "pole": [
+          0,
+          -1,
+          -1
+        ],
+        "weight": {
+          "param": "strike",
+          "fade": 0.15
+        }
+      }
+    ]
+  },
+  "params": {
+    "hold": {
+      "flag": "hold_box"
+    },
+    "strike": {
+      "flag": "strike_contact"
+    }
+  },
+  "flags": {
+    "hold_box": false,
+    "strike_contact": false
+  },
+  "cues": [
+    {
+      "at": 0.2,
+      "kind": "flag",
+      "name": "hold_box",
+      "value": true
+    },
+    {
+      "at": 0.9,
+      "kind": "flag",
+      "name": "strike_contact",
+      "value": true
+    },
+    {
+      "at": 2.1,
+      "kind": "flag",
+      "name": "strike_contact",
+      "value": false
+    },
+    {
+      "at": 2.6,
+      "kind": "flag",
+      "name": "hold_box",
+      "value": false
+    }
+  ],
+  "annotations": {
+    "category": "gesture",
+    "emotion": [
+      "neutral"
+    ],
+    "intensity": 1,
+    "contacts": [
+      "both-hands"
+    ],
+    "descZh": "待审IK候选：左腕定位胸前盒锚，右腕沿附着目标短划。未制作手指握姿或道具几何，接触与动作质量待人工预览。",
+    "descEn": "Unreviewed IK candidate: left wrist holds a chest-height box anchor, right wrist follows a short attached striking path. Finger grip and prop geometry are not authored; contact and motion quality require visual review.",
+    "tags": [
+      "match-strike",
+      "ik-completion",
+      "draft",
+      "finger-grip-missing",
+      "prop-geometry-missing"
+    ]
+  }
+}

@@ -36,7 +36,7 @@ function localMatrix(node, label) {
 }
 // Skin-only render metadata. Geometry/animation/compression extensions remain
 // prohibited; defaults retain the original strict T5/motion contract.
-export const SKIN_MATERIAL_EXTENSIONS = Object.freeze(['KHR_materials_specular']);
+export const SKIN_MATERIAL_EXTENSIONS = Object.freeze(['KHR_materials_specular', 'KHR_texture_transform']);
 function specularMaterial(value, json) {
   check(value && typeof value === 'object' && !Array.isArray(value), 'KHR_materials_specular must be an object');
   const keys = ['specularFactor', 'specularColorFactor', 'specularTexture', 'specularColorTexture', 'extensions', 'extras'];
@@ -52,17 +52,50 @@ function specularMaterial(value, json) {
     if (texture.sampler !== undefined) ref(json.samplers, texture.sampler, `${key} sampler`);
   }
 }
+function textureTransform(value) {
+  check(value && typeof value === 'object' && !Array.isArray(value), 'KHR_texture_transform must be an object');
+  check(Object.keys(value).every(key => ['offset', 'rotation', 'scale', 'texCoord', 'extensions', 'extras'].includes(key)), 'unsupported KHR_texture_transform field');
+  for (const key of ['offset', 'scale']) if (value[key] !== undefined) vector(value[key], 2, `KHR_texture_transform ${key}`);
+  if (value.rotation !== undefined) check(Number.isFinite(value.rotation), 'KHR_texture_transform rotation must be finite');
+  if (value.texCoord !== undefined) check(integer(value.texCoord), 'KHR_texture_transform texCoord must be a nonnegative integer');
+}
+function materialTextureInfos(materials) {
+  const infos = new Map();
+  for (const [materialIndex, material] of [...materials].entries()) {
+    for (const key of ['normalTexture', 'occlusionTexture', 'emissiveTexture']) if (material[key]) infos.set(material[key], materialIndex);
+    for (const key of ['baseColorTexture', 'metallicRoughnessTexture']) if (material.pbrMetallicRoughness?.[key]) infos.set(material.pbrMetallicRoughness[key], materialIndex);
+    for (const key of ['specularTexture', 'specularColorTexture']) if (material.extensions?.KHR_materials_specular?.[key]) infos.set(material.extensions.KHR_materials_specular[key], materialIndex);
+  }
+  return infos;
+}
+function transformTextureInfo(info, json, materialIndex) {
+  check(info && typeof info === 'object' && !Array.isArray(info), 'texture transform requires material textureInfo');
+  const texture = ref(json.textures, info.index, 'texture transform texture');
+  check(info.texCoord === undefined || integer(info.texCoord), 'textureInfo texCoord must be a nonnegative integer');
+  ref(json.images, texture.source, 'texture transform image');
+  if (texture.sampler !== undefined) ref(json.samplers, texture.sampler, 'texture transform sampler');
+  const coordinate = info.extensions.KHR_texture_transform.texCoord ?? info.texCoord ?? 0;
+  check(integer(coordinate), 'KHR_texture_transform texCoord must be a nonnegative integer');
+  for (const mesh of json.meshes ?? []) for (const primitive of mesh.primitives ?? []) if (primitive.material === materialIndex) {
+    const uv = ref(json.accessors, primitive.attributes?.[`TEXCOORD_${coordinate}`], `KHR_texture_transform TEXCOORD_${coordinate} accessor`);
+    check(uv.type === 'VEC2' && (uv.componentType === 5126 && !uv.normalized || [5121, 5123].includes(uv.componentType) && uv.normalized === true), `KHR_texture_transform TEXCOORD_${coordinate} must use a valid UV accessor`);
+  }
+}
 function extensionsFree(value, allowSkinMaterialExtensions = false) {
   const materials = new Set(allowSkinMaterialExtensions ? value.materials ?? [] : []);
+  const textureInfos = materialTextureInfos(materials);
   const pending = [value];
   while (pending.length) {
     const item = pending.pop();
     if (!item || typeof item !== 'object') continue;
     if (item.extensions && Object.keys(item.extensions).length > 0) {
-      check(materials.has(item) && Object.keys(item.extensions).every(name => SKIN_MATERIAL_EXTENSIONS.includes(name)), 'unsupported extensions/compression; decompress before character validation');
       for (const [name, extension] of Object.entries(item.extensions)) {
+        const specular = materials.has(item) && name === 'KHR_materials_specular';
+        const transform = textureInfos.has(item) && name === 'KHR_texture_transform';
+        check(specular || transform, 'unsupported extensions/compression; decompress before character validation');
         check(value.extensionsUsed?.includes(name), `material extension ${name} must be declared in extensionsUsed`);
-        specularMaterial(extension, value);
+        if (specular) specularMaterial(extension, value);
+        else { transformTextureInfo(item, value, textureInfos.get(item)); textureTransform(extension); }
       }
     }
     for (const [key, child] of Object.entries(item)) if (key !== 'extras' && child && typeof child === 'object') pending.push(child);

@@ -4,10 +4,10 @@
 // - 保守节流：串行、每个间隔 --delay-ms（缺省 4000）、单次最多 --max（缺省 40）；401/403/429 立即停，不重试。
 // - 输出目录必须在仓库外（公开仓库不得含 Mixamo 原件）；manifest.json 记来源与 SHA，可断点续传。
 // 用法见 docs/design/ai-pipeline/mixamo-library.md。
-import { readFileSync, writeFileSync, mkdirSync, existsSync, renameSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, renameSync, realpathSync, rmSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { homedir } from 'node:os';
-import { join, resolve, dirname, relative, isAbsolute } from 'node:path';
+import { join, resolve, dirname, relative, isAbsolute, sep, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -19,8 +19,16 @@ const ID = /^[a-z][a-z0-9-]{0,63}$/;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
 
+export const MIN_EXPORT_DELAY_MS = 4000;
+export const MAX_EXPORTS_PER_RUN = 40;
 export class StopError extends Error {}
 function reject(message) { console.error(`[mixamo-fetch] reject: ${message}`); throw Object.assign(new Error(message), { logged: true }); }
+
+function validateRateLimits(max, delayMs) {
+  if (!Number.isInteger(max) || max < 1 || max > MAX_EXPORTS_PER_RUN) reject('--max 必须为 1–40');
+  // Values above the native timer range wrap to ~1ms in Node, defeating the floor.
+  if (!Number.isInteger(delayMs) || delayMs < MIN_EXPORT_DELAY_MS || delayMs > 2147483647) reject('--delay-ms 必须为 4000–2147483647（防限流封号）');
+}
 
 /** 清单：[{ id, query, pick?, inPlace?, note? }]。id 即本地文件名。 */
 export function validateList(list) {
@@ -40,19 +48,62 @@ export function validateList(list) {
 
 /** 公开仓库不得含 Mixamo 原件：输出目录落在仓库内一律拒绝。 */
 export function assertOutsideRepo(outDir, repoRoot = ROOT) {
-  const rel = relative(resolve(repoRoot), resolve(outDir));
-  if (rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))) reject(`输出目录 ${outDir} 在仓库内；Mixamo 原件只能放仓库外（缺省 ${DEFAULT_OUT}）`);
+  const requested = resolve(outDir);
+  let ancestor = requested;
+  while (!existsSync(ancestor)) ancestor = dirname(ancestor);
+  const physical = resolve(realpathSync(ancestor), relative(ancestor, requested));
+  const rel = relative(realpathSync(resolve(repoRoot)), physical);
+  if (rel === '' || (rel !== '..' && !rel.startsWith('..' + sep) && !isAbsolute(rel))) reject(`输出目录 ${outDir} 在仓库内；Mixamo 原件只能放仓库外（缺省 ${DEFAULT_OUT}）`);
+  for (let parent = physical; ; parent = dirname(parent)) {
+    if (existsSync(join(parent, '.git'))) reject(`输出目录 ${outDir} 在仓库内；Mixamo 原件只能放仓库外`);
+    if (dirname(parent) === parent) break;
+  }
+  return physical;
+}
+
+function localOutput(outDir, name) {
+  if (typeof name !== 'string' || basename(name) !== name) reject('输出文件必须在下载目录内');
+  if (assertOutsideRepo(outDir) !== outDir) reject('输出目录的物理路径已改变');
+  const file = join(outDir, name);
+  if (assertOutsideRepo(file) !== file) reject('输出文件存在物理别名');
+  return file;
+}
+function publishFile(outDir, name, bytes) {
+  const file = localOutput(outDir, name), temporary = localOutput(outDir, name + '.tmp');
+  let created = false;
+  try {
+    // Exclusive temp creation never follows an existing symlink or hard link.
+    writeFileSync(temporary, bytes, { flag: 'wx' }); created = true;
+    localOutput(outDir, name); localOutput(outDir, name + '.tmp');
+    // rename replaces the local directory entry, never writes through a final symlink.
+    renameSync(temporary, file); created = false;
+  } finally {
+    if (created) {
+      try { if (localOutput(outDir, name + '.tmp') === temporary) rmSync(temporary); }
+      catch { /* Preserve evidence instead of following a changed path during cleanup. */ }
+    }
+  }
+}
+function publicFailure(error, stage) {
+  if (error instanceof StopError) {
+    const status = /\b(401|403|429)\b/.exec(String(error.message))?.[1];
+    return status === '429' ? 'HTTP 429：限流，停止本轮' : status ? `HTTP ${status}：token 失效或无权限，停止本轮` : '安全停止本轮';
+  }
+  // Remote messages/network exceptions may echo Authorization. Never publish them.
+  return `${stage} 阶段失败（远端或文件诊断已省略）`;
 }
 
 export function createClient({ token, fetchImpl = fetch }) {
   if (typeof token !== 'string' || !token.trim()) reject('缺 MIXAMO_TOKEN：浏览器登录 mixamo.com → 开发者工具 Console 执行 localStorage.access_token → 复制到环境变量');
   const headers = { Authorization: `Bearer ${token.trim()}`, 'X-Api-Key': 'mixamo2', Accept: 'application/json' };
   async function call(path, init = {}) {
-    const res = await fetchImpl(`${API}${path}`, { ...init, headers: { ...headers, ...(init.body ? { 'Content-Type': 'application/json' } : {}) } });
+    let res;
+    try { res = await fetchImpl(`${API}${path}`, { ...init, headers: { ...headers, ...(init.body ? { 'Content-Type': 'application/json' } : {}) } }); }
+    catch { throw new Error('Mixamo 网络请求失败（诊断已省略）'); }
     if (res.status === 401 || res.status === 403) throw new StopError(`HTTP ${res.status}：token 失效或无权限（重新登录 mixamo.com 取新 token；中国区 Adobe 账号不可用 Mixamo）`);
     if (res.status === 429) throw new StopError('HTTP 429：被限流，停止本轮，稍后再跑（已下的会续传跳过）');
-    if (!res.ok) throw new Error(`HTTP ${res.status} ${path}`);
-    return res.json();
+    if (!res.ok) throw new Error(`HTTP ${res.status} Mixamo API`);
+    try { return await res.json(); } catch { throw new Error('Mixamo JSON 响应读取失败（诊断已省略）'); }
   }
   return {
     primaryCharacter: async () => {
@@ -69,9 +120,11 @@ export function createClient({ token, fetchImpl = fetch }) {
     exportMotion: (body) => call('/animations/export', { method: 'POST', body: JSON.stringify(body) }),
     monitor: (characterId) => call(`/characters/${encodeURIComponent(characterId)}/monitor`),
     download: async (url) => {
-      const res = await fetchImpl(url);
+      let res;
+      try { res = await fetchImpl(url); } catch { throw new Error('Mixamo 下载请求失败（诊断已省略）'); }
+      if ([401, 403, 429].includes(res.status)) throw new StopError(`下载 HTTP ${res.status}：停止本轮`);
       if (!res.ok) throw new Error(`下载 HTTP ${res.status}`);
-      return Buffer.from(await res.arrayBuffer());
+      try { return Buffer.from(await res.arrayBuffer()); } catch { throw new Error('Mixamo 下载响应读取失败（诊断已省略）'); }
     },
   };
 }
@@ -118,24 +171,25 @@ function fileKind(buf) {
 }
 
 function readManifest(outDir) {
-  const file = join(outDir, 'manifest.json');
+  const file = localOutput(outDir, 'manifest.json');
   if (!existsSync(file)) return { version: 1, source: 'mixamo-fetch', licenseUrl: LICENSE_URL, clips: {} };
   const m = JSON.parse(readFileSync(file, 'utf8'));
   if (m?.version !== 1 || !m.clips || typeof m.clips !== 'object') reject(`${file} 不是本工具的 manifest`);
   return m;
 }
 function writeManifest(outDir, m) {
-  const file = join(outDir, 'manifest.json'), tmp = `${file}.tmp`;
-  writeFileSync(tmp, JSON.stringify(m, null, 2) + '\n'); renameSync(tmp, file);
+  publishFile(outDir, 'manifest.json', JSON.stringify(m, null, 2) + '\n');
 }
 
 /**
  * 跑一轮。searchOnly=true 只搜不下（先核对搜索词选中了什么）。
  * 返回 { downloaded, skipped, failed, stopped, plan }。
  */
-export async function runFetch({ list, outDir = DEFAULT_OUT, client, characterId, searchOnly = false, max = 40, delayMs = 4000, pollMs = 2000, timeoutMs = 120000, fps = 30, only = null, now = () => new Date().toISOString() }) {
+export async function runFetch({ list, outDir = DEFAULT_OUT, client, characterId, searchOnly = false, max = 40, delayMs = 4000, pollMs = 2000, timeoutMs = 120000, fps = 30, only = null, now = () => new Date().toISOString(), wait = sleep }) {
+  validateRateLimits(max, delayMs);
+  if (typeof wait !== 'function') reject('wait 必须是等待函数');
   validateList(list);
-  assertOutsideRepo(outDir);
+  outDir = assertOutsideRepo(outDir);
   const entries = only ? list.filter((e) => only.includes(e.id)) : list;
   const result = { downloaded: [], skipped: [], failed: [], stopped: null, plan: [] };
   let manifest = null;
@@ -147,6 +201,7 @@ export async function runFetch({ list, outDir = DEFAULT_OUT, client, characterId
       console.info(`[mixamo-fetch] skip: ${entry.id} 已下载且 SHA 一致`); result.skipped.push(entry.id); continue;
     }
     if (!searchOnly && exported >= max) { console.info(`[mixamo-fetch] skip: 已达本轮上限 ${max}，其余下次续传`); break; }
+    let stage = 'search';
     try {
       const results = await client.search(entry.query);
       const hit = pickResult(entry, results);
@@ -159,25 +214,31 @@ export async function runFetch({ list, outDir = DEFAULT_OUT, client, characterId
         console.info(`[mixamo-fetch] decision: ${entry.id} ← 「${name}」（候选：${results.slice(0, 5).map((r) => r.description ?? r.name).join(' / ')}）`);
         result.plan.push({ id: entry.id, name, mixamoId: hit.id }); continue;
       }
-      if (exported > 0) await sleep(delayMs);
+      if (exported > 0) await wait(delayMs);
       exported++;
+      stage = 'product';
       const product = await client.product(hit.id, characterId);
       const { body, inPlaceApplied } = exportBody(product, characterId, { inPlace: !!entry.inPlace, fps });
       if (entry.inPlace && !inPlaceApplied) console.warn(`[mixamo-fetch] decision: ${entry.id} 动作不支持 In Place，按原位移下载`);
+      stage = 'export';
       await client.exportMotion(body);
+      stage = 'monitor';
       const url = await waitJob(client, characterId, { pollMs, timeoutMs });
+      stage = 'download';
       const buf = await client.download(url);
       const kind = fileKind(buf);
       if (!kind) throw new Error('下载内容既不是二进制 FBX 也不是 zip');
       const file = `${entry.id}.${kind}`;
-      writeFileSync(join(outDir, file), buf);
+      stage = 'publish';
+      publishFile(outDir, file, buf);
       manifest.clips[entry.id] = { file, sha256: sha256(buf), bytes: buf.length, searchTerm: entry.query, mixamoName: name, mixamoId: hit.id, characterId, download: { format: 'FBX', skin: false, fps, inPlace: inPlaceApplied }, downloadedAt: now() };
       writeManifest(outDir, manifest);
       console.info(`[mixamo-fetch] commit: ${entry.id} ← 「${name}」 ${buf.length} bytes${kind === 'zip' ? '（zip：需手动解压）' : ''}`);
       result.downloaded.push(entry.id);
     } catch (e) {
-      if (e instanceof StopError) { console.error(`[mixamo-fetch] reject: ${e.message}`); result.stopped = e.message; break; }
-      console.warn(`[mixamo-fetch] reject: ${entry.id} ${e.message}`); result.failed.push({ id: entry.id, error: e.message });
+      const message = publicFailure(e, stage);
+      if (e instanceof StopError) { console.error(`[mixamo-fetch] reject: ${message}`); result.stopped = message; break; }
+      console.warn(`[mixamo-fetch] reject: ${entry.id} ${message}`); result.failed.push({ id: entry.id, error: message });
     }
   }
   return result;
@@ -192,8 +253,7 @@ function parseArgs(argv) {
     else if (a === '--character') o.character = v(); else if (a === '--only') o.only = v().split(',').map((s) => s.trim()).filter(Boolean);
     else reject(`未知参数 ${a}`);
   }
-  if (!Number.isInteger(o.max) || o.max < 1 || o.max > 200) reject('--max 必须为 1–200');
-  if (!Number.isInteger(o.delayMs) || o.delayMs < 2000) reject('--delay-ms 至少 2000（防限流封号）');
+  validateRateLimits(o.max, o.delayMs);
   if (![24, 30, 60].includes(o.fps)) reject('--fps 只收 24 / 30 / 60');
   return o;
 }

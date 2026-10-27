@@ -53,3 +53,9 @@ node scripts/motion-compose.mjs --recipe /absolute/recipe.json --lib ~/ApolloAss
 等价性只覆盖指定采样点；采样点之间由输出 LINEAR 曲线近似原生连续求解。不可达目标沿用原生最近可达结果，不能把“求解成功”当作“已接触”。不保证所有动作、所有体型或身体接触、碰撞、双人配合、道具穿插正确；必须预览。附着物只是求解辅助，不烘焙道具或火焰。
 
 M1 的同一 T-pose/同朝向、髋部位移和旋转插值约束仍适用；不做 A-pose 归一化。实际 Mixamo 动作、真实 Skin、Blender 导入和人工视觉验收不由纯合成测试证明。
+
+## 查看未发布候选
+
+`node scripts/motion-preview.mjs --lib <主库> --compose-candidate <上一步返回的evidence.json>`
+
+该入口核验配方、基础动作、Skin与候选SHA和技术等价证据，在候选目录下建立独立review catalog，通过同一个M3播放器并排查看基础动作与候选。它不写主catalog、不操作ingest锁、不产生人工批准回执；可以在整库转换期间使用。重跑只接受完全相同的review目录。确认仍需用户明确提供对应配方SHA，且发布状态仍是draft。

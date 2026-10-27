@@ -256,3 +256,52 @@ describe('animation contracts', () => {
     expect(() => inspectCharacterGlb(makeMockCharacterGlb({ clipName: 'walk' }), options)).toThrow(/fps|frames/);
   });
 });
+
+
+describe('static skin texture transform compatibility', () => {
+  const options = { allowSkinMaterialExtensions: true };
+  function transformed(payload = { offset: [1, -1] }, edit = () => {}) {
+    return edited((json, bin, parts) => {
+      const uv = Buffer.alloc(24); [0,0,1,0,0,1].forEach((n,i) => uv.writeFloatLE(n,i*4));
+      json.bufferViews.push({buffer:0,byteOffset:bin.length,byteLength:uv.length});
+      json.accessors.push({bufferView:json.bufferViews.length-1,componentType:5126,count:3,type:'VEC2'});
+      primitive(json).attributes.TEXCOORD_0=json.accessors.length-1;primitive(json).attributes.TEXCOORD_1=json.accessors.length-1;parts.bin=Buffer.concat([bin,uv]);
+      json.extensionsUsed = ['KHR_texture_transform']; json.extensionsRequired = ['KHR_texture_transform'];
+      json.images = [{ uri: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==' }];
+      json.textures = [{ source: 0 }];
+      json.materials = [{ pbrMetallicRoughness: { baseColorTexture: { index: 0, extensions: { KHR_texture_transform: payload } } } }];
+      primitive(json).material = 0; edit(json);
+    }, {});
+  }
+  it('accepts a required UV transform only for static skins without changing input bytes', () => {
+    const bytes = transformed({ offset: [1, -1], scale: [-2, 0.5], rotation: Math.PI, texCoord: 1 }), before = Buffer.from(bytes);
+    expect(inspectCharacterGlb(bytes, options).bones).toEqual(HUMANOID_BONES); expect(bytes).toEqual(before);
+    expect(() => inspectCharacterGlb(bytes)).toThrow(/extensions/);
+  });
+  it.each([{ offset: [1] }, { offset: [1, 'bad'] }, { scale: [1, 2, 3] }, { rotation: 'bad' }, { texCoord: -1 }, { texCoord: 0.5 }, { python: 'exec' }])('rejects invalid transform payload %j', payload => { expect(() => inspectCharacterGlb(transformed(payload), options)).toThrow(/KHR_texture_transform/); });
+  it.each([
+    json => { json.materials[0].pbrMetallicRoughness.baseColorTexture.index = 999; },
+    json => { json.textures[0].source = 999; },
+    json => { json.textures[0].sampler = 999; },
+    json => { json.images[0].uri = 'https://invalid.example/texture.png'; },
+    json => { json.materials[0].pbrMetallicRoughness.baseColorTexture.texCoord = -1; },
+  ])('rejects invalid texture dependencies', edit => { expect(() => inspectCharacterGlb(transformed({}, edit), options)).toThrow(); });
+  it.each([
+    json => { json.materials[0].pbrMetallicRoughness.baseColorTexture.extensions.KHR_texture_transform.texCoord = 99; },
+    json => { delete primitive(json).attributes.TEXCOORD_0; },
+    json => { primitive(json).attributes.TEXCOORD_0 = primitive(json).attributes.POSITION; },
+    json => { primitive(json).attributes.TEXCOORD_0 = 999; },
+    json => { const second=structuredClone(primitive(json));delete second.attributes.TEXCOORD_0;json.meshes[0].primitives.push(second); },
+  ])('rejects unavailable or invalid UV accessors on every material primitive', edit => { expect(() => inspectCharacterGlb(transformed({}, edit), options)).toThrow(/KHR_texture_transform/); });
+  it.each(['node', 'primitive', 'material', 'nested'])('rejects texture transforms at unsupported %s locations', location => {
+    expect(() => inspectCharacterGlb(transformed({}, json => {
+      const extension = { KHR_texture_transform: { offset: [1, -1] } };
+      if (location === 'node') json.nodes[0].extensions = extension;
+      if (location === 'primitive') primitive(json).extensions = extension;
+      if (location === 'material') json.materials[0].extensions = extension;
+      if (location === 'nested') json.materials[0].pbrMetallicRoughness.baseColorTexture.extensions.KHR_texture_transform.extensions = extension;
+    }), options)).toThrow(/extensions/);
+  });
+  it.each(['KHR_draco_mesh_compression', 'EXT_meshopt_compression', 'KHR_unknown'])('keeps %s rejected in skin opt-in', name => { expect(() => inspectCharacterGlb(transformed({}, json => { json.extensionsUsed.push(name); primitive(json).extensions = { [name]: {} }; }), options)).toThrow(/extensions/); });
+  it('keeps animated skins rejected from material extension opt-in', () => { const bytes = edited(json => { const source = unpack(transformed()).json; for (const key of ['extensionsUsed', 'extensionsRequired', 'images', 'textures', 'materials']) json[key] = source[key]; }); expect(() => inspectCharacterGlb(bytes, options)).toThrow(/static skins/); });
+});
