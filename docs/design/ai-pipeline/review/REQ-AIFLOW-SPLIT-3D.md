@@ -165,3 +165,18 @@ node scripts/scoped-gate.mjs --run
 ### 仍在范围外
 
 SP1 不改变 model3d spec 中的 bbox 信息（Claude 已判非阻断），不补 GAP-AIFLOW-REFS、G1/G2 的未裁能力。真实 Tripo / ARP / Mixamo 链路仍未验；已有本地 Blender 自有夹具与真实 GPU 技术验证不能被概括为全是 Mock，也不能替代付费生产链来源验收。未签真人门。
+
+## 返工独立复查判词（Claude · 2026-10-28）
+
+**PASS。SP1 已修，本单结案。** 复查对象 `e5f95928`（施工 Codex，复查人未参与该返工），在隔离 worktree（当前主干 HEAD）上执行，恢复后 clean。
+
+- **独立复跑**：`npx vitest run scripts/asset-split.test.mjs scripts/art-replace.test.mjs scripts/blender-job.test.mjs` → **219/219**，exit 0。
+- **原复现重跑**：我在 FAIL 判词里的最小复现（sprite 行已 filled、gen 为 PNG，再改 asset:model3d）现在抛出「不一致」拒收，输入台账 JSON 不变；同类型重推导仍正常（保留 filled 与 gen）。
+- **撤修验红（与施工方锚点不同，均先断言命中 = 1）**：
+  1. 拒收调用 `reject(\`${p.no}: 拆层 asset=… 不一致` 改为只打 `console.warn` 不抛 → exit 1，7 例红（sprite→model3d 三种状态等）。
+  2. 条件只拦一个方向（追加 `&& f.kind === 'model3d'`）→ exit 1，恰好 model3d→sprite 的 3 例红，证明测试真覆盖双向。
+  两次均恢复原文件（cmp 一致）。
+- **全量门禁**：`node scripts/scoped-gate.mjs --run --base e5f95928^`（scope=full）→ **exit 0**，688 文件 / **7488** 测试，末行 `✅ 门禁全绿（scope=full）`。topological-sort 仍只有既有 `[L,P]` fixture 一条。
+- **取舍认可**：选「拒收」而非「自动重置」，改类型须换新消费槽；retired 行也拒收，偏保守但已写进契约文档，接受。
+- **复查中我自己的一处误判（如实记录）**：起初预期同类型重推导会更新 `prompt`，实测保留原 prompt、只更新 query。这是 C8 既有合并规则，不是本单缺陷。
+- **真实 Tripo / Blender / Auto-Rig Pro / Mixamo 链路未验。**
