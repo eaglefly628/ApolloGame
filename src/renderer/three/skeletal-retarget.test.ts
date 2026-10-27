@@ -2,7 +2,7 @@
 // Rigs are built from world-space T-poses so the expected answer is known in closed form.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
-import { bindSkeletalClip, captureSkeletonRest, retargetHumanoidClip, type SkeletalClip } from './skeletal-clips.js';
+import { bindSkeletalClip, captureSkeletonRest, extractSkeletalClip, retargetHumanoidClip, type SkeletalClip } from './skeletal-clips.js';
 import { validateAnimGraph3D } from '@engine/protocol/components/anim-graph.js';
 
 const NAMES = ['Hips', 'Spine', 'Chest', 'Neck', 'Head', 'LeftUpperArm', 'LeftLowerArm', 'LeftHand', 'RightUpperArm', 'RightLowerArm', 'RightHand', 'LeftUpperLeg', 'LeftLowerLeg', 'LeftFoot', 'RightUpperLeg', 'RightLowerLeg', 'RightFoot'];
@@ -110,6 +110,43 @@ describe('M1 humanoid retarget', () => {
     const a = pose(source, transferable(clip), 1), b = pose(target, bindSkeletalClip(clip, 'walk', target.scene, target.rest, 'humanoid'), 1);
     for (const name of NAMES) expect(angle(a.q.get(name)!, b.q.get(name)!), name).toBeLessThan(1e-4);
     expect(info.mock.calls.flat().join(' ')).toMatch(/humanoid retarget "walk" · 17 shared bones · hip scale 1\.200 · 3 source tracks dropped/);
+  });
+
+  it('preserves STEP rotations and hip holds between samples after validated import', () => {
+    vi.spyOn(console, 'info').mockImplementation(() => {});
+    const source = rig(), target = rig({ scale: 1.5, roll: true }), raw = motion(source);
+    for (const { track } of raw.tracks) track.setInterpolation(THREE.InterpolateDiscrete);
+    const clip = extractSkeletalClip(source.scene, [raw.clip], { kind: 'skeletal-animation', key: 'motion/step', src: 'step.glb', skeleton: 'apollo-humanoid-v1', fps: 2, frames: 3, loop: false });
+    const bound = bindSkeletalClip(clip, 'walk', target.scene, target.rest, 'humanoid');
+    for (const t of [0.1, 0.25, 0.49, 0.5, 0.75, 0.99]) {
+      const a = pose(source, transferable(clip), t), b = pose(target, bound, t);
+      for (const name of NAMES) expect(angle(b.q.get(name)!, a.q.get(name)!.clone().multiply(target.worldQ.get(name)!)), `${name}@${t}`).toBeLessThan(1e-4);
+      expect(b.p.get('Hips')!.distanceTo(a.p.get('Hips')!.clone().multiplyScalar(1.5))).toBeLessThan(1e-5);
+    }
+  });
+
+  it('preserves independent LINEAR hip travel while STEP rotations hold', () => {
+    vi.spyOn(console, 'info').mockImplementation(() => {});
+    const source = rig(), target = rig(), clip = motion(source);
+    for (const entry of clip.tracks) if (entry.property === 'quaternion') entry.track.setInterpolation(THREE.InterpolateDiscrete);
+    const a = pose(source, transferable(clip), 0.25), b = pose(target, retargetHumanoidClip(clip, target.scene, target.rest), 0.25);
+    expect(angle(a.q.get('LeftUpperArm')!, b.q.get('LeftUpperArm')!)).toBeLessThan(1e-5);
+    expect(a.p.get('Hips')!.distanceTo(b.p.get('Hips')!)).toBeLessThan(1e-5);
+  });
+
+  it('rejects cubic/smooth and mixed rotation interpolation before silently changing timing', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const source = rig(), target = rig(), mixed = motion(source);
+    mixed.tracks[0].track.setInterpolation(THREE.InterpolateDiscrete);
+    expect(() => retargetHumanoidClip(mixed, target.scene, target.rest)).toThrow('cannot mix STEP and LINEAR');
+    const smooth = motion(source);
+    smooth.tracks.find(t => t.bone === 'Hips' && t.property === 'position')!.track.setInterpolation(THREE.InterpolateSmooth);
+    expect(() => retargetHumanoidClip(smooth, target.scene, target.rest)).toThrow('normalize cubic/smooth');
+    const cubic = motion(source);
+    const factory = cubic.tracks[0].track as unknown as { createInterpolant: { isInterpolantFactoryMethodGLTFCubicSpline?: boolean } };
+    factory.createInterpolant = Object.assign(() => { throw new Error('must reject before sampling'); }, { isInterpolantFactoryMethodGLTFCubicSpline: true });
+    expect(() => retargetHumanoidClip(cubic, target.scene, target.rest)).toThrow('normalize cubic/smooth');
+    expect(warn).toHaveBeenCalledTimes(3);
   });
 
   it('rejects a rest pose with hips at or below the model origin', () => {

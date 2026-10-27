@@ -236,7 +236,18 @@ function restPoses(rest: SkeletonRest): Map<string, RestPose> {
   }
   return poses;
 }
-// GLTFLoader may install a cubic-spline factory; sampling through it keeps the source curve exact.
+// A retarget bake retains STEP holds or LINEAR playback. Cubic curves and mixed
+// rotation modes need offline normalization first: sampling only their keys would
+// silently change the motion between frames.
+function retargetInterpolation(track: THREE.KeyframeTrack): THREE.InterpolationModes {
+  const factory = (track as unknown as { createInterpolant: { isInterpolantFactoryMethodGLTFCubicSpline?: boolean } }).createInterpolant;
+  const mode = track.getInterpolation();
+  if (factory.isInterpolantFactoryMethodGLTFCubicSpline || (mode !== THREE.InterpolateDiscrete && mode !== THREE.InterpolateLinear)) {
+    console.warn(`[ModelPool] reject: humanoid retarget interpolation on "${track.name}" needs offline LINEAR normalization`);
+    check(false, 'humanoid retarget supports STEP or LINEAR tracks; normalize cubic/smooth curves offline');
+  }
+  return mode;
+}
 const interpolant = (track: THREE.KeyframeTrack): THREE.Interpolant => (track as unknown as { createInterpolant(): THREE.Interpolant }).createInterpolant();
 const byDepth = (poses: Map<string, RestPose>): string[] => [...poses.keys()].sort((a, b) => poses.get(a)!.depth - poses.get(b)!.depth || (a < b ? -1 : a > b ? 1 : 0));
 
@@ -254,10 +265,16 @@ export function retargetHumanoidClip(source: SkeletalClip, target: THREE.Object3
   const ratio = tHipY / sHipY;
   const tracks = new Map(source.tracks.map(t => [`${t.bone}.${t.property}`, t.track]));
   const times = source.tracks[0].track.times;
-  check(source.tracks.every(t => t.track.times.length === times.length), 'retarget needs one shared sample timeline');
+  check(source.tracks.every(t => t.track.times.length === times.length && t.track.times.every((time, i) => time === times[i])), 'retarget needs one shared sample timeline');
+  const rotationModes = new Set(source.tracks.filter(t => t.property === 'quaternion').map(t => retargetInterpolation(t.track)));
+  if (rotationModes.size > 1) {
+    console.warn('[ModelPool] reject: mixed rotation interpolation needs offline LINEAR normalization');
+    check(false, 'humanoid retarget cannot mix STEP and LINEAR rotations; normalize offline');
+  }
+  const rotationMode = rotationModes.values().next().value ?? THREE.InterpolateLinear;
   const rotation = new Map<string, THREE.Interpolant>();
   for (const [key, track] of tracks) if (key.endsWith('.quaternion')) rotation.set(key.slice(0, -'.quaternion'.length), interpolant(track));
-  const hip = tracks.get('Hips.position'), hipTrack = hip ? interpolant(hip) : undefined;
+  const hip = tracks.get('Hips.position'), hipMode = hip ? retargetInterpolation(hip) : THREE.InterpolateLinear, hipTrack = hip ? interpolant(hip) : undefined;
   const bones = uniqueBones(target), sOrder = byDepth(sPose), tOrder = byDepth(tPose);
   const shared = tOrder.filter(name => sPose.has(name));
   for (const name of shared) check(bones.get(name)?.length === 1, `selected model must retain unique bone ${name}`);
@@ -284,8 +301,8 @@ export function retargetHumanoidClip(source: SkeletalClip, target: THREE.Object3
       delta.applyMatrix3(sParent3).multiplyScalar(ratio).applyMatrix3(tParentInv3).add(tPose.get('Hips')!.localP).toArray(hipValues, i * 3);
     }
   }
-  const out: THREE.KeyframeTrack[] = shared.map(name => new THREE.QuaternionKeyframeTrack(`${bones.get(name)![0].uuid}.quaternion`, Array.from(times), Array.from(values.get(name)!)));
-  if (hipValues) out.push(new THREE.VectorKeyframeTrack(`${bones.get('Hips')![0].uuid}.position`, Array.from(times), Array.from(hipValues)));
+  const out: THREE.KeyframeTrack[] = shared.map(name => new THREE.QuaternionKeyframeTrack(`${bones.get(name)![0].uuid}.quaternion`, Array.from(times), Array.from(values.get(name)!), rotationMode));
+  if (hipValues) out.push(new THREE.VectorKeyframeTrack(`${bones.get('Hips')![0].uuid}.position`, Array.from(times), Array.from(hipValues), hipMode));
   const dropped = source.tracks.filter(t => !tPose.has(t.bone) || t.property === 'scale' || (t.property === 'position' && t.bone !== 'Hips')).length;
   console.info(`[ModelPool] decision: humanoid retarget "${source.clip.name}" · ${shared.length} shared bones · hip scale ${ratio.toFixed(3)} · ${dropped} source tracks dropped (non-hip translation/scale or bones missing on target)`);
   return new THREE.AnimationClip(source.clip.name, source.clip.duration, out, source.clip.blendMode);

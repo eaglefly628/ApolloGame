@@ -69,3 +69,15 @@ node scripts/scoped-gate.mjs --run
 - 基线全量门禁：`node scripts/scoped-gate.mjs --run --base 9d003301^` 退出 1；eslint、depcruise、sim-dom-fence、tsc 均过；7482/7485 测试过，3 项失败：golden-shot 与 render-probe 的浏览器环境对照，以及 style-tokens 的 pending.json 缺失。未改被审实现，此为该隔离环境的基线结果；没有把全量结果报绿，后续 build / 文档守卫未在这次 full 运行中执行。告警中另有 happy-dom AbortError，未将其隐去。真实 Mixamo × 两个 Skin 的视觉播放尚未验证；本轮已下载真实素材，不据此冒称导入或视觉通过。
 
 后续：保持原施工归属，不在复查中代修；M3 的 M1 PASS 依赖未满足。M2、骨骼提取等独立路径不能伪称已完成。
+
+## 本会话返工与再次独立复查
+
+owner 本会话授权继续执行 M1～M6，施工锁由本会话接管；另由未参与修复的独立复查 agent 复验。历史 FAIL 保留，当前代码复查结论为 **PASS（以下明确边界）**。
+
+- 修复：输出保留旋转 STEP/LINEAR 模式，髋位移单独保留自身模式；核对共享采样时间戳而非只比数量；不加每帧重定向计算。
+- 支持边界：同一动作的旋转轨须统一为 STEP 或 LINEAR；髋位移可独立选择这两者。cubic/smooth 或混合旋转显式 reject 并记原因，需在 M2 离线规范化；不声称任意曲线或不同层级在帧间完全等价。
+- 原四文件独立复跑 94/94；旧 STEP 复现误差 0 rad；加入边界时刻、目标独有中间骨、独立髋模式、拒收及不同时间轴等独立对抗用例，共 100/100 通过。
+- 独立双锚点撤修：去掉旋转输出模式 → 旧 0.309421662276 rad 问题复现；髋误用旋转模式 → 位置偏差 0.1216038921。各锚点命中 1，退出 1，恢复后 100/100；原文件字节恢复已核实。
+- 完整独立判词另附 [返工复查记录](REQ-MOTION-M1-interpolation-review.md)。全量门禁与真实素材视觉验收分别记录，不用单测代替两角色实播。
+
+本次返工全量门禁：`TMPDIR=/private/tmp RENDER_PROBE_CHROMIUM=<本机 Chrome 程序> node scripts/scoped-gate.mjs --run` 退出 0；eslint、depcruise、tsc、全量测试、build、文档引用/预算守卫通过。此前三项基线失败分别由显式本机浏览器路径和规范化临时目录消解，没有修改相关工具或测试。构建大 chunk 提示及既有美术台账 WARN 仍保留。门禁运行包含同期 M2 工作树，仅本次 M1 文件进入本次提交。

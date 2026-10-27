@@ -72,7 +72,7 @@
 
 | 单 | 归属 | 依赖 | 状态 |
 |---|---|---|---|
-| **M1** 一库多 Skin 重定向 | 🔴 主程（Claude） | — | **独立复查 FAIL · 待原施工方返工（STEP 时序）** · Review 单 `docs/design/ai-pipeline/review/REQ-MOTION-M1.md` |
+| **M1** 一库多 Skin 重定向 | 🔴 主程（Claude） | — | **代码独立复查 PASS（STEP/LINEAR 明确边界）；真实素材视觉待验** · Review 单 `docs/design/ai-pipeline/review/REQ-MOTION-M1.md` |
 | **M2** 入库与目录 | 🟢 Codex | 第一批 Mixamo 下载完成 | 待抢锁 |
 | **M3** 预览台 | 🟢 Codex | M1 PASS、M2 | 待抢锁 |
 | **M4** 匹配 | 🟢 Codex | M2 | 待抢锁 |
