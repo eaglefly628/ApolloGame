@@ -95,8 +95,7 @@
 
 <!-- REQ-AIFLOW-SCENELOAD：独立复查通过，判词08ba7e0ac；施工955826af4。按完工清池规则移出，全文查git历史。 -->
 
-### GAP-AIFLOW-REFS · 拆层行按关键图切图并作参考图喂给生成 · [2026-10-24] · Lead 实查带出（缺口复盘） · **⚖ 待 owner 判 A/B** · 施工主体：待裁 · status: open · P1 · 类型: 工具链扩写（🟢 仅 `scripts/`）
-> 实查：`asset-split` 不切图（全仓 `crop` 零命中）；`art-replace::genRowAsset` 只把文字提示词交适配器，拆层行 `refs` 在生成路径零引用，所以 3D 道具只能文生、跟关键图脱节。A = bbox 确定性切图 + 台账带切图路径 + model3d 走 Tripo 单图、sprite 走 GPT Image 2.5 输入图（provenance 记 SHA）；B = 人工逐行 `ai-gen --ref` 再手动回写。**Lead 推荐 A**。全文：`docs/design/ai-pipeline/gap-review-2026-10-24.md` §二。
+<!-- GAP-AIFLOW-REFS：owner 2026-10-27 撤回（“先别A了，这块我们再看看，移除需求”），已从当前可执行池移除；不再等待本次A/B，不代表已实现。原始A/B讨论保留于 docs/design/ai-pipeline/gap-review-2026-10-24.md §二，完整条目查Git历史；准备记录保留。重启须新指令。 -->
 
 ### REQ-MOTION-M2 · 动画库入库与目录（FBX → 标准骨架 GLB · 自动测量 · 闭集标签） · [2026-10-27] · owner 判 A · 🟢 工具链 · **施工主体 = Codex（2026-10-27·本行即锁）** · status: in-progress（108 角色及 2445 动画下载已核验） · P1
 > spec：`docs/workflow/handoff-codex-motion-line.md` ■ M2；字段与词表：流程图 §2。
