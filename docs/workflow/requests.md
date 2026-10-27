@@ -102,6 +102,9 @@
 ### GAP-AIFLOW-REFS · 拆层行按关键图切图并作参考图喂给生成 · [2026-10-24] · Lead 实查带出（缺口复盘） · **⚖ 待 owner 判 A/B** · 施工主体：待裁 · status: open · P1 · 类型: 工具链扩写（🟢 仅 `scripts/`）
 > 实查：`asset-split` 不切图（全仓 `crop` 零命中）；`art-replace::genRowAsset` 只把文字提示词交适配器，拆层行 `refs` 在生成路径零引用，所以 3D 道具只能文生、跟关键图脱节。A = bbox 确定性切图 + 台账带切图路径 + model3d 走 Tripo 单图、sprite 走 GPT Image 2.5 输入图（provenance 记 SHA）；B = 人工逐行 `ai-gen --ref` 再手动回写。**Lead 推荐 A**。全文：`docs/design/ai-pipeline/gap-review-2026-10-24.md` §二。
 
+### GAP-MOTION-LIB · 全动画库：一库多 Skin · 目录与批量规范化 · 预览台 · 演绎内容自动匹配 · 微调扩展 · [2026-10-27] · owner 提 · **⚖ 待 owner 逐条判 A/B（M1–M5）** · 施工主体：待裁 · status: open · P1 · 类型: M1 引擎（🔴 P3D·render-only）+ M2–M5 工具链（🟢）
+> 实查要点：外部动作能播（`AnimGraph3D.clips[*].asset` → `bindSkeletalClip`），演出编排可由时间线 flag → 动作图重组；但 `assertSameSkeleton`（`src/renderer/three/skeletal-clips.ts:153`）要求静止 / 绑定矩阵一致，**不同身材的 Skin 共用一套动作会被拒**（M1）。目录批量规范化、预览台、匹配检索、下载侧变体均无（M2–M5）。Lead 推荐全部 A，顺序 M2 → M1 → M3 → M4 → M5。全文：`docs/design/ai-pipeline/motion-library-plan.md`。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
