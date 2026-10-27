@@ -102,8 +102,20 @@
 ### GAP-AIFLOW-REFS · 拆层行按关键图切图并作参考图喂给生成 · [2026-10-24] · Lead 实查带出（缺口复盘） · **⚖ 待 owner 判 A/B** · 施工主体：待裁 · status: open · P1 · 类型: 工具链扩写（🟢 仅 `scripts/`）
 > 实查：`asset-split` 不切图（全仓 `crop` 零命中）；`art-replace::genRowAsset` 只把文字提示词交适配器，拆层行 `refs` 在生成路径零引用，所以 3D 道具只能文生、跟关键图脱节。A = bbox 确定性切图 + 台账带切图路径 + model3d 走 Tripo 单图、sprite 走 GPT Image 2.5 输入图（provenance 记 SHA）；B = 人工逐行 `ai-gen --ref` 再手动回写。**Lead 推荐 A**。全文：`docs/design/ai-pipeline/gap-review-2026-10-24.md` §二。
 
-### GAP-MOTION-LIB · 全动画库：一库多 Skin · 目录与批量规范化 · 预览台 · 演绎内容自动匹配 · 微调扩展 · [2026-10-27] · owner 提 · **⚖ 待 owner 逐条判 A/B（M1–M5）** · 施工主体：待裁 · status: open · P1 · 类型: M1 引擎（🔴 P3D·render-only）+ M2–M5 工具链（🟢）
-> 实查要点：外部动作能播（`AnimGraph3D.clips[*].asset` → `bindSkeletalClip`），演出编排可由时间线 flag → 动作图重组；但 `assertSameSkeleton`（`src/renderer/three/skeletal-clips.ts:153`）要求静止 / 绑定矩阵一致，**不同身材的 Skin 共用一套动作会被拒**（M1）。目录批量规范化、预览台、匹配检索、下载侧变体均无（M2–M5）。Lead 推荐全部 A，顺序 M2 → M1 → M3 → M4 → M5。全文：`docs/design/ai-pipeline/motion-library-plan.md`。
+### REQ-MOTION-M1 · 一库多 Skin：同名骨骼不同身材的动作重定向 · [2026-10-27] · owner 判 A · 🔴 引擎 render-only · **施工主体 = Claude（2026-10-27·本行即锁）** · 复查 = Codex · status: 施工完·待独立复查（Codex；Review 单 `docs/design/ai-pipeline/review/REQ-MOTION-M1.md`） · P1
+> `AnimGraph3D.clips[*].retarget:'humanoid'`；流程图 `docs/workflow/motion-production-line.md`。
+
+### REQ-MOTION-M2 · 动画库入库与目录（FBX → 标准骨架 GLB · 自动测量 · 闭集标签） · [2026-10-27] · owner 判 A · 🟢 工具链 · **施工主体：待抢锁（指派 Codex）** · status: open（依赖第一批 Mixamo 下载） · P1
+> spec：`docs/workflow/handoff-codex-motion-line.md` ■ M2；字段与词表：流程图 §2。
+
+### REQ-MOTION-M3 · 动画预览台（Skin × 动作网格） · [2026-10-27] · owner 判 A · 🟢 工具 · **施工主体：待抢锁（指派 Codex）** · status: open（依赖 M1 PASS、M2） · P2
+> spec：派工单 ■ M3。
+
+### REQ-MOTION-M4 · 演绎内容动作匹配（确定性检索 + skill） · [2026-10-27] · owner 判 A · 🟢 工具 + skill · **施工主体：待抢锁（指派 Codex）** · status: open（依赖 M2） · P1
+> spec：派工单 ■ M4。
+
+### REQ-MOTION-M5 · 动画库扩展（Mixamo 滑杆变体 · 带皮角色下载 · 裁剪/镜像/补循环 · 其它来源） · [2026-10-27] · owner 判 A · 🟢 工具扩写 · **施工主体：待抢锁（指派 Codex）** · status: open（依赖 M2） · P2
+> spec：派工单 ■ M5。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 

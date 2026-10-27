@@ -36,6 +36,20 @@ function skinned(object: THREE.Object3D): THREE.SkinnedMesh { let mesh!: THREE.S
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('ModelPool external animation graphs through real GLTFLoader', () => {
+  it('M1: a motion authored on a skin with different proportions is rejected strictly but plays with retarget humanoid, hip travel scaled', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {}), info = vi.spyOn(console, 'info').mockImplementation(() => {}), f = setup();
+    // Motion skin has hips twice as high (rest 1.9 vs 0.95): exact binding must refuse it.
+    f.load('model', bytes()); f.load('walk', bytes('walk', json => { json.nodes[0].translation[1] = 1.9; }), true); await ready(f);
+    await playing(f); expect((f.pool as any).graphs.get('a').failed).toBe(true); expect(warn).toHaveBeenCalledOnce();
+    const retarget: AnimGraph3D = { ...graph(), clips: { action: { asset: 'walk', clip: 'walk', speed: 1, retarget: 'humanoid' } } };
+    await playing(f, 'a', retarget); expect((f.pool as any).graphs.get('a').controller).toBeDefined(); expect(warn).toHaveBeenCalledOnce();
+    expect(info.mock.calls.flat().join(' ')).toContain('hip scale 0.500');
+    f.pool.update(1000); for (let ms = 1100; ms <= 1500; ms += 100) f.pool.update(ms); // update caps each step at 0.1s
+    // Source hips sample at 0.5s = (0.025, 0.95, 0) against rest (0, 1.9, 0): delta (0.025, -0.95, 0) × 0.5 onto target rest (0, 0.95, 0).
+    const h = hips((f.pool as any).instances.get('a')).position;
+    expect(h.x).toBeCloseTo(0.0125, 5); expect(h.y).toBeCloseTo(0.475, 5); expect(h.z).toBeCloseTo(0, 6);
+    f.pool.dispose(f.scene);
+  });
   it('binds one motion to two different meshes plus two instances with independent skeletons/actions and no loads or source mutation', async () => {
     const f = setup(); f.load('model', bytes()); f.load('different', bytes(undefined, (json, bin) => { const p = json.accessors[0]; bin.writeFloatLE(-.6, json.bufferViews[p.bufferView].byteOffset); })); f.load('walk', bytes('walk'), true);
     const a = await ready(f), b = await ready(f, 'b'), c = await ready(f, 'c', 'different');

@@ -362,7 +362,7 @@ export class ModelPool {
         }
       }
       if (waiting) return;
-      for (const [alias, source] of external) clips.set(alias, { clip: bindSkeletalClip(source, entry.graph.clips[alias].clip, object, template.rest), loop: source.loop });
+      for (const [alias, source] of external) clips.set(alias, { clip: bindSkeletalClip(source, entry.graph.clips[alias].clip, object, template.rest, entry.graph.clips[alias].retarget), loop: source.loop });
       entry.controller = new AnimationGraphController(object, entry.graph, clips);
       this.dirty = true;
     } catch (error) {

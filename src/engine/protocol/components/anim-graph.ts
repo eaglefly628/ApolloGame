@@ -3,7 +3,8 @@ import type { CmpOp } from './logic.js';
 
 export type AnimGraphParamSource = 'speed' | `flag:${string}` | `state:${string}`;
 export type AnimGraphParamValue = number | string | boolean | undefined;
-export interface AnimGraphClip { readonly asset?: string; readonly clip: string; readonly speed?: number; readonly loop?: boolean; }
+/** retarget:'humanoid' (M1) lets an external clip drive a model with the same bone names but different proportions; omit for exact-skeleton binding. Requires asset. */
+export interface AnimGraphClip { readonly asset?: string; readonly clip: string; readonly speed?: number; readonly loop?: boolean; readonly retarget?: 'humanoid'; }
 export interface AnimGraphBlendPoint { readonly at: number; readonly clip: string; }
 export type AnimGraphState = { readonly clip: string; readonly blend?: never } | { readonly blend: { readonly param: string; readonly points: readonly AnimGraphBlendPoint[] }; readonly clip?: never };
 export interface AnimGraphTransition { readonly from: string; readonly to: string; readonly whenParam: string; readonly cmp: CmpOp; readonly value: number | string | boolean; readonly fade: number; }
@@ -40,8 +41,9 @@ export function validateAnimGraph3D(value: unknown): AnimGraph3D {
   if (data.type !== undefined && data.type !== 'AnimGraph3D') reject('type must be AnimGraph3D');
   const clips = aliases(data.clips, 'clips'), states = aliases(data.states, 'states'), params = aliases(data.params, 'params');
   for (const [name, raw] of Object.entries(clips)) {
-    const clip = fields(raw, ['asset','clip','speed','loop'], `clips.${name}`); text(clip.clip, `clips.${name}.clip`);
+    const clip = fields(raw, ['asset','clip','speed','loop','retarget'], `clips.${name}`); text(clip.clip, `clips.${name}.clip`);
     if (Object.hasOwn(clip, 'asset')) text(clip.asset, `clips.${name}.asset`);
+    if (Object.hasOwn(clip, 'retarget') && (clip.retarget !== 'humanoid' || !Object.hasOwn(clip, 'asset'))) reject(`clips.${name}.retarget must be humanoid and requires asset`);
     if (Object.hasOwn(clip, 'speed')) finite(clip.speed, `clips.${name}.speed`, 0, 16);
     if (Object.hasOwn(clip, 'loop') && typeof clip.loop !== 'boolean') reject(`clips.${name}.loop must be boolean`);
   }

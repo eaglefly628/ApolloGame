@@ -197,16 +197,96 @@ export function extractSkeletalClip(scene: THREE.Object3D, clips: readonly THREE
   return { clip, rest, tracks, loop: descriptor.loop };
 }
 
-/** Internal UUID paths prevent a mesh with the same name from taking a binding. */
-export function bindSkeletalClip(source: SkeletalClip, clipName: string, target: THREE.Object3D, rest: SkeletonRest): THREE.AnimationClip {
-  check(source.clip.name === clipName, `clip name ${clipName} does not exactly match ${source.clip.name}`);
-  assertSameSkeleton(source.rest, rest);
+/** Opt-in retarget modes for AnimGraph3D clips. Absent = exact same skeleton (unchanged default). */
+export type SkeletalRetarget = 'humanoid';
+
+function uniqueBones(target: THREE.Object3D): Map<string, THREE.Bone[]> {
   const bones = new Map<string, THREE.Bone[]>();
   target.traverse(node => { if ((node as THREE.Bone).isBone) bones.set(node.name, [...(bones.get(node.name) ?? []), node as THREE.Bone]); });
+  return bones;
+}
+
+/** Internal UUID paths prevent a mesh with the same name from taking a binding. */
+export function bindSkeletalClip(source: SkeletalClip, clipName: string, target: THREE.Object3D, rest: SkeletonRest, retarget?: SkeletalRetarget): THREE.AnimationClip {
+  check(source.clip.name === clipName, `clip name ${clipName} does not exactly match ${source.clip.name}`);
+  if (retarget === 'humanoid') return retargetHumanoidClip(source, target, rest);
+  check(retarget === undefined, `unsupported retarget ${String(retarget)}`);
+  assertSameSkeleton(source.rest, rest);
+  const bones = uniqueBones(target);
   const tracks = source.tracks.map(({ track, bone, property }) => {
     const targets = bones.get(bone);
     check(targets?.length === 1, `selected model must retain unique bone ${bone}`);
     const cloned = track.clone(); cloned.name = `${targets[0].uuid}.${property}`; return cloned;
   });
   return new THREE.AnimationClip(source.clip.name, source.clip.duration, tracks, source.clip.blendMode);
+}
+
+interface RestPose { readonly local: THREE.Matrix4; readonly localQ: THREE.Quaternion; readonly localP: THREE.Vector3; readonly worldQ: THREE.Quaternion; readonly parentWorld: THREE.Matrix4; readonly parentWorldQ: THREE.Quaternion; readonly parent?: string; readonly depth: number; }
+function restPoses(rest: SkeletonRest): Map<string, RestPose> {
+  const poses = new Map<string, RestPose>();
+  for (const [name, bone] of rest.bones) {
+    const local = new THREE.Matrix4().fromArray(bone.local as number[]), world = new THREE.Matrix4().fromArray(bone.world as number[]);
+    const localP = new THREE.Vector3(), localQ = new THREE.Quaternion(), worldQ = new THREE.Quaternion(), tmpP = new THREE.Vector3(), tmpS = new THREE.Vector3();
+    local.decompose(localP, localQ, tmpS); world.decompose(tmpP, worldQ, tmpS);
+    // Constant parent frame at rest; for bone parents it is replaced by the animated parent world each frame.
+    const parentWorld = world.clone().multiply(local.clone().invert()), parentWorldQ = new THREE.Quaternion();
+    parentWorld.decompose(tmpP, parentWorldQ, tmpS);
+    const parent = bone.ancestors[0]?.name;
+    poses.set(name, { local, localQ, localP, worldQ, parentWorld, parentWorldQ, parent: parent && rest.bones.has(parent) ? parent : undefined, depth: bone.ancestors.length });
+  }
+  return poses;
+}
+// GLTFLoader may install a cubic-spline factory; sampling through it keeps the source curve exact.
+const interpolant = (track: THREE.KeyframeTrack): THREE.Interpolant => (track as unknown as { createInterpolant(): THREE.Interpolant }).createInterpolant();
+const byDepth = (poses: Map<string, RestPose>): string[] => [...poses.keys()].sort((a, b) => poses.get(a)!.depth - poses.get(b)!.depth || (a < b ? -1 : a > b ? 1 : 0));
+
+/**
+ * M1 humanoid retarget: same apollo-humanoid-v1 bone names, different proportions or bone-local axes.
+ * Rotations transfer as world-space deltas from rest (target world = source world · source rest⁻¹ · target rest),
+ * so bone roll conventions may differ; bone lengths stay the target's own; only Hips translation transfers,
+ * scaled by rest hip height. Assumes both rest poses are the same stance (T-pose to T-pose) facing the same way.
+ */
+export function retargetHumanoidClip(source: SkeletalClip, target: THREE.Object3D, targetRest: SkeletonRest): THREE.AnimationClip {
+  requireSkeleton(source.rest); requireSkeleton(targetRest);
+  const sPose = restPoses(source.rest), tPose = restPoses(targetRest);
+  const sHipY = source.rest.bones.get('Hips')!.world[13], tHipY = targetRest.bones.get('Hips')!.world[13];
+  check(sHipY > 1e-6 && tHipY > 1e-6, 'humanoid retarget needs Hips above the model origin in both rest poses');
+  const ratio = tHipY / sHipY;
+  const tracks = new Map(source.tracks.map(t => [`${t.bone}.${t.property}`, t.track]));
+  const times = source.tracks[0].track.times;
+  check(source.tracks.every(t => t.track.times.length === times.length), 'retarget needs one shared sample timeline');
+  const rotation = new Map<string, THREE.Interpolant>();
+  for (const [key, track] of tracks) if (key.endsWith('.quaternion')) rotation.set(key.slice(0, -'.quaternion'.length), interpolant(track));
+  const hip = tracks.get('Hips.position'), hipTrack = hip ? interpolant(hip) : undefined;
+  const bones = uniqueBones(target), sOrder = byDepth(sPose), tOrder = byDepth(tPose);
+  const shared = tOrder.filter(name => sPose.has(name));
+  for (const name of shared) check(bones.get(name)?.length === 1, `selected model must retain unique bone ${name}`);
+  const values = new Map(shared.map(name => [name, new Float32Array(times.length * 4)]));
+  const hipValues = hipTrack ? new Float32Array(times.length * 3) : null;
+  const sParent3 = new THREE.Matrix3().setFromMatrix4(sPose.get('Hips')!.parentWorld), tParentInv3 = new THREE.Matrix3().setFromMatrix4(tPose.get('Hips')!.parentWorld).invert();
+  const sWorld = new Map<string, THREE.Quaternion>(), tWorld = new Map<string, THREE.Quaternion>(), q = new THREE.Quaternion();
+  for (let i = 0; i < times.length; i++) {
+    sWorld.clear(); tWorld.clear();
+    for (const name of sOrder) {
+      const pose = sPose.get(name)!, sample = rotation.get(name)?.evaluate(times[i]);
+      const local = sample ? q.fromArray(sample as unknown as number[]).normalize().clone() : pose.localQ.clone();
+      sWorld.set(name, (pose.parent ? sWorld.get(pose.parent)! : pose.parentWorldQ).clone().multiply(local));
+    }
+    for (const name of tOrder) {
+      const pose = tPose.get(name)!, parentWorld = pose.parent ? tWorld.get(pose.parent)! : pose.parentWorldQ;
+      if (!sPose.has(name)) { tWorld.set(name, parentWorld.clone().multiply(pose.localQ)); continue; }
+      const world = sWorld.get(name)!.clone().multiply(sPose.get(name)!.worldQ.clone().invert()).multiply(pose.worldQ);
+      tWorld.set(name, world);
+      parentWorld.clone().invert().multiply(world).normalize().toArray(values.get(name)!, i * 4);
+    }
+    if (hipTrack && hipValues) {
+      const delta = new THREE.Vector3().fromArray(hipTrack.evaluate(times[i]) as unknown as number[]).sub(sPose.get('Hips')!.localP);
+      delta.applyMatrix3(sParent3).multiplyScalar(ratio).applyMatrix3(tParentInv3).add(tPose.get('Hips')!.localP).toArray(hipValues, i * 3);
+    }
+  }
+  const out: THREE.KeyframeTrack[] = shared.map(name => new THREE.QuaternionKeyframeTrack(`${bones.get(name)![0].uuid}.quaternion`, Array.from(times), Array.from(values.get(name)!)));
+  if (hipValues) out.push(new THREE.VectorKeyframeTrack(`${bones.get('Hips')![0].uuid}.position`, Array.from(times), Array.from(hipValues)));
+  const dropped = source.tracks.filter(t => !tPose.has(t.bone) || t.property === 'scale' || (t.property === 'position' && t.bone !== 'Hips')).length;
+  console.info(`[ModelPool] decision: humanoid retarget "${source.clip.name}" · ${shared.length} shared bones · hip scale ${ratio.toFixed(3)} · ${dropped} source tracks dropped (non-hip translation/scale or bones missing on target)`);
+  return new THREE.AnimationClip(source.clip.name, source.clip.duration, out, source.clip.blendMode);
 }
