@@ -102,10 +102,10 @@
 ### GAP-AIFLOW-REFS · 拆层行按关键图切图并作参考图喂给生成 · [2026-10-24] · Lead 实查带出（缺口复盘） · **⚖ 待 owner 判 A/B** · 施工主体：待裁 · status: open · P1 · 类型: 工具链扩写（🟢 仅 `scripts/`）
 > 实查：`asset-split` 不切图（全仓 `crop` 零命中）；`art-replace::genRowAsset` 只把文字提示词交适配器，拆层行 `refs` 在生成路径零引用，所以 3D 道具只能文生、跟关键图脱节。A = bbox 确定性切图 + 台账带切图路径 + model3d 走 Tripo 单图、sprite 走 GPT Image 2.5 输入图（provenance 记 SHA）；B = 人工逐行 `ai-gen --ref` 再手动回写。**Lead 推荐 A**。全文：`docs/design/ai-pipeline/gap-review-2026-10-24.md` §二。
 
-### REQ-MOTION-M1 · 一库多 Skin：同名骨骼不同身材的动作重定向 · [2026-10-27] · owner 判 A · 🔴 引擎 render-only · **施工主体 = Claude（2026-10-27·本行即锁）** · 复查 = Codex · status: 独立复查 FAIL·待原施工方返工（STEP 帧间动作提前，见 Review 单） · P1
+### REQ-MOTION-M1 · 一库多 Skin：同名骨骼不同身材的动作重定向 · [2026-10-27] · owner 判 A · 🔴 引擎 render-only · **施工主体 = Codex（2026-10-27·owner 本会话继续执行授权接管返工·本行即锁）** · 复查 = 独立 agent（不参与施工） · status: in-progress（修复 STEP/CUBICSPLINE 帧间语义） · P1
 > `AnimGraph3D.clips[*].retarget:'humanoid'`；流程图 `docs/workflow/motion-production-line.md`。
 
-### REQ-MOTION-M2 · 动画库入库与目录（FBX → 标准骨架 GLB · 自动测量 · 闭集标签） · [2026-10-27] · owner 判 A · 🟢 工具链 · **施工主体：待抢锁（指派 Codex）** · status: open（依赖第一批 Mixamo 下载） · P1
+### REQ-MOTION-M2 · 动画库入库与目录（FBX → 标准骨架 GLB · 自动测量 · 闭集标签） · [2026-10-27] · owner 判 A · 🟢 工具链 · **施工主体 = Codex（2026-10-27·本行即锁）** · status: in-progress（108 角色及 2445 动画下载已核验） · P1
 > spec：`docs/workflow/handoff-codex-motion-line.md` ■ M2；字段与词表：流程图 §2。
 
 ### REQ-MOTION-M3 · 动画预览台（Skin × 动作网格） · [2026-10-27] · owner 判 A · 🟢 工具 · **施工主体：待抢锁（指派 Codex）** · status: open（依赖 M1 PASS、M2） · P2
