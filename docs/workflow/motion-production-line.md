@@ -72,12 +72,12 @@
 
 | 单 | 归属 | 依赖 | 状态 |
 |---|---|---|---|
-| **M1** 一库多 Skin 重定向 | 🔴 主程（Claude） | — | **施工完 · 待独立复查（Codex）** · Review 单 `docs/design/ai-pipeline/review/REQ-MOTION-M1.md` |
+| **M1** 一库多 Skin 重定向 | 🔴 主程（Claude） | — | **独立复查 FAIL · 待原施工方返工（STEP 时序）** · Review 单 `docs/design/ai-pipeline/review/REQ-MOTION-M1.md` |
 | **M2** 入库与目录 | 🟢 Codex | 第一批 Mixamo 下载完成 | 待抢锁 |
 | **M3** 预览台 | 🟢 Codex | M1 PASS、M2 | 待抢锁 |
 | **M4** 匹配 | 🟢 Codex | M2 | 待抢锁 |
 | **M5** 扩展与 Skin 下载 | 🟢 Codex | Skin 下载部分已提前（2026-10-28）；其余依赖 M2 | 待抢锁 |
-| **M6** 补全动作烘焙入库 | 🟢 Codex | M2、M4 | **⚖ 待 owner 判 A/B**（`docs/design/ai-pipeline/motion-completion.md`） |
+| **M6** 补全动作烘焙入库 | 🟢 Codex | M2、M4 | **owner 本会话已判 A**（`docs/design/ai-pipeline/motion-completion.md`） |
 
 每单照旧：施工人 ≠ 复查人；Codex 施工的由 Claude 复查，M1 由 Codex 复查；owner 最后可以按 §4 自己验收。派工指令全文：`docs/workflow/handoff-codex-motion-line.md`。
 

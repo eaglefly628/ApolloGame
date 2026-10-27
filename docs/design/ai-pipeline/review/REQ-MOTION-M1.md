@@ -56,3 +56,16 @@ node scripts/scoped-gate.mjs --run
 - 极端体型（Q 版大头短手）手脚可能穿插，用 E4 IK 兜底。
 - 髋部父骨若本身带动画（少见，例如有 Root 骨），父空间用静止值近似。
 - **真实 Mixamo 动作 × 真实 Skin 未验**（本机无 Mixamo 原件）；本单只用自造骨架与 mock GLB 验证。
+
+## 独立复查判词（本会话）
+
+**FAIL，需原施工方返工。** 基线为 `b0965fc26`（含 M1 提交 `9d003301`）；在独立工作树复跑。
+
+- 原指定 4 个测试文件：91/91 通过，退出码 0。
+- 新增独立实证：`extractSkeletalClip` 接受 STEP 旋转/位移轨；同骨架、不启用 retarget 时 0.25 秒姿态保持正确；启用 humanoid 后，左上臂世界旋转误差 **0.3094216623 rad（约 17.7°）**。复现退出码 1。
+- 原因位置：`retargetHumanoidClip` 输出所有旋转及髋位移轨时新建轨道而未保留插值语义，默认变成线性；因此原本应保持到下一采样点才跳转的动作会提前过渡。现有用例只覆盖线性输入，未覆盖该路径。需定义并测试 STEP / CUBICSPLINE 的帧间语义，不能把采样点一致等同播放一致。
+- 最小复现附件：[STEP 复现源码](REQ-MOTION-M1-step.repro.ts.txt)（自造骨架，无 Mixamo 内容）。将附件复制为 `src/renderer/three/skeletal-retarget.review.test.ts`，执行 `node node_modules/vitest/vitest.mjs run src/renderer/three/skeletal-retarget.review.test.ts`，可得到上述失败。附件本身不加入正常测试扫描；不把已知红测试推入 CI。
+- 独立撤修验红（与施工自证不同）：① 删除目标父坐标的逆旋转；② 禁用髋部位置通道。两处均断言锚点命中恰好 1 次，原 M1 用例各退出 1；之后恢复原文件。
+- 基线全量门禁：`node scripts/scoped-gate.mjs --run --base 9d003301^` 退出 1；eslint、depcruise、sim-dom-fence、tsc 均过；7482/7485 测试过，3 项失败：golden-shot 与 render-probe 的浏览器环境对照，以及 style-tokens 的 pending.json 缺失。未改被审实现，此为该隔离环境的基线结果；没有把全量结果报绿，后续 build / 文档守卫未在这次 full 运行中执行。告警中另有 happy-dom AbortError，未将其隐去。真实 Mixamo × 两个 Skin 的视觉播放尚未验证；本轮已下载真实素材，不据此冒称导入或视觉通过。
+
+后续：保持原施工归属，不在复查中代修；M3 的 M1 PASS 依赖未满足。M2、骨骼提取等独立路径不能伪称已完成。
