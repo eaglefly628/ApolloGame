@@ -65,3 +65,12 @@ Downloads中的109份已核实重复角色移入可恢复废纸篓；16个额外
 另制作了实际“擦火柴”IK候选：3秒、30fps、91帧，基于已入库idle+YBot，用左手持盒锚及右手约5.6cm短划轨迹，原生淡入淡出。仅CPU烘焙，原生/烘焙偏差小于1e-5，无receipt、未发布。配方范例见 `docs/design/ai-pipeline/examples/match-strike.recipe.json`；未做手指捏握、腕朝向约束、道具几何或火花，不称艺术动作已合格。素材和样片保持在本机review目录。
 
 本轮补齐门禁：独立motion-compat工作树scope=full退出0，697个测试文件、7695项通过、2项环境开关默认跳过；TypeScript和构建通过。告警仍为大bundle及game-a/game-c既有两条美术死账WARN，已读取。代码合入主线后，不在运行中更换motion-line转换器；Ty重试及最终全库计数必须等当前批处理结束后执行。
+
+## 2026-10-28 · 减帧对照组收尾与完整帧重建
+
+- 旧批次进程已退出但锁/状态遗留；独立核实两个PID均不存在后，锁与原状态移入恢复证据，不删除原件。43项接续成功，sumo长动作以600000ms预算成功；Ty兼容修复补入。最终原始动作2445、派生1、Skin108，validate计2554项通过。旧组保留draft，不代表视觉质量通过。
+- 本次发现非均匀减帧的关键间姿态明显失真。男118900901在同一转换/引擎下，Non-uniform最大躯干48.1677度，None10.0934度，Uniform10.0499度；Uniform相对None仍有右趾端约4.37cm、右脚约11.62度最大误差。Uniform原FBX只省0.687%，三GLB大小相同；不以单样本背书整库Uniform安全。完整对照证据在本机 `/private/tmp/motion-briefcase-three-way-summary.json`，三列冻结第49帧预览仅在本机review库。
+- owner决定：None、Without Skin、30FPS重新获取全体动作并转换；108Skin复用。已核验的2份原None直接复用，男转身新None已入独立库；其余继续逐项官方UI下载。先完成None母版，M7内部自适应减帧后置。
+- 隔离：旧原FBX `~/ApolloAssets/mixamo/`及旧GLB `~/ApolloAssets/motion-lib/`；None源 `~/ApolloAssets/mixamo/full-frames/`，None库 `~/ApolloAssets/motion-lib-full-frames/`；Uniform试验 `~/ApolloAssets/mixamo/uniform-review/`及 `~/ApolloAssets/motion-review/uniform/`。不覆盖旧源，不把减帧文件当None母版；每项有设置/源SHA/作业和输出SHA。
+- 工具补可选超时预算，独立62项复跑及两处唯一锚点撤修验红通过；完整门禁7716通过、2跳过，全部guard/build通过。原默认临时目录的macOS别名与缺省Linux浏览器路径造成3个环境失败，改用真实Chrome和规范/tmp复现79项通过；高负载下单个已有实算测试5000ms超时，降低并行度后全量通过，未放宽断言/超时。既有bundle体积与game-a/game-c两条死账WARN已读。
+- 持续任务已由应用保存为 `mixamo-none`，只推进本轮None重建，读取外部断点并避免重复启动；普通超时先查落盘再退避，401/403/429/验证码/安全拦截不绕过。

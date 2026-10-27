@@ -10,6 +10,7 @@ export { CATEGORIES, EMOTIONS, CONTACTS, ROOT_MOTIONS, standardBoneName, validat
 const ROOT=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const log=(kind,message)=>console.error(`[motion-library] ${kind}: ${message}`);
 const readJson=p=>JSON.parse(readFileSync(p,'utf8'));
+function timeoutBudget(value){check(Number.isInteger(value)&&value>=1&&value<=3600000,'timeoutMs must be an integer in 1..3600000');return value;}
 const nested=(base,path)=>{const rel=relative(base,path);return rel===''||(!isAbsolute(rel)&&rel!=='..'&&!rel.startsWith('../'));};
 function physical(path) {path=resolve(path);let parent=path;while(!existsSync(parent))parent=dirname(parent);return resolve(realpathSync(parent),relative(parent,path));}
 export function libraryPath(path) {const real=physical(path);check(!nested(realpathSync(ROOT),real),'library output inside repository is forbidden');for(let parent=real;;parent=dirname(parent)){check(!existsSync(join(parent,'.git')),'library output inside repository is forbidden');if(dirname(parent)===parent)break;}return real;}
@@ -27,7 +28,8 @@ export async function validateLibrary(lib) {
   }
   log('commit',`validated ${catalog.clips.length} clips and ${catalog.skins.length} skins`);return {ok:true,count};
 }
-export async function ingestLibrary({from,lib=join(homedir(),'ApolloAssets/motion-lib'),annotations,sourceKind='mixamo',license,blender,skin=false,ids}={}) {
+export async function ingestLibrary({from,lib=join(homedir(),'ApolloAssets/motion-lib'),annotations,sourceKind='mixamo',license,blender,skin=false,ids,timeoutMs=120000}={}) {
+  timeoutBudget(timeoutMs);
   check(from,'--from is required');from=realpathSync(resolve(from));lib=libraryPath(lib);
   check(!nested(from,lib)&&!nested(lib,from),'source and library roots must not overlap');
   check(sourceKind==='mixamo'||typeof license==='string'&&license.trim(),'non-Mixamo source requires --license');
@@ -54,7 +56,7 @@ export async function ingestLibrary({from,lib=join(homedir(),'ApolloAssets/motio
         const work=guardOutput(lib,join(lib,'.ingest-jobs',kind,id,hash));mkdirSync(work,{recursive:true});
         const job={op:skin?'skin-import':'motion-import',inputs:[sourceFile],params:{profile:'apollo-humanoid-v1',...(!skin?{clipId:id,fps:source.download?.fps||30}:{})},outputs:['output.glb']};
         const jobPath=guardOutput(lib,join(work,'job.json'));writeFileSync(jobPath,JSON.stringify(job,null,2)+'\n');
-        log('decision',`${job.op} ${id}`);const report=runBlenderJob(jobPath,{...(blender?{blender}:{})});
+        log('decision',`${job.op} ${id}`);const report=runBlenderJob(jobPath,{timeoutMs,...(blender?{blender}:{})});
         const bytes=readFileSync(report.outputs[0].path);const measured=skin?await measureSkin(bytes):await measureMotion(bytes,id,job.params.fps);
         const entry={id,file:`${kind}/${id}.glb`,sha256:sha256(bytes),source:{kind:sourceKind,mixamoName:source.mixamoName||source.name||id,searchTerm:source.searchTerm||source.mixamoName||source.name||id,fbxSha256:hash,manifestSha256:sha256(readFileSync(inputFile)),sourceFile:source.file||source.relativePath,...(license?{license}:{})},...measured,...annotation,derivedFrom:null,status:'draft',provenance:{requestSha256,jobHash:report.jobHash,evidenceDir:report.evidenceDir,validationCarrier:!skin,semanticOrigin:skin?null:sha256(readFileSync(annotations))}};
         mkdirSync(dirname(destination),{recursive:true});
@@ -74,9 +76,10 @@ export async function main(argv=process.argv.slice(2)) {
     const command=argv.shift();
     if(command==='compose')return (await import('./motion-compose.mjs')).main(argv);
     if(command==='variant')return (await import('./motion-variant.mjs')).variantMain(argv);
-    const opts={};for(let i=0;i<argv.length;i++){const key=argv[i];check(['--from','--lib','--annotations','--source-kind','--license','--blender','--ids'].includes(key)&&i+1<argv.length,`unknown or missing argument ${key}`);opts[{'--from':'from','--lib':'lib','--annotations':'annotations','--source-kind':'sourceKind','--license':'license','--blender':'blender','--ids':'ids'}[key]]=argv[++i];}
+    const opts={};for(let i=0;i<argv.length;i++){const key=argv[i];check(['--from','--lib','--annotations','--source-kind','--license','--blender','--ids','--timeout-ms'].includes(key)&&i+1<argv.length,`unknown or missing argument ${key}`);opts[{'--from':'from','--lib':'lib','--annotations':'annotations','--source-kind':'sourceKind','--license':'license','--blender':'blender','--ids':'ids','--timeout-ms':'timeoutMs'}[key]]=argv[++i];}
+    if(Object.hasOwn(opts,'timeoutMs'))opts.timeoutMs=timeoutBudget(Number(opts.timeoutMs));
     if(opts.ids)opts.ids=opts.ids.split(',');
-    check(['ingest','skin-ingest','validate'].includes(command),'usage: motion-library.mjs ingest|skin-ingest|validate --lib <external library> [--from <source> --annotations <json> --blender <executable>]');
+    check(['ingest','skin-ingest','validate'].includes(command),'usage: motion-library.mjs ingest|skin-ingest|validate --lib <external library> [--from <source> --annotations <json> --blender <executable> --timeout-ms <1..3600000>]');
     const result=command==='validate'?await validateLibrary(opts.lib||join(homedir(),'ApolloAssets/motion-lib')):await ingestLibrary({...opts,skin:command==='skin-ingest'});console.log(JSON.stringify(result));return result.ok?0:1;
   }catch(error){log('reject',error.message);return 1;}
 }
