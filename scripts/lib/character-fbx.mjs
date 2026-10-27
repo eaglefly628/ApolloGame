@@ -19,7 +19,9 @@ function arrayValue(property,index) {const offset=index*WIDTH[property.type],b=p
 /**
  * Supported subset: binary FBX 7.1..7.7, raw/zlib standard properties,
  * positive unique object IDs, OO/OP connections and sampled XYZ Model transform animation. ASCII, unknown
- * connection modes, unsupported animation bindings and one-key curves reject.
+ * connection modes, unsupported animation bindings and zero-duration playback reject. Fully
+ * unbound exporter curve objects are still structurally validated and reported,
+ * but do not contribute to the connected motion's samples or duration.
  * A root null record is mandatory; up to 512 trailing footer bytes remain opaque.
  * Returned counts prove bounded structure and connected samples, not DCC playback.
  */
@@ -91,14 +93,25 @@ export function validateMotionFbx(bytes) {
  }
  for(const type of ANIMATION)check(byType.get(type)?.length>0,`Objects lacks ${type}`);
  check(connections.children.length>0&&connections.children.length<=LIMITS.connections,'connection count outside budget');
- const outgoing=new Map(),incoming=new Map(),seen=new Set();
+ const outgoing=new Map(),incoming=new Map(),seen=new Set(),constantDefaultAxes=new Map();let constantDefaultConnections=0;
+ function declaredConstantAxis(node,axis) {
+  const properties=onlyChild(node,'Properties70',false);if(!properties)return false;
+  const defaults=properties.children.filter(p=>p.name==='P'&&p.properties[0]?.type==='S'&&p.properties[0].value===axis);
+  if(defaults.length!==1)return false;const props=defaults[0].properties;
+  return props.length===5&&!defaults[0].children.length&&props[1]?.type==='S'&&props[1].value==='Number'&&props[2]?.type==='S'&&props[3]?.type==='S'&&['D','F','I'].includes(props[4]?.type)&&Number.isFinite(props[4].value);
+ }
  for(const connection of connections.children) {
   check(connection.name==='C'&&!connection.children.length,'Connections only supports leaf C records');
   const props=connection.properties,mode=scalar(props[0],'S','connection mode');check((mode==='OO'&&props.length===3)||(mode==='OP'&&props.length===4),'only exact OO/OP connection layouts are supported');
   const from=scalar(props[1],'L','connection source'),to=scalar(props[2],'L','connection target');
-  check(byId.has(from)&&(to===0n||byId.has(to))&&from!==to,'connection references missing/self object');
   const field=mode==='OP'?scalar(props[3],'S','connection property'):'';check(mode!=='OP'||field.length>0,'OP property must be nonempty');
-  const sourceType=byId.get(from).name,targetType=byId.get(to)?.name;
+  const target=byId.get(to);
+  if(!byId.has(from)&&from>0n&&from!==to&&mode==='OP'&&target?.name==='AnimationCurveNode'&&AXES.has(field)&&declaredConstantAxis(target,field)) {
+   const key=`${mode}:${from}:${to}:${field}`;check(!seen.has(key),'duplicate connection');seen.add(key);
+   if(!constantDefaultAxes.has(to))constantDefaultAxes.set(to,new Set());const axes=constantDefaultAxes.get(to);check(!axes.has(field),'duplicate constant default axis');axes.add(field);constantDefaultConnections++;continue;
+  }
+  check(byId.has(from)&&(to===0n||byId.has(to))&&from!==to,'connection references missing/self object');
+  const sourceType=byId.get(from).name,targetType=target?.name;
   if(ANIMATION.has(targetType))check(ANIMATION.has(sourceType),'unsupported non-animation link into animation hierarchy');
   const key=`${mode}:${from}:${to}:${field}`;check(!seen.has(key),'duplicate connection');seen.add(key);
   const item={mode,from,to,field};if(!outgoing.has(from))outgoing.set(from,[]);outgoing.get(from).push(item);if(!incoming.has(to))incoming.set(to,[]);incoming.get(to).push(item);
@@ -112,11 +125,12 @@ export function validateMotionFbx(bytes) {
  }
  for(const id of modelParents.keys()) {const visited=new Set();let current=id;while(current!==0n&&modelParents.has(current)){check(!visited.has(current)&&visited.size<256,'Model parent hierarchy cycle/depth budget exceeded');visited.add(current);current=modelParents.get(current);}}
  const links=(id,mode,type)=>(outgoing.get(id)||[]).filter(c=>c.mode===mode&&byId.get(c.to)?.name===type);
- let samples=0,minTime,maxTime;
+ const unboundNodes=new Set(byType.get('AnimationCurveNode').filter(node=>!(outgoing.get(node.id)||[]).length).map(node=>node.id));
+ let samples=0,minTime,maxTime,unboundCurves=0,constantKeyCurves=0;
  for(const curve of byType.get('AnimationCurve')) {
-  const times=singleArray(curve,'KeyTime','l'),values=singleArray(curve,'KeyValueFloat','f');check(times.count>=2&&times.count===values.count,'KeyTime/KeyValueFloat require equal counts with at least two samples');
+  const times=singleArray(curve,'KeyTime','l'),values=singleArray(curve,'KeyValueFloat','f');check(times.count>=1&&times.count===values.count,'KeyTime/KeyValueFloat require equal counts with at least one sample');if(times.count===1)constantKeyCurves++;
   let previous;for(let i=0;i<times.count;i++){const time=arrayValue(times,i);check(previous===undefined||time>previous,'KeyTime must be strictly increasing');previous=time;}
-  const first=arrayValue(times,0),last=arrayValue(times,times.count-1);minTime=minTime===undefined||first<minTime?first:minTime;maxTime=maxTime===undefined||last>maxTime?last:maxTime;samples+=times.count;
+  const first=arrayValue(times,0),last=arrayValue(times,times.count-1);
   const attrs=['KeyAttrFlags','KeyAttrDataFloat','KeyAttrRefCount'].map(name=>onlyChild(curve,name,false));
   if(attrs.some(Boolean)) {
    check(attrs.every(Boolean),'curve key attributes must include Flags, DataFloat and RefCount together');
@@ -124,12 +138,16 @@ export function validateMotionFbx(bytes) {
    check(flags.count>0&&refs.count===flags.count&&dataFloat.count===flags.count*4,'key attribute array counts mismatch');
    let total=0;for(let i=0;i<refs.count;i++){const count=arrayValue(refs,i);check(count>0,'KeyAttrRefCount entries must be positive');total+=count;}check(total===times.count,'KeyAttrRefCount sum must equal sample count');
   }
-  const destinations=outgoing.get(curve.id)||[];check(destinations.length===1&&links(curve.id,'OP','AnimationCurveNode').length===1&&AXES.has(destinations[0].field),'AnimationCurve must connect once to curve node XYZ property');
+  const destinations=outgoing.get(curve.id)||[];
+  if(destinations.length===0 && !(incoming.get(curve.id)||[]).length) {unboundCurves++;continue;}
+  check(destinations.length===1&&links(curve.id,'OP','AnimationCurveNode').length===1&&AXES.has(destinations[0].field),'AnimationCurve must connect once to curve node XYZ property');
+  if(unboundNodes.has(destinations[0].to)){unboundCurves++;continue;}
+  minTime=minTime===undefined||first<minTime?first:minTime;maxTime=maxTime===undefined||last>maxTime?last:maxTime;samples+=times.count;
  }
  for(const node of byType.get('AnimationCurveNode')) {
   const destinations=outgoing.get(node.id)||[],layers=links(node.id,'OO','AnimationLayer'),models=links(node.id,'OP','Model');
-  check(destinations.length===2&&layers.length===1&&models.length===1&&TRANSFORMS.has(models[0].field),'AnimationCurveNode requires one layer and one Model transform property');
-  const axes=(incoming.get(node.id)||[]).filter(c=>byId.get(c.from)?.name==='AnimationCurve');check(axes.length>0&&new Set(axes.map(c=>c.field)).size===axes.length,'curve node requires unique animated axes');
+  check(unboundNodes.has(node.id)||destinations.length===2&&layers.length===1&&models.length===1&&TRANSFORMS.has(models[0].field),'AnimationCurveNode requires one layer and one Model transform property');
+  const incomingLinks=incoming.get(node.id)||[],axes=incomingLinks.filter(c=>byId.get(c.from)?.name==='AnimationCurve');check(axes.length===incomingLinks.length&&(axes.length>0||constantDefaultAxes.get(node.id)?.size>0)&&new Set(axes.map(c=>c.field)).size===axes.length&&axes.every(c=>!constantDefaultAxes.get(node.id)?.has(c.field)),'curve node requires unique animated axes');
  }
  for(const layer of byType.get('AnimationLayer')) {
   check((outgoing.get(layer.id)||[]).length===1&&links(layer.id,'OO','AnimationStack').length===1,'AnimationLayer must connect once to AnimationStack');
@@ -139,9 +157,10 @@ export function validateMotionFbx(bytes) {
   check(!(outgoing.get(stack.id)||[]).length,'AnimationStack outgoing bindings unsupported');
   check((incoming.get(stack.id)||[]).some(c=>c.mode==='OO'&&byId.get(c.from)?.name==='AnimationLayer'),'AnimationStack has no layers');
  }
+ check(samples>0&&minTime!==undefined&&maxTime>minTime,'connected animation needs at least two samples over positive duration');
  const animatedModels=new Set(byType.get('AnimationCurveNode').flatMap(node=>links(node.id,'OP','Model').map(c=>c.to)));
  const limbModels=(byType.get('Model')||[]).filter(model=>scalar(model.properties[2],'S','Model subtype')==='LimbNode');
  check(limbModels.length>0,'motion requires at least one declared LimbNode Model');
  check(limbModels.some(model=>{let id=model.id;while(id!==undefined&&id!==0n){if(animatedModels.has(id))return true;id=modelParents.get(id);}return false;}),'animation must affect a LimbNode or its Model ancestor');
- return {format:'binary-fbx',version,objects:byId.size,connections:seen.size,stacks:byType.get('AnimationStack').length,layers:byType.get('AnimationLayer').length,curveNodes:byType.get('AnimationCurveNode').length,curves:byType.get('AnimationCurve').length,samples,durationSeconds:Number(maxTime-minTime)/46186158000,structureOnly:true};
+ return {format:'binary-fbx',version,objects:byId.size,connections:seen.size,stacks:byType.get('AnimationStack').length,layers:byType.get('AnimationLayer').length,curveNodes:byType.get('AnimationCurveNode').length,curves:byType.get('AnimationCurve').length,...(unboundCurves?{connectedCurves:byType.get('AnimationCurve').length-unboundCurves,unboundCurves,unboundCurveNodes:unboundNodes.size}:{}),...(constantKeyCurves?{constantKeyCurves}:{}),...(constantDefaultConnections?{constantDefaultConnections}:{}),samples,durationSeconds:Number(maxTime-minTime)/46186158000,structureOnly:true};
 }

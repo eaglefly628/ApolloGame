@@ -15,7 +15,8 @@ import { validateCharacterInputs } from './lib/character-inputs.mjs';
 import { inspectCharacterGlb } from './lib/character-glb.mjs';
 import { makeMockCharacterGlb } from './fixtures/character-pipeline/mock-character.mjs';
 
-export const BLENDER_OPS = Object.freeze(['normalize', 'rig-arp', 'retarget-arp', 'build-scene', 'render-views']);
+import { validateVariantJob } from './lib/motion-variant-job.mjs';
+export const BLENDER_OPS = Object.freeze(['normalize', 'rig-arp', 'retarget-arp', 'build-scene', 'render-views', 'motion-import', 'skin-import', 'motion-variant']);
 const HERE = dirname(fileURLToPath(import.meta.url));
 const diagnostics = new Console({stdout:process.stderr,stderr:process.stderr});
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -72,6 +73,16 @@ export function validateJob(job) {
       if(v.position.every((x,i)=>x===v.target[i]))reject('相机position不能等于target');
       number(v.fov,'fov',0.001,179.999);
       for(const k of ['width','height'])if(!Number.isInteger(v[k])||v[k]<16||v[k]>4096)reject(`${k} 必须是16..4096整数`);
+    }
+  } else if(job.op==='motion-variant') {
+    validateVariantJob(job);
+  } else if(['motion-import','skin-import'].includes(job.op)) {
+    object(job.params,job.op==='motion-import'?['profile','clipId','fps']:['profile'],`${job.op} params`);
+    if(job.params.profile!=='apollo-humanoid-v1')reject('profile 必须是 apollo-humanoid-v1');
+    if(job.inputs.length!==1||!['.fbx','.glb'].includes(extname(job.inputs[0]).toLowerCase())||job.outputs.length!==1||extname(job.outputs[0]).toLowerCase()!=='.glb')reject('motion/skin import requires one FBX/GLB input and one GLB output');
+    if(job.op==='motion-import') {
+      if(typeof job.params.clipId!=='string'||!/^[a-z0-9][a-z0-9-]*$/.test(job.params.clipId))reject('invalid clipId');
+      if(!Number.isInteger(job.params.fps)||job.params.fps<1||job.params.fps>120)reject('fps 必须是1..120整数');
     }
   } else if(job.op==='normalize') {
     object(job.params,['sourceUp','targetHeightMeters','maxTris','maxTextureSize'],'normalize params');
@@ -179,7 +190,8 @@ export function runBlenderJob(jobFile,{mock=false,blender=process.env.BLENDER_BI
   checkSplit(job,buffers);
   const worker=readFileSync(join(HERE,'blender','worker.py'));
   const refs=inputs.map((path,i)=>({path:job.inputs[i],sha256:sha(buffers[i])}));
-  const jobHash=sha(canonical({job,inputs:refs,worker:sha(worker)}));
+  const variantWorker=job.op==='motion-variant'?readFileSync(join(HERE,'blender','motion_variant.py')):null;
+  const jobHash=sha(canonical({job,inputs:refs,worker:sha(worker),...(variantWorker?{variantWorker:sha(variantWorker)}:{})}));
   const evidenceRoot=inside(base,`.blender-jobs/${mock?'mock':'real'}/${jobHash}`);
   mkdirSync(evidenceRoot,{recursive:true});
   // Each invocation has its own evidence, even when rerunning the identical job.
@@ -193,6 +205,7 @@ export function runBlenderJob(jobFile,{mock=false,blender=process.env.BLENDER_BI
   // A rerun starts with no success record or stale stage outputs to borrow.
   rmSync(resultPath,{force:true});rmSync(stage,{recursive:true,force:true});mkdirSync(stage,{recursive:true});
   writeFileSync(scriptPath,worker);
+  if(variantWorker)writeFileSync(join(evidenceDir,'motion_variant.py'),variantWorker);
   const stageOutputs=targets.map((t,i)=>join(stage,`${i}${extname(t).toLowerCase()}`));
   // Consume the exact bytes that were hashed, not mutable originals read later by Blender.
   const snapshotDir=join(evidenceDir,'inputs');mkdirSync(snapshotDir,{recursive:true});

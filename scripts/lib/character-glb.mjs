@@ -34,12 +34,37 @@ function localMatrix(node, label) {
     2 * (x * y - z * w) * s[1], (1 - 2 * (x * x + z * z)) * s[1], 2 * (y * z + x * w) * s[1], 0,
     2 * (x * z + y * w) * s[2], 2 * (y * z - x * w) * s[2], (1 - 2 * (x * x + y * y)) * s[2], 0, ...t, 1];
 }
-function extensionsFree(value) {
+// Skin-only render metadata. Geometry/animation/compression extensions remain
+// prohibited; defaults retain the original strict T5/motion contract.
+export const SKIN_MATERIAL_EXTENSIONS = Object.freeze(['KHR_materials_specular']);
+function specularMaterial(value, json) {
+  check(value && typeof value === 'object' && !Array.isArray(value), 'KHR_materials_specular must be an object');
+  const keys = ['specularFactor', 'specularColorFactor', 'specularTexture', 'specularColorTexture', 'extensions', 'extras'];
+  check(Object.keys(value).every(key => keys.includes(key)), 'unsupported KHR_materials_specular field');
+  if (value.specularFactor !== undefined) check(Number.isFinite(value.specularFactor) && value.specularFactor >= 0 && value.specularFactor <= 1, 'specularFactor must be in [0,1]');
+  if (value.specularColorFactor !== undefined) check(vector(value.specularColorFactor, 3, 'specularColorFactor').every(n => n >= 0), 'specularColorFactor must be nonnegative');
+  for (const key of ['specularTexture', 'specularColorTexture']) if (value[key] !== undefined) {
+    const info = value[key];
+    check(info && typeof info === 'object' && !Array.isArray(info) && Object.keys(info).every(k => ['index', 'texCoord', 'extensions', 'extras'].includes(k)), `${key} must be closed textureInfo`);
+    const texture = ref(json.textures, info.index, `${key} texture`);
+    check(info.texCoord === undefined || integer(info.texCoord), `${key} texCoord must be a nonnegative integer`);
+    ref(json.images, texture.source, `${key} image`);
+    if (texture.sampler !== undefined) ref(json.samplers, texture.sampler, `${key} sampler`);
+  }
+}
+function extensionsFree(value, allowSkinMaterialExtensions = false) {
+  const materials = new Set(allowSkinMaterialExtensions ? value.materials ?? [] : []);
   const pending = [value];
   while (pending.length) {
     const item = pending.pop();
     if (!item || typeof item !== 'object') continue;
-    check(!item.extensions || Object.keys(item.extensions).length === 0, 'unsupported extensions/compression; decompress before character validation');
+    if (item.extensions && Object.keys(item.extensions).length > 0) {
+      check(materials.has(item) && Object.keys(item.extensions).every(name => SKIN_MATERIAL_EXTENSIONS.includes(name)), 'unsupported extensions/compression; decompress before character validation');
+      for (const [name, extension] of Object.entries(item.extensions)) {
+        check(value.extensionsUsed?.includes(name), `material extension ${name} must be declared in extensionsUsed`);
+        specularMaterial(extension, value);
+      }
+    }
     for (const [key, child] of Object.entries(item)) if (key !== 'extras' && child && typeof child === 'object') pending.push(child);
   }
 }
@@ -47,7 +72,7 @@ function extensionsFree(value) {
 /** Synchronous, dependency-free, uncompressed GLB 2 character inspection. Bounds are rest-pose world metres.
  * Inspects the explicit default scene, or the sole scene when `scene` is omitted; ambiguous multi-scene assets reject.
  */
-export function inspectCharacterGlb(bytes, { clipName, fps, frames, requireSkin = true, requireHumanoid = true } = {}) {
+export function inspectCharacterGlb(bytes, { clipName, fps, frames, requireSkin = true, requireHumanoid = true, allowSkinMaterialExtensions = false } = {}) {
   check(bytes instanceof Uint8Array || bytes instanceof ArrayBuffer, 'bytes must be a Uint8Array or ArrayBuffer');
   const input = bytes instanceof ArrayBuffer ? new Uint8Array(bytes) : bytes;
   const view = new DataView(input.buffer, input.byteOffset, input.byteLength);
@@ -74,8 +99,14 @@ export function inspectCharacterGlb(bytes, { clipName, fps, frames, requireSkin 
     cursor += length; chunkCount++;
   }
   check(json && typeof json === 'object' && json.asset?.version === '2.0', 'asset.version must be 2.0');
-  check(!json.extensionsUsed?.length && !json.extensionsRequired?.length, 'unsupported extensions/compression; decompress before character validation');
-  extensionsFree(json);
+  check(typeof allowSkinMaterialExtensions === 'boolean', 'allowSkinMaterialExtensions must be boolean');
+  check(!allowSkinMaterialExtensions || (requireSkin && clipName === undefined && fps === undefined && !(json.animations ?? []).length), 'material extension opt-in is only for static skins');
+  for (const field of ['extensionsUsed', 'extensionsRequired']) {
+    check(json[field] === undefined || Array.isArray(json[field]) && json[field].every(name => typeof name === 'string'), `${field} must be an array of names`);
+    check(!json[field]?.length || allowSkinMaterialExtensions && json[field].every(name => SKIN_MATERIAL_EXTENSIONS.includes(name)), 'unsupported extensions/compression; decompress before character validation');
+  }
+  check(!json.extensionsRequired?.some(name => !json.extensionsUsed?.includes(name)), 'required extension must also be declared used');
+  extensionsFree(json, allowSkinMaterialExtensions);
   check(Array.isArray(json.buffers) && json.buffers.length === 1 && binary, 'one self-contained BIN buffer is required');
   const buffer = json.buffers[0];
   check(buffer.uri === undefined && integer(buffer.byteLength, 1, binary.length) && binary.length - buffer.byteLength <= 3, 'buffer must be self-contained with a valid byteLength');

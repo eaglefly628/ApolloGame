@@ -100,17 +100,8 @@
 ### REQ-MOTION-M2 · 动画库入库与目录（FBX → 标准骨架 GLB · 自动测量 · 闭集标签） · [2026-10-27] · owner 判 A · 🟢 工具链 · **施工主体 = Codex（2026-10-27·本行即锁）** · status: in-progress（108 角色及 2445 动画下载已核验） · P1
 > spec：`docs/workflow/handoff-codex-motion-line.md` ■ M2；字段与词表：流程图 §2。
 
-### REQ-MOTION-M3 · 动画预览台（Skin × 动作网格） · [2026-10-27] · owner 判 A · 🟢 工具 · **施工主体 = Codex（2026-10-27·本行即锁）** · status: in-progress（依赖 M1 PASS、M2） · P2
-> spec：派工单 ■ M3。
-
-### REQ-MOTION-M4 · 演绎内容动作匹配（确定性检索 + skill） · [2026-10-27] · owner 判 A · 🟢 工具 + skill · **施工主体 = Codex（2026-10-27·本行即锁）** · status: in-progress（依赖 M2） · P1
-> spec：派工单 ■ M4。
-
 ### REQ-MOTION-M5 · 动画库扩展（Mixamo 滑杆变体 · 带皮角色下载 · 裁剪/镜像/补循环 · 其它来源） · [2026-10-27] · owner 判 A · 🟢 工具扩写 · **施工主体 = Codex（2026-10-27·本行即锁）** · status: in-progress（依赖 M2） · P2
 > spec：派工单 ■ M5。
-
-### GAP-MOTION-M6 · 补全动作烘焙入库（基础动作 + IK + 挂点 → 新动作 GLB） · [2026-10-28] · owner 提（擦火柴等库中缺失动作） · **owner 本会话判 A** · **施工主体 = Codex（2026-10-27·本行即锁）** · status: in-progress · P1 · 类型: 工具链（🟢）
-> 实查：运行时补全可由 M4 选最近动作 + `Attach3D` + `IK3D`（权重读动作图 flag）+ 时间线重组，**不报缺口**；但 IK 只在渲染时生效，无工具把结果烘焙成新动作，补出来的动作进不了库。A = `motion-library compose` 用引擎同一套动画 / IK 代码逐帧求解烘焙入库；B = 每个游戏运行时自拼。**Lead 推荐 A**。全文：`docs/design/ai-pipeline/motion-completion.md`。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 

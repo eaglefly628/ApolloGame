@@ -32,6 +32,15 @@ describe('T5 bounded binary FBX motion structure',()=>{
   const bytes=makeMockMotionFbx({version}),before=Buffer.from(bytes),info=validateMotionFbx(bytes);
   expect(info).toEqual({format:'binary-fbx',version,objects:5,connections:5,stacks:1,layers:1,curveNodes:1,curves:1,samples:2,durationSeconds:1,structureOnly:true});expect(bytes).toEqual(before);
  });
+ it('validates but excludes unbound exporter curves from active motion measurements',()=>{
+  const info=validateMotionFbx(makeMockMotionFbx({version:7700,unboundCurves:3}));
+  expect(info).toMatchObject({curves:4,connectedCurves:1,unboundCurves:3,samples:2,durationSeconds:1});
+ });
+ it('accepts an unbound XYZ curve-node subtree without treating it as active playback',()=>{expect(validateMotionFbx(makeMockMotionFbx({version:7700,unboundCurves:2,unboundCurveNode:true}))).toMatchObject({curves:6,connectedCurves:1,unboundCurves:5,unboundCurveNodes:1,samples:2,durationSeconds:1});});
+ it('supports one-key constant channels only alongside actual sampled playback',()=>{expect(validateMotionFbx(makeMockMotionFbx({constantCurve:true}))).toMatchObject({constantKeyCurves:1,samples:3,durationSeconds:1});expect(()=>validateMotionFbx(makeMockMotionFbx({times:[0n],values:[0]}))).toThrow(/positive duration/);});
+ it('supports missing exporter curve links only when that exact axis declares a finite constant default',()=>{expect(validateMotionFbx(makeMockMotionFbx({version:7700,missingCurveDefault:true}))).toMatchObject({constantDefaultConnections:1,samples:2,durationSeconds:1});});
+ it.each([{declareMissingDefault:false},{missingDefaultField:'d|W'},{missingDefaultValue:Infinity},{missingDefaultField:'d|X'}])('rejects missing curve link without a usable unique default %j',options=>{expect(()=>validateMotionFbx(makeMockMotionFbx({missingCurveDefault:true,...options}))).toThrow();});
+ it('still rejects malformed unbound curve samples',()=>{expect(()=>validateMotionFbx(makeMockMotionFbx({unboundCurves:1,unboundTimes:[1n,1n]}))).toThrow(/strictly increasing/);expect(()=>validateMotionFbx(makeMockMotionFbx({unboundCurves:1,unboundValues:[0,Infinity]}))).toThrow(/non-finite/);});
  it.each([7400,7500,7700])('supports bounded zlib arrays in version %i',version=>{expect(validateMotionFbx(makeMockMotionFbx({version,compressed:true})).samples).toBe(2);});
  it('accepts a sliced Uint8Array and standalone ArrayBuffer',()=>{const fixture=makeMockMotionFbx(),surrounded=Buffer.concat([Buffer.from('prefix'),fixture,Buffer.from('suffix')]),slice=surrounded.subarray(6,6+fixture.length);expect(validateMotionFbx(new Uint8Array(slice.buffer,slice.byteOffset,slice.length)).curves).toBe(1);expect(validateMotionFbx(Uint8Array.from(fixture).buffer).curves).toBe(1);});
  it.each([

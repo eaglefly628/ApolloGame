@@ -84,8 +84,8 @@ beforeEach(() => { for (const method of ['error', 'warn', 'info']) vi.spyOn(cons
 afterEach(() => { vi.restoreAllMocks(); for (const dir of roots.splice(0)) rmSync(dir, { recursive: true, force: true }); });
 
 describe('T7 closed job schema', () => {
-  it('exposes only five operations and validates data without reading files or mutating it', () => {
-    expect(BLENDER_OPS).toEqual(['normalize', 'rig-arp', 'retarget-arp', 'build-scene', 'render-views']);
+  it('exposes only eight operations and validates data without reading files or mutating it', () => {
+    expect(BLENDER_OPS).toEqual(['normalize', 'rig-arp', 'retarget-arp', 'build-scene', 'render-views', 'motion-import', 'skin-import', 'motion-variant']);
     const jobs = [build(), render(), { op: 'normalize', inputs: ['absent.glb'], params: { sourceUp: 'Y', targetHeightMeters: 1.8, maxTris: 30000, maxTextureSize: 2048 }, outputs: ['out.glb', 'spec.json'] }, ...['rig-arp', 'retarget-arp'].map(op => ({ op, inputs: op === 'retarget-arp' ? ['absent-a.glb', 'absent-b.glb'] : ['absent.glb'], params: {}, outputs: ['out.glb'] }))];
     for (const job of jobs) { const before = clone(job); expect(validateJob(job)).toBe(job); expect(job).toEqual(before); }
   });

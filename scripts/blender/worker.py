@@ -3,6 +3,7 @@ import hashlib
 import importlib.util
 import json
 import math
+import re
 import struct
 import sys
 from pathlib import Path
@@ -10,7 +11,7 @@ from pathlib import Path
 import bpy
 from mathutils import Matrix, Vector
 
-OPS = {'normalize', 'rig-arp', 'retarget-arp', 'build-scene', 'render-views'}
+OPS = {'normalize', 'rig-arp', 'retarget-arp', 'build-scene', 'render-views', 'motion-import', 'skin-import', 'motion-variant'}
 # Engine/glTF Y-up metres -> Blender Z-up, a proper rotation (determinant +1).
 BASIS = Matrix(((1, 0, 0, 0), (0, 0, -1, 0), (0, 1, 0, 0), (0, 0, 0, 1)))
 
@@ -444,6 +445,101 @@ def arp_available():
     return False
 
 
+def standard_bone_name(name):
+    name = name.split(':')[-1]
+    if name.startswith('mixamorig'):
+        name = re.sub(r'^mixamorig[0-9]*_?', '', name)
+    mapping = {'Spine2': 'Chest'}
+    for side in ('Left', 'Right'):
+        for source, target in (('Arm', 'UpperArm'), ('ForeArm', 'LowerArm'), ('UpLeg', 'UpperLeg'), ('Leg', 'LowerLeg')):
+            mapping[side + source] = side + target
+    return mapping.get(name, name)
+
+
+def motion_import(job):
+    scene = reset_scene()
+    motion = job['op'] == 'motion-import'
+    source = job['inputs'][0]
+    if Path(source).suffix.lower() == '.fbx':
+        finished(bpy.ops.import_scene.fbx(filepath=source, use_anim=motion, automatic_bone_orientation=False), 'FBX import')
+    else:
+        finished(bpy.ops.import_scene.gltf(filepath=source, import_pack_images=True), 'GLB import')
+    armatures = [obj for obj in scene.objects if obj.type == 'ARMATURE']
+    if len(armatures) != 1:
+        raise ValueError('import requires exactly one armature')
+    rig = armatures[0]
+    names = [standard_bone_name(bone.name) for bone in rig.data.bones]
+    if len(names) != len(set(names)):
+        raise ValueError('standard skeleton name collision')
+    for bone, name in zip(list(rig.data.bones), names):
+        bone.name = name
+    required = {'Hips', 'Spine', 'Chest', 'Neck', 'Head'}
+    for side in ('Left', 'Right'):
+        required.update(side + part for part in ('UpperArm', 'LowerArm', 'Hand', 'UpperLeg', 'LowerLeg', 'Foot'))
+    if not required.issubset(set(names)):
+        raise ValueError('missing required humanoid bones: ' + str(sorted(required - set(names))))
+    if motion:
+        if not rig.animation_data or not rig.animation_data.action:
+            raise ValueError('motion input has no active action')
+        action = rig.animation_data.action
+        start, end = action.frame_range
+        fps = job['params']['fps']
+        source_fps = scene.render.fps / scene.render.fps_base
+        frames = round((end - start) / source_fps * fps) + 1
+        if not 2 <= frames <= 36001:
+            raise ValueError('motion frame budget exceeded')
+        samples = []
+        for index in range(frames):
+            time = start + index / fps * source_fps
+            scene.frame_set(math.floor(time), subframe=time % 1)
+            samples.append({bone.name: bone.matrix_basis.copy() for bone in rig.pose.bones})
+        rig.animation_data_clear()
+        scene.render.fps, scene.render.fps_base = fps, 1
+        scene.frame_start, scene.frame_end = 0, frames - 1
+        for index, sample in enumerate(samples):
+            scene.frame_set(index)
+            for bone in rig.pose.bones:
+                bone.rotation_mode = 'QUATERNION'
+                bone.matrix_basis = sample[bone.name]
+                for path in ('location', 'rotation_quaternion', 'scale'):
+                    bone.keyframe_insert(data_path=path, frame=index, group=bone.name)
+        rig.animation_data.action.name = job['params']['clipId']
+        for obj in list(scene.objects):
+            if obj != rig:
+                bpy.data.objects.remove(obj, do_unlink=True)
+        # Existing engine validation requires skin-backed bones. This authored
+        # triangle carries the skeleton; no source character mesh is exported.
+        mesh = bpy.data.meshes.new('MotionValidationCarrier')
+        mesh.from_pydata([(0, 0, 0), (0.01, 0, 0), (0, 0.01, 0)], [], [(0, 1, 2)])
+        carrier = bpy.data.objects.new('MotionValidationCarrier', mesh)
+        scene.collection.objects.link(carrier)
+        group = carrier.vertex_groups.new(name='Hips')
+        group.add([0, 1, 2], 1, 'REPLACE')
+        modifier = carrier.modifiers.new('ValidationSkin', 'ARMATURE')
+        modifier.object = rig
+        carrier.parent = rig
+        carrier['motionValidationCarrier'] = True
+        rig['motionValidationCarrier'] = True
+    else:
+        for obj in list(scene.objects):
+            obj.animation_data_clear()
+        for bone in rig.pose.bones:
+            bone.matrix_basis = Matrix.Identity(4)
+    scene.frame_set(0)
+    bpy.context.view_layer.update()
+    finished(bpy.ops.export_scene.gltf(
+        filepath=job['outputs'][0], export_format='GLB', export_yup=True,
+        export_cameras=False, export_lights=False, export_animations=motion,
+        export_animation_mode='ACTIVE_ACTIONS', export_force_sampling=True,
+        export_nla_strips_merged_animation_name=job['params'].get('clipId', 'Animation'),
+        export_frame_range=True, export_frame_step=1, export_optimize_animation_size=False,
+        export_anim_slide_to_zero=True, export_extras=True, export_def_bones=False,
+        export_rest_position_armature=True, export_current_frame=False,
+        export_apply=False, export_materials='NONE' if motion else 'EXPORT',
+    ), 'standard humanoid GLB export')
+    log('commit', 'standard humanoid exported; motion carrier=' + str(motion))
+
+
 def main():
     args = sys.argv[sys.argv.index('--') + 1:]
     if len(args) != 1:
@@ -466,7 +562,12 @@ def main():
         raise ValueError('views/output count mismatch')
     for output in job['outputs']:
         Path(output).parent.mkdir(parents=True, exist_ok=True)
-    {'normalize': normalize, 'build-scene': build_scene, 'render-views': render_views}[op](job)
+    if op == 'motion-variant':
+        sys.path.insert(0, str(Path(__file__).parent))
+        from motion_variant import motion_variant
+        motion_variant(job)
+    else:
+        {'normalize': normalize, 'build-scene': build_scene, 'render-views': render_views, 'motion-import': motion_import, 'skin-import': motion_import}[op](job)
     for output in job['outputs']:
         path = Path(output)
         if not path.is_file() or path.stat().st_size == 0:

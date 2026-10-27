@@ -4,10 +4,11 @@ const MAGIC=Buffer.from('Kaydara FBX Binary  \0\x1a\0','binary');
 const p=(type,value)=>({type,value});
 const node=(name,properties=[],children=[])=>({name,properties,children});
 /** Tiny one-bone, one-stack/layer/XYZ-curve structure for parser tests only. */
-export function makeMockMotionFbx({version=7400,compressed=false,times=[0n,46186158000n],values=[0,0.1],withAnimation=true,referenceCounts=[times.length],detachedLimb=false}={}) {
+export function makeMockMotionFbx({version=7400,compressed=false,times=[0n,46186158000n],values=[0,0.1],withAnimation=true,referenceCounts=[times.length],detachedLimb=false,unboundCurves=0,unboundTimes=[0n,923723160000n],unboundValues=[0,1],unboundCurveNode=false,constantCurve=false,missingCurveDefault=false,declareMissingDefault=true,missingDefaultField='d|Y',missingDefaultValue=0}={}) {
  const wide=version>=7500,width=wide?25:13;
  function property({type,value}) {
   if(type==='S'){const bytes=Buffer.from(value);const out=Buffer.alloc(5+bytes.length);out.write(type);out.writeUInt32LE(bytes.length,1);bytes.copy(out,5);return out;}
+  if(type==='D'){const out=Buffer.alloc(9);out.write(type);out.writeDoubleLE(value,1);return out;}
   if(type==='L'){const out=Buffer.alloc(9);out.write(type);out.writeBigInt64LE(BigInt(value),1);return out;}
   const stride=type==='l'?8:4,raw=Buffer.alloc(value.length*stride);
   value.forEach((v,i)=>type==='l'?raw.writeBigInt64LE(BigInt(v),i*stride):type==='f'?raw.writeFloatLE(v,i*stride):raw.writeInt32LE(v,i*stride));
@@ -29,6 +30,15 @@ export function makeMockMotionFbx({version=7400,compressed=false,times=[0n,46186
   ]));
   connections.push(node('C',[p('S','OO'),p('L',3),p('L',2)]),node('C',[p('S','OO'),p('L',4),p('L',3)]),node('C',[p('S','OP'),p('L',4),p('L',1),p('S','Lcl Translation')]),node('C',[p('S','OP'),p('L',5),p('L',4),p('S','d|X')]));
  }
+ for(let index=0;index<unboundCurves;index++)objects.push(object('AnimationCurve',100+index,'Unused\0\x01AnimCurve','',[
+  node('KeyTime',[p('l',unboundTimes)]),node('KeyValueFloat',[p('f',unboundValues)]),
+ ]));
+ if(unboundCurveNode){objects.push(object('AnimationCurveNode',200,'UnusedR\0\x01AnimCurveNode'));for(const [index,axis] of ['X','Y','Z'].entries()){
+  objects.push(object('AnimationCurve',300+index,'UnusedLinked\0\x01AnimCurve','',[node('KeyTime',[p('l',unboundTimes)]),node('KeyValueFloat',[p('f',unboundValues)])]));
+  connections.push(node('C',[p('S','OP'),p('L',300+index),p('L',200),p('S','d|'+axis)]));
+ }}
+ if(constantCurve){objects.push(object('AnimationCurve',50,'Constant\0\x01AnimCurve','',[node('KeyTime',[p('l',[0n])]),node('KeyValueFloat',[p('f',[42])])]));connections.push(node('C',[p('S','OP'),p('L',50),p('L',4),p('S','d|Y')]));}
+ if(missingCurveDefault){if(declareMissingDefault)objects.find(o=>o.name==='AnimationCurveNode'&&o.properties[0].value===4).children.push(node('Properties70',[],[node('P',[p('S',missingDefaultField),p('S','Number'),p('S',''),p('S','A'),p('D',missingDefaultValue)])]));connections.push(node('C',[p('S','OP'),p('L',400),p('L',4),p('S',missingDefaultField)]));}
  const header=Buffer.alloc(27);MAGIC.copy(header);header.writeUInt32LE(version,23);
  const roots=[node('Objects',[],objects),node('Connections',[],connections)],parts=[header];let offset=27;
  for(const item of roots){const bytes=encode(item,offset);parts.push(bytes);offset+=bytes.length;}
