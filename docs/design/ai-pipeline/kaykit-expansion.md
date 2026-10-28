@@ -1,4 +1,6 @@
-# KayKit 风格补全能力评估（不用 Tripo 类 AI 建模）（2026-10-28·⚖ 待 owner 判 A/B）
+# KayKit 风格补全能力评估（不用 Tripo 类 AI 建模）（2026-10-28·**owner 判 A**）
+
+> 已起单 REQ-WORLDKIT-K1–K4；派工单 `docs/workflow/handoff-codex-worldkit.md`。运行时 3D 多部件模板（🔴）仍暂缓。
 
 > **owner 裁（2026-10-28）**：风格锚定为 **KayKit**。问题：**不用 Tripo 之类 AI 建模**，我们能不能按 KayKit 风格补全物件，组成世界与基本元素？
 > 口径：逐项对现有代码实查。

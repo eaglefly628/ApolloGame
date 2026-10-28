@@ -106,9 +106,17 @@
 ### REQ-MOTION-M7 · 基于世界位移、转角与速度误差的自适应关键帧压缩 · [2026-10-28] · owner 明确授权 · 🔴 通用资源/渲染工具 · **施工主体 = Codex（2026-10-28·本行即锁）** · status: queued（owner要求先完成None母版，再做内部智能减帧；完整母版不可覆盖） · P1
 > spec：`docs/design/ai-pipeline/motion-adaptive-reduction.md`。opt-in 稀疏 LINEAR GLB → 加载时还原均匀采样；保留旧默认/预算；世界末端位置、转角、速度与接触窗验证，不做源站黑盒减帧或游戏自由代码。
 
-### GAP-KAYKIT-LINE · KayKit 风格补全线（K1 入库目录 · K2 拼装烘焙 · K3 换色与风格校正 · K4 参数化生成） · [2026-10-28] · owner 提（风格锚已定 KayKit·不用 Tripo 类 AI 建模） · **⚖ 待 owner 判 A/B** · 施工主体：待裁 · status: open · P1 · 类型: 工具链（🟢 仅 `scripts/` 与 Blender 作业）
-> 实查：Blender 无头桥、规范化、部件显隐、多机位渲染与盲审已有；缺静态物件目录、拼装烘焙（`build-scene` 绑拆层单，运行时 `prefab` 只偏移 2D Transform 不偏移 Transform3D）、色图换色 / 校正、参数化生成。**Lead 推荐 A**，顺序 K5 数据 → K1 → K3 → K2 → K4；运行时 3D 多部件模板（🔴）暂缓。全文：`docs/design/ai-pipeline/kaykit-expansion.md`。
+### REQ-WORLDKIT-K1 · KayKit 入库与目录（含 K5 风格规范实测 · KayKit 骨骼改名表） · [2026-10-28] · owner 判 A · 🟢 工具链 · **施工主体：待抢锁（指派 Codex）** · status: open · P1
+> spec：`docs/workflow/handoff-codex-worldkit.md` ■ K1；评估：`docs/design/ai-pipeline/kaykit-expansion.md`。
 
+### REQ-WORLDKIT-K3 · 色图换色与风格校正（Blender 作业 atlas-conform） · [2026-10-28] · owner 判 A · 🟢 工具链 · **施工主体：待抢锁（指派 Codex）** · status: open（依赖 K1） · P1
+> spec：派工单 ■ K3。
+
+### REQ-WORLDKIT-K2 · 拼装烘焙（Blender 作业 kitbash） · [2026-10-28] · owner 判 A · 🟢 工具链 · **施工主体：待抢锁（指派 Codex）** · status: open（依赖 K1、K3） · P1
+> spec：派工单 ■ K2。
+
+### REQ-WORLDKIT-K4 · 参数化生成（Blender 作业 generate · 登记制生成器） · [2026-10-28] · owner 判 A · 🟢 工具链 · **施工主体：待抢锁（指派 Codex）** · status: open（依赖 K3） · P2
+> spec：派工单 ■ K4。
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
