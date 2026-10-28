@@ -117,6 +117,9 @@
 
 ### REQ-WORLDKIT-K4 · 参数化生成（Blender 作业 generate · 登记制生成器） · [2026-10-28] · owner 判 A · 🟢 工具链 · **施工主体：待抢锁（指派 Codex）** · status: open（依赖 K3） · P2
 > spec：派工单 ■ K4。
+### GAP-FX-RENDER · 渲染线 R1 导入模型实例化绘制 · R2 导入模型卡通着色 · 特效线 V1–V5（爆发 / 贴图序列帧 / 网格粒子 / 盒面发射 / 噪声风）+ 特效库 · [2026-10-28] · owner 要求复盘 · **⚖ 待 owner 判 A/B** · 施工主体：待裁 · status: open · P1 · 类型: 渲染器（🔴 P3D 域·render-only）
+> 实查：实例化只覆盖 `Mesh3D`（`batches.ts`），`ModelPool` 逐实体克隆；`Vfx3D` 为圆点 `THREE.Points`，只有持续发射与点 / 锥 / 球形状，无贴图、无爆发、无噪声。**Lead 推荐 R1=A、R2=B、V=A**。全文：`docs/design/ai-pipeline/fx-render-line-review-2026-10-28.md`。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
