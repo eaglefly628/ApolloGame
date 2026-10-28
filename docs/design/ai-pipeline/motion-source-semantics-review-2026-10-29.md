@@ -55,3 +55,39 @@ UI 审计按环境设置已有的 UI_AUDIT_CHROMIUM。亮暗审计均使用合�
 - 依赖链接 node_modules 是本机既有未跟踪链接。仅在门禁进程设置 core.excludesFile 忽略该链接，不改仓库忽略配置，不提交链接。
 
 全量测试阶段实测：700 个测试文件、7746 项通过，2 项按既有配置跳过；本批不新增跳过项。最终完整门禁 scope=full 退出 0，eslint、depcruise、tsc、全量测试、build 和文档/预算守卫通过。已读存量告警：大 bundle 警告、game-a/game-c 美术文件缺失 WARN（门禁允许退出 2）；不把存量告警描述为零问题。
+
+## 独立复查判词（Claude · 2026-10-29）
+
+**PASS（目标 `1b87a04d5d032b472cd789382a78c79895eb9c75`）。** 接单即开始，复查人未参与施工；在隔离 worktree 检出目标提交执行，结束后已移除。范围只限本提交的 Description 来源草稿与完整目录预览；不是 4077 条语义结论的准确性验收，也不是 2445×108 的视觉验收。
+
+### ① 独立复跑
+
+- `node node_modules/vitest/vitest.mjs run scripts/motion-semantics.test.mjs scripts/motion-classify.test.mjs tools/motion-preview scripts/motion-preview.test.mjs` → 7 文件 **64/64**，exit 0。
+- `node node_modules/typescript/bin/tsc -p tools/motion-preview/tsconfig.json` → exit 0。
+- UI 审计（本容器 Chromium `/opt/pw-browsers/chromium-1194`）：默认 / daylight × 676 / 1280 共 4 次全部 exit 0，重叠 0、对比硬失败 0、对比警告 0。
+- 全量门禁 `node scripts/scoped-gate.mjs --run --base 3b07d6366c01963beb02fcdc1575c91c092a9630`：scope=full，**exit 0**，700 文件，**7746 通过 / 2 跳过**（既有配置），末行 `✅ 门禁全绿（scope=full）`。本环境未出现施工方提到的三项浏览器 / 临时路径环境失败。
+
+### ② 撤修验红（4 处；前 2 处为我自选、后 2 处取自复查单导航；均断言锚点命中 = 1，恢复后 cmp 一致）
+
+| 锚点 | 撤法 | 红灯 |
+|---|---|---|
+| 否定跳过整句 `if(/\b(?:no\|not\|without…)…/i.test(prefix)) {warnings.push('negated-mention-skipped');continue;}` | 删除 | exit 1：否定反例、标题不压否定、否定后肯定子句 3 例 |
+| 标题补位守卫 `&&!warnings.length&&!RECIPIENT.test(text))collect(title,'title',true);` | 去掉两个守卫 | exit 1：`uses a title to supplement absent behavior but not an explicit negation` |
+| 静态姿势 `facet:staticPose&&facet==='action'?'poseContext':facet` | 改为 `facet:facet` | exit 1：`never treats a two-frame static pose as moving exercise` |
+| 失败重试 `  if(failed)playbackKey='';` | 删除 | exit 1：`retries a failed selection…` 等预览生命周期 3 例 |
+
+### ③ 实证复现
+
+- **CLI 只读**：自造 3 条目录跑真实入口 `node scripts/motion-classify.mjs --lib <临时目录> --json` → exit 0；`catalog.json` 字节 SHA 前后一致，目录内只有原文件；资产原状态 `confirmed` 原样输出，标注一律 `draft`；未知参数 exit 1。
+- **语义反例 26 条**（合成文字）：否定、否定后肯定子句、受方、闪避对方攻击、球类射门、步枪射击、翻书页、拐杖、静态姿势、缺说明降级为标题，均与复查单承诺一致；原文切片 `start/end` 与 quote 一致。
+
+### ④ 读告警
+
+topological-sort 只有既有 `[L,P]` fixture 一条；art-ledger-guard 为既有 WARN；与本批相关文件无新增 warn / error / reject 输出。
+
+### 非阻断观察（交给 M2 标签审核，不影响本判词）
+
+确定性文字规则的已知局限，复查单已声明「规则覆盖率不等于准确率」，这些是实测到的具体样例，建议进反例集：
+- 误标：`Standing close to a table` → `action:close`；`At this point he waves` → 多出 `action:point`；`Nobody walks here; he dances` → 多出 `action:walk`（`nobody` 不在否定词表）。
+- 漏标：复数 `push ups`（`Doing push ups on the floor`）描述侧不命中 `exercise`（正则 `push[ -]?up\b` 不收复数），此时只能靠标题补位；若标题也是复数则归入待分类。`Receiving a strong kick to the stomach` 只得 `role:recipient`，没有 `hit-reaction` 行为（受击行为正则只认 `hit`）。
+- 以上均为 `draft`，不影响资产批准状态；正式 M3 写回、标签级批准、M4 新契约接线仍需各自复查，本判词不覆盖。
