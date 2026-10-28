@@ -97,8 +97,8 @@
 
 <!-- GAP-AIFLOW-REFS：owner 2026-10-27 撤回（“先别A了，这块我们再看看，移除需求”），已从当前可执行池移除；不再等待本次A/B，不代表已实现。原始A/B讨论保留于 docs/design/ai-pipeline/gap-review-2026-10-24.md §二，完整条目查Git历史；准备记录保留。重启须新指令。 -->
 
-### REQ-MOTION-M2 · 动画库入库与目录（FBX → 标准骨架 GLB · 自动测量 · 闭集标签） · [2026-10-27] · owner 判 A · 🟢 工具链 · **施工主体 = Codex（2026-10-27·本行即锁）** · status: in-progress（旧对照组2445动作/108角色已完成并校验；None完整帧母版按2026-10-28新指令重建） · P1
-> spec：`docs/workflow/handoff-codex-motion-line.md` ■ M2；字段与词表：流程图 §2。
+### REQ-MOTION-M2 · 动画库入库与目录（FBX → 标准骨架 GLB · 自动测量 · 闭集标签） · [2026-10-27] · owner 判 A · 🟢 工具链 · **施工主体 = Codex（2026-10-27·本行即锁）** · status: in-progress（None母版2445/2445、动作GLB2445/2445、108角色全库验证通过；当前升级Description主导标签分类并同步M3目录/预览优化） · P1
+> spec：`docs/workflow/handoff-codex-motion-line.md` ■ M2；本轮范围与复查入口：`docs/design/ai-pipeline/motion-line-scope-2026-10-29.md`。字段与词表：流程图 §2（新分类契约待施工，不冒充已上线）。
 
 ### REQ-MOTION-M5 · 动画库扩展（Mixamo 滑杆变体 · 带皮角色下载 · 裁剪/镜像/补循环 · 其它来源） · [2026-10-27] · owner 判 A · 🟢 工具扩写 · **施工主体 = Codex（2026-10-27·本行即锁）** · status: in-progress（依赖 M2） · P2
 > spec：派工单 ■ M5。

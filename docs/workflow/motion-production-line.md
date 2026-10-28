@@ -3,6 +3,8 @@
 > 目标：一个**全动画库**（自己的、元数据齐全、可扩展），任何角色（Skin）都能用库里任何动作；童话剧等演绎型内容的 AI 生产从库里**自动匹配**动作并能**预览**。
 > 方案与实查：`docs/design/ai-pipeline/motion-library-plan.md`。本文件是**施工与使用的流程图**：每一步用什么工具、吃什么、产什么、谁把关。
 
+> 当前范围与状态以 [2026-10-29 阶段复查单](../design/ai-pipeline/motion-line-scope-2026-10-29.md) 为准；M2 标签分类与 M3 预览优化为当前并行工作。
+
 ## 0. 两条硬约定
 
 1. **标准骨架 = `apollo-humanoid-v1`**（引擎既有：`Hips / Spine / Chest / Neck / Head / Left|Right UpperArm·LowerArm·Hand / Left|Right UpperLeg·LowerLeg·Foot` 17 根必备骨，允许额外骨如手指、肩、Spine1）。库里的动作和所有 Skin 都用这套命名；Mixamo 的 `mixamorig:*` 在入库时改名（§2 映射表）。静止姿态统一 **T-pose、Y 轴向上、面朝 +Z**。
@@ -73,10 +75,10 @@
 | 单 | 归属 | 依赖 | 状态 |
 |---|---|---|---|
 | **M1** 一库多 Skin 重定向 | 🔴 主程（Claude） | — | **代码独立复查 PASS（STEP/LINEAR 明确边界）；真实素材视觉待验** · Review 单 `docs/design/ai-pipeline/review/REQ-MOTION-M1.md` |
-| **M2** 入库与目录 | 🟢 Codex | 第一批 Mixamo 下载完成 | 待抢锁 |
-| **M3** 预览台 | 🟢 Codex | M1 PASS、M2 | 待抢锁 |
-| **M4** 匹配 | 🟢 Codex | M2 | 待抢锁 |
-| **M5** 扩展与 Skin 下载 | 🟢 Codex | Skin 下载部分已提前（2026-10-28）；其余依赖 M2 | 待抢锁 |
+| **M2** 入库与目录 | 🟢 Codex | None 母版 | 技术入库全库通过；Description 主导分类升级进行中 |
+| **M3** 预览台 | 🟢 Codex | M1 PASS、M2 | 首版可用；与 M2 同步优化全目录与标签核对 |
+| **M4** 匹配 | 🟢 Codex | M2 标签契约 | 关键词版已复查；新标签消费待施工 |
+| **M5** 扩展与 Skin 下载 | 🟢 Codex | M2 | 108 Skin 与本地变体已有；远端滑杆协议未验 |
 | **M6** 补全动作烘焙入库 | 🟢 Codex | M2、M4 | **owner 本会话已判 A**（`docs/design/ai-pipeline/motion-completion.md`） |
 
 每单照旧：施工人 ≠ 复查人；Codex 施工的由 Claude 复查，M1 由 Codex 复查；owner 最后可以按 §4 自己验收。派工指令全文：`docs/workflow/handoff-codex-motion-line.md`。
