@@ -2,19 +2,25 @@
 
 > 引擎能力缺口不写这里，写 `docs/workflow/requests.md` / `requests-3d.md`；这里只放本作的设计与生产工单。编号 `G628-NN`，开单前 grep 防重号。
 
+> **⏸ 待 owner 裁（2026-10-27 讨论·owner 定「做 628 时再签」）**——重启本作时先过这四问：
+> 1. 风格令牌：先用草案令牌出 KA-02、看图后令牌与风格锚一并定稿（Lead 推荐·合并 01/02/03 为一次确认），还是先签色值？
+> 2. 可玩原型：A 照 `design-freeze.md` §6 定稿后再进 S3 骨架 / B 重签能力计划后灰盒并行做三动词循环（Lead 推荐 B·规则面与美术无关）。
+> 3. 生图 key 用哪家（`DASHSCOPE_API_KEY` / `ARK_API_KEY`）与配置时间。
+> 4. G628-07（原著改编文本）/ G628-09（动作清单）是否开工；G628-12–15 在无可玩入口前是否标挂起。
+
 ### G628-01 · GDD v0.1 → v1.0 定稿 · [2026-10-16] · owner 提 · status: open
 - ✅ 2026-10-22：owner 定 3D；其余三项按 Lead 默认推进（见 `gdd.md` §9）。剩风格令牌（G628-02）待 owner 看一眼。
 
 ### G628-02 · 风格令牌定稿 · [2026-10-16] · status: open
 - 草案见 `design-freeze.md` §2。格式等 `REQ-AIFLOW-STYLETOKENS` 定；在此之前以草案表为准。
 
-### G628-03 · 风格锚 KA-02（铁火炉）出图与定稿 · [2026-10-16] · status: blocked（等 `REQ-AIFLOW-REFGEN`）
+### G628-03 · 风格锚 KA-02（铁火炉）出图与定稿 · [2026-10-16] · status: blocked（等 G628-02 + 生图 key；`REQ-AIFLOW-REFGEN` 已交付·`ai-gen.mjs --ref` 可用，缺 key 只出 mock）
 - 先只出这一张；owner 定稿后作为全作参考图。
 
 ### G628-04 · 其余关键图 + 角色设定 · [2026-10-16] · status: blocked（等 G628-03）
 - 清单见 `design-freeze.md` §3。
 
-### G628-05 · 拆层单 D1 · [2026-10-16] · status: blocked（等 `REQ-AIFLOW-SPLIT` + G628-04）
+### G628-05 · 拆层单 D1 · [2026-10-16] · status: blocked（等 G628-04；`REQ-AIFLOW-SPLIT` 已交付·`scripts/asset-split.mjs`）
 - 预期拆法见 `design-freeze.md` §4；owner 确认后才进美术台账。
 
 ### G628-06 · UI 需求单 → Claude Design 出稿 → 收稿 · [2026-10-16] · status: blocked（等 G628-01/02）
