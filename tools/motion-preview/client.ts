@@ -6,7 +6,9 @@ import { AssetManager, ModelAssetLoader } from '../../src/assets/index.js';
 import { frameSkin } from './framing.js';
 import { buildPreview, previewClips, previewSkins, selectedPreviewClip, type PreviewState, type PreviewRow } from './layout.js';
 interface Row extends PreviewRow { file: string; hipHeight?: number; sha256?: string; fps: number; frames: number; loop: boolean; }
-const catalog = await fetch('/catalog.json').then(r=>{if(!r.ok)throw new Error('目录读取失败');return r.json();});
+const API_BASE=location.pathname?.startsWith('/library/')?'/library':'';
+const requestedClip=new URLSearchParams(location.search).get('clip');
+const catalog = await fetch(API_BASE+'/catalog.json').then(r=>{if(!r.ok)throw new Error('目录读取失败');return r.json();});
 const root = document.getElementById('root')!;
 const defaultSkin = (name:string,fallback:number):string => catalog.skins.find((skin:Row)=>skin.source?.mixamoName===name)?.id || catalog.skins[fallback]?.id || '';
 const state: PreviewState = {...catalog,query:'',category:'',emotion:'',page:0,paused:false,message:'',viewportWidth:root.clientWidth || 1280,skinIds:[defaultSkin('Y Bot',0),defaultSkin('X Bot',1)]};
@@ -14,7 +16,7 @@ const boundsCache=new Map<string,Promise<unknown>>();
 function skinBounds(skin:Row):Promise<unknown> {
   const key=skin.id+':'+skin.sha256;
   let pending=boundsCache.get(key);
-  if(!pending){pending=fetch('/skin-bounds/'+skin.id).then(async response=>{
+  if(!pending){pending=fetch(API_BASE+'/skin-bounds/'+skin.id).then(async response=>{
     if(!response.ok)throw new Error('角色边界读取失败');
     const data=await response.json();if(data.id!==skin.id||data.sha256!==skin.sha256)throw new Error('角色边界与素材不一致');return data.bounds;
   }).catch(error=>{boundsCache.delete(key);throw error;});boundsCache.set(key,pending);}
@@ -28,7 +30,7 @@ function drain(): void {
   }
 }
 function tree() {
-  const data = buildPreview(state), issues=validateLayoutNode(data);
+  const data = buildPreview(state);if(API_BASE)data.children?.unshift({id:'workbench-home',type:'Button',props:{label:'返回动画工作台',action:'workbench-home'}});const issues=validateLayoutNode(data);
   if(issues.length)throw new Error(JSON.stringify(issues));
   return data;
 }
@@ -46,7 +48,7 @@ async function syncPlayback(force=false): Promise<void> {
     const release=()=>{if(released)return;released=true;try{if(engine){activeEngines.delete(engine);engine.stop();}}finally{try{renderer?.destroy();}finally{assets.clear();}}};
     cleanup.push(release);
     try {
-      assets.registerManifest([{kind:'model',key:'skin',src:`/assets/${skin.file}`},{kind:'skeletal-animation',key:'motion',src:`/assets/${clip.file}`,skeleton:'apollo-humanoid-v1',fps:clip.fps,frames:clip.frames,loop:clip.loop}]);
+      assets.registerManifest([{kind:'model',key:'skin',src:`${API_BASE}/assets/${skin.file}`},{kind:'skeletal-animation',key:'motion',src:`${API_BASE}/assets/${clip.file}`,skeleton:'apollo-humanoid-v1',fps:clip.fps,frames:clip.frames,loop:clip.loop}]);
       const [,bounds]=await Promise.all([assets.loadAll(),skinBounds(skin)]);if(current!==generation){release();return;}
       engine=new Engine({tickRate:60});const scale=1/(skin.hipHeight || 1),width=Math.max(200,container.clientWidth);
       engine.load({capabilities:[],entities:{
@@ -71,11 +73,12 @@ const selectSkin=(index:0|1)=>(value?:string)=>{
 };
 const adjacent=(delta:number)=>{const matching=previewClips(state),at=matching.findIndex(row=>row.id===selectedPreviewClip(state)?.id),next=matching[at+delta];if(next){state.selectedId=next.id;refresh();}};
 const handlers={
+  'workbench-home':()=>location.assign('/'),
   'skin-first':selectSkin(0),'skin-second':selectSkin(1),query:change('query'),category:change('category'),
   'select-clip':(id?:string)=>{if(id&&previewClips(state).some(clip=>clip.id===id)){state.selectedId=id;refresh();}},
   previous:()=>adjacent(-1),next:()=>adjacent(1),pause:()=>{state.paused=!state.paused;for(const engine of activeEngines){if(state.paused)engine.stop();else engine.start();}mounted.update(tree());},
 };
-state.selectedId=selectedPreviewClip(state)?.id || '';mounted=mountUI(root,tree(),handlers,motionPreviewTheme(new URLSearchParams(location.search).has('daylight')));
+state.selectedId=catalog.clips.some((clip:Row)=>clip.id===requestedClip)?requestedClip!:selectedPreviewClip(state)?.id || '';mounted=mountUI(root,tree(),handlers,motionPreviewTheme(new URLSearchParams(location.search).has('daylight')));
 const onResize=()=>{const before=(state.viewportWidth || 1280)>=1100;state.viewportWidth=root.clientWidth || 1280;const after=state.viewportWidth>=1100;if(before!==after){mounted.update(tree());void syncPlayback(true);}};
 window.addEventListener('resize',onResize);
 window.addEventListener('pagehide',()=>{generation++;drain();mounted();},{once:true});

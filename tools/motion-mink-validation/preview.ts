@@ -12,6 +12,7 @@ interface Clip {id:string;file:string;fps:number;frames:number;loop:boolean;desc
 interface Catalog {skins:Skin[];clips:Clip[]}
 interface ReviewProp {id:string;bone:'LeftHand'|'RightHand'|'LeftGripSocket'|'RightGripSocket'|'LeftHandContactSocket'|'RightHandMatchHeadSocket';offset:[number,number,number];rot:[number,number,number];size:[number,number,number];color?:number}
 const root=document.getElementById('root');if(!root)throw new Error('Missing preview root');
+const API_BASE=location.pathname.startsWith('/interaction/')?'/interaction':'';
 const viewColumns=(root.clientWidth || window.innerWidth)<800?1:2;
 let benchmarkSkinName='Y Bot',selectedSkinId='',skinOptions:{value:string;label:string}[]=[],loadGeneration=0;
 let paused=false,message='正在加载本机验证候选…',summary:string[]=[],candidate='',disposed=false;
@@ -25,6 +26,7 @@ function resume(engine:Engine):void{if(newPausedGraphs.delete(engine)){const gra
 const label=(id:string,text:string):LayoutNode=>({id,type:'Label',props:{text,color:'text'}});
 function layout():LayoutNode {
   const tree:LayoutNode={id:'mink-preview',type:'Screen',props:{bg:'panel'},layout:{direction:'column',gap:14,padding:16,maxWidth:1600},children:[
+    ...(API_BASE?[{id:'workbench-home',type:'Button' as const,props:{label:'返回动画工作台',action:'workbench-home'}}]:[]),
     {id:'title',type:'Label',props:{text:selectedRuntime?'手持道具 · 实时 Socket IK':'Mink 离线候选验证',font:'epic',size:28,color:'text'}},
     label('review-warning','本地候选；几何、表意与换Skin检查分别记录。'),
     {id:'select-skin',type:'Dropdown',props:{value:selectedSkinId,options:skinOptions,action:'select-skin'}},
@@ -41,12 +43,12 @@ function layout():LayoutNode {
   ]};
   const issues=validateLayoutNode(tree);if(issues.length)throw new Error(JSON.stringify(issues));return tree;
 }
-const mounted=mountUI(root,layout(),{'socket-interact':()=>{if(paused)return;interactionActive=!interactionActive;applySocketControls();},'box-left':()=>moveBox(-.025,0),'box-right':()=>moveBox(.025,0),'box-up':()=>moveBox(0,.025),'box-down':()=>moveBox(0,-.025),'box-reset':()=>{if(paused)return;boxShift=[0,0,0];applySocketControls();},'socket-toggle':()=>{if(paused)return;runtimeEnabled=!runtimeEnabled;applySocketControls();},'select-skin':(id?:string)=>{if(!id||id===selectedSkinId||!skinOptions.some(option=>option.value===id))return;selectedSkinId=id;boxShift=[0,0,0];for(const dispose of release.splice(0).reverse())dispose();engines.length=0;message='正在重定向到所选角色…';mounted.update(layout());const requestedGeneration=loadGeneration+1;void load().catch(error=>rejectLoad(error,id,requestedGeneration));},pause:()=>{paused=!paused;for(const engine of engines){if(paused)engine.stop();else resume(engine);}mounted.update(layout());}},motionPreviewTheme(new URLSearchParams(location.search).has('daylight')));
+const mounted=mountUI(root,layout(),{'workbench-home':()=>location.assign('/'),'socket-interact':()=>{if(paused)return;interactionActive=!interactionActive;applySocketControls();},'box-left':()=>moveBox(-.025,0),'box-right':()=>moveBox(.025,0),'box-up':()=>moveBox(0,.025),'box-down':()=>moveBox(0,-.025),'box-reset':()=>{if(paused)return;boxShift=[0,0,0];applySocketControls();},'socket-toggle':()=>{if(paused)return;runtimeEnabled=!runtimeEnabled;applySocketControls();},'select-skin':(id?:string)=>{if(!id||id===selectedSkinId||!skinOptions.some(option=>option.value===id))return;selectedSkinId=id;boxShift=[0,0,0];for(const dispose of release.splice(0).reverse())dispose();engines.length=0;message='正在重定向到所选角色…';mounted.update(layout());const requestedGeneration=loadGeneration+1;void load().catch(error=>rejectLoad(error,id,requestedGeneration));},pause:()=>{paused=!paused;for(const engine of engines){if(paused)engine.stop();else resume(engine);}mounted.update(layout());}},motionPreviewTheme(new URLSearchParams(location.search).has('daylight')));
 const close=()=>{disposed=true;for(const dispose of release.splice(0).reverse())dispose();mounted();};
 window.addEventListener('pagehide',close,{once:true});
 // A breakpoint changes native stage elements; reload only on that transition. Pause never rebuilds scenes.
 window.addEventListener('resize',()=>{if(((root.clientWidth || window.innerWidth)<800?1:2)!==viewColumns)location.reload();});
-async function json(path:string):Promise<unknown>{const response=await fetch(path);if(!response.ok)throw new Error(`${path} 读取失败`);return response.json();}
+async function json(path:string):Promise<unknown>{const response=await fetch(API_BASE+path);if(!response.ok)throw new Error(`${path} 读取失败`);return response.json();}
 function summarizeReport(value:unknown):string[]{
   if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('验证报告不是对象');
   const object=(entry:unknown):Record<string,unknown>=>entry&&typeof entry==='object'&&!Array.isArray(entry)?entry as Record<string,unknown>:{};
@@ -101,7 +103,8 @@ async function load():Promise<void>{
   if(!catalog.skins.length||!catalog.clips.length)throw new Error('Mink 验证预览要求至少 1 个角色、1 个候选动作');
   const socketReport=report as {runtimeSockets?:{bySkin?:Record<string,{validationStatus?:string}>,unsupportedBySkin?:Record<string,{clipId:string;reason:string;statusLabel?:string;skinBounds:SkinBounds}>}};
   skinOptions=catalog.skins.map(row=>({value:row.id,label:(row.source?.mixamoName||row.id)+(socketReport.runtimeSockets?.unsupportedBySkin?.[row.id]?' · 仅基础播放':socketReport.runtimeSockets?.bySkin?.[row.id]?.validationStatus==='fail'?' · 交互未通过':'')}));
-  if(!selectedSkinId)selectedSkinId=catalog.skins.find(row=>row.source?.mixamoName==='Michelle')?.id||catalog.skins[0].id;
+  const requestedSkin=new URLSearchParams(location.search).get('skin');
+  if(!selectedSkinId)selectedSkinId=catalog.skins.some(row=>row.id===requestedSkin)?requestedSkin!:catalog.skins.find(row=>row.source?.mixamoName==='Claire')?.id||catalog.skins[0].id;
   if(report&&typeof report==='object'&&'sourceSkinName' in report&&typeof report.sourceSkinName==='string')benchmarkSkinName=report.sourceSkinName.slice(0,80);
   const skin=catalog.skins.find(row=>row.id===selectedSkinId)!;selectedRuntime=runtimeSocketProfile(report,skin);const unsupported=socketReport.runtimeSockets?.unsupportedBySkin?.[skin.id];const clip=selectedRuntime?catalog.clips.find(row=>row.id===selectedRuntime!.clipId):unsupported?catalog.clips.find(row=>row.id===unsupported.clipId):catalog.clips[0];if(!clip)throw new Error('Socket 角色动作缺失');candidate=clip.id+(report&&typeof report==='object'&&'experimentId' in report&&typeof report.experimentId==='string'?' · '+report.experimentId.slice(0,80):'');summary=summarizeReport(report);if(selectedRuntime?.statusLabel)summary.unshift(selectedRuntime.statusLabel);if(unsupported)summary.unshift('此角色仅基础播放：'+unsupported.reason);const props=reviewProps(selectedRuntime?{props:selectedRuntime.props}:unsupported?{props:[]}:report);const follow=unsupported?undefined:(report as {headFollow?:{bone:string;targetProp:string;weight:number}}).headFollow;if(follow&&!(follow.bone==='Head'&&follow.targetProp==='match-head'&&typeof follow.weight==='number'&&Number.isFinite(follow.weight)&&follow.weight>=0&&follow.weight<=.25&&props.some(p=>p.id==='match-head')))throw new Error('头部跟随配置非法');summary.push(`尺寸/接触参考道具：${props.length} 件（已换算的骨局部单位）`);mounted.update(layout());
   if(!Number.isFinite(skin.hipHeight)||skin.hipHeight<=0)throw new Error('角色 hipHeight 非法');
@@ -113,7 +116,7 @@ async function load():Promise<void>{
   for(const view of ['front','side']){
     const assets=new AssetManager(new ModelAssetLoader());let engine:Engine|undefined,renderer:ThreeRenderer|undefined,released=false;
     const dispose=()=>{if(released)return;released=true;try{if(engine){newPausedGraphs.delete(engine);runtimeViews.delete(engine);}engine?.stop();}finally{try{renderer?.destroy();}finally{assets.clear();}}};release.push(dispose);
-    assets.registerManifest([{kind:'model',key:'skin',src:'/embedded-skin/'+skin.id}]);
+    assets.registerManifest([{kind:'model',key:'skin',src:API_BASE+'/embedded-skin/'+skin.id}]);
     await assets.loadAll();if(disposed||generation!==loadGeneration){dispose();return;}
     const container=root!.querySelector<HTMLElement>('#stage-'+view)!;const width=Math.max(200,container.clientWidth);
     const full=frameSkin(boundsData.bounds,scale,width/520),height=(boundsData.bounds[1][1]-boundsData.bounds[0][1])*scale;
