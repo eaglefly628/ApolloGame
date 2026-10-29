@@ -73,7 +73,7 @@ M6 需要补全的部分作为 missingRequirements/补全建议单列；不得�
 
 ## 本阶段的结论边界
 
-目前完成实查、契约草案、合成场景设计及来源索引的全库只读一致性核对；没有实现持久化/HTTP 写入/标签批准/M4 新匹配 API。固定提交的 Claude PASS 已在 `5ae0ee47698d7f9b8f0e78bbbe2d69a49b0fe553` 核验；下一阶段仍须冻结共享字典公开接口，再分阶段实现与独立复查。本单不自签该门，也不把等待门扩大成停止所有可独立做的核对工作。
+以下为最初契约阶段的历史状态：当时完成实查、合成场景设计及来源索引只读核对，尚未实现持久化、HTTP 写入、标签批准或 M4 新匹配 API。此后仅新增下述隔离候选，未启用真实写回或生产接线。固定提交的 Claude PASS 已在 `5ae0ee47698d7f9b8f0e78bbbe2d69a49b0fe553` 核验；下一阶段仍须冻结共享字典公开接口，再分阶段实现与独立复查。本单不自签该门，也不把等待门扩大成停止所有可独立做的核对工作。
 
 内部文档审阅已核对目标/父 SHA 和实现边界，并补齐撤回目标约束与嵌套撤回的合成场景。该审阅不代替 Claude 对 1b87a04d5 的最终判词。
 
@@ -95,3 +95,24 @@ M6 需要补全的部分作为 missingRequirements/补全建议单列；不得�
 - 影子查询 `scripts/lib/motion-semantic-query.mjs`、`.d.mts` 与 `scripts/motion-semantic-query.test.mjs`：消费同一已验证来源草稿；提案不自动变为事实；支持/冲突/未知分别返回，严格查询对未知拒收；只校验所选动作文件 SHA，不冒充视觉或文件结构验收。旧 `motion-match` 未接线。
 
 建议在合成临时库独立重跑两组测试、原五个故障探针、目录链和日志头锚点撤修验红并检查告警；不访问或上传真实目录。双方文件 hash、目标提交 SHA、机器与 Python 环境均应记入复查回执。任何通过都不代表 accept/reject/retract、标签级人审、M3 写回或生产 M4 已完成。
+
+
+## 最小独立复跑与验红定位
+
+在独立检出分别固定 SHA，使用合成临时库执行；这些命令不访问真实素材：
+
+```sh
+# 字典候选：先检出 1f4b3e9a8599152dac21d0bde8267d64628ea308
+node node_modules/vitest/vitest.mjs run scripts/motion-source-dictionary.test.mjs scripts/motion-semantics.test.mjs
+
+# 侧车/影子查询候选：先检出 a39aa8c249c6f20d713c6f11e1d1be20d933a75a
+node node_modules/vitest/vitest.mjs run scripts/motion-semantic-drafts.test.mjs scripts/motion-semantic-query.test.mjs scripts/motion-source-dictionary.test.mjs scripts/motion-semantics.test.mjs
+```
+
+撤修验红在临时副本操作，每处先断言锚点唯一命中、试验后恢复字节：
+
+- 字典：`motion-semantics.mjs` 的 `Object.freeze(value)`，对应深度只读测试。
+- 侧车日志：`motion-semantic-drafts-validate.mjs` 的 `published head does not match log tail` 检查，对应 `suffix` / `empty` 历史回滚测试。
+- 目录固定：`motion-semantic-drafts-fs.py` 的 `sidecar directory changed` 检查，对应目录替换测试。
+
+侧车复查须覆盖 FIFO、log/head 后期替换、真实进程崩溃、两个写者竞争、异常留证与 2445 条合成规模；完整门禁和告警独立复跑。本候选仅支持 POSIX Python 3 与协作锁，Windows 不支持，亦不承诺防御绕过锁的同 UID 进程；不得将本说明等同完整安全保证或人审批准。
