@@ -79,3 +79,21 @@ node node_modules/vitest/vitest.mjs run tools/asset-vault/vault.test.mjs
 内部相对链接仅接受直接指向资源根内已有实体的形式，保留其原始相对链接文字；链式链接、穿过链接目录的目标、绝对/外部/断裂/循环链接明确拒收，不扁平化、不偷偷改写。文件名非 NFC 时也拒收而不自动改名。若源在执行期间变化，须查看失败日志并用原 source/target 参数重新运行；已完成对象会重新核验复用。硬崩溃留下的锁、初始化中断目录和损坏对象不自动清除，需独立人工核对，不能无条件自动重试。
 
 保险库结构为 `vault.json` 标记、`objects/<SHA>/<UUID>/data` 与对应完成标记、`snapshots/<UUID>/complete.json` 以及 `logs/*.jsonl`。没有“删除旧版本”或“覆盖损坏文件”命令。清单及失败日志可能很大且属于本机数据，全部必须在 Git 之外；工具会拒绝 Git 内目标/恢复目录，仓库既有 `__pycache__/`、`*.pyc` 忽略规则只用于代码测试缓存，不增设全局模型忽略以免隐藏合法游戏资源。
+
+## 三层范围：运行数据、离线运行全备、制作档案
+
+默认不把所有历史目录都装进包。“最小”由运行入口的实际依赖闭包定义，本轮入口为完整动画工作台与完整场景草稿树，不能缩成一个样片。
+
+- **最小运行数据**：原库 catalog 和所有索引 clips/skins；运行时 Socket catalog 和所有索引 clips/skins、完整/精简报告；场景整树含许可、贴图与安全相对链接。使用新资源根显式启动，不包含未索引作业、旧压缩对照或 static-skins。
+- **离线完整运行 Backup**：上述数据、固定 Git commit 的源码归档、锁文件、相对根绑定及恢复说明，取回源码无需 GitHub。可附当前 OS/CPU 的现有 Node/依赖种子，但它不是通用跨平台安装包，也不自动包含 Blender/Mink 制作环境。
+- **可选制作源/历史档案**：原始 FBX、旧减帧对照、独有派生动作、导入证据及候选历史。未进入运行包不等于可删除；角色历史来源可能仍引用旧导入目录。具体清理必须另有依赖核对、可恢复备份与用户确认。
+
+`runtime-plan.mjs::buildRuntimePlan` 只读生成运行闭包，显式参数为 libraryRoot、runtimeRoot、runtimeReport、previewReport、sceneRoot 与完整40位 codeRevision。默认校验所有文件 SHA；`verifyAssets:false` 仅将模型按元数据列出，并显式标记实际模型 SHA 待核验，不能冒充已备份。计划含本机 sourceAbs，真实逐资产计划不得提交 Git。
+
+输出按 library/runtime/scene 三个别名绑定；目录中的全部动作、角色和交互适配都覆盖。原始 catalog/report 逐字保留；历史绝对 source/evidence URI只作为历史来源，不是运行时读取路径。场景库仍是原始草稿，不因复制而获规范化或视觉验收。
+
+```sh
+node node_modules/vitest/vitest.mjs run tools/asset-vault/runtime-plan.test.mjs
+```
+
+隔离验证须把全计划数据复制到新目录并核 SHA，恢复固定代码，禁止读取原 ApolloAssets，使用新服务加载。代码版本中若含本机绝对依赖链接，要保留其元数据并禁止自动跟随，不能偷偷借原链接通过测试。字节校验、HTTP 可加载、少量真实渲染和全库视觉验收分别记录；其它游戏/制作入口需各自闭包和平台验收。
