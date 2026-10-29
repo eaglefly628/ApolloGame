@@ -144,3 +144,27 @@ export function summarizeSemantics(rows) {
   for(const row of rows){const a=sourceSemantics(row);if(a.basis==='description')descriptions++;if(a.groups.includes('other'))unclassified++;for(const g of a.groups)groupCounts[g]++;}
   return {dictionaryVersion:DICTIONARY_VERSION,total:rows.length,descriptions,titleFallback:rows.length-descriptions,unclassified,groupCounts};
 }
+
+
+// Public, read-only taxonomy. Derive it from the classifier's own rules; consumers
+// must never copy a second facet/value table or treat this as label approval.
+const freeze=(value)=>{if(value&&typeof value==='object'){for(const child of Object.values(value))freeze(child);Object.freeze(value);}return value;};
+const dictionary=freeze({schemaVersion:1,dictionaryVersion:DICTIONARY_VERSION,groups:BROWSE_GROUPS,
+  facets:FACETS.map(id=>({id,values:[...new Map(RULES.filter(([facet])=>facet===id||(id==='poseContext'&&facet==='action')).map(([,value,label,group])=>[value,{value,defaultLabel:label,defaultGroup:id==='poseContext'?null:group}])).values()].sort((a,b)=>compare(a.value,b.value))})),
+});
+/** Immutable taxonomy metadata, not an accuracy or approval statement. */
+export function getSourceDictionary(){return dictionary;}
+/** Unknown values remain unknown; does not create or register new labels. */
+export function getSourceTagDefinition(facet,value){
+  if(typeof facet!=='string'||typeof value!=='string'||facet.length>64||value.length>128)throw new Error('invalid source tag query');
+  return dictionary.facets.find(item=>item.id===facet)?.values.find(item=>item.value===value)??null;
+}
+/** Validate a literal source span only. It does not prove the proposed semantics. */
+export function validateSourceEvidence(row,evidence){
+  if(!row||typeof row!=='object'||Array.isArray(row)||!evidence||typeof evidence!=='object'||Array.isArray(evidence))throw new Error('invalid source evidence');
+  if(Object.keys(evidence).some(key=>!['source','quote','start','end'].includes(key)))throw new Error('unknown source evidence field');
+  const {source,quote,start,end}=evidence;
+  const text=source==='description'?sourceDescription(row):source==='title'?(row.source?.mixamoName||row.id):null;
+  if(typeof text!=='string'||typeof quote!=='string'||!quote.length||quote.length>4000||!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||start<0||end<=start||end>text.length||text.slice(start,end)!==quote)throw new Error('source evidence span mismatch');
+  return {source,quote,start,end};
+}
