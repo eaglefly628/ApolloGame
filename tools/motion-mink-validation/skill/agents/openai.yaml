@@ -1,0 +1,7 @@
+interface:
+  display_name: "Apollo 简单动画补全"
+  short_description: "为站定与上肢动作生成离线候选，校验骨架、几何与多视角表意，保留证据"
+  default_prompt: "使用 $apollo-motion-completion，为我指定的站定或上肢动作生成并核对一个本地 draft 候选，最多迭代五版。"
+
+policy:
+  allow_implicit_invocation: true
