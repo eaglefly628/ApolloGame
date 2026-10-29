@@ -7,8 +7,8 @@ import {spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {loadMotionRecipe,motionRecipeSha} from './recipe.mjs';
 const HERE=dirname(fileURLToPath(import.meta.url)),ROOT=resolve(HERE,'../..');
-const PIPELINE_TOOLS=['run.mjs','recipe.mjs','export.mjs','solve.py','bake.mjs','check.py','review-assets.mjs'];
-const PREVIEW_TOOLS=['preview.mjs','preview.ts'];
+const PIPELINE_TOOLS=['run.mjs','recipe.mjs','export.mjs','solve.py','contact.py','bake.mjs','check.py','review-assets.mjs'];
+const PREVIEW_TOOLS=['preview.mjs','preview.ts','paused-frame.ts','embedded-motion.mjs'];
 const hash=b=>createHash('sha256').update(b).digest('hex');
 const check=(ok,message)=>{if(!ok)throw new Error('motion candidate: '+message);};
 export function validateCandidateOutput(path){const out=resolve(path);let ancestor=out;while(!existsSync(ancestor))ancestor=dirname(ancestor);const physical=resolve(realpathSync(ancestor),relative(ancestor,out));check(out===physical,'output aliases are not allowed');for(let dir=ancestor;;dir=dirname(dir)){check(!existsSync(join(dir,'.git')),'output must remain outside every Git repository');if(dirname(dir)===dir)break;}const rel=relative(ROOT,out);check(isAbsolute(rel)||rel==='..'||rel.startsWith('../'),'output cannot be in project');check(!existsSync(out),'output must be a new isolated directory');return out;}
@@ -26,7 +26,7 @@ export function runMotionCandidate(options){
   check(step('solve',python,[join(HERE,'solve.py'),out]),'solver failed');
   check(step('bake',process.execPath,[join(HERE,'bake.mjs'),out,candidateId]),'bake/native playback failed');
   const passed=step('independent-check',python,[join(HERE,'check.py'),out]);
-  const report=JSON.parse(readFileSync(join(out,'report.json')));report.experimentId=recipe.label+' / '+candidateId;report.recipeSha256=recipeSha256;report.summary.backend='Mink / MuJoCo';report.collision=existsSync(join(out,'collision-report.json'))?JSON.parse(readFileSync(join(out,'collision-report.json'))):{status:'incomplete'};report.meshCheck=passed?'pass':'fail';report.visualReview={status:'pending',referenceImagesUsed:false,automatedPoseEstimator:false};report.fingerReview={status:'not-calibrated',scope:'Current solver does not certify each finger local axis, anatomical flexion or prop contact.'};report.status=passed?'candidate-needs-visual-review':'candidate-rejected-technical';report.capabilityScope='Fixed torso/legs; simple upper-limb targets; finger anatomy and cross-skin contact are not certified.';
+  const report=JSON.parse(readFileSync(join(out,'report.json')));report.experimentId=recipe.label+' / '+candidateId;report.recipeSha256=recipeSha256;report.summary.backend='Mink / MuJoCo';report.collision=existsSync(join(out,'collision-report.json'))?JSON.parse(readFileSync(join(out,'collision-report.json'))):{status:'incomplete'};report.meshCheck=passed?'pass':'fail';if(recipe.headFollowWeight!==undefined)report.headFollow={bone:'Head',targetProp:'match-head',weight:recipe.headFollowWeight,scope:'existing runtime IK3D lookAt; not baked into the candidate GLB'};report.visualReview={status:'pending',referenceImagesUsed:false,automatedPoseEstimator:false};report.fingerReview={status:'not-calibrated',scope:'Current solver does not certify each finger local axis, anatomical flexion or prop contact.'};report.status=passed?'candidate-needs-visual-review':'candidate-rejected-technical';report.capabilityScope='Fixed torso/legs; simple upper-limb targets; finger anatomy and cross-skin contact are not certified.';
   writeFileSync(join(out,'validation.json'),JSON.stringify(report,null,2)+'\n',{flag:'wx'});persist(report.status);
   return {ok:passed,status:report.status,out,candidateId,recipeSha256,validation:join(out,'validation.json'),previewCommand:['node',join(HERE,'preview.mjs'),'--lib',join(out,'review'),'--report',join(out,'validation.json')]};
  }catch(error){persist('failed');throw error;}

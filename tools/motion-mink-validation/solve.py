@@ -5,6 +5,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation as Rot, Slerp
 from scipy.spatial import ConvexHull
 import mujoco, mink
+from contact import stroke_point
 from importlib.metadata import version
 
 folder=Path(sys.argv[1]); doc=json.loads((folder/'input.json').read_text())
@@ -30,7 +31,10 @@ initial_vertices=skin_positions(by); dominant=np.array([v['j'][int(np.argmax(v['
 # The torso stays fixed in this first validation. Its geoms are fit in metre space.
 body_geoms=[]
 for label,group in [('pelvis',['Hips']),('abdomen',['Spine']),('chest',['Spine1','Chest']),('head',['Head'])]:
- pts=initial_vertices[np.isin(dominant,group)];lo=pts.min(axis=0);hi=pts.max(axis=0);center=(lo+hi)/2;rad=(hi-lo)/2
+ pts=initial_vertices[np.isin(dominant,group)]
+ if not len(pts) and label=='abdomen':pts=initial_vertices[dominant=='Spine1'];print('proxy fallback: abdomen uses weighted Spine1 surface',flush=True)
+ if not len(pts):raise RuntimeError(f'No weighted surface available for required body proxy: {label}')
+ lo=pts.min(axis=0);hi=pts.max(axis=0);center=(lo+hi)/2;rad=(hi-lo)/2
  # Conservative axis padding; independent skinned-surface validation follows.
  rad+=np.array([.008,.012,.008]);body_geoms.append((label,center,rad))
 world_geoms=[f'<geom name="body_{n}" type="ellipsoid" pos="{vec(c)}" size="{vec(r)}" contype="1" conaffinity="1"/>' for n,c,r in body_geoms]
@@ -60,6 +64,13 @@ for side in ['Left','Right']:
    g=side+'_'+finger+str(i);specs.append(g);geom_specs[n]=(g,a,b,radius)
  arm_geom_names[side]=specs
 
+def hand_goal(side):
+ finger=R(side+'Hand').inv().apply(P(side+'HandMiddle1')-P(side+'Hand'));finger/=np.linalg.norm(finger)
+ across=R(side+'Hand').inv().apply(P(side+'HandIndex1')-P(side+'HandPinky1'));normal=np.cross(finger,across);normal/=np.linalg.norm(normal);across=np.cross(normal,finger)
+ # Fingers point forward, palms oppose vertically; orientation is explicit, not inferred from position.
+ orientation=recipe.get('handOrientations',{}).get(side);f=np.asarray(orientation['fingers'],dtype=float) if orientation else (np.array([0.,0.,1.]) if side=='Left' else np.array([1.,0.,0.]));norm=np.asarray(orientation['normal'],dtype=float) if orientation else np.array([0.,1.,0.]);f/=np.linalg.norm(f);norm-=f*np.dot(norm,f);norm/=np.linalg.norm(norm);a=np.cross(norm,f)
+ return Rot.from_matrix(np.column_stack([f,a,norm])@np.column_stack([finger,across,normal]).T)
+match_head_local=np.array([.04,.115,.04])+hand_goal('Right').inv().apply([.039,0.,0.])
 def body_xml(n,parent=None):
  p=P(n) if parent is None else local(parent,P(n));q=R(n) if parent is None else R(parent).inv()*R(n)
  out=f'<body name="{n}" pos="{vec(p)}" quat="{wquat(q)}">'
@@ -76,6 +87,7 @@ def body_xml(n,parent=None):
   g,a,b,r=geom_specs[n]
   if n in hand_meshes:out+=f'<geom name="{g}" type="mesh" mesh="{hand_meshes[n]}" contype="1" conaffinity="1"/>'
   else:out+=f'<geom name="{g}" type="capsule" fromto="{vec(a)} {vec(b)}" size="{r}" contype="1" conaffinity="1"/>'
+ if n=='RightHand':out+=f'<site name="MatchHead_site" pos="{vec(match_head_local)}" size=".00175"/>'
  if n in ['LeftLowerArm','RightLowerArm','LeftHand','RightHand','RightHandIndex4','RightHandThumb4']:out+=f'<site name="{n}_site" size=".01"/>'
  for c in children[n]:out+=body_xml(c,n)
  return out+'</body>'
@@ -103,12 +115,6 @@ assert zero_pos<1e-8 and zero_rot<1e-8 and rest_error<1e-5
 calibration['world10cmProbeM']=float(np.linalg.norm((P('Hips')+np.array([0,0,.1]))-P('Hips')))
 assert abs(calibration['world10cmProbeM']-.1)<1e-10
 
-def hand_goal(side):
- finger=R(side+'Hand').inv().apply(P(side+'HandMiddle1')-P(side+'Hand'));finger/=np.linalg.norm(finger)
- across=R(side+'Hand').inv().apply(P(side+'HandIndex1')-P(side+'HandPinky1'));normal=np.cross(finger,across);normal/=np.linalg.norm(normal);across=np.cross(normal,finger)
- # Fingers point forward, palms oppose vertically; orientation is explicit, not inferred from position.
- orientation=recipe.get('handOrientations',{}).get(side);f=np.asarray(orientation['fingers'],dtype=float) if orientation else (np.array([0.,0.,1.]) if side=='Left' else np.array([1.,0.,0.]));norm=np.asarray(orientation['normal'],dtype=float) if orientation else np.array([0.,1.,0.]);f/=np.linalg.norm(f);norm-=f*np.dot(norm,f);norm/=np.linalg.norm(norm);a=np.cross(norm,f)
- return Rot.from_matrix(np.column_stack([f,a,norm])@np.column_stack([finger,across,normal]).T)
 hip=P('Hips');goal_rot={side:hand_goal(side) for side in ['Left','Right']};work={'Left':hip+np.array(recipe.get('handTargetsM',{}).get('Left',[.11,.25,.34]))}
 pinch_local=np.array([.04,.115,.04])
 box_center=None;box_size=np.array([.055,.014,.036])
@@ -131,8 +137,18 @@ if mode=='match-strike':
  prop('striker-strip','Left',goal_rot['Left'].inv().apply(box_center+np.array([-box_size[0]/2-.0006,0,0])-work['Left']),goal_rot['Left'].inv(),[.0012,.010,.033],0x684432)
  prop('matchstick','Right',pinch_local+goal_rot['Right'].inv().apply([.02,0,0]),goal_rot['Right'].inv(),[.04,.002,.002],0xd5ad72)
  prop('match-head','Right',pinch_local+goal_rot['Right'].inv().apply([.039,0,0]),goal_rot['Right'].inv(),[.0035,.0035,.0035],0xc94b40)
+contact=recipe.get('contactStroke');contact_tasks=[]
+box_local=goal_rot['Left'].inv().apply(box_center-work['Left']) if box_center is not None else None
+if contact:
+ contact_task=mink.RelativeFrameTask(frame_name='MatchHead_site',frame_type='site',root_name='LeftHand',root_type='body',position_cost=80.,orientation_cost=0.,lm_damping=1e-5);contact_tasks.append(contact_task)
+def contact_local(t):
+ point=stroke_point(t,float(recipe['durationS']),contact,box_size[0]/2,.0012,.00175)
+ return box_local+goal_rot['Left'].inv().apply(point)
+def contact_world(t):
+ body=model.body('LeftHand').id
+ return configuration.data.xpos[body]+Rot.from_quat(np.roll(configuration.data.xquat[body],-1)).apply(contact_local(t))
 print('working_targets',{side:p.tolist() for side,p in work.items()},'box',box_center.tolist() if box_center is not None else None,flush=True)
-tasks={s:mink.FrameTask(frame_name=s+'Hand_site',frame_type='site',position_cost=10.,orientation_cost=.5,lm_damping=1e-4) for s in work}
+tasks={s:mink.FrameTask(frame_name=s+'Hand_site',frame_type='site',position_cost=(80. if contact and s=='Left' else (1. if contact else 10.)),orientation_cost=(8. if s in recipe.get('rotationCurvesRad',{}) else .5),lm_damping=1e-4) for s in work}
 elbow_tasks={}
 elbow_guides={}
 for side in work:
@@ -151,11 +167,19 @@ DT=1/240;DURATION=float(recipe.get('durationS',4.));frames=[];checks=[]
 for i in range(1800):
  for side in work:
   tasks[side].set_target(mink.SE3.from_rotation_and_translation(mink.SO3(np.roll(goal_rot[side].as_quat(),1)),work[side]))
- vel=mink.solve_ik(configuration,list(tasks.values())+list(elbow_tasks.values())+finger_tasks+[posture,damping],DT,solver='daqp',limits=limits)
+ if contact:
+  contact_task.set_target(mink.SE3.from_translation(contact_local(0.)))
+  tasks['Right'].set_target(mink.SE3.from_rotation_and_translation(mink.SO3(np.roll(goal_rot['Right'].as_quat(),1)),contact_world(0.)-goal_rot['Right'].apply(match_head_local)))
+ vel=mink.solve_ik(configuration,list(tasks.values())+list(elbow_tasks.values())+finger_tasks+contact_tasks+[posture,damping],DT,solver='daqp',limits=limits)
  configuration.integrate_inplace(vel,DT)
  if min(distances())<.003:raise RuntimeError(f'Unsafe warm-up proxy clearance frame={i} distance={min(distances())} pair={pairs[int(np.argmin(distances()))]}')
  if i%120==0:print('warmup',i,min(distances()),flush=True)
 print('warmup_errors',{side:float(np.linalg.norm(configuration.data.site_xpos[model.site(side+'Hand_site').id]-work[side])) for side in work},flush=True)
+# Keep the warmed-up forearm pose for wrist-led strokes; rotation is assigned to Hand.
+for side in recipe.get('rotationCurvesRad',{}):
+ task=elbow_tasks[side];task.set_orientation_cost(2. if contact else 8.)
+ bid=model.body(side+'LowerArm').id
+ task.set_target(mink.SE3.from_rotation_and_translation(mink.SO3(configuration.data.xquat[bid].copy()),configuration.data.xpos[bid].copy()))
 def smooth(x):return x*x*(3-2*x)
 def targets(t):
  out={side:(p.copy(),goal_rot[side]) for side,p in work.items()}
@@ -164,21 +188,29 @@ def targets(t):
  for side,keys in (curves or {}).items():
   for a,b in zip(keys,keys[1:]):
    if a[0]<=t<=b[0]:out[side][0][:]+=np.asarray(a[1:])+(np.asarray(b[1:])-np.asarray(a[1:]))*smooth((t-a[0])/(b[0]-a[0]));break
+ for side,keys in recipe.get('rotationCurvesRad',{}).items():
+  for a,b in zip(keys,keys[1:]):
+   if a[0]<=t<=b[0]:
+    delta=np.asarray(a[1:])+(np.asarray(b[1:])-np.asarray(a[1:]))*smooth((t-a[0])/(b[0]-a[0]))
+    out[side]=(out[side][0],Rot.from_rotvec(delta)*goal_rot[side]);break
+ if contact:
+  q=out['Right'][1];out['Right']=(contact_world(t)-q.apply(match_head_local),q)
  return out
 for frame in range(round(DURATION/DT)+1):
  t=frame*DT;desired=targets(t)
  for s,(p,q) in desired.items():tasks[s].set_target(mink.SE3.from_rotation_and_translation(mink.SO3(np.roll(q.as_quat(),1)),p))
+ if contact:contact_task.set_target(mink.SE3.from_translation(contact_local(t)))
  if frame:
-  velocity=mink.solve_ik(configuration,list(tasks.values())+list(elbow_tasks.values())+finger_tasks+[posture,damping],DT,solver='daqp',limits=limits)
+  velocity=mink.solve_ik(configuration,list(tasks.values())+list(elbow_tasks.values())+finger_tasks+contact_tasks+[posture,damping],DT,solver='daqp',limits=limits)
   configuration.integrate_inplace(velocity,DT)
  ds=distances();min_d=min(ds)
  if min_d<.003:raise RuntimeError(f'Proxy clearance failed {t}: {min_d} pair={pairs[int(np.argmin(ds))]}')
  pose={n:{'position':configuration.data.xpos[model.body(n).id].tolist(),'rotation':np.roll(configuration.data.xquat[model.body(n).id],-1).tolist()} for n in names}
  err={s:float(np.linalg.norm(np.asarray(pose[s+'Hand']['position'])-p)) for s,(p,q) in desired.items()}
- checks.append({'time':t,'minDistanceM':float(min_d),'pair':pairs[int(np.argmin(ds))],'targetErrorsM':err})
- frames.append({'at':t,'world':pose,'targets':{s:p.tolist() for s,(p,q) in desired.items()}})
+ checks.append({'time':t,'minDistanceM':float(min_d),'pair':pairs[int(np.argmin(ds))],'targetErrorsM':err,'orientationErrorsRad':{side:float((Rot.from_quat(pose[side+'Hand']['rotation']).inv()*q).magnitude()) for side,(p,q) in desired.items()}})
+ frames.append({'at':t,'world':pose,'targets':{s:p.tolist() for s,(p,q) in desired.items()},'targetRotations':{s:q.as_quat().tolist() for s,(p,q) in desired.items()}})
  if frame%120==0:print('solve',round(t,2),'distance',round(min_d,4),'errors',err,flush=True)
-result={'version':1,'backend':{name:version(name) for name in ['mink','mujoco','numpy','scipy','daqp']},'dt':DT,'fps':30,'durationS':DURATION,'calibration':calibration,'proxySpecs':{'body':[{'name':n,'position':p.tolist(),'radii':r.tolist()} for n,p,r in body_geoms],'pairs':pairs},'frames':frames,'checks':checks,'props':props,'boxCenter':box_center.tolist() if box_center is not None else None,'pinchLocalM':pinch_local.tolist(),'elbowGuides':{k:v.tolist() for k,v in elbow_guides.items()},'jointModel':'elbow-flexion-plus-forearm-twist-v1','recipeSha256':doc.get('recipeSha256'),'qualityThresholds':recipe.get('qualityThresholds',{})}
+result={'version':1,'backend':{name:version(name) for name in ['mink','mujoco','numpy','scipy','daqp']},'dt':DT,'fps':30,'durationS':DURATION,'calibration':calibration,'proxySpecs':{'body':[{'name':n,'position':p.tolist(),'radii':r.tolist()} for n,p,r in body_geoms],'pairs':pairs},'frames':frames,'checks':checks,'props':props,'boxCenter':box_center.tolist() if box_center is not None else None,'pinchLocalM':pinch_local.tolist(),'elbowGuides':{k:v.tolist() for k,v in elbow_guides.items()},'jointModel':'elbow-flexion-plus-forearm-twist-v1','recipeSha256':doc.get('recipeSha256'),'qualityThresholds':recipe.get('qualityThresholds',{}),'contactStroke':contact}
 result_text=json.dumps(result);result_file=folder/'solution.json'
 if result_file.exists():
  if result_file.read_text()!=result_text:raise RuntimeError('Existing solution differs; use a new isolated run')
