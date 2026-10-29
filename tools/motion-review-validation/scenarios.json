@@ -1,0 +1,346 @@
+{
+  "fixtureVersion": 1,
+  "status": "preparation-only-not-runtime-acceptance",
+  "note": "Synthetic data only. Partial boundary cases, not complete requests. Actual request envelopes must follow the independently reviewed frozen API. These expectations have not been run against an M2 persistence or M4 semantic matcher implementation.",
+  "cases": [
+    {
+      "id": "same-title-distinct-assets",
+      "area": "M2",
+      "given": {
+        "clips": [
+          {
+            "catalogSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "dictionaryVersion": "source-description-v1",
+            "clipId": "synthetic-a",
+            "clipSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "sourceFbxSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "title": "Synthetic shared name"
+          },
+          {
+            "catalogSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "dictionaryVersion": "source-description-v1",
+            "clipId": "synthetic-b",
+            "clipSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "sourceFbxSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "title": "Synthetic shared name"
+          }
+        ]
+      },
+      "when": {
+        "operation": "flag",
+        "target": {
+          "catalogSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dictionaryVersion": "source-description-v1",
+          "clipId": "synthetic-a",
+          "clipSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sourceFbxSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      },
+      "expect": {
+        "changedClipIds": [
+          "synthetic-a"
+        ],
+        "otherClipUnchanged": true
+      }
+    },
+    {
+      "id": "stale-clip-sha",
+      "area": "M2",
+      "given": {
+        "identity": {
+          "catalogSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dictionaryVersion": "source-description-v1",
+          "clipId": "synthetic-a",
+          "clipSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sourceFbxSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      },
+      "when": {
+        "operation": "propose",
+        "identity": {
+          "catalogSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dictionaryVersion": "source-description-v1",
+          "clipId": "synthetic-a",
+          "clipSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "sourceFbxSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      },
+      "expect": {
+        "reject": true,
+        "logBytesUnchanged": true
+      }
+    },
+    {
+      "id": "changed-source-fbx",
+      "area": "M2",
+      "given": {
+        "identity": {
+          "catalogSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dictionaryVersion": "source-description-v1",
+          "clipId": "synthetic-a",
+          "clipSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sourceFbxSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      },
+      "when": {
+        "operation": "propose",
+        "identity": {
+          "catalogSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dictionaryVersion": "source-description-v1",
+          "clipId": "synthetic-a",
+          "clipSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sourceFbxSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "expect": {
+        "reject": true,
+        "logBytesUnchanged": true
+      }
+    },
+    {
+      "id": "quote-span-mismatch",
+      "area": "M2",
+      "given": {
+        "identity": {
+          "catalogSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dictionaryVersion": "source-description-v1",
+          "clipId": "synthetic-a",
+          "clipSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sourceFbxSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        "description": "Walking forward"
+      },
+      "when": {
+        "operation": "propose",
+        "evidence": {
+          "source": "description",
+          "quote": "Running",
+          "start": 0,
+          "end": 7
+        }
+      },
+      "expect": {
+        "reject": true,
+        "logBytesUnchanged": true
+      }
+    },
+    {
+      "id": "stale-revision",
+      "area": "M2",
+      "given": {
+        "identity": {
+          "catalogSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dictionaryVersion": "source-description-v1",
+          "clipId": "synthetic-a",
+          "clipSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sourceFbxSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        "revision": 2
+      },
+      "when": {
+        "operation": "propose",
+        "expectedRevision": 1
+      },
+      "expect": {
+        "reject": true,
+        "reason": "revision-conflict",
+        "logBytesUnchanged": true
+      }
+    },
+    {
+      "id": "retry-event-content-mismatch",
+      "area": "M2",
+      "given": {
+        "identity": {
+          "catalogSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dictionaryVersion": "source-description-v1",
+          "clipId": "synthetic-a",
+          "clipSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sourceFbxSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        "events": [
+          {
+            "eventId": "synthetic-event-1",
+            "operation": "flag",
+            "reason": "uncertain source"
+          }
+        ]
+      },
+      "when": {
+        "eventId": "synthetic-event-1",
+        "operation": "flag",
+        "reason": "changed payload"
+      },
+      "expect": {
+        "reject": true,
+        "logBytesUnchanged": true
+      }
+    },
+    {
+      "id": "cross-clip-retract",
+      "area": "M2",
+      "given": {
+        "identity": {
+          "catalogSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dictionaryVersion": "source-description-v1",
+          "clipId": "synthetic-a",
+          "clipSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sourceFbxSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        "events": [
+          {
+            "eventId": "synthetic-event-b",
+            "clipId": "synthetic-b",
+            "operation": "flag"
+          }
+        ]
+      },
+      "when": {
+        "operation": "retract",
+        "targetEventId": "synthetic-event-b",
+        "clipId": "synthetic-a"
+      },
+      "expect": {
+        "reject": true,
+        "logBytesUnchanged": true
+      }
+    },
+    {
+      "id": "confirmed-asset-draft-label",
+      "area": "M4",
+      "given": {
+        "identity": {
+          "catalogSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dictionaryVersion": "source-description-v1",
+          "clipId": "synthetic-a",
+          "clipSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sourceFbxSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        "assetStatus": "confirmed",
+        "labelStatus": "draft",
+        "description": "Walking forward"
+      },
+      "when": {
+        "constraints": [
+          {
+            "facet": "action",
+            "value": "walk"
+          }
+        ]
+      },
+      "expect": {
+        "requiresHumanConfirmation": true,
+        "labelStatus": "draft"
+      }
+    },
+    {
+      "id": "absent-contact-is-unknown",
+      "area": "M4",
+      "given": {
+        "identity": {
+          "catalogSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dictionaryVersion": "source-description-v1",
+          "clipId": "synthetic-a",
+          "clipSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sourceFbxSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        "description": "Walking forward"
+      },
+      "when": {
+        "constraints": [
+          {
+            "facet": "contact",
+            "value": "right-hand"
+          }
+        ]
+      },
+      "expect": {
+        "constraintState": "unknown",
+        "strictCandidateIds": []
+      }
+    },
+    {
+      "id": "multiple-actions-not-conflict",
+      "area": "M4",
+      "given": {
+        "identity": {
+          "catalogSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dictionaryVersion": "source-description-v1",
+          "clipId": "synthetic-a",
+          "clipSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sourceFbxSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        "description": "Walking then running"
+      },
+      "when": {
+        "constraints": [
+          {
+            "facet": "action",
+            "value": "walk"
+          },
+          {
+            "facet": "action",
+            "value": "run"
+          }
+        ]
+      },
+      "expect": {
+        "constraintStates": [
+          "supported",
+          "supported"
+        ]
+      }
+    },
+    {
+      "id": "stale-index-catalog",
+      "area": "M4",
+      "given": {
+        "identity": {
+          "catalogSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dictionaryVersion": "source-description-v1",
+          "clipId": "synthetic-a",
+          "clipSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sourceFbxSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        "indexCatalogSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "when": {
+        "constraints": [
+          {
+            "facet": "action",
+            "value": "walk"
+          }
+        ]
+      },
+      "expect": {
+        "reject": true,
+        "legacyFallback": false
+      }
+    },
+    {
+      "id": "unbaked-motion-is-missing",
+      "area": "M4",
+      "given": {
+        "identity": {
+          "catalogSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dictionaryVersion": "source-description-v1",
+          "clipId": "synthetic-a",
+          "clipSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sourceFbxSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        "description": "Walking forward",
+        "catalogClipIds": [
+          "synthetic-a"
+        ]
+      },
+      "when": {
+        "requestedComposite": "synthetic-strike-match"
+      },
+      "expect": {
+        "candidateIds": [],
+        "missingRequirement": true,
+        "fabricateClip": false
+      }
+    }
+  ]
+}

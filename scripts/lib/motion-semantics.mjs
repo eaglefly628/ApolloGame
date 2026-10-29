@@ -1,5 +1,5 @@
 /** Description-derived proposals. Never changes catalog approval or infers physical contact. */
-export const DICTIONARY_VERSION = 'source-description-v1';
+export const DICTIONARY_VERSION = 'source-description-v2';
 export const BROWSE_GROUPS = Object.freeze([
   ['locomotion','移动与转向'],['combat','战斗动作'],['dance','舞蹈'],['gesture','交谈与手势'],
   ['interaction','伸手与物体交互'],['daily','日常与运动'],['reaction','受击与反应'],['idle','待机'],['pose','静态姿势'],['posture','起坐与身体姿态'],['other','待分类'],
@@ -49,10 +49,10 @@ const RULES=[
  ['action','text','发短信','daily',/\btext(?:s|ed|ing)\b/i],
  ['action','read','阅读','daily',/\bread(?:s|ing)?\b/i],
  ['action','pray','祈祷','daily',/\b(?:pray(?:s|ed|ing)?|prayer)\b/i],
- ['action','exercise','锻炼','daily',/\b(?:plank|push[ -]?up|sit[ -]?up|exercise|workout)\b/i],
+ ['action','exercise','锻炼','daily',/\b(?:plank|push[ -]?ups?|sit[ -]?up|exercise|workout)\b/i],
  ['action','laugh','大笑','gesture',/\blaugh(?:s|ed|ing)?\b/i],
  ['action','cry','哭泣','gesture',/\b(?:cry|cries|cried|crying)\b/i],
- ['action','hit-reaction','受击','reaction',/\b(?:(?:receiv(?:e|es|ed|ing)|getting|got)\s+(?:a\s+)?(?:\w+\s+){0,2}hit|hit\s+reaction|impact|flinch(?:es|ed|ing)?)\b/i],
+ ['action','hit-reaction','受击','reaction',/\b(?:(?:receiv(?:e|es|ed|ing)|getting|got)\s+(?:a\s+)?(?:\w+\s+){0,2}hit|receiv(?:e|es|ed|ing)\s+(?:a|an|the)\s+(?:\w+\s+){0,2}(?:kick|punch)|hit\s+reaction|impact|flinch(?:es|ed|ing)?)\b/i],
  ['action','fall','跌落','reaction',/\b(?:fall(?:s|ing)?|fell|stumble|tripping)\b/i],
  ['action','death','倒下/死亡','reaction',/\b(?:death|dying|die|dies|dead)\b/i],
  ['action','step','迈步','locomotion',/\bstep(?:s|ped|ping)?\b/i],
@@ -115,10 +115,12 @@ export function sourceSemantics(row) {
       if(value==='shoot'&&!weapon)continue;
       const prefix=input.slice(Math.max(0,match.index-80),match.index).split(/[,;.!?]|\b(?:but|then|while|and)\b/i).at(-1);
       const following=input.slice(match.index+match[0].length);
+      if(value==='close'&&/^close$/i.test(match[0])&&/^\s+to\b/i.test(following))continue;
+      if(value==='point'&&/^point$/i.test(match[0])&&/\bat\s+(?:(?:this|that|the|a)\s+)?$/i.test(prefix))continue;
       if(value==='turn'&&/^\s+(?:(?:the|a|some)\s+)?(?:pages?|into|on|off)\b/i.test(following))continue;
       if(facet==='emotion'&&/\b(?:with|beside|near|to)\s+(?:an?\s+)?$/i.test(prefix)&&/^\s+(?:man|woman|person|people|child|boy|girl|friend|opponent)\b/i.test(following))continue;
       if(value==='walk'&&/^\s+stick\b/i.test(following)||value==='roll'&&/^\s+(?:(?:the|their|his|her)\s+)?(?:shoulders?|eyes?|head|wrists?|ankles?)\b/i.test(following))continue;
-      if(/\b(?:no|not|without|never|cannot|isn't|doesn't|don't)\s+(?:\w+\s+){0,2}$/i.test(prefix)) {warnings.push('negated-mention-skipped');continue;}
+      if(/\b(?:no|nobody|no\s+one|not|without|never|cannot|isn't|doesn't|don't)\s+(?:\w+\s+){0,2}$/i.test(prefix)) {warnings.push('negated-mention-skipped');continue;}
       if(['punch','kick','slash','shoot','attack'].includes(value)&&(RECIPIENT.test(prefix+match[0])||/\b(?:dodg(?:e|ing)|evad(?:e|ing)|block(?:s|ed|ing)?)\s+(?:\w+\s+){0,4}$/i.test(prefix))) {warnings.push('opponent-action-not-performed');continue;}
       claims.push({facet:staticPose&&facet==='action'?'poseContext':facet,value,label:ballSport&&value==='kick'?'踢球':label,quote:match[0],start:match.index,end:match.index+match[0].length,source,status:'source-derived'});
       if(group&&!staticPose)groups.add(ballSport&&['kick','block','throw'].includes(value)?'daily':group);

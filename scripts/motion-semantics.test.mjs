@@ -40,3 +40,33 @@ describe('subject and object ambiguity',()=>{
  it('does not mistake page turning for body travel',()=>{expect(values(sourceSemantics(clip('Turning the pages of a book')),'action')).not.toContain('turn');});
  it('does not assign an explicitly accompanying person emotion to the performer',()=>{expect(values(sourceSemantics(clip('Walking with an angry man')),'emotion')).toEqual([]);});
 });
+
+
+describe('M2 follow-up: external review counterexamples (synthetic source text)',()=>{
+ it.each([
+  ['Standing close to a table','close'],
+  ['At this point he waves','point'],
+  ['Nobody walks here; he dances','walk'],
+ ])('does not infer a performed action from %s',(description,absent)=>{
+  const a=sourceSemantics(clip(description));expect(values(a,'action')).not.toContain(absent);expect(a.status).toBe('draft');
+ });
+ it('recognizes plural push ups from Description without title rescue',()=>{
+  const a=sourceSemantics(clip('Doing push ups on the floor'));expect(values(a,'action')).toContain('exercise');expect(a.claims.find(c=>c.value==='exercise').source).toBe('description');
+ });
+ it('recognizes receiving a kick without assigning the kick to the recipient',()=>{
+  const a=sourceSemantics(clip('Receiving a strong kick to the stomach'));expect(values(a,'action')).toContain('hit-reaction');expect(values(a,'action')).not.toContain('kick');expect(values(a,'role')).toContain('recipient');
+ });
+ it('keeps affirmative counterparts and exact spans after filtering ambiguous words',()=>{
+  for(const description of ['Closing a door','Pointing at a table','Nobody walks here; he dances','Doing push ups on the floor','Receiving a strong kick to the stomach']){
+   const a=sourceSemantics(clip(description));for(const c of a.claims)expect(description.slice(c.start,c.end)).toBe(c.quote);
+  }
+  expect(values(sourceSemantics(clip('Closing a door')),'action')).toContain('close');expect(values(sourceSemantics(clip('Pointing at a table')),'action')).toContain('point');expect(values(sourceSemantics(clip('Nobody walks here; he dances')),'action')).toContain('dance');
+ });
+});
+
+
+describe('M2 independent review: preparation is not a received strike',()=>{
+ it.each([['Getting ready to kick','kick'],['Getting ready to punch','punch']])('%s keeps performer role',(description,action)=>{
+  const a=sourceSemantics(clip(description));expect(values(a,'action')).toContain(action);expect(values(a,'action')).not.toContain('hit-reaction');expect(values(a,'role')).not.toContain('recipient');
+ });
+});
