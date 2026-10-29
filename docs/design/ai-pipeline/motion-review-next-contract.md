@@ -84,4 +84,14 @@ M6 需要补全的部分作为 missingRequirements/补全建议单列；不得�
 
 请按用户指定的交叉复查流程，将本批准确提交 SHA 交 Claude 独立复跑、撤修验红、实证复现并读告警，明确“共享字典 API 是否可冻结”的判词。原 `1b87a04d5` 的 PASS 和后续 `f75e1dd9d` 的门禁不覆盖本候选。
 
-草稿日志和 M4 影子查询仍在隔离现场；目录替换时日志可能写到库外的问题已被独立复现，修复和独立复查完成前不得启用真实写回，也不随本批提交。后续人审批准、正式 M3 保存及生产 M4 接线仍须分别完成并独立复查；Mink 样片仍待视觉验收。
+草稿日志和 M4 影子查询已有仅供复查的候选源码；目录替换时日志可能写到库外的问题曾被独立复现，当前候选使用固定目录句柄并增加针对性故障测试。真实写回仍须完成针对本批准确 SHA 的独立复查。后续人审批准、正式 M3 保存及生产 M4 接线仍须分别完成并独立复查；Mink 样片仍待视觉验收。
+
+
+## 草稿侧车与影子查询候选：分项送审
+
+本批为可复查候选源码，未连接 CLI、HTTP、正式标签保存或生产匹配。请指定复查者对本批准确提交 SHA 分别给出草稿日志和 M4 影子查询的判词；共享字典接口另以 `1f4b3e9a8599152dac21d0bde8267d64628ea308` 的对应复查冻结，不能自签。
+
+- 侧车 `scripts/lib/motion-semantic-drafts.mjs`、`.d.mts`、`motion-semantic-drafts-fs.py`、`motion-semantic-drafts-validate.mjs` 与 `scripts/motion-semantic-drafts.test.mjs`：仅 propose/flag，保持 draft；精确绑定目录、素材与来源证据；持锁快照、追加、锚点发布；异常与历史损坏拒收并保留诊断。Python 3 + POSIX 目录句柄和 flock 是本候选运行依赖，Windows 明确不支持。它只保证协作写者的串行和目录固定，不是对绕过锁的本机恶意进程或伪造人审的安全保证。
+- 影子查询 `scripts/lib/motion-semantic-query.mjs`、`.d.mts` 与 `scripts/motion-semantic-query.test.mjs`：消费同一已验证来源草稿；提案不自动变为事实；支持/冲突/未知分别返回，严格查询对未知拒收；只校验所选动作文件 SHA，不冒充视觉或文件结构验收。旧 `motion-match` 未接线。
+
+建议在合成临时库独立重跑两组测试、原五个故障探针、目录链和日志头锚点撤修验红并检查告警；不访问或上传真实目录。双方文件 hash、目标提交 SHA、机器与 Python 环境均应记入复查回执。任何通过都不代表 accept/reject/retract、标签级人审、M3 写回或生产 M4 已完成。
