@@ -1,3 +1,4 @@
+import {allowLocalPreviewHost} from '../../scripts/lib/local-preview-host.mjs';
 // Read-only local workbench. Assets remain behind existing SHA-checked preview handlers.
 import {createServer} from 'node:http';
 import {readFileSync,realpathSync,statSync} from 'node:fs';
@@ -26,8 +27,9 @@ export async function createWorkbenchServer({lib,runtimeLib,runtimeReport,previe
  const library=await createPreviewServer(lib),interaction=await createMinkPreviewServer({lib:runtimeLib,report:previewReport});
  const bundle=await build({entryPoints:[join(ROOT,'tools/motion-workbench/client.ts')],bundle:true,write:false,format:'esm',platform:'browser',alias:engineAliases(ROOT)});
  for(const [file,expected] of [[join(lib,'catalog.json'),original.sha256],[join(runtimeLib,'catalog.json'),runtime.sha256],[runtimeReport,evidence.sha256],[previewReport,previewEvidence.sha256]])if(readJson(file).sha256!==expected)throw new Error('workbench source changed during initialization');
- return createServer((req,res)=>{
+ const server=createServer((req,res)=>{
   try{
+   if(!allowLocalPreviewHost(req.headers.host,server.address()?.port)){res.writeHead(403).end('local preview host required');return;}
    if(!['GET','HEAD'].includes(req.method)){res.writeHead(405).end();return;}
    const url=new URL(req.url,'http://127.0.0.1');let bytes,type='application/json; charset=utf-8';
    const prefix=url.pathname.startsWith('/library/')?'/library':url.pathname.startsWith('/interaction/')?'/interaction':undefined;
@@ -42,6 +44,7 @@ export async function createWorkbenchServer({lib,runtimeLib,runtimeReport,previe
    res.writeHead(200,{'Content-Type':type,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(req.method==='HEAD'?undefined:bytes);
   }catch(error){console.error('[motion-workbench] reject:',error.message);if(!res.headersSent)res.writeHead(400,{'Content-Type':'application/json'}).end(JSON.stringify({error:'request rejected'}));else res.end();}
  });
+ return server;
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const args={};for(let i=2;i<process.argv.length;i++){const key=process.argv[i];if(!['--lib','--runtime-lib','--runtime-report','--preview-report'].includes(key)||!process.argv[i+1]||Object.hasOwn(args,key))throw new Error('usage: server.mjs --lib path --runtime-lib path --runtime-report path [--preview-report path]');args[key]=process.argv[++i];}

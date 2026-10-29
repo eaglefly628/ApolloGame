@@ -1,3 +1,4 @@
+import {request as httpRequest} from 'node:http';
 import {beforeAll,afterAll,it,expect,vi} from 'vitest';
 import {mkdtempSync,mkdirSync,writeFileSync,readFileSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
@@ -46,3 +47,9 @@ it('refuses startup when a catalog or either evidence snapshot changes during na
   }finally{rmSync(isolated,{recursive:true,force:true});}
  }
 },20000);
+
+it('rejects foreign Host names before serving workbench or nested assets',async()=>{
+ const request=(path,host)=>new Promise((resolve,reject)=>{const req=httpRequest(base+path,{headers:{Host:host}},res=>{res.resume();resolve(res.statusCode);});req.on('error',reject);req.end();});
+ for(const path of ['/ai-catalog.json','/library/catalog.json','/interaction/validation.json','/interaction/embedded-skin/skin'])expect(await request(path,'foreign.example:'+server.address().port)).toBe(403);
+ expect(await request('/summary.json','localhost:'+server.address().port)).toBe(200);expect(await request('/summary.json','127.0.0.1:1')).toBe(403);
+});

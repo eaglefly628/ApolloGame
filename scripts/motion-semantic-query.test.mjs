@@ -1,12 +1,13 @@
+import {tmpdir} from 'node:os';
 import {describe,it,expect,afterEach} from 'vitest';
-import {mkdtempSync,mkdirSync,writeFileSync,readFileSync,readdirSync,rmSync,symlinkSync} from 'node:fs';
+import {realpathSync,mkdtempSync,mkdirSync,writeFileSync,readFileSync,readdirSync,rmSync,symlinkSync} from 'node:fs';
 import {join} from 'node:path';
 import {sha256} from './lib/motion-catalog.mjs';
 import {readSemanticDrafts,appendSemanticDraft} from './lib/motion-semantic-drafts.mjs';
 import {querySemanticDrafts} from './lib/motion-semantic-query.mjs';
 const roots=[];afterEach(()=>roots.splice(0).forEach(root=>rmSync(root,{recursive:true,force:true})));
 const clip=(id,description,extra={})=>({id,file:`clips/${id}.glb`,sha256:sha256(Buffer.from(id)),source:{kind:'mixamo',fbxSha256:'b'.repeat(64),searchTerm:'Synthetic',mixamoName:'Synthetic shared title',description},fps:30,frames:61,durationS:2,loop:false,inPlace:true,rootMotion:'none',category:'pose',emotion:['neutral'],contacts:[],intensity:1,descZh:'合成测试占位',descEn:'Synthetic source fixture',tags:[],derivedFrom:null,status:'confirmed',...extra});
-function fixture(...clips){const lib=mkdtempSync('/private/tmp/semantic-query-');roots.push(lib);mkdirSync(join(lib,'clips'));for(const row of clips)writeFileSync(join(lib,row.file),Buffer.from(row.id));writeFileSync(join(lib,'catalog.json'),JSON.stringify({version:1,clips,skins:[]}));writeFileSync(join(lib,'original.fbx'),'synthetic untouched source');return lib;}
+function fixture(...clips){const lib=mkdtempSync(join(realpathSync(tmpdir()),'semantic-query-'));roots.push(lib);mkdirSync(join(lib,'clips'));for(const row of clips)writeFileSync(join(lib,row.file),Buffer.from(row.id));writeFileSync(join(lib,'catalog.json'),JSON.stringify({version:1,clips,skins:[]}));writeFileSync(join(lib,'original.fbx'),'synthetic untouched source');return lib;}
 async function query(lib,constraints,extra={}){const s=await readSemanticDrafts({lib});return querySemanticDrafts({lib,request:{expectedCatalogSha256:s.catalogSha256,expectedDictionaryVersion:s.dictionaryVersion,expectedRevision:s.head.revision,expectedHeadSha256:s.head.eventSha256,constraints,...extra}});}
 describe('unwired M4 shadow query over shared draft evidence',()=>{
  it('keeps source drafts separate from asset confirmation and old neutral/pose defaults',async()=>{

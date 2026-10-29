@@ -1,3 +1,4 @@
+import {allowLocalPreviewHost} from './lib/local-preview-host.mjs';
 import { createServer } from 'node:http';
 import { readFileSync, realpathSync, statSync } from 'node:fs';
 import { resolve, dirname, join, sep } from 'node:path';
@@ -25,6 +26,7 @@ export async function createPreviewServer(lib) {
   const bundle=await build({entryPoints:[join(ROOT,'tools/motion-preview/client.ts')],bundle:true,write:false,format:'esm',platform:'browser',alias:engineAliases(ROOT)});
   const server=createServer((req,res)=>{
     try {
+      if(!allowLocalPreviewHost(req.headers.host,server.address()?.port)){res.writeHead(403).end('local preview host required');return;}
       if(!['GET','HEAD'].includes(req.method)){res.writeHead(405).end();return;}
       const url=req.url.split('?')[0];let bytes,type;
       if(url==='/') {bytes=Buffer.from('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>动作预览台</title><div id="root"></div><script type="module" src="/app.js"></script>');type='text/html; charset=utf-8';}

@@ -1,3 +1,4 @@
+import {allowLocalPreviewHost} from '../../scripts/lib/local-preview-host.mjs';
 import {libraryPath} from '../../scripts/motion-library.mjs';
 import {sha256,validateCatalog} from '../../scripts/lib/motion-catalog.mjs';
 import {buildEmbeddedPreview} from './embedded-motion.mjs';
@@ -25,6 +26,7 @@ export async function createMinkPreviewServer({lib,report}) {
   if(handlers.length!==1)throw new Error('unexpected preview request handler count');
   server.removeAllListeners('request');
   server.on('request',async(req,res)=>{
+    if(!allowLocalPreviewHost(req.headers.host,server.address()?.port)){res.writeHead(403).end('local preview host required');return;}
     const path=(req.url||'').split('?')[0];
     if(path.startsWith('/embedded-skin/')){if(!['GET','HEAD'].includes(req.method)){res.writeHead(405).end();return;}const skin=catalog.skins.find(row=>path==='/embedded-skin/'+row.id);if(!skin){res.writeHead(404).end();return;}try{const bytes=await embeddedSkin(skin);if(res.destroyed)return;res.writeHead(200,{'Content-Type':'model/gltf-binary','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(req.method==='HEAD'?undefined:bytes);}catch(error){console.error('[motion-mink-preview] reject:',error.message);if(!res.destroyed)res.writeHead(409).end('preview preparation failed');}return;}
     if(path!=='/app.js'&&path!=='/validation.json'){handlers[0].call(server,req,res);return;}

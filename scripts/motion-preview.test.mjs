@@ -50,3 +50,7 @@ describe('local read-only motion preview server',()=>{
   const alias=join(root,'alias-lib');mkdirSync(alias);writeFileSync(join(outside,'catalog.json'),JSON.stringify(catalog));symlinkSync(join(outside,'catalog.json'),join(alias,'catalog.json'));await expect(createPreviewServer(alias)).rejects.toThrow(/catalog escapes/);
  });
 });
+
+it('rejects foreign Host names on the standalone preview too',async()=>{
+ const status=await new Promise((resolve,reject)=>{const req=rawRequest(base+'/catalog.json',{headers:{Host:'foreign.example'}},res=>{res.resume();resolve(res.statusCode);});req.on('error',reject);req.end();});expect(status).toBe(403);
+});
