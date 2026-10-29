@@ -7,6 +7,10 @@
 
 ---
 
+## REQ-3D-GLB-TOON · 导入模型可选卡通材质覆盖 · [2026-10-29] · owner 明确同意补运行时 · **施工主体 = Codex K 线（2026-10-29；本行即锁）** · status: in-progress · P1
+> 目标：给 Model3D 导入模型接入可选 toon 着色和可调档位；默认不覆盖，保持原有渲染。复用现有 three.js 卡通材质，保留兼容材质的多材质、纹理、UV、透明、法线、自发光；无法等价转换的材质保留原材质并明确记录。不得修改缓存共享模板材质，实例生命周期与资源释放须验证。描边可选并评估成本，不默认启用。
+> 验收：默认行为回归、不同实例隔离、多材质和透明/贴图/法线/自发光、复杂材质回退、tint/dissolve 交互；真实 ApolloGame 场景关/低/中/高对照；手机性能实测或标为未测。施工完成交不同施工人的独立复查；未完成不标验收。
+
 ## REQ-3D-RENDER-BIND · 通用画面参数绑定（GAP-628-04） · [2026-10-26] · owner 判 A · **施工主体 = Codex / P3D（2026-10-26·本行即锁）** · status: 施工完·待独立复查（Claude） · P1
 > owner 本聊天明确选择：火光 / 幻象等效果下沉通用能力，后续故事复用。实查与 A/B 成本见 game628 的 engine-readiness-2026-10-23 G1；不是给游戏加专属 system，也不扩 effect-apply 写渲染字段。
 > spec：新增 render-only 闭集数据绑定，读 Resource 比例 / Flag / Signal，驱动同体 Light3D.intensity、Material3D.dissolve.progress、Vfx3D.rate、Glow3D.opacity；可声明缓动；hover来源为只在表现侧保存的指针状态，复用既有pick射线，移开/取消/失焦/销毁清理，不向sim发布纯视觉悬停信号。不能把DOM/游戏自由代码藏进绑定。解释器只读sim，使用独立表现覆盖，不改源组件、Signal消费或hash。materialRef重组必须保留本单绑定输出；dissolve须作用于导入GLB的逐实例材质，复用既有shader、不替换模板或误释放共享纹理。无绑定组件时保持原渲染路径。
