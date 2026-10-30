@@ -131,5 +131,23 @@ owner 追问「代码是否都看过」。上一轮判词只逐行读了审查�
 
 ## Q1 与保管库跨平台断言返工（2026-10-30）
 
-施工主体：当前 Codex motion-semantics-next session。状态：施工中，独立复核待进行。
+施工主体：当前 Codex motion-semantics-next session。状态：修复、自证、独立复核及完整门禁已完成；交 Claude 复核，原判词保持不变。
 范围：影子查询 strict 仅约束 required；forbidden 未知保留 unknown 和人工确认，明确冲突继续排除。补默认/显式严格模式反例。保管库仅修正测试平台假设，不放宽生产拒收。Q2–Q7 不在本次修改范围。
+
+### 本轮实现边界
+
+- Q1：默认及显式 `strict=true` 仅要求 required 条件都有正面证据。forbidden 有明确证据则冲突排除，没有证据仍返回 `unknown`，保留 `requiresHumanConfirmation=true`，不宣称禁止行为已被排除或视觉质量通过。只有禁止条件而无任何正面需求时仍不生成补全请求。
+- 回归：覆盖默认/true/false、走路同时跑步的明确冲突、required 未知继续拒收、待定禁止词不伪造验证；15 项影子查询测试通过。修复前默认/true 与待定禁止词共 3 项验红。
+- 保管库：生产代码不变；大小写冲突仍只能接受 collision，Unicode 双写法接受 NFC 拒收或 collision。追加独立枚举夹具，并断言枚举命中，避免 Mac 的文件名归一化跳过 Linux 情形。43 项 Python 检查通过；本机为 Darwin，不能冒充 Linux 实机复验。
+- Q2–Q7 保留原审查意见，未标记已完成；影子查询仍未接入 M4 生产流程。真实资产及目录未写入。
+
+### 验证记录（本轮自证，不替代 Claude 判词）
+
+- 独立复核：另一个复核代理自行复跑查询 15 项与 Python 43 项；临时副本撤修 3 项变红、恢复同一字节后转绿。Vault 生产文件与基线一致。
+- 首次完整门禁：721 文件中 720 通过，7933 项通过、2 项既有跳过，1 项 `never sends forbidden-only constraints to motion completion` 由于 `spawnSync python3 ETIMEDOUT` 失败；独立复跑同文件 15 项通过。保留失败记录，未提高超时、未修改断言，降低并行重新执行全量。
+
+- 独立撤修证据：本机临时目录 `/private/tmp/q1-review-withdraw-20261030`；验红 `/private/tmp/q1-review-withdraw-red.log`；恢复 `/private/tmp/q1-review-restore-green.log`。这些仅含合成测试，不含素材。
+
+- 完整重跑：`scoped-gate --run --base 274b5721c` 退出码 0；721 文件通过，7934 项通过、2 项既有跳过。eslint、依赖、类型、构建、文档引用及预算守卫通过。保留既有大包提示、美术台账 game-a art-03 / game-c art-017 WARN 与 happy-dom teardown 日志；未因本轮放宽守卫。
+- 日志（本机临时证据）：首次 `/private/tmp/q1-vault-full-gate.log`；通过 `/private/tmp/q1-vault-full-gate-retry.log`；专项 `/private/tmp/q1-vault-focused-final.log`；超时专项复跑 `/private/tmp/q1-timeout-recheck.log`。代码/测试在验证后 SHA 冻结一致。
+- 给 Claude：复核本节 Q1 默认/显式 strict 语义及保管库 Unicode 断言；本轮不声明 Linux 实机通过，不代改原复查判词。Q2–Q7 仍待后续处理。

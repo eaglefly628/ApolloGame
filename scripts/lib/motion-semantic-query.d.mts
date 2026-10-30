@@ -2,6 +2,7 @@ import type {SourceEvidence} from './motion-semantics.mjs';
 export interface SemanticConstraint {facet:string;value:string;mode?:'required'|'forbidden';}
 export interface SemanticQueryRequest {
  expectedCatalogSha256:string;expectedDictionaryVersion:string;expectedRevision:number;expectedHeadSha256:string|null;
+ /** Strict (default): every required constraint needs evidence; forbidden unknowns remain unverified, not excluded. */
  constraints:SemanticConstraint[];strict?:boolean;top?:number;
 }
 export interface EvaluatedSemanticConstraint {

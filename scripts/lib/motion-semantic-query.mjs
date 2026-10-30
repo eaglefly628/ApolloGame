@@ -53,10 +53,12 @@ export async function querySemanticDrafts({lib,request}){
    const reason=state!=='unknown'?'explicit-source-claim':constraint.vocabularyStatus!=='known'?'pending-vocabulary':!usable?'base-reference-not-current-evidence':'absence-is-not-counterevidence';
    return {...constraint,state,reason,evidence};
   });
+  // Strict mode requires positive evidence for required facts. An unknown prohibition
+  // remains unknown (and requires confirmation); only an explicit conflict excludes it.
   const score=states.filter(state=>state.state==='supported').length;
-  const conflict=states.some(state=>state.state==='conflict'),unknown=states.some(state=>state.state==='unknown');
+  const conflict=states.some(state=>state.state==='conflict'),unknownRequired=states.some(state=>state.mode==='required'&&state.state==='unknown');
   return {clipId:row.id,file:row.file,clipSha256:row.sha256,assetStatus:row.status,labelStatus:'draft',requiresHumanConfirmation:true,score,constraints:states,
-   eligible:!conflict&&score>0&&(!(request.strict??true)||!unknown),exclusionReason:conflict?'explicit-conflict':score===0?'no-supported-requirement':unknown&&(request.strict??true)?'strict-unknown':null};
+   eligible:!conflict&&score>0&&(!(request.strict??true)||!unknownRequired),exclusionReason:conflict?'explicit-conflict':score===0?'no-supported-requirement':unknownRequired&&(request.strict??true)?'strict-unknown':null};
  });
  const matching=evaluated.filter(row=>row.eligible).sort((a,b)=>b.score-a.score||compare(a.clipId,b.clipId)),selected=matching.slice(0,request.top??20);
  for(const candidate of selected)verifyCandidate(root,byId.get(candidate.clipId));

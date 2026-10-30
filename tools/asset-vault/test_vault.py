@@ -188,8 +188,26 @@ class VaultTests(unittest.TestCase):
                     (Path(source) / name).write_bytes(name.encode())
                 # macOS may normalize/casefold the names at creation. Test only distinct entries.
                 if len(list(Path(source).iterdir())) == 2:
-                    with self.assertRaisesRegex(vault.VaultError, "collision"):
+                    expected = "collision" if names == ("Art", "art") else "collision|source name must already be NFC"
+                    with self.assertRaisesRegex(vault.VaultError, expected):
                         vault.plan({"art": source}, self.target, reserve_bytes=0)
+
+    def test_distinct_unicode_entries_refused_even_on_normalizing_filesystem(self):
+        # Reproduce Linux enumeration without relying on the host filesystem allowing
+        # both spellings. The non-NFC entry must be refused before any file read.
+        original_iterdir = Path.iterdir
+        canonical_source = self.source.resolve()
+        seen = []
+        def entries(directory):
+            if directory == canonical_source:
+                seen.append(directory)
+                return iter([canonical_source / "é", canonical_source / "e\u0301"])
+            return original_iterdir(directory)
+        with mock.patch.object(Path, "iterdir", entries):
+            with self.assertRaisesRegex(vault.VaultError, "source name must already be NFC"):
+                vault.plan(self.sources, self.target, reserve_bytes=0)
+        self.assertEqual(seen, [canonical_source])
+        self.assertEqual(list(self.target.iterdir()), [])
 
     def test_windows_reserved_and_path_escape_names_refused(self):
         for name in ["CON", "nul.txt", "COM1.bin", "bad.", "bad ", "a:b", "../escape", "/absolute"]:

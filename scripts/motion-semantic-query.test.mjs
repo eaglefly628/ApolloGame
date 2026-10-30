@@ -18,8 +18,30 @@ describe('unwired M4 shadow query over shared draft evidence',()=>{
  it('does not make walk and run mutually exclusive, and sorts exact identities deterministically',async()=>{
   const lib=fixture(clip('z','Walking then running'),clip('a','Walking then running'));const result=await query(lib,[{facet:'action',value:'walk'},{facet:'action',value:'run'}]);expect(result.candidates.map(c=>c.clipId)).toEqual(['a','z']);expect(result.candidates[0].constraints.map(c=>c.state)).toEqual(['supported','supported']);
  });
- it('distinguishes an explicit forbidden action from an omitted fact',async()=>{
-  const lib=fixture(clip('walk','Walking'),clip('run','Running'));const result=await query(lib,[{facet:'action',value:'walk'},{facet:'action',value:'run',mode:'forbidden'}],{strict:false});expect(result.candidates.map(c=>c.clipId)).toEqual(['walk']);expect(result.candidates[0].constraints[1].state).toBe('unknown');expect(result.missingRequirements).toEqual([]);expect(result.excluded.find(c=>c.clipId==='run').constraints[1].state).toBe('conflict');expect((await query(lib,[{facet:'action',value:'walk'},{facet:'action',value:'run',mode:'forbidden'}])).candidates).toEqual([]);
+ it.each([undefined,true,false])('retains unknown prohibitions without claiming safety (strict=%s)',async(strict)=>{
+  const lib=fixture(clip('walk','Walking'),clip('run','Running'),clip('both','Walking then running'));
+  const result=await query(lib,[{facet:'action',value:'walk'},{facet:'action',value:'run',mode:'forbidden'}],strict===undefined?{}:{strict});
+  expect(result.candidates.map(c=>c.clipId)).toEqual(['walk']);
+  expect(result.candidates[0]).toMatchObject({labelStatus:'draft',requiresHumanConfirmation:true});
+  expect(result.candidates[0].constraints[1]).toMatchObject({state:'unknown',reason:'absence-is-not-counterevidence',evidence:[]});
+  expect(result.missingRequirements).toEqual([]);
+  expect(result.excluded.find(c=>c.clipId==='both')).toMatchObject({exclusionReason:'explicit-conflict',score:1});
+  expect(result.excluded.find(c=>c.clipId==='run').constraints[1].state).toBe('conflict');
+ });
+ it.each([undefined,true])('keeps unknown required constraints strict (strict=%s)',async(strict)=>{
+  const lib=fixture(clip('walk','Walking'));
+  const constraints=[{facet:'action',value:'walk'},{facet:'action',value:'jump'},{facet:'action',value:'run',mode:'forbidden'}];
+  const result=await query(lib,constraints,strict===undefined?{}:{strict});
+  expect(result.candidates).toEqual([]);
+  expect(result.excluded[0].exclusionReason).toBe('strict-unknown');
+  expect(result.missingRequirements.map(c=>c.value)).toEqual(['jump']);
+  expect((await query(lib,constraints,{strict:false})).candidates.map(c=>c.clipId)).toEqual(['walk']);
+ });
+ it('does not turn pending forbidden vocabulary into verified absence',async()=>{
+  const lib=fixture(clip('walk','Walking'));
+  const result=await query(lib,[{facet:'action',value:'walk'},{facet:'action',value:'synthetic-forbidden',mode:'forbidden'}]);
+  expect(result.candidates.map(c=>c.clipId)).toEqual(['walk']);
+  expect(result.candidates[0].constraints[1]).toMatchObject({state:'unknown',reason:'pending-vocabulary',vocabularyStatus:'pending-vocabulary'});
  });
  it('returns missing requirements without inventing an unbaked motion ID or treating base references as evidence',async()=>{
   const lib=fixture(clip('derived','Walking',{derivedFrom:'synthetic-parent'}));const result=await query(lib,[{facet:'action',value:'walk'}]);expect(result.candidates).toEqual([]);expect(result.excluded[0].constraints[0]).toMatchObject({state:'unknown',reason:'base-reference-not-current-evidence'});
