@@ -127,3 +127,9 @@ owner 追问「代码是否都看过」。上一轮判词只逐行读了审查�
 ### 另报（不属本批）：主干在 Linux 上全量门禁为红
 
 `tools/asset-vault/vault.test.mjs`（`666e4476`，资产保管库）中 `test_casefold_and_unicode_normalization_collisions_refused` 在 Linux 失败：macOS 文件系统会把 `é` 与 `é` 归一成一个文件，该用例被跳过；Linux 上两个文件并存，保管库先以「source name must already be NFC」拒绝（行为正确），而测试只接受「collision」字样。建议施工方让断言同时接受两种拒绝原因。该提交未交我复查，此处只报告。
+
+
+## Q1 与保管库跨平台断言返工（2026-10-30）
+
+施工主体：当前 Codex motion-semantics-next session。状态：施工中，独立复核待进行。
+范围：影子查询 strict 仅约束 required；forbidden 未知保留 unknown 和人工确认，明确冲突继续排除。补默认/显式严格模式反例。保管库仅修正测试平台假设，不放宽生产拒收。Q2–Q7 不在本次修改范围。
