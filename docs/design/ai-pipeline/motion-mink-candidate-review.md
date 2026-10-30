@@ -93,3 +93,37 @@ python3 -m unittest discover -s tools/motion-mink-validation -p '*_test.py'
 
 
 修复批实证（施工记录，不是新独立判词）：三文件在自定义规范 TMPDIR 下17项通过，独立拦截确认16次目录创建全走该根且清理无残留；macOS实测，未伪称Linux通过。Host相关六文件28项和独立Mink HTTP 25条断言通过。完整门禁首轮在既有 `motion-library.test.mjs` 的真实子进程5000ms重试断言失败1例；单文件60项通过后，以两worker降低负载复跑，不改断言或超时，最终719文件、7914通过、2跳过，scope=full退出0。既有构建分块体积、game-a/game-c美术台账缺文件WARN及happy-dom AbortError日志保留。
+
+## 逐行补审与 MK1 复核（Claude · 2026-10-30）
+
+owner 追问「代码是否都看过」。上一轮判词只逐行读了审查重点涉及的约四成文件，其余靠测试、撤修与门禁间接覆盖。本轮把 `058ffd6a` 批次剩余文件全部逐行读完，并复核修复提交 `2eac57e6`。
+
+### MK1 复核：PASS
+
+- `2eac57e6` 三个测试改为 `mkdtempSync(join(realpathSync(tmpdir()), …))`。在**不存在 `/private/tmp`** 的 Linux 上重跑定向 24 文件 **227 / 227** 通过。
+- 同提交新增 Host 白名单 `scripts/lib/local-preview-host.mjs`（只认 `127.0.0.1` / `localhost` 加实际监听端口；嵌套处理器依赖外层校验），三个预览服务均已接入。撤修验红：删掉工作台的 Host 检查 → `rejects foreign Host names before serving workbench or nested assets` 变红，恢复后绿。
+- 全量门禁 `--base 058ffd6a`：**7913 通过，1 失败**，失败项不在本批，见文末「另报」。
+
+### 逐行补审发现
+
+| # | 级别 | 位置 | 问题 | 复现 / 依据 | 建议 |
+|---|---|---|---|---|---|
+| Q1 | **P2（接 M4 前必修）** | `scripts/lib/motion-semantic-query.mjs`（`a39aa8c2`） | 默认 `strict=true` 下，任何 `forbidden` 约束都会让候选全被排除。标签来自文字，永远无法证明「没有」，所以 forbidden 只能是 conflict 或 unknown，而 strict 把 unknown 一律排除 | 合成目录 walk / run，查询「要 walk、禁 run」，默认模式 → `candidates: []`、`missingRequirements: []`、walk 被判 `strict-unknown`。调用方看到「什么都不缺、却一个都没有」 | strict 只作用于 required；forbidden 的 unknown 不排除，或强制调用方显式选择。现有测试只覆盖 `strict:false`，需补默认模式用例 |
+| Q2 | P3 | 草稿日志（`motion-semantic-drafts-validate.mjs`） | 日志头绑定目录 SHA，目录任何变动（新增一个动作）后整份日志读不出（`head catalog changed`），无迁移路径 | 读码 | 正式让人工审核写入前，先定「目录升级时如何迁移草稿」 |
+| Q3 | P3 | `tools/motion-mink-validation/export.mjs:181` | 仓库隔离只判断路径字符串是否含 `/ApolloGame/`；克隆或 worktree 改名就失效。`bake.mjs` 无输出校验，依赖 `run.mjs` 先校验 | 读码 | 独立入口复用 `validateCandidateOutput` |
+| Q4 | P3 | `tools/motion-mink-validation/socket-run.mjs` | 按角色显示名 `find` 取第一个，同名角色静默取第一个；本机库确有重复的 Amy。新的 `socket-runtime-run.mjs` 已报「名字有歧义」，旧的没跟上 | 读码 | 与 `selectRuntimeSkins` 统一 |
+| Q5 | P3 | `recipe.mjs` `motionRecipeSha` | 用普通 `JSON.stringify`，同一配方键顺序不同 → SHA 与候选 ID 不同 | 读码 | 用规范化序列化（仓库已有 canonical 实现） |
+| Q6 | P3 | `tools/motion-mink-validation/preview.ts:50` | 窗口跨过列数断点时整页 `location.reload()`，丢失选中项与播放位置 | 读码 | 布局改响应式，不重载 |
+| Q7 | P3 | `export.mjs` | 无配方时写死回落到 Y Bot / `texting-119350901` | 读码 | 无配方即报错 |
+
+### 逐行读过、未发现问题的部分
+
+`socket-attach.mjs`（Socket 骨插入只追加、原二进制前缀不变；握点按掌型比例映射、道具保持米制尺寸；回放复核含帧间采样）、`socket-frames.mjs`、`socket-runtime-run.mjs`（失败保留并单列、源技术状态不被覆盖、名字歧义报错、ID 截断不超 120）、`bake.mjs`（桥接误差阈值 1e-5、输出排他写）、`review-assets.mjs`（目标复核 SHA，防篡改）、`contact.py` / `check.py`（皮肤穿插取保守下界；接触必需却无样本时判失败；平滑曲线与 `contact.py` 一致）、`solve.py`（无随机、输出排他写；本机无 mink / mujoco 未运行）、工作台前端 `client.ts` 与预览 `preview.ts` / `runtime-controls.ts` / `paused-frame.ts`（全部 LayoutNode、文字经 `Label` 无注入、换角色用代次计数丢弃过期加载、暂停时交互被拦）、`motion-semantic-drafts.mjs`、`motion-semantic-query.mjs` 的路径部分（`id` 闭集 `[a-z0-9-]`，无穿越；候选读文件前拒符号链接并核 SHA）。
+
+### 本批最终结论
+
+**PASS（附条件）**：MK1 已修复并复核；Q1 不阻断本批（影子查询未接线），但**接入 M4 前必须修复并补默认模式测试**；Q2–Q7 为 P3，随后续批次处理。真实素材相关结论仍未复验。
+
+### 另报（不属本批）：主干在 Linux 上全量门禁为红
+
+`tools/asset-vault/vault.test.mjs`（`666e4476`，资产保管库）中 `test_casefold_and_unicode_normalization_collisions_refused` 在 Linux 失败：macOS 文件系统会把 `é` 与 `é` 归一成一个文件，该用例被跳过；Linux 上两个文件并存，保管库先以「source name must already be NFC」拒绝（行为正确），而测试只接受「collision」字样。建议施工方让断言同时接受两种拒绝原因。该提交未交我复查，此处只报告。
