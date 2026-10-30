@@ -18,6 +18,9 @@ export interface SemanticQueryResult {
  schemaVersion:1;status:'draft';catalogSha256:string;dictionaryVersion:string;head:{revision:number;eventSha256:string|null};
  totalMatches:number;candidates:SemanticQueryCandidate[];excluded:SemanticQueryCandidate[];
  missingRequirements:{facet:string;value:string;mode:'required'|'forbidden';vocabularyStatus:'known'|'pending-vocabulary';reason:string}[];
- pendingProposalCount:number;assetVerification:'selected-candidate-SHA-only';integration:'shadow-only-not-production-wired';
+ pendingProposalCount:number;assetVerification:'selected-candidate-SHA-only';integration:'offline-draft-query';
 }
 export function querySemanticDrafts(options:{lib:string;request:SemanticQueryRequest}):Promise<SemanticQueryResult>;
+
+/** Batched queries share an internally loaded catalog/revision and verify selected assets once. */
+export function querySemanticDraftBatch(options:{lib:string;requests:SemanticQueryRequest[]}):Promise<SemanticQueryResult[]>;

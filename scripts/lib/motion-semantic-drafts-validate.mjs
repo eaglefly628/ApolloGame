@@ -45,7 +45,79 @@ export function validateDraftSnapshot(input){
  check(request.expectedRevision===context.head.revision,'revision conflict');check(context.events.length<SEMANTIC_DRAFT_LIMITS.events,'event count budget');const body={schemaVersion:1,revision:context.head.revision+1,prevEventSha256:context.head.eventSha256,requestSha256,request},event={...body,eventSha256:digest(body)};projectEvent(context,event);const line=canonical(event)+'\n';check(Buffer.byteLength(line)<=SEMANTIC_DRAFT_LIMITS.eventBytes,'event byte budget');check(Buffer.byteLength(input.snapshot.logText??'')+Buffer.byteLength(line)<=SEMANTIC_DRAFT_LIMITS.logBytes,'log byte budget');
  const anchor={schemaVersion:1,catalogSha256:context.catalogSha256,dictionaryVersion:DICTIONARY_VERSION,revision:event.revision,eventSha256:event.eventSha256};return {result:{status:'draft',idempotent:false,event,head:{revision:event.revision,eventSha256:event.eventSha256}},commit:{eventLine:line,headText:canonical(anchor)+'\n'}};
 }
+
+// Bound inherited evidence independently of the current catalog/log budgets.
+export const SEMANTIC_MIGRATION_HISTORY_LIMITS=Object.freeze({bytes:64*1024*1024,generations:8,files:32});
+function migrationHistoryFiles(history){
+ const files=new Map(),seen=new Set();let prefix='',total=0,generations=0;
+ const add=(path,value,limit)=>{check(typeof value==='string'&&Buffer.byteLength(value)<=limit,'migration history file byte budget');total+=Buffer.byteLength(value);check(total<=SEMANTIC_MIGRATION_HISTORY_LIMITS.bytes,'migration history total byte budget');files.set(path,value);check(files.size<=SEMANTIC_MIGRATION_HISTORY_LIMITS.files,'migration history file count budget');};
+ for(let node=history;node!==null;node=node.parent){
+  check(!seen.has(node),'migration history cycle');seen.add(node);check(++generations<SEMANTIC_MIGRATION_HISTORY_LIMITS.generations,'migration history generation budget');
+  record(node,['receiptText','snapshot','parent'],'migration history');record(node.snapshot,['catalogText','logText','headText','nextPresent'],'migration historical snapshot');
+  add(prefix+'migration-receipt.json',node.receiptText,32*1024*1024);
+  for(const [key,name,limit] of [['catalogText','catalog.json',SEMANTIC_DRAFT_LIMITS.catalogBytes],['logText','drafts.jsonl',SEMANTIC_DRAFT_LIMITS.logBytes],['headText','head.json',4096]])if(node.snapshot[key]!==null)add(prefix+'migration-archive/'+name,node.snapshot[key],limit);
+  prefix+='migration-archive/parent-migration/';
+ }
+ return files;
+}
+function validateMigrationHistory(history,currentSnapshot,currentContext){
+ if(history===null)return;
+ const receipt=JSON.parse(history.receiptText);
+ check(receipt?.lineageVersion===1,'unsupported migration lineage version; preserve historical artifacts for operator review');
+ // Reconstruct each historical decision from its exact archive, through this same planner.
+ const prior=planSemanticDraftMigration({sourceSnapshot:history.snapshot,targetSnapshot:{catalogText:currentSnapshot.catalogText,logText:null,headText:null,nextPresent:false},sourceHistory:history.parent,expected:receipt.binding});
+ check(prior.commit.receiptText===history.receiptText,'migration history receipt mismatch');
+ const count=prior.result.target.head.revision;
+ check(count<=currentContext.events.length,'migration history target head exceeds current history');
+ const prefix=count===0?null:currentSnapshot.logText.split('\n').slice(0,count).join('\n')+'\n';
+ check(prefix===prior.commit.logText,'migration history target log prefix mismatch');
+}
+/** Pure, draft-only migration. Both catalogs/chains use the exact same validator as read/append. */
+export function planSemanticDraftMigration({sourceSnapshot,targetSnapshot,sourceHistory=null,expected=null}){
+ const inherited=migrationHistoryFiles(sourceHistory),source=load(sourceSnapshot),target=load(targetSnapshot);
+ validateMigrationHistory(sourceHistory,sourceSnapshot,source);
+ check(targetSnapshot.logText===null&&targetSnapshot.headText===null&&!targetSnapshot.nextPresent,'migration target must have no draft history');
+ const binding={sourceCatalogSha256:source.catalogSha256,sourceHead:source.head,targetCatalogSha256:target.catalogSha256,dictionaryVersion:source.dictionaryVersion};
+ if(inherited.size)binding.sourceHistorySha256=digest([...inherited].map(([path,text])=>({path,sha256:hash(Buffer.from(text)),bytes:Buffer.byteLength(text)})));
+ if(expected!==null){
+  record(expected,Object.keys(binding),'migration binding');
+  record(expected.sourceHead,['revision','eventSha256'],'migration source head');
+  check(canonical(expected)===canonical(binding),'stale migration binding');
+ }
+ check(source.dictionaryVersion===target.dictionaryVersion,'migration dictionary mismatch');
+ const classification={unchanged:[],changed:[],deleted:[],added:[]};
+ for(const [id,row] of source.rows){const next=target.rows.get(id);classification[next===undefined?'deleted':canonical(row)===canonical(next)?'unchanged':'changed'].push(id);}
+ for(const id of target.rows.keys())if(!source.rows.has(id))classification.added.push(id);
+ for(const ids of Object.values(classification))ids.sort();
+ const unchanged=new Set(classification.unchanged),deleted=new Set(classification.deleted),tagIds=new Map(),targetClips=new Map(target.clips.map(clip=>[clip.clipId,clip]));
+ for(const old of source.clips){if(!unchanged.has(old.clipId))continue;const next=targetClips.get(old.clipId);check(old.tags.length===next.tags.length,'migration source tag coverage');for(let i=0;i<old.tags.length;i++)tagIds.set(old.tags[i].tagId,next.tags[i].tagId);}
+ const eventMap=[],needsReview=[],lines=[];
+ for(const old of source.events){
+  if(!unchanged.has(old.request.clipId)){needsReview.push({eventId:old.request.eventId,eventSha256:old.eventSha256,clipId:old.request.clipId,operation:old.request.operation,reason:deleted.has(old.request.clipId)?'clip-deleted':'clip-changed'});continue;}
+  const clip=targetClips.get(old.request.clipId),request={...JSON.parse(canonical(old.request)),eventId:'migrated-'+old.eventSha256,expectedRevision:target.head.revision,catalogSha256:target.catalogSha256,dictionaryVersion:target.dictionaryVersion,clipSha256:clip.clipSha256,sourceFbxSha256:clip.sourceFbxSha256,baseSnapshotSha256:clip.baseSnapshotSha256};
+  if(request.operation==='flag'){check(tagIds.has(request.targetTagId),'migration flag target mapping missing');request.targetTagId=tagIds.get(request.targetTagId);}
+  requestShape(request);const requestSha256=digest(request),body={schemaVersion:1,revision:target.head.revision+1,prevEventSha256:target.head.eventSha256,requestSha256,request},event={...body,eventSha256:digest(body)};
+  projectEvent(target,event);target.head={revision:event.revision,eventSha256:event.eventSha256};target.events.push(event);
+  const mapping={clipId:clip.clipId,operation:request.operation,sourceEventId:old.request.eventId,sourceEventSha256:old.eventSha256,targetEventId:request.eventId,targetEventSha256:event.eventSha256};
+  if(request.operation==='propose'){
+   const oldTagId='proposal-'+digest({clipId:clip.clipId,eventId:old.request.eventId,tag:old.request.tag}),newTagId=clip.pendingProposals.at(-1).tagId;
+   tagIds.set(oldTagId,newTagId);mapping.sourceTagId=oldTagId;mapping.targetTagId=newTagId;
+  }else{mapping.sourceTagId=old.request.targetTagId;mapping.targetTagId=request.targetTagId;}
+  eventMap.push(mapping);const line=canonical(event)+'\n';check(Buffer.byteLength(line)<=SEMANTIC_DRAFT_LIMITS.eventBytes,'migration event byte budget');lines.push(line);
+ }
+ const logText=lines.length?lines.join(''):null;
+ check(logText===null||Buffer.byteLength(logText)<=SEMANTIC_DRAFT_LIMITS.logBytes,'migration log byte budget');
+ const headText=lines.length?canonical({schemaVersion:1,catalogSha256:target.catalogSha256,dictionaryVersion:target.dictionaryVersion,...target.head})+'\n':null;
+ // Re-read the whole new chain using the production validator, without fabricating revision-zero files.
+ load({catalogText:targetSnapshot.catalogText,logText,headText,nextPresent:false});
+ const archiveFiles={};for(const [name,text] of [['catalog.json',sourceSnapshot.catalogText],['drafts.jsonl',sourceSnapshot.logText],['head.json',sourceSnapshot.headText]])if(text!==null)archiveFiles[name]={sha256:hash(Buffer.from(text)),bytes:Buffer.byteLength(text)};
+ for(const [path,text] of inherited)archiveFiles['parent-migration/'+path]={sha256:hash(Buffer.from(text)),bytes:Buffer.byteLength(text)};
+ const counts={sourceEvents:source.events.length,migratedEvents:eventMap.length,needsReviewEvents:needsReview.length};
+ const receipt={schemaVersion:1,lineageVersion:1,status:'draft',kind:'semantic-draft-migration',binding,classification,counts,eventMap,needsReview,archive:{directory:'migration-archive',files:archiveFiles},target:{head:target.head,logSha256:logText===null?null:hash(logText),headSha256:headText===null?null:hash(headText)},approval:'not-supported'};
+ const receiptText=canonical(receipt)+'\n';
+ return {result:{...receipt,receiptSha256:hash(receiptText)},commit:{logText,headText,receiptText}};
+}
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
- try{const chunks=[];let size=0,count;const buffer=Buffer.alloc(65536);while((count=readSync(0,buffer,0,buffer.length,null))>0){size+=count;check(size<=128*1024*1024,'internal IPC byte budget');chunks.push(Buffer.from(buffer.subarray(0,count)));}const result=validateDraftSnapshot(JSON.parse(Buffer.concat(chunks).toString('utf8'))),output=Buffer.from(JSON.stringify(result));check(output.length<=96*1024*1024,'internal output budget');let offset=0;while(offset<output.length)offset+=writeSync(1,output,offset,output.length-offset);}
+ try{const chunks=[];let size=0,count;const buffer=Buffer.alloc(65536);while((count=readSync(0,buffer,0,buffer.length,null))>0){size+=count;check(size<=128*1024*1024,'internal IPC byte budget');chunks.push(Buffer.from(buffer.subarray(0,count)));}const input=JSON.parse(Buffer.concat(chunks).toString('utf8')),result=input.action==='migrate'?planSemanticDraftMigration(input):validateDraftSnapshot(input),output=Buffer.from(JSON.stringify(result));check(output.length<=96*1024*1024,'internal output budget');let offset=0;while(offset<output.length)offset+=writeSync(1,output,offset,output.length-offset);}
  catch(error){process.stderr.write(String(error));process.exitCode=2;}
 }

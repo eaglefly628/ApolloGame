@@ -1,0 +1,282 @@
+{
+  "schemaVersion": 1,
+  "storyId": "match-girl-original",
+  "title": "卖火柴的小女孩：来源证据检索草案",
+  "binding": {
+    "catalogSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "dictionaryVersion": "source-description-v2",
+    "head": {
+      "revision": 0,
+      "eventSha256": null
+    }
+  },
+  "beats": [
+    {
+      "id": "girl-shiver",
+      "text": "女孩缩坐在墙角发抖",
+      "kind": "motion",
+      "constraints": [
+        {
+          "facet": "posture",
+          "value": "seated"
+        },
+        {
+          "facet": "action",
+          "value": "shiver"
+        }
+      ],
+      "verificationNeeds": [
+        "balance",
+        "visual-expression"
+      ]
+    },
+    {
+      "id": "strike-match",
+      "text": "女孩将火柴头贴到火柴盒侧面划动",
+      "kind": "interaction",
+      "constraints": [
+        {
+          "facet": "action",
+          "value": "strike-match"
+        },
+        {
+          "facet": "propMention",
+          "value": "matchbox"
+        }
+      ],
+      "verificationNeeds": [
+        "contact",
+        "collision",
+        "fingers",
+        "retargeting"
+      ]
+    },
+    {
+      "id": "warm-hands",
+      "text": "女孩向幻象火炉伸出双手取暖",
+      "kind": "interaction",
+      "constraints": [
+        {
+          "facet": "action",
+          "value": "reach"
+        },
+        {
+          "facet": "bodyPart",
+          "value": "both-hands"
+        }
+      ],
+      "verificationNeeds": [
+        "contact",
+        "visual-expression"
+      ]
+    },
+    {
+      "id": "look-up",
+      "text": "女孩抬头仰望烛光和星星",
+      "kind": "motion",
+      "constraints": [
+        {
+          "facet": "action",
+          "value": "look"
+        },
+        {
+          "facet": "direction",
+          "value": "up"
+        }
+      ],
+      "verificationNeeds": [
+        "visual-expression"
+      ]
+    },
+    {
+      "id": "smile-wall",
+      "text": "女孩微笑倚墙",
+      "kind": "motion",
+      "constraints": [
+        {
+          "facet": "action",
+          "value": "smile"
+        },
+        {
+          "facet": "action",
+          "value": "lean"
+        }
+      ],
+      "verificationNeeds": [
+        "contact",
+        "visual-expression"
+      ]
+    },
+    {
+      "id": "grandma-reach",
+      "text": "奶奶向女孩伸手",
+      "kind": "motion",
+      "constraints": [
+        {
+          "facet": "action",
+          "value": "reach"
+        }
+      ],
+      "verificationNeeds": [
+        "visual-expression",
+        "retargeting"
+      ]
+    },
+    {
+      "id": "grandma-lift",
+      "text": "奶奶抱起女孩",
+      "kind": "multi-character",
+      "verificationNeeds": [
+        "contact",
+        "balance",
+        "collision"
+      ]
+    },
+    {
+      "id": "street-pedestrians",
+      "text": "雪夜街上的行人向前走动",
+      "kind": "motion",
+      "constraints": [
+        {
+          "facet": "action",
+          "value": "walk"
+        },
+        {
+          "facet": "direction",
+          "value": "forward"
+        },
+        {
+          "facet": "action",
+          "value": "run",
+          "mode": "forbidden"
+        }
+      ],
+      "verificationNeeds": [
+        "balance",
+        "retargeting"
+      ]
+    },
+    {
+      "id": "girl-corner",
+      "text": "女孩缩进墙角",
+      "kind": "motion",
+      "constraints": [
+        {
+          "facet": "posture",
+          "value": "crouched"
+        }
+      ],
+      "verificationNeeds": [
+        "balance",
+        "contact"
+      ]
+    },
+    {
+      "id": "feet-stove",
+      "text": "女孩向火炉伸脚",
+      "kind": "interaction",
+      "constraints": [
+        {
+          "facet": "action",
+          "value": "stretch"
+        },
+        {
+          "facet": "bodyPart",
+          "value": "feet"
+        }
+      ],
+      "verificationNeeds": [
+        "contact",
+        "balance"
+      ]
+    },
+    {
+      "id": "match-props",
+      "text": "火柴与火柴盒跟随双手握点",
+      "kind": "interaction",
+      "constraints": [
+        {
+          "facet": "action",
+          "value": "hold"
+        },
+        {
+          "facet": "propMention",
+          "value": "matchbox"
+        }
+      ],
+      "verificationNeeds": [
+        "contact",
+        "fingers",
+        "retargeting"
+      ]
+    },
+    {
+      "id": "match-flame",
+      "text": "火柴起火、护火和熄灭",
+      "kind": "scene",
+      "verificationNeeds": [
+        "timing"
+      ]
+    },
+    {
+      "id": "vision-fade",
+      "text": "火炉幻象显现、墙透明与消退",
+      "kind": "scene",
+      "verificationNeeds": [
+        "timing"
+      ]
+    },
+    {
+      "id": "roast-goose",
+      "text": "插着刀叉的烤鹅走来",
+      "kind": "scene",
+      "verificationNeeds": [
+        "timing"
+      ]
+    },
+    {
+      "id": "candles-stars",
+      "text": "烛光升起变成星星",
+      "kind": "scene",
+      "verificationNeeds": [
+        "timing"
+      ]
+    },
+    {
+      "id": "falling-star",
+      "text": "流星划过天空",
+      "kind": "scene",
+      "verificationNeeds": [
+        "timing"
+      ]
+    },
+    {
+      "id": "whole-hand-matches",
+      "text": "女孩擦亮整把火柴",
+      "kind": "interaction",
+      "constraints": [
+        {
+          "facet": "action",
+          "value": "strike-match"
+        },
+        {
+          "facet": "propMention",
+          "value": "matches"
+        }
+      ],
+      "verificationNeeds": [
+        "contact",
+        "fingers"
+      ]
+    },
+    {
+      "id": "ascent",
+      "text": "奶奶与女孩一起升高",
+      "kind": "multi-character",
+      "verificationNeeds": [
+        "contact",
+        "timing"
+      ]
+    }
+  ]
+}
