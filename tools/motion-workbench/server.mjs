@@ -1,3 +1,4 @@
+import {readLocalPreviewFont} from '../../scripts/lib/local-preview-fonts.mjs';
 import {allowLocalPreviewHost} from '../../scripts/lib/local-preview-host.mjs';
 // Read-only local workbench. Assets remain behind existing SHA-checked preview handlers.
 import {createServer} from 'node:http';
@@ -31,11 +32,12 @@ export async function createWorkbenchServer({lib,runtimeLib,runtimeReport,previe
   try{
    if(!allowLocalPreviewHost(req.headers.host,server.address()?.port)){res.writeHead(403).end('local preview host required');return;}
    if(!['GET','HEAD'].includes(req.method)){res.writeHead(405).end();return;}
-   const url=new URL(req.url,'http://127.0.0.1');let bytes,type='application/json; charset=utf-8';
+   const url=new URL(req.url,'http://127.0.0.1');let bytes,type='application/json; charset=utf-8';const font=readLocalPreviewFont(ROOT,url.pathname);
    const prefix=url.pathname.startsWith('/library/')?'/library':url.pathname.startsWith('/interaction/')?'/interaction':undefined;
    if(prefix){const path=url.pathname.slice(prefix.length);if(path==='/'){bytes=Buffer.from(html(prefix+'/app.js',prefix==='/library'?'动作库预览':'手部 Socket 交互'));type='text/html; charset=utf-8';}else{const forwarded=Object.create(req);forwarded.url=path+url.search;(prefix==='/library'?library:interaction).emit('request',forwarded,res);return;}}
    else if(url.pathname==='/'){bytes=Buffer.from(html('/app.js','Apollo 动画工作台'));type='text/html; charset=utf-8';}
    else if(url.pathname==='/app.js'){bytes=bundle.outputFiles[0].contents;type='text/javascript';}
+   else if(font){bytes=font;type='font/woff2';}
    else if(url.pathname==='/summary.json')bytes=Buffer.from(JSON.stringify({schemaVersion:1,counts:catalog.counts,warnings:catalog.warnings,snapshot,storyCounts:story.counts}));
    else if(url.pathname==='/ai-catalog.json')bytes=Buffer.from(JSON.stringify({...catalog,snapshot,story}));
    else if(url.pathname==='/story.json')bytes=Buffer.from(JSON.stringify(story));

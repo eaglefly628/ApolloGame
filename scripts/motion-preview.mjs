@@ -1,3 +1,4 @@
+import {readLocalPreviewFont} from './lib/local-preview-fonts.mjs';
 import {allowLocalPreviewHost} from './lib/local-preview-host.mjs';
 import { createServer } from 'node:http';
 import { readFileSync, realpathSync, statSync } from 'node:fs';
@@ -28,9 +29,10 @@ export async function createPreviewServer(lib) {
     try {
       if(!allowLocalPreviewHost(req.headers.host,server.address()?.port)){res.writeHead(403).end('local preview host required');return;}
       if(!['GET','HEAD'].includes(req.method)){res.writeHead(405).end();return;}
-      const url=req.url.split('?')[0];let bytes,type;
+      const url=req.url.split('?')[0];let bytes,type;const font=readLocalPreviewFont(ROOT,url);
       if(url==='/') {bytes=Buffer.from('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>动作预览台</title><div id="root"></div><script type="module" src="/app.js"></script>');type='text/html; charset=utf-8';}
       else if(url==='/app.js'){bytes=bundle.outputFiles[0].contents;type='text/javascript';}
+      else if(font){bytes=font;type='font/woff2';}
       else if(url==='/catalog.json'){bytes=Buffer.from(JSON.stringify(catalog));type='application/json';}
       else if(skinBounds.has(url)) {
         const row=skinBounds.get(url),asset=checkedBytes(row),key=row.id+':'+row.sha256;

@@ -1,3 +1,4 @@
+import {validateLayoutNode} from '../../src/ui/components/validate.ts';
 import {it,expect} from 'vitest';
 import fs from 'node:fs';
 import {transform} from 'esbuild';
@@ -12,7 +13,7 @@ const cases=[
 ];
 for(const entry of cases)it('honors preview identity and availability: '+entry.key,async()=>{
 let handlers,tree;const nav=[];const find=(n,id)=>n.id===id?n:(n.children||[]).map(c=>find(c,id)).find(Boolean);
-await new AsyncFunction('mountUI','validateLayoutNode','motionPreviewTheme','document','fetch','location',code)(
-(_r,t,h)=>{handlers=h;tree=t;return {update(t){tree=t}}},()=>[],()=>({}),{getElementById:()=>({})},async p=>({ok:true,json:async()=>p==='/summary.json'?{counts:{}}:p==='/story.json'?{counts:{},requirements:[]}:{total:1,offset:0,limit:50,items:[entry]}}),{assign:p=>nav.push(p)});
+await new AsyncFunction('mountUI','validateLayoutNode','workbenchTheme','document','fetch','location',code)(
+(_r,t,h)=>{handlers=h;tree=t;return {update(t){tree=t}}},validateLayoutNode,()=>({}),{getElementById:()=>({})},async p=>({ok:true,json:async()=>p==='/summary.json'?{counts:{}}:p==='/story.json'?{counts:{},requirements:[]}:{total:1,offset:0,limit:50,items:[entry]}}),{assign:p=>nav.push(p)});
 const disabled=find(tree,'preview').props.disabled;handlers.preview();if(entry.previewable===false){expect(disabled).toBe(true);expect(nav).toEqual([]);}else{expect(disabled).toBe(false);expect(nav).toEqual(['/interaction/?skin=passing-role']);}
 });

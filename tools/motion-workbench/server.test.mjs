@@ -53,3 +53,5 @@ it('rejects foreign Host names before serving workbench or nested assets',async(
  for(const path of ['/ai-catalog.json','/library/catalog.json','/interaction/validation.json','/interaction/embedded-skin/skin'])expect(await request(path,'foreign.example:'+server.address().port)).toBe(403);
  expect(await request('/summary.json','localhost:'+server.address().port)).toBe(200);expect(await request('/summary.json','127.0.0.1:1')).toBe(403);
 });
+
+it('self-hosts the two tracked cartoon fonts without external services',async()=>{for(const path of ['/ui-fonts/cjk/cnround.woff2','/ui-fonts/cjk/round.woff2']){const response=await fetch(base+path);expect(response.status).toBe(200);expect(response.headers.get('content-type')).toBe('font/woff2');expect((await response.arrayBuffer()).byteLength).toBeGreaterThan(1000);}expect((await fetch(base+'/ui-fonts/cjk/not-allowed.woff2')).status).toBe(404);});
