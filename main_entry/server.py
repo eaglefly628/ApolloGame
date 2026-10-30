@@ -34,6 +34,7 @@ from .llm_log import handle_llm_logs
 from .llm_transport import get_available_providers
 from .packaging import _PKG_JOBS, _PKG_JOBS_LOCK, handle_dokiworld_apps, handle_package_job_get, handle_package_job_start
 from .paths import LIBRARY_DIR, _design_parts, _lib_parts, _valid_slug
+from .platforms import handle_platform_launch, handle_platforms_list
 from .pipeline_board import handle_pipeline_board, handle_pipeline_concept, handle_pipeline_gate, handle_pipeline_orch_abort, handle_pipeline_orch_dispatch, handle_pipeline_orch_status, handle_pipeline_signoff, handle_pipeline_wizard_concept
 from .placeholder import handle_art_resolve
 from .projects import handle_project_save
@@ -451,6 +452,9 @@ class APIHandler(BaseHTTPRequestHandler):
                 self._send_json(*_lib_dispatch(lambda: design_draft_get(did)))
             return
 
+        if path == '/api/platforms':  # 三平台合并 P0：动画 / 3D 资产平台的配置与运行态
+            self._send_json(200, handle_platforms_list())
+            return
         if path == '/api/status':
             data = get_project_status()
         elif path == '/api/bench-ready':  # 页面服务(vite)是否就绪——/bench 兜底页轮询它·就绪即自动跳（owner 07-15：▶ 别撞死链）
@@ -635,6 +639,10 @@ class APIHandler(BaseHTTPRequestHandler):
         m_cover = re.fullmatch(r'/api/games/([a-z0-9][a-z0-9-]*)/cover', path)
         if m_cover:  # 游戏封面/图标文生图（owner 07-12·替换卡片默认矢量图标）
             self._send_json(200, handle_game_cover_generate(m_cover.group(1), body))
+            return
+        m_plat = re.fullmatch(r'/api/platforms/([a-z0-9][a-z0-9-]*)/launch', path)
+        if m_plat:  # 只拉起 .zerocraft/platforms.json 里写死的条目；请求体不带命令
+            self._send_json(200, handle_platform_launch(m_plat.group(1)))
             return
         if path == '/api/settings/test':
             self._send_json(200, handle_settings_test(body))

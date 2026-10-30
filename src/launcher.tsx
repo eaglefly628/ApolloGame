@@ -20,6 +20,7 @@ import { DesignStudio, EntryChoice, ContinueChoice } from './studio/DesignStudio
 import { ArtLedgerPanel, ArtGamePicker } from './studio/ArtLedgerPanel.js';
 import { GamePipelinePanel } from './studio/GamePipelinePanel.js';
 import { SettingsPanel } from './studio/SettingsPanel.js';
+import { PlatformLauncher } from './studio/PlatformLauncher.js';
 
 // （2026-07-16 纯结构拆分·token 优化）轮播/DevTools/游戏运行时/API 助手拆至 ./launcher/*，行为不变。
 import { API, apiCall } from './launcher/api.js';
@@ -631,6 +632,7 @@ export function Launcher() {
             >
               🗃 资源库
             </button>
+            <PlatformLauncher />
             <button
               onClick={() => setEntryChoice(true)}
               title="新建游戏（设计先行 / 快速生成）——旧 GameCreator 已退役，两模式同流"
