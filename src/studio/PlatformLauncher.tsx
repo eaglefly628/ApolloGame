@@ -50,7 +50,7 @@ export function PlatformLauncher() {
 
   if (!items.length) return null;
   return (
-    <span data-testid="platform-launcher">
+    <span data-testid="platform-launcher" style={{ position: 'relative' }}>
       {items.map((p) => (
         <button
           key={p.id}
@@ -77,7 +77,8 @@ export function PlatformLauncher() {
           {busy === p.id ? '⏳ 启动中…' : `${ICON[p.id] ?? '↗'} ${p.label}${p.running ? ' ●' : ''}`}
         </button>
       ))}
-      {error && <div role="alert" style={{ marginTop: 8, fontSize: 12, color: SHELL.warn }}>{error}</div>}
+      {/* 提示浮在按钮行下方：不占行内流，免得把同排按钮挤成两行 */}
+      {error && <span role="alert" style={{ position: 'absolute', top: '100%', right: 0, marginTop: 6, whiteSpace: 'nowrap', fontSize: 12, color: SHELL.warn }}>{error}</span>}
     </span>
   );
 }
