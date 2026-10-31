@@ -2,7 +2,7 @@
 import { readFileSync, lstatSync, realpathSync, openSync, closeSync, fstatSync, constants } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { readSemanticDrafts } from './motion-semantic-drafts.mjs';
-import { getSourceDictionary, getSourceTagDefinition } from './motion-semantics.mjs';
+import { getSourceDictionary, getSourceTagDefinition, SUPPORTED_DICTIONARY_VERSIONS } from './motion-semantics.mjs';
 import { sha256, validateCatalog, check } from './motion-catalog.mjs';
 const compare=(a,b)=>a<b?-1:a>b?1:0;
 const exact=(value,keys)=>check(value&&typeof value==='object'&&!Array.isArray(value)&&[Object.prototype,null].includes(Object.getPrototypeOf(value))&&!Object.getOwnPropertySymbols(value).length&&Object.entries(Object.getOwnPropertyDescriptors(value)).every(([key,descriptor])=>keys.includes(key)&&Object.hasOwn(descriptor,'value')),'unknown semantic query field');
@@ -20,14 +20,15 @@ function validateRequest(request){
  dataArray(request.constraints,32);check(request.constraints.length>0,'query requires 1..32 constraints');
  check(request.strict===undefined||typeof request.strict==='boolean','invalid strict mode');
  check(request.top===undefined||Number.isSafeInteger(request.top)&&request.top>=1&&request.top<=1000,'invalid query top');
- const seen=new Set(),facets=new Set(getSourceDictionary().facets.map(f=>f.id));
+ check(SUPPORTED_DICTIONARY_VERSIONS.includes(request.expectedDictionaryVersion),'stale query dictionary');
+ const seen=new Set(),facets=new Set(getSourceDictionary(request.expectedDictionaryVersion).facets.map(f=>f.id));
  const constraints=Array.prototype.map.call(request.constraints,constraint=>{
   exact(constraint,['facet','value','mode']);const {facet,value,mode='required'}=constraint;
   check(typeof facet==='string'&&facets.has(facet),'unknown constraint facet');
   check(typeof value==='string'&&/^[a-z0-9][a-z0-9-]{0,127}$/.test(value),'invalid constraint value');
   check(['required','forbidden'].includes(mode),'invalid constraint mode');
   const key=JSON.stringify([facet,value,mode]);check(!seen.has(key),'duplicate constraint');seen.add(key);
-  return Object.freeze({facet,value,mode,vocabularyStatus:getSourceTagDefinition(facet,value)?'known':'pending-vocabulary'});
+  return Object.freeze({facet,value,mode,vocabularyStatus:getSourceTagDefinition(facet,value,request.expectedDictionaryVersion)?'known':'pending-vocabulary'});
  });
  return Object.freeze({expectedCatalogSha256:request.expectedCatalogSha256,expectedDictionaryVersion:request.expectedDictionaryVersion,expectedRevision:request.expectedRevision,expectedHeadSha256:request.expectedHeadSha256,strict:request.strict??true,top:request.top??20,constraints:Object.freeze(constraints)});
 }
@@ -44,23 +45,24 @@ function evaluate(snapshot,byId,request){
   const states=constraints.map(constraint=>{
    // Base-reference descriptions describe the old clip, not the generated result.
    const usable=clip.sourceScope==='clip-source';
-   const tags=usable?clip.tags.filter(tag=>tag.facet===constraint.facet&&tag.value===constraint.value&&tag.vocabularyStatus==='known'&&tag.status==='draft'):[];
-   const evidence=tags.map(tag=>({tagId:tag.tagId,basis:tag.basis,evidence:tag.evidence,status:tag.status,flagEventIds:tag.flagEventIds}));
+   const matchingTags=usable?clip.tags.filter(tag=>tag.facet===constraint.facet&&tag.value===constraint.value&&tag.vocabularyStatus==='known'&&tag.status==='draft'):[];
+   const tags=matchingTags.filter(tag=>!tag.intentOnly),intentOnly=matchingTags.some(tag=>tag.intentOnly);
+   const evidence=matchingTags.map(tag=>({tagId:tag.tagId,basis:tag.basis,evidence:tag.evidence,status:tag.status,flagEventIds:tag.flagEventIds,...(tag.intentOnly?{intentOnly:true}:{})}));
    const state=tags.length?(constraint.mode==='required'?'supported':'conflict'):'unknown';
-   const reason=state!=='unknown'?'explicit-source-claim':constraint.vocabularyStatus!=='known'?'pending-vocabulary':!usable?'base-reference-not-current-evidence':'absence-is-not-counterevidence';
+   const reason=state!=='unknown'?'explicit-source-claim':constraint.vocabularyStatus!=='known'?'pending-vocabulary':!usable?'base-reference-not-current-evidence':intentOnly?'source-intent-not-execution':'absence-is-not-counterevidence';
    return {...constraint,state,reason,evidence};
   });
   // Strict mode requires positive evidence for required facts. An unknown prohibition
   // remains unknown (and requires confirmation); only an explicit conflict excludes it.
   const score=states.filter(state=>state.state==='supported').length;
   const conflict=states.some(state=>state.state==='conflict'),unknownRequired=states.some(state=>state.mode==='required'&&state.state==='unknown');
-  return {clipId:row.id,file:row.file,clipSha256:row.sha256,assetStatus:row.status,labelStatus:'draft',requiresHumanConfirmation:true,score,constraints:states,
+  return {clipId:row.id,file:row.file,clipSha256:row.sha256,assetStatus:row.status,labelStatus:'draft',requiresHumanConfirmation:true,sourceWarnings:[...clip.source.warnings],score,constraints:states,
    eligible:!conflict&&score>0&&(!(request.strict??true)||!unknownRequired),exclusionReason:conflict?'explicit-conflict':score===0?'no-supported-requirement':unknownRequired&&(request.strict??true)?'strict-unknown':null};
  });
  const matching=evaluated.filter(row=>row.eligible).sort((a,b)=>b.score-a.score||compare(a.clipId,b.clipId)),selected=matching.slice(0,request.top??20);
  return {schemaVersion:1,status:'draft',catalogSha256:snapshot.catalogSha256,dictionaryVersion:snapshot.dictionaryVersion,head:snapshot.head,
   totalMatches:matching.length,candidates:selected,excluded:evaluated.filter(row=>!row.eligible).sort((a,b)=>compare(a.clipId,b.clipId)),
-  missingRequirements:constraints.filter((constraint,i)=>constraint.mode==='required'&&!evaluated.some(row=>row.constraints[i].state==='supported')).map(constraint=>({...constraint,reason:constraint.vocabularyStatus==='known'?'no-supported-source-candidate':'pending-vocabulary'})),
+  missingRequirements:constraints.flatMap((constraint,i)=>constraint.mode!=='required'||evaluated.some(row=>row.constraints[i].state==='supported')?[]:[{...constraint,reason:constraint.vocabularyStatus!=='known'?'pending-vocabulary':evaluated.some(row=>row.constraints[i].reason==='source-intent-not-execution')?'source-intent-not-execution':'no-supported-source-candidate'}]),
   pendingProposalCount:snapshot.clips.reduce((count,clip)=>count+clip.pendingProposals.length,0),assetVerification:'selected-candidate-SHA-only',integration:'offline-draft-query'};
 }
 
@@ -69,7 +71,13 @@ export async function querySemanticDraftBatch({lib,requests}){
  dataArray(requests,64);check(requests.length>=1,'batch requires 1..64 queries');
  requests=Array.prototype.map.call(requests,validateRequest);
  check(requests.reduce((n,r)=>n+r.constraints.length,0)<=128,'batch constraint budget');
- const snapshot=await readSemanticDrafts({lib});
+ const dictionaryVersion=requests[0].expectedDictionaryVersion;
+ check(requests.every(request=>request.expectedDictionaryVersion===dictionaryVersion),'mixed query dictionary versions');
+ let snapshot;
+ try{snapshot=await readSemanticDrafts({lib,dictionaryVersion});}catch(error){
+  if(error.message.includes('dictionary version conflict'))throw new Error('stale query dictionary: '+error.message);
+  throw error;
+ }
  for(const request of requests){
   check(snapshot.catalogSha256===request.expectedCatalogSha256,'stale query catalog');
   check(snapshot.dictionaryVersion===request.expectedDictionaryVersion,'stale query dictionary');
@@ -85,7 +93,7 @@ export async function querySemanticDraftBatch({lib,requests}){
   verifyCandidate(root,byId.get(candidate.clipId));verified.add(candidate.clipId);
  }
  // The catalog and revision must still match after all selected asset reads.
- const latest=await readSemanticDrafts({lib});
+ const latest=await readSemanticDrafts({lib,dictionaryVersion});
  check(latest.catalogSha256===snapshot.catalogSha256&&latest.dictionaryVersion===snapshot.dictionaryVersion&&latest.head.revision===snapshot.head.revision&&latest.head.eventSha256===snapshot.head.eventSha256,'semantic snapshot changed during query');
  return results;
 }

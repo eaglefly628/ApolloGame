@@ -20,9 +20,13 @@ spec.loader.exec_module(base)
 Transaction, require, entry = base.Transaction, base.require, base.entry
 STAGING = '.semantic-review.migration-staging'
 PUBLIC_LIMIT = 32 * 1024 * 1024
-HISTORY_BYTES = 64 * 1024 * 1024
-HISTORY_GENERATIONS = 8
-HISTORY_FILES = 32
+with open(os.path.join(HERE, 'motion-semantic-migrate-limits.json'), encoding='utf-8') as limits_file:
+    HISTORY_LIMITS = json.load(limits_file)
+require(isinstance(HISTORY_LIMITS, dict) and set(HISTORY_LIMITS) == {'bytes', 'generations', 'files'}
+        and all(type(value) is int and value > 0 for value in HISTORY_LIMITS.values()), 'invalid migration history limits')
+HISTORY_BYTES = HISTORY_LIMITS['bytes']
+HISTORY_GENERATIONS = HISTORY_LIMITS['generations']
+HISTORY_FILES = HISTORY_LIMITS['files']
 
 
 class MigrationTransaction(Transaction):
@@ -73,7 +77,8 @@ class MigrationTransaction(Transaction):
         return self.history_node(self.side, '', 1, root=True)
 
     def history_node(self, parent, prefix, generation, root=False):
-        require(generation <= HISTORY_GENERATIONS, 'migration history generation budget')
+        # Include the migration being prepared, exactly as the Node validator does.
+        require(generation + 1 <= HISTORY_GENERATIONS, 'migration history generation budget')
         if not root:
             self.history_listing(parent, {'migration-receipt.json', 'migration-archive'}, {'migration-receipt.json', 'migration-archive'})
         receipt = self.history_file(parent, 'migration-receipt.json', prefix, PUBLIC_LIMIT)

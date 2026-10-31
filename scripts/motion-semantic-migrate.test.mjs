@@ -87,6 +87,17 @@ describe('safe independent draft migration',()=>{
  it('allows append after an archive-only zero-event migration without inventing its old head',()=>{
   const f=fixture();apply(f);propose(f.targetLib);const second=nextGeneration(f);apply(second);expect(readSemanticDrafts({lib:second.targetLib}).head.revision).toBe(1);expect(existsSync(join(side(second.targetLib),'migration-archive/parent-migration/migration-archive/head.json'))).toBe(false);
  });
+ it('rejects a forged non-binding receipt source event ID on the next dry-run without repairing evidence',()=>{
+  const f=fixture();propose(f.sourceLib,'one','original-source-event');apply(f);
+  const next=nextGeneration(f),path=join(side(next.sourceLib),'migration-receipt.json');
+  const receipt=JSON.parse(readFileSync(path));expect(receipt.eventMap[0].sourceEventId).toBe('original-source-event');
+  const binding=clone(receipt.binding);receipt.eventMap[0].sourceEventId='forged-non-binding-source-event';
+  writeFileSync(path,JSON.stringify(receipt)+'\n');const forged=readFileSync(path),before=bytes(next.sourceLib);
+  expect(receipt.binding).toEqual(binding);
+  expect(()=>run(next)).toThrow('migration history receipt mismatch');
+  expect(readFileSync(path)).toEqual(forged);expect(bytes(next.sourceLib)).toEqual(before);
+  expect(readdirSync(next.targetLib)).toEqual(['catalog.json']);
+ });
  it.each(['archive-catalog','archive-log','archive-head','receipt-map','receipt-sha','receipt-missing','archive-extra','nested-removed'])('refuses damaged ancestor %s before creating staging',kind=>{
   const f=fixture();propose(f.sourceLib);apply(f);const second=nextGeneration(f,f.targetLib,'second');apply(second);const third=nextGeneration(second,second.targetLib,'third'),prior=join(side(third.sourceLib),'migration-archive/parent-migration');
   if(kind.startsWith('archive-')&&kind!=='archive-extra'){const name={'archive-catalog':'catalog.json','archive-log':'drafts.jsonl','archive-head':'head.json'}[kind];appendFileSync(join(prior,'migration-archive',name),' ');}
@@ -110,7 +121,16 @@ describe('safe independent draft migration',()=>{
   expect(()=>run(third)).toThrow(/budget/);expect(existsSync(join(third.targetLib,SEMANTIC_MIGRATION_STAGING))).toBe(false);
  });
  it('enforces the generation budget and retains all prior receipts at the boundary',()=>{
+  expect(SEMANTIC_MIGRATION_HISTORY_LIMITS.generations).toBe(8);
+  const helper=resolve('scripts/lib/motion-semantic-migrate-fs.py');
+  const limits=spawnSync('python3',['-c',`import json,runpy\nm=runpy.run_path(${JSON.stringify(helper)})\nprint(json.dumps(m['HISTORY_LIMITS']))`],{encoding:'utf8',timeout:30000});
+  expect(limits.status).toBe(0);expect(JSON.parse(limits.stdout)).toEqual(SEMANTIC_MIGRATION_HISTORY_LIMITS);
   let current=fixture();apply(current);for(let i=1;i<SEMANTIC_MIGRATION_HISTORY_LIMITS.generations;i++){current=nextGeneration(current,current.targetLib,'generation-'+(i+1));apply(current);}
+  // Eight published generations remain readable, but Python must reject preparing the ninth
+  // before invoking Node; a looser reader would otherwise hide behind Node's stricter check.
+  expect(readSemanticDrafts({lib:current.targetLib}).head.revision).toBe(0);
+  const readHistory=spawnSync('python3',['-c',`import runpy,sys\nm=runpy.run_path(${JSON.stringify(helper)})\nt=m['MigrationTransaction'](sys.argv[1],False)\ntry:\n t.snapshot_history()\nexcept Exception as error:\n sys.stderr.write(str(error))\n sys.exit(2)\nfinally:\n t.close()`,current.targetLib],{encoding:'utf8',timeout:30000});
+  expect(readHistory.status).toBe(2);expect(readHistory.stderr).toContain('migration history generation budget');
   const next=nextGeneration(current,current.targetLib,'over-generation-budget');expect(()=>run(next)).toThrow(/generation budget/);expect(existsSync(side(next.targetLib))).toBe(false);
  },15000);
  it('rejects non-JSON option descriptors, nested getters, symbols, and proxies without invoking hooks',()=>{

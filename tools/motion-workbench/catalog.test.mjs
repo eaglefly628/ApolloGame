@@ -18,3 +18,12 @@ describe('read-only unified motion workbench catalog',()=>{
  it('requires exact embedded Skin SHA before exposing runtime or fallback preview and capability compatibility',()=>{const f=fixture();delete f.runtimeReport.runtimeSockets.bySkin['pass-role'].embeddedSkinSha256;delete f.runtimeReport.runtimeSockets.unsupportedBySkin['fallback-role'].embeddedSkinSha256;const index=buildWorkbenchCatalog(f);expect(entry(index,'runtime-profile:pass-role')).toMatchObject({validation:{status:'unknown'},previewable:false,previewMode:null});expect(entry(index,'runtime-profile:fallback-role')).toMatchObject({status:'unsupported',previewable:false,previewMode:null});expect(entry(index,'capability:match-strike')).toMatchObject({previewable:false,applicableSkinIds:[]});expect(entry(index,'runtime-clip:runtime-base').applicableSkinIds).toEqual([]);expect(entry(index,'runtime-clip:fallback-base').previewable).toBe(false);expect(index.warnings).toContain('missing-runtime-skin-sha:pass-role');});
 
 });
+
+
+it('preserves source intent scope and warning metadata for AI and preview readers',()=>{
+ const index=buildWorkbenchCatalog({libraryCatalog:{version:1,skins:[],clips:[clip('synthetic-intent','Walking to gather flowers')]}});
+ const item=entry(index,'library:synthetic-intent');
+ expect(item.tags.find(t=>t.value==='gather')).toMatchObject({intentOnly:true,status:'draft',evidence:{quote:'to gather'}});
+ expect(item.source.warnings).toContain('intended-action-phase-unverified');
+ expect(item.source.dictionaryVersion).toBe('source-description-v3');
+});

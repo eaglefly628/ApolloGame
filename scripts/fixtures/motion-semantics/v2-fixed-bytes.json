@@ -1,0 +1,754 @@
+{
+  "fixtureVersion": 1,
+  "generatedByCodeRevision": "92aed56bc2a0ecf3fab217e6f2c2221892f0aa8c",
+  "syntheticAssets": true,
+  "catalogText": "{\n  \"version\": 1,\n  \"clips\": [\n    {\n      \"id\": \"legacy-walk\",\n      \"file\": \"clips/legacy-walk.glb\",\n      \"sha256\": \"53d5a9d2ab061ea88a81490b3d4588756e7034f412583c06eff6f8d55fdc1524\",\n      \"source\": {\n        \"kind\": \"fixture\",\n        \"license\": \"synthetic\",\n        \"fbxSha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n        \"mixamoName\": \"Synthetic legacy walk\",\n        \"searchTerm\": \"fixture\",\n        \"description\": \"Walking forward\"\n      },\n      \"fps\": 30,\n      \"frames\": 31,\n      \"durationS\": 1,\n      \"loop\": false,\n      \"inPlace\": true,\n      \"rootMotion\": \"none\",\n      \"category\": \"pose\",\n      \"emotion\": [\n        \"neutral\"\n      ],\n      \"intensity\": 1,\n      \"contacts\": [],\n      \"descZh\": \"合成兼容夹具\",\n      \"descEn\": \"Synthetic compatibility fixture\",\n      \"tags\": [],\n      \"derivedFrom\": null,\n      \"status\": \"confirmed\"\n    },\n    {\n      \"id\": \"legacy-warming-hands\",\n      \"file\": \"clips/legacy-warming-hands.glb\",\n      \"sha256\": \"ab79134d3e4b468e96628c491a44a02df05e84ce0d7dd1f8d5693b816cbaac7d\",\n      \"source\": {\n        \"kind\": \"fixture\",\n        \"license\": \"synthetic\",\n        \"fbxSha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n        \"mixamoName\": \"Synthetic legacy hand warming\",\n        \"searchTerm\": \"fixture\",\n        \"description\": \"Kneeling Warming Hands Over Campfire\"\n      },\n      \"fps\": 30,\n      \"frames\": 31,\n      \"durationS\": 1,\n      \"loop\": false,\n      \"inPlace\": true,\n      \"rootMotion\": \"none\",\n      \"category\": \"pose\",\n      \"emotion\": [\n        \"neutral\"\n      ],\n      \"intensity\": 1,\n      \"contacts\": [],\n      \"descZh\": \"合成兼容夹具\",\n      \"descEn\": \"Synthetic compatibility fixture\",\n      \"tags\": [],\n      \"derivedFrom\": null,\n      \"status\": \"confirmed\"\n    }\n  ],\n  \"skins\": []\n}\n",
+  "logText": "{\"eventSha256\":\"7486297abf8b0b117a77cf76ea8f7420c09a8d29eccd1babd57d73fbb90ba5d3\",\"prevEventSha256\":null,\"request\":{\"actor\":{\"id\":\"compat-fixture\",\"kind\":\"human\"},\"baseSnapshotSha256\":\"8b3915249109de12ead3f827fc6c5da23d9a3d34db415db4b060be8fa6170712\",\"catalogSha256\":\"a2338e31d0409bd0e8f08b64c0118fa8f7455526da445837b95463638f55d86c\",\"clipId\":\"legacy-walk\",\"clipSha256\":\"53d5a9d2ab061ea88a81490b3d4588756e7034f412583c06eff6f8d55fdc1524\",\"dictionaryVersion\":\"source-description-v2\",\"eventId\":\"v2-propose-walk\",\"expectedRevision\":0,\"operation\":\"propose\",\"reason\":\"Synthetic frozen v2 fixture\",\"sourceFbxSha256\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"tag\":{\"evidence\":{\"end\":7,\"quote\":\"Walking\",\"source\":\"description\",\"start\":0},\"facet\":\"action\",\"value\":\"walk\"}},\"requestSha256\":\"60d10032d0388ef35977d1383b57195f69b572c9e3eac984d4ac0788d883c3b6\",\"revision\":1,\"schemaVersion\":1}\n{\"eventSha256\":\"346809ee639d4f973be622206bbea836c39de99011acead41e724944971fce5a\",\"prevEventSha256\":\"7486297abf8b0b117a77cf76ea8f7420c09a8d29eccd1babd57d73fbb90ba5d3\",\"request\":{\"actor\":{\"id\":\"compat-fixture\",\"kind\":\"human\"},\"baseSnapshotSha256\":\"8b3915249109de12ead3f827fc6c5da23d9a3d34db415db4b060be8fa6170712\",\"catalogSha256\":\"a2338e31d0409bd0e8f08b64c0118fa8f7455526da445837b95463638f55d86c\",\"clipId\":\"legacy-walk\",\"clipSha256\":\"53d5a9d2ab061ea88a81490b3d4588756e7034f412583c06eff6f8d55fdc1524\",\"dictionaryVersion\":\"source-description-v2\",\"eventId\":\"v2-flag-walk\",\"expectedRevision\":1,\"operation\":\"flag\",\"reason\":\"Synthetic frozen v2 fixture\",\"sourceFbxSha256\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"targetTagId\":\"source-aa816e3a5dea114e16a00e4672f4316be325b994925fde04159a15caeda9f157\"},\"requestSha256\":\"7539a8f6b86d9161cac01fdc48d45d905122faf92d0cb30490309f0725f3a17f\",\"revision\":2,\"schemaVersion\":1}\n",
+  "headText": "{\"catalogSha256\":\"a2338e31d0409bd0e8f08b64c0118fa8f7455526da445837b95463638f55d86c\",\"dictionaryVersion\":\"source-description-v2\",\"eventSha256\":\"346809ee639d4f973be622206bbea836c39de99011acead41e724944971fce5a\",\"revision\":2,\"schemaVersion\":1}\n",
+  "zeroMigration": {
+    "catalogText": "{\n  \"version\": 1,\n  \"clips\": [\n    {\n      \"id\": \"legacy-walk\",\n      \"file\": \"clips/legacy-walk.glb\",\n      \"sha256\": \"53d5a9d2ab061ea88a81490b3d4588756e7034f412583c06eff6f8d55fdc1524\",\n      \"source\": {\n        \"kind\": \"fixture\",\n        \"license\": \"synthetic\",\n        \"fbxSha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n        \"mixamoName\": \"Synthetic legacy walk\",\n        \"searchTerm\": \"fixture\",\n        \"description\": \"Walking forward\"\n      },\n      \"fps\": 30,\n      \"frames\": 31,\n      \"durationS\": 1,\n      \"loop\": false,\n      \"inPlace\": true,\n      \"rootMotion\": \"none\",\n      \"category\": \"pose\",\n      \"emotion\": [\n        \"neutral\"\n      ],\n      \"intensity\": 1,\n      \"contacts\": [],\n      \"descZh\": \"合成兼容夹具\",\n      \"descEn\": \"Synthetic compatibility fixture\",\n      \"tags\": [],\n      \"derivedFrom\": null,\n      \"status\": \"confirmed\"\n    },\n    {\n      \"id\": \"legacy-warming-hands\",\n      \"file\": \"clips/legacy-warming-hands.glb\",\n      \"sha256\": \"ab79134d3e4b468e96628c491a44a02df05e84ce0d7dd1f8d5693b816cbaac7d\",\n      \"source\": {\n        \"kind\": \"fixture\",\n        \"license\": \"synthetic\",\n        \"fbxSha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n        \"mixamoName\": \"Synthetic legacy hand warming\",\n        \"searchTerm\": \"fixture\",\n        \"description\": \"Kneeling Warming Hands Over Campfire\"\n      },\n      \"fps\": 30,\n      \"frames\": 31,\n      \"durationS\": 1,\n      \"loop\": false,\n      \"inPlace\": true,\n      \"rootMotion\": \"none\",\n      \"category\": \"pose\",\n      \"emotion\": [\n        \"neutral\"\n      ],\n      \"intensity\": 1,\n      \"contacts\": [],\n      \"descZh\": \"合成兼容夹具\",\n      \"descEn\": \"Synthetic compatibility fixture\",\n      \"tags\": [],\n      \"derivedFrom\": null,\n      \"status\": \"confirmed\"\n    }\n  ],\n  \"skins\": []\n}\n",
+    "receiptText": "{\"approval\":\"not-supported\",\"archive\":{\"directory\":\"migration-archive\",\"files\":{\"catalog.json\":{\"bytes\":1834,\"sha256\":\"a2338e31d0409bd0e8f08b64c0118fa8f7455526da445837b95463638f55d86c\"}}},\"binding\":{\"dictionaryVersion\":\"source-description-v2\",\"sourceCatalogSha256\":\"a2338e31d0409bd0e8f08b64c0118fa8f7455526da445837b95463638f55d86c\",\"sourceHead\":{\"eventSha256\":null,\"revision\":0},\"targetCatalogSha256\":\"a2338e31d0409bd0e8f08b64c0118fa8f7455526da445837b95463638f55d86c\"},\"classification\":{\"added\":[],\"changed\":[],\"deleted\":[],\"unchanged\":[\"legacy-walk\",\"legacy-warming-hands\"]},\"counts\":{\"migratedEvents\":0,\"needsReviewEvents\":0,\"sourceEvents\":0},\"eventMap\":[],\"kind\":\"semantic-draft-migration\",\"lineageVersion\":1,\"needsReview\":[],\"schemaVersion\":1,\"status\":\"draft\",\"target\":{\"head\":{\"eventSha256\":null,\"revision\":0},\"headSha256\":null,\"logSha256\":null}}\n",
+    "archiveCatalogText": "{\n  \"version\": 1,\n  \"clips\": [\n    {\n      \"id\": \"legacy-walk\",\n      \"file\": \"clips/legacy-walk.glb\",\n      \"sha256\": \"53d5a9d2ab061ea88a81490b3d4588756e7034f412583c06eff6f8d55fdc1524\",\n      \"source\": {\n        \"kind\": \"fixture\",\n        \"license\": \"synthetic\",\n        \"fbxSha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n        \"mixamoName\": \"Synthetic legacy walk\",\n        \"searchTerm\": \"fixture\",\n        \"description\": \"Walking forward\"\n      },\n      \"fps\": 30,\n      \"frames\": 31,\n      \"durationS\": 1,\n      \"loop\": false,\n      \"inPlace\": true,\n      \"rootMotion\": \"none\",\n      \"category\": \"pose\",\n      \"emotion\": [\n        \"neutral\"\n      ],\n      \"intensity\": 1,\n      \"contacts\": [],\n      \"descZh\": \"合成兼容夹具\",\n      \"descEn\": \"Synthetic compatibility fixture\",\n      \"tags\": [],\n      \"derivedFrom\": null,\n      \"status\": \"confirmed\"\n    },\n    {\n      \"id\": \"legacy-warming-hands\",\n      \"file\": \"clips/legacy-warming-hands.glb\",\n      \"sha256\": \"ab79134d3e4b468e96628c491a44a02df05e84ce0d7dd1f8d5693b816cbaac7d\",\n      \"source\": {\n        \"kind\": \"fixture\",\n        \"license\": \"synthetic\",\n        \"fbxSha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n        \"mixamoName\": \"Synthetic legacy hand warming\",\n        \"searchTerm\": \"fixture\",\n        \"description\": \"Kneeling Warming Hands Over Campfire\"\n      },\n      \"fps\": 30,\n      \"frames\": 31,\n      \"durationS\": 1,\n      \"loop\": false,\n      \"inPlace\": true,\n      \"rootMotion\": \"none\",\n      \"category\": \"pose\",\n      \"emotion\": [\n        \"neutral\"\n      ],\n      \"intensity\": 1,\n      \"contacts\": [],\n      \"descZh\": \"合成兼容夹具\",\n      \"descEn\": \"Synthetic compatibility fixture\",\n      \"tags\": [],\n      \"derivedFrom\": null,\n      \"status\": \"confirmed\"\n    }\n  ],\n  \"skins\": []\n}\n",
+    "expectedSnapshot": {
+      "schemaVersion": 1,
+      "status": "draft",
+      "catalogSha256": "a2338e31d0409bd0e8f08b64c0118fa8f7455526da445837b95463638f55d86c",
+      "dictionaryVersion": "source-description-v2",
+      "head": {
+        "revision": 0,
+        "eventSha256": null
+      },
+      "clips": [
+        {
+          "clipId": "legacy-walk",
+          "clipSha256": "53d5a9d2ab061ea88a81490b3d4588756e7034f412583c06eff6f8d55fdc1524",
+          "sourceFbxSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "assetStatus": "confirmed",
+          "baseSnapshotSha256": "8b3915249109de12ead3f827fc6c5da23d9a3d34db415db4b060be8fa6170712",
+          "sourceScope": "clip-source",
+          "source": {
+            "version": 1,
+            "basis": "description",
+            "description": "Walking forward",
+            "groups": [
+              "locomotion"
+            ],
+            "claims": [
+              {
+                "facet": "action",
+                "value": "walk",
+                "label": "行走",
+                "quote": "Walking",
+                "start": 0,
+                "end": 7,
+                "source": "description",
+                "status": "source-derived"
+              },
+              {
+                "facet": "direction",
+                "value": "forward",
+                "label": "向前",
+                "quote": "Walking forward",
+                "start": 0,
+                "end": 15,
+                "source": "description",
+                "status": "source-derived"
+              }
+            ],
+            "unknownFacets": [
+              "activity",
+              "role",
+              "posture",
+              "bodyPart",
+              "propMention",
+              "emotion",
+              "style",
+              "poseContext",
+              "contact",
+              "startPosture",
+              "endPosture",
+              "phases"
+            ],
+            "warnings": [],
+            "status": "draft"
+          },
+          "tags": [
+            {
+              "tagId": "source-aa816e3a5dea114e16a00e4672f4316be325b994925fde04159a15caeda9f157",
+              "facet": "action",
+              "value": "walk",
+              "label": "行走",
+              "evidence": {
+                "source": "description",
+                "quote": "Walking",
+                "start": 0,
+                "end": 7
+              },
+              "basis": "source-text",
+              "vocabularyStatus": "known",
+              "status": "draft",
+              "flagEventIds": []
+            },
+            {
+              "tagId": "source-5efea98432c76ef51c7a9f5210d546a256ace4b3a63f46edbfc58ffdad2a78d0",
+              "facet": "direction",
+              "value": "forward",
+              "label": "向前",
+              "evidence": {
+                "source": "description",
+                "quote": "Walking forward",
+                "start": 0,
+                "end": 15
+              },
+              "basis": "source-text",
+              "vocabularyStatus": "known",
+              "status": "draft",
+              "flagEventIds": []
+            }
+          ],
+          "pendingProposals": []
+        },
+        {
+          "clipId": "legacy-warming-hands",
+          "clipSha256": "ab79134d3e4b468e96628c491a44a02df05e84ce0d7dd1f8d5693b816cbaac7d",
+          "sourceFbxSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "assetStatus": "confirmed",
+          "baseSnapshotSha256": "516b9b60dd5075a7fa79fbe8040a3984c4d47ab8ad4fc8f9f095c470b24a0900",
+          "sourceScope": "clip-source",
+          "source": {
+            "version": 1,
+            "basis": "description",
+            "description": "Kneeling Warming Hands Over Campfire",
+            "groups": [
+              "posture"
+            ],
+            "claims": [
+              {
+                "facet": "posture",
+                "value": "kneeling",
+                "label": "跪姿",
+                "quote": "Kneeling",
+                "start": 0,
+                "end": 8,
+                "source": "description",
+                "status": "source-derived"
+              }
+            ],
+            "unknownFacets": [
+              "action",
+              "activity",
+              "role",
+              "bodyPart",
+              "direction",
+              "propMention",
+              "emotion",
+              "style",
+              "poseContext",
+              "contact",
+              "startPosture",
+              "endPosture",
+              "phases"
+            ],
+            "warnings": [
+              "unclassified-action"
+            ],
+            "status": "draft"
+          },
+          "tags": [
+            {
+              "tagId": "source-b1c76b9f4a3868fd49477e27057c38fe6310a8f82bbd2dfab87f91a95b36be95",
+              "facet": "posture",
+              "value": "kneeling",
+              "label": "跪姿",
+              "evidence": {
+                "source": "description",
+                "quote": "Kneeling",
+                "start": 0,
+                "end": 8
+              },
+              "basis": "source-text",
+              "vocabularyStatus": "known",
+              "status": "draft",
+              "flagEventIds": []
+            }
+          ],
+          "pendingProposals": []
+        }
+      ],
+      "events": []
+    }
+  },
+  "expectedSnapshot": {
+    "schemaVersion": 1,
+    "status": "draft",
+    "catalogSha256": "a2338e31d0409bd0e8f08b64c0118fa8f7455526da445837b95463638f55d86c",
+    "dictionaryVersion": "source-description-v2",
+    "head": {
+      "revision": 2,
+      "eventSha256": "346809ee639d4f973be622206bbea836c39de99011acead41e724944971fce5a"
+    },
+    "clips": [
+      {
+        "clipId": "legacy-walk",
+        "clipSha256": "53d5a9d2ab061ea88a81490b3d4588756e7034f412583c06eff6f8d55fdc1524",
+        "sourceFbxSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "assetStatus": "confirmed",
+        "baseSnapshotSha256": "8b3915249109de12ead3f827fc6c5da23d9a3d34db415db4b060be8fa6170712",
+        "sourceScope": "clip-source",
+        "source": {
+          "version": 1,
+          "basis": "description",
+          "description": "Walking forward",
+          "groups": [
+            "locomotion"
+          ],
+          "claims": [
+            {
+              "facet": "action",
+              "value": "walk",
+              "label": "行走",
+              "quote": "Walking",
+              "start": 0,
+              "end": 7,
+              "source": "description",
+              "status": "source-derived"
+            },
+            {
+              "facet": "direction",
+              "value": "forward",
+              "label": "向前",
+              "quote": "Walking forward",
+              "start": 0,
+              "end": 15,
+              "source": "description",
+              "status": "source-derived"
+            }
+          ],
+          "unknownFacets": [
+            "activity",
+            "role",
+            "posture",
+            "bodyPart",
+            "propMention",
+            "emotion",
+            "style",
+            "poseContext",
+            "contact",
+            "startPosture",
+            "endPosture",
+            "phases"
+          ],
+          "warnings": [],
+          "status": "draft"
+        },
+        "tags": [
+          {
+            "tagId": "source-aa816e3a5dea114e16a00e4672f4316be325b994925fde04159a15caeda9f157",
+            "facet": "action",
+            "value": "walk",
+            "label": "行走",
+            "evidence": {
+              "source": "description",
+              "quote": "Walking",
+              "start": 0,
+              "end": 7
+            },
+            "basis": "source-text",
+            "vocabularyStatus": "known",
+            "status": "draft",
+            "flagEventIds": [
+              "v2-flag-walk"
+            ]
+          },
+          {
+            "tagId": "source-5efea98432c76ef51c7a9f5210d546a256ace4b3a63f46edbfc58ffdad2a78d0",
+            "facet": "direction",
+            "value": "forward",
+            "label": "向前",
+            "evidence": {
+              "source": "description",
+              "quote": "Walking forward",
+              "start": 0,
+              "end": 15
+            },
+            "basis": "source-text",
+            "vocabularyStatus": "known",
+            "status": "draft",
+            "flagEventIds": []
+          }
+        ],
+        "pendingProposals": [
+          {
+            "tagId": "proposal-b31707f3b2b000b30b56bb18696e94094673e4a4c5b972c4ed8d24dc53a7e7c7",
+            "eventId": "v2-propose-walk",
+            "evidence": {
+              "end": 7,
+              "quote": "Walking",
+              "source": "description",
+              "start": 0
+            },
+            "facet": "action",
+            "value": "walk",
+            "label": "行走",
+            "basis": "proposal",
+            "vocabularyStatus": "known",
+            "status": "draft",
+            "flagEventIds": []
+          }
+        ]
+      },
+      {
+        "clipId": "legacy-warming-hands",
+        "clipSha256": "ab79134d3e4b468e96628c491a44a02df05e84ce0d7dd1f8d5693b816cbaac7d",
+        "sourceFbxSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "assetStatus": "confirmed",
+        "baseSnapshotSha256": "516b9b60dd5075a7fa79fbe8040a3984c4d47ab8ad4fc8f9f095c470b24a0900",
+        "sourceScope": "clip-source",
+        "source": {
+          "version": 1,
+          "basis": "description",
+          "description": "Kneeling Warming Hands Over Campfire",
+          "groups": [
+            "posture"
+          ],
+          "claims": [
+            {
+              "facet": "posture",
+              "value": "kneeling",
+              "label": "跪姿",
+              "quote": "Kneeling",
+              "start": 0,
+              "end": 8,
+              "source": "description",
+              "status": "source-derived"
+            }
+          ],
+          "unknownFacets": [
+            "action",
+            "activity",
+            "role",
+            "bodyPart",
+            "direction",
+            "propMention",
+            "emotion",
+            "style",
+            "poseContext",
+            "contact",
+            "startPosture",
+            "endPosture",
+            "phases"
+          ],
+          "warnings": [
+            "unclassified-action"
+          ],
+          "status": "draft"
+        },
+        "tags": [
+          {
+            "tagId": "source-b1c76b9f4a3868fd49477e27057c38fe6310a8f82bbd2dfab87f91a95b36be95",
+            "facet": "posture",
+            "value": "kneeling",
+            "label": "跪姿",
+            "evidence": {
+              "source": "description",
+              "quote": "Kneeling",
+              "start": 0,
+              "end": 8
+            },
+            "basis": "source-text",
+            "vocabularyStatus": "known",
+            "status": "draft",
+            "flagEventIds": []
+          }
+        ],
+        "pendingProposals": []
+      }
+    ],
+    "events": [
+      {
+        "eventSha256": "7486297abf8b0b117a77cf76ea8f7420c09a8d29eccd1babd57d73fbb90ba5d3",
+        "prevEventSha256": null,
+        "request": {
+          "actor": {
+            "id": "compat-fixture",
+            "kind": "human"
+          },
+          "baseSnapshotSha256": "8b3915249109de12ead3f827fc6c5da23d9a3d34db415db4b060be8fa6170712",
+          "catalogSha256": "a2338e31d0409bd0e8f08b64c0118fa8f7455526da445837b95463638f55d86c",
+          "clipId": "legacy-walk",
+          "clipSha256": "53d5a9d2ab061ea88a81490b3d4588756e7034f412583c06eff6f8d55fdc1524",
+          "dictionaryVersion": "source-description-v2",
+          "eventId": "v2-propose-walk",
+          "expectedRevision": 0,
+          "operation": "propose",
+          "reason": "Synthetic frozen v2 fixture",
+          "sourceFbxSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "tag": {
+            "evidence": {
+              "end": 7,
+              "quote": "Walking",
+              "source": "description",
+              "start": 0
+            },
+            "facet": "action",
+            "value": "walk"
+          }
+        },
+        "requestSha256": "60d10032d0388ef35977d1383b57195f69b572c9e3eac984d4ac0788d883c3b6",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "eventSha256": "346809ee639d4f973be622206bbea836c39de99011acead41e724944971fce5a",
+        "prevEventSha256": "7486297abf8b0b117a77cf76ea8f7420c09a8d29eccd1babd57d73fbb90ba5d3",
+        "request": {
+          "actor": {
+            "id": "compat-fixture",
+            "kind": "human"
+          },
+          "baseSnapshotSha256": "8b3915249109de12ead3f827fc6c5da23d9a3d34db415db4b060be8fa6170712",
+          "catalogSha256": "a2338e31d0409bd0e8f08b64c0118fa8f7455526da445837b95463638f55d86c",
+          "clipId": "legacy-walk",
+          "clipSha256": "53d5a9d2ab061ea88a81490b3d4588756e7034f412583c06eff6f8d55fdc1524",
+          "dictionaryVersion": "source-description-v2",
+          "eventId": "v2-flag-walk",
+          "expectedRevision": 1,
+          "operation": "flag",
+          "reason": "Synthetic frozen v2 fixture",
+          "sourceFbxSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "targetTagId": "source-aa816e3a5dea114e16a00e4672f4316be325b994925fde04159a15caeda9f157"
+        },
+        "requestSha256": "7539a8f6b86d9161cac01fdc48d45d905122faf92d0cb30490309f0725f3a17f",
+        "revision": 2,
+        "schemaVersion": 1
+      }
+    ]
+  },
+  "byteSha256": {
+    "catalogText": "a2338e31d0409bd0e8f08b64c0118fa8f7455526da445837b95463638f55d86c",
+    "logText": "67fc9cce49f42026a6ec82bf08f4fe99f2950833ea1700258748fdd11c1c524f",
+    "headText": "7ced4656e57456592c7201ba2cb77489cfb6bfa2552a30b00b5456407dcac6af"
+  },
+  "legacyClassifierSha256": "681170ef5556323b0c69cee05fbc17020ad8b5cbefb076450009bd5f56c10a66",
+  "thirdFlagRequest": {
+    "eventId": "v2-flag-proposal",
+    "expectedRevision": 2,
+    "catalogSha256": "a2338e31d0409bd0e8f08b64c0118fa8f7455526da445837b95463638f55d86c",
+    "dictionaryVersion": "source-description-v2",
+    "clipId": "legacy-walk",
+    "clipSha256": "53d5a9d2ab061ea88a81490b3d4588756e7034f412583c06eff6f8d55fdc1524",
+    "sourceFbxSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "baseSnapshotSha256": "8b3915249109de12ead3f827fc6c5da23d9a3d34db415db4b060be8fa6170712",
+    "reason": "Synthetic frozen v2 flag",
+    "actor": {
+      "kind": "human",
+      "id": "compat-fixture"
+    },
+    "operation": "flag",
+    "targetTagId": "proposal-b31707f3b2b000b30b56bb18696e94094673e4a4c5b972c4ed8d24dc53a7e7c7"
+  },
+  "expectedThirdFlag": {
+    "status": "draft",
+    "idempotent": false,
+    "event": {
+      "schemaVersion": 1,
+      "revision": 3,
+      "prevEventSha256": "346809ee639d4f973be622206bbea836c39de99011acead41e724944971fce5a",
+      "requestSha256": "5a7290b5870eb3454633fba0bcf46afe4942e67bdeeed8f2560f22d6b2164d0c",
+      "request": {
+        "actor": {
+          "id": "compat-fixture",
+          "kind": "human"
+        },
+        "baseSnapshotSha256": "8b3915249109de12ead3f827fc6c5da23d9a3d34db415db4b060be8fa6170712",
+        "catalogSha256": "a2338e31d0409bd0e8f08b64c0118fa8f7455526da445837b95463638f55d86c",
+        "clipId": "legacy-walk",
+        "clipSha256": "53d5a9d2ab061ea88a81490b3d4588756e7034f412583c06eff6f8d55fdc1524",
+        "dictionaryVersion": "source-description-v2",
+        "eventId": "v2-flag-proposal",
+        "expectedRevision": 2,
+        "operation": "flag",
+        "reason": "Synthetic frozen v2 flag",
+        "sourceFbxSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "targetTagId": "proposal-b31707f3b2b000b30b56bb18696e94094673e4a4c5b972c4ed8d24dc53a7e7c7"
+      },
+      "eventSha256": "3d9acdc0a62aa53b37ce0afea6d64667a9534cc8b4345dc3327793cafb29846e"
+    },
+    "head": {
+      "revision": 3,
+      "eventSha256": "3d9acdc0a62aa53b37ce0afea6d64667a9534cc8b4345dc3327793cafb29846e"
+    }
+  },
+  "expectedAfterThird": {
+    "schemaVersion": 1,
+    "status": "draft",
+    "catalogSha256": "a2338e31d0409bd0e8f08b64c0118fa8f7455526da445837b95463638f55d86c",
+    "dictionaryVersion": "source-description-v2",
+    "head": {
+      "revision": 3,
+      "eventSha256": "3d9acdc0a62aa53b37ce0afea6d64667a9534cc8b4345dc3327793cafb29846e"
+    },
+    "clips": [
+      {
+        "clipId": "legacy-walk",
+        "clipSha256": "53d5a9d2ab061ea88a81490b3d4588756e7034f412583c06eff6f8d55fdc1524",
+        "sourceFbxSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "assetStatus": "confirmed",
+        "baseSnapshotSha256": "8b3915249109de12ead3f827fc6c5da23d9a3d34db415db4b060be8fa6170712",
+        "sourceScope": "clip-source",
+        "source": {
+          "version": 1,
+          "basis": "description",
+          "description": "Walking forward",
+          "groups": [
+            "locomotion"
+          ],
+          "claims": [
+            {
+              "facet": "action",
+              "value": "walk",
+              "label": "行走",
+              "quote": "Walking",
+              "start": 0,
+              "end": 7,
+              "source": "description",
+              "status": "source-derived"
+            },
+            {
+              "facet": "direction",
+              "value": "forward",
+              "label": "向前",
+              "quote": "Walking forward",
+              "start": 0,
+              "end": 15,
+              "source": "description",
+              "status": "source-derived"
+            }
+          ],
+          "unknownFacets": [
+            "activity",
+            "role",
+            "posture",
+            "bodyPart",
+            "propMention",
+            "emotion",
+            "style",
+            "poseContext",
+            "contact",
+            "startPosture",
+            "endPosture",
+            "phases"
+          ],
+          "warnings": [],
+          "status": "draft"
+        },
+        "tags": [
+          {
+            "tagId": "source-aa816e3a5dea114e16a00e4672f4316be325b994925fde04159a15caeda9f157",
+            "facet": "action",
+            "value": "walk",
+            "label": "行走",
+            "evidence": {
+              "source": "description",
+              "quote": "Walking",
+              "start": 0,
+              "end": 7
+            },
+            "basis": "source-text",
+            "vocabularyStatus": "known",
+            "status": "draft",
+            "flagEventIds": [
+              "v2-flag-walk"
+            ]
+          },
+          {
+            "tagId": "source-5efea98432c76ef51c7a9f5210d546a256ace4b3a63f46edbfc58ffdad2a78d0",
+            "facet": "direction",
+            "value": "forward",
+            "label": "向前",
+            "evidence": {
+              "source": "description",
+              "quote": "Walking forward",
+              "start": 0,
+              "end": 15
+            },
+            "basis": "source-text",
+            "vocabularyStatus": "known",
+            "status": "draft",
+            "flagEventIds": []
+          }
+        ],
+        "pendingProposals": [
+          {
+            "tagId": "proposal-b31707f3b2b000b30b56bb18696e94094673e4a4c5b972c4ed8d24dc53a7e7c7",
+            "eventId": "v2-propose-walk",
+            "evidence": {
+              "end": 7,
+              "quote": "Walking",
+              "source": "description",
+              "start": 0
+            },
+            "facet": "action",
+            "value": "walk",
+            "label": "行走",
+            "basis": "proposal",
+            "vocabularyStatus": "known",
+            "status": "draft",
+            "flagEventIds": [
+              "v2-flag-proposal"
+            ]
+          }
+        ]
+      },
+      {
+        "clipId": "legacy-warming-hands",
+        "clipSha256": "ab79134d3e4b468e96628c491a44a02df05e84ce0d7dd1f8d5693b816cbaac7d",
+        "sourceFbxSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "assetStatus": "confirmed",
+        "baseSnapshotSha256": "516b9b60dd5075a7fa79fbe8040a3984c4d47ab8ad4fc8f9f095c470b24a0900",
+        "sourceScope": "clip-source",
+        "source": {
+          "version": 1,
+          "basis": "description",
+          "description": "Kneeling Warming Hands Over Campfire",
+          "groups": [
+            "posture"
+          ],
+          "claims": [
+            {
+              "facet": "posture",
+              "value": "kneeling",
+              "label": "跪姿",
+              "quote": "Kneeling",
+              "start": 0,
+              "end": 8,
+              "source": "description",
+              "status": "source-derived"
+            }
+          ],
+          "unknownFacets": [
+            "action",
+            "activity",
+            "role",
+            "bodyPart",
+            "direction",
+            "propMention",
+            "emotion",
+            "style",
+            "poseContext",
+            "contact",
+            "startPosture",
+            "endPosture",
+            "phases"
+          ],
+          "warnings": [
+            "unclassified-action"
+          ],
+          "status": "draft"
+        },
+        "tags": [
+          {
+            "tagId": "source-b1c76b9f4a3868fd49477e27057c38fe6310a8f82bbd2dfab87f91a95b36be95",
+            "facet": "posture",
+            "value": "kneeling",
+            "label": "跪姿",
+            "evidence": {
+              "source": "description",
+              "quote": "Kneeling",
+              "start": 0,
+              "end": 8
+            },
+            "basis": "source-text",
+            "vocabularyStatus": "known",
+            "status": "draft",
+            "flagEventIds": []
+          }
+        ],
+        "pendingProposals": []
+      }
+    ],
+    "events": [
+      {
+        "eventSha256": "7486297abf8b0b117a77cf76ea8f7420c09a8d29eccd1babd57d73fbb90ba5d3",
+        "prevEventSha256": null,
+        "request": {
+          "actor": {
+            "id": "compat-fixture",
+            "kind": "human"
+          },
+          "baseSnapshotSha256": "8b3915249109de12ead3f827fc6c5da23d9a3d34db415db4b060be8fa6170712",
+          "catalogSha256": "a2338e31d0409bd0e8f08b64c0118fa8f7455526da445837b95463638f55d86c",
+          "clipId": "legacy-walk",
+          "clipSha256": "53d5a9d2ab061ea88a81490b3d4588756e7034f412583c06eff6f8d55fdc1524",
+          "dictionaryVersion": "source-description-v2",
+          "eventId": "v2-propose-walk",
+          "expectedRevision": 0,
+          "operation": "propose",
+          "reason": "Synthetic frozen v2 fixture",
+          "sourceFbxSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "tag": {
+            "evidence": {
+              "end": 7,
+              "quote": "Walking",
+              "source": "description",
+              "start": 0
+            },
+            "facet": "action",
+            "value": "walk"
+          }
+        },
+        "requestSha256": "60d10032d0388ef35977d1383b57195f69b572c9e3eac984d4ac0788d883c3b6",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "eventSha256": "346809ee639d4f973be622206bbea836c39de99011acead41e724944971fce5a",
+        "prevEventSha256": "7486297abf8b0b117a77cf76ea8f7420c09a8d29eccd1babd57d73fbb90ba5d3",
+        "request": {
+          "actor": {
+            "id": "compat-fixture",
+            "kind": "human"
+          },
+          "baseSnapshotSha256": "8b3915249109de12ead3f827fc6c5da23d9a3d34db415db4b060be8fa6170712",
+          "catalogSha256": "a2338e31d0409bd0e8f08b64c0118fa8f7455526da445837b95463638f55d86c",
+          "clipId": "legacy-walk",
+          "clipSha256": "53d5a9d2ab061ea88a81490b3d4588756e7034f412583c06eff6f8d55fdc1524",
+          "dictionaryVersion": "source-description-v2",
+          "eventId": "v2-flag-walk",
+          "expectedRevision": 1,
+          "operation": "flag",
+          "reason": "Synthetic frozen v2 fixture",
+          "sourceFbxSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "targetTagId": "source-aa816e3a5dea114e16a00e4672f4316be325b994925fde04159a15caeda9f157"
+        },
+        "requestSha256": "7539a8f6b86d9161cac01fdc48d45d905122faf92d0cb30490309f0725f3a17f",
+        "revision": 2,
+        "schemaVersion": 1
+      },
+      {
+        "eventSha256": "3d9acdc0a62aa53b37ce0afea6d64667a9534cc8b4345dc3327793cafb29846e",
+        "prevEventSha256": "346809ee639d4f973be622206bbea836c39de99011acead41e724944971fce5a",
+        "request": {
+          "actor": {
+            "id": "compat-fixture",
+            "kind": "human"
+          },
+          "baseSnapshotSha256": "8b3915249109de12ead3f827fc6c5da23d9a3d34db415db4b060be8fa6170712",
+          "catalogSha256": "a2338e31d0409bd0e8f08b64c0118fa8f7455526da445837b95463638f55d86c",
+          "clipId": "legacy-walk",
+          "clipSha256": "53d5a9d2ab061ea88a81490b3d4588756e7034f412583c06eff6f8d55fdc1524",
+          "dictionaryVersion": "source-description-v2",
+          "eventId": "v2-flag-proposal",
+          "expectedRevision": 2,
+          "operation": "flag",
+          "reason": "Synthetic frozen v2 flag",
+          "sourceFbxSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "targetTagId": "proposal-b31707f3b2b000b30b56bb18696e94094673e4a4c5b972c4ed8d24dc53a7e7c7"
+        },
+        "requestSha256": "5a7290b5870eb3454633fba0bcf46afe4942e67bdeeed8f2560f22d6b2164d0c",
+        "revision": 3,
+        "schemaVersion": 1
+      }
+    ]
+  }
+}

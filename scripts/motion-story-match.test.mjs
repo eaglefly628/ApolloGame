@@ -36,6 +36,16 @@ describe('M4 offline evidence-based story matching',()=>{
   const b=result.beats[0];expect(b.candidates).toEqual([]);expect(b.partialReferences.map(r=>r.clipId)).toEqual(['walk']);
   expect(b.evidenceGaps.map(c=>c.value)).toEqual(['neutral','hands']);expect(b.authoring.automaticGeneration).toBe(false);
  });
+ it('returns no partial references when a complete candidate and a partial candidate coexist',async()=>{
+  const lib=fixture(row('complete','Walking then running'),row('partial','Walking'));
+  const s=story(lib,[beat([action('walk'),action('run')])]);
+  const partial=await querySemanticDrafts({lib,request:{expectedCatalogSha256:s.binding.catalogSha256,expectedDictionaryVersion:s.binding.dictionaryVersion,expectedRevision:s.binding.head.revision,expectedHeadSha256:s.binding.head.eventSha256,constraints:s.beats[0].constraints,strict:false}});
+  expect(partial.candidates.map(c=>c.clipId)).toEqual(['complete','partial']);
+  expect(partial.candidates[1].constraints.map(c=>c.state)).toEqual(['supported','unknown']);
+  const result=await matchSemanticStory({lib,story:s});
+  expect(result.beats[0].candidates.map(c=>c.clipId)).toEqual(['complete']);
+  expect(result.beats[0].partialReferences).toEqual([]);
+ });
  it('reports a joint-combination gap even though individual requirements exist',async()=>{
   const lib=fixture(row('walk','Walking'),row('run','Running'));
   const result=await matchSemanticStory({lib,story:story(lib,[beat([action('walk'),action('run')])])});

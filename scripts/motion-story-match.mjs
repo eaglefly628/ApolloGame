@@ -53,17 +53,18 @@ export function semanticLabelAudit({lib}){
   if(c.source.description!==null)descriptions++;
   const actions=c.tags.filter(t=>t.facet==='action');if(actions.length>1)multipleActions++;
   for(const facet of new Set(c.tags.map(t=>t.facet)))facetCoverage[facet]=(facetCoverage[facet]??0)+1;
-  const reviewReasons=[];
-  if(!actions.length)reviewReasons.push('no-action-claim-not-proof-of-missing-motion');
-  if(c.source.warnings.length)reviewReasons.push('source-extraction-warning');
+  const reviewReasons=[],informationalWarnings=c.source.warnings.filter(w=>['negated-mention-skipped','opponent-action-not-performed','posture-only-no-behavior-described','passive-action-not-performed','other-performer-mention-skipped'].includes(w));
+  const contextOnly=c.source.groups.includes('pose')||c.source.warnings.includes('posture-only-no-behavior-described');
+  if(!actions.length&&!contextOnly)reviewReasons.push('no-action-claim-not-proof-of-missing-motion');
+  if(c.source.warnings.some(w=>!informationalWarnings.includes(w)))reviewReasons.push('source-extraction-warning');
   if(c.sourceScope==='base-reference')reviewReasons.push('base-reference-not-current-motion-evidence');
   if(c.tags.some(t=>t.flagEventIds.length))reviewReasons.push('flagged-source-claim');
   if(c.pendingProposals.length)reviewReasons.push('pending-tag-proposal');
   for(const reason of reviewReasons)reviewReasonCounts[reason]=(reviewReasonCounts[reason]??0)+1;
-  return {...c,reviewReasons,labelStatus:'draft',requiresHumanConfirmation:true};
+  return {...c,reviewReasons,informationalWarnings,contextOnly,labelStatus:'draft',requiresHumanConfirmation:true};
  });
  return {schemaVersion:1,status:'source-label-audit-not-approval',binding:{catalogSha256:s.catalogSha256,dictionaryVersion:s.dictionaryVersion,head:s.head},
-  summary:{clips:clips.length,descriptions,titleFallback:clips.length-descriptions,actionRows:facetCoverage.action??0,multipleActions,facetCoverage,reviewReasonCounts,attentionRows:clips.filter(c=>c.reviewReasons.length).length,approvedLabels:0},
+  summary:{clips:clips.length,descriptions,titleFallback:clips.length-descriptions,actionRows:facetCoverage.action??0,multipleActions,intentOnlyRows:clips.filter(c=>c.tags.some(t=>t.intentOnly)).length,executionClaimRows:clips.filter(c=>c.tags.some(t=>t.facet==='action'&&!t.intentOnly)).length,contextOnlyRows:clips.filter(c=>c.contextOnly).length,facetCoverage,reviewReasonCounts,attentionRows:clips.filter(c=>c.reviewReasons.length).length,approvedLabels:0},
   clips,assetVerification:'none-metadata-only',writes:false};
 }
 const sameBinding=(a,b)=>a.catalogSha256===b.catalogSha256&&a.dictionaryVersion===b.dictionaryVersion&&a.head.revision===b.head.revision&&a.head.eventSha256===b.head.eventSha256;
@@ -71,11 +72,12 @@ const flagged=row=>row.constraints.some(c=>c.evidence.some(e=>e.flagEventIds.len
 function summarizeBeat(beat,result,partial){
  if(!result)return {...beat,status:'separate-authoring',candidates:[],partialReferences:[],gaps:[{kind:'outside-humanoid-query',reason:beat.kind}],authoring:{status:'separate-scope-review',automaticGeneration:false}};
  const excludedByReason={};for(const row of result.excluded)excludedByReason[row.exclusionReason]=(excludedByReason[row.exclusionReason]??0)+1;
- const gaps=result.missingRequirements.map(c=>({kind:c.vocabularyStatus==='pending-vocabulary'?'pending-vocabulary':'no-source-evidence',constraint:c}));
+ const gaps=result.missingRequirements.map(c=>({kind:c.reason==='source-intent-not-execution'?'intent-not-execution':c.vocabularyStatus==='pending-vocabulary'?'pending-vocabulary':'no-source-evidence',constraint:c}));
  if(result.totalMatches===0&&!gaps.length)gaps.push({kind:result.excluded.some(r=>r.exclusionReason==='explicit-conflict')?'constraints-not-jointly-satisfied':'combination-unproven',reason:'Individual claims do not prove that one clip meets this beat.'});
  const uncertain=result.candidates.flatMap(row=>row.constraints.filter(c=>c.state==='unknown').map(c=>({clipId:row.clipId,...c})));
  const hasFlags=result.candidates.some(flagged);
- return {id:beat.id,text:beat.text,kind:beat.kind,status:result.totalMatches?(hasFlags?'needs-tag-review':'source-candidates-only'):'needs-requirement-review',
+ const needsSourceReview=result.candidates.some(r=>(r.sourceWarnings??[]).some(w=>['intended-action-phase-unverified','interaction-role-unresolved','ambiguous-posture-sequence'].includes(w)));
+ return {id:beat.id,text:beat.text,kind:beat.kind,status:result.totalMatches?(hasFlags?'needs-tag-review':needsSourceReview?'needs-source-review':'source-candidates-only'):'needs-requirement-review',
   strict:beat.strict??true,totalMatches:result.totalMatches,candidates:result.candidates,
   partialReferences:result.totalMatches===0?(partial?.candidates??[]):[],
   evidenceGaps:result.missingRequirements,gaps,uncertainConstraints:uncertain,excludedByReason,
@@ -101,7 +103,7 @@ export async function matchSemanticStory({lib,story}){
  check(sameBinding(actual,semanticStoryBinding({lib})),'story snapshot changed');
  const beats=story.beats.map(beat=>{const slot=slots.get(beat.id);return summarizeBeat(beat,slot?results[slot.main]:null,slot?.partial===null?null:results[slot?.partial]);});
  return {schemaVersion:1,storyId:story.storyId,title:story.title,status:'draft-retrieval-not-story-approval',binding:actual,beats,
-  counts:{beats:beats.length,withCandidates:beats.filter(b=>b.candidates.length).length,withoutCandidates:beats.filter(b=>!b.candidates.length).length,withUncertainConstraints:beats.filter(b=>b.uncertainConstraints?.length).length,needingTagReview:beats.filter(b=>b.status==='needs-tag-review').length,separateAuthoring:beats.filter(b=>b.status==='separate-authoring').length,verifiedStoryBeats:0},
+  counts:{beats:beats.length,withCandidates:beats.filter(b=>b.candidates.length).length,withoutCandidates:beats.filter(b=>!b.candidates.length).length,withUncertainConstraints:beats.filter(b=>b.uncertainConstraints?.length).length,needingTagReview:beats.filter(b=>b.status==='needs-tag-review').length,needingSourceReview:beats.filter(b=>b.status==='needs-source-review').length,separateAuthoring:beats.filter(b=>b.status==='separate-authoring').length,verifiedStoryBeats:0},
   assetVerification:'returned-full-and-partial-candidate-SHA-only',integration:'offline-story-draft-matcher',writes:false};
 }
 
@@ -112,10 +114,10 @@ function readInput(file){
 export async function main(args=process.argv.slice(2),io={out:console.log,log:console.error}){
  try{
   const command=args[0];check(['dictionary','snapshot','labels','match'].includes(command),'use dictionary | snapshot/labels --lib ROOT | match --lib ROOT --input STORY.json');
-  const options={};for(let i=1;i<args.length;i++){const key=args[i];check(['--lib','--input'].includes(key)&&!Object.hasOwn(options,key),'unknown/duplicate option');const value=args[++i];check(typeof value==='string'&&value.trim().length&&!value.startsWith('--'),'missing option value');options[key]=value;}
-  if(command==='dictionary')check(Object.keys(options).length===0,'dictionary takes no options');
-  else {check(options['--lib'],'explicit --lib required');check(command==='match'?!!options['--input']:!options['--input'],'input required only for match');}
-  const result=command==='dictionary'?getSourceDictionary():command==='snapshot'?semanticStoryBinding({lib:options['--lib']}):command==='labels'?semanticLabelAudit({lib:options['--lib']}):await matchSemanticStory({lib:options['--lib'],story:readInput(options['--input'])});
+  const options={};for(let i=1;i<args.length;i++){const key=args[i];check(['--lib','--input','--version'].includes(key)&&!Object.hasOwn(options,key),'unknown/duplicate option');const value=args[++i];check(typeof value==='string'&&value.trim().length&&!value.startsWith('--'),'missing option value');options[key]=value;}
+  if(command==='dictionary')check(Object.keys(options).every(k=>k==='--version'),'dictionary accepts only --version');
+  else {check(!options['--version'],'--version is only for dictionary discovery');check(options['--lib'],'explicit --lib required');check(command==='match'?!!options['--input']:!options['--input'],'input required only for match');}
+  const result=command==='dictionary'?getSourceDictionary(options['--version']):command==='snapshot'?semanticStoryBinding({lib:options['--lib']}):command==='labels'?semanticLabelAudit({lib:options['--lib']}):await matchSemanticStory({lib:options['--lib'],story:readInput(options['--input'])});
   io.log('[motion-story-match] decision '+JSON.stringify({command,...(result.counts??{}),writes:false}));io.out(JSON.stringify(result,null,2));return 0;
  }catch(error){io.log('[motion-story-match] reject '+JSON.stringify({message:error.message}));return 1;}
 }

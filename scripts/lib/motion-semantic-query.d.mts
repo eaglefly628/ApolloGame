@@ -8,10 +8,11 @@ export interface SemanticQueryRequest {
 export interface EvaluatedSemanticConstraint {
  facet:string;value:string;mode:'required'|'forbidden';vocabularyStatus:'known'|'pending-vocabulary';
  state:'supported'|'conflict'|'unknown';reason:string;
- evidence:{tagId:string;basis:string;evidence:SourceEvidence;status:'draft';flagEventIds:string[]}[];
+ evidence:{tagId:string;basis:string;evidence:SourceEvidence;status:'draft';flagEventIds:string[];intentOnly?:true}[];
 }
 export interface SemanticQueryCandidate {
  clipId:string;file:string;clipSha256:string;assetStatus:'draft'|'confirmed';labelStatus:'draft';requiresHumanConfirmation:true;
+ sourceWarnings?:string[];
  score:number;constraints:EvaluatedSemanticConstraint[];eligible:boolean;exclusionReason:string|null;
 }
 export interface SemanticQueryResult {
@@ -22,5 +23,5 @@ export interface SemanticQueryResult {
 }
 export function querySemanticDrafts(options:{lib:string;request:SemanticQueryRequest}):Promise<SemanticQueryResult>;
 
-/** Batched queries share an internally loaded catalog/revision and verify selected assets once. */
+/** Batched queries share one explicit dictionary version and an internally loaded catalog/revision; selected assets are verified once. */
 export function querySemanticDraftBatch(options:{lib:string;requests:SemanticQueryRequest[]}):Promise<SemanticQueryResult[]>;

@@ -121,8 +121,16 @@ class Transaction:
             require(not next_present, 'interrupted head publication')
             log = self.read_ref('log', self.side, 'drafts.jsonl', LOG_LIMIT, optional=True, linked=True)
             head = self.read_ref('head', self.side, 'head.json', 4096, optional=True, linked=True)
+        # Archive-only migrations have no head. Their original receipt pins the dictionary;
+        # keep its inode/bytes in the same transaction snapshot instead of inferring latest.
+        pin = None
+        if self.side is not None and log is None and head is None:
+            pin = self.read_ref('dictionary-pin', self.side, 'migration-receipt.json', CATALOG_LIMIT, optional=True, linked=True)
         self.assert_structure()
-        return {'catalogText': catalog, 'logText': log, 'headText': head, 'nextPresent': next_present}
+        snapshot = {'catalogText': catalog, 'logText': log, 'headText': head, 'nextPresent': next_present}
+        if pin is not None:
+            snapshot['dictionaryPinText'] = pin
+        return snapshot
 
     def assert_snapshot(self, own_next=None):
         self.assert_structure()
@@ -212,7 +220,8 @@ def main():
         Transaction.__init__(transaction, request['lib'], request['action'] == 'append')
         snapshot = transaction.snapshot()
         validator = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'motion-semantic-drafts-validate.mjs')
-        payload = json.dumps({'action': request['action'], 'request': request.get('request'), 'snapshot': snapshot}, ensure_ascii=False).encode('utf-8')
+        payload = json.dumps({'action': request['action'], 'request': request.get('request'), 'snapshot': snapshot,
+                              **({'dictionaryVersion': request['dictionaryVersion']} if 'dictionaryVersion' in request else {})}, ensure_ascii=False).encode('utf-8')
         require(len(payload) <= IPC_LIMIT, 'internal snapshot byte budget')
         process = subprocess.run([request['nodeExecutable'], validator], input=payload, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
         require(process.returncode == 0, process.stderr.decode('utf-8', errors='replace')[:4096] or 'semantic validation failed')

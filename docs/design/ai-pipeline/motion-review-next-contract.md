@@ -118,3 +118,8 @@ node node_modules/vitest/vitest.mjs run scripts/motion-semantic-drafts.test.mjs 
 - 目录固定：`motion-semantic-drafts-fs.py` 的 `sidecar directory changed` 检查，对应目录替换测试。
 
 侧车复查须覆盖 FIFO、log/head 后期替换、真实进程崩溃、两个写者竞争、异常留证与 2445 条合成规模；完整门禁和告警独立复跑。本候选仅支持 POSIX Python 3 与协作锁，Windows 不支持，亦不承诺防御绕过锁的同 UID 进程；不得将本说明等同完整安全保证或人审批准。
+
+
+## 词典精化后续（2026-10-31）
+
+source-description-v3 的具体范围、v2 身份保留、来源意图与执行边界见 [标签精化批次](motion-label-refinement-2026-10-31.md)。旧版日志不因新词表发布自动升级；以上历史候选状态不替代新批次的精确提交复核。

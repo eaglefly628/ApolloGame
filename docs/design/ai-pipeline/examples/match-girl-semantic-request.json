@@ -4,7 +4,7 @@
   "title": "卖火柴的小女孩：来源证据检索草案",
   "binding": {
     "catalogSha256": "0000000000000000000000000000000000000000000000000000000000000000",
-    "dictionaryVersion": "source-description-v2",
+    "dictionaryVersion": "source-description-v3",
     "head": {
       "revision": 0,
       "eventSha256": null
@@ -80,7 +80,7 @@
           "value": "look"
         },
         {
-          "facet": "direction",
+          "facet": "gazeDirection",
           "value": "up"
         }
       ],

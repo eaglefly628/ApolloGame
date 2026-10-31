@@ -35,7 +35,7 @@ export function previewSkins(state: PreviewState): PreviewRow[] {
   const ids=state.skinIds || [state.skins[0]?.id || '',state.skins[1]?.id || ''];
   return ids.flatMap(id=>{const skin=state.skins.find(row=>row.id===id);return skin?[skin]:[];});
 }
-const facetLabels:Record<string,string>={action:'动作',activity:'活动',role:'施受角色',posture:'姿态',bodyPart:'身体部位',direction:'方向',propMention:'道具',emotion:'情绪',style:'风格',poseContext:'姿势语境',contact:'接触',startPosture:'起始姿态',endPosture:'结束姿态',phases:'动作阶段'};
+const facetLabels:Record<string,string>={action:'动作',activity:'活动',role:'施受角色',posture:'姿态',bodyPart:'身体部位',direction:'移动/转向方向',gazeDirection:'视线方向',propMention:'道具',emotion:'情绪',style:'风格',poseContext:'姿势语境',contact:'接触',startPosture:'起始姿态',endPosture:'结束姿态',phases:'动作阶段'};
 const label=(id:string,text:string):LayoutNode=>({id,type:'Label',props:{text,color:'text'}});
 export function buildPreview(state: PreviewState): LayoutNode {
   const matching = previewClips(state), selected = selectedPreviewClip(state), wide = (state.viewportWidth || 1280)>=1100;
@@ -57,7 +57,7 @@ export function buildPreview(state: PreviewState): LayoutNode {
     }))},
     label('description',`来源 Description：${previewSemantics(selected).description || '未记录明确来源说明'}`),
     label('annotation-status',`${previewSemantics(selected).basis==='description'?'依据来源说明':'来源说明缺失，仅依据标题'} · 标签草稿，尚未人工确认；不代表逐动作视觉验收通过。`),
-    {id:'evidence',type:'Panel',props:{bg:'panel',edge:'gold'},layout:{direction:'column',gap:10,padding:14},children:previewSemantics(selected).claims.length?previewSemantics(selected).claims.map((claim,index)=>label(`claim-${index}`,`${claim.label} · ${claim.source==='description'?'说明':'标题'}原文：${claim.quote}`)):[label('evidence-empty','没有足够文字依据，保持待分类。')]},
+    {id:'evidence',type:'Panel',props:{bg:'panel',edge:'gold'},layout:{direction:'column',gap:10,padding:14},children:previewSemantics(selected).claims.length?previewSemantics(selected).claims.map((claim,index)=>label(`claim-${index}`,`${claim.label}${claim.intentOnly?'（仅意图，执行待核对）':''} · ${claim.source==='description'?'说明':'标题'}原文：${claim.quote}`)):[label('evidence-empty','没有足够文字依据，保持待分类。')]},
     label('unknown',`未明确的信息：${previewSemantics(selected).unknownFacets.map(facet=>facetLabels[facet] || facet).join('、') || '暂无'}。未说明的情绪不会填为中性。`),
   ]:[label('empty','没有匹配动作，请清除搜索或调整行为分组。')]};
   const directory:LayoutNode={id:'directory',type:'Panel',props:{bare:true},layout:{direction:'column',gap:10,...(wide?{width:480}:{})},children:[
