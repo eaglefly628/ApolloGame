@@ -7,6 +7,9 @@
 
 ---
 
+## REQ-3D-MOTION-DRIVER-M35 · 影视角色动画驱动与完整 Locomotion · [2026-10-31] · owner 明确要求引擎扩展（参考 Unreal 动画系统） · **施工主体 = 当前 Codex motion-semantics-next session（2026-10-31；本行即锁）** · status: in-progress（架构与验收契约） · P1
+> 目标是完整影视叙事动画驱动，不以基础走跑演示结案。继承 AnimGraph3D、M1/M2/M3/M4/M6 及 E3/E4，扩充状态/混合、Root Motion 与移动权威、动作段/分层、同步事件、目标对齐、时间线和工作台诊断。公共实现属于引擎，作品只填数据；真实素材不进 Git。完整范围、分批边界及验收见 `docs/design/ai-pipeline/motion-driver-m35.md`。当前尚未实现新驱动，不改变旧 render-only AnimGraph3D 或宣称 Unreal 功能对等。
+
 ## REQ-3D-GLB-TOON · 导入模型可选卡通材质覆盖 · [2026-10-29] · owner 明确同意补运行时 · **施工主体 = Codex K 线（2026-10-29；本行即锁）** · status: in-progress · P1
 > 目标：给 Model3D 导入模型接入可选 toon 着色和可调档位；默认不覆盖，保持原有渲染。复用现有 three.js 卡通材质，保留兼容材质的多材质、纹理、UV、透明、法线、自发光；无法等价转换的材质保留原材质并明确记录。不得修改缓存共享模板材质，实例生命周期与资源释放须验证。描边可选并评估成本，不默认启用。
 > 验收：默认行为回归、不同实例隔离、多材质和透明/贴图/法线/自发光、复杂材质回退、tint/dissolve 交互；真实 ApolloGame 场景关/低/中/高对照；手机性能实测或标为未测。施工完成交不同施工人的独立复查；未完成不标验收。
