@@ -84,7 +84,7 @@ Downloads中的109份已核实重复角色移入可恢复废纸篓；16个额外
 
 ## 2026-11-01 · M3.5运行接线与节省上下文断点
 
-本轮owner授权新增完整影视Locomotion/动画驱动，范围与分批验收见 `docs/design/ai-pipeline/motion-driver-m35.md`。D1代码已推 `3758f5240`，D2纯混合/步态/扫掠及线性XZ派生工具已推 `c54c1155b`。当前D2运行批已过独立CPU/GPU与scope=full（8523通过、2跳过，exit0）；最终推送提交以git记录为准。完整D2及D3–D6未标完成。
+本轮owner授权新增完整影视Locomotion/动画驱动，范围与分批验收见 `docs/design/ai-pipeline/motion-driver-m35.md`。D1代码已推 `3758f5240`，D2纯混合/步态/扫掠及线性XZ派生工具已推 `c54c1155b`，D2运行接线已推 `22e2b25a2`，该运行批已过独立CPU/GPU与scope=full（8523通过、2跳过，exit0）。完整D2及D3–D6未标完成。
 
 - 活跃代码目录：`/private/tmp/motion-mink-stage-20261029`，分支 `codex/mainbranch`。注入的旧motion-semantics-next工作树有他人在途修改，不checkout/reset/stash/clean；只有当前stage做发布。`node_modules`只是本机未跟踪symlink，不提交。
 - 运行合同与局限：`docs/design/ai-pipeline/motion-driver-d1.md`、`motion-driver-d2.md`。phase -1将motor与可选动画一起原子提交；22诊断晚期外写。仅单motor+静态AABB，真实脚滑、坡阶、分层、通用根运动、交互足锁、导演/工作台仍须接续，不重复索取已授权引擎A。
@@ -95,3 +95,17 @@ Downloads中的109份已核实重复角色移入可恢复废纸篓；16个额外
 - D2c足锁：`/private/tmp/m35-d2c-footlock/`，native E4原型处理中，失败版本保留。原3脚滑FAIL可被端点锁降到2cm门内，但reach/fade、toe相邻角及loop seam尚未全部通过，不能发布为ready。先读最新report与作者freeze，不盲用旧结果。
 
 接续优先：先把已验运行批推送给Claude复查并保护本地断点；再闭合target绑定的实际artifact校验、源接触/循环审查、足锁/真实多Skin画面、坡阶体积碰撞。随后做D3分层/动作段、D4根运动、D5影视交互、D6导演与工作台。临时试验没有独立门或真实质量凭据的一律留candidate，不以整理清单冒充完成。数据只留本机ApolloAssets/仓库外，不上传或覆盖母版。
+
+## 2026-11-02 · D2c源素材、足锁与审核文件实证
+
+本批只推进仓库外离线候选；生产运行源码仍为 `22e2b25a2`，未注册新组件或把候选自动入库。原2445个None动作、108个Skin及catalog均不修改。账户额度余量按owner指明为使用额度，复用不变范围的既有证据，不重复整库门禁或下载。
+
+- **源问题已追溯**：`walk-forward-128620917`的LeftToeBase在offset26/27分别约1.97762/1.96541rad突跳。Blender真实导入原FBX（SHA匹配catalog，action帧1–31）与None GLB、planar派生、M1目标派生同帧复现；不是后面几步新引入，不能因此断言所有源素材有问题。证据 `/private/tmp/m35-d2c-source-audit/{fbx-report.json,report.json,freeze.json}`。Blender受限启动曾崩溃，本机权限重跑exit0；仅读原件、输出临时报告。
+- **替代行走8份数值候选**：筛查16条短Walking GLB后，`walking-100460901`与`walking-117840901`各在Y Bot/Claire/Amy/Sporty Granny上经原根分离→标定→原生E4足锁。8份均通过原2cm/200ms、相邻角、接缝数值条件，最差1.464cm/200ms；不删帧、不放宽阈值。源文字分别为Male Happy Walk、Walking With A Swagger，不能当中性行走已审标签。报告 `/private/tmp/m35-d2c-walk-alternative/compact-report.json`。根分离全骨世界位置重建误差<1.57e-7m，不等于全TRS/mesh/视觉批准。
+- **独立复跑与撤修**：固定v1足锁副本的8个真实输出SHA及完整数值结果与作者逐项一致；独立副本禁用E4配置后比较转红，恢复后绿，原始资产SHA不变。判词 `/private/tmp/m35-d2c-walk-independent/verdict.json`只签数值复跑。作者另以v2重算8份仍为候选，见 `trial-fixed-v001/report.json`，该增量未冒称独立视觉/全流程复审。
+- **稀疏轨道残留已修**：独立复查先以真实E4复现缺旋转轨道骨骼保留IK修改，旧判词FAIL保留。v2在首次采样前捕获全Bone静态TRS/matrix，每次源采样先还原，再让native动画写有轨道属性。9作者+4独立测试通过，同帧及前进帧均恢复，撤掉新增还原步骤转红/恢复绿。判词 `/private/tmp/m35-d2c-footlock-independent/v2/verdict.json`，core SHA `75f524cb56f06d0edd8c5c53ef2a0ffdfb3369be749bbb7beebc718ef188e6cf`。原8样本v007对v006状态/滑移/输出SHA不变，4条旧walk失败没有被提升。
+- **实际审核文件校验已补**：`/private/tmp/m35-d2c-binding/calibration-artifact.ts`使用同FD、256KiB限制、前后stat及同字节SHA读取闭集规范JSON；绑定实际profile/skin/selector/scale/rest/source身份。numerical/loop/visual各scope凭据须来自调用方独立可信SHA pin并实读核验，draft/fail/unknown不能升审核通过；外部可信审核台账仍是信任根，工具不产生质量审批。独立50测试（44原+6新增）、源码类型检查、两处唯一锚点撤修红/恢复绿通过。判词 `/private/tmp/m35-d2c-artifact-independent/verdict.json`；reader SHA `241fb31367b10799bf73b951ce0d54c513f33fe0c49dafee2aaef2d2d77483da`。旧identity gate仍只作身份诊断，不能代新审核入口。
+
+**持久断点**：已创建 `~/ApolloAssets/motion-review/m35-checkpoint-20261102-d2c/`，376文件、137758281字节，`checkpoint.json`逐文件SHA核对；包含本批工具、旧FAIL、新判词及候选。之前标定输入保留在 `m35-checkpoint-20261101-runtime8523`。不复制node_modules/.git/symlink；部分脚本保留绝对tmp导入，恢复时须还原对应路径或显式重绑并重算冻结。全部仅本机，未上传数据。
+
+**尚未验收**：真实多Skin画面/mesh/解剖与接触质量、可信审核台账及生产renderer绑定、一般坡阶碰撞；D3–D6仍未完成。数值候选不是完整D2或M3.5完成。接续时从本批新冻结与独立判词读起，不能复用旧足锁FAIL版本充当已修版本。
