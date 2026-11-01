@@ -1,3 +1,5 @@
+import { animationDriverData, validateAnimationDrivers } from './animation-drivers.js';
+import { validateAnimationDriver3D, validateAnimationDriverCommand3D } from '@engine/protocol/components/animation-driver.js';
 import type { CapabilityDefinition, ComponentSchema } from '@engine/core/define-capability.js';
 import { validate as validateSchema } from '@engine/core/schema.js';
 import type { EntityBlueprint } from './demo.assembly.js';
@@ -95,6 +97,14 @@ export function validateComponentData(
         catch (error) { errors.push({ entity: eid, component: ctype, message: error instanceof Error ? error.message : String(error) }); }
         continue;
       }
+      if (ctype === 'AnimationDriver3D' || ctype === 'AnimationDriverPlayback3D' || ctype === 'AnimationDriverCommand3D') {
+        try {
+          if (ctype === 'AnimationDriver3D') validateAnimationDriver3D(animationDriverData(data, ctype));
+          else if (ctype === 'AnimationDriverCommand3D') validateAnimationDriverCommand3D(animationDriverData(data, ctype));
+          validateAnimationDrivers({ [eid]: comps });
+        } catch (error) { errors.push({ entity: eid, component: ctype, message: error instanceof Error ? error.message : String(error) }); }
+        continue;
+      }
       if (ctype === 'AnimGraph3D') {
         try { validateAnimGraph3D(data); }
         catch (error) { errors.push({ entity: eid, component: ctype, message: error instanceof Error ? error.message : String(error) }); }
@@ -158,13 +168,14 @@ export function validateAssetRefs(
   const errors: SchemaIssue[] = [];
   for (const [eid, comps] of Object.entries(entities)) {
     for (const [ctype, data] of Object.entries(comps as Record<string, unknown>)) {
-      if (ctype === 'AnimGraph3D' && data && typeof data === 'object') {
-        const clips = (data as Record<string, unknown>).clips;
+      if ((ctype === 'AnimGraph3D' || ctype === 'AnimationDriver3D') && data && typeof data === 'object') {
+        const graph = ctype === 'AnimationDriver3D' ? (data as Record<string, unknown>).graph : data;
+        const clips = graph && typeof graph === 'object' ? (graph as Record<string, unknown>).clips : undefined;
         if (clips && typeof clips === 'object' && !Array.isArray(clips)) for (const [alias, raw] of Object.entries(clips)) {
           if (!raw || typeof raw !== 'object' || !Object.hasOwn(raw, 'asset')) continue;
           const asset = (raw as Record<string, unknown>).asset;
           if (typeof asset === 'string' && !assetKeys.has(asset)) errors.push({
-            entity: eid, component: ctype, field: `clips.${alias}.asset`,
+            entity: eid, component: ctype, field: `${ctype === 'AnimationDriver3D' ? 'graph.' : ''}clips.${alias}.asset`,
             message: `${ctype}.clips.${alias}.asset 引用了清单中不存在的资产 key "${asset}"（防 AI 编造）`,
           });
         }

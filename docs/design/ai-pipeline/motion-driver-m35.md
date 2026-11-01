@@ -101,3 +101,8 @@ M1负责骨架适配；M2负责素材/标签与版本；M3负责工作台；**M3
 独立复查判定：范围足够，可进入D1详细schema设计；不表示schema冻结或运行时通过。原审阅留本机 `/private/tmp/m35-architecture-review.json`。已落实：导演seek与权威rollback-resim政策分开、base/override/additive不跨层归一、D1先定义移动接口且D2实际验收竖直运动、双人共享锚不冒充承重求解。
 
 D1动手前必须在其细化合同固定：时间/rate量化与配置hash、实体/播放实例/快照身份、系统阶段与同刻转换的原子性、seek/rollback事件身份与去重、异步clip元数据就绪装配、移动request/result及GroundWalker/碰撞仲裁。以上均是本次已授权工程的设计工作，不再向owner重复索取引擎A裁决；未固定前不以自由代码先行实现。
+
+
+## D1 实施入口（2026-11-01）
+
+D1协议、纯步进核、world能力、载入校验与绝对渲染桥已实际施工，详细合同、使用方式和验证边界见 [D1固定时钟](motion-driver-d1.md)。施工中不把D2–D6标完成。

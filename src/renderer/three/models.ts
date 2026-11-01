@@ -7,6 +7,9 @@ import { isModelHandle } from '@assets/index.js';
 import { ModelCodecs } from './model-codecs.js';
 import { AnimationGraphController } from './animation-graph.js';
 import { bindSkeletalClip, captureSkeletonRest, extractSkeletalClip, snapshotSkeletalGlb, type SkeletalClip, type SkeletonRest } from './skeletal-clips.js';
+import type { AnimationDriver3D, AnimationDriverPlayback3D } from '@engine/protocol/components/animation-driver.js';
+import { projectAnimationDriver } from '@engine/animation/driver.js';
+import { AnimationDriverPoseSampler, type DriverPoseSample, type DriverPoseClip } from './animation-driver-pose.js';
 import { validateAnimGraph3D } from '@engine/protocol/components/anim-graph.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -18,6 +21,7 @@ import { validateAnimGraph3D } from '@engine/protocol/components/anim-graph.js';
 
 interface Tpl { scene: THREE.Object3D; clips: THREE.AnimationClip[]; resources: ModelResources; nodes: ReadonlyMap<number, THREE.Object3D>; rest: SkeletonRest; } // 模板：场景图 + glTF 动画
 interface GraphAnim { signature: string; graph: AnimGraph3D; params: Readonly<Record<string, number | string | boolean | undefined>>; dependencies: ReadonlySet<string>; controller?: AnimationGraphController; failed?: boolean; }
+interface DriverAnim { signature: string; config: AnimationDriver3D; samples: readonly DriverPoseSample[]; dependencies: ReadonlySet<string>; sampler?: AnimationDriverPoseSampler; failed?: boolean; }
 interface Anim { mixer: THREE.AnimationMixer; clips: THREE.AnimationClip[]; clip?: string; action?: THREE.AnimationAction; }
 
 // Instance identity is separate from modelKey resource ownership (R4).
@@ -212,6 +216,8 @@ export class ModelPool {
   private readonly state = new Map<string, 'pending' | 'failed'>(); // 解析中/失败（避免每帧重复 parse）
   private readonly anims = new Map<string, Anim>(); // 每实体骨骼动画混合器（模型有 clip 时）
   private readonly graphs = new Map<string, GraphAnim>();
+  private readonly drivers = new Map<string, DriverAnim>();
+  private readonly rejectedDrivers = new Map<string, string>();
   private readonly rejectedGraphs = new Map<string, unknown>();
   private readonly motions = new Map<string, SkeletalClip>();
   private readonly motionParsing = new Map<string, ModelResources>();
@@ -279,6 +285,7 @@ export class ModelPool {
 
   // 应用骨骼动画状态：clip 名变 → 淡入切新动作（旧的淡出·idle↔run 平滑过渡）；每帧设倍速/循环。模型无 clip 则 no-op。
   applyAnim(entityId: string, a: AnimState3D): void {
+    this.clearDriver(entityId);
     this.clearGraph(entityId);
     const an = this.anims.get(entityId);
     if (!an) return;
@@ -299,6 +306,7 @@ export class ModelPool {
   }
 
   applyGraph(entityId: string, graph: AnimGraph3D, params: Readonly<Record<string, number | string | boolean | undefined>>): void {
+    this.clearDriver(entityId);
     if (!this.instances.has(entityId)) return;
     let signature: string, dependencies: ReadonlySet<string>;
     try {
@@ -335,7 +343,80 @@ export class ModelPool {
     entry.controller?.dispose();
     this.graphs.delete(entityId);
     this.dirty = true;
-    for (const key of entry.dependencies) if (![...this.graphs.values()].some(other => other.dependencies.has(key))) this.missingMotions.delete(key);
+    for (const key of entry.dependencies) if (![...this.graphs.values(), ...this.drivers.values()].some(other => other.dependencies.has(key))) this.missingMotions.delete(key);
+  }
+
+  /** Only committed fixed-tick playback is projected; no live Flag/Velocity reads. */
+  applyDriver(entityId: string, config: AnimationDriver3D, playback: AnimationDriverPlayback3D): void {
+    if (!this.instances.has(entityId)) return;
+    try {
+      const projection = projectAnimationDriver(config, playback);
+      const signature = JSON.stringify(config);
+      const samples = Object.entries(projection.samples).map(([clip, sample]) => ({ clip, timeSeconds: sample.timeSeconds, weight: sample.weight }));
+      let entry = this.drivers.get(entityId);
+      if (entry?.signature !== signature) {
+        this.clearDriver(entityId); this.clearGraph(entityId);
+        const legacy = this.anims.get(entityId); legacy?.mixer.stopAllAction();
+        if (legacy) { legacy.action = undefined; legacy.clip = undefined; }
+        entry = { signature, config: JSON.parse(signature) as AnimationDriver3D, samples, dependencies: new Set(Object.values(config.graph.clips).flatMap(c => c.asset ? [c.asset] : [])) };
+        this.drivers.set(entityId, entry);
+      }
+      this.rejectedDrivers.delete(entityId);
+      entry.samples = samples;
+      this.buildDriver(entityId, entry);
+    } catch (error) { this.rejectDriver(entityId, error instanceof Error ? error.message : 'invalid committed playback'); }
+  }
+
+  /** Explicit opt-in conflicts/missing playback are rejected, never legacy fallback. */
+  rejectDriver(entityId: string, reason: string): void {
+    this.clearDriver(entityId); this.clearGraph(entityId);
+    const legacy = this.anims.get(entityId); legacy?.mixer.stopAllAction();
+    if (legacy) { legacy.action = undefined; legacy.clip = undefined; }
+    if (this.rejectedDrivers.get(entityId) !== reason) {
+      this.rejectedDrivers.set(entityId, reason);
+      console.warn(`[ModelPool] Rejected animation driver for "${entityId}": ${reason}`);
+    }
+  }
+
+  clearDriver(entityId: string): void {
+    const entry = this.drivers.get(entityId);
+    if (!entry) return;
+    entry.sampler?.dispose(); this.drivers.delete(entityId); this.dirty = true;
+    for (const key of entry.dependencies) if (![...this.graphs.values(), ...this.drivers.values()].some(other => other.dependencies.has(key))) this.missingMotions.delete(key);
+  }
+
+  private buildDriver(entityId: string, entry: DriverAnim): void {
+    if (entry.sampler || entry.failed) return;
+    const object = this.instances.get(entityId), template = this.cache.get(this.keyOf.get(entityId) ?? '');
+    if (!object || !template) return;
+    try {
+      const clips = new Map<string, DriverPoseClip>();
+      const external = new Map<string, SkeletalClip>(); let waiting = false;
+      for (const [alias, spec] of Object.entries(entry.config.graph.clips)) {
+        if (spec.asset) {
+          const source = this.motion(spec.asset);
+          if (!source) {
+            if (this.motionState.get(spec.asset) === 'failed') throw new Error(`external clip asset "${spec.asset}" was rejected`);
+            waiting = true; continue;
+          }
+          external.set(alias, source);
+        } else {
+          const clip = template.clips.find(c => c.name === spec.clip);
+          if (!clip) throw new Error(`model clip "${spec.clip}" was not found`);
+          clips.set(alias, { clip, durationTicks: entry.config.clips[alias].durationTicks });
+        }
+      }
+      if (waiting) return;
+      for (const [alias, source] of external) {
+        const spec = entry.config.graph.clips[alias];
+        clips.set(alias, { clip: bindSkeletalClip(source, spec.clip, object, template.rest, spec.retarget), durationTicks: entry.config.clips[alias].durationTicks });
+      }
+      entry.sampler = new AnimationDriverPoseSampler(object, entry.config.tickRate, clips);
+      this.dirty = true;
+    } catch (error) {
+      entry.failed = true;
+      console.warn(`[ModelPool] Rejected animation driver for "${entityId}"`, error);
+    }
   }
 
   private buildGraph(entityId: string, entry: GraphAnim): void {
@@ -376,8 +457,13 @@ export class ModelPool {
   update(nowMs: number): number {
     const dt = this.lastMs ? Math.min(0.1, (nowMs - this.lastMs) / 1000) : 0;
     this.lastMs = nowMs;
-    for (const [, an] of this.anims) an.mixer.update(dt);
-    let active = countRunningAnims(this.anims.values());
+    for (const [id, an] of this.anims) if (!this.drivers.has(id)) an.mixer.update(dt);
+    let active = countRunningAnims([...this.anims].filter(([id]) => !this.drivers.has(id)).map(([, an]) => an));
+    for (const [id, entry] of this.drivers) {
+      this.buildDriver(id, entry);
+      try { if (entry.sampler?.sample(entry.samples).changed) active++; }
+      catch (error) { this.rejectDriver(id, error instanceof Error ? error.message : 'invalid pose projection'); }
+    }
     for (const [id, entry] of this.graphs) {
       this.buildGraph(id, entry);
       const result = entry.controller?.update(Math.max(0, Number.isFinite(dt) ? dt : 0), entry.params);
@@ -400,6 +486,7 @@ export class ModelPool {
   }
 
   private removeInstance(scene: THREE.Object3D | undefined, id: string): void {
+    this.clearDriver(id);
     this.clearGraph(id);
     const obj = this.instances.get(id);
     if (obj) (obj.parent ?? scene)?.remove(obj);
@@ -417,7 +504,7 @@ export class ModelPool {
     this.keyOf.delete(id);
     this.selectorOf.delete(id);
     this.anims.delete(id);
-    this.rejectedGraphs.delete(id);
+    this.rejectedGraphs.delete(id); this.rejectedDrivers.delete(id);
   }
 
   dispose(scene: THREE.Scene): void {
@@ -432,7 +519,7 @@ export class ModelPool {
     this.motionState.clear();
     this.missingMotions.clear();
     this.motions.clear();
-    this.graphs.clear();
+    this.graphs.clear(); this.drivers.clear(); this.rejectedDrivers.clear();
     this.rejectedGraphs.clear();
     this.cache.clear();
     this.state.clear();
@@ -459,6 +546,9 @@ export class ModelPool {
       this.motions.delete(key);
       for (const entry of this.graphs.values()) if (entry.dependencies.has(key)) {
         entry.controller?.dispose(); entry.controller = undefined; entry.failed = false; this.dirty = true;
+      }
+      for (const entry of this.drivers.values()) if (entry.dependencies.has(key)) {
+        entry.sampler?.dispose(); entry.sampler = undefined; entry.failed = false; this.dirty = true;
       }
     });
   }

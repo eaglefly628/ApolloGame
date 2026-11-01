@@ -1,3 +1,4 @@
+import type { AnimationDriver3D, AnimationDriverPlayback3D } from '@engine/protocol/components/animation-driver.js';
 import * as THREE from 'three';
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
 import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D, AnimState3D, AnimGraph3D, Attach3D, IK3D, Glow3D, Transform3D, Pivot3D, Pickable3D, FaceDir, Velocity } from '@engine/protocol/components.js';
@@ -403,7 +404,13 @@ export class ThreeRenderer implements RendererBackend {
           if (r.model3d.tint !== undefined) this.models.tint(r.entityId, r.model3d.tint);
           const anim = world.getComponent<AnimState3D>(r.entityId, 'AnimState3D'); // 骨骼动画（render-only·播 glTF clip）
           const graph = world.getComponent<AnimGraph3D>(r.entityId, 'AnimGraph3D');
-          if (anim) {
+          const driver = world.getComponent<AnimationDriver3D>(r.entityId, 'AnimationDriver3D');
+          const playback = world.getComponent<AnimationDriverPlayback3D>(r.entityId, 'AnimationDriverPlayback3D');
+          if (driver || playback) {
+            this.animationConflictWarnings.delete(r.entityId);
+            if (!driver || !playback || anim || graph) this.models.rejectDriver(r.entityId, 'requires exclusive AnimationDriver3D + AnimationDriverPlayback3D; cannot combine with AnimState3D/AnimGraph3D');
+            else this.models.applyDriver(r.entityId, driver, playback);
+          } else if (anim) {
             // Existing single-clip data keeps precedence and its original playback semantics.
             if (graph && !this.animationConflictWarnings.has(r.entityId)) {
               console.warn(`[renderer] ${r.entityId}: AnimState3D takes precedence; skip AnimGraph3D`);
@@ -413,6 +420,7 @@ export class ThreeRenderer implements RendererBackend {
               ...anim, speed: modelMotionSpeed(anim, world.getComponent<Velocity>(r.entityId, 'Velocity')),
             });
           } else {
+            this.models.clearDriver(r.entityId);
             this.animationConflictWarnings.delete(r.entityId);
             if (graph) this.models.applyGraph(r.entityId, graph, readAnimGraphParams(world, r.entityId, graph));
             else this.models.clearGraph(r.entityId);

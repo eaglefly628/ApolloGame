@@ -17,6 +17,9 @@ import type {
   AnimState,
   AnimState3D,
   AnimGraph3D,
+  AnimationDriver3D,
+  AnimationDriverPlayback3D,
+  AnimationDriverCommand3D,
   Attach3D,
   IK3D,
   Billboard3D,
@@ -194,6 +197,9 @@ export interface ComponentDataMap {
   AnimState: Omit<AnimState, 'type'>;
   AnimState3D: Omit<AnimState3D, 'type'>;
   AnimGraph3D: Omit<AnimGraph3D, 'type'>;
+  AnimationDriver3D: Omit<AnimationDriver3D, 'type'>;
+  AnimationDriverPlayback3D: Omit<AnimationDriverPlayback3D, 'type'>;
+  AnimationDriverCommand3D: Omit<AnimationDriverCommand3D, 'type'>;
   Attach3D: Omit<Attach3D, 'type'>;
   IK3D: Omit<IK3D, 'type'>;
   Billboard3D: Omit<Billboard3D, 'type'>;

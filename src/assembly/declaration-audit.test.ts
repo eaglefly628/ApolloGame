@@ -159,7 +159,7 @@ const PHASE_BASELINE: string[] = [
   'p10:collision-resolve,collision-resolve-3d,tile-collision',
   'p14:conveyor-queue,friction,gauge,hierarchy-resolve,orbit-motion,text-binding',
   'p20:anim-state,block-view-sync,bounds-clamp,cooldown,craft-recipe,effect-apply,face-rotate,facing,jump,match-view-sync,matrix-duel-announce,matrix-duel-intent,stat-bind,weighted-spawn',
-  'p21:ground-final-3d', // R2 resamples after Commit bounds; before Cleanup.
+  'p21:animation-driver,ground-final-3d', // R2 resamples after Commit bounds; before Cleanup.
   'p30:group-gc', // 2026-09-08 G4 group 配套：Cleanup 相位（destroy-apply 之后摘除已销毁成员）
 ];
 

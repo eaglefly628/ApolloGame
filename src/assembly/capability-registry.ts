@@ -1,3 +1,4 @@
+import { animationDriverCapability } from '@skills/tier2/animation-driver.js';
 import type { CapabilityDefinition } from '@engine/core/define-capability.js';
 import { buildCapabilityIndex, inferCapabilityIdsWith, metaOf, unknownCapabilityError } from './capability-index.js';
 import { allAtomCapabilities, extensionAtomCapabilities } from '@atom-skills/index.js';
@@ -89,6 +90,7 @@ import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapa
 export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   sceneImport3dCapability,
   groundWalk3dCapability,
+  animationDriverCapability,
   ...allAtomCapabilities,
   ...extensionAtomCapabilities,
   // tier1

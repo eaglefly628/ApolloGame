@@ -1,3 +1,4 @@
+import { validateAnimationDrivers } from '@assembly/animation-drivers.js';
 import { World } from '@engine/core/world.js';
 import type { Component, RendererBackend, IWorld } from '@engine/core/types.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
@@ -32,6 +33,7 @@ export class Engine {
   private readonly services: FrameService[] = []; // 每帧服务（音频/存档/平台…），与渲染器同侧同步
   private _tickRate: number;
   private readonly input: InputSource | null;
+  private readonly installedCapabilities = new Set<string>();
 
   constructor(options: EngineOptions = {}) {
     this.world = new World();
@@ -47,16 +49,31 @@ export class Engine {
   load(blueprint: WorldBlueprint, options: { sceneImports?: SceneImportCatalog } = {}): void {
     // Validate/expand the whole import before tick rate, systems or entities change.
     const entities = expandSceneImports(blueprint.entities, options.sceneImports);
+    const targetTickRate = blueprint.meta?.tickRate ?? this._tickRate;
+    validateAnimationDrivers(entities, targetTickRate);
+    // A later additive load cannot change the clock underneath existing actors.
+    const liveDrivers: Record<string, unknown> = {};
+    for (const [id, components] of this.world.query('AnimationDriver3D')) liveDrivers[id] = Object.fromEntries(components);
+    validateAnimationDrivers(liveDrivers, targetTickRate);
+    if (Object.values(entities).some(entity => Object.hasOwn(entity, 'AnimationDriver3D'))
+      && !this.installedCapabilities.has('t2-animation-driver') && !blueprint.capabilities.some(cap => cap.id === 't2-animation-driver'))
+      throw new Error('animation-drivers: AnimationDriver3D requires t2-animation-driver capability');
     const existing = new Set(this.world.query().map(([id]) => id));
     for (const id of Object.keys(entities)) {
       if (existing.has(id)) throw new Error(`engine.load: entity id conflict "${id}"`);
     }
     if (blueprint.meta?.tickRate !== undefined) this._tickRate = blueprint.meta.tickRate; // 蓝图是游戏的数据·它说了算
+    let driverInstalled = this.installedCapabilities.has('t2-animation-driver');
     for (const cap of blueprint.capabilities) {
+      // Additive actor loads reuse the authoritative driver; installing it twice
+      // would advance all clocks twice and introduce a self-dependency cycle.
+      if (cap.id === 't2-animation-driver') { if (driverInstalled) continue; driverInstalled = true; }
       for (const system of cap.systems) {
         this.world.addSystem(system);
       }
     }
+
+    for (const cap of blueprint.capabilities) this.installedCapabilities.add(cap.id);
 
     for (const [entityId, components] of Object.entries(entities)) {
       this.world.createEntity(entityId);
