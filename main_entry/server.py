@@ -34,6 +34,7 @@ from .llm_log import handle_llm_logs
 from .llm_transport import get_available_providers
 from .packaging import _PKG_JOBS, _PKG_JOBS_LOCK, handle_dokiworld_apps, handle_package_job_get, handle_package_job_start
 from .paths import LIBRARY_DIR, _design_parts, _lib_parts, _valid_slug
+from .editor_projects import handle_project_changes, handle_project_create, handle_project_edit, handle_project_file, handle_project_get, handle_project_note, handle_projects_list
 from .platforms import handle_platform_launch, handle_platforms_list
 from .pipeline_board import handle_pipeline_board, handle_pipeline_concept, handle_pipeline_gate, handle_pipeline_orch_abort, handle_pipeline_orch_dispatch, handle_pipeline_orch_status, handle_pipeline_signoff, handle_pipeline_wizard_concept
 from .placeholder import handle_art_resolve
@@ -452,6 +453,20 @@ class APIHandler(BaseHTTPRequestHandler):
                 self._send_json(*_lib_dispatch(lambda: design_draft_get(did)))
             return
 
+        if path == '/api/editor/projects' or path.startswith('/api/editor/projects/'):  # AI 原生编辑器（new<n> 项目）
+            segs = path.split('/')[4:]  # ['', 'api', 'editor', 'projects', slug, action]
+            query = urllib.parse.parse_qs(self.path.split('?', 1)[1] if '?' in self.path else '')
+            if not segs:
+                self._send_json(*_lib_dispatch(handle_projects_list))
+            elif len(segs) == 1:
+                self._send_json(*_lib_dispatch(lambda: handle_project_get(segs[0])))
+            elif len(segs) == 2 and segs[1] == 'file':
+                self._send_json(*_lib_dispatch(lambda: handle_project_file(segs[0], (query.get('path') or [''])[0])))
+            elif len(segs) == 2 and segs[1] == 'changes':
+                self._send_json(*_lib_dispatch(lambda: handle_project_changes(segs[0])))
+            else:
+                self._send_json(404, {'success': False, 'error': f'未知编辑器端点: {path}'})
+            return
         if path == '/api/platforms':  # 三平台合并 P0：动画 / 3D 资产平台的配置与运行态
             self._send_json(200, handle_platforms_list())
             return
@@ -639,6 +654,14 @@ class APIHandler(BaseHTTPRequestHandler):
         m_cover = re.fullmatch(r'/api/games/([a-z0-9][a-z0-9-]*)/cover', path)
         if m_cover:  # 游戏封面/图标文生图（owner 07-12·替换卡片默认矢量图标）
             self._send_json(200, handle_game_cover_generate(m_cover.group(1), body))
+            return
+        if path == '/api/editor/projects':
+            self._send_json(*_lib_dispatch(lambda: handle_project_create(body)))
+            return
+        m_ed = re.fullmatch(r'/api/editor/projects/([a-z0-9][a-z0-9-]*)/(edit|note)', path)
+        if m_ed:
+            fn = handle_project_edit if m_ed.group(2) == 'edit' else handle_project_note
+            self._send_json(*_lib_dispatch(lambda: fn(m_ed.group(1), body)))
             return
         m_plat = re.fullmatch(r'/api/platforms/([a-z0-9][a-z0-9-]*)/launch', path)
         if m_plat:  # 只拉起 .zerocraft/platforms.json 里写死的条目；请求体不带命令

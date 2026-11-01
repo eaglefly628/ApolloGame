@@ -21,6 +21,8 @@ import { ArtLedgerPanel, ArtGamePicker } from './studio/ArtLedgerPanel.js';
 import { GamePipelinePanel } from './studio/GamePipelinePanel.js';
 import { SettingsPanel } from './studio/SettingsPanel.js';
 import { PlatformLauncher } from './studio/PlatformLauncher.js';
+import { EditorApp } from './studio/editor/EditorApp.js';
+import { startsInLegacy } from './studio/editor/app-route.js';
 
 // （2026-07-16 纯结构拆分·token 优化）轮播/DevTools/游戏运行时/API 助手拆至 ./launcher/*，行为不变。
 import { API, apiCall } from './launcher/api.js';
@@ -634,6 +636,13 @@ export function Launcher() {
             </button>
             <PlatformLauncher />
             <button
+              onClick={() => { window.location.href = window.location.pathname; }}
+              title="新的 AI 原生引擎编辑器（new<n> 项目）"
+              style={{ marginTop: 14, marginLeft: 10, padding: '7px 18px', background: SHELL.jadeWash, color: SHELL.jade, border: `1px solid ${SHELL.jadeLine}`, borderRadius: 8, fontSize: 12, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', outline: 'none' }}
+            >
+              ✦ 引擎编辑器（新）
+            </button>
+            <button
               onClick={() => setEntryChoice(true)}
               title="新建游戏（设计先行 / 快速生成）——旧 GameCreator 已退役，两模式同流"
               style={{
@@ -879,4 +888,19 @@ export function Launcher() {
 // #app 存在才挂载（index.html 恒有）；无 #app（如无头集成测试 import 本模块）→ 零副作用，
 // 让测试能渲染导出的 <Launcher /> 走真实接线（返修 Lead 要求的 launcher 层集成测试的前提）。
 const appEl = document.getElementById('app');
-if (appEl) createRoot(appEl).render(<Launcher />);
+if (appEl) createRoot(appEl).render(<AppRoot />);
+
+/** 首屏：新的 AI 原生引擎编辑器（缺省）⇄ 旧版创作台（老游戏·保持兼容）。路由规则见 studio/editor/app-route.ts。 */
+function AppRoot() {
+  const [legacy, setLegacy] = useState(() => startsInLegacy(window.location.search));
+  if (legacy) return <Launcher />;
+  return (
+    <EditorApp onLegacy={() => {
+      const u = new URL(window.location.href);
+      u.searchParams.delete('project');
+      u.searchParams.set('legacy', '1');
+      window.history.replaceState(null, '', u.toString());
+      setLegacy(true);
+    }} />
+  );
+}
