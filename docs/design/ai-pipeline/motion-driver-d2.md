@@ -9,7 +9,7 @@
 - `src/engine/animation/yaw-fixed.ts`：65536整周单位、静态Q1000000四分之一波表与整数插值；正Z前向，正yaw朝正X，local lateral正号仅是坐标定义。方向量化、短弧转向和秒制余数可恢复，不在sim调用三角函数。
 - `src/engine/spatial/capsule-box-sweep.ts`：竖直胶囊对静态AABB的连续直线扫掠；分段距离二次式及BigInt判定，保守量化TOI。区分初始重叠、接触后离开/切向和入射，不用包围长方体冒充胶囊；调用方须留至少2Q皮肤。不是完整角色motor、旋转扫掠、hull或动态碰撞实现。
 
-上述模块均不直接改World。新motor、动画状态树、渲染投影、真实素材标定与端到端测试仍须接线；旧E2/旧D1不因这些纯函数自动升级。
+上述纯模块均不直接改World。后续运行批已将motor、状态树与渲染投影接入真实Engine，具体边界见下节；真实素材标定仍在继续。旧E2/旧D1保留各自协议，不自动迁移。
 
 ## 原地动作与位移轨迹的隔离
 
@@ -29,9 +29,9 @@
 
 ## 尚须完成才可验收D2
 
-- 确定性角色motor与唯一位置/脚高/yaw权威，显式输入序号，站蹲/跳跃/落地/恢复；旧积分器与地面系统不能再移同一角色。
-- 二维blend与完整起停、转向、站蹲、空中/落地状态树接World与renderer，暂停/seek/rollback保持明确事件语义。
-- 真实走跑不同步幅的同步策略。当前gait按单一参考步幅积分，不能把不同实测stride改成一样的元数据掩盖脚滑。
+- 将已验收的静态平地motor扩到可靠的坡面、台阶与凸体场景；保持唯一位置/脚高/yaw权威，不引入第二积分器。
+- 15状态World/renderer技术链已接通；真实起停、转身、跳跃素材的衔接与画面标准仍须验证。
+- 加权实测步幅策略已接入快照与步态，同组不同stride无需伪改元数据；真实目标Skin仍需独立标定、接触/循环审核和脚滑修正。
 - 平地、墙角、薄墙、台阶、坡及空中碰撞的明确支持边界；不支持的形状、动态承载或多层场景不能静默当作通过。
 - 至少三个不同体型Skin的连续走跑/转向/蹲起/跳落地GPU预览、足底轨迹/脚滑和恢复重演证据。常数IK不等于足锁已实现。
 
@@ -40,3 +40,26 @@ D3槽/分层/动作段、D4通用根运动、D5交互/足锁、D6工作台与导
 ## 本批发布门
 
 基础函数与线性派生批最终完整门禁退出0：738个测试文件通过，8308项通过、2项跳过，类型与构建通过。已读取构建大包提醒及game-a/art-03、game-c/art-017旧台账缺图WARN；没有新增调度成环。施工中的motor/状态树/加权步幅桥在独立目录推进，没有混入本次冻结门禁。上述独立复核各自只签所读源码范围，不替Claude签完整D2或艺术验收。
+
+## 运行批实际接线（2026-11-01）
+
+公共能力 `t2-character-motor` 提供Motor配置/意图/播放快照/静态环境身份，以及Locomotion配置/命令/播放快照，共7个sim组件。具体schema与typed map/registry同提交；不是游戏层自由system。World以明确的phase -1顺序计算pure motor→量化yaw/实际运动事实→可选locomotion→全批校验后一起提交位置、碰撞体、动画与事件。坏图、时间不匹配或脚步预算失败不会先移角色再报动画失败；旧phase0检测同tick看到新碰撞体。phase22只诊断晚期外写，不冒称全World.tick事务回滚。
+
+15个状态为idle/start/move/stop、正负turn、crouch-in/crouched-idle/crouched-move/crouch-out、jump-start/rising/falling/land/recover。二维混合用实际接受的本地速度，不以期望速度在墙前原地满速走。蹲起动画边沿来自前动画stance与当前接受的物理stance，暂停期间转换也不丢失；V1物理碰撞高度仍是瞬时切换，不能称连续胶囊高度动画已做。动画pause不暂停物理；完整导演暂停留待D6。
+
+`weighted-measured`使用各成员真实stride的权重平均换算参考距离，固定micro-reference-Q余数随快照保存；每步除法丢失严格小于一个micro-reference-Q且有累计上界计数。正实际位移即使尚不足一个整数reference-Q也显式start共享plant，不能假加距离。原`normalized-reference`路径独立1000步对照逐字节兼容。Motor接受距离目前每tick取整数范数，下取整损失小于1Q；后续高精度质量标定不得忽略该边界。
+
+公共同步/异步manifest、SceneImport共同门、直接Engine.load均拒绝孤立/不一致快照、不同clock、第二位置驱动及不支持的碰撞形状；新增load不能偷偷改变活跃actor时钟或静态碰撞布局。快照恢复检查真实占据与支撑身份，不用重新出生结果覆盖保存的速度和实例。相同load或追加load重复安装能力只推进一次。
+
+渲染复用ModelPool/M1/native绝对采样。动作GLB的真实冻结字节异步核SHA，迟到digest/parse有generation隔离；旧D1不被新验证阻塞。新旧配置、播放快照、命令任一出现都遵守排他；孤立命令不回退旧播放器。Motor朝向不经过FaceDir墙钟平滑；同体/父Pivot或同体Attach不能挪走模拟角色，普通手持prop仍可Attach到该角色。
+
+当前可验收物理支持集仍严格限定：一个竖直胶囊actor、静态AABB、Q10000网格、固定tick内直线扫掠。无坡面/台阶/hull、动态actor碰撞对、移动承载、通用根运动或眼部跟随；身体yaw不是头眼look-at。目标Skin SHA/selector/模型缩放及M1比例尚未生产绑定，因此source stride不能保证换任意Skin后无脚滑。
+
+## 运行批证据
+
+- 最终完整门禁退出0：747测试文件，8523项通过、2项跳过，类型/构建/守卫通过。已读SKILL-SHAPE存量WARN、两条旧美术台账缺图和构建大包提醒；未放宽阈值或新增SCC。
+- root运行接线21文件由非施工人独立核SHA，272项复跑绿，7处唯一锚点撤修红/恢复绿；独立发现的raw事实序号、环境type、字符串trigger差异均已复现修复。两组assembly分别48/25项独立测试与5/3处撤修通过；其真实scene/renderer边界分别签，不互相代签。
+- 新ModelPool/renderer另组独立53项测试及额外探针通过，三条初版命令排他/孤立命令回退/Motor作为Attach child的问题先验红、修复再撤修重现。旧FAIL历史保留，不抹去失败。
+- 实际Chrome/Apple M5/ANGLE Metal/WebGL2独立执行合成场景：15状态、458次无renderer对照hash、472次render零sim写、466次骨骼检查及清理通过。隔离撤掉seek后实际exit1，恢复exit0；三次GPU骨纹理各576个float读回与CPU矩阵最大误差0，另一次明确JSON复制快照恢复像素一致。截图是三角蒙皮，不是人体艺术质量证据。
+
+完整M3.5仍未结案。真实8个target-fit候选保留5数值过门、Amy走/跑和Granny跑3项失败；这些结果不代表contact、loop、mesh或真人动画审美通过。校准/绑定/地形/foot-lock的下一批候选仅在仓库外试验，未混入本次生产门禁或上传资产。

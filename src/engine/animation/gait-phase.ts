@@ -207,6 +207,36 @@ export function selectGaitLeader(config: GaitPhaseGroupV1, weightsQ: GaitWeights
   return leader;
 }
 
+function plantEvent(config: GaitPhaseGroupV1, state: GaitPhaseStateV1, marker: GaitCanonicalMarker, cycle: number): GaitPlantEvent {
+  return {
+    id: `${config.id}:${state.instance}:${cycle}:${marker.id}`,
+    groupId: config.id, instance: state.instance, cycle, markerId: marker.id,
+    phaseQ: marker.phaseQ, foot: marker.foot, kind: 'plant',
+  };
+}
+
+/** Explicit positive-actual-motion signal, before reference-distance quantization.
+ * This does not add distance or advance phase/cycle/remainder. The caller must
+ * only invoke it when physical motion occurred (never for pause or stationary seek).
+ * Inactive and already-started groups are idempotent; preview seek already marks started.
+ */
+export function startGaitPhaseGroup(
+  config: GaitPhaseGroupV1,
+  previous: GaitPhaseStateV1,
+  weightsQ: GaitWeightsQ,
+): { readonly state: GaitPhaseStateV1; readonly events: readonly GaitPlantEvent[]; readonly leader: string | undefined } {
+  validateGaitPhaseState(config, previous);
+  const leader = selectGaitLeader(config, weightsQ);
+  if (leader === undefined || previous.started) return { state: { ...previous }, events: [], leader };
+  // The snapshot validator requires an unstarted group to be at its initial anchor.
+  const anchor = config.markers[0];
+  return {
+    state: { ...previous, started: true },
+    events: anchor.kind === 'plant' ? [plantEvent(config, previous, anchor, previous.cycle)] : [],
+    leader,
+  };
+}
+
 /** Exact rational integration uses BigInt internally; persisted state/events contain JSON-safe numbers only.
  * No backward distance or unbounded catchup is supported. Budget violations throw before returning a new state.
  * The first positive accepted displacement fires an anchor plant once, even if only the rational remainder advances.
@@ -251,11 +281,7 @@ export function stepGaitPhaseGroup(
     for (let cycle = occurrence.firstCycle; cycle <= occurrence.lastCycle; cycle++) ordered.push({ marker: occurrence.marker, cycle });
   }
   ordered.sort((a, b) => a.cycle - b.cycle || a.marker.phaseQ - b.marker.phaseQ);
-  const events = ordered.map(({ marker, cycle }): GaitPlantEvent => ({
-    id: `${config.id}:${previous.instance}:${cycle}:${marker.id}`,
-    groupId: config.id, instance: previous.instance, cycle, markerId: marker.id,
-    phaseQ: marker.phaseQ, foot: marker.foot, kind: 'plant',
-  }));
+  const events = ordered.map(({ marker, cycle }) => plantEvent(config, previous, marker, cycle));
   const state: GaitPhaseStateV1 = {
     ...previous, phaseQ: nextPhase, cycle: Number(nextCycle),
     remainder: Number(numerator % denominator), started: true,

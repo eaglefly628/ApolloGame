@@ -47,6 +47,10 @@ export function collectAssetRefs(capabilities: readonly CapabilityDefinition[], 
   const seen = new Set<string>();
   for (const comps of Object.values(entities)) {
     for (const [ctype, data] of Object.entries(comps as Record<string, unknown>)) {
+      if(ctype==='LocomotionDriver3D'&&data&&typeof data==='object'){
+        const clips=(data as {clips?:Record<string,{asset?:unknown}>}).clips;
+        if(clips&&typeof clips==='object')for(const [alias,clip] of Object.entries(clips))if(typeof clip?.asset==='string'&&clip.asset&&!seen.has(clip.asset)){seen.add(clip.asset);refs.push({key:clip.asset,assetType:'animation',component:ctype,field:`clips.${alias}.asset`});}
+      }
       if (ctype === 'AnimationDriver3D' && data && typeof data === 'object') {
         const graph = (data as { graph?: { clips?: Record<string, {asset?:unknown}> } }).graph;
         if (graph?.clips && typeof graph.clips === 'object') for (const [alias, clip] of Object.entries(graph.clips)) {

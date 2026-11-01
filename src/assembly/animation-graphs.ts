@@ -1,3 +1,5 @@
+import {validateCharacterMotors} from './character-motors.js';
+import {validateLocomotionDrivers} from './locomotion-drivers.js';
 import { validateAnimationDrivers } from './animation-drivers.js';
 import { validateAnimGraph3D } from '@engine/protocol/components/anim-graph.js';
 
@@ -6,6 +8,8 @@ const object = (value: unknown): value is Record<string, unknown> => !!value && 
 /** Validate before any load-time/world mutation, including direct Engine.load. */
 export function validateAnimationGraphs(entities: Record<string, unknown>): void {
   validateAnimationDrivers(entities);
+  validateCharacterMotors(entities);
+  validateLocomotionDrivers(entities);
   for (const [id, raw] of Object.entries(entities)) {
     if (!object(raw) || !Object.hasOwn(raw, 'AnimGraph3D')) continue;
     try {

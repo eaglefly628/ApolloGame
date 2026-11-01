@@ -7,7 +7,7 @@
 
 ---
 
-## REQ-3D-MOTION-DRIVER-M35 · 影视角色动画驱动与完整 Locomotion · [2026-10-31] · owner 明确要求引擎扩展（参考 Unreal 动画系统） · **施工主体 = 当前 Codex motion-semantics-next session（2026-10-31；本行即锁）** · status: in-progress（D1固定时钟已实现；D2移动/混合/步态施工） · P1
+## REQ-3D-MOTION-DRIVER-M35 · 影视角色动画驱动与完整 Locomotion · [2026-10-31] · owner 明确要求引擎扩展（参考 Unreal 动画系统） · **施工主体 = 当前 Codex motion-semantics-next session（2026-10-31；本行即锁）** · status: in-progress（D1已推；D2运行接线CPU/GPU及全量通过，真实脚步/坡阶继续） · P1
 > 目标是完整影视叙事动画驱动，不以基础走跑演示结案。继承 AnimGraph3D、M1/M2/M3/M4/M6 及 E3/E4，扩充状态/混合、Root Motion 与移动权威、动作段/分层、同步事件、目标对齐、时间线和工作台诊断。公共实现属于引擎，作品只填数据；真实素材不进 Git。完整范围、分批边界及验收见 `docs/design/ai-pipeline/motion-driver-m35.md`。D1已接入协议、装配、固定tick系统与原生GPU采样，专项内部独立复核和全量门禁分别登记在 `docs/design/ai-pipeline/motion-driver-d1.md`；完整D2–D6仍在施工，不改变旧 render-only AnimGraph3D 或宣称 Unreal 功能对等。
 
 ## REQ-3D-GLB-TOON · 导入模型可选卡通材质覆盖 · [2026-10-29] · owner 明确同意补运行时 · **施工主体 = Codex K 线（2026-10-29；本行即锁）** · status: in-progress · P1

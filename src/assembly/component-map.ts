@@ -17,6 +17,13 @@ import type {
   AnimState,
   AnimState3D,
   AnimGraph3D,
+  LocomotionDriver3D,
+  LocomotionPlayback3D,
+  LocomotionCommand3D,
+  CharacterMotor3D,
+  CharacterMotorIntent3D,
+  CharacterMotorPlayback3D,
+  CharacterMotorEnvironment3D,
   AnimationDriver3D,
   AnimationDriverPlayback3D,
   AnimationDriverCommand3D,
@@ -185,6 +192,13 @@ import type { IntentBarrier, IntentInbox } from '@skills/tier2/intent-barrier-co
 import type { Vfx2D } from '@atom-skills/vfx2d/index.js';
 
 export interface ComponentDataMap {
+  LocomotionDriver3D: Omit<LocomotionDriver3D, 'type'>;
+  LocomotionPlayback3D: Omit<LocomotionPlayback3D, 'type'>;
+  LocomotionCommand3D: Omit<LocomotionCommand3D, 'type'>;
+  CharacterMotor3D: Omit<CharacterMotor3D, 'type'>;
+  CharacterMotorIntent3D: Omit<CharacterMotorIntent3D, 'type'>;
+  CharacterMotorPlayback3D: Omit<CharacterMotorPlayback3D, 'type'>;
+  CharacterMotorEnvironment3D: Omit<CharacterMotorEnvironment3D, 'type'>;
   SceneImport3D: Omit<SceneImport3D, 'type'>;
   GroundSurface3D: Omit<GroundSurface3D, 'type'>;
   GroundWalker3D: Omit<GroundWalker3D, 'type'>;

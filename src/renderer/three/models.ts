@@ -9,6 +9,8 @@ import { AnimationGraphController } from './animation-graph.js';
 import { bindSkeletalClip, captureSkeletonRest, extractSkeletalClip, snapshotSkeletalGlb, type SkeletalClip, type SkeletonRest } from './skeletal-clips.js';
 import type { AnimationDriver3D, AnimationDriverPlayback3D } from '@engine/protocol/components/animation-driver.js';
 import { projectAnimationDriver } from '@engine/animation/driver.js';
+import type { LocomotionDriver3D, LocomotionPlayback } from '@engine/animation/locomotion-driver.js';
+import { prepareLocomotionPose } from './locomotion-driver-pose.js';
 import { AnimationDriverPoseSampler, type DriverPoseSample, type DriverPoseClip } from './animation-driver-pose.js';
 import { validateAnimGraph3D } from '@engine/protocol/components/anim-graph.js';
 
@@ -21,6 +23,7 @@ import { validateAnimGraph3D } from '@engine/protocol/components/anim-graph.js';
 
 interface Tpl { scene: THREE.Object3D; clips: THREE.AnimationClip[]; resources: ModelResources; nodes: ReadonlyMap<number, THREE.Object3D>; rest: SkeletonRest; } // 模板：场景图 + glTF 动画
 interface GraphAnim { signature: string; graph: AnimGraph3D; params: Readonly<Record<string, number | string | boolean | undefined>>; dependencies: ReadonlySet<string>; controller?: AnimationGraphController; failed?: boolean; }
+interface LocomotionAnim { signature: string; config: LocomotionDriver3D; samples: readonly DriverPoseSample[]; dependencies: ReadonlySet<string>; sampler?: AnimationDriverPoseSampler; failed?: boolean; }
 interface DriverAnim { signature: string; config: AnimationDriver3D; samples: readonly DriverPoseSample[]; dependencies: ReadonlySet<string>; sampler?: AnimationDriverPoseSampler; failed?: boolean; }
 interface Anim { mixer: THREE.AnimationMixer; clips: THREE.AnimationClip[]; clip?: string; action?: THREE.AnimationAction; }
 
@@ -217,6 +220,8 @@ export class ModelPool {
   private readonly anims = new Map<string, Anim>(); // 每实体骨骼动画混合器（模型有 clip 时）
   private readonly graphs = new Map<string, GraphAnim>();
   private readonly drivers = new Map<string, DriverAnim>();
+  private readonly locomotionDrivers = new Map<string, LocomotionAnim>();
+  private readonly motionDigests = new Map<string, { value?: string; error?: string }>();
   private readonly rejectedDrivers = new Map<string, string>();
   private readonly rejectedGraphs = new Map<string, unknown>();
   private readonly motions = new Map<string, SkeletalClip>();
@@ -343,7 +348,7 @@ export class ModelPool {
     entry.controller?.dispose();
     this.graphs.delete(entityId);
     this.dirty = true;
-    for (const key of entry.dependencies) if (![...this.graphs.values(), ...this.drivers.values()].some(other => other.dependencies.has(key))) this.missingMotions.delete(key);
+    for (const key of entry.dependencies) if (![...this.graphs.values(), ...this.drivers.values(), ...this.locomotionDrivers.values()].some(other => other.dependencies.has(key))) this.missingMotions.delete(key);
   }
 
   /** Only committed fixed-tick playback is projected; no live Flag/Velocity reads. */
@@ -367,6 +372,74 @@ export class ModelPool {
     } catch (error) { this.rejectDriver(entityId, error instanceof Error ? error.message : 'invalid committed playback'); }
   }
 
+  /** Locomotion has its own validated protocol, never coerced into a D1 graph. */
+  applyLocomotionDriver(entityId: string, config: LocomotionDriver3D, playback: LocomotionPlayback): void {
+    if (!this.instances.has(entityId)) return;
+    try {
+      const prepared = prepareLocomotionPose(config, playback);
+      let entry = this.locomotionDrivers.get(entityId);
+      if (entry?.signature !== prepared.signature) {
+        this.clearDriver(entityId); this.clearGraph(entityId);
+        const legacy = this.anims.get(entityId); legacy?.mixer.stopAllAction();
+        if (legacy) { legacy.action = undefined; legacy.clip = undefined; }
+        entry = { signature: prepared.signature, config: prepared.config, samples: prepared.samples, dependencies: new Set(Object.values(prepared.config.clips).map(c => c.asset)) };
+        this.locomotionDrivers.set(entityId, entry);
+      }
+      this.rejectedDrivers.delete(entityId);
+      entry.samples = prepared.samples;
+      this.buildLocomotionDriver(entityId, entry);
+    } catch (error) { this.rejectDriver(entityId, error instanceof Error ? error.message : 'invalid locomotion snapshot'); }
+  }
+
+  private clearLocomotionDriver(entityId: string): void {
+    const entry = this.locomotionDrivers.get(entityId);
+    if (!entry) return;
+    entry.sampler?.dispose(); this.locomotionDrivers.delete(entityId); this.dirty = true;
+    for (const key of entry.dependencies) if (![...this.graphs.values(), ...this.drivers.values(), ...this.locomotionDrivers.values()].some(other => other.dependencies.has(key))) this.missingMotions.delete(key);
+  }
+
+  private buildLocomotionDriver(entityId: string, entry: LocomotionAnim): void {
+    if (entry.sampler || entry.failed) return;
+    const object = this.instances.get(entityId), template = this.cache.get(this.keyOf.get(entityId) ?? '');
+    if (!object || !template) return;
+    try {
+      const clips = new Map<string, DriverPoseClip>();
+      const sources = new Map<string, SkeletalClip>(); let waiting = false;
+      for (const [alias, spec] of Object.entries(entry.config.clips)) {
+        const source = this.motion(spec.asset);
+        if (!source) {
+          if (this.motionState.get(spec.asset) === 'failed') throw new Error(`external clip asset "${spec.asset}" was rejected`);
+          waiting = true; continue;
+        }
+        const digest = this.motionDigests.get(spec.asset);
+        if (digest?.error) throw new Error(`cannot verify locomotion source "${spec.asset}": ${digest.error}`);
+        if (!digest?.value) { waiting = true; continue; }
+        if (digest.value !== spec.sourceSha256) throw new Error(`locomotion source SHA256 mismatch for "${spec.asset}"`);
+        sources.set(alias, source);
+      }
+      if (waiting) return;
+      // Target-identity validation belongs here before M1 binding when a future
+      // config version carries Skin SHA/expected retarget scale. V1 has no such
+      // fields: model-generation isolation is preserved, but source stride is
+      // never claimed to certify target-Skin foot travel or no-slip quality.
+      const bound = new Map<string, THREE.AnimationClip>();
+      for (const [alias, source] of sources) {
+        const spec = entry.config.clips[alias];
+        // Locomotion v1 has one fixed M1 humanoid binding policy. Future policy
+        // choices require a versioned config change, not an implicit fallback.
+        const bindingKey = JSON.stringify([spec.asset, spec.clipName]);
+        let clip = bound.get(bindingKey);
+        if (!clip) { clip = bindSkeletalClip(source, spec.clipName, object, template.rest, 'humanoid'); bound.set(bindingKey, clip); }
+        clips.set(alias, { clip, durationTicks: spec.durationTicks });
+      }
+      entry.sampler = new AnimationDriverPoseSampler(object, entry.config.tickRate, clips);
+      this.dirty = true;
+    } catch (error) {
+      entry.failed = true;
+      console.warn(`[ModelPool] Rejected locomotion driver for "${entityId}"`, error);
+    }
+  }
+
   /** Explicit opt-in conflicts/missing playback are rejected, never legacy fallback. */
   rejectDriver(entityId: string, reason: string): void {
     this.clearDriver(entityId); this.clearGraph(entityId);
@@ -379,10 +452,11 @@ export class ModelPool {
   }
 
   clearDriver(entityId: string): void {
+    this.clearLocomotionDriver(entityId);
     const entry = this.drivers.get(entityId);
     if (!entry) return;
     entry.sampler?.dispose(); this.drivers.delete(entityId); this.dirty = true;
-    for (const key of entry.dependencies) if (![...this.graphs.values(), ...this.drivers.values()].some(other => other.dependencies.has(key))) this.missingMotions.delete(key);
+    for (const key of entry.dependencies) if (![...this.graphs.values(), ...this.drivers.values(), ...this.locomotionDrivers.values()].some(other => other.dependencies.has(key))) this.missingMotions.delete(key);
   }
 
   private buildDriver(entityId: string, entry: DriverAnim): void {
@@ -457,12 +531,17 @@ export class ModelPool {
   update(nowMs: number): number {
     const dt = this.lastMs ? Math.min(0.1, (nowMs - this.lastMs) / 1000) : 0;
     this.lastMs = nowMs;
-    for (const [id, an] of this.anims) if (!this.drivers.has(id)) an.mixer.update(dt);
-    let active = countRunningAnims([...this.anims].filter(([id]) => !this.drivers.has(id)).map(([, an]) => an));
+    for (const [id, an] of this.anims) if (!this.drivers.has(id) && !this.locomotionDrivers.has(id)) an.mixer.update(dt);
+    let active = countRunningAnims([...this.anims].filter(([id]) => !this.drivers.has(id) && !this.locomotionDrivers.has(id)).map(([, an]) => an));
     for (const [id, entry] of this.drivers) {
       this.buildDriver(id, entry);
       try { if (entry.sampler?.sample(entry.samples).changed) active++; }
       catch (error) { this.rejectDriver(id, error instanceof Error ? error.message : 'invalid pose projection'); }
+    }
+    for (const [id, entry] of this.locomotionDrivers) {
+      this.buildLocomotionDriver(id, entry);
+      try { if (entry.sampler?.sample(entry.samples).changed) active++; }
+      catch (error) { this.rejectDriver(id, error instanceof Error ? error.message : 'invalid locomotion projection'); }
     }
     for (const [id, entry] of this.graphs) {
       this.buildGraph(id, entry);
@@ -519,7 +598,7 @@ export class ModelPool {
     this.motionState.clear();
     this.missingMotions.clear();
     this.motions.clear();
-    this.graphs.clear(); this.drivers.clear(); this.rejectedDrivers.clear();
+    this.graphs.clear(); this.drivers.clear(); this.locomotionDrivers.clear(); this.motionDigests.clear(); this.rejectedDrivers.clear();
     this.rejectedGraphs.clear();
     this.cache.clear();
     this.state.clear();
@@ -543,14 +622,32 @@ export class ModelPool {
       this.motionParsing.delete(key);
       this.motionState.delete(key);
       this.missingMotions.delete(key);
-      this.motions.delete(key);
+      this.motions.delete(key); this.motionDigests.delete(key);
       for (const entry of this.graphs.values()) if (entry.dependencies.has(key)) {
         entry.controller?.dispose(); entry.controller = undefined; entry.failed = false; this.dirty = true;
       }
       for (const entry of this.drivers.values()) if (entry.dependencies.has(key)) {
         entry.sampler?.dispose(); entry.sampler = undefined; entry.failed = false; this.dirty = true;
       }
+      for (const entry of this.locomotionDrivers.values()) if (entry.dependencies.has(key)) {
+        entry.sampler?.dispose(); entry.sampler = undefined; entry.failed = false; this.dirty = true;
+      }
     });
+  }
+
+  private digestMotionSnapshot(key: string, bytes: ArrayBuffer): void {
+    const slot: { value?: string; error?: string } = {};
+    this.motionDigests.set(key, slot);
+    // Hash the exact frozen parse snapshot. Original mutable AssetManager bytes
+    // cannot later impersonate the clip that was actually decoded.
+    if (!globalThis.crypto?.subtle) { slot.error = 'SHA256 unavailable'; return; }
+    try {
+      void globalThis.crypto.subtle.digest('SHA-256', bytes).then(hash => {
+        if (this.motionDigests.get(key) !== slot) return;
+        slot.value = Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join('');
+        if ([...this.locomotionDrivers.values()].some(entry => entry.dependencies.has(key))) this.dirty = true;
+      }, () => { if (this.motionDigests.get(key) === slot) { slot.error = 'SHA256 failed'; if ([...this.locomotionDrivers.values()].some(entry => entry.dependencies.has(key))) this.dirty = true; } });
+    } catch { slot.error = 'SHA256 failed'; }
   }
 
   private motion(key: string): SkeletalClip | null {
@@ -576,11 +673,12 @@ export class ModelPool {
       resources.dispose();
       if (this.motionParsing.get(key) !== resources) return;
       this.motionParsing.delete(key);
-      this.motionState.set(key, 'failed');
+      this.motionState.set(key, 'failed'); this.motionDigests.delete(key);
       console.warn(`[ModelPool] Rejected skeletal-animation "${key}"`, error);
     };
     try {
       const bytes = snapshotSkeletalGlb(asset.handle);
+      this.digestMotionSnapshot(key, bytes);
       const codecs = this.codecs ??= new ModelCodecs(this.renderer);
       if (!this.gltf) { this.gltf = new GLTFLoader(); codecs.connect(this.gltf); }
       const loader = this.gltf;

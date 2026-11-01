@@ -66,3 +66,8 @@ export type * from './components/scene-import.js';
 export type * from './components/ground.js';
 
 export type * from './components/animation-driver.js';
+
+export type {CharacterMotor3D,CharacterMotorIntent3D,CharacterMotorPlayback3D} from './components/character-motor.js';
+export type {CharacterMotorEnvironment3D} from './components/character-motor-environment.js';
+
+export type {LocomotionDriver3D,LocomotionPlayback3D,LocomotionCommand3D} from './components/locomotion-driver.js';

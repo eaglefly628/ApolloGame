@@ -1,3 +1,5 @@
+import type { LocomotionDriver3D, LocomotionPlayback3D } from '@engine/protocol/components/locomotion-driver.js';
+import { unwrapLocomotionPlayback } from './three/locomotion-driver-pose.js';
 import type { AnimationDriver3D, AnimationDriverPlayback3D } from '@engine/protocol/components/animation-driver.js';
 import * as THREE from 'three';
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
@@ -298,7 +300,10 @@ export class ThreeRenderer implements RendererBackend {
     const seen = new Set<string>();
     const seenModels = new Set<string>();
     const seenStandalone = new Set<string>();
-    const attachmentIds = new Set(world.queryEntities('Attach3D'));
+    const motorActors = new Set(world.queryEntities('CharacterMotor3D'));
+    // A motor actor cannot become an attached child of another render model.
+    // Props attached to an actor remain ordinary (non-motor) attachment IDs.
+    const attachmentIds = new Set(world.queryEntities('Attach3D').filter(id => !motorActors.has(id)));
     const ikIds = new Set(world.queryEntities('IK3D'));
     const needsBoneTargets = attachmentIds.size > 0 || ikIds.size > 0;
     const poseOf = new Map<string, Pose3D>();
@@ -306,12 +311,13 @@ export class ThreeRenderer implements RendererBackend {
     const modelSigs: string[] = [];
     const groundSigs: string[] = [];
     const groundWalkers = new Set(world.queryEntities('GroundWalker3D'));
+    const simPoseActors = new Set([...groundWalkers, ...motorActors]);
     const warnGroundConflict = (id: string, drivers: readonly string[]): void => {
       if (drivers.length === 0 || this.groundConflictWarnings.has(id)) return;
       this.groundConflictWarnings.add(id);
-      console.warn(`[ThreeRenderer] GroundWalker3D "${id}" uses sim ground pose; conflicting render drivers: ${drivers.join(', ')}`);
+      console.warn(`[ThreeRenderer] ${motorActors.has(id) ? 'CharacterMotor3D' : 'GroundWalker3D'} "${id}" uses sim ground pose; conflicting render drivers: ${drivers.join(', ')}`);
     };
-    for (const id of groundWalkers) warnGroundConflict(id, ['Transform3D', 'Anim3D', 'Path3D', 'RigidBody3D', 'Hierarchy', 'Pivot3D'].filter(type => world.hasComponent(id, type)));
+    for (const id of simPoseActors) warnGroundConflict(id, ['Transform3D', 'Anim3D', 'Path3D', 'RigidBody3D', 'Hierarchy', 'Pivot3D', ...(motorActors.has(id) ? ['Attach3D'] : [])].filter(type => world.hasComponent(id, type)));
     const instGroups: InstGroups = new Map(); // W1-A：不透明 Mesh3D 按视觉签名分批
     const pbrBuilders = new Map<string, PbrBatchBuild>(); // PBR 批构建器（REQ-3D-PBR-INSTANCING·按材质签名·渲染器持贴图解析器故在此建闭包）
     this.frame++;
@@ -346,13 +352,13 @@ export class ThreeRenderer implements RendererBackend {
     // 无 Pivot3D → 空 map·pivotPose 恒等返回·零开销（向后兼容）。
     const pivotMap = new Map<string, THREE.Matrix4>();
     for (const [pid] of world.query('Pivot3D')) {
-      if (groundWalkers.has(pid)) continue;
+      if (simPoseActors.has(pid)) continue;
       const pv = world.getComponent<Pivot3D>(pid, 'Pivot3D');
       const pt = world.getComponent<Transform3D>(pid, 'Transform3D');
       if (!pv || !pt || pv.children.length === 0) continue;
       const M = pivotMatrix({ x: pt.x, y: pt.y, z: pt.z, rotX: pt.rotX ?? 0, rotY: pt.rotY ?? 0, rotZ: pt.rotZ ?? 0, scale: pt.scale ?? 1 }, pv.centerX ?? 0, pv.centerY ?? 0, pv.centerZ ?? 0);
       for (const c of pv.children) {
-        if (groundWalkers.has(c)) warnGroundConflict(c, [`Pivot3D(${pid})`]);
+        if (simPoseActors.has(c)) warnGroundConflict(c, [`Pivot3D(${pid})`]);
         else pivotMap.set(c, M);
       }
     }
@@ -376,7 +382,7 @@ export class ThreeRenderer implements RendererBackend {
           const rawPose: Pose3D = r.groundBaseY !== undefined ? groundPose(r, 0) : (r.transform3d || cam3d)
             ? (r.transform3d ? transform3dPose(r.transform3d) : groundPose(r, 0))
             : renderablePose(r, this.zStep);
-          if (!r.transform3d && (cam3d || r.groundBaseY !== undefined)) {
+          if (!r.transform3d && (cam3d || r.groundBaseY !== undefined) && !world.hasComponent(r.entityId, 'CharacterMotor3D')) {
             const dir = world.getComponent<FaceDir>(r.entityId, 'FaceDir');
             if (dir) {
               const wanted = modelYawFromFaceDir(dir, rawPose.ry ?? 0);
@@ -406,7 +412,18 @@ export class ThreeRenderer implements RendererBackend {
           const graph = world.getComponent<AnimGraph3D>(r.entityId, 'AnimGraph3D');
           const driver = world.getComponent<AnimationDriver3D>(r.entityId, 'AnimationDriver3D');
           const playback = world.getComponent<AnimationDriverPlayback3D>(r.entityId, 'AnimationDriverPlayback3D');
-          if (driver || playback) {
+          const driverCommand = world.hasComponent(r.entityId, 'AnimationDriverCommand3D');
+          const locomotion = world.getComponent<LocomotionDriver3D>(r.entityId, 'LocomotionDriver3D');
+          const locomotionPlayback = world.getComponent<LocomotionPlayback3D>(r.entityId, 'LocomotionPlayback3D');
+          const locomotionCommand = world.hasComponent(r.entityId, 'LocomotionCommand3D');
+          if (locomotion || locomotionPlayback || locomotionCommand) {
+            this.animationConflictWarnings.delete(r.entityId);
+            if (!locomotion || !locomotionPlayback || driver || playback || driverCommand || anim || graph) this.models.rejectDriver(r.entityId, 'requires exclusive LocomotionDriver3D + LocomotionPlayback3D; cannot combine with AnimationDriver3D/AnimState3D/AnimGraph3D');
+            else {
+              try { this.models.applyLocomotionDriver(r.entityId, locomotion, unwrapLocomotionPlayback(locomotionPlayback)); }
+              catch (error) { this.models.rejectDriver(r.entityId, error instanceof Error ? error.message : 'invalid LocomotionPlayback3D'); }
+            }
+          } else if (driver || playback || driverCommand) {
             this.animationConflictWarnings.delete(r.entityId);
             if (!driver || !playback || anim || graph) this.models.rejectDriver(r.entityId, 'requires exclusive AnimationDriver3D + AnimationDriverPlayback3D; cannot combine with AnimState3D/AnimGraph3D');
             else this.models.applyDriver(r.entityId, driver, playback);

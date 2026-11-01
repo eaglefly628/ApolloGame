@@ -81,3 +81,17 @@ Downloads中的109份已核实重复角色移入可恢复废纸篓；16个额外
 - 隔离：旧原FBX `~/ApolloAssets/mixamo/`及旧GLB `~/ApolloAssets/motion-lib/`；None源 `~/ApolloAssets/mixamo/full-frames/`，None库 `~/ApolloAssets/motion-lib-full-frames/`；Uniform试验 `~/ApolloAssets/mixamo/uniform-review/`及 `~/ApolloAssets/motion-review/uniform/`。不覆盖旧源，不把减帧文件当None母版；每项有设置/源SHA/作业和输出SHA。
 - 工具补可选超时预算，独立62项复跑及两处唯一锚点撤修验红通过；完整门禁7716通过、2跳过，全部guard/build通过。原默认临时目录的macOS别名与缺省Linux浏览器路径造成3个环境失败，改用真实Chrome和规范/tmp复现79项通过；高负载下单个已有实算测试5000ms超时，降低并行度后全量通过，未放宽断言/超时。既有bundle体积与game-a/game-c两条死账WARN已读。
 - 持续任务已由应用保存为 `mixamo-none`，只推进本轮None重建，读取外部断点并避免重复启动；普通超时先查落盘再退避，401/403/429/验证码/安全拦截不绕过。
+
+## 2026-11-01 · M3.5运行接线与节省上下文断点
+
+本轮owner授权新增完整影视Locomotion/动画驱动，范围与分批验收见 `docs/design/ai-pipeline/motion-driver-m35.md`。D1代码已推 `3758f5240`，D2纯混合/步态/扫掠及线性XZ派生工具已推 `c54c1155b`。当前D2运行批已过独立CPU/GPU与scope=full（8523通过、2跳过，exit0）；最终推送提交以git记录为准。完整D2及D3–D6未标完成。
+
+- 活跃代码目录：`/private/tmp/motion-mink-stage-20261029`，分支 `codex/mainbranch`。注入的旧motion-semantics-next工作树有他人在途修改，不checkout/reset/stash/clean；只有当前stage做发布。`node_modules`只是本机未跟踪symlink，不提交。
+- 运行合同与局限：`docs/design/ai-pipeline/motion-driver-d1.md`、`motion-driver-d2.md`。phase -1将motor与可选动画一起原子提交；22诊断晚期外写。仅单motor+静态AABB，真实脚滑、坡阶、分层、通用根运动、交互足锁、导演/工作台仍须接续，不重复索取已授权引擎A。
+- 精确运行复核：`/private/tmp/m35-d2-runtime-root-freeze.json`与`m35-d2-runtime-review/verdict.json`；renderer复核`m35-loco-render-independent.json`；GPU`m35-locomotion-gpu-independent.json`。依赖各自冻结独立签署，不能以一份PASS代全部范围。生产源码冻结后完整门禁`m35-d2-runtime-full-gate.log`已exit0。
+- D2c校准：`/private/tmp/m35-d2c-calibration/freeze.json`、`trial-v006/report.json`；最终独立数值审`/private/tmp/m35-d2c-calibration-independent/final/review.json`。13作者测试、100独立仿射对照；修低fps空pair、预算、路径别名漏洞。8真实小样本5数值过、3失败；Foot/Toe四骨位置回放不是全骨/mesh/接触/循环批准，原catalog/None/Skin不改。
+- D2c绑定：`/private/tmp/m35-d2c-binding/CONTRACT.md`及`freeze.json`，非施工人报告`/private/tmp/m35-d2c-binding-review/verdict.json`。32测试窄PASS，仍只有校准artifact声明，缺真实bounded读取/SHA/scope验收，不能接成已审核质量或当作已注册能力。
+- D2c地形：`/private/tmp/m35-d2c-ground/DESIGN.md`、`report.json`和Python原型。11自测、2自撤修；凸prism半空间包络，面内可认证、棱角uncertain拒支撑，不代精确capsule-hull通用CCD；尚待异人审，不进生产。保留exact AABB fastpath。
+- D2c足锁：`/private/tmp/m35-d2c-footlock/`，native E4原型处理中，失败版本保留。原3脚滑FAIL可被端点锁降到2cm门内，但reach/fade、toe相邻角及loop seam尚未全部通过，不能发布为ready。先读最新report与作者freeze，不盲用旧结果。
+
+接续优先：先把已验运行批推送给Claude复查并保护本地断点；再闭合target绑定的实际artifact校验、源接触/循环审查、足锁/真实多Skin画面、坡阶体积碰撞。随后做D3分层/动作段、D4根运动、D5影视交互、D6导演与工作台。临时试验没有独立门或真实质量凭据的一律留candidate，不以整理清单冒充完成。数据只留本机ApolloAssets/仓库外，不上传或覆盖母版。

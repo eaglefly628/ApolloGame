@@ -1,3 +1,5 @@
+import {validateCharacterMotors} from './character-motors.js';
+import {validateLocomotionDrivers} from './locomotion-drivers.js';
 import { expandEntities } from './entity-templates.js';
 export { expandEntities, substituteTemplate } from './entity-templates.js';
 import type { CapabilityDefinition } from '@engine/core/define-capability.js';
@@ -190,6 +192,8 @@ export function finishManifest(prep: PreparedManifest, capabilities: CapabilityD
   const { entities, meta } = prep;
   const warnings = [...prep.warnings];
   const tickRate = meta?.tickRate ?? 60;
+  validateCharacterMotors(entities,tickRate);
+  validateLocomotionDrivers(entities,tickRate);
   // 时长单位糖：数字字段里写 "2s" / "500ms" / "1.5min" → 按 tickRate 换算成整数 tick；
   // 能力内部仍只认 tick（sim 唯一时钟），单位只存在于数据入口。
   const coerced = coerceDurations(capabilities, entities, tickRate);

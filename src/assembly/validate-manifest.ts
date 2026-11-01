@@ -1,3 +1,5 @@
+import {validateCharacterMotors} from './character-motors.js';
+import {validateLocomotionDrivers} from './locomotion-drivers.js';
 import { animationDriverData, validateAnimationDrivers } from './animation-drivers.js';
 import { validateAnimationDriver3D, validateAnimationDriverCommand3D } from '@engine/protocol/components/animation-driver.js';
 import type { CapabilityDefinition, ComponentSchema } from '@engine/core/define-capability.js';
@@ -74,6 +76,12 @@ export function validateComponentData(
   const schemas = collectComponentSchemas(capabilities);
   const errors: SchemaIssue[] = [];
   const warnings: SchemaIssue[] = [];
+  for(const check of [validateCharacterMotors,validateLocomotionDrivers]){
+    try{check(entities);}catch(error){const entry=Object.keys(entities).find(id=>{const descriptor=Object.getOwnPropertyDescriptor(entities,id);const c=descriptor&&'value'in descriptor?descriptor.value:undefined;return c&&typeof c==='object'&&Object.keys(c).some(k=>k.startsWith('CharacterMotor')||k.startsWith('Locomotion'));});errors.push({entity:entry??Object.keys(entities)[0]??'world',component:'CharacterMotor3D/LocomotionDriver3D',message:String(error)});}
+  }
+  // Reject before walking values: error reporting must not execute accessors
+  // that the new movement/animation boundary has already refused.
+  if(errors.length)return {errors,warnings};
 
   for (const [eid, comps] of Object.entries(entities)) {
     for (const [ctype, data] of Object.entries(comps as Record<string, unknown>)) {
@@ -168,7 +176,7 @@ export function validateAssetRefs(
   const errors: SchemaIssue[] = [];
   for (const [eid, comps] of Object.entries(entities)) {
     for (const [ctype, data] of Object.entries(comps as Record<string, unknown>)) {
-      if ((ctype === 'AnimGraph3D' || ctype === 'AnimationDriver3D') && data && typeof data === 'object') {
+      if ((ctype === 'AnimGraph3D' || ctype === 'AnimationDriver3D' || ctype === 'LocomotionDriver3D') && data && typeof data === 'object') {
         const graph = ctype === 'AnimationDriver3D' ? (data as Record<string, unknown>).graph : data;
         const clips = graph && typeof graph === 'object' ? (graph as Record<string, unknown>).clips : undefined;
         if (clips && typeof clips === 'object' && !Array.isArray(clips)) for (const [alias, raw] of Object.entries(clips)) {

@@ -1,0 +1,12 @@
+import { t } from '../../core/schema.js';
+const n = t.num, s = t.str, v = () => t.obj({ x: n(), y: n(), z: n() });
+const stance = t.enum(['standing', 'crouched']);
+const move = t.obj({ xQ: n(), zQ: n(), gait: t.enum(['walk', 'run']), stance });
+const facing = t.obj({ mode: t.enum(['move', 'direction']), xQ: n(), zQ: n() });
+const config = t.obj({ version: t.lit(1), unitsPerMeter: t.lit(10000), tickRate: n(), body: t.obj({ kind: t.lit('capsule'), radiusQ: n(), standingHeightQ: n(), crouchedHeightQ: n(), skinQ: n() }), maxWalkSpeedQps: n(), maxRunSpeedQps: n(), maxCrouchSpeedQps: n(), accelQps2: n(), brakeQps2: n(), airControlQps2: n(), gravityQps2: n(), jumpSpeedQps: n(), terminalFallSpeedQps: n(), recoverTicks: n(), collision: t.obj({ kind: t.lit('static-aabb'), maxObstacles: n(), maxContacts: n(), maxSlideIterations: n(), maxDeltaQ: n() }) });
+const motor = t.obj({ version: t.lit(1), configCanonical: s(), tick: n(), positionQ: v(), positionRemainderQ: v(), velocityMicroQps: v(), accelRemainder: n(), gravityRemainder: n(), stance, mode: t.enum(['grounded', 'rising', 'falling', 'landing', 'recovering']), modeTicks: n(), lastMoveSeq: n(), lastJumpSeq: n(), move, jumpInstance: n(), landingInstance: n(), supportId: t.opt(s()) });
+export const CHARACTER_MOTOR_SCHEMAS = {
+    CharacterMotor3D: t.obj({ version: t.lit(1), motion: config, initial: t.obj({ positionQ: v(), stance, yawUnits: n() }), maxTurnUnitsPerSecond: n() }),
+    CharacterMotorIntent3D: t.obj({ version: t.lit(1), move: t.opt(t.obj({ seq: n(), ...move.props })), jump: t.opt(t.obj({ seq: n() })), facing: t.opt(t.obj({ seq: n(), ...facing.props })) }),
+    CharacterMotorPlayback3D: t.obj({ version: t.lit(1), configCanonical: s(), motor, yawUnits: n(), yawRemainder: n(), lastFacingSeq: n(), facing, facts: t.obj({ seq: n(), localLateralQps: n(), localForwardQps: n(), acceptedDistanceQ: n(), desiredSpeedQps: n(), mode: t.enum(['grounded', 'rising', 'falling']), stance: t.enum(['standing', 'crouch-in', 'crouched', 'crouch-out']), yawErrorUnits: n(), jumpInstance: n(), landingInstance: n() }), result: t.obj({ desiredDeltaQ: v(), acceptedDeltaQ: v(), contacts: t.arr(t.obj({ obstacleId: s(), timeQ: n(), normalQ: v() })), blockedReasons: t.arr(t.enum(['collision', 'stand-blocked', 'jump-not-grounded', 'jump-crouched', 'jump-ceiling'])) }), events: t.arr(t.obj({ kind: t.enum(['jump', 'land']), id: s(), instance: n(), obstacleId: t.opt(s()), impactSpeedQps: t.opt(n()) })) }),
+} as const;

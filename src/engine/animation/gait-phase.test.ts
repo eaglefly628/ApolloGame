@@ -1,10 +1,11 @@
 import {describe,expect,it} from 'vitest';
 import {
-  createGaitPhaseGroup, validateGaitPhaseGroup, validateGaitPhaseState,
+  createGaitPhaseGroup, validateGaitPhaseGroup, validateGaitPhaseState, startGaitPhaseGroup,
   stepGaitPhaseGroup, projectGaitPhaseGroup, seekGaitPhaseGroup, selectGaitLeader,
   GAIT_MAX_DISTANCE_Q, GAIT_MAX_CYCLE,
 } from './gait-phase.js';
 import type {GaitPhaseGroupV1,GaitPhaseStateV1} from './gait-phase.js';
+import {createWeightedGaitDistance,stepWeightedGaitDistance} from './weighted-gait-distance.js';
 
 type Mutable<T> = {-readonly [K in keyof T]: T[K] extends object ? Mutable<T[K]> : T[K]};
 const clone=<T>(v:T):Mutable<T>=>JSON.parse(JSON.stringify(v));
@@ -84,4 +85,13 @@ describe('D2 hostile input and finite work budgets',()=>{
   it('rejects hidden/accessor hooks and shared object graphs without invoking them',()=>{let called=false;const c:any=clone(group());Object.defineProperty(c,'toJSON',{value:()=>{called=true;return {};}});expect(()=>createGaitPhaseGroup(c)).toThrow();expect(called).toBe(false);const d:any=clone(group());Object.defineProperty(d.members.walk,'durationSubticks',{enumerable:true,get(){called=true;return 1000;}});expect(()=>createGaitPhaseGroup(d)).toThrow(/accessor/);expect(called).toBe(false);const e:any=clone(group());e.members.run=e.members.walk;expect(()=>createGaitPhaseGroup(e)).toThrow(/shared/);});
   it('rejects seek beyond half-open phase and unknown step/seek fields',()=>{const c=group(),s=createGaitPhaseGroup(c);expect(()=>seekGaitPhaseGroup(c,s,{phaseQ:1000000,cycle:0})).toThrow();expect(()=>seekGaitPhaseGroup(c,s,{phaseQ:0,cycle:0,events:true} as any)).toThrow();expect(()=>stepGaitPhaseGroup(c,s,{acceptedDistanceQ:1,weightsQ:{},timeSeconds:1} as any)).toThrow();});
   it('full validation and every projection/step preserve configuration bytes',()=>{const c=group(),before=JSON.stringify(c),s=createGaitPhaseGroup(c);move(c,s,500);projectGaitPhaseGroup(c,s);seekGaitPhaseGroup(c,s,{phaseQ:200000,cycle:1});expect(JSON.stringify(c)).toBe(before);});
+});
+
+describe('explicit movement start before integer reference-distance conversion',()=>{
+  it('signals one initial plant for positive actual1Q mapped to reference0 without inventing distance',()=>{const c=group(),s=createGaitPhaseGroup(c,12);const d=stepWeightedGaitDistance(c,createWeightedGaitDistance(c),{run:1000000},1);expect(d.referenceDistanceQ).toBe(0);expect(d.state.referenceRemainderMicroQ).toBe(500000);const start=startGaitPhaseGroup(c,s,{run:1000000});const advance=move(c,start.state,d.referenceDistanceQ,{walk:0,run:1000000});expect([...start.events,...advance.events].map(e=>e.id)).toEqual(['gait:12:0:LP']);expect(advance.state).toMatchObject({phaseQ:0,cycle:0,remainder:0,started:true});expect(s.started).toBe(false);});
+  it('inactive starts and repeated active starts preserve clocks/carry and emit nothing extra',()=>{const c=group(),s=createGaitPhaseGroup(c);for(const w of [{},{walk:0,run:0}] as Record<string,number>[]){const r=startGaitPhaseGroup(c,s,w);expect(r.state).toEqual(s);expect(r.events).toEqual([]);expect(r.leader).toBeUndefined();}const first=startGaitPhaseGroup(c,s,{walk:1000000});const repeat=startGaitPhaseGroup(c,first.state,{run:1000000});expect(repeat.events).toEqual([]);expect(repeat.state).toEqual(first.state);expect(repeat.leader).toBe('run');});
+  it('start preserves fractional carry after moving and a subsequent loop emits its normal plant exactly once',()=>{const c=group(),s=startGaitPhaseGroup(c,createGaitPhaseGroup(c),{walk:1000000});const p=move(c,s.state,500).state;expect(startGaitPhaseGroup(c,p,{walk:1000000}).state).toEqual(p);const r=move(c,p,500);expect(r.events.map(e=>[e.markerId,e.cycle])).toEqual([['LP',1]]);expect(startGaitPhaseGroup(c,r.state,{walk:1000000}).events).toEqual([]);});
+  it('does not emit on a sought phase0 or require a plant at a lift anchor',()=>{const c=group(),seek=seekGaitPhaseGroup(c,createGaitPhaseGroup(c),{phaseQ:0,cycle:3});expect(startGaitPhaseGroup(c,seek,{walk:1000000}).events).toEqual([]);const d=clone(c);d.markers[0].kind='lift';d.markers[1].kind='plant';const r=startGaitPhaseGroup(d,createGaitPhaseGroup(d),{walk:1000000});expect(r.state.started).toBe(true);expect(r.events).toEqual([]);});
+  it('keeps paused zero-distance paths unchanged until an explicit positive-motion start is supplied',()=>{const c=group();let s=createGaitPhaseGroup(c);for(let i=0;i<3;i++){const pause=move(c,s,0);expect(pause.events).toEqual([]);expect(pause.state).toEqual(s);s=pause.state;}const start=startGaitPhaseGroup(c,s,{walk:1000000}),pause=move(c,start.state,0);expect(start.events.map(e=>e.markerId)).toEqual(['LP']);expect(pause.events).toEqual([]);expect(pause.state).toEqual(start.state);});
+  it('is JSON replay deterministic and retains strict identity/weight gates',()=>{const c=group(),s=createGaitPhaseGroup(c);expect(startGaitPhaseGroup(c,JSON.parse(JSON.stringify(s)),{walk:1000000})).toEqual(startGaitPhaseGroup(c,s,{walk:1000000}));expect(()=>startGaitPhaseGroup(c,s,{unknown:1})).toThrow();expect(()=>startGaitPhaseGroup(c,{...s,phaseQ:1},{walk:1})).toThrow();});
 });

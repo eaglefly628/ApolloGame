@@ -1,6 +1,6 @@
 {
   "_doc": "引擎共同零件（组件）清单基线——所有游戏共用的积木。改/加/删任一零件必须同提交跑 `node scripts/component-manifest-guard.mjs --update` 更新本文件（让共同语言的变动在 diff 里可见）。",
-  "count": 166,
+  "count": 173,
   "components": [
     "Acceleration",
     "Action",
@@ -25,6 +25,10 @@
     "CameraTarget",
     "CardPile",
     "Caster",
+    "CharacterMotor3D",
+    "CharacterMotorEnvironment3D",
+    "CharacterMotorIntent3D",
+    "CharacterMotorPlayback3D",
     "Clickable",
     "Coachmark",
     "Collider3D",
@@ -76,6 +80,9 @@
     "Light3D",
     "Line3D",
     "LineWins",
+    "LocomotionCommand3D",
+    "LocomotionDriver3D",
+    "LocomotionPlayback3D",
     "Mass",
     "MatchBoard",
     "Material3D",

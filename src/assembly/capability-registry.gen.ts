@@ -7,6 +7,7 @@ import type { CapabilityLoader } from './capability-index.js';
 export const CAPABILITY_LOADERS: readonly CapabilityLoader[] = [
   { id: 'a-scene-import-3d', provides: ['SceneImport3D'], load: () => import('@atom-skills/scene-import-3d/index.js').then((m) => m.sceneImport3dCapability) },
   { id: 't2-ground-walk-3d', provides: ['GroundWalker3D', 'GroundSurface3D', 'GroundContact3D', 'GroundTeleport3D'], load: () => import('@skills/tier2/ground-walk-3d.js').then((m) => m.groundWalk3dCapability) },
+  { id: 't2-character-motor', provides: ['LocomotionDriver3D', 'LocomotionPlayback3D', 'LocomotionCommand3D', 'CharacterMotor3D', 'CharacterMotorIntent3D', 'CharacterMotorPlayback3D', 'CharacterMotorEnvironment3D'], load: () => import('@skills/tier2/character-motor.js').then((m) => m.characterMotorCapability) },
   { id: 't2-animation-driver', provides: ['AnimationDriver3D', 'AnimationDriverPlayback3D', 'AnimationDriverCommand3D'], load: () => import('@skills/tier2/animation-driver.js').then((m) => m.animationDriverCapability) },
   { id: 'a1-transform', provides: ['Transform'], load: () => import('@atom-skills/transform/index.js').then((m) => m.transformCapability) },
   { id: 'a2-hierarchy', provides: ['Hierarchy'], load: () => import('@atom-skills/hierarchy/index.js').then((m) => m.hierarchyCapability) },

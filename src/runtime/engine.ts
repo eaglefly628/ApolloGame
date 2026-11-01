@@ -1,3 +1,5 @@
+import {validateCharacterMotors} from '@assembly/character-motors.js';
+import {validateLocomotionDrivers} from '@assembly/locomotion-drivers.js';
 import { validateAnimationDrivers } from '@assembly/animation-drivers.js';
 import { World } from '@engine/core/world.js';
 import type { Component, RendererBackend, IWorld } from '@engine/core/types.js';
@@ -55,6 +57,9 @@ export class Engine {
     const liveDrivers: Record<string, unknown> = {};
     for (const [id, components] of this.world.query('AnimationDriver3D')) liveDrivers[id] = Object.fromEntries(components);
     validateAnimationDrivers(liveDrivers, targetTickRate);
+    const combined:Record<string,unknown>={};for(const [id,components] of this.world.query())combined[id]=Object.fromEntries(components);Object.assign(combined,entities);
+    validateCharacterMotors(combined,targetTickRate);validateLocomotionDrivers(combined,targetTickRate);
+    if(Object.values(entities).some(entity=>Object.hasOwn(entity,'CharacterMotor3D')||Object.hasOwn(entity,'LocomotionDriver3D'))&&!this.installedCapabilities.has('t2-character-motor')&&!blueprint.capabilities.some(cap=>cap.id==='t2-character-motor'))throw new Error('character-motor: CharacterMotor3D/LocomotionDriver3D requires t2-character-motor capability');
     if (Object.values(entities).some(entity => Object.hasOwn(entity, 'AnimationDriver3D'))
       && !this.installedCapabilities.has('t2-animation-driver') && !blueprint.capabilities.some(cap => cap.id === 't2-animation-driver'))
       throw new Error('animation-drivers: AnimationDriver3D requires t2-animation-driver capability');
@@ -64,10 +69,12 @@ export class Engine {
     }
     if (blueprint.meta?.tickRate !== undefined) this._tickRate = blueprint.meta.tickRate; // 蓝图是游戏的数据·它说了算
     let driverInstalled = this.installedCapabilities.has('t2-animation-driver');
+    let motorInstalled = this.installedCapabilities.has('t2-character-motor');
     for (const cap of blueprint.capabilities) {
       // Additive actor loads reuse the authoritative driver; installing it twice
       // would advance all clocks twice and introduce a self-dependency cycle.
       if (cap.id === 't2-animation-driver') { if (driverInstalled) continue; driverInstalled = true; }
+      if (cap.id === 't2-character-motor') { if (motorInstalled) continue; motorInstalled = true; }
       for (const system of cap.systems) {
         this.world.addSystem(system);
       }
