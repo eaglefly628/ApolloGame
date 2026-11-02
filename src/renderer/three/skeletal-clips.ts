@@ -307,3 +307,10 @@ export function retargetHumanoidClip(source: SkeletalClip, target: THREE.Object3
   console.info(`[ModelPool] decision: humanoid retarget "${source.clip.name}" · ${shared.length} shared bones · hip scale ${ratio.toFixed(3)} · ${dropped} source tracks dropped (non-hip translation/scale or bones missing on target)`);
   return new THREE.AnimationClip(source.clip.name, source.clip.duration, out, source.clip.blendMode);
 }
+
+/** Immutable capture serialization for exact target/source identity hashing.
+ * Use the captured template rest, never current animated bone transforms. */
+export function serializeSkeletonRest(rest:SkeletonRest): readonly BoneRest[] {
+ requireSkeleton(rest);
+ return [...rest.bones.values()].map(b=>({name:b.name,local:[...b.local],world:[...b.world],inverse:[...b.inverse],ancestors:b.ancestors.map(a=>({name:a.name,matrix:[...a.matrix]}))})).sort((a,b)=>a.name<b.name?-1:a.name>b.name?1:0);
+}

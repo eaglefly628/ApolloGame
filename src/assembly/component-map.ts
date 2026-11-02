@@ -18,6 +18,18 @@ import type {
   AnimState3D,
   AnimGraph3D,
   LocomotionDriver3D,
+  LocomotionCharacter3D,
+  AnimationPerformance3D,
+  AnimationPerformancePlayback3D,
+  AnimationPerformanceCommand3D,
+  RootMotion3D,
+  RootMotionPlayback3D,
+  RootMotionSource3D,
+  BoneSockets3D,
+  FacePose3D,
+  AnimationCueSignals3D,
+  AnimationCueSignalsPlayback3D,
+  AnimationCueSource3D,
   LocomotionPlayback3D,
   LocomotionCommand3D,
   CharacterMotor3D,
@@ -193,6 +205,18 @@ import type { Vfx2D } from '@atom-skills/vfx2d/index.js';
 
 export interface ComponentDataMap {
   LocomotionDriver3D: Omit<LocomotionDriver3D, 'type'>;
+  LocomotionCharacter3D: Omit<LocomotionCharacter3D, 'type'>;
+  AnimationPerformance3D: Omit<AnimationPerformance3D, 'type'>;
+  AnimationPerformancePlayback3D: Omit<AnimationPerformancePlayback3D, 'type'>;
+  AnimationPerformanceCommand3D: Omit<AnimationPerformanceCommand3D, 'type'>;
+  RootMotion3D: Omit<RootMotion3D, 'type'>;
+  RootMotionPlayback3D: Omit<RootMotionPlayback3D, 'type'>;
+  RootMotionSource3D: Omit<RootMotionSource3D, 'type'>;
+  BoneSockets3D: Omit<BoneSockets3D, 'type'>;
+  FacePose3D: Omit<FacePose3D, 'type'>;
+  AnimationCueSignals3D: Omit<AnimationCueSignals3D, 'type'>;
+  AnimationCueSignalsPlayback3D: Omit<AnimationCueSignalsPlayback3D, 'type'>;
+  AnimationCueSource3D: Omit<AnimationCueSource3D, 'type'>;
   LocomotionPlayback3D: Omit<LocomotionPlayback3D, 'type'>;
   LocomotionCommand3D: Omit<LocomotionCommand3D, 'type'>;
   CharacterMotor3D: Omit<CharacterMotor3D, 'type'>;

@@ -1,5 +1,11 @@
+import {validateFacePoses} from '@assembly/face-poses.js';
+import {validateAnimationCueSignals} from '@assembly/animation-cue-signals.js';
 import {validateCharacterMotors} from '@assembly/character-motors.js';
 import {validateLocomotionDrivers} from '@assembly/locomotion-drivers.js';
+import {validateLocomotionCharacters} from '@assembly/locomotion-characters.js';
+import {validateAnimationPerformances} from '@assembly/animation-performances.js';
+import {validateRootMotions} from '@assembly/root-motions.js';
+import {validateBoneSocketReferences} from '@assembly/bone-sockets.js';
 import { validateAnimationDrivers } from '@assembly/animation-drivers.js';
 import { World } from '@engine/core/world.js';
 import type { Component, RendererBackend, IWorld } from '@engine/core/types.js';
@@ -48,6 +54,13 @@ export class Engine {
     return this._tickRate;
   }
 
+  /** Preview hosts own the common fixed-tick scheduler. Snapshot rendering does
+   * not advance simulation, frame services or user frame callbacks. */
+  renderSnapshot():void {
+    if(this.isRunning)throw Error('engine.renderSnapshot: stop live playback before preview control');
+    this.renderer?.sync(this.world.readView());
+  }
+
   load(blueprint: WorldBlueprint, options: { sceneImports?: SceneImportCatalog } = {}): void {
     // Validate/expand the whole import before tick rate, systems or entities change.
     const entities = expandSceneImports(blueprint.entities, options.sceneImports);
@@ -59,6 +72,15 @@ export class Engine {
     validateAnimationDrivers(liveDrivers, targetTickRate);
     const combined:Record<string,unknown>={};for(const [id,components] of this.world.query())combined[id]=Object.fromEntries(components);Object.assign(combined,entities);
     validateCharacterMotors(combined,targetTickRate);validateLocomotionDrivers(combined,targetTickRate);
+    validateLocomotionCharacters(combined);
+    validateAnimationPerformances(combined,targetTickRate);
+    validateRootMotions(combined,targetTickRate);
+    validateBoneSocketReferences(combined);
+    validateFacePoses(combined);
+    validateAnimationCueSignals(combined,targetTickRate);
+    if(Object.values(entities).some(entity=>Object.hasOwn(entity,'AnimationCueSignals3D'))&&!this.installedCapabilities.has('t2-animation-cue-signals')&&!blueprint.capabilities.some(cap=>cap.id==='t2-animation-cue-signals'))throw Error('animation-cue: requires t2-animation-cue-signals capability');
+    if(Object.values(entities).some(entity=>Object.hasOwn(entity,'RootMotion3D'))&&!this.installedCapabilities.has('t2-root-motion')&&!blueprint.capabilities.some(cap=>cap.id==='t2-root-motion'))throw Error('root-motion: requires t2-root-motion capability');
+    if(Object.values(entities).some(entity=>Object.hasOwn(entity,'AnimationPerformance3D'))&&!this.installedCapabilities.has('t2-animation-performance')&&!blueprint.capabilities.some(cap=>cap.id==='t2-animation-performance'))throw Error('animation-performance: requires t2-animation-performance capability');
     if(Object.values(entities).some(entity=>Object.hasOwn(entity,'CharacterMotor3D')||Object.hasOwn(entity,'LocomotionDriver3D'))&&!this.installedCapabilities.has('t2-character-motor')&&!blueprint.capabilities.some(cap=>cap.id==='t2-character-motor'))throw new Error('character-motor: CharacterMotor3D/LocomotionDriver3D requires t2-character-motor capability');
     if (Object.values(entities).some(entity => Object.hasOwn(entity, 'AnimationDriver3D'))
       && !this.installedCapabilities.has('t2-animation-driver') && !blueprint.capabilities.some(cap => cap.id === 't2-animation-driver'))
@@ -70,11 +92,15 @@ export class Engine {
     if (blueprint.meta?.tickRate !== undefined) this._tickRate = blueprint.meta.tickRate; // 蓝图是游戏的数据·它说了算
     let driverInstalled = this.installedCapabilities.has('t2-animation-driver');
     let motorInstalled = this.installedCapabilities.has('t2-character-motor');
+    let performanceInstalled=this.installedCapabilities.has('t2-animation-performance');
+    let cueSignalsInstalled=this.installedCapabilities.has('t2-animation-cue-signals');
     for (const cap of blueprint.capabilities) {
       // Additive actor loads reuse the authoritative driver; installing it twice
       // would advance all clocks twice and introduce a self-dependency cycle.
       if (cap.id === 't2-animation-driver') { if (driverInstalled) continue; driverInstalled = true; }
       if (cap.id === 't2-character-motor') { if (motorInstalled) continue; motorInstalled = true; }
+      if(cap.id==='t2-animation-performance'){if(performanceInstalled)continue;performanceInstalled=true;}
+      if(cap.id==='t2-animation-cue-signals'){if(cueSignalsInstalled)continue;cueSignalsInstalled=true;}
       for (const system of cap.systems) {
         this.world.addSystem(system);
       }

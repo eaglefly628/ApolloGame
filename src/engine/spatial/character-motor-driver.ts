@@ -2,7 +2,7 @@
  * No World mutation or renderer input. Host commits all actors atomically.
  */
 import type {CharacterMotor3D,CharacterMotorIntent3D,CharacterMotorPlayback3D} from '../protocol/components/character-motor.js';
-import {createCharacterMotor,stepCharacterMotor,validateCharacterMotorConfig,validateCharacterMotorState,type CharacterMotorObstacle} from './character-motor.js';
+import {createCharacterMotor,stepCharacterMotor,validateCharacterMotorConfig,validateCharacterMotorState,type CharacterMotorObstacle,type CharacterMotorRootMotionRequest} from './character-motor.js';
 import {advanceYaw,directionYawUnits,worldToLocalQ} from '../animation/yaw-fixed.js';
 import {validateDriverTree} from '../protocol/components/animation-driver.js';
 const Q=10000;
@@ -44,9 +44,16 @@ export function createCharacterMotorPlayback3D(c:CharacterMotor3D,obstacles:read
  validateCharacterMotor3D(c);const m=createCharacterMotor(c.motion,{positionQ:c.initial.positionQ,stance:c.initial.stance},obstacles);const zero=()=>({x:0,y:0,z:0});
  const p={type:'CharacterMotorPlayback3D' as const,version:1 as const,configCanonical:canonical(c),motor:m,yawUnits:c.initial.yawUnits,yawRemainder:0,lastFacingSeq:0,facing:{mode:'move' as const,xQ:0,zQ:0},result:{desiredDeltaQ:zero(),acceptedDeltaQ:zero(),contacts:[],blockedReasons:[]},events:[],facts:null as unknown as CharacterMotorPlayback3D['facts']};p.facts=facts(c,p);validateCharacterMotorPlayback3D(c,p);return p;
 }
-export function stepCharacterMotorPlayback3D(c:CharacterMotor3D,previous:CharacterMotorPlayback3D,actorId:string,intent:CharacterMotorIntent3D|undefined,obstacles:readonly CharacterMotorObstacle[]):CharacterMotorPlayback3D{
+export function stepCharacterMotorPlayback3D(c:CharacterMotor3D,previous:CharacterMotorPlayback3D,actorId:string,intent:CharacterMotorIntent3D|undefined,obstacles:readonly CharacterMotorObstacle[],rootMotion?:(CharacterMotorRootMotionRequest&{readonly yawDeltaUnits:number})):CharacterMotorPlayback3D{
  validateCharacterMotorPlayback3D(c,previous);if(typeof actorId!=='string'||!actorId.length||actorId.length>256)fail('actor identity');if(intent!==undefined)validateCharacterMotorIntent3D(intent);
- const result=stepCharacterMotor(c.motion,previous.motor,{obstacles,...(intent?.move?{move:intent.move}:{}),...(intent?.jump?{jump:intent.jump}:{})});
+ if(rootMotion!==undefined){validateDriverTree(rootMotion);fields(rootMotion,['requestId','deltaQ','yawDeltaUnits']);int(rootMotion.yawDeltaUnits,-65536,65536);if(intent?.facing)fail('root motion and facing intent are exclusive');}
+ const result=stepCharacterMotor(c.motion,previous.motor,{obstacles,...(intent?.move?{move:intent.move}:{}),...(intent?.jump?{jump:intent.jump}:{}),...(rootMotion?{rootMotion:{requestId:rootMotion.requestId,deltaQ:rootMotion.deltaQ}}:{})});
  let direction=previous.facing,lastFacingSeq=previous.lastFacingSeq;if(intent?.facing&&intent.facing.seq>lastFacingSeq){const {seq,...v}=intent.facing;direction={...v};lastFacingSeq=seq;}
- const p={...previous,motor:result.state,facing:direction,lastFacingSeq,result:result.result,events:result.events.map(e=>({...e,id:`${actorId}:${e.id}`}))};const target=yawTarget(p),turn=advanceYaw(previous.yawUnits,target,c.maxTurnUnitsPerSecond,c.motion.tickRate,previous.yawRemainder);p.yawUnits=turn.yawUnits;p.yawRemainder=turn.remainder;p.facts=facts(c,p);validateCharacterMotorPlayback3D(c,p);return p;
+ const p={...previous,motor:result.state,facing:direction,lastFacingSeq,result:result.result,events:result.events.map(e=>({...e,id:`${actorId}:${e.id}`}))};
+ if(rootMotion){
+  // The upright capsule is yaw-invariant. A quantized root yaw therefore has
+  // no separate rotational collision sweep and cannot also face a velocity target.
+  p.yawUnits=((previous.yawUnits+rootMotion.yawDeltaUnits)%65536+65536)%65536;p.yawRemainder=0;p.facing={mode:'move',xQ:0,zQ:0};
+ }else{const turn=advanceYaw(previous.yawUnits,yawTarget(p),c.maxTurnUnitsPerSecond,c.motion.tickRate,previous.yawRemainder);p.yawUnits=turn.yawUnits;p.yawRemainder=turn.remainder;}
+ p.facts=facts(c,p);validateCharacterMotorPlayback3D(c,p);return p;
 }

@@ -176,7 +176,7 @@ export function validateAssetRefs(
   const errors: SchemaIssue[] = [];
   for (const [eid, comps] of Object.entries(entities)) {
     for (const [ctype, data] of Object.entries(comps as Record<string, unknown>)) {
-      if ((ctype === 'AnimGraph3D' || ctype === 'AnimationDriver3D' || ctype === 'LocomotionDriver3D') && data && typeof data === 'object') {
+      if ((ctype === 'AnimGraph3D' || ctype === 'AnimationDriver3D' || ctype === 'LocomotionDriver3D'||ctype==='AnimationPerformance3D') && data && typeof data === 'object') {
         const graph = ctype === 'AnimationDriver3D' ? (data as Record<string, unknown>).graph : data;
         const clips = graph && typeof graph === 'object' ? (graph as Record<string, unknown>).clips : undefined;
         if (clips && typeof clips === 'object' && !Array.isArray(clips)) for (const [alias, raw] of Object.entries(clips)) {

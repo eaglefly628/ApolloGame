@@ -8,7 +8,7 @@
 //  加/改/删组件后同提交重跑生成命令；忘了 → scripts/build-component-map.test.mjs 漂移守卫亮红。
 // ═══════════════════════════════════════════════════════════════
 
-/** 全部运行时组件名（190 个·升序去重·生成物）。 */
+/** 全部运行时组件名（202 个·升序去重·生成物）。 */
 export const COMPONENT_UNIVERSE = [
   'Acceleration',
   'Action',
@@ -16,9 +16,15 @@ export const COMPONENT_UNIVERSE = [
   'AnimGraph3D',
   'AnimState',
   'AnimState3D',
+  'AnimationCueSignals3D',
+  'AnimationCueSignalsPlayback3D',
+  'AnimationCueSource3D',
   'AnimationDriver3D',
   'AnimationDriverCommand3D',
   'AnimationDriverPlayback3D',
+  'AnimationPerformance3D',
+  'AnimationPerformanceCommand3D',
+  'AnimationPerformancePlayback3D',
   'Armor',
   'Attach3D',
   'Billboard3D',
@@ -26,6 +32,7 @@ export const COMPONENT_UNIVERSE = [
   'BlockTrayPiece',
   'Blocker',
   'BoardCell',
+  'BoneSockets3D',
   'Bounce',
   'Bounds',
   'Camera',
@@ -66,6 +73,7 @@ export const COMPONENT_UNIVERSE = [
   'Effect',
   'EventWhen',
   'FaceDir',
+  'FacePose3D',
   'FaceRotate',
   'Facing',
   'Flag',
@@ -101,6 +109,7 @@ export const COMPONENT_UNIVERSE = [
   'Light3D',
   'Line3D',
   'LineWins',
+  'LocomotionCharacter3D',
   'LocomotionCommand3D',
   'LocomotionDriver3D',
   'LocomotionPlayback3D',
@@ -157,6 +166,9 @@ export const COMPONENT_UNIVERSE = [
   'ResourceModify',
   'RigidBody3D',
   'RolledDice',
+  'RootMotion3D',
+  'RootMotionPlayback3D',
+  'RootMotionSource3D',
   'SceneImport3D',
   'ScoreTrace',
   'SelfRule',

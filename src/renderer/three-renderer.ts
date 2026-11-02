@@ -1,3 +1,11 @@
+import type {FacePose3D} from '@engine/protocol/components/face-pose.js';
+import type {RootMotion3D,RootMotionSource3D} from '@engine/protocol/components/root-motion.js';
+import type {NativeRootMotionBinding} from './three/root-motion-binding.js';
+import type {AnimationDiagnostic} from './three/animation-diagnostics.js';
+import {BoneSocketPool} from './three/bone-sockets.js';
+import type {BoneSockets3D} from '@engine/protocol/components/bone-sockets.js';
+import type {AnimationPerformance3D,AnimationPerformancePlayback3D} from '@engine/protocol/components/animation-performance.js';
+import type {LocomotionCharacter3D} from '@engine/protocol/components/locomotion-character.js';
 import type { LocomotionDriver3D, LocomotionPlayback3D } from '@engine/protocol/components/locomotion-driver.js';
 import { unwrapLocomotionPlayback } from './three/locomotion-driver-pose.js';
 import type { AnimationDriver3D, AnimationDriverPlayback3D } from '@engine/protocol/components/animation-driver.js';
@@ -19,7 +27,7 @@ import { LightRig } from './three/lights.js';
 import { PostPipeline, FlashDecay } from './three/post.js';
 import { SkeletalAttachments } from './three/skeletal-attachments.js';
 import { InverseKinematics } from './three/inverse-kinematics.js';
-import { readIKParams } from './three/ik-params.js';
+import { readIKParams,readIKPerformanceWeights } from './three/ik-params.js';
 import { createIKTargetResolver } from './three/ik-targets.js';
 import { ModelPool, modelSelectorSig } from './three/models.js';
 import { readAnimGraphParams } from './three/animation-graph-params.js';
@@ -104,7 +112,10 @@ export class ThreeRenderer implements RendererBackend {
   private post!: PostPipeline;
   private models!: ModelPool;
   private readonly attachments = new SkeletalAttachments();
+  /** Cached native readiness only; does not render, load assets or touch World. */
+  getAnimationDiagnostics():readonly AnimationDiagnostic[]{return Object.freeze([...this.models.getAnimationDiagnostics(),...this.boneSockets.getAnimationDiagnostics(),...this.ik.getAnimationDiagnostics()]);}
   private readonly ik = new InverseKinematics();
+  private readonly boneSockets=new BoneSocketPool();
   private lastIKMs = 0;
   private readonly batches = new InstancedBatches();
   private readonly colliderDebug = new ColliderDebug(); // 碰撞体线框（debug·开关见 setDebugColliders）
@@ -305,7 +316,8 @@ export class ThreeRenderer implements RendererBackend {
     // Props attached to an actor remain ordinary (non-motor) attachment IDs.
     const attachmentIds = new Set(world.queryEntities('Attach3D').filter(id => !motorActors.has(id)));
     const ikIds = new Set(world.queryEntities('IK3D'));
-    const needsBoneTargets = attachmentIds.size > 0 || ikIds.size > 0;
+    const socketIds=world.queryEntities('BoneSockets3D');
+    const needsBoneTargets = attachmentIds.size > 0 || ikIds.size > 0||socketIds.length>0;
     const poseOf = new Map<string, Pose3D>();
     const poses: Pose3D[] = [];
     const modelSigs: string[] = [];
@@ -416,17 +428,30 @@ export class ThreeRenderer implements RendererBackend {
           const locomotion = world.getComponent<LocomotionDriver3D>(r.entityId, 'LocomotionDriver3D');
           const locomotionPlayback = world.getComponent<LocomotionPlayback3D>(r.entityId, 'LocomotionPlayback3D');
           const locomotionCommand = world.hasComponent(r.entityId, 'LocomotionCommand3D');
-          if (locomotion || locomotionPlayback || locomotionCommand) {
+          const locomotionCharacter=world.getComponent<LocomotionCharacter3D>(r.entityId,'LocomotionCharacter3D');
+          const performance=world.getComponent<AnimationPerformance3D>(r.entityId,'AnimationPerformance3D');
+          const performancePlayback=world.getComponent<AnimationPerformancePlayback3D>(r.entityId,'AnimationPerformancePlayback3D');
+          const performanceCommand=world.hasComponent(r.entityId,'AnimationPerformanceCommand3D');
+          const rootCurve=world.getComponent<RootMotion3D>(r.entityId,'RootMotion3D'),rootSource=world.getComponent<RootMotionSource3D>(r.entityId,'RootMotionSource3D');
+          const rootPresent=!!(rootCurve||rootSource||world.hasComponent(r.entityId,'RootMotionPlayback3D'));
+          const nativeRoot=rootPresent?({curve:rootCurve,source:rootSource,...(driver?{baseConfig:driver}:{}),...(playback?{basePlayback:playback}:{}),...(performance?{performanceConfig:performance}:{}),...(performancePlayback?{performancePlayback}:{} )} as NativeRootMotionBinding):null;
+          const rootValid=this.models.setRootMotionBinding(r.entityId,nativeRoot);
+          const performancePresent=!!(performance||performancePlayback||performanceCommand);
+          const validPerformancePair=!!(performance&&performancePlayback&&!anim&&!graph&&((locomotion&&locomotionPlayback&&!driver&&!playback&&!driverCommand)||(driver&&playback&&!locomotion&&!locomotionPlayback&&!locomotionCommand&&!locomotionCharacter)));
+          if(!rootValid)this.models.rejectDriver(r.entityId,'root source metadata is incompatible','root');
+          else if(rootPresent&&!driver&&!locomotion)this.models.rejectDriver(r.entityId,'root source requires an absolute animation base','root');
+          else if(performancePresent&&!validPerformancePair)this.models.rejectDriver(r.entityId,'AnimationPerformance3D requires exclusive absolute base + config/playback');
+          else if (locomotion || locomotionPlayback || locomotionCommand || locomotionCharacter) {
             this.animationConflictWarnings.delete(r.entityId);
             if (!locomotion || !locomotionPlayback || driver || playback || driverCommand || anim || graph) this.models.rejectDriver(r.entityId, 'requires exclusive LocomotionDriver3D + LocomotionPlayback3D; cannot combine with AnimationDriver3D/AnimState3D/AnimGraph3D');
             else {
-              try { this.models.applyLocomotionDriver(r.entityId, locomotion, unwrapLocomotionPlayback(locomotionPlayback)); }
+              try { this.models.applyLocomotionDriver(r.entityId, locomotion, unwrapLocomotionPlayback(locomotionPlayback),locomotionCharacter,r.model3d); }
               catch (error) { this.models.rejectDriver(r.entityId, error instanceof Error ? error.message : 'invalid LocomotionPlayback3D'); }
             }
           } else if (driver || playback || driverCommand) {
             this.animationConflictWarnings.delete(r.entityId);
             if (!driver || !playback || anim || graph) this.models.rejectDriver(r.entityId, 'requires exclusive AnimationDriver3D + AnimationDriverPlayback3D; cannot combine with AnimState3D/AnimGraph3D');
-            else this.models.applyDriver(r.entityId, driver, playback);
+            else this.models.applyDriver(r.entityId, driver, playback,nativeRoot);
           } else if (anim) {
             // Existing single-clip data keeps precedence and its original playback semantics.
             if (graph && !this.animationConflictWarnings.has(r.entityId)) {
@@ -442,6 +467,10 @@ export class ThreeRenderer implements RendererBackend {
             if (graph) this.models.applyGraph(r.entityId, graph, readAnimGraphParams(world, r.entityId, graph));
             else this.models.clearGraph(r.entityId);
           }
+          if(validPerformancePair&&rootValid)this.models.applyAnimationPerformance(r.entityId,performance!,performancePlayback!,nativeRoot);
+          else this.models.clearPerformance(r.entityId);
+          const face=world.getComponent<FacePose3D>(r.entityId,'FacePose3D');
+          this.models.applyFace(r.entityId,face?{actorId:r.entityId,face,...(performance?{performance}:{}),...(performancePlayback?{playback:performancePlayback}:{})}:null);
           seenModels.add(r.entityId);
           seen.add(r.entityId);
           poses.push(pose); if (needsBoneTargets) poseOf.set(r.entityId, pose);
@@ -556,21 +585,23 @@ export class ThreeRenderer implements RendererBackend {
         console.warn(`[renderer] Attach3D ${id}: no current drawable; skip attachment`);
       }
     }
-    let attachmentFrame = this.attachments.sync(bindings, parentModels);
+    this.boneSockets.sync(socketIds.map(id=>({id,config:world.getComponent<BoneSockets3D>(id,'BoneSockets3D'),model:parentModels.get(id),rest:this.models.capturedRest(id)})));
+    let attachmentFrame = this.attachments.sync(bindings, parentModels,this.boneSockets.resolve);
     const ikDrawables = new Map<string, THREE.Object3D>();
     if (ikIds.size > 0) for (const id of seenStandalone) { const object = this.meshes.get(id); if (object) ikDrawables.set(id, object); }
     const ikStep = this.lastIKMs ? Math.max(0, Math.min(0.1, (t0 - this.lastIKMs) / 1000)) : 0;
     this.lastIKMs = t0;
     const ikFrame = this.ik.sync([...ikIds].map(id => ({
       id, config: world.getComponent<IK3D>(id, 'IK3D'),
-      model: attachmentFrame.hidden.has(id) || parentModels.get(id)?.visible === false ? undefined : parentModels.get(id), params: readIKParams(world, id),
+      model: attachmentFrame.hidden.has(id) || parentModels.get(id)?.visible === false ? undefined : parentModels.get(id), params: readIKParams(world, id),performanceWeights:readIKPerformanceWeights(world,id),
     })), {
-      resolveTarget: createIKTargetResolver(world, parentModels, ikDrawables, poseOf, () => attachmentFrame.hidden),
-      refreshAttachments: () => { attachmentFrame = this.attachments.sync(bindings, parentModels); },
+      resolveTarget: createIKTargetResolver(world, parentModels, ikDrawables, poseOf, () => attachmentFrame.hidden,this.boneSockets.resolve),
+      resolveEffector:this.boneSockets.resolve,
+      refreshAttachments: () => { attachmentFrame = this.attachments.sync(bindings, parentModels,this.boneSockets.resolve); },
     }, ikStep);
     // Hands corrected by earlier chains may carry targets for later chains.
     // The final pass also drives picking and the camera from the corrected pose.
-    if (ikIds.size > 0) attachmentFrame = this.attachments.sync(bindings, parentModels);
+    if (ikIds.size > 0) attachmentFrame = this.attachments.sync(bindings, parentModels,this.boneSockets.resolve);
     const hiddenPoses = new Set<Pose3D>();
     for (const id of attachmentFrame.hidden) {
       const pose = poseOf.get(id); if (pose) hiddenPoses.add(pose);
@@ -788,7 +819,7 @@ export class ThreeRenderer implements RendererBackend {
     this.disposed = true;
     this.shots.clear();
     this.ik.clear(); this.lastIKMs = 0;
-    this.attachments.clear();
+    this.attachments.clear();this.boneSockets.clear();
     this.groundConflictWarnings.clear();
     this.animationConflictWarnings.clear();
     this.attachmentSkippedWarnings.clear();

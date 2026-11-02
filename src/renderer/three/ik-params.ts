@@ -1,3 +1,4 @@
+import {validateAnimationPerformance3D,validateAnimationPerformancePlayback3D} from '@engine/protocol/components/animation-performance.js';
 import type { IWorld } from '@engine/core/types.js';
 import { validateAnimGraph3D, type AnimGraph3D, type AnimGraphParamValue } from '@engine/protocol/components/anim-graph.js';
 import { readAnimGraphParams } from './animation-graph-params.js';
@@ -31,4 +32,13 @@ export function readIKParams(world: IWorld, id: string): Readonly<Record<string,
     const graph = validateAnimGraph3D(raw);
     return readAnimGraphParams(view, id, graph);
   } catch { return EMPTY_PARAMS; } // Playback owner diagnoses invalid raw IK/graph data once.
+}
+
+/** Snapshot-derived performance envelope. No E2/flag fallback and no renderer
+ * delta smoothing: the fixed-tick slot already owns entry/exit fade clocks. */
+export function readIKPerformanceWeights(world:IWorld,id:string):Readonly<Record<string,number>>{
+ try{const root=(world.root??world) as IWorld&{readView?:()=>IWorld};const view=root.readView?.()??world;
+ const config=validateAnimationPerformance3D(view.getComponent(id,'AnimationPerformance3D'));const playback=validateAnimationPerformancePlayback3D(config,view.getComponent(id,'AnimationPerformancePlayback3D'));if(playback.actorId!==id)return Object.freeze({});
+ return Object.freeze(Object.fromEntries(Object.keys(config.slots).map(slot=>{const state=playback.slots[slot];return[slot,((state?.weightQ??0)+(state?.outgoing?.weightQ??0))/1000000];})));
+ }catch{return Object.freeze({});}
 }

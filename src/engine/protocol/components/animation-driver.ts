@@ -7,10 +7,17 @@ import { fnv1a32 } from '../../math/hash.js';
 export const ANIMATION_SUBTICKS = 1000;
 export const ANIMATION_MAX_EVENTS = 1024;
 export interface AnimationDriverTiming { readonly durationTicks: number; readonly notifies?: readonly { readonly id: string; readonly atTick: number }[] }
+export type AnimationDriverCondition=
+ |{readonly kind:'param';readonly param:string;readonly cmp:'eq'|'ne'|'gt'|'gte'|'lt'|'lte';readonly value:number|string|boolean}
+ |{readonly kind:'complete';readonly clip:string};
+export interface AnimationDriverTransition {readonly from:string;readonly to:string;readonly priority:number;readonly minStateTicks:number;readonly fadeTicks:number;readonly all:readonly AnimationDriverCondition[];}
 /** D1 full-body/1D only. Each graph clip must explicitly declare loop. */
 export interface AnimationDriver3D extends Component {
   readonly type: 'AnimationDriver3D'; readonly version: 1; readonly graph: AnimGraph3D;
   readonly tickRate: number; readonly initialState: string; readonly clips: Readonly<Record<string, AnimationDriverTiming>>;
+  /** Optional D1 extension: AND conditions, clip completion and explicit ordered
+   * priorities. Embedded legacy graph transitions must be empty in this mode. */
+  readonly transitions?:readonly AnimationDriverTransition[];
 }
 export type AnimationDriverOperation =
   | { readonly seq: number; readonly op: 'play'; readonly state: string }
@@ -27,6 +34,7 @@ export interface AnimationDriverPlayback3D extends Component {
   readonly type: 'AnimationDriverPlayback3D'; readonly version: 1;
   readonly configIdentity: { readonly canonical: string; readonly fnv: number };
   readonly tick: number; readonly state: string; readonly paused: boolean; readonly lastCommandSeq: number; readonly nextInstance: number;
+  readonly stateElapsedTicks?:number;
   readonly clips: Readonly<Record<string, AnimationDriverCursor>>;
   readonly weights: Readonly<Record<string, number>>;
   readonly targets: Readonly<Record<string, Readonly<Record<string, number>>>>;
@@ -83,7 +91,7 @@ export function animationDriverIdentity(config: AnimationDriver3D): { canonical:
   const text=canonical(config); return {canonical:text,fnv:fnv1a32(text)};
 }
 export function validateAnimationDriver3D(value: unknown): AnimationDriver3D {
-  validateDriverTree(value); const d=driverFields(value,['type','version','graph','tickRate','initialState','clips'],'config');
+  validateDriverTree(value); const d=driverFields(value,['type','version','graph','tickRate','initialState','clips','transitions'],'config');
   if (d.type!=='AnimationDriver3D'||d.version!==1) driverReject('config type/version');
   const graph=validateAnimGraph3D(d.graph); if(graph.type!=='AnimGraph3D') driverReject('embedded graph type required');
   driverInt(d.tickRate,'tickRate',1,240); reference(d.initialState,graph.states,'initialState');
@@ -100,6 +108,17 @@ export function validateAnimationDriver3D(value: unknown): AnimationDriver3D {
   // D1 self-conditions would restart their fade every tick; use a fresh-seq play to retrigger.
   // This tighter driver boundary does not change the legacy E2 AnimGraph validator.
   for(const t of graph.transitions){if(t.from===t.to)driverReject('self condition transition is unsupported; retrigger with play');driverFixed(t.fade,d.tickRate,'transition fade ticks');}
+  if(d.transitions!==undefined){
+    if(!Array.isArray(d.transitions)||d.transitions.length>128||graph.transitions.length)driverReject('extended transitions max128 and exclusive with graph transitions');
+    for(const raw of d.transitions){const tr=driverFields(raw,['from','to','priority','minStateTicks','fadeTicks','all'],'extended transition');reference(tr.from,graph.states,'transition from');reference(tr.to,graph.states,'transition to');if(tr.from===tr.to)driverReject('self transition; use explicit play');driverInt(tr.priority,'priority',0,65535);driverInt(tr.minStateTicks,'minimum state ticks',0,1000000000);driverInt(tr.fadeTicks,'fade ticks',0,14400);
+      if(!Array.isArray(tr.all)||!tr.all.length||tr.all.length>16)driverReject('AND conditions1..16');
+      for(const rawCondition of tr.all){const c=driverFields(rawCondition,rawCondition?.kind==='complete'?['kind','clip']:['kind','param','cmp','value'],'condition');
+        if(c.kind==='complete'){reference(c.clip,graph.clips,'complete clip');const state=graph.states[tr.from],live=state.clip!==undefined?[state.clip]:state.blend.points.map(x=>x.clip);if(graph.clips[c.clip].loop||!live.includes(c.clip))driverReject('completion requires a nonloop clip in the source state');}
+        else if(c.kind==='param'){reference(c.param,graph.params,'condition param');if(!['eq','ne','gt','gte','lt','lte'].includes(c.cmp as string))driverReject('condition comparator');const source=graph.params[c.param],expected=source==='speed'?'number':source.startsWith('flag:')?'boolean':'string';if(typeof c.value!==expected||(typeof c.value==='number'&&!Number.isFinite(c.value))||(typeof c.value==='string'&&c.value.length>256))driverReject('condition value/source type');if(expected!=='number'&&c.cmp!=='eq'&&c.cmp!=='ne')driverReject('ordered condition requires numeric parameter');}
+        else driverReject('unknown condition kind');
+      }
+    }
+  }
   return value as AnimationDriver3D;
 }
 export function validateAnimationDriverCommand3D(value: unknown): AnimationDriverCommand3D {
@@ -114,10 +133,11 @@ function weights(value: unknown, aliases: readonly string[], label: string): voi
   const r=exactKeys(value,aliases,label);let sum=0;for(const n of Object.values(r)){if(typeof n!=='number'||!Number.isFinite(n)||n<0||n>1)driverReject('invalid weight');sum+=n;}if(sum>1+1e-9)driverReject('weights exceed one');
 }
 export function validateAnimationDriverPlayback3D(config: AnimationDriver3D, value: unknown): AnimationDriverPlayback3D {
-  validateAnimationDriver3D(config);validateDriverTree(value);const p=driverFields(value,['type','version','configIdentity','tick','state','paused','lastCommandSeq','nextInstance','clips','weights','targets','transition','events'],'playback');
+  validateAnimationDriver3D(config);validateDriverTree(value);const p=driverFields(value,['type','version','configIdentity','tick','state','paused','lastCommandSeq','nextInstance','clips','weights','targets','transition','events','stateElapsedTicks'],'playback');
   if(p.type!=='AnimationDriverPlayback3D'||p.version!==1)driverReject('playback type/version');
   const id=driverFields(p.configIdentity,['canonical','fnv'],'identity'), expected=animationDriverIdentity(config);if(id.canonical!==expected.canonical||id.fnv!==expected.fnv)driverReject('config identity mismatch');
   driverInt(p.tick,'tick');driverInt(p.lastCommandSeq,'lastCommandSeq');driverInt(p.nextInstance,'nextInstance',1);reference(p.state,config.graph.states,'playback state');bool(p.paused,'paused');
+  if(config.transitions!==undefined)driverInt(p.stateElapsedTicks,'state elapsed ticks',0,1000000000);else if(p.stateElapsedTicks!==undefined)driverReject('state elapsed only belongs to extended transition mode');
   const aliases=Object.keys(config.clips);const cs=exactKeys(p.clips,aliases,'playback clips');const instances=new Set<number>();
   for(const alias of aliases){const c=driverFields(cs[alias],['cursorSubticks','cycle','instance','started','completed'],'cursor');const duration=config.clips[alias].durationTicks*ANIMATION_SUBTICKS;driverInt(c.cursorSubticks,'cursorSubticks',0,duration);driverInt(c.cycle,'cycle');driverInt(c.instance,'instance');bool(c.started,'started');bool(c.completed,'completed');
     if(c.instance>0){if(c.instance>=(p.nextInstance as number)||instances.has(c.instance))driverReject('instance identity');instances.add(c.instance);}
@@ -145,8 +165,9 @@ const operationSchema=t.union([
  t.obj({seq:t.num(),op:t.lit('resume')}),t.obj({seq:t.num(),op:t.lit('seek'),tick:t.num()})
 ],'op');
 const graphSchema=t.obj({type:t.lit('AnimGraph3D'),clips:t.rec(t.obj({asset:t.opt(t.str()),clip:t.str(),speed:t.opt(t.num()),loop:t.bool(),retarget:t.opt(t.lit('humanoid'))})),states:t.rec(t.union([t.obj({clip:t.str()}),t.obj({blend:t.obj({param:t.str(),points:t.arr(t.obj({at:t.num(),clip:t.str()}))})})])),transitions:t.arr(t.obj({from:t.str(),to:t.str(),whenParam:t.str(),cmp:t.enum(['eq','ne','gt','gte','lt','lte']),value:t.union([t.num(),t.str(),t.bool()]),fade:t.num()})),params:t.rec(t.str())});
+const extendedTransition=t.obj({from:t.str(),to:t.str(),priority:t.num(),minStateTicks:t.num(),fadeTicks:t.num(),all:t.arr(t.union([t.obj({kind:t.lit('param'),param:t.str(),cmp:t.enum(['eq','ne','gt','gte','lt','lte']),value:t.union([t.num(),t.str(),t.bool()])}),t.obj({kind:t.lit('complete'),clip:t.str()})],'kind'))});
 export const ANIMATION_DRIVER_SCHEMAS={
- AnimationDriver3D:t.obj({version:t.lit(1),graph:graphSchema,tickRate:t.num(),initialState:t.str(),clips:t.rec(t.obj({durationTicks:t.num(),notifies:t.opt(t.arr(t.obj({id:t.str(),atTick:t.num()})))}))}),
+ AnimationDriver3D:t.obj({version:t.lit(1),graph:graphSchema,tickRate:t.num(),initialState:t.str(),clips:t.rec(t.obj({durationTicks:t.num(),notifies:t.opt(t.arr(t.obj({id:t.str(),atTick:t.num()})))})),transitions:t.opt(t.arr(extendedTransition))}),
  AnimationDriverCommand3D:t.obj({version:t.lit(1),commands:t.arr(operationSchema)}),
- AnimationDriverPlayback3D:t.obj({version:t.lit(1),configIdentity:t.obj({canonical:t.str(),fnv:t.num()}),tick:t.num(),state:t.str(),paused:t.bool(),lastCommandSeq:t.num(),nextInstance:t.num(),clips:t.rec(t.obj({cursorSubticks:t.num(),cycle:t.num(),instance:t.num(),started:t.bool(),completed:t.bool()})),weights:weightSchema,targets:t.rec(weightSchema),transition:t.opt(t.obj({elapsedTicks:t.num(),durationTicks:t.num(),fromWeights:weightSchema})),events:t.arr(t.obj({id:t.str(),kind:t.enum(['notify','complete']),alias:t.str(),instance:t.num(),cycle:t.num(),atTick:t.num(),notifyId:t.opt(t.str())}))})
+ AnimationDriverPlayback3D:t.obj({version:t.lit(1),configIdentity:t.obj({canonical:t.str(),fnv:t.num()}),tick:t.num(),state:t.str(),paused:t.bool(),lastCommandSeq:t.num(),nextInstance:t.num(),stateElapsedTicks:t.opt(t.num()),clips:t.rec(t.obj({cursorSubticks:t.num(),cycle:t.num(),instance:t.num(),started:t.bool(),completed:t.bool()})),weights:weightSchema,targets:t.rec(weightSchema),transition:t.opt(t.obj({elapsedTicks:t.num(),durationTicks:t.num(),fromWeights:weightSchema})),events:t.arr(t.obj({id:t.str(),kind:t.enum(['notify','complete']),alias:t.str(),instance:t.num(),cycle:t.num(),atTick:t.num(),notifyId:t.opt(t.str())}))})
 } as const;

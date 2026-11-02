@@ -1,5 +1,10 @@
+import {validateFacePoses} from './face-poses.js';
+import {validateAnimationCueSignals} from './animation-cue-signals.js';
 import {validateCharacterMotors} from './character-motors.js';
 import {validateLocomotionDrivers} from './locomotion-drivers.js';
+import {validateLocomotionCharacters} from './locomotion-characters.js';
+import {validateAnimationPerformances} from './animation-performances.js';
+import {validateRootMotions} from './root-motions.js';
 import { validateAnimationDrivers } from './animation-drivers.js';
 import { validateAnimGraph3D } from '@engine/protocol/components/anim-graph.js';
 
@@ -10,6 +15,11 @@ export function validateAnimationGraphs(entities: Record<string, unknown>): void
   validateAnimationDrivers(entities);
   validateCharacterMotors(entities);
   validateLocomotionDrivers(entities);
+  validateLocomotionCharacters(entities);
+  validateAnimationPerformances(entities);
+  validateRootMotions(entities);
+  validateFacePoses(entities);
+  validateAnimationCueSignals(entities);
   for (const [id, raw] of Object.entries(entities)) {
     if (!object(raw) || !Object.hasOwn(raw, 'AnimGraph3D')) continue;
     try {

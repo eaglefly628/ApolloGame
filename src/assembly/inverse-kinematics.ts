@@ -1,5 +1,7 @@
 import { validateIK3D } from '@engine/protocol/components/ik3d.js';
 import { validateAnimGraph3D } from '@engine/protocol/components/anim-graph.js';
+import {validateAnimationPerformance3D} from '@engine/protocol/components/animation-performance.js';
+import {animationDriverData} from './animation-drivers.js';
 
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 
@@ -13,6 +15,11 @@ export function validateInverseKinematics(entities: Record<string, unknown>): vo
       const weights = [...ik.chains.map(chain => chain.weight), ...(ik.lookAt ? [ik.lookAt.weight] : [])];
       for (const weight of weights) {
         if (typeof weight === 'number') continue;
+        if('source' in weight){
+          const performance=validateAnimationPerformance3D(animationDriverData(raw.AnimationPerformance3D,'AnimationPerformance3D'));
+          if(!Object.hasOwn(performance.slots,weight.slot))throw Error(`IK3D weight references missing performance slot ${weight.slot}`);
+          continue;
+        }
         const graph = validateAnimGraph3D(raw.AnimGraph3D);
         if (!Object.hasOwn(graph.params, weight.param)) throw new Error(`IK3D weight references missing parameter ${weight.param}`);
         const source = graph.params[weight.param];

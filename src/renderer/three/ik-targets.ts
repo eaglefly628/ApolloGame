@@ -3,9 +3,10 @@ import type { IWorld } from '@engine/core/types.js';
 import type { Attach3D, Transform3D, Visibility, IKTarget } from '@engine/protocol/components.js';
 import { validateAttach3D } from '@engine/protocol/components/attach3d.js';
 import { transform3dPose, type Pose3D } from '../three-projection.js';
+import {rigidFrame,type ResolvedBoneSocket} from './bone-sockets.js';
 import { applyPose } from './geometry.js';
 
-export interface ResolvedIKTarget { readonly position: THREE.Vector3; readonly dependencies: readonly THREE.Object3D[]; }
+export interface ResolvedIKTarget { readonly position: THREE.Vector3; readonly orientation?:THREE.Quaternion; readonly dependencies: readonly THREE.Object3D[]; }
 function visible(object: THREE.Object3D): boolean {
   for (let node: THREE.Object3D | null = object; node; node = node.parent) if (!node.visible) return false;
   return true;
@@ -37,6 +38,7 @@ export function createIKTargetResolver(
   drawables: ReadonlyMap<string, THREE.Object3D>,
   poses: ReadonlyMap<string, Pose3D>,
   hidden: () => ReadonlySet<string>,
+  resolveSocket?:(id:string,socket:string)=>ResolvedBoneSocket|undefined,
 ): (target: IKTarget) => ResolvedIKTarget | undefined {
   const root = (world.root ?? world) as IWorld & { readView?: () => IWorld };
   const view = root.readView?.() ?? world, dummy = new THREE.Object3D();
@@ -48,7 +50,8 @@ export function createIKTargetResolver(
       const model = models.get(target.entity), object = model ?? drawables.get(target.entity);
       const dependencies: THREE.Object3D[] = [];
       let matrix: THREE.Matrix4;
-      if (target.bone !== undefined) {
+      if(target.socket!==undefined){if(target.bone!==undefined||!model||!visible(model))return undefined;const socket=resolveSocket?.(target.entity,target.socket);if(!socket||!visible(socket.bone))return undefined;matrix=socket.matrix;dependencies.push(socket.bone);}
+      else if (target.bone !== undefined) {
         if (!model || !visible(model)) return undefined;
         const matches = bones(model, target.bone);
         if (matches.length !== 1 || !visible(matches[0])) return undefined;
@@ -83,14 +86,14 @@ export function createIKTargetResolver(
         if (!dataOnly(raw)) return undefined;
         const config = validateAttach3D(raw), parent = models.get(config.parentId);
         if (!parent || !visible(parent) || hidden().has(config.parentId)) return undefined;
-        const matches = bones(parent, config.bone);
-        dependencies.push(matches.length === 1 ? matches[0] : parent); // Same fallback as E3.
+        if(config.socket!==undefined){const socket=resolveSocket?.(config.parentId,config.socket);if(!socket)return undefined;dependencies.push(socket.bone);}
+        else{const matches = bones(parent, config.bone!);dependencies.push(matches.length === 1 ? matches[0] : parent);} // Same fallback as E3.
         id = config.parentId;
       }
       const e = matrix.elements;
       if (!e.every(Number.isFinite) || e[3] !== 0 || e[7] !== 0 || e[11] !== 0 || e[15] !== 1) return undefined;
       const position = new THREE.Vector3(...target.offset).applyMatrix4(matrix);
-      return position.toArray().every(Number.isFinite) ? { position, dependencies } : undefined;
+      return position.toArray().every(Number.isFinite) ? { position, dependencies,orientation:rigidFrame(matrix)?.rotation } : undefined;
     } catch { return undefined; } // Controller records a bounded rejection diagnostic.
   };
 }

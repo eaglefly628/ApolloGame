@@ -1,10 +1,17 @@
+import { prepareAnimationDriverStep } from './animation-driver.js';
+import { prepareRootMotionWorldStep, acceptRootMotionWorldStep, validateRootMotionWorldSnapshot } from './root-motion-plan.js';
+import type { RootMotionPlayback3D } from '@engine/protocol/components/root-motion.js';
+import type { AnimationDriverPlayback3D } from '@engine/protocol/components/animation-driver.js';
 import { LOCOMOTION_SCHEMAS } from '@engine/protocol/components/locomotion-schema.js';
+import { LOCOMOTION_CHARACTER_SCHEMAS, validateLocomotionCharacter3D } from '@engine/protocol/components/locomotion-character.js';
 import type { LocomotionDriver3D, LocomotionPlayback3D, LocomotionCommand3D } from '@engine/protocol/components/locomotion-driver.js';
 import { compileLocomotionDriver3D, createLocomotionDriver, stepLocomotionDriver, type CompiledLocomotionDriver } from '@engine/animation/locomotion-driver.js';
 import { validateLocomotionPlayback3D, validateLocomotionCommand3D } from '@engine/animation/locomotion-envelope.js';
 import { defineCapability } from '@engine/core/define-capability.js';
 import { defineComponent } from '@engine/core/define-component.js';
 import { defineSystem } from '@engine/core/define-system.js';
+import { prepareAnimationPerformanceStep } from './animation-performance.js';
+import { validateAnimationPerformancePlayback3D, type AnimationPerformance3D, type AnimationPerformancePlayback3D } from '@engine/protocol/components/animation-performance.js';
 import { t } from '@engine/core/schema.js';
 import { SystemPhase, type IWorld } from '@engine/core/types.js';
 import type { Transform, Collider3D } from '@engine/protocol/components.js';
@@ -38,6 +45,17 @@ function program(world: IWorld, id: string, raw: LocomotionDriver3D): CompiledLo
     return compiled;
 }
 const provides = {
+    LocomotionCharacter3D: defineComponent('LocomotionCharacter3D', LOCOMOTION_CHARACTER_SCHEMAS.LocomotionCharacter3D.props, {
+        category: 'config', sim: false,
+        describe: 'Optional exact target Skin, selector, scale and immutable rest binding for a locomotion profile. Renderer validates actual asset bytes and parsed skeleton; declared calibration status is metadata, not quality approval.',
+        refine(value) { try {
+            validateLocomotionCharacter3D({ ...value, type: 'LocomotionCharacter3D' });
+            return [];
+        }
+        catch (error) {
+            return [{ path: '', severity: 'error' as const, message: String(error) }];
+        } }
+    }),
     LocomotionDriver3D: defineComponent('LocomotionDriver3D', LOCOMOTION_SCHEMAS.LocomotionDriver3D.props, { category: 'config', sim: true, describe: 'Complete D2 locomotion state lifecycle and calibrated two-dimensional blend configuration; requires same-entity CharacterMotor3D. Actual asset SHA and in-place motion are explicit.', refine(value) {
             try {
                 compileLocomotionDriver3D({ ...value, type: 'LocomotionDriver3D' });
@@ -78,13 +96,13 @@ const provides = {
     CharacterMotorPlayback3D: defineComponent('CharacterMotorPlayback3D', schema.CharacterMotorPlayback3D.props, { category: 'config', sim: true, describe: 'Snapshot-owned accepted position, velocity, yaw, intent cursors, events and derived locomotion facts; not a second editable transform.' }),
     CharacterMotorEnvironment3D: defineComponent('CharacterMotorEnvironment3D', { version: t.lit(1), staticSceneCanonical: t.str() }, { category: 'config', sim: true, describe: 'System-owned static collision scene identity; changed/moving obstacles reject until a supported movement policy exists.' }),
 };
-const reads = ['LocomotionDriver3D', 'LocomotionPlayback3D', 'LocomotionCommand3D', 'CharacterMotor3D', 'CharacterMotorIntent3D', 'CharacterMotorPlayback3D', 'CharacterMotorEnvironment3D', 'Collider3D', 'Transform', ...exclusive] as const;
+const reads = ['RootMotion3D', 'RootMotionSource3D', 'RootMotionPlayback3D', 'AnimationDriver3D', 'AnimationDriverPlayback3D', 'AnimationDriverCommand3D', 'Velocity', 'Flag', 'State', 'AnimationPerformance3D', 'AnimationPerformancePlayback3D', 'AnimationPerformanceCommand3D', 'LocomotionDriver3D', 'LocomotionPlayback3D', 'LocomotionCommand3D', 'CharacterMotor3D', 'CharacterMotorIntent3D', 'CharacterMotorPlayback3D', 'CharacterMotorEnvironment3D', 'Collider3D', 'Transform', ...exclusive] as const;
 export const characterMotorCapability = defineCapability({
     id: 't2-character-motor', version: '1.0.0', describe: { name: 'character-motor', summary: 'D2 fixed-tick capsule movement and optional calibrated locomotion animation in one atomic commit, with authoritative yaw and snapshot-owned events.', semantic: ['tier2', '3d', 'movement', 'deterministic'], whenToUse: 'Use CharacterMotor3D on a character without legacy Velocity/GroundWalker/Bounds/Hierarchy/FaceDir. Static axis-aligned box scene only; dynamic actors, slopes, hulls and steps are unsupported. Intents and initial position use Q10000 meters.', examples: ['Move and jump a cinematic actor over a static box floor, with a separately controlled gaze direction.'] },
-    components: { provides, reads: [...reads], writes: ['LocomotionPlayback3D', 'CharacterMotorPlayback3D', 'CharacterMotorEnvironment3D', 'Transform', 'Collider3D'], consumes: [] }, config: {},
-    systems: [defineSystem({ id: 'character-motor-step', phase: SystemPhase.Simulate - 1, reads: [...reads], writes: ['LocomotionPlayback3D', 'CharacterMotorPlayback3D', 'CharacterMotorEnvironment3D', 'Transform', 'Collider3D'], run(view) {
+    components: { provides, reads: [...reads], writes: ['RootMotionPlayback3D', 'AnimationDriverPlayback3D', 'AnimationPerformancePlayback3D', 'LocomotionPlayback3D', 'CharacterMotorPlayback3D', 'CharacterMotorEnvironment3D', 'Transform', 'Collider3D'], consumes: [] }, config: {},
+    systems: [defineSystem({ id: 'character-motor-step', phase: SystemPhase.Simulate - 1, reads: [...reads], writes: ['RootMotionPlayback3D', 'AnimationDriverPlayback3D', 'AnimationPerformancePlayback3D', 'LocomotionPlayback3D', 'CharacterMotorPlayback3D', 'CharacterMotorEnvironment3D', 'Transform', 'Collider3D'], run(view) {
                 const ids = view.query('CharacterMotor3D').map(([id]) => id).sort();
-                const orphanTypes = ['CharacterMotorIntent3D', 'CharacterMotorPlayback3D', 'CharacterMotorEnvironment3D', 'LocomotionDriver3D', 'LocomotionPlayback3D', 'LocomotionCommand3D'] as const;
+                const orphanTypes = ['RootMotion3D', 'RootMotionSource3D', 'RootMotionPlayback3D', 'CharacterMotorIntent3D', 'CharacterMotorPlayback3D', 'CharacterMotorEnvironment3D', 'LocomotionDriver3D', 'LocomotionPlayback3D', 'LocomotionCommand3D'] as const;
                 const orphan = orphanTypes.flatMap(type => view.query(type).filter(([id]) => !view.hasComponent(id, 'CharacterMotor3D')).map(([id]) => id));
                 if (!ids.length && !orphan.length)
                     return;
@@ -99,6 +117,9 @@ export const characterMotorCapability = defineCapability({
                     };
                     changed: boolean;
                     locomotion?: LocomotionPlayback3D;
+                    performance?: AnimationPerformancePlayback3D;
+                    driver?: AnimationDriverPlayback3D;
+                    root?: RootMotionPlayback3D;
                 }> = [];
                 try {
                     if (orphan.length)
@@ -119,7 +140,13 @@ export const characterMotorCapability = defineCapability({
                         if (saved)
                             validateMotorSceneSnapshot(c, previous, obstacles);
                         validateMotorProjection(world, id, c, previous, true);
-                        const intent = view.getComponent<CharacterMotorIntent3D>(id, 'CharacterMotorIntent3D'), playback = stepCharacterMotorPlayback3D(c, previous, id, intent, obstacles);
+                        const performance = prepareAnimationPerformanceStep(view, id);
+                        const driver = view.getComponent(id, 'RootMotion3D') ? prepareAnimationDriverStep(world, id) : undefined;
+                        const rootPlan = prepareRootMotionWorldStep(view, id, c, previous, { ...(driver ? { base: driver } : {}), ...(performance ? { performance } : {}) });
+                        const intent = view.getComponent<CharacterMotorIntent3D>(id, 'CharacterMotorIntent3D');
+                        const physicsRoot = rootPlan ? { requestId: JSON.stringify([id, rootPlan.playback.instance, rootPlan.playback.epoch, rootPlan.request?.driverTick ?? rootPlan.playback.lastDriverTick]), deltaQ: rootPlan.request?.deltaQ ?? { x: 0, z: 0 }, yawDeltaUnits: rootPlan.request?.yawDeltaUnits ?? 0 } : undefined;
+                        const playback = stepCharacterMotorPlayback3D(c, previous, id, intent, obstacles, physicsRoot);
+                        const root = rootPlan ? acceptRootMotionWorldStep(rootPlan, previous, playback) : undefined;
                         const graph = view.getComponent<LocomotionDriver3D>(id, 'LocomotionDriver3D'), savedLoco = view.getComponent<LocomotionPlayback3D>(id, 'LocomotionPlayback3D'), command = view.getComponent<LocomotionCommand3D>(id, 'LocomotionCommand3D');
                         let locomotion: LocomotionPlayback3D | undefined;
                         if (!graph && (savedLoco || command))
@@ -144,7 +171,7 @@ export const characterMotorCapability = defineCapability({
                             locomotion = { type: 'LocomotionPlayback3D', version: 1, playback: animated.state, events: animated.events };
                             validateLocomotionPlayback3D(compiled, locomotion);
                         }
-                        staged.push({ id, playback, ...(locomotion ? { locomotion } : {}), environment: { type: 'CharacterMotorEnvironment3D', version: 1, staticSceneCanonical: scene }, projection: motorProjections(c, playback), changed: !!locomotion && (!savedLoco || locomotion.playback.state !== savedLoco.playback.state || locomotion.playback.paused !== savedLoco.playback.paused || locomotion.playback.lastCommandSeq !== savedLoco.playback.lastCommandSeq) || !saved || playback.yawUnits !== previous.yawUnits || playback.motor.stance !== previous.motor.stance || playback.motor.lastMoveSeq !== previous.motor.lastMoveSeq || Object.values(playback.result.acceptedDeltaQ).some(n => n !== 0) });
+                        staged.push({ id, playback, ...(driver ? { driver: driver.playback } : {}), ...(root ? { root } : {}), ...(locomotion ? { locomotion } : {}), ...(performance ? { performance } : {}), environment: { type: 'CharacterMotorEnvironment3D', version: 1, staticSceneCanonical: scene }, projection: motorProjections(c, playback), changed: !!trace && (!!locomotion && (!savedLoco || locomotion.playback.state !== savedLoco.playback.state || locomotion.playback.paused !== savedLoco.playback.paused || locomotion.playback.lastCommandSeq !== savedLoco.playback.lastCommandSeq) || !saved || playback.yawUnits !== previous.yawUnits || playback.motor.stance !== previous.motor.stance || playback.motor.lastMoveSeq !== previous.motor.lastMoveSeq || Object.values(playback.result.acceptedDeltaQ).some(n => n !== 0)) });
                     }
                 }
                 catch (error) {
@@ -153,15 +180,23 @@ export const characterMotorCapability = defineCapability({
                     throw error;
                 }
                 let rejected = 0, events = 0;
-                for (const { id, playback, environment, projection, locomotion } of staged) {
+                for (const { id, playback, environment, projection, locomotion, performance, driver, root } of staged) {
                     view.addComponent(id, playback);
+                    if (driver)
+                        view.addComponent(id, driver);
+                    if (root)
+                        view.addComponent(id, root);
                     if (locomotion)
                         view.addComponent(id, locomotion);
+                    if (performance)
+                        view.addComponent(id, performance);
                     view.addComponent(id, environment);
                     view.addComponent(id, projection.transform);
                     view.addComponent(id, projection.collider);
-                    rejected += playback.result.blockedReasons.length ? 1 : 0;
-                    events += playback.events.length + (locomotion?.events.length ?? 0);
+                    if (trace) {
+                        rejected += playback.result.blockedReasons.length ? 1 : 0;
+                        events += playback.events.length + (locomotion?.events.length ?? 0) + (performance?.events.length ?? 0) + (driver?.events.length ?? 0);
+                    }
                 }
                 if (trace && rejected)
                     appendTrace(trace, view.getVersion(), 'character-motor-step', 'reject', `${rejected} actors constrained`, staged.filter(s => s.playback.result.blockedReasons.length).slice(0, 3).map(s => s.id + ':' + s.playback.result.blockedReasons.join(',')).join('; '));
@@ -177,6 +212,7 @@ export const characterMotorCapability = defineCapability({
                 const world = view as unknown as IWorld;
                 try {
                     for (const [id] of view.query('CharacterMotorPlayback3D')) {
+                        validateRootMotionWorldSnapshot(view, id);
                         const c = view.getComponent<CharacterMotor3D>(id, 'CharacterMotor3D'), p = view.getComponent<CharacterMotorPlayback3D>(id, 'CharacterMotorPlayback3D')!;
                         if (!c)
                             fail(`${id}: orphan motor playback`);
@@ -197,6 +233,16 @@ export const characterMotorCapability = defineCapability({
                         }
                         else if (graph)
                             fail(`${id}: missing committed locomotion playback`);
+                        const performanceConfig = view.getComponent<AnimationPerformance3D>(id, 'AnimationPerformance3D'), performance = view.getComponent<AnimationPerformancePlayback3D>(id, 'AnimationPerformancePlayback3D');
+                        if (performanceConfig) {
+                            if (!performance)
+                                fail(`${id}: missing committed performance playback`);
+                            validateAnimationPerformancePlayback3D(performanceConfig, performance);
+                            if (performance.actorId !== id)
+                                fail(`${id}: late performance actor mismatch`);
+                        }
+                        else if (performance || view.getComponent(id, 'AnimationPerformanceCommand3D'))
+                            fail(`${id}: orphan late performance component`);
                     }
                 }
                 catch (error) {

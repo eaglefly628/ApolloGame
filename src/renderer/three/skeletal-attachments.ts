@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { validateAttach3D, type Attach3D } from '@engine/protocol/components/attach3d.js';
+import type {ResolvedBoneSocket} from './bone-sockets.js';
 import type { Pose3D } from '../three-projection.js';
 
 type Binding = { readonly id: string; readonly config: unknown; readonly object: THREE.Object3D };
@@ -30,7 +31,7 @@ export class SkeletalAttachments {
 
   clear(): void { this.beginFrame(); this.diagnostics.clear(); }
 
-  sync(bindings: readonly Binding[], models: ReadonlyMap<string, THREE.Object3D>): { signature: string; hidden: ReadonlySet<string>; poses: ReadonlyMap<string, Pose3D> } {
+  sync(bindings: readonly Binding[], models: ReadonlyMap<string, THREE.Object3D>,resolveSocket?:(id:string,socket:string)=>ResolvedBoneSocket|undefined): { signature: string; hidden: ReadonlySet<string>; poses: ReadonlyMap<string, Pose3D> } {
     // Also make repeated sync calls safe for headless consumers.
     this.beginFrame();
     const entries = new Map<string, Entry>(), hidden = new Set<string>(), poses = new Map<string, Pose3D>();
@@ -53,7 +54,7 @@ export class SkeletalAttachments {
     const warn = (entry: Entry, code: string, message: string): void => {
       const active = frameIssues.get(entry.binding.id) ?? new Set<string>(); active.add(code); frameIssues.set(entry.binding.id, active);
       const config = entry.config, parent = config && models.get(config.parentId);
-      const token = config ? JSON.stringify([config.parentId, config.bone, config.offset, config.rot, parent?.uuid ?? null]) : entry.error ?? 'duplicate';
+      const token = config ? JSON.stringify([config.parentId, config.bone, config.socket, config.offset, config.rot, parent?.uuid ?? null]) : entry.error ?? 'duplicate';
       let diagnostic = this.diagnostics.get(entry.binding.id);
       if (!diagnostic || diagnostic.object !== entry.binding.object || diagnostic.token !== token) {
         diagnostic = { object: entry.binding.object, token, codes: new Set() }; this.diagnostics.set(entry.binding.id, diagnostic);
@@ -90,12 +91,15 @@ export class SkeletalAttachments {
         if (!parent || hidden.has(config.parentId) || !visible(parent)) hide(entry, 'missing-parent', `parent model "${config.parentId}" is unavailable; hidden`);
         else {
           parent.updateWorldMatrix(true, true);
-          const matches = index(parent).get(config.bone) ?? [];
+          const socket=config.socket===undefined?undefined:resolveSocket?.(config.parentId,config.socket);
+          if(config.socket!==undefined&&!socket){hide(entry,'unsupported-socket','socket unavailable/unsupported; hidden');}
+          else {
+          const matches = config.bone===undefined?[]:index(parent).get(config.bone) ?? [];
           const anchor = matches.length === 1 ? matches[0] : parent;
-          if (matches.length !== 1) warn(entry, 'bone-fallback', `bone "${config.bone}" is ${matches.length === 0 ? 'missing' : 'ambiguous'}; using parent model root`);
+          if (!socket&&matches.length !== 1) warn(entry, 'bone-fallback', `bone "${config.bone}" is ${matches.length === 0 ? 'missing' : 'ambiguous'}; using parent model root`);
           const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(...config.rot, 'XYZ'));
           const local = new THREE.Matrix4().compose(new THREE.Vector3(...config.offset), rotation, object.scale);
-          const world = new THREE.Matrix4().multiplyMatrices(anchor.matrixWorld, local);
+          const world = new THREE.Matrix4().multiplyMatrices(socket?.matrix??anchor.matrixWorld, local);
           let valid = finite(world.elements);
           if (object.parent) {
             object.parent.updateWorldMatrix(true, false);
@@ -123,6 +127,7 @@ export class SkeletalAttachments {
               if (!finite([pose.x, pose.y, pose.z, pose.rx!, pose.ry!, pose.rotZ, pose.sx, pose.sy, pose.sz!, ...pose.quat!])) hide(entry, 'nonfinite', 'attachment camera pose is nonfinite; hidden');
               else poses.set(id, pose);
             }
+          }
           }
         }
       }

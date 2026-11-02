@@ -101,7 +101,8 @@ describe('ModelPool asset group eviction', () => {
     const [old, other] = fake.parses;
     assets.evict('a'); const currentHandle = assets.load('a'); ensure(pool, scene, 'a');
     const current = fake.parses[2], fresh = model('new-a'), late = model('old-a'), lateDisposed = disposal(late);
-    expect(current.buffer).toBe(currentHandle);
+    expect(current.buffer).not.toBe(currentHandle);
+    expect(new Uint8Array(current.buffer)).toEqual(new Uint8Array(currentHandle));
     if (phase === 'ready') current.onLoad(fresh);
     if (outcome === 'success') old.onLoad(late); else old.onError(new Error('old parse failed'));
     if (phase === 'pending') {

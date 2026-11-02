@@ -1,3 +1,5 @@
+import {validateFacePoses} from './face-poses.js';
+import {validateAnimationCueSignals} from './animation-cue-signals.js';
 import { parseSceneImportData, type SceneImportCatalog, type SceneImportNode } from '@assets/scene-import-data.js';
 import { bakeNavGraph } from '@engine/spatial/navmesh.js';
 import { bakeGroundSurface, type GroundTriangleInput } from '@engine/spatial/ground-surface.js';
@@ -7,6 +9,7 @@ import { validateGroundWalkers } from './ground-walkers.js';
 import { validateAnimationGraphs } from './animation-graphs.js';
 import { validateSkeletalAttachments } from './skeletal-attachments.js';
 import { validateInverseKinematics } from './inverse-kinematics.js';
+import {validateBoneSocketReferences} from './bone-sockets.js';
 import { validateCameraShots } from './camera-shots.js';
 import { validateRenderBindings } from './render-bindings.js';
 
@@ -438,6 +441,9 @@ export function sceneImportKeys(raw: unknown): readonly string[] {
  * The caller supplies only SHA-verified catalog records. Already-expanded entities
  * have no SceneImport3D marker, so Engine.load can safely apply this again. */
 export function expandSceneImports<T extends Record<string, unknown>>(entities: T, catalog?: SceneImportCatalog): T {
+  validateBoneSocketReferences(entities);
+  validateFacePoses(entities);
+  validateAnimationCueSignals(entities);
   validateAnimationGraphs(entities);
   validateSkeletalAttachments(entities);
   validateInverseKinematics(entities);
@@ -495,6 +501,9 @@ export function expandSceneImports<T extends Record<string, unknown>>(entities: 
   validateAnimationGraphs(out);
   validateSkeletalAttachments(out);
   validateInverseKinematics(out);
+  validateBoneSocketReferences(out);
+  validateFacePoses(out);
+  validateAnimationCueSignals(out);
   validateCameraShots(out);
   validateRenderBindings(out);
   return out as T;

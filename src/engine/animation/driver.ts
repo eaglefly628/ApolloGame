@@ -8,7 +8,7 @@
  * Zero-weight clips emit nothing. Overflow rejects whole step; callers retain their original snapshot.
  */
 import type { AnimGraphState, AnimGraphTransition } from '../protocol/components/anim-graph.js';
-import type { AnimationDriver3D, AnimationDriverPlayback3D, AnimationDriverEvent, AnimationDriverParams, AnimationDriverOperation } from '../protocol/components/animation-driver.js';
+import type { AnimationDriver3D, AnimationDriverPlayback3D, AnimationDriverEvent, AnimationDriverParams, AnimationDriverOperation,AnimationDriverTransition } from '../protocol/components/animation-driver.js';
 import { ANIMATION_SUBTICKS, ANIMATION_MAX_EVENTS, animationDriverIdentity, driverFixed, driverReject, driverInt, driverFields, validateAnimationDriver3D, validateAnimationDriverCommand3D, validateAnimationDriverPlayback3D } from '../protocol/components/animation-driver.js';
 
 type Mutable<T> = { -readonly [P in keyof T]: T[P] extends object ? Mutable<T[P]> : T[P] };
@@ -34,7 +34,7 @@ function target(config: AnimationDriver3D, p: Playback, state: string, params: A
   }
   p.targets[state]={...w};return w;
 }
-function matches(t: AnimGraphTransition, params: AnimationDriverParams): boolean {
+function matches(t: Pick<AnimGraphTransition,'whenParam'|'cmp'|'value'>, params: AnimationDriverParams): boolean {
   const a=params[t.whenParam],b=t.value;if(a===undefined||typeof a!==typeof b)return false;
   switch(t.cmp){case'eq':return a===b;case'ne':return a!==b;case'gt':return typeof a==='number'&&typeof b==='number'&&a>b;case'gte':return typeof a==='number'&&typeof b==='number'&&a>=b;case'lt':return typeof a==='number'&&typeof b==='number'&&a<b;case'lte':return typeof a==='number'&&typeof b==='number'&&a<=b;}
 }
@@ -45,6 +45,7 @@ function reset(p: Playback, alias: string): void {
 function stateAliases(s: AnimGraphState): string[] {return s.clip!==undefined?[s.clip]:[...new Set(s.blend.points.map(p=>p.clip))];}
 function enter(config: AnimationDriver3D,p: Playback,state: string,params: AnimationDriverParams,fadeTicks: number,preserveLive=false): void {
   const from={...p.weights};p.state=state;target(config,p,state,params);
+  if(config.transitions!==undefined)p.stateElapsedTicks=0;
   // A condition changes graph state, not the identity of an already audible clip stream.
   // Explicit play/create use preserveLive=false, including aliases shared with the previous state.
   for(const a of stateAliases(config.graph.states[state]).sort())if(!preserveLive||from[a]===0)reset(p,a);
@@ -88,9 +89,20 @@ export function stepAnimationDriver(config: AnimationDriver3D,playback: Animatio
     if(c.op==='play'){if(!Object.hasOwn(config.graph.states,c.state))driverReject('play state missing reference');enter(config,p,c.state,params,0);mix(config,p,params,false);p.paused=false;controlled=true;}
     else if(c.op==='pause')p.paused=true;
     else if(c.op==='resume')p.paused=false;
-    else {for(const a of aliases(config)){if(p.weights[a]===0)continue;const clock=p.clips[a],duration=config.clips[a].durationTicks;clock.cursorSubticks=(config.graph.clips[a].loop?c.tick%duration:Math.min(c.tick,duration))*ANIMATION_SUBTICKS;clock.cycle=config.graph.clips[a].loop?Math.floor(c.tick/duration):0;clock.completed=!config.graph.clips[a].loop&&c.tick>=duration;clock.started=true;}controlled=true;}
+    else {for(const a of aliases(config)){if(p.weights[a]===0)continue;const clock=p.clips[a],duration=config.clips[a].durationTicks;clock.cursorSubticks=(config.graph.clips[a].loop?c.tick%duration:Math.min(c.tick,duration))*ANIMATION_SUBTICKS;clock.cycle=config.graph.clips[a].loop?Math.floor(c.tick/duration):0;clock.completed=!config.graph.clips[a].loop&&c.tick>=duration;clock.started=true;}if(config.transitions!==undefined)p.stateElapsedTicks=c.tick;controlled=true;}
   }
-  if(!p.paused&&!controlled){const t=config.graph.transitions.find(t=>t.from===p.state&&matches(t,params));if(t)enter(config,p,t.to,params,driverFixed(t.fade,config.tickRate,'fade'),true);mix(config,p,params,true);for(const a of aliases(config))if(p.weights[a]>0)advance(config,p,a);}
+  if(!p.paused&&!controlled){
+    if(config.transitions!==undefined){
+      let selected:AnimationDriverTransition|undefined;
+      for(const rule of config.transitions){
+        if(rule.from!==p.state||(p.stateElapsedTicks??0)<rule.minStateTicks||selected&&selected.priority>=rule.priority)continue;
+        if(rule.all.every(c=>c.kind==='complete'?p.clips[c.clip].completed:matches({whenParam:c.param,cmp:c.cmp,value:c.value},params)))selected=rule;
+      }
+      if(selected)enter(config,p,selected.to,params,selected.fadeTicks,true);
+    }else{const t=config.graph.transitions.find(t=>t.from===p.state&&matches(t,params));if(t)enter(config,p,t.to,params,driverFixed(t.fade,config.tickRate,'fade'),true);}
+    mix(config,p,params,true);for(const a of aliases(config))if(p.weights[a]>0)advance(config,p,a);
+    if(config.transitions!==undefined){driverInt(p.stateElapsedTicks,'state age',0,999999999);p.stateElapsedTicks++;}
+  }
   validateAnimationDriverPlayback3D(config,p);return{playback:p,events:p.events};
 }
 /** Pure absolute renderer sampling; snapshot weights and times are authoritative. */

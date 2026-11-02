@@ -4,7 +4,8 @@ import type { Component } from '../../core/types.js';
 export interface Attach3D extends Component {
   readonly type: 'Attach3D';
   readonly parentId: string;
-  readonly bone: string;
+  readonly bone?: string;
+  readonly socket?: string;
   readonly offset: readonly [number, number, number];
   readonly rot: readonly [number, number, number];
 }
@@ -25,12 +26,13 @@ export function validateAttach3D(value: unknown): Attach3D {
   if (!value || typeof value !== 'object' || Array.isArray(value)
     || ![Object.prototype, null].includes(Object.getPrototypeOf(value))) reject('must be a plain object');
   for (const key of Reflect.ownKeys(value)) {
-    if (!['type', 'parentId', 'bone', 'offset', 'rot'].includes(key as string)) reject(`unknown field ${String(key)}`);
+    if (!['type', 'parentId', 'bone', 'socket', 'offset', 'rot'].includes(key as string)) reject(`unknown field ${String(key)}`);
     if (!Object.hasOwn(Object.getOwnPropertyDescriptor(value, key)!, 'value')) reject(`${String(key)} must be plain data`);
   }
   const data = value as Record<string, unknown>;
   if (data.type !== undefined && data.type !== 'Attach3D') reject('type must be Attach3D');
-  for (const field of ['parentId', 'bone']) {
+  if(Object.hasOwn(data,'bone')===Object.hasOwn(data,'socket'))reject('exactly one bone or socket required');
+  for (const field of ['parentId',Object.hasOwn(data,'bone')?'bone':'socket']) {
     if (!Object.hasOwn(data, field) || typeof data[field] !== 'string' || !(data[field] as string).trim() || (data[field] as string).length > 256)
       reject(`${field} must be nonempty text (max256)`);
   }
@@ -38,3 +40,6 @@ export function validateAttach3D(value: unknown): Attach3D {
   tuple(data.rot, 'rot');
   return value as Attach3D;
 }
+
+import {t} from '../../core/schema.js';
+export const ATTACH3D_SCHEMA=t.obj({parentId:t.entity(),bone:t.opt(t.str()),socket:t.opt(t.str()),offset:t.arr(t.num()),rot:t.arr(t.num())});

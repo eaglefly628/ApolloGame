@@ -1,4 +1,8 @@
+export {animationCueSignalsCapability} from './animation-cue-signals.js';
 // Tier 2 涌现层（规则与约束 / 感知 / 控制）。读取 Tier 1 与检测原子的结果，施加约束、派生事实、响应输入。
+export {animationPerformanceCapability} from './animation-performance.js';
+export {rootMotionCapability} from './root-motion.js';
+export {facePoseCapability} from './face-pose.js';
 // 跨阶段用 SystemPhase 显式定序（Update→Resolve→Commit），避免与"读位置/读速度"的系统在纯组件拓扑上成环。
 export { collisionResolveCapability } from './collision-resolve.js';
 export { groundSenseCapability } from './ground-sense.js';

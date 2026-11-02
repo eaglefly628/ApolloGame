@@ -19,7 +19,7 @@ function renderer() {
   const r=new ThreeRenderer(),access=r as any,object=new THREE.Group();
   access.scene=new THREE.Scene();access.scene.add(object);const objects=new Map<string,THREE.Object3D>([['actor',object]]);
   const gl={dispose:vi.fn(),forceContextLoss:vi.fn(),domElement:{remove:vi.fn()},render:vi.fn(),shadowMap:{},properties:{get:()=>({})},info:{reset:()=>{},memory:{geometries:0,textures:0},render:{calls:0,triangles:0}}};
-  const models={get count(){return objects.size;},ensure:vi.fn((scene:THREE.Scene,id:string)=>{let next=objects.get(id);if(!next){next=new THREE.Group();objects.set(id,next);scene.add(next);}return next;}),update:vi.fn(()=>0),sweep:vi.fn(),dispose:vi.fn(),clearDriver:vi.fn(),clearGraph:vi.fn(),rejectDriver:vi.fn(),applyAnim:vi.fn(),applyGraph:vi.fn(),applyDriver:vi.fn(),applyLocomotionDriver:vi.fn(),instance:(id:string)=>objects.get(id)};
+  const models={get count(){return objects.size;},ensure:vi.fn((scene:THREE.Scene,id:string)=>{let next=objects.get(id);if(!next){next=new THREE.Group();objects.set(id,next);scene.add(next);}return next;}),update:vi.fn(()=>0),sweep:vi.fn(),dispose:vi.fn(),clearDriver:vi.fn(),clearGraph:vi.fn(),rejectDriver:vi.fn(),applyAnim:vi.fn(),applyGraph:vi.fn(),applyDriver:vi.fn(),applyLocomotionDriver:vi.fn(),applyAnimationPerformance:vi.fn(),clearPerformance:vi.fn(),applyFace:vi.fn(),setRootMotionBinding:vi.fn(()=>true),getAnimationDiagnostics:vi.fn(()=>[]),instance:(id:string)=>objects.get(id)};
   Object.assign(access,{gl,cameras:new CameraRig(50,1.6),lights:new LightRig(access.scene),models});return{r,object,models,objects};
 }
 beforeEach(()=>{vi.stubGlobal('document',{createElement:()=>({getContext:()=>({createLinearGradient:()=>({addColorStop:()=>{}}),createRadialGradient:()=>({addColorStop:()=>{}}),fillRect:()=>{}})})});});
@@ -38,13 +38,16 @@ describe('actual ThreeRenderer locomotion dispatch and motor pose authority (CPU
     const warn=vi.spyOn(console,'warn').mockImplementation(()=>{}),before=hashSnapshot(w.snapshot());f.r.sync(w.readView());expect(f.object.getWorldPosition(new THREE.Vector3()).toArray()).toEqual([0,0,0]);
     const attached=f.objects.get('prop')!.getWorldPosition(new THREE.Vector3());expect(attached.x).toBeCloseTo(0);expect(attached.y).toBeCloseTo(.5);expect(attached.z).toBeCloseTo(-1);expect(warn.mock.calls.flat().join(' ')).toContain('Attach3D');expect(hashSnapshot(w.snapshot())).toBe(before);f.r.destroy();
   });
-  it.each(['LocomotionDriver3D','LocomotionPlayback3D','LocomotionCommand3D','AnimationDriver3D','AnimationDriverPlayback3D','AnimationDriverCommand3D'])('rejects orphan %s instead of falling back to a legacy animation',type=>{
+  it.each(['LocomotionDriver3D','LocomotionPlayback3D','LocomotionCommand3D','LocomotionCharacter3D','AnimationDriver3D','AnimationDriverPlayback3D','AnimationDriverCommand3D'])('rejects orphan %s instead of falling back to a legacy animation',type=>{
     const w=world(),f=renderer();w.addComponent('actor',{type:'AnimState3D',clip:'legacy'});w.addComponent('actor',{type});
     f.r.sync(w.readView());expect(f.models.rejectDriver).toHaveBeenCalledOnce();expect(f.models.applyAnim).not.toHaveBeenCalled();expect(f.models.applyGraph).not.toHaveBeenCalled();expect(f.models.applyDriver).not.toHaveBeenCalled();expect(f.models.applyLocomotionDriver).not.toHaveBeenCalled();f.r.destroy();
   });
-  it.each(['LocomotionDriver3D','LocomotionPlayback3D','LocomotionCommand3D'])('rejects a D1 pair with competing raw %s',type=>{
+  it.each(['LocomotionDriver3D','LocomotionPlayback3D','LocomotionCommand3D','LocomotionCharacter3D'])('rejects a D1 pair with competing raw %s',type=>{
     const w=world(),f=renderer();w.addComponent('actor',{type:'AnimationDriver3D'});w.addComponent('actor',{type:'AnimationDriverPlayback3D'});w.addComponent('actor',{type});
     f.r.sync(w.readView());expect(f.models.rejectDriver).toHaveBeenCalledOnce();expect(f.models.applyAnim).not.toHaveBeenCalled();expect(f.models.applyGraph).not.toHaveBeenCalled();expect(f.models.applyDriver).not.toHaveBeenCalled();expect(f.models.applyLocomotionDriver).not.toHaveBeenCalled();f.r.destroy();
+  });
+  it.each(['AnimationPerformance3D','AnimationPerformancePlayback3D','AnimationPerformanceCommand3D'])('rejects raw orphan %s before applying a legacy base',type=>{
+    const w=world(),f=renderer();w.addComponent('actor',{type:'AnimState3D',clip:'legacy'});w.addComponent('actor',{type});f.r.sync(w.readView());expect(f.models.rejectDriver).toHaveBeenCalledOnce();expect(f.models.applyAnim).not.toHaveBeenCalled();expect(f.models.applyAnimationPerformance).not.toHaveBeenCalled();f.r.destroy();
   });
   it('keeps a pure legacy AnimState route unchanged when no versioned ownership marker exists',()=>{
     const w=world(),f=renderer();w.addComponent('actor',{type:'AnimState3D',clip:'legacy'});f.r.sync(w.readView());expect(f.models.rejectDriver).not.toHaveBeenCalled();expect(f.models.applyAnim).toHaveBeenCalledOnce();f.r.destroy();

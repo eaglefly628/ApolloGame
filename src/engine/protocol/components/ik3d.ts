@@ -3,10 +3,11 @@ import type { Component } from '../../core/types.js';
 export interface IKTarget {
   readonly entity: string;
   readonly bone?: string;
+  readonly socket?: string;
   readonly offset: readonly [number, number, number];
 }
 
-export type IKWeight = number | { readonly param: string; readonly fade: number };
+export type IKWeight = number | { readonly param: string; readonly fade: number } | {readonly source:'performance-slot';readonly slot:string};
 
 /** Render-only two-bone constraints and local +Z look-at, applied after animation. */
 export interface IK3D extends Component {
@@ -17,6 +18,7 @@ export interface IK3D extends Component {
     readonly mid: string;
     readonly end: string;
     readonly target: IKTarget;
+    readonly effectorSocket?:string;
     readonly pole?: readonly [number, number, number];
     readonly weight: IKWeight;
   }[];
@@ -45,8 +47,10 @@ function tuple(value: unknown, label: string): void {
   }
 }
 function target(value: unknown, label: string): void {
-  const data = record(value, label, ['entity', 'bone', 'offset']);
+  const data = record(value, label, ['entity', 'bone', 'socket', 'offset']);
   text(data.entity, `${label}.entity`);
+  if(Object.hasOwn(data,'bone')&&Object.hasOwn(data,'socket'))reject(label+': bone/socket are mutually exclusive');
+  if(Object.hasOwn(data,'socket'))text(data.socket,label+'.socket');
   if (Object.hasOwn(data, 'bone')) text(data.bone, `${label}.bone`);
   tuple(data.offset, `${label}.offset`);
 }
@@ -55,7 +59,8 @@ function weight(value: unknown, label: string): void {
     if (!Number.isFinite(value) || value < 0 || value > 1) reject(`${label} must be finite in 0..1`);
     return;
   }
-  const data = record(value, label, ['param', 'fade']);
+  const data = record(value, label, ['param', 'fade','source','slot']);
+  if(Object.hasOwn(data,'source')||Object.hasOwn(data,'slot')){if(Reflect.ownKeys(data).length!==2||Object.keys(data).length!==2||data.source!=='performance-slot')reject(label+': closed performance-slot reference');text(data.slot,label+'.slot');return;}
   text(data.param, `${label}.param`);
   if (typeof data.fade !== 'number' || !Number.isFinite(data.fade) || data.fade < 0 || data.fade > 60) reject(`${label}.fade must be finite in 0..60`);
 }
@@ -72,11 +77,12 @@ export function validateIK3D(value: unknown): IK3D {
   for (let i = 0; i < data.chains.length; i++) {
     const item = Object.getOwnPropertyDescriptor(data.chains, String(i));
     if (!item || !Object.hasOwn(item, 'value')) reject('chains must contain plain data without holes');
-    const label = `chains.${i}`, chain = record(item.value, label, ['kind', 'root', 'mid', 'end', 'target', 'pole', 'weight']);
+    const label = `chains.${i}`, chain = record(item.value, label, ['kind', 'root', 'mid', 'end', 'target', 'pole', 'weight','effectorSocket']);
     if (chain.kind !== 'two-bone') reject(`${label}.kind must be two-bone`);
     for (const name of ['root', 'mid', 'end']) text(chain[name], `${label}.${name}`);
     if (new Set([chain.root, chain.mid, chain.end]).size !== 3) reject(`${label} root/mid/end must be distinct`);
     target(chain.target, `${label}.target`);
+    if(Object.hasOwn(chain,'effectorSocket'))text(chain.effectorSocket,label+'.effectorSocket');
     if (Object.hasOwn(chain, 'pole')) tuple(chain.pole, `${label}.pole`);
     weight(chain.weight, `${label}.weight`);
   }
@@ -86,3 +92,8 @@ export function validateIK3D(value: unknown): IK3D {
   }
   return value as IK3D;
 }
+
+import {t} from '../../core/schema.js';
+const targetSchema=t.obj({entity:t.entity(),bone:t.opt(t.str()),socket:t.opt(t.str()),offset:t.arr(t.num())});
+const weightSchema=t.union([t.num(),t.obj({param:t.str(),fade:t.num()}),t.obj({source:t.lit('performance-slot'),slot:t.str()})]);
+export const IK3D_SCHEMA=t.obj({chains:t.arr(t.obj({kind:t.lit('two-bone'),root:t.str(),mid:t.str(),end:t.str(),effectorSocket:t.opt(t.str()),target:targetSchema,pole:t.opt(t.arr(t.num())),weight:weightSchema})),lookAt:t.opt(t.obj({bone:t.str(),target:targetSchema,weight:weightSchema}))});

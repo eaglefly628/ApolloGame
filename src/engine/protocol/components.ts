@@ -71,3 +71,10 @@ export type {CharacterMotor3D,CharacterMotorIntent3D,CharacterMotorPlayback3D} f
 export type {CharacterMotorEnvironment3D} from './components/character-motor-environment.js';
 
 export type {LocomotionDriver3D,LocomotionPlayback3D,LocomotionCommand3D} from './components/locomotion-driver.js';
+export type {LocomotionCharacter3D} from './components/locomotion-character.js';
+export type {AnimationPerformance3D,AnimationPerformancePlayback3D,AnimationPerformanceCommand3D} from './components/animation-performance.js';
+export type {RootMotion3D,RootMotionPlayback3D,RootMotionSource3D} from './components/root-motion.js';
+export type {BoneSockets3D} from './components/bone-sockets.js';
+export type {FacePose3D} from './components/face-pose.js';
+
+export type {AnimationCueSignals3D,AnimationCueSignalsPlayback3D,AnimationCueSource3D} from './components/animation-cue-signals.js';

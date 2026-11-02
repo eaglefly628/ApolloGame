@@ -1,4 +1,9 @@
+import {animationCueSignalsCapability} from '@skills/tier2/animation-cue-signals.js';
 import {characterMotorCapability} from '@skills/tier2/character-motor.js';
+import {animationPerformanceCapability} from '@skills/tier2/animation-performance.js';
+import {rootMotionCapability} from '@skills/tier2/root-motion.js';
+import {facePoseCapability} from '@skills/tier2/face-pose.js';
+import {boneSocketsCapability} from '@atom-skills/bone-sockets/index.js';
 import { animationDriverCapability } from '@skills/tier2/animation-driver.js';
 import type { CapabilityDefinition } from '@engine/core/define-capability.js';
 import { buildCapabilityIndex, inferCapabilityIdsWith, metaOf, unknownCapabilityError } from './capability-index.js';
@@ -92,6 +97,11 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   sceneImport3dCapability,
   groundWalk3dCapability,
   characterMotorCapability,
+  animationPerformanceCapability,
+  rootMotionCapability,
+  facePoseCapability,
+  animationCueSignalsCapability,
+  boneSocketsCapability,
   animationDriverCapability,
   ...allAtomCapabilities,
   ...extensionAtomCapabilities,

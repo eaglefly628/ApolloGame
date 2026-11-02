@@ -109,3 +109,15 @@ Downloads中的109份已核实重复角色移入可恢复废纸篓；16个额外
 **持久断点**：已创建 `~/ApolloAssets/motion-review/m35-checkpoint-20261102-d2c/`，376文件、137758281字节，`checkpoint.json`逐文件SHA核对；包含本批工具、旧FAIL、新判词及候选。之前标定输入保留在 `m35-checkpoint-20261101-runtime8523`。不复制node_modules/.git/symlink；部分脚本保留绝对tmp导入，恢复时须还原对应路径或显式重绑并重算冻结。全部仅本机，未上传数据。
 
 **尚未验收**：真实多Skin画面/mesh/解剖与接触质量、可信审核台账及生产renderer绑定、一般坡阶碰撞；D3–D6仍未完成。数值候选不是完整D2或M3.5完成。接续时从本批新冻结与独立判词读起，不能复用旧足锁FAIL版本充当已修版本。
+
+## 2026-11-02 · M3.5 联合接线
+
+本批已施工：D2c实际模型SHA/静止骨架/选择器/比例绑定；D1参数AND/优先级/真实clip完成转换；D3权威蒙太奇与native骨骼分层；D4纯根轨迹与motor原子接受、配对资产实际SHA；D5具名手Socket、Socket目标IK/LookAt、performance槽位权重及真实morph表情接口；D6同World导演会话与`/driver/`工作台；动画事件通过独立Cue→Signal桥接既有效果系统。新组件完整进入protocol/组件映射/capability registry/导入、直接载入与快照恢复校验。
+
+独立范围复核：D3原生分层83项与4次定点撤修；D4纯核26项加独立有符号分数位移oracle2项；D4/D5/Face原生接缝109项；box-step/Face辅助逻辑118项与3次定点撤修。独立GPU覆盖根位移受墙阻、实际morph变化、双演员Socket目标及恢复一致性，未从renderer写World。撤去Socket末端朝向后CPU现有集未检出，独立GPU检出实际grip位移/朝向错误，恢复后GPU通过；只计后者为该检查的有效验红。所有本机判词/截图/素材仍为本地证据，不入Git。
+
+真实Y Bot/Claire/Amy/Sporty Granny的6秒连续走/停/挥手profile与原始资源严格隔离；工作台实际浏览器完成播放、暂停、单帧、定位、reset、换profile，每次保留一个canvas。真实GPU通过只证明该有限样本的加载和操作链，不升级标签审核或全体型艺术质量。
+
+总项仍in-progress：完整坐下/起身/交互场景、多Skin足部/穿插画面、已制作双人抱持动作及一般斜坡尚未整体验收。共享锚不代替双人承重求解。全门禁与提交编号以随后追加的实际结果为准，不能把这些范围测试加总冒充全量测试结果。
+
+本批最终共享门禁退出0：782测试文件、8929测试通过、2跳过，类型检查、lint、依赖/模拟域围栏和build通过。已读告警：能力形状为存量在案、既有game-a/game-c美术台账缺件，以及构建大chunk提示；未出现新定序环或依赖越界。阶段源码复查入口见 [M3.5联合接线复查单](review-m35-driver-joint-20261102.md)。最新源码、四角色候选和逐项判词已保存至 `~/ApolloAssets/motion-review/m35-checkpoint-20261102-driver-joint/`，真实数据不入Git；全项保持in-progress。

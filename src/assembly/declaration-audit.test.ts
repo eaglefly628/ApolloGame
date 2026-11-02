@@ -159,9 +159,12 @@ const PHASE_BASELINE: string[] = [
   'p4:rotation-apply',
   'p10:collision-resolve,collision-resolve-3d,tile-collision',
   'p14:conveyor-queue,friction,gauge,hierarchy-resolve,orbit-motion,text-binding',
+  'p19:animation-cue-delivery', // Deliver authenticated previous-tick animation Signals before EffectApply20.
   'p20:anim-state,block-view-sync,bounds-clamp,cooldown,craft-recipe,effect-apply,face-rotate,facing,jump,match-view-sync,matrix-duel-announce,matrix-duel-intent,stat-bind,weighted-spawn',
   'p21:animation-driver,ground-final-3d', // R2 resamples after Commit bounds; before Cleanup.
   'p22:character-motor-integrity', // Assert late systems did not replace the accepted position/scene.
+  'p23:animation-performance', // Non-motor montage clocks; motor actors commit their performance atomically at -1.
+  'p24:animation-cue-signals', // Publish current committed cues after D1/performance; preserve for end-frame services.
   'p30:group-gc', // 2026-09-08 G4 group 配套：Cleanup 相位（destroy-apply 之后摘除已销毁成员）
 ];
 
