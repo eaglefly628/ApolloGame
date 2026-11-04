@@ -47,3 +47,22 @@ node node_modules/typescript/bin/tsc --noEmit -p tools/motion-workbench/tsconfig
 `/driver/profiles.json` 返回可读模板、program及规范AssetDescriptor本地白名单src，省略源file/SHA字段与绝对路径；组件中的声明SHA仍作为其原有身份数据。前端先加载资产，再`new Engine → parseManifest/load → CinematicPreviewSession.seek(0)`。唯一World推进者是该session；RAF仅使用既有FixedStepClock决定整场景步数，不启动Engine自身RAF。暂停继续只读renderSnapshot，允许资源解析完成；不运行FrameServices。角色切换重建Engine并清理旧renderer/assets；卸载或过期异步任务不提交新Engine。
 
 控制全场景播放/暂停、单帧、复位及定位；观察已提交base/slots/weights/cues、root请求/接受及阻挡。原生动画状态读取renderer只读diagnostics，模型计数或sim游标不构成原生就绪；非兼容原因可展开查看。这里始终显示数值候选，不把技术可播放、原生就绪或模板声明当作视觉/接触/完整M3.5审核通过。真实素材及截图仅留外部本机目录，不进入Git。
+
+## 原作故事预演与 Seedance 参考包
+
+导演台 JSON 可追加 `story:{title,chapters:[{profileId,title,narration,delivery:'animation'|'video-planned'}]}`。章节必须引用唯一的已声明 profile（1–16章）。故事连播等待原生基础/移动/表演/根运动绑定就绪后才推进；暂停、手动切章、定位或错误会取消连播。章节结束重建下一章 Engine，属于硬切预演，不是连续世界或动画自动过渡。标为 `video-planned` 的章节仅展示动画参考，不会假装已有生成视频。
+
+构建《卖火柴的小女孩》原作参考包：
+
+```sh
+node tools/motion-workbench/build-match-girl-reference.mjs \
+  --lib /外部完整动作库 \
+  --calibrated-review /外部M35校准参考/review.json \
+  --strike /外部strike-wrist-v022 \
+  --out /外部已有父目录/全新输出目录
+node tools/motion-workbench/driver-server.mjs --driver-scene /全新输出目录/review.json
+```
+
+输出10章、75秒的本地草模、来源及输出 SHA、原样保留的擦火柴技术拒收结论，以及8项尚未提交的 Seedance 作业。输入仅校验和读取；输出必须在仓库与所有源目录外，且必须为新目录。动作和模型不进 Git。可先用浏览器逐章核对表意、取参考图，再向即梦提交渲染参考；不上传原始 FBX/GLB。作业中的参考图/视频字段只有在真实导出后才能填写，生成结果也须核验后才能回填。
+
+Claire 为成人占位角色；快乐走路参考不等于原作悲伤步态，坐地不等于冷颤，奶奶站立不等于双人抱起。烤鹅、圣诞树幻象及升空仍需最终素材；清晨保留原作离世结局。当前没有正式小女孩造型、完整转场、配音或生成视频，不能作为成片验收。
