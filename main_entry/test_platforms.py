@@ -1,6 +1,8 @@
 """三平台合并 P0：拉起外部平台。用真子进程（python 打印本机地址后常驻）跑真 POST/GET 分派器。"""
 import io
 import json
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import sys
 import tempfile
 import unittest
@@ -97,6 +99,67 @@ class PlatformLaunch(unittest.TestCase):
         self.assertFalse(r['success'])
         self.assertIn('未打印本机地址', r['error'])
         self.assertNotIn('motion', platforms._RUNNING)
+
+
+class FakeCatalog(BaseHTTPRequestHandler):
+    """最小「平台资产目录契约 v1」实现：回显查询参数，便于断言转发正确。"""
+    def do_GET(self):
+        from urllib.parse import urlsplit, parse_qs
+        u = urlsplit(self.path)
+        if u.path != '/entries':
+            self.send_response(404); self.end_headers(); return
+        q = {k: v[0] for k, v in parse_qs(u.query).items()}
+        items = [{'key': 'library:walk', 'id': 'walk', 'type': 'motion', 'title': 'Walking', 'status': 'ready', 'sha256': 'x' * 64, 'secret': {'nested': 1}},
+                 {'key': 'bad', 'title': 'no id'}]
+        body = json.dumps({'total': 2, 'offset': 0, 'limit': int(q.get('limit', 50)), 'items': items, 'echo': q}).encode()
+        self.send_response(200); self.send_header('Content-Type', 'application/json'); self.end_headers(); self.wfile.write(body)
+        FakeCatalog.last = q
+
+    def log_message(self, *a):
+        pass
+
+
+class PlatformCatalog(unittest.TestCase):
+    def setUp(self):
+        self.httpd = ThreadingHTTPServer(('127.0.0.1', 0), FakeCatalog)
+        threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
+        self.addCleanup(self.httpd.server_close)
+        self.addCleanup(self.httpd.shutdown)
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.cfg = Path(self.tmp.name) / 'platforms.json'
+        p = patch.object(platforms, 'PLATFORMS_FILE', self.cfg)
+        p.start()
+        self.addCleanup(p.stop)
+
+    def write(self, entries):
+        self.cfg.write_text(json.dumps({'platforms': entries}), encoding='utf-8')
+
+    def get(self, path):
+        handler = object.__new__(server.APIHandler)
+        handler.path = path
+        handler.headers = {}
+        out = []
+        handler._send_json = lambda s, d: out.append((s, d))
+        handler.do_GET()
+        self.assertEqual(out[0][0], 200)
+        return out[0][1]
+
+    def test_search_forwards_query_and_keeps_only_contract_fields(self):
+        port = self.httpd.server_address[1]
+        self.write({'motion': {'url': f'http://127.0.0.1:{port}/driver/'}})  # 带子路径的地址 → 按源站根取 /entries
+        r = self.get('/api/platforms/motion/catalog?text=walk%20fast&type=motion&limit=500')
+        self.assertTrue(r['success'], r)
+        self.assertEqual(FakeCatalog.last, {'text': 'walk fast', 'offset': '0', 'limit': '100', 'type': 'motion'})
+        self.assertEqual(r['items'], [{'key': 'library:walk', 'id': 'walk', 'type': 'motion', 'title': 'Walking', 'status': 'ready'}])
+
+    def test_not_running_and_unreachable(self):
+        r = self.get('/api/platforms/motion/catalog?text=a')
+        self.assertEqual((r['success'], r['running']), (False, False))
+        self.write({'motion': {'url': 'http://127.0.0.1:9/'}})
+        r = self.get('/api/platforms/motion/catalog?text=a')
+        self.assertFalse(r['success'])
+        self.assertIn('连不上', r['error'])
 
 
 if __name__ == '__main__':

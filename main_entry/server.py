@@ -34,8 +34,8 @@ from .llm_log import handle_llm_logs
 from .llm_transport import get_available_providers
 from .packaging import _PKG_JOBS, _PKG_JOBS_LOCK, handle_dokiworld_apps, handle_package_job_get, handle_package_job_start
 from .paths import LIBRARY_DIR, _design_parts, _lib_parts, _valid_slug
-from .editor_projects import handle_project_changes, handle_project_create, handle_project_edit, handle_project_file, handle_project_get, handle_project_note, handle_projects_list
-from .platforms import handle_platform_launch, handle_platforms_list
+from .editor_projects import handle_project_changes, handle_project_create, handle_project_edit, handle_project_file, handle_project_get, handle_project_link, handle_project_note, handle_projects_list
+from .platforms import handle_platform_catalog, handle_platform_launch, handle_platforms_list
 from .pipeline_board import handle_pipeline_board, handle_pipeline_concept, handle_pipeline_gate, handle_pipeline_orch_abort, handle_pipeline_orch_dispatch, handle_pipeline_orch_status, handle_pipeline_signoff, handle_pipeline_wizard_concept
 from .placeholder import handle_art_resolve
 from .projects import handle_project_save
@@ -467,6 +467,11 @@ class APIHandler(BaseHTTPRequestHandler):
             else:
                 self._send_json(404, {'success': False, 'error': f'未知编辑器端点: {path}'})
             return
+        m_cat = re.fullmatch(r'/api/platforms/([a-z0-9][a-z0-9-]*)/catalog', path)
+        if m_cat:  # 平台资产目录契约 v1：只读搜索外部平台素材（编辑器链接用）
+            q = {k: v[0] for k, v in urllib.parse.parse_qs(self.path.split('?', 1)[1] if '?' in self.path else '').items()}
+            self._send_json(200, handle_platform_catalog(m_cat.group(1), q))
+            return
         if path == '/api/platforms':  # 三平台合并 P0：动画 / 3D 资产平台的配置与运行态
             self._send_json(200, handle_platforms_list())
             return
@@ -658,9 +663,9 @@ class APIHandler(BaseHTTPRequestHandler):
         if path == '/api/editor/projects':
             self._send_json(*_lib_dispatch(lambda: handle_project_create(body)))
             return
-        m_ed = re.fullmatch(r'/api/editor/projects/([a-z0-9][a-z0-9-]*)/(edit|note)', path)
+        m_ed = re.fullmatch(r'/api/editor/projects/([a-z0-9][a-z0-9-]*)/(edit|note|link)', path)
         if m_ed:
-            fn = handle_project_edit if m_ed.group(2) == 'edit' else handle_project_note
+            fn = {'edit': handle_project_edit, 'note': handle_project_note, 'link': handle_project_link}[m_ed.group(2)]
             self._send_json(*_lib_dispatch(lambda: fn(m_ed.group(1), body)))
             return
         m_plat = re.fullmatch(r'/api/platforms/([a-z0-9][a-z0-9-]*)/launch', path)

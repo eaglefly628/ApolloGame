@@ -54,6 +54,8 @@ Unity 的核心动作是「拖一下」；这里是「**选中这个 → 告诉 
   - `main_entry/editor_projects.py`：项目列表、建 `new<n>`（骨架 = 两个场景 + HUD + 数值表 + 设计总览）、读已登记文件、乙档手调（只改已有标量、类型不变、UI 结构键拒收）、AI 改动记账、改动记录。测试 `main_entry/test_editor_projects.py`。
   - `src/studio/editor/`：`project-model.ts`（索引校验/树/层级/摊平/手调解析/指认上下文）· `EditorApp.tsx`（Hub + 编辑器）· `editor-api.ts` · `app-route.ts`（首屏路由）。测试三份。
   - `src/launcher.tsx`：首屏缺省进编辑器；`?legacy=1` 或旧版自己的深链参数（`game`/`from`/`bare`/`mode`）直进旧版；旧版里加「✦ 引擎编辑器（新）」回跳。
+- **I1（已施工·2026-11-06）**：「＋ 链接素材」——搜动画平台 / 3D 资产平台的只读目录（平台资产目录契约 v1），以 `ref` 链接进 `project.json`。详见 `platform-merge-2026-10-30.md` §4 I1。
+- **内容生产方向**（owner 2026-11-06：内容是壁垒、玩法做模板）：方案草稿 `content-platform-2026-11-06.md`，待 owner 裁后排入。
 - **E2**：AI 写入通道覆盖全部资产类型（现阶段 AI 只能直接改入口场景 `manifest.json`，对其它资产只给文字建议）；AI 新增/删除资产时同步改 `project.json`。
 - **E3**：底栏加 DebugTrace（只读重建「为什么是这个结果」）；确定性时间轴（逐帧单步、拖动、同局重放）。
 - **E4**：场景视图内点选实体（与层级同步）；外部资产（动作/3D）的缩略预览。

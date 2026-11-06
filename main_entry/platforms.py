@@ -1,7 +1,9 @@
 """外部平台拉起（三平台合并 P0·docs/design/platform-merge-2026-10-30.md）。
 
 创作平台只负责「按本机配置拉起」动画平台 / 3D 资产平台并把地址交给前端开新窗；
-不改、不代理、不读这些平台的代码与数据——它们保持独立进程、独立端口、独立安全校验。
+不改这些平台的代码、不碰它们的素材文件——它们保持独立进程、独立端口、独立安全校验。
+唯一读取 = 平台自己公开的只读目录接口（平台资产目录契约 v1，见 handle_platform_catalog），
+用于在编辑器里搜素材并以引用（不复制）链接进项目。
 
 配置 `.zerocraft/platforms.json`（Git 外·含本机绝对路径）：
   {"platforms": {
@@ -12,6 +14,9 @@
 或 `url`（已在跑的平台·直接给地址）。只能拉起配置里写死的条目，请求体不携带任何命令。
 """
 import json
+import urllib.error
+import urllib.parse
+import urllib.request
 import re
 import subprocess
 import threading
@@ -163,3 +168,59 @@ def handle_platform_launch(pid: str, config_path: Path | None = None, timeout: f
     reason = f'进程退出（code={code}），详见终端输出' if code is not None else f'{timeout:g}s 内未打印本机地址，已停止'
     _log('reject', f'{pid} {reason}')
     return {'success': False, 'error': reason}
+
+
+# ── 平台资产目录契约 v1（三平台整合 I1·docs/design/platform-merge-2026-10-30.md §4）──
+# 平台若在根路径提供只读 `GET /entries?text=&type=&offset=&limit=` →
+#   {"total": n, "items": [{"key", "id", "type", "title", "description", "status", ...}]}
+# 编辑器即可搜索它的素材。动画工作台已按此提供（tools/motion-workbench/README.md「AI 只读接口」）；
+# 3D 资产平台照同一形状实现即可接入，创作平台这边无需再改。
+CATALOG_TIMEOUT = 10.0
+CATALOG_MAX_BYTES = 4 * 1024 * 1024
+_CATALOG_KEYS = ('key', 'id', 'type', 'title', 'description', 'intent', 'status')
+
+
+def _origin(url: str) -> str:
+    u = urllib.parse.urlsplit(url)
+    return f'{u.scheme}://{u.netloc}'
+
+
+def handle_platform_catalog(pid: str, query: dict, config_path: Path | None = None) -> dict:
+    if not isinstance(pid, str) or not _ID_RE.fullmatch(pid):
+        return {'success': False, 'error': '非法平台 id'}
+    spec = _load_config(config_path).get(pid)
+    with _LOCK:
+        run = _alive(pid)
+        url = (run['url'] if run else None) or (spec['url'] if spec else None)
+    if not url:
+        _log('reject', f'{pid} 目录：平台未运行')
+        return {'success': False, 'running': False, 'error': '平台未运行：先启动它再搜索'}
+    params = {'text': str(query.get('text') or '')[:200], 'offset': '0'}
+    try:
+        params['limit'] = str(max(1, min(100, int(query.get('limit') or 50))))
+    except (TypeError, ValueError):
+        params['limit'] = '50'
+    if query.get('type'):
+        params['type'] = str(query['type'])[:40]
+    target = f'{_origin(url)}/entries?{urllib.parse.urlencode(params)}'
+    try:
+        with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(target, timeout=CATALOG_TIMEOUT) as res:
+            body = res.read(CATALOG_MAX_BYTES + 1)
+    except urllib.error.HTTPError as e:
+        _log('reject', f'{pid} 目录 HTTP {e.code}')
+        return {'success': False, 'error': f'平台目录返回 HTTP {e.code}（该平台可能未提供 /entries 只读接口）'}
+    except (urllib.error.URLError, OSError) as e:
+        _log('reject', f'{pid} 目录连不上：{e}')
+        return {'success': False, 'error': f'连不上平台目录：{e}'}
+    if len(body) > CATALOG_MAX_BYTES:
+        return {'success': False, 'error': '平台目录响应过大'}
+    try:
+        data = json.loads(body)
+        items = [{k: it[k] for k in _CATALOG_KEYS if isinstance(it.get(k), str)} for it in data['items'] if isinstance(it, dict)]
+        total = int(data.get('total', len(items)))
+    except (ValueError, KeyError, TypeError) as e:
+        _log('reject', f'{pid} 目录形状不对：{e}')
+        return {'success': False, 'error': '平台目录不符合契约 v1（{total, items[]}）'}
+    items = [it for it in items if it.get('id')]
+    _log('decision', f'{pid} 目录「{params["text"]}」→ {len(items)}/{total}')
+    return {'success': True, 'total': total, 'items': items}

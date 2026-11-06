@@ -254,3 +254,49 @@ def handle_project_note(slug: str, body: dict) -> tuple:
         f.write(json.dumps(change, ensure_ascii=False) + '\n')
     _log('commit', f'{slug}:{rel} AI 改动记录')
     return (200, {'success': True, 'change': change})
+
+
+# ── 链接外部平台素材（三平台整合 I1）：只往 project.json 加一条 ref 资产，不复制素材 ──
+# owner 判乙只放开「调数值」；链接素材属于资产管理（相当于 Unity 的导入），不改游戏数据本身，
+# 故作为人可直接做的第二件事放开——游戏里怎么**用**这条素材，仍由 AI 改场景。
+REF_TYPES = ('image', 'model', 'motion', 'audio')
+_PLATFORM_RE = re.compile(r'^[a-z0-9][a-z0-9-]{0,31}$')
+_ASSET_SEG_RE = re.compile(r'[^a-z0-9-]+')
+
+
+def _asset_id_for(type_: str, ref_id: str, taken: set) -> str:
+    seg = _ASSET_SEG_RE.sub('-', ref_id.lower()).strip('-')[:48] or 'item'
+    base = f'{type_}/{seg}'
+    aid, n = base, 2
+    while aid in taken:
+        aid, n = f'{base}-{n}', n + 1
+    return aid
+
+
+def handle_project_link(slug: str, body: dict) -> tuple:
+    type_ = body.get('type')
+    ref = body.get('ref') if isinstance(body.get('ref'), dict) else {}
+    platform, ref_id = ref.get('platform'), ref.get('id')
+    name = str(body.get('name') or '').strip()[:80]
+    if type_ not in REF_TYPES:
+        return (400, {'success': False, 'error': f'type 须为 {"/".join(REF_TYPES)}'})
+    if not isinstance(platform, str) or not _PLATFORM_RE.match(platform) or not isinstance(ref_id, str) or not ref_id or len(ref_id) > 200:
+        return (400, {'success': False, 'error': 'ref 须为 {platform, id}'})
+    d = _project_dir(slug)
+    project = _read_project(slug)
+    for a in project['assets']:
+        r = a.get('ref') if isinstance(a, dict) else None
+        if isinstance(r, dict) and r.get('platform') == platform and r.get('id') == ref_id:
+            _log('decision', f'{slug} 已链接过 {platform}:{ref_id}')
+            return (200, {'success': True, 'asset': a, 'existing': True})
+    taken = {a.get('id') for a in project['assets'] if isinstance(a, dict)}
+    asset = {'id': _asset_id_for(type_, ref_id, taken), 'type': type_, **({'name': name} if name else {}),
+             'ref': {'platform': platform, 'id': ref_id}}
+    project['assets'].append(asset)
+    _write_json(d / 'project.json', project)
+    change = {'at': _now_iso(), 'by': 'human', 'path': 'project.json', 'summary': f'链接 {platform}:{ref_id} → {asset["id"]}'}
+    with open(d / CHANGES_FILE, 'a', encoding='utf-8') as f:
+        f.write(json.dumps(change, ensure_ascii=False) + '\n')
+    _version_save_all(d, change['summary'])
+    _log('commit', f'{slug} {change["summary"]}')
+    return (200, {'success': True, 'asset': asset, 'change': change})

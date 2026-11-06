@@ -48,6 +48,13 @@
     ```
     每条二选一：`command`（由创作平台拉起）或 `url`（平台已自行在跑）。`label` 可选。
   - 动画平台零改动：沿用它现有的启动命令与端口，自带的本机 Host 校验原样生效。
+- **I1 编辑器链接平台素材（已施工·2026-11-06）**——P1 的第一刀，落在 AI 原生编辑器（`docs/design/ai-native-editor-2026-11-01.md`）里：
+  - **平台资产目录契约 v1**：平台在根路径提供只读 `GET /entries?text=&type=&offset=&limit=` → `{total, items:[{key,id,type,title,description,status,…}]}`。动画工作台本来就提供（其 README「AI 只读接口」），**零改动接入**；3D 资产平台照同一形状实现即可接入，创作平台无需再改。
+  - `main_entry/platforms.py::handle_platform_catalog`（`GET /api/platforms/<id>/catalog`）：经本机服务只读转查运行中的平台，只回传契约字段，限时限量；平台未运行明确报「先启动」。
+  - `main_entry/editor_projects.py::handle_project_link`（`POST /api/editor/projects/<slug>/link`）：以 `ref` 把素材链接进 `project.json`（不复制素材·同素材不重复链·撞 id 自动加后缀），记入改动记录。
+  - 编辑器「＋ 链接素材」：选平台 → 搜索 → 链接；未运行一键启动；规划中的能力条目不可链；动作直达 `/library/?clip=`、角色直达 `/interaction/?skin=`。
+  - 归属判断（Lead·待 owner 追认）：owner 判乙只放开「调数值」；**链接素材 = 资产管理**（相当于 Unity 导入），不改游戏数据，故作为人可直接做的第二件事放开。游戏里怎么用这条素材仍由 AI 改场景。
+  - 联调：替身平台（实现同一契约）走完 启动 → 搜索 → 链接 → 直达 全链；真实动画库只在 owner 本机，首次真跑待 owner 验。
 - **P1 资产身份契约**（核心）：定 `APOLLO_ASSETS` 资产根 + 统一条目身份（`key`·`sha256`·`source/license`·`status ∈ draft|candidate|confirmed|failed`）；仓内 AssetIndex、动作 catalog、3D catalog 各写**只读映射**到该契约，出一个汇总只读视图。不改各平台原 catalog 格式。
 - **P2 跨平台流转**：创作平台为游戏挑动作/模型 → 按 SHA vendor 进游戏本地目录（扩 `resource-manager` 流程补动作/模型段）。
 - **不做（现阶段）**：统一后端语言；把创作平台 React 壳重写为 LayoutNode。

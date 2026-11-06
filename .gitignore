@@ -32,6 +32,8 @@ public/games/*/cover.png
 .zerocraft/cap-gaps.jsonl
 .zerocraft/matlib-groups.json
 .zerocraft/claude-code-cwd/
+# 外部平台本机配置（三平台整合·含本机绝对路径·每台机器各写各的·见 docs/design/platform-merge-2026-10-30.md）
+.zerocraft/platforms.json
 # 编排器运行时域（REQ-PIPESOFT P1a·图纸「锁文件属 .zerocraft/ 运行时域·不进库」）：
 # 串行锁（本机此刻谁在施工）、运行台账（status/板读的终态）、会话日志——全是本机运行态，不进引擎仓。
 .zerocraft/orchestrator.lock

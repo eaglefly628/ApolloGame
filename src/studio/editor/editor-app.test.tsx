@@ -6,7 +6,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 vi.mock('../DataCartridgeRunner.js', () => ({ ManifestPreview: () => <div data-testid="scene-preview" /> }));
-const { EditorApp } = await import('./EditorApp.js');
+const { EditorApp, linkTypeFor, platformDeepLink } = await import('./EditorApp.js');
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -23,10 +23,12 @@ const FILES: Record<string, unknown> = {
 };
 
 let container: HTMLElement; let root: Root; let fetchMock: ReturnType<typeof vi.fn>;
+let motionRunning = false; let linked: { type: string; ref: { platform: string; id: string } } | null = null;
 async function flush() { for (let i = 0; i < 4; i++) await act(async () => { await new Promise((r) => setTimeout(r, 0)); }); }
 const $ = (sel: string) => container.querySelector(sel) as HTMLElement;
 
 beforeEach(() => {
+  motionRunning = false; linked = null; PROJECT.assets.splice(2);
   container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
   fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
     const u = new URL(url);
@@ -36,7 +38,12 @@ beforeEach(() => {
     else if (u.pathname.endsWith('/file')) body = { success: true, json: FILES[u.searchParams.get('path')!] };
     else if (u.pathname.endsWith('/changes')) body = { success: true, changes: [] };
     else if (u.pathname.endsWith('/edit')) body = { success: true, change: { by: 'human', ...JSON.parse(String(init?.body)) } };
-    else if (u.pathname === '/api/platforms') body = { success: true, platforms: [] };
+    else if (u.pathname === '/api/platforms') body = { success: true, platforms: [{ id: 'motion', label: '动画平台', configured: true, running: motionRunning, url: null }] };
+    else if (u.pathname === '/api/platforms/motion/launch') { motionRunning = true; body = { success: true, url: 'http://127.0.0.1:5891' }; }
+    else if (u.pathname === '/api/platforms/motion/catalog') body = motionRunning
+      ? { success: true, total: 2, items: [{ key: 'library:walk', id: 'walk', type: 'motion', title: 'Walking', status: 'ready' }, { key: 'capability:press', id: 'press', type: 'capability', title: '按压', status: 'planned' }] }
+      : { success: false, running: false, error: '平台未运行：先启动它再搜索' };
+    else if (u.pathname.endsWith('/link')) { const req = JSON.parse(String(init?.body)); linked = req; PROJECT.assets.push({ id: 'motion/walk', type: 'motion', name: 'Walking', ref: req.ref } as never); body = { success: true, asset: { id: 'motion/walk' } }; }
     return { ok: true, json: async () => body };
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -110,5 +117,40 @@ describe('EditorApp · AI 原生引擎编辑器', () => {
     const legacy = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === '旧版创作台')!;
     await act(async () => { legacy.click(); });
     expect(onLegacy).toHaveBeenCalled();
+  });
+  it('链接素材：平台未运行 → 一键启动 → 搜索 → 以引用链接；规划中的能力不可链接', async () => {
+    window.history.replaceState(null, '', '/?project=new1');
+    await act(async () => { root.render(<EditorApp onLegacy={() => {}} />); });
+    await flush();
+    await act(async () => { $('[data-testid="link-open"]').click(); });
+    await flush();
+    const btnByText = (t: string) => Array.from(container.querySelectorAll('[role="dialog"] button')).find((b) => b.textContent === t) as HTMLButtonElement;
+    await act(async () => { btnByText('搜索').click(); });
+    await flush();
+    expect($('[role="dialog"] [role="alert"]').textContent).toContain('平台未运行');
+    await act(async () => { btnByText('启动动画平台').click(); });
+    await flush();
+    expect($('[data-catalog="walk"]').textContent).toContain('Walking');
+    expect(($('[data-catalog="press"] button') as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => { ($('[data-catalog="walk"] button') as HTMLButtonElement).click(); });
+    await flush();
+    expect(linked).toEqual({ type: 'motion', ref: { platform: 'motion', id: 'walk' }, name: 'Walking' });
+    expect($('[role="dialog"]')).toBeNull();
+    expect($('[data-asset="motion/walk"]')).toBeTruthy();
+  });
+
+  it('外部素材直达地址：动作进动作库、角色进交互页、只取源站根', () => {
+    const m = { id: 'motion/a', type: 'motion' as const, ref: { platform: 'motion', id: 'Sitting Idle' } };
+    expect(platformDeepLink('http://127.0.0.1:5891/driver/', m)).toBe('http://127.0.0.1:5891/library/?clip=Sitting%20Idle');
+    expect(platformDeepLink('http://127.0.0.1:5891', { ...m, type: 'model' })).toBe('http://127.0.0.1:5891/interaction/?skin=Sitting%20Idle');
+    expect(platformDeepLink('http://127.0.0.1:7000/', { ...m, ref: { platform: 'asset3d', id: 'x' } })).toBe('http://127.0.0.1:7000/');
+  });
+
+  it('目录条目类型 → 资产类型映射', () => {
+    expect(linkTypeFor('motion', 'generated-motion')).toBe('motion');
+    expect(linkTypeFor('motion', 'runtime-profile')).toBe('model');
+    expect(linkTypeFor('motion', 'capability')).toBeNull();
+    expect(linkTypeFor('asset3d', undefined)).toBe('model');
+    expect(linkTypeFor('other', 'weird')).toBeNull();
   });
 });

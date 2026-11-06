@@ -6,6 +6,8 @@ export const API = 'http://localhost:4000';
 export interface ProjectSummary { id: string; name: string; assets: number; updated: number }
 export interface Change { at: string; by: 'human' | 'ai'; path: string; pointer?: Pointer; from?: unknown; to?: unknown; summary?: string }
 export interface FileResp { success: boolean; path?: string; json?: unknown; text?: string; parseError?: string; error?: string }
+export interface CatalogItem { key?: string; id: string; type?: string; title?: string; description?: string; intent?: string; status?: string }
+export interface PlatformRow { id: string; label: string; configured: boolean; running: boolean; url: string | null }
 export interface AgentResp { success: boolean; reply?: string; manifest?: unknown; manifestError?: string; error?: string }
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
@@ -28,5 +30,12 @@ export const editorApi = {
   /** 既有落盘端点：先过引擎真校验再写 manifest.json + 存一版。 */
   saveManifest: (slug: string, manifest: unknown, note: string) =>
     call<{ success: boolean; error?: string }>(`/api/library/${slug}/manifest`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ manifest, note }) }),
+  platforms: () => call<{ success: boolean; platforms?: PlatformRow[] }>('/api/platforms'),
+  /** 平台资产目录契约 v1：经本机服务只读转查（平台须在运行）。 */
+  catalog: (id: string, text: string) => call<{ success: boolean; total?: number; items?: CatalogItem[]; running?: boolean; error?: string }>(
+    `/api/platforms/${id}/catalog?text=${encodeURIComponent(text)}&limit=50`),
+  /** 以引用把平台素材链接进项目（只改 project.json·不复制素材）。 */
+  link: (slug: string, type: string, platform: string, id: string, name?: string) =>
+    call<{ success: boolean; asset?: unknown; existing?: boolean; error?: string }>(`/api/editor/projects/${slug}/link`, post({ type, ref: { platform, id }, ...(name ? { name } : {}) })),
   launchPlatform: (id: string) => call<{ success: boolean; url?: string; error?: string }>(`/api/platforms/${id}/launch`, post({})),
 };

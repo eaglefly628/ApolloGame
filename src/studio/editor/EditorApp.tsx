@@ -19,7 +19,7 @@ import {
   validateProject, buildAssetTree, sceneHierarchy, flattenValues, coerceEdit, getAt, selectionContext,
   type ProjectIndex, type ProjectAsset, type AssetTreeNode, type Pointer, type ProjectIssue,
 } from './project-model.js';
-import { editorApi, type ProjectSummary, type Change, type FileResp } from './editor-api.js';
+import { editorApi, type ProjectSummary, type Change, type FileResp, type CatalogItem, type PlatformRow } from './editor-api.js';
 
 const TYPE_ICON: Record<string, string> = { scene: '🗺', ui: '🪟', table: '📊', doc: '📄', image: '🖼', model: '🧊', motion: '🎞', audio: '🔊' };
 /** UI 节点上的结构键：改了等于换控件/断引用，乙档不许手调。 */
@@ -151,6 +151,17 @@ export function EditorShell({ slug, onClose, onLegacy }: { slug: string; onClose
     return () => { dead = true; };
   }, [slug, openAsset, refreshChanges]);
 
+  const [linking, setLinking] = useState(false);
+  /** 链接素材后重读 project.json 并选中新资产（入口场景不重开）。 */
+  const afterLink = useCallback(async (assetId: string) => {
+    const r = await editorApi.project(slug);
+    const v = validateProject(r.project);
+    if (!v.project) { setIssues(v.issues); return; }
+    setProject(v.project);
+    const a = v.project.assets.find((x) => x.id === assetId);
+    if (a) await openAsset(a);
+    await refreshChanges();
+  }, [slug, openAsset, refreshChanges]);
   const reload = useCallback(async () => { if (sel) await openAsset(sel.asset, true); await refreshChanges(); setRunKey((k) => k + 1); }, [sel, openAsset, refreshChanges]);
   const tree = useMemo(() => (project ? buildAssetTree(project.assets) : null), [project]);
   const data = sel?.file?.json;
@@ -183,7 +194,7 @@ export function EditorShell({ slug, onClose, onLegacy }: { slug: string; onClose
 
       <div style={{ flex: 1, minHeight: 0, display: 'grid', gap: 6, padding: 6, gridTemplateColumns: '250px minmax(0,1fr) 340px', gridTemplateRows: 'minmax(0,1fr) minmax(0,1fr) 170px' }}>
         <section style={{ ...panel, gridColumn: 1, gridRow: 1 }} aria-label="项目">
-          <div style={panelHead}>项目 · 资产</div>
+          <div style={panelHead}>项目 · 资产<div style={{ flex: 1 }} /><button data-testid="link-open" style={{ ...btn('violet'), padding: '2px 8px', fontSize: 11 }} onClick={() => setLinking(true)} title="从动画平台 / 3D 资产平台搜索素材，以引用链接进项目（不复制）">＋ 链接素材</button></div>
           <div style={panelBody}><AssetTree node={tree} selected={sel?.asset.id} onPick={(a) => void openAsset(a)} /></div>
         </section>
         <section style={{ ...panel, gridColumn: 1, gridRow: 2 }} aria-label="层级">
@@ -213,6 +224,7 @@ export function EditorShell({ slug, onClose, onLegacy }: { slug: string; onClose
           <div style={panelBody}><ChangeLog changes={changes} /></div>
         </section>
       </div>
+      {linking && <LinkPicker slug={slug} onClose={() => setLinking(false)} onLinked={(id) => { setLinking(false); void afterLink(id); }} />}
     </>
   );
 }
@@ -299,6 +311,15 @@ function UiPreview({ node }: { node: unknown }) {
   );
 }
 
+/** 外部素材直达地址：动画工作台支持 `/library/?clip=<动作ID>` 与 `/interaction/?skin=<角色ID>`（tools/motion-workbench/README.md）；
+ *  其它平台打开根地址。只取源站根，平台自身打印的子路径（如 /driver/）不影响拼接。 */
+export function platformDeepLink(url: string, asset: ProjectAsset): string {
+  const ref = asset.ref;
+  if (!ref || ref.platform !== 'motion') return url;
+  const origin = new URL(url).origin;
+  return asset.type === 'model' ? `${origin}/interaction/?skin=${encodeURIComponent(ref.id)}` : `${origin}/library/?clip=${encodeURIComponent(ref.id)}`;
+}
+
 function RefPreview({ asset }: { asset: ProjectAsset }) {
   const [msg, setMsg] = useState<string | null>(null);
   const open = async () => {
@@ -307,9 +328,7 @@ function RefPreview({ asset }: { asset: ProjectAsset }) {
     try {
       const r = await editorApi.launchPlatform(ref.platform);
       if (!r.success || !r.url) throw new Error(r.error ?? '拉起失败');
-      // 动画平台工作台支持 /library/?clip=<精确ID> 直达（tools/motion-workbench/README.md）
-      const url = ref.platform === 'motion' ? `${r.url.replace(/\/$/, '')}/library/?clip=${encodeURIComponent(ref.id)}` : r.url;
-      if (win) win.location.href = url;
+      if (win) win.location.href = platformDeepLink(r.url, asset);
     } catch (e) { win?.close(); setMsg(e instanceof Error ? e.message : String(e)); }
   };
   return (
@@ -460,6 +479,95 @@ function ChangeLog({ changes }: { changes: Change[] }) {
           </span>
         </div>
       ))}
+    </div>
+  );
+}
+
+// ── 链接素材：搜外部平台的只读目录（契约 v1），以 ref 链接进项目。素材不复制，游戏里怎么用仍由 AI 改场景。──
+/** 平台目录条目类型 → 项目资产类型；null = 不可链接（如尚未实现的能力条目）。 */
+export function linkTypeFor(platform: string, entryType?: string): 'motion' | 'model' | 'image' | 'audio' | null {
+  if (entryType === 'capability') return null;
+  if (entryType === 'runtime-profile') return 'model';
+  if (entryType && ['motion', 'generated-motion', 'runtime-clip'].includes(entryType)) return 'motion';
+  if (entryType && ['model', 'image', 'audio'].includes(entryType)) return entryType as 'model' | 'image' | 'audio';
+  return platform === 'motion' ? 'motion' : platform === 'asset3d' ? 'model' : null;
+}
+
+const STATUS_TONE: Record<string, string> = { ready: SHELL.ok, candidate: SHELL.warn, failed: SHELL.danger, unsupported: SHELL.dim, planned: SHELL.dim };
+
+function LinkPicker({ slug, onClose, onLinked }: { slug: string; onClose: () => void; onLinked: (assetId: string) => void }) {
+  const [platforms, setPlatforms] = useState<PlatformRow[]>([]);
+  const [pid, setPid] = useState('motion');
+  const [text, setText] = useState('');
+  const [items, setItems] = useState<CatalogItem[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [notRunning, setNotRunning] = useState(false);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { editorApi.platforms().then((r) => { if (r.success) setPlatforms(r.platforms ?? []); }).catch(() => setMsg('连不上本机服务')); }, []);
+  const search = async () => {
+    setBusy(true); setMsg(null); setNotRunning(false);
+    try {
+      const r = await editorApi.catalog(pid, text.trim());
+      if (!r.success) { setItems(null); setNotRunning(r.running === false); setMsg(r.error ?? '搜索失败'); return; }
+      setItems(r.items ?? []); setTotal(r.total ?? 0);
+    } catch { setMsg('连不上本机服务'); } finally { setBusy(false); }
+  };
+  const start = async () => {
+    setBusy(true); setMsg('启动中…（动画工作台冷启动可能要几十秒）');
+    try {
+      const r = await editorApi.launchPlatform(pid);
+      if (!r.success) { setMsg(r.error ?? '启动失败'); return; }
+      setBusy(false); await search();
+    } catch { setMsg('连不上本机服务'); } finally { setBusy(false); }
+  };
+  const link = async (it: CatalogItem) => {
+    const type = linkTypeFor(pid, it.type);
+    if (!type) return;
+    try {
+      const r = await editorApi.link(slug, type, pid, it.id, it.title);
+      const a = r.asset as { id?: string } | undefined;
+      if (!r.success || !a?.id) { setMsg(r.error ?? '链接失败'); return; }
+      onLinked(a.id);
+    } catch { setMsg('连不上本机服务'); }
+  };
+  const current = platforms.find((p) => p.id === pid);
+  return (
+    <div role="dialog" aria-label="链接素材" style={{ position: 'fixed', inset: 0, background: 'rgba(4,3,12,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }} onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} style={{ ...panel, width: 'min(720px, calc(100vw - 32px))', height: 'min(560px, calc(100vh - 32px))' }}>
+        <div style={panelHead}>链接素材 <span style={{ color: SHELL.dim }}>以引用加入项目 · 素材留在原平台不复制</span><div style={{ flex: 1 }} /><button style={btn()} onClick={onClose}>关闭</button></div>
+        <div style={{ display: 'flex', gap: 8, padding: 10, borderBottom: `1px solid ${SHELL.line}` }}>
+          <select value={pid} onChange={(e) => { setPid(e.target.value); setItems(null); setMsg(null); setNotRunning(false); }} aria-label="平台"
+            style={{ padding: '6px 8px', borderRadius: 6, border: `1px solid ${SHELL.lineStrong}`, background: SHELL.bg0, color: SHELL.text, fontSize: 12 }}>
+            {(platforms.length ? platforms : [{ id: 'motion', label: '动画平台' } as PlatformRow]).map((p) => <option key={p.id} value={p.id}>{p.label}{p.running ? ' ●' : ''}</option>)}
+          </select>
+          <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') void search(); }} placeholder="搜索：如 walk / 擦火柴 / sit"
+            aria-label="搜索素材" style={{ flex: 1, padding: '6px 10px', borderRadius: 6, border: `1px solid ${SHELL.lineStrong}`, background: SHELL.bg0, color: SHELL.text, fontSize: 12, outline: 'none' }} />
+          <button style={btn('jade')} disabled={busy} onClick={() => void search()}>搜索</button>
+        </div>
+        <div style={panelBody}>
+          {msg && <div role="alert" style={{ padding: '10px 12px', fontSize: 12, color: SHELL.warn }}>{msg}
+            {notRunning && current?.configured !== false && <button style={{ ...btn('violet'), marginLeft: 10 }} disabled={busy} onClick={() => void start()}>启动{current?.label ?? '平台'}</button>}
+            {notRunning && current?.configured === false && <span style={{ color: SHELL.dim }}>（该平台未配置：在 .zerocraft/platforms.json 写 platforms.{pid}）</span>}
+          </div>}
+          {items && <div style={{ padding: '6px 12px', fontSize: 11, color: SHELL.dim }}>共 {total} 条{total > items.length ? `，显示前 ${items.length} 条` : ''}</div>}
+          {items?.map((it) => {
+            const type = linkTypeFor(pid, it.type);
+            return (
+              <div key={it.key ?? it.id} data-catalog={it.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 12px', borderTop: `1px solid ${SHELL.line}` }}>
+                <span style={{ fontSize: 18 }}>{TYPE_ICON[type ?? ''] ?? '·'}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, color: SHELL.text }}>{it.title ?? it.id} <span style={{ color: SHELL.dim }}>{it.type}</span></div>
+                  <div style={{ fontSize: 11, color: SHELL.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.description ?? it.intent ?? it.id}</div>
+                </div>
+                {it.status && <span style={{ fontSize: 11, color: STATUS_TONE[it.status] ?? SHELL.sub }}>{it.status}</span>}
+                <button style={btn(type ? 'jade' : 'plain')} disabled={!type} title={type ? `以 ${TYPE_NAME[type]} 引用链接` : '该条目不可链接（规划中的能力）'} onClick={() => void link(it)}>链接</button>
+              </div>
+            );
+          })}
+          {items?.length === 0 && <div style={{ padding: 16, fontSize: 12, color: SHELL.dim }}>没有匹配的素材（平台目录是逐字查找，换个词试试）。</div>}
+        </div>
+      </div>
     </div>
   );
 }

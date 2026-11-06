@@ -77,5 +77,22 @@ class EditorProjects(unittest.TestCase):
         self.assertEqual([c['by'] for c in changes], ['human', 'human', 'ai'])
 
 
+    def test_link_platform_asset_by_reference(self):
+        self.create()
+        body = {'type': 'motion', 'name': '走路', 'ref': {'platform': 'motion', 'id': 'Walking Fast_v2'}}
+        r = self.call('POST', '/api/editor/projects/new1/link', body)
+        self.assertEqual(r['asset'], {'id': 'motion/walking-fast-v2', 'type': 'motion', 'name': '走路', 'ref': {'platform': 'motion', 'id': 'Walking Fast_v2'}})
+        again = self.call('POST', '/api/editor/projects/new1/link', body)  # 同一素材不重复链接
+        self.assertTrue(again['existing'])
+        other = self.call('POST', '/api/editor/projects/new1/link', {'type': 'motion', 'ref': {'platform': 'motion', 'id': 'walking-fast-v2'}})
+        self.assertEqual(other['asset']['id'], 'motion/walking-fast-v2-2')  # 撞 id 自动加后缀
+        project = self.call('GET', '/api/editor/projects/new1')['project']
+        self.assertEqual(sum(1 for a in project['assets'] if 'ref' in a), 2)
+        self.call('POST', '/api/editor/projects/new1/link', {'type': 'scene', 'ref': {'platform': 'motion', 'id': 'x'}}, status=400)
+        self.call('POST', '/api/editor/projects/new1/link', {'type': 'motion', 'ref': {'platform': 'Bad Platform', 'id': 'x'}}, status=400)
+        changes = self.call('GET', '/api/editor/projects/new1/changes')['changes']
+        self.assertTrue(changes[-1]['summary'].startswith('链接 motion:walking-fast-v2'))
+
+
 if __name__ == '__main__':
     unittest.main()
