@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "bodySelection": {
+    "draftStateId": "avatar.build",
+    "appliedLookStateId": "avatar.applied.look",
+    "appliedLookBodyIndex": 1,
+    "variants": { "0": "slim", "1": "regular", "2": "full" }
+  },
+  "shoulders": {
+    "left": { "node": "LeftShoulder", "offsetM": [0, 0, 0] },
+    "right": { "node": "RightShoulder", "offsetM": [0, 0, 0] },
+    "space": "animated node local",
+    "fitStatus": "bone origins only, cloth offsets awaiting fitting"
+  },
+  "tryOn": {
+    "flagId": "avatar.cape.request",
+    "enableSignal": "avatar.cape.on",
+    "disableSignal": "avatar.cape.off",
+    "default": false
+  }
+}

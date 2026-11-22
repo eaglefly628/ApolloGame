@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Game 628 · 街坊与人物观察</title><style>html,body,#root{margin:0;width:100%;height:100%;overflow:clip;background:#eee7da}body{font-family:system-ui,sans-serif;background:linear-gradient(135deg,#b9b9a7,#ddd4bd 48%,#b6b3a0)}#root{width:min(100%,239dvh);margin-inline:auto}</style><style>[hidden]{display:none!important}
+.game628-curtain{position:fixed;inset:0;z-index:10000;display:grid;place-content:center;justify-items:center;gap:16px;text-align:center;background:#241f1c;color:#f6e7d0;padding:24px;font:16px/1.5 system-ui,sans-serif}
+.game628-curtain p{margin:0}
+.game628-curtain a,.game628-curtain button{display:inline-block;margin:4px;padding:9px 16px;background:#f6e7d0;color:#2f251e;border:0;border-radius:6px;font:inherit;text-decoration:none;cursor:pointer}
+.game628-curtain :focus-visible{outline:2px solid #fac47a;outline-offset:3px}
+</style><style>html[data-entry-embedded="street"] :is(#header,#footer,#weather-controls,#performance-controls){display:none!important}</style></head><body><div id="root" inert></div>
+<div id="scene-curtain" class="game628-curtain">
+<p id="scene-loading" role="status">正在准备街景…</p>
+<div id="scene-recovery" hidden><p role="alert">街景未能加载，请重试或返回标题。</p><button id="scene-retry">重试</button><a href="/">返回标题</a></div>
+</div>
+<script>
+(() => {
+  const curtain = document.querySelector('#scene-curtain');
+  const root = document.querySelector('#root');
+  const loading = document.querySelector('#scene-loading');
+  const recovery = document.querySelector('#scene-recovery');
+  const retry = document.querySelector('#scene-retry');
+  const search = new URLSearchParams(location.search);
+  const attempt = search.get('entryAttempt');
+  const embedded = window.parent !== window && Boolean(attempt);
+  let state = 'loading';
+  const publish = status => {
+    if (embedded) parent.postMessage({kind:'game628-street-frame',attempt,status},location.origin);
+  };
+  const setState = value => { state = value; curtain.dataset.state = value; };
+  setState(state);
+  if (embedded) document.documentElement.dataset.entryEmbedded = 'street';
+  if (search.get('scene') === 'face-studio') {
+    curtain.hidden = true;
+    root.inert = false;
+  }
+  const fail = () => {
+    if (state !== 'loading') return;
+    clearTimeout(watchdog);
+    setState('failed');
+    curtain.hidden = false;
+    root.inert = true;
+    loading.hidden = true;
+    recovery.hidden = false;
+    retry.focus();
+    publish('failed');
+  };
+  const watchdog = setTimeout(fail,30000);
+  retry.onclick = () => location.reload();
+  addEventListener('error', event => {
+    if (event.target instanceof HTMLScriptElement) fail();
+  }, true);
+  addEventListener('game628-entry-failed', fail);
+  addEventListener('game628-entry-frame', async () => {
+    if (state !== 'loading') return;
+    clearTimeout(watchdog);
+    setState('revealing');
+    if (embedded) {
+      curtain.hidden = true;
+      // The parent still covers the entire iframe. Give the compositor a
+      // paint opportunity with the child curtain already removed.
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      publish('ready');
+    } else if (!curtain.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const animation=curtain.animate([{opacity:1},{opacity:0}],{duration:500,easing:'ease-in-out',fill:'forwards'});
+      await animation.finished.catch(() => {});
+      curtain.hidden = true;
+    } else {
+      curtain.hidden = true;
+    }
+    root.inert = false;
+    setState('ready');
+  });
+})();
+</script><script type="module" src="/host.ts"></script></body></html>

@@ -1,0 +1,49 @@
+{
+  "source": "traveler-v2.glb",
+  "sourceSha256": "c371801cd8e9ab0d0872bbda091063756f555de1130e5e681d1ebe71d3ece0ff",
+  "candidate": "traveler-v3.glb",
+  "candidateSha256": "366ae491bd1340a2a59109adbb0650742e12cff2f67d28731ab83a6dc3a7a59b",
+  "originalBinaryPrefixPreserved": true,
+  "geometryUnchanged": true,
+  "sourceQuaternionTracksUnchanged": true,
+  "method": "Exact transformed rounded sole vertices; zero target support height per 240Hz sample; Hip vertical curve only. No uniform global sinking offset.",
+  "rebakes": [
+    {
+      "clip": "idle",
+      "frames": 2385,
+      "rate": 240,
+      "maxVerticalCorrectionM": 0.000803744724937959
+    },
+    {
+      "clip": "walk",
+      "frames": 337,
+      "rate": 240,
+      "maxVerticalCorrectionM": 0.010478268003775076
+    },
+    {
+      "clip": "wave",
+      "frames": 1137,
+      "rate": 240,
+      "maxVerticalCorrectionM": 0.00034895112456589245
+    }
+  ],
+  "rootAuthority": "Scene sim only; no new planar displacement",
+  "nominalWalkSpeedMps": 0.9221460884538626,
+  "speedAtVelocityPerTick": 0.015369101474231043,
+  "status": "numeric_pass_for_floating_fix_runtime_visual_pending",
+  "validation": {
+    "finalGlbReimport": "Three GLTFLoader + actual AnimationMixer",
+    "continuousRate": 960,
+    "actualSoleVertices": true,
+    "originalBinaryPrefixIdentical": true,
+    "nodesMeshesMaterialsScenesIdentical": true,
+    "originalAccessorPayloadsAndMetadataIdentical": true,
+    "changedChannels": "Only Hips translation sampler input/output for 3 clips",
+    "v2MaxWalkGapM": 0.01047827065826168,
+    "v3MaxWalkGapM": 0.0005189451211929236,
+    "v3MinWalkGapM": -3.8164310843469273e-05,
+    "blendCases": 32,
+    "v3MaxBlendGapM": 3.335333802548246e-08,
+    "v3WorstBlendPenetrationM": -0.058301407806898506
+  }
+}

@@ -1,0 +1,63 @@
+:root{color-scheme:light;font-family:system-ui,sans-serif;background:#f4e8d6}
+*{box-sizing:border-box}
+body{margin:0}
+#entry{min-height:100dvh;display:grid}
+#entry:not([data-screen="street"]):not([data-screen="face"]){background:linear-gradient(90deg,#3c2b1d73,#3c2b1d15),url('/wutong-evening.jpg') center/cover}
+#entry[data-screen="home"],#entry[data-screen="login"]{align-items:center}
+#chrome{width:min(100%,470px);padding:clamp(16px,5vw,48px);margin-left:clamp(0px,8vw,115px)}
+#entry[data-screen="face"],#entry[data-screen="street"]{grid-template-rows:minmax(200px,1fr) auto;height:100dvh}
+#entry[data-screen="face"] #chrome,#entry[data-screen="street"] #chrome{margin:0 auto;padding:8px 12px;width:min(100%,650px)}
+#scene{position:relative;min-height:0}
+iframe{display:block;border:0;width:100%;height:100%;background:#e7d8bd}
+#entry[data-overlay="true"] #chrome{position:fixed;inset:0;display:grid;place-content:center;width:100%;padding:20px;background:#21170cdb;max-height:100dvh;overflow:auto}
+#entry[data-overlay="true"] #chrome>div{width:min(370px,calc(100vw - 40px))}
+:focus-visible{outline:3px solid #a14123;outline-offset:2px}
+@media(max-width:560px){#chrome{margin-left:0}}
+
+/* Safe area belongs to the HUD. The world viewport stays full width. */
+#entry {
+  --safe-start: max(12px, env(safe-area-inset-left, 0px));
+  --safe-end: max(12px, env(safe-area-inset-right, 0px));
+  --safe-top: max(12px, env(safe-area-inset-top, 0px));
+  --safe-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+  --entry-max: 470px;
+  --hud-max: 650px;
+  --dialog-max: 370px;
+}
+#entry[data-screen="home"] #chrome,#entry[data-screen="login"] #chrome {
+  width: min(var(--entry-max), calc(100% - var(--safe-start) - var(--safe-end)));
+  margin-inline-start: max(var(--safe-start), min(8vw, 115px));
+  margin-block: var(--safe-top) var(--safe-bottom);
+}
+#entry[data-screen="face"],#entry[data-screen="street"] {
+  grid-template-rows: minmax(0,1fr) auto;
+  min-height: 0;
+}
+#entry[data-screen="face"] #chrome,#entry[data-screen="street"] #chrome {
+  width: min(var(--hud-max), calc(100% - var(--safe-start) - var(--safe-end) + 24px));
+  padding-inline: var(--safe-start) var(--safe-end);
+  padding-bottom: var(--safe-bottom);
+}
+#entry[data-overlay="true"] #chrome {
+  width: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: max(20px,var(--safe-top)) max(20px,var(--safe-end)) max(20px,var(--safe-bottom)) max(20px,var(--safe-start));
+}
+#entry[data-overlay="true"] #chrome > div {
+  flex: 0 0 auto;
+  margin-block: auto;
+  width: min(var(--dialog-max),100%);
+}
+@media (max-width:560px) {
+  #entry[data-screen="home"] #chrome,#entry[data-screen="login"] #chrome {
+    margin-inline: auto;
+  }
+}
+@media (min-aspect-ratio:2/1) and (min-width:1100px) {
+  #entry[data-screen="home"] #chrome,#entry[data-screen="login"] #chrome {
+    margin-inline: auto;
+  }
+}

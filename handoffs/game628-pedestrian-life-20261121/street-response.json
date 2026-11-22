@@ -1,0 +1,26 @@
+{
+  "type": "StreetResponse",
+  "source": "player",
+  "actions": {
+    "pose.wave": { "radius": 2.4, "halfConeCos": -0.15, "gesture": true },
+    "pose.clap": { "radius": 3.1, "halfConeCos": -1, "gesture": false },
+    "pose.dance": { "radius": 2.8, "halfConeCos": -0.25, "gesture": false },
+    "pose.bow": { "radius": 2.2, "halfConeCos": -0.15, "gesture": true },
+    "pose.martial": { "radius": 2.8, "halfConeCos": -0.25, "gesture": false }
+  },
+  "interests": ["interest-bakery", "interest-cat-shop"],
+  "haltMask": 4096,
+  "scanTicks": 24,
+  "cooldownTicks": 420,
+  "sourceCooldownTicks": 210,
+  "nextSourceTick": 0,
+  "tick": 0,
+  "chatRadius": 1.95,
+  "interestRadius": 1.5,
+  "relayRadius": 2.35,
+  "relayChance": 0.4,
+  "inspectTicks": 60,
+  "chatTicks": 144,
+  "noticeTicks": 80,
+  "relayDelay": 18
+}

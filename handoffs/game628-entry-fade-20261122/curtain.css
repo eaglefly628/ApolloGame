@@ -1,0 +1,5 @@
+[hidden]{display:none!important}
+.game628-curtain{position:fixed;inset:0;z-index:10000;display:grid;place-content:center;justify-items:center;gap:16px;text-align:center;background:#241f1c;color:#f6e7d0;padding:24px;font:16px/1.5 system-ui,sans-serif}
+.game628-curtain p{margin:0}
+.game628-curtain a,.game628-curtain button{display:inline-block;margin:4px;padding:9px 16px;background:#f6e7d0;color:#2f251e;border:0;border-radius:6px;font:inherit;text-decoration:none;cursor:pointer}
+.game628-curtain :focus-visible{outline:2px solid #fac47a;outline-offset:3px}

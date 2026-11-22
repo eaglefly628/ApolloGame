@@ -1,0 +1,1815 @@
+{
+  "revision": "fit-20261121-r8-close-sleeve",
+  "canonicalContract": {
+    "path": "/Users/junbaili/Documents/GitHub/ApolloGame/handoffs/game628-cape-runtime-engine-20261120/CONTRACT.json",
+    "sha256": "d4fb612b2dc0bb91e7b96496ab426004690a5851272b8617a782371501fecaf6"
+  },
+  "units": "meters",
+  "axes": "Y-up,+Z-forward",
+  "material": {
+    "fabric": "velvet",
+    "color": 6169657
+  },
+  "cloth": {
+    "style": "plain",
+    "wind": {
+      "z": 1.1
+    }
+  },
+  "body": {
+    "slim": {
+      "shoulderGapM": 0.3501938964432847,
+      "widthM": 0.3065686234584638,
+      "heightM": 0.55,
+      "pins": [
+        "left",
+        "right"
+      ],
+      "qualityByTier": {
+        "normal": {
+          "quality": "medium",
+          "iterations": 4
+        },
+        "low": {
+          "quality": "low",
+          "iterations": 2
+        },
+        "off": null
+      },
+      "proxyBindings": [
+        {
+          "id": "shirt-body-0-0",
+          "shape": "capsule",
+          "radius": 0.0944112,
+          "halfHeight": 0.1941105,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              -0.1117998,
+              0.1125324,
+              -0.0431234
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-0-1",
+          "shape": "capsule",
+          "radius": 0.0944112,
+          "halfHeight": 0.1941105,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              -0.1117998,
+              0.1125324,
+              0.0792023
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-1-0",
+          "shape": "capsule",
+          "radius": 0.0944112,
+          "halfHeight": 0.1941105,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              0.0000111,
+              0.1125324,
+              -0.0431234
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-1-1",
+          "shape": "capsule",
+          "radius": 0.0944112,
+          "halfHeight": 0.1941105,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              0.0000111,
+              0.1125324,
+              0.0792023
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-2-0",
+          "shape": "capsule",
+          "radius": 0.0944112,
+          "halfHeight": 0.1941105,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              0.1118221,
+              0.1125324,
+              -0.0431234
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-2-1",
+          "shape": "capsule",
+          "radius": 0.0944112,
+          "halfHeight": 0.1941105,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              0.1118221,
+              0.1125324,
+              0.0792023
+            ]
+          }
+        },
+        {
+          "id": "trouser-seat-0-0",
+          "shape": "capsule",
+          "radius": 0.0768077,
+          "halfHeight": 0.0592854,
+          "covers": [
+            "trouser-seat"
+          ],
+          "attachment": {
+            "node": "Hips",
+            "offsetM": [
+              -0.0962046,
+              -0.025,
+              -0.0462502
+            ]
+          }
+        },
+        {
+          "id": "trouser-seat-0-1",
+          "shape": "capsule",
+          "radius": 0.0768077,
+          "halfHeight": 0.0592854,
+          "covers": [
+            "trouser-seat"
+          ],
+          "attachment": {
+            "node": "Hips",
+            "offsetM": [
+              -0.0962046,
+              -0.025,
+              0.0462502
+            ]
+          }
+        },
+        {
+          "id": "trouser-seat-1-0",
+          "shape": "capsule",
+          "radius": 0.0768077,
+          "halfHeight": 0.0592854,
+          "covers": [
+            "trouser-seat"
+          ],
+          "attachment": {
+            "node": "Hips",
+            "offsetM": [
+              -0.0000022,
+              -0.025,
+              -0.0462502
+            ]
+          }
+        },
+        {
+          "id": "trouser-seat-1-1",
+          "shape": "capsule",
+          "radius": 0.0768077,
+          "halfHeight": 0.0592854,
+          "covers": [
+            "trouser-seat"
+          ],
+          "attachment": {
+            "node": "Hips",
+            "offsetM": [
+              -0.0000022,
+              -0.025,
+              0.0462502
+            ]
+          }
+        },
+        {
+          "id": "trouser-seat-2-0",
+          "shape": "capsule",
+          "radius": 0.0768077,
+          "halfHeight": 0.0592854,
+          "covers": [
+            "trouser-seat"
+          ],
+          "attachment": {
+            "node": "Hips",
+            "offsetM": [
+              0.0962002,
+              -0.025,
+              -0.0462502
+            ]
+          }
+        },
+        {
+          "id": "trouser-seat-2-1",
+          "shape": "capsule",
+          "radius": 0.0768077,
+          "halfHeight": 0.0592854,
+          "covers": [
+            "trouser-seat"
+          ],
+          "attachment": {
+            "node": "Hips",
+            "offsetM": [
+              0.0962002,
+              -0.025,
+              0.0462502
+            ]
+          }
+        },
+        {
+          "id": "head-0-0",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.2000028,
+              0.035,
+              -0.1468752
+            ]
+          }
+        },
+        {
+          "id": "head-0-1",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.2000028,
+              0.035,
+              -0.0456251
+            ]
+          }
+        },
+        {
+          "id": "head-0-2",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.2000028,
+              0.035,
+              0.0556251
+            ]
+          }
+        },
+        {
+          "id": "head-0-3",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.2000028,
+              0.035,
+              0.1568752
+            ]
+          }
+        },
+        {
+          "id": "head-1-0",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.0999999,
+              0.035,
+              -0.1468752
+            ]
+          }
+        },
+        {
+          "id": "head-1-1",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.0999999,
+              0.035,
+              -0.0456251
+            ]
+          }
+        },
+        {
+          "id": "head-1-2",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.0999999,
+              0.035,
+              0.0556251
+            ]
+          }
+        },
+        {
+          "id": "head-1-3",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.0999999,
+              0.035,
+              0.1568752
+            ]
+          }
+        },
+        {
+          "id": "head-2-0",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.0000031,
+              0.035,
+              -0.1468752
+            ]
+          }
+        },
+        {
+          "id": "head-2-1",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.0000031,
+              0.035,
+              -0.0456251
+            ]
+          }
+        },
+        {
+          "id": "head-2-2",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.0000031,
+              0.035,
+              0.0556251
+            ]
+          }
+        },
+        {
+          "id": "head-2-3",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.0000031,
+              0.035,
+              0.1568752
+            ]
+          }
+        },
+        {
+          "id": "head-3-0",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.100006,
+              0.035,
+              -0.1468752
+            ]
+          }
+        },
+        {
+          "id": "head-3-1",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.100006,
+              0.035,
+              -0.0456251
+            ]
+          }
+        },
+        {
+          "id": "head-3-2",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.100006,
+              0.035,
+              0.0556251
+            ]
+          }
+        },
+        {
+          "id": "head-3-3",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.100006,
+              0.035,
+              0.1568752
+            ]
+          }
+        },
+        {
+          "id": "head-4-0",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.2000089,
+              0.035,
+              -0.1468752
+            ]
+          }
+        },
+        {
+          "id": "head-4-1",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.2000089,
+              0.035,
+              -0.0456251
+            ]
+          }
+        },
+        {
+          "id": "head-4-2",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.2000089,
+              0.035,
+              0.0556251
+            ]
+          }
+        },
+        {
+          "id": "head-4-3",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.2000089,
+              0.035,
+              0.1568752
+            ]
+          }
+        },
+        {
+          "id": "back-hair-0-0",
+          "shape": "capsule",
+          "radius": 0.0892185,
+          "halfHeight": 0.099328,
+          "covers": [
+            "back-hair"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.1799997,
+              0.065,
+              -0.188
+            ]
+          }
+        },
+        {
+          "id": "back-hair-1-0",
+          "shape": "capsule",
+          "radius": 0.0892185,
+          "halfHeight": 0.099328,
+          "covers": [
+            "back-hair"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.0599963,
+              0.065,
+              -0.188
+            ]
+          }
+        },
+        {
+          "id": "back-hair-2-0",
+          "shape": "capsule",
+          "radius": 0.0892185,
+          "halfHeight": 0.099328,
+          "covers": [
+            "back-hair"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.0600071,
+              0.065,
+              -0.188
+            ]
+          }
+        },
+        {
+          "id": "back-hair-3-0",
+          "shape": "capsule",
+          "radius": 0.0892185,
+          "halfHeight": 0.099328,
+          "covers": [
+            "back-hair"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.1800105,
+              0.065,
+              -0.188
+            ]
+          }
+        },
+        {
+          "id": "left-arm",
+          "shape": "capsule",
+          "radius": 0.112,
+          "halfHeight": 0.1313402,
+          "covers": [
+            "Left-sleeve",
+            "Left-arm-upper"
+          ],
+          "attachment": {
+            "node": "LeftUpperArm",
+            "offsetM": [
+              0,
+              0.1500902,
+              0
+            ]
+          }
+        },
+        {
+          "id": "left-forearm",
+          "shape": "capsule",
+          "radius": 0.099,
+          "halfHeight": 0.0889933,
+          "covers": [
+            "Left-forearm"
+          ],
+          "attachment": {
+            "node": "LeftLowerArm",
+            "offsetM": [
+              0,
+              0.1044933,
+              0
+            ]
+          }
+        },
+        {
+          "id": "left-thigh",
+          "shape": "capsule",
+          "radius": 0.107,
+          "halfHeight": 0.1570774,
+          "covers": [
+            "Left-thigh"
+          ],
+          "attachment": {
+            "node": "LeftUpperLeg",
+            "offsetM": [
+              0,
+              0.1745774,
+              0
+            ]
+          }
+        },
+        {
+          "id": "right-arm",
+          "shape": "capsule",
+          "radius": 0.112,
+          "halfHeight": 0.1313402,
+          "covers": [
+            "Right-sleeve",
+            "Right-arm-upper"
+          ],
+          "attachment": {
+            "node": "RightUpperArm",
+            "offsetM": [
+              0,
+              0.1500902,
+              0
+            ]
+          }
+        },
+        {
+          "id": "right-forearm",
+          "shape": "capsule",
+          "radius": 0.099,
+          "halfHeight": 0.0889933,
+          "covers": [
+            "Right-forearm"
+          ],
+          "attachment": {
+            "node": "RightLowerArm",
+            "offsetM": [
+              0,
+              0.1044933,
+              0
+            ]
+          }
+        },
+        {
+          "id": "right-thigh",
+          "shape": "capsule",
+          "radius": 0.107,
+          "halfHeight": 0.1570775,
+          "covers": [
+            "Right-thigh"
+          ],
+          "attachment": {
+            "node": "RightUpperLeg",
+            "offsetM": [
+              0,
+              0.1745775,
+              0
+            ]
+          }
+        }
+      ],
+      "sourceInput": "fixtures/slim.json",
+      "fitStatus": "under-test",
+      "attachment": {
+        "avatarId": "avatar",
+        "generation": 0,
+        "left": {
+          "node": "LeftUpperArm",
+          "offsetM": [
+            0.1125833,
+            0.06,
+            -0.065
+          ]
+        },
+        "right": {
+          "node": "RightUpperArm",
+          "offsetM": [
+            -0.1125833,
+            0.06,
+            -0.065
+          ]
+        },
+        "maxStepMeters": 0.25
+      }
+    },
+    "full": {
+      "shoulderGapM": 0.4696954243188132,
+      "widthM": 0.4260911770803427,
+      "heightM": 0.55,
+      "pins": [
+        "left",
+        "right"
+      ],
+      "qualityByTier": {
+        "normal": {
+          "quality": "medium",
+          "iterations": 4
+        },
+        "low": {
+          "quality": "low",
+          "iterations": 2
+        },
+        "off": null
+      },
+      "proxyBindings": [
+        {
+          "id": "shirt-body-0-0",
+          "shape": "capsule",
+          "radius": 0.099228,
+          "halfHeight": 0.2001384,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              -0.2064014,
+              0.1125324,
+              -0.1262322
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-0-1",
+          "shape": "capsule",
+          "radius": 0.099228,
+          "halfHeight": 0.2001384,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              -0.2064014,
+              0.1125324,
+              -0.0188374
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-0-2",
+          "shape": "capsule",
+          "radius": 0.099228,
+          "halfHeight": 0.2001384,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              -0.2064014,
+              0.1125324,
+              0.0885575
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-0-3",
+          "shape": "capsule",
+          "radius": 0.099228,
+          "halfHeight": 0.2001384,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              -0.2064014,
+              0.1125324,
+              0.1959524
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-1-0",
+          "shape": "capsule",
+          "radius": 0.099228,
+          "halfHeight": 0.2001384,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              -0.068793,
+              0.1125324,
+              -0.1262322
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-1-1",
+          "shape": "capsule",
+          "radius": 0.099228,
+          "halfHeight": 0.2001384,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              -0.068793,
+              0.1125324,
+              -0.0188374
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-1-2",
+          "shape": "capsule",
+          "radius": 0.099228,
+          "halfHeight": 0.2001384,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              -0.068793,
+              0.1125324,
+              0.0885575
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-1-3",
+          "shape": "capsule",
+          "radius": 0.099228,
+          "halfHeight": 0.2001384,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              -0.068793,
+              0.1125324,
+              0.1959524
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-2-0",
+          "shape": "capsule",
+          "radius": 0.099228,
+          "halfHeight": 0.2001384,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              0.0688153,
+              0.1125324,
+              -0.1262322
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-2-1",
+          "shape": "capsule",
+          "radius": 0.099228,
+          "halfHeight": 0.2001384,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              0.0688153,
+              0.1125324,
+              -0.0188374
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-2-2",
+          "shape": "capsule",
+          "radius": 0.099228,
+          "halfHeight": 0.2001384,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              0.0688153,
+              0.1125324,
+              0.0885575
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-2-3",
+          "shape": "capsule",
+          "radius": 0.099228,
+          "halfHeight": 0.2001384,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              0.0688153,
+              0.1125324,
+              0.1959524
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-3-0",
+          "shape": "capsule",
+          "radius": 0.099228,
+          "halfHeight": 0.2001384,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              0.2064236,
+              0.1125324,
+              -0.1262322
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-3-1",
+          "shape": "capsule",
+          "radius": 0.099228,
+          "halfHeight": 0.2001384,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              0.2064236,
+              0.1125324,
+              -0.0188374
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-3-2",
+          "shape": "capsule",
+          "radius": 0.099228,
+          "halfHeight": 0.2001384,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              0.2064236,
+              0.1125324,
+              0.0885575
+            ]
+          }
+        },
+        {
+          "id": "shirt-body-3-3",
+          "shape": "capsule",
+          "radius": 0.099228,
+          "halfHeight": 0.2001384,
+          "covers": [
+            "shirt-body"
+          ],
+          "attachment": {
+            "node": "Spine",
+            "offsetM": [
+              0.2064236,
+              0.1125324,
+              0.1959524
+            ]
+          }
+        },
+        {
+          "id": "trouser-seat-0-0",
+          "shape": "capsule",
+          "radius": 0.0956447,
+          "halfHeight": 0.051756,
+          "covers": [
+            "trouser-seat"
+          ],
+          "attachment": {
+            "node": "Hips",
+            "offsetM": [
+              -0.1776051,
+              -0.025,
+              -0.1191671
+            ]
+          }
+        },
+        {
+          "id": "trouser-seat-0-1",
+          "shape": "capsule",
+          "radius": 0.0956447,
+          "halfHeight": 0.051756,
+          "covers": [
+            "trouser-seat"
+          ],
+          "attachment": {
+            "node": "Hips",
+            "offsetM": [
+              -0.1776051,
+              -0.025,
+              0
+            ]
+          }
+        },
+        {
+          "id": "trouser-seat-0-2",
+          "shape": "capsule",
+          "radius": 0.0956447,
+          "halfHeight": 0.051756,
+          "covers": [
+            "trouser-seat"
+          ],
+          "attachment": {
+            "node": "Hips",
+            "offsetM": [
+              -0.1776051,
+              -0.025,
+              0.1191671
+            ]
+          }
+        },
+        {
+          "id": "trouser-seat-1-0",
+          "shape": "capsule",
+          "radius": 0.0956447,
+          "halfHeight": 0.051756,
+          "covers": [
+            "trouser-seat"
+          ],
+          "attachment": {
+            "node": "Hips",
+            "offsetM": [
+              -0.0592031,
+              -0.025,
+              -0.1191671
+            ]
+          }
+        },
+        {
+          "id": "trouser-seat-1-1",
+          "shape": "capsule",
+          "radius": 0.0956447,
+          "halfHeight": 0.051756,
+          "covers": [
+            "trouser-seat"
+          ],
+          "attachment": {
+            "node": "Hips",
+            "offsetM": [
+              -0.0592031,
+              -0.025,
+              0
+            ]
+          }
+        },
+        {
+          "id": "trouser-seat-1-2",
+          "shape": "capsule",
+          "radius": 0.0956447,
+          "halfHeight": 0.051756,
+          "covers": [
+            "trouser-seat"
+          ],
+          "attachment": {
+            "node": "Hips",
+            "offsetM": [
+              -0.0592031,
+              -0.025,
+              0.1191671
+            ]
+          }
+        },
+        {
+          "id": "trouser-seat-2-0",
+          "shape": "capsule",
+          "radius": 0.0956447,
+          "halfHeight": 0.051756,
+          "covers": [
+            "trouser-seat"
+          ],
+          "attachment": {
+            "node": "Hips",
+            "offsetM": [
+              0.0591988,
+              -0.025,
+              -0.1191671
+            ]
+          }
+        },
+        {
+          "id": "trouser-seat-2-1",
+          "shape": "capsule",
+          "radius": 0.0956447,
+          "halfHeight": 0.051756,
+          "covers": [
+            "trouser-seat"
+          ],
+          "attachment": {
+            "node": "Hips",
+            "offsetM": [
+              0.0591988,
+              -0.025,
+              0
+            ]
+          }
+        },
+        {
+          "id": "trouser-seat-2-2",
+          "shape": "capsule",
+          "radius": 0.0956447,
+          "halfHeight": 0.051756,
+          "covers": [
+            "trouser-seat"
+          ],
+          "attachment": {
+            "node": "Hips",
+            "offsetM": [
+              0.0591988,
+              -0.025,
+              0.1191671
+            ]
+          }
+        },
+        {
+          "id": "trouser-seat-3-0",
+          "shape": "capsule",
+          "radius": 0.0956447,
+          "halfHeight": 0.051756,
+          "covers": [
+            "trouser-seat"
+          ],
+          "attachment": {
+            "node": "Hips",
+            "offsetM": [
+              0.1776007,
+              -0.025,
+              -0.1191671
+            ]
+          }
+        },
+        {
+          "id": "trouser-seat-3-1",
+          "shape": "capsule",
+          "radius": 0.0956447,
+          "halfHeight": 0.051756,
+          "covers": [
+            "trouser-seat"
+          ],
+          "attachment": {
+            "node": "Hips",
+            "offsetM": [
+              0.1776007,
+              -0.025,
+              0
+            ]
+          }
+        },
+        {
+          "id": "trouser-seat-3-2",
+          "shape": "capsule",
+          "radius": 0.0956447,
+          "halfHeight": 0.051756,
+          "covers": [
+            "trouser-seat"
+          ],
+          "attachment": {
+            "node": "Hips",
+            "offsetM": [
+              0.1776007,
+              -0.025,
+              0.1191671
+            ]
+          }
+        },
+        {
+          "id": "head-0-0",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.2000028,
+              0.035,
+              -0.1468752
+            ]
+          }
+        },
+        {
+          "id": "head-0-1",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.2000028,
+              0.035,
+              -0.0456251
+            ]
+          }
+        },
+        {
+          "id": "head-0-2",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.2000028,
+              0.035,
+              0.0556251
+            ]
+          }
+        },
+        {
+          "id": "head-0-3",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.2000028,
+              0.035,
+              0.1568752
+            ]
+          }
+        },
+        {
+          "id": "head-1-0",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.0999999,
+              0.035,
+              -0.1468752
+            ]
+          }
+        },
+        {
+          "id": "head-1-1",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.0999999,
+              0.035,
+              -0.0456251
+            ]
+          }
+        },
+        {
+          "id": "head-1-2",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.0999999,
+              0.035,
+              0.0556251
+            ]
+          }
+        },
+        {
+          "id": "head-1-3",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.0999999,
+              0.035,
+              0.1568752
+            ]
+          }
+        },
+        {
+          "id": "head-2-0",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.0000031,
+              0.035,
+              -0.1468752
+            ]
+          }
+        },
+        {
+          "id": "head-2-1",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.0000031,
+              0.035,
+              -0.0456251
+            ]
+          }
+        },
+        {
+          "id": "head-2-2",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.0000031,
+              0.035,
+              0.0556251
+            ]
+          }
+        },
+        {
+          "id": "head-2-3",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.0000031,
+              0.035,
+              0.1568752
+            ]
+          }
+        },
+        {
+          "id": "head-3-0",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.100006,
+              0.035,
+              -0.1468752
+            ]
+          }
+        },
+        {
+          "id": "head-3-1",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.100006,
+              0.035,
+              -0.0456251
+            ]
+          }
+        },
+        {
+          "id": "head-3-2",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.100006,
+              0.035,
+              0.0556251
+            ]
+          }
+        },
+        {
+          "id": "head-3-3",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.100006,
+              0.035,
+              0.1568752
+            ]
+          }
+        },
+        {
+          "id": "head-4-0",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.2000089,
+              0.035,
+              -0.1468752
+            ]
+          }
+        },
+        {
+          "id": "head-4-1",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.2000089,
+              0.035,
+              -0.0456251
+            ]
+          }
+        },
+        {
+          "id": "head-4-2",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.2000089,
+              0.035,
+              0.0556251
+            ]
+          }
+        },
+        {
+          "id": "head-4-3",
+          "shape": "capsule",
+          "radius": 0.0816366,
+          "halfHeight": 0.1473579,
+          "covers": [
+            "head"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.2000089,
+              0.035,
+              0.1568752
+            ]
+          }
+        },
+        {
+          "id": "back-hair-0-0",
+          "shape": "capsule",
+          "radius": 0.0892185,
+          "halfHeight": 0.099328,
+          "covers": [
+            "back-hair"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.1799997,
+              0.065,
+              -0.188
+            ]
+          }
+        },
+        {
+          "id": "back-hair-1-0",
+          "shape": "capsule",
+          "radius": 0.0892185,
+          "halfHeight": 0.099328,
+          "covers": [
+            "back-hair"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              -0.0599963,
+              0.065,
+              -0.188
+            ]
+          }
+        },
+        {
+          "id": "back-hair-2-0",
+          "shape": "capsule",
+          "radius": 0.0892185,
+          "halfHeight": 0.099328,
+          "covers": [
+            "back-hair"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.0600071,
+              0.065,
+              -0.188
+            ]
+          }
+        },
+        {
+          "id": "back-hair-3-0",
+          "shape": "capsule",
+          "radius": 0.0892185,
+          "halfHeight": 0.099328,
+          "covers": [
+            "back-hair"
+          ],
+          "attachment": {
+            "node": "Head",
+            "offsetM": [
+              0.1800105,
+              0.065,
+              -0.188
+            ]
+          }
+        },
+        {
+          "id": "left-arm",
+          "shape": "capsule",
+          "radius": 0.112,
+          "halfHeight": 0.1313402,
+          "covers": [
+            "Left-sleeve",
+            "Left-arm-upper"
+          ],
+          "attachment": {
+            "node": "LeftUpperArm",
+            "offsetM": [
+              0,
+              0.1500902,
+              0
+            ]
+          }
+        },
+        {
+          "id": "left-forearm",
+          "shape": "capsule",
+          "radius": 0.099,
+          "halfHeight": 0.0889933,
+          "covers": [
+            "Left-forearm"
+          ],
+          "attachment": {
+            "node": "LeftLowerArm",
+            "offsetM": [
+              0,
+              0.1044933,
+              0
+            ]
+          }
+        },
+        {
+          "id": "left-thigh",
+          "shape": "capsule",
+          "radius": 0.107,
+          "halfHeight": 0.1570774,
+          "covers": [
+            "Left-thigh"
+          ],
+          "attachment": {
+            "node": "LeftUpperLeg",
+            "offsetM": [
+              0,
+              0.1745774,
+              0
+            ]
+          }
+        },
+        {
+          "id": "right-arm",
+          "shape": "capsule",
+          "radius": 0.112,
+          "halfHeight": 0.1313402,
+          "covers": [
+            "Right-sleeve",
+            "Right-arm-upper"
+          ],
+          "attachment": {
+            "node": "RightUpperArm",
+            "offsetM": [
+              0,
+              0.1500902,
+              0
+            ]
+          }
+        },
+        {
+          "id": "right-forearm",
+          "shape": "capsule",
+          "radius": 0.099,
+          "halfHeight": 0.0889933,
+          "covers": [
+            "Right-forearm"
+          ],
+          "attachment": {
+            "node": "RightLowerArm",
+            "offsetM": [
+              0,
+              0.1044933,
+              0
+            ]
+          }
+        },
+        {
+          "id": "right-thigh",
+          "shape": "capsule",
+          "radius": 0.107,
+          "halfHeight": 0.1570775,
+          "covers": [
+            "Right-thigh"
+          ],
+          "attachment": {
+            "node": "RightUpperLeg",
+            "offsetM": [
+              0,
+              0.1745775,
+              0
+            ]
+          }
+        }
+      ],
+      "sourceInput": "fixtures/full.json",
+      "fitStatus": "under-test",
+      "attachment": {
+        "avatarId": "avatar",
+        "generation": 0,
+        "left": {
+          "node": "LeftUpperArm",
+          "offsetM": [
+            0.1125833,
+            0.06,
+            -0.065
+          ]
+        },
+        "right": {
+          "node": "RightUpperArm",
+          "offsetM": [
+            -0.1125833,
+            0.06,
+            -0.065
+          ]
+        },
+        "maxStepMeters": 0.25
+      }
+    }
+  }
+}

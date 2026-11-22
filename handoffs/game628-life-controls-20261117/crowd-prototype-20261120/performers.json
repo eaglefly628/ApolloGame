@@ -1,0 +1,80 @@
+{
+  "playerSrc": "/art/street-performers/traveler-performances.glb",
+  "actions": [
+    {
+      "clip": "dance",
+      "label": "跳舞",
+      "sourceId": "arms-hip-hop-dance-108990901",
+      "sourceSha256": "870ab28f3f9287510f4594c46ef13fabddbf3193285648875602851250faf1c8",
+      "action": "pose.dance",
+      "durationMs": 21966.66717529297
+    },
+    {
+      "clip": "clap",
+      "label": "鼓掌",
+      "sourceId": "clapping-100570901",
+      "sourceSha256": "81b26bd2530d3fa15804c19e081f0444df54afc3da5d9d5afedc851d285e50a6",
+      "action": "pose.clap",
+      "durationMs": 1166.6666269302368
+    },
+    {
+      "clip": "bow",
+      "label": "鞠躬",
+      "sourceId": "quick-formal-bow-119110901",
+      "sourceSha256": "a07a838645a6933f7308c4dccfad48fdca43e31a5a36c91781431156b0d1ce21",
+      "action": "pose.bow",
+      "durationMs": 2733.3333492279053
+    }
+  ],
+  "seed": 628211,
+  "residents": [
+    {
+      "key": "street-pedestrian-1",
+      "src": "/art/street-performers/street-pedestrian-1.glb",
+      "gender": "male",
+      "faceId": "2002",
+      "faceDNA": {
+        "eyes": 2,
+        "brows": 0,
+        "nose": 0,
+        "mouth": 2
+      }
+    },
+    {
+      "key": "street-pedestrian-2",
+      "src": "/art/street-performers/street-pedestrian-2.glb",
+      "gender": "female",
+      "faceId": "1010",
+      "faceDNA": {
+        "eyes": 1,
+        "brows": 0,
+        "nose": 1,
+        "mouth": 0
+      }
+    },
+    {
+      "key": "street-pedestrian-3",
+      "src": "/art/street-performers/street-pedestrian-3.glb",
+      "gender": "male",
+      "faceId": "0020",
+      "faceDNA": {
+        "eyes": 0,
+        "brows": 0,
+        "nose": 2,
+        "mouth": 0
+      }
+    },
+    {
+      "key": "street-pedestrian-4",
+      "src": "/art/street-performers/street-pedestrian-4.glb",
+      "gender": "female",
+      "faceId": "2021",
+      "faceDNA": {
+        "eyes": 2,
+        "brows": 0,
+        "nose": 2,
+        "mouth": 1
+      }
+    }
+  ]
+}

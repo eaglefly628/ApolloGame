@@ -1,0 +1,64 @@
+{
+  "references": {
+    "cozyStreet": "generated_images/exec-e200c4ec-58a4-40bd-a8e6-2c5cfc5b3c19.png",
+    "materialTarget": "generated_images/exec-d689b904-d681-4ccd-b65f-ff984561fe65.png"
+  },
+  "scope": "Game628 local material variants; geometry/scene assembly unchanged; separate candidate scene; no K ledger edits",
+  "artDirection": [
+    {
+      "shop": "grocery",
+      "source": "housing-e",
+      "surface": "warm stucco, restrained rain marks, cream mineral trim",
+      "output": "housing-e-detail.glb"
+    },
+    {
+      "shop": "bakery",
+      "source": "housing-a",
+      "surface": "cream stucco, pale stone trims, warm bakery identity",
+      "output": "housing-a-bakery.glb"
+    },
+    {
+      "shop": "noodles",
+      "source": "housing-d",
+      "surface": "warm brick, darker trim, restrained red accents",
+      "output": "housing-d-noodles.glb"
+    },
+    {
+      "shop": "catcafe",
+      "source": "housing-h",
+      "surface": "soft green stucco, pale warm trim, calmer variation",
+      "output": "housing-h-catcafe.glb"
+    },
+    {
+      "shop": "bikeshop",
+      "source": "housing-a",
+      "surface": "muted grey blue paint, metal identity, restrained wear",
+      "output": "housing-a-bikeshop.glb"
+    }
+  ],
+  "invariants": [
+    "Original POSITION, NORMAL, index payloads and node transforms",
+    "No new floors, openings or structural props",
+    "No new runtime engine code",
+    "No sunlight, cast shadow or night glow baked into new albedo"
+  ],
+  "baselineSha256": {
+    "public/art/neighborhood-v1/k-library/housing-a.glb": "e4f56e4c97910c65d8a22b9b0b8245a24802dcb50ead216ef480f8ca0c917451",
+    "public/art/neighborhood-v1/k-library/housing-d.glb": "5aca2a78a7fb5154d4b01146eab807f470495f16dbec01623cbce8bc6801b417",
+    "public/art/neighborhood-v1/k-library/housing-e.glb": "1992d215a60a05141d1ec5881509c36e88c02c24db32adb0ac55fa3e88b02c1c",
+    "public/art/neighborhood-v1/k-library/housing-h.glb": "267bc979f5dfe5fbfb28a01d8c8485f8a20d6ce433644be242463352efa5f2e4",
+    "public/scenes/art-overview.json": "d57d8a70919d8dacb39545c143e0c40ae7dd8e2681bd7868f8c63fffd6e16545",
+    "public/scenes/art-parts.json": "e4b9712e7c7ee10cfe143dd01c50b7cc37d1a0056fde9da20ecef42676121eb7",
+    "public/scenes/art-street.json": "c3a89f1a55687f528ebed041eda965c51acbf23e2643497657e75a691f07f75d",
+    "public/scenes/people.json": "5f716ec446899609ec2130e5ee473fd9506a1417ea67585ec8f60e29f50195f4",
+    "public/scenes/street-2-east.json": "a3c6dad6dcc42290ae383d7b14dbd3115704493534ec090c4680731f12512c2c",
+    "public/scenes/street-2-west.json": "4aedc7d25c264f7efa742bdad85bc191e584f0d63e29c70e497b1e1d5dfd7d3f",
+    "public/scenes/street-2.json": "a5e46155eacec65b459758b9ff33cc43d0b2fd952fb69fd31515a064502cd5eb",
+    "public/scenes/street-3-east.json": "72debc2c50f947046f3c8f6e89857666c966186bf57291cfd844d5cd539ad4d1",
+    "public/scenes/street-3-west.json": "a209272b011acc9a267a26936dd46b675511e6b33dfd88c395d259bbedae6874",
+    "public/scenes/street-3.json": "4ad8a1de5ed17691dc382ed44c08def514f5344dfe8a544e3aa5fafa30454127",
+    "public/scenes/streets-east.json": "cf5c7b94902917e1d5a7df447362b5886a8e46475eff0ed58d1410c5a581c674",
+    "public/scenes/streets-west.json": "80b7826cf00296fe60c3fd69d77dc5d0ac45a76b717813b551cd5c672db95951",
+    "public/scenes/streets.json": "9ef2057723c10edc89d8de4b6d0509ee1c511d75cb291073cb6fc95a54185e1c"
+  }
+}

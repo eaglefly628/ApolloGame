@@ -1,0 +1,12 @@
+{
+  "extends": "./runtime/tsconfig.json",
+  "include": [
+    "host.ts"
+  ],
+  "compilerOptions": {
+    "types": [
+      "vite/client"
+    ],
+    "allowJs": true
+  }
+}

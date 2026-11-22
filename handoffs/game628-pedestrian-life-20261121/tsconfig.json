@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": ["host.ts", "scene-adapter.ts", "pedestrian-response.ts"],
+  "compilerOptions": { "types": ["vite/client"] }
+}

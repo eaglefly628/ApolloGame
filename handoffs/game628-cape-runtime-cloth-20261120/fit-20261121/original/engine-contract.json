@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "status": "isolated-engine-candidate",
+  "authority": "handoffs/game628-cape-runtime-engine-20261120/CONTRACT.json",
+  "reconciles": ["game628-avatar-cape-20261120/CONTRACT.md", "game628-avatar-edit-20261120/cape-editor-contract.json"],
+  "ownership": {
+    "editor": "owns selected body, actual avatar entity, model placement and action selection",
+    "engine": "samples the placed animated instance once after mixer update; sampled anchors are the runtime authority",
+    "cloth": "consumes this attachment descriptor and frame, supplies fitted profile/material/quality; does not run a separate skeleton sampler in gameplay",
+    "migration": "LeftShoulder/RightShoulder zero-offset draft is superseded for this candidate; no silent alias or mixing with UpperArm points"
+  },
+  "coordinates": {
+    "units": "meters", "up": "+Y", "forward": "+Z", "handedness": "right",
+    "root": "rigid world position and normalized quaternion [x,y,z,w]; solver and cloth mesh use world coordinates",
+    "offsetM": "physical meters in animated bone orientation; use normalized bone world quaternion, never raw armature scale",
+    "rootLocalPins": "inverse(root rigid world matrix) * bone world anchor; world pin = root rigid world matrix * rootLocalPin",
+    "skinScale": "glTF hierarchy already consumes Armature 0.0086; never multiply again"
+  },
+  "bounds": {"worldPositionAbsMaxMeters": 1000000, "boneOffsetAbsMaxMeters": 1, "anchorStepMaxMeters": 2, "precision": "measured attachment accuracy applies to the tested near-origin scene; no large-world millimetre precision claim"},
+  "attachment": {
+    "avatarId": "editor-selected entity ID",
+    "generation": 0,
+    "left": {"node": "LeftUpperArm", "offsetM": [0, 0, -0.025]},
+    "right": {"node": "RightUpperArm", "offsetM": [0, 0, -0.025]},
+    "maxStepMeters": 0.25
+  },
+  "pinMapping": {"column0": "right", "columnLast": "left", "pins": "topCorners"},
+  "offsetFitStatus": "rearward 25mm candidate, physical attachment/contact fitting awaits cloth and editor joint review",
+  "order": ["place model and resolve Pivot3D", "apply animation selection", "advance AnimationMixer once", "update world matrices", "sample both bone anchors and proxy transforms", "update existing zero-mass vertices and kinematic proxies", "bounded Jolt substeps", "upload deformed positions"],
+  "history": "root/bone motion keeps body ID, free-vertex positions, previous positions and velocities; no whole-cloth rigid teleport",
+  "rebuild": ["cloth topology/material/solver structure changes", "reset changes", "attachment descriptors or explicit generation changes", "avatar instance UUID changes", "recovery after missing/invalid anchor"],
+  "reject": ["missing or duplicate named bone", "missing/unloaded avatar", "nonfinite pose/offset", "pin separation below 1mm", "anchor step exceeds maxStepMeters", "attachment pins not topCorners"],
+  "failure": "remove native panel and render mesh with bounded warning; no stale frozen cape; retry after next valid frame",
+  "quality": {"normal": "medium: 63 vertices, 96 faces, 4 iterations", "low": "low: 35 vertices, 48 faces, 2 iterations", "off": "remove Cloth3D"},
+  "lowFrameRate": {"fixedStepSeconds": 0.016666666666666666, "maxSteps": 4, "excessTime": "discard with clampedFrames diagnostic; do not replay unbounded catch-up", "pins": "interpolate previous/current sampled anchor per substep"},
+  "colliders": {"component": "ClothCollider3D", "shapes": ["sphere", "capsule"], "attachment": {"avatarId": "same avatar ID", "node": "Spine1", "offsetM": [0, 0, -0.04]}, "axis": "capsule local Y follows sampled bone orientation", "shapeChange": "rebuild proxy only", "movement": "MoveKinematic on existing body"}
+}

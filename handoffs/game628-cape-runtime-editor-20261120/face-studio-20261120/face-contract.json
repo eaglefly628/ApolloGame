@@ -1,0 +1,1037 @@
+{
+  "status": "finite-81-combination-local-prototype-not-infinite-avatar-system",
+  "families": {
+    "eyes": [
+      "椭圆眼",
+      "笑弯眼",
+      "横圆眼"
+    ],
+    "brows": [
+      "平眉",
+      "弧眉",
+      "斜粗眉"
+    ],
+    "nose": [
+      "圆鼻",
+      "长鼻",
+      "楔鼻"
+    ],
+    "mouth": [
+      "微笑",
+      "平嘴",
+      "圆嘴"
+    ]
+  },
+  "variants": [
+    {
+      "id": "0000",
+      "dna": {
+        "eyes": 0,
+        "brows": 0,
+        "nose": 0,
+        "mouth": 0
+      },
+      "key": "npc-face-0000",
+      "src": "/art/face-studio-20261120/face-0000.gltf"
+    },
+    {
+      "id": "0001",
+      "dna": {
+        "eyes": 0,
+        "brows": 0,
+        "nose": 0,
+        "mouth": 1
+      },
+      "key": "npc-face-0001",
+      "src": "/art/face-studio-20261120/face-0001.gltf"
+    },
+    {
+      "id": "0002",
+      "dna": {
+        "eyes": 0,
+        "brows": 0,
+        "nose": 0,
+        "mouth": 2
+      },
+      "key": "npc-face-0002",
+      "src": "/art/face-studio-20261120/face-0002.gltf"
+    },
+    {
+      "id": "0010",
+      "dna": {
+        "eyes": 0,
+        "brows": 0,
+        "nose": 1,
+        "mouth": 0
+      },
+      "key": "npc-face-0010",
+      "src": "/art/face-studio-20261120/face-0010.gltf"
+    },
+    {
+      "id": "0011",
+      "dna": {
+        "eyes": 0,
+        "brows": 0,
+        "nose": 1,
+        "mouth": 1
+      },
+      "key": "npc-face-0011",
+      "src": "/art/face-studio-20261120/face-0011.gltf"
+    },
+    {
+      "id": "0012",
+      "dna": {
+        "eyes": 0,
+        "brows": 0,
+        "nose": 1,
+        "mouth": 2
+      },
+      "key": "npc-face-0012",
+      "src": "/art/face-studio-20261120/face-0012.gltf"
+    },
+    {
+      "id": "0020",
+      "dna": {
+        "eyes": 0,
+        "brows": 0,
+        "nose": 2,
+        "mouth": 0
+      },
+      "key": "npc-face-0020",
+      "src": "/art/face-studio-20261120/face-0020.gltf"
+    },
+    {
+      "id": "0021",
+      "dna": {
+        "eyes": 0,
+        "brows": 0,
+        "nose": 2,
+        "mouth": 1
+      },
+      "key": "npc-face-0021",
+      "src": "/art/face-studio-20261120/face-0021.gltf"
+    },
+    {
+      "id": "0022",
+      "dna": {
+        "eyes": 0,
+        "brows": 0,
+        "nose": 2,
+        "mouth": 2
+      },
+      "key": "npc-face-0022",
+      "src": "/art/face-studio-20261120/face-0022.gltf"
+    },
+    {
+      "id": "0100",
+      "dna": {
+        "eyes": 0,
+        "brows": 1,
+        "nose": 0,
+        "mouth": 0
+      },
+      "key": "npc-face-0100",
+      "src": "/art/face-studio-20261120/face-0100.gltf"
+    },
+    {
+      "id": "0101",
+      "dna": {
+        "eyes": 0,
+        "brows": 1,
+        "nose": 0,
+        "mouth": 1
+      },
+      "key": "npc-face-0101",
+      "src": "/art/face-studio-20261120/face-0101.gltf"
+    },
+    {
+      "id": "0102",
+      "dna": {
+        "eyes": 0,
+        "brows": 1,
+        "nose": 0,
+        "mouth": 2
+      },
+      "key": "npc-face-0102",
+      "src": "/art/face-studio-20261120/face-0102.gltf"
+    },
+    {
+      "id": "0110",
+      "dna": {
+        "eyes": 0,
+        "brows": 1,
+        "nose": 1,
+        "mouth": 0
+      },
+      "key": "npc-face-0110",
+      "src": "/art/face-studio-20261120/face-0110.gltf"
+    },
+    {
+      "id": "0111",
+      "dna": {
+        "eyes": 0,
+        "brows": 1,
+        "nose": 1,
+        "mouth": 1
+      },
+      "key": "npc-face-0111",
+      "src": "/art/face-studio-20261120/face-0111.gltf"
+    },
+    {
+      "id": "0112",
+      "dna": {
+        "eyes": 0,
+        "brows": 1,
+        "nose": 1,
+        "mouth": 2
+      },
+      "key": "npc-face-0112",
+      "src": "/art/face-studio-20261120/face-0112.gltf"
+    },
+    {
+      "id": "0120",
+      "dna": {
+        "eyes": 0,
+        "brows": 1,
+        "nose": 2,
+        "mouth": 0
+      },
+      "key": "npc-face-0120",
+      "src": "/art/face-studio-20261120/face-0120.gltf"
+    },
+    {
+      "id": "0121",
+      "dna": {
+        "eyes": 0,
+        "brows": 1,
+        "nose": 2,
+        "mouth": 1
+      },
+      "key": "npc-face-0121",
+      "src": "/art/face-studio-20261120/face-0121.gltf"
+    },
+    {
+      "id": "0122",
+      "dna": {
+        "eyes": 0,
+        "brows": 1,
+        "nose": 2,
+        "mouth": 2
+      },
+      "key": "npc-face-0122",
+      "src": "/art/face-studio-20261120/face-0122.gltf"
+    },
+    {
+      "id": "0200",
+      "dna": {
+        "eyes": 0,
+        "brows": 2,
+        "nose": 0,
+        "mouth": 0
+      },
+      "key": "npc-face-0200",
+      "src": "/art/face-studio-20261120/face-0200.gltf"
+    },
+    {
+      "id": "0201",
+      "dna": {
+        "eyes": 0,
+        "brows": 2,
+        "nose": 0,
+        "mouth": 1
+      },
+      "key": "npc-face-0201",
+      "src": "/art/face-studio-20261120/face-0201.gltf"
+    },
+    {
+      "id": "0202",
+      "dna": {
+        "eyes": 0,
+        "brows": 2,
+        "nose": 0,
+        "mouth": 2
+      },
+      "key": "npc-face-0202",
+      "src": "/art/face-studio-20261120/face-0202.gltf"
+    },
+    {
+      "id": "0210",
+      "dna": {
+        "eyes": 0,
+        "brows": 2,
+        "nose": 1,
+        "mouth": 0
+      },
+      "key": "npc-face-0210",
+      "src": "/art/face-studio-20261120/face-0210.gltf"
+    },
+    {
+      "id": "0211",
+      "dna": {
+        "eyes": 0,
+        "brows": 2,
+        "nose": 1,
+        "mouth": 1
+      },
+      "key": "npc-face-0211",
+      "src": "/art/face-studio-20261120/face-0211.gltf"
+    },
+    {
+      "id": "0212",
+      "dna": {
+        "eyes": 0,
+        "brows": 2,
+        "nose": 1,
+        "mouth": 2
+      },
+      "key": "npc-face-0212",
+      "src": "/art/face-studio-20261120/face-0212.gltf"
+    },
+    {
+      "id": "0220",
+      "dna": {
+        "eyes": 0,
+        "brows": 2,
+        "nose": 2,
+        "mouth": 0
+      },
+      "key": "npc-face-0220",
+      "src": "/art/face-studio-20261120/face-0220.gltf"
+    },
+    {
+      "id": "0221",
+      "dna": {
+        "eyes": 0,
+        "brows": 2,
+        "nose": 2,
+        "mouth": 1
+      },
+      "key": "npc-face-0221",
+      "src": "/art/face-studio-20261120/face-0221.gltf"
+    },
+    {
+      "id": "0222",
+      "dna": {
+        "eyes": 0,
+        "brows": 2,
+        "nose": 2,
+        "mouth": 2
+      },
+      "key": "npc-face-0222",
+      "src": "/art/face-studio-20261120/face-0222.gltf"
+    },
+    {
+      "id": "1000",
+      "dna": {
+        "eyes": 1,
+        "brows": 0,
+        "nose": 0,
+        "mouth": 0
+      },
+      "key": "npc-face-1000",
+      "src": "/art/face-studio-20261120/face-1000.gltf"
+    },
+    {
+      "id": "1001",
+      "dna": {
+        "eyes": 1,
+        "brows": 0,
+        "nose": 0,
+        "mouth": 1
+      },
+      "key": "npc-face-1001",
+      "src": "/art/face-studio-20261120/face-1001.gltf"
+    },
+    {
+      "id": "1002",
+      "dna": {
+        "eyes": 1,
+        "brows": 0,
+        "nose": 0,
+        "mouth": 2
+      },
+      "key": "npc-face-1002",
+      "src": "/art/face-studio-20261120/face-1002.gltf"
+    },
+    {
+      "id": "1010",
+      "dna": {
+        "eyes": 1,
+        "brows": 0,
+        "nose": 1,
+        "mouth": 0
+      },
+      "key": "npc-face-1010",
+      "src": "/art/face-studio-20261120/face-1010.gltf"
+    },
+    {
+      "id": "1011",
+      "dna": {
+        "eyes": 1,
+        "brows": 0,
+        "nose": 1,
+        "mouth": 1
+      },
+      "key": "npc-face-1011",
+      "src": "/art/face-studio-20261120/face-1011.gltf"
+    },
+    {
+      "id": "1012",
+      "dna": {
+        "eyes": 1,
+        "brows": 0,
+        "nose": 1,
+        "mouth": 2
+      },
+      "key": "npc-face-1012",
+      "src": "/art/face-studio-20261120/face-1012.gltf"
+    },
+    {
+      "id": "1020",
+      "dna": {
+        "eyes": 1,
+        "brows": 0,
+        "nose": 2,
+        "mouth": 0
+      },
+      "key": "npc-face-1020",
+      "src": "/art/face-studio-20261120/face-1020.gltf"
+    },
+    {
+      "id": "1021",
+      "dna": {
+        "eyes": 1,
+        "brows": 0,
+        "nose": 2,
+        "mouth": 1
+      },
+      "key": "npc-face-1021",
+      "src": "/art/face-studio-20261120/face-1021.gltf"
+    },
+    {
+      "id": "1022",
+      "dna": {
+        "eyes": 1,
+        "brows": 0,
+        "nose": 2,
+        "mouth": 2
+      },
+      "key": "npc-face-1022",
+      "src": "/art/face-studio-20261120/face-1022.gltf"
+    },
+    {
+      "id": "1100",
+      "dna": {
+        "eyes": 1,
+        "brows": 1,
+        "nose": 0,
+        "mouth": 0
+      },
+      "key": "npc-face-1100",
+      "src": "/art/face-studio-20261120/face-1100.gltf"
+    },
+    {
+      "id": "1101",
+      "dna": {
+        "eyes": 1,
+        "brows": 1,
+        "nose": 0,
+        "mouth": 1
+      },
+      "key": "npc-face-1101",
+      "src": "/art/face-studio-20261120/face-1101.gltf"
+    },
+    {
+      "id": "1102",
+      "dna": {
+        "eyes": 1,
+        "brows": 1,
+        "nose": 0,
+        "mouth": 2
+      },
+      "key": "npc-face-1102",
+      "src": "/art/face-studio-20261120/face-1102.gltf"
+    },
+    {
+      "id": "1110",
+      "dna": {
+        "eyes": 1,
+        "brows": 1,
+        "nose": 1,
+        "mouth": 0
+      },
+      "key": "npc-face-1110",
+      "src": "/art/face-studio-20261120/face-1110.gltf"
+    },
+    {
+      "id": "1111",
+      "dna": {
+        "eyes": 1,
+        "brows": 1,
+        "nose": 1,
+        "mouth": 1
+      },
+      "key": "npc-face-1111",
+      "src": "/art/face-studio-20261120/face-1111.gltf"
+    },
+    {
+      "id": "1112",
+      "dna": {
+        "eyes": 1,
+        "brows": 1,
+        "nose": 1,
+        "mouth": 2
+      },
+      "key": "npc-face-1112",
+      "src": "/art/face-studio-20261120/face-1112.gltf"
+    },
+    {
+      "id": "1120",
+      "dna": {
+        "eyes": 1,
+        "brows": 1,
+        "nose": 2,
+        "mouth": 0
+      },
+      "key": "npc-face-1120",
+      "src": "/art/face-studio-20261120/face-1120.gltf"
+    },
+    {
+      "id": "1121",
+      "dna": {
+        "eyes": 1,
+        "brows": 1,
+        "nose": 2,
+        "mouth": 1
+      },
+      "key": "npc-face-1121",
+      "src": "/art/face-studio-20261120/face-1121.gltf"
+    },
+    {
+      "id": "1122",
+      "dna": {
+        "eyes": 1,
+        "brows": 1,
+        "nose": 2,
+        "mouth": 2
+      },
+      "key": "npc-face-1122",
+      "src": "/art/face-studio-20261120/face-1122.gltf"
+    },
+    {
+      "id": "1200",
+      "dna": {
+        "eyes": 1,
+        "brows": 2,
+        "nose": 0,
+        "mouth": 0
+      },
+      "key": "npc-face-1200",
+      "src": "/art/face-studio-20261120/face-1200.gltf"
+    },
+    {
+      "id": "1201",
+      "dna": {
+        "eyes": 1,
+        "brows": 2,
+        "nose": 0,
+        "mouth": 1
+      },
+      "key": "npc-face-1201",
+      "src": "/art/face-studio-20261120/face-1201.gltf"
+    },
+    {
+      "id": "1202",
+      "dna": {
+        "eyes": 1,
+        "brows": 2,
+        "nose": 0,
+        "mouth": 2
+      },
+      "key": "npc-face-1202",
+      "src": "/art/face-studio-20261120/face-1202.gltf"
+    },
+    {
+      "id": "1210",
+      "dna": {
+        "eyes": 1,
+        "brows": 2,
+        "nose": 1,
+        "mouth": 0
+      },
+      "key": "npc-face-1210",
+      "src": "/art/face-studio-20261120/face-1210.gltf"
+    },
+    {
+      "id": "1211",
+      "dna": {
+        "eyes": 1,
+        "brows": 2,
+        "nose": 1,
+        "mouth": 1
+      },
+      "key": "npc-face-1211",
+      "src": "/art/face-studio-20261120/face-1211.gltf"
+    },
+    {
+      "id": "1212",
+      "dna": {
+        "eyes": 1,
+        "brows": 2,
+        "nose": 1,
+        "mouth": 2
+      },
+      "key": "npc-face-1212",
+      "src": "/art/face-studio-20261120/face-1212.gltf"
+    },
+    {
+      "id": "1220",
+      "dna": {
+        "eyes": 1,
+        "brows": 2,
+        "nose": 2,
+        "mouth": 0
+      },
+      "key": "npc-face-1220",
+      "src": "/art/face-studio-20261120/face-1220.gltf"
+    },
+    {
+      "id": "1221",
+      "dna": {
+        "eyes": 1,
+        "brows": 2,
+        "nose": 2,
+        "mouth": 1
+      },
+      "key": "npc-face-1221",
+      "src": "/art/face-studio-20261120/face-1221.gltf"
+    },
+    {
+      "id": "1222",
+      "dna": {
+        "eyes": 1,
+        "brows": 2,
+        "nose": 2,
+        "mouth": 2
+      },
+      "key": "npc-face-1222",
+      "src": "/art/face-studio-20261120/face-1222.gltf"
+    },
+    {
+      "id": "2000",
+      "dna": {
+        "eyes": 2,
+        "brows": 0,
+        "nose": 0,
+        "mouth": 0
+      },
+      "key": "npc-face-2000",
+      "src": "/art/face-studio-20261120/face-2000.gltf"
+    },
+    {
+      "id": "2001",
+      "dna": {
+        "eyes": 2,
+        "brows": 0,
+        "nose": 0,
+        "mouth": 1
+      },
+      "key": "npc-face-2001",
+      "src": "/art/face-studio-20261120/face-2001.gltf"
+    },
+    {
+      "id": "2002",
+      "dna": {
+        "eyes": 2,
+        "brows": 0,
+        "nose": 0,
+        "mouth": 2
+      },
+      "key": "npc-face-2002",
+      "src": "/art/face-studio-20261120/face-2002.gltf"
+    },
+    {
+      "id": "2010",
+      "dna": {
+        "eyes": 2,
+        "brows": 0,
+        "nose": 1,
+        "mouth": 0
+      },
+      "key": "npc-face-2010",
+      "src": "/art/face-studio-20261120/face-2010.gltf"
+    },
+    {
+      "id": "2011",
+      "dna": {
+        "eyes": 2,
+        "brows": 0,
+        "nose": 1,
+        "mouth": 1
+      },
+      "key": "npc-face-2011",
+      "src": "/art/face-studio-20261120/face-2011.gltf"
+    },
+    {
+      "id": "2012",
+      "dna": {
+        "eyes": 2,
+        "brows": 0,
+        "nose": 1,
+        "mouth": 2
+      },
+      "key": "npc-face-2012",
+      "src": "/art/face-studio-20261120/face-2012.gltf"
+    },
+    {
+      "id": "2020",
+      "dna": {
+        "eyes": 2,
+        "brows": 0,
+        "nose": 2,
+        "mouth": 0
+      },
+      "key": "npc-face-2020",
+      "src": "/art/face-studio-20261120/face-2020.gltf"
+    },
+    {
+      "id": "2021",
+      "dna": {
+        "eyes": 2,
+        "brows": 0,
+        "nose": 2,
+        "mouth": 1
+      },
+      "key": "npc-face-2021",
+      "src": "/art/face-studio-20261120/face-2021.gltf"
+    },
+    {
+      "id": "2022",
+      "dna": {
+        "eyes": 2,
+        "brows": 0,
+        "nose": 2,
+        "mouth": 2
+      },
+      "key": "npc-face-2022",
+      "src": "/art/face-studio-20261120/face-2022.gltf"
+    },
+    {
+      "id": "2100",
+      "dna": {
+        "eyes": 2,
+        "brows": 1,
+        "nose": 0,
+        "mouth": 0
+      },
+      "key": "npc-face-2100",
+      "src": "/art/face-studio-20261120/face-2100.gltf"
+    },
+    {
+      "id": "2101",
+      "dna": {
+        "eyes": 2,
+        "brows": 1,
+        "nose": 0,
+        "mouth": 1
+      },
+      "key": "npc-face-2101",
+      "src": "/art/face-studio-20261120/face-2101.gltf"
+    },
+    {
+      "id": "2102",
+      "dna": {
+        "eyes": 2,
+        "brows": 1,
+        "nose": 0,
+        "mouth": 2
+      },
+      "key": "npc-face-2102",
+      "src": "/art/face-studio-20261120/face-2102.gltf"
+    },
+    {
+      "id": "2110",
+      "dna": {
+        "eyes": 2,
+        "brows": 1,
+        "nose": 1,
+        "mouth": 0
+      },
+      "key": "npc-face-2110",
+      "src": "/art/face-studio-20261120/face-2110.gltf"
+    },
+    {
+      "id": "2111",
+      "dna": {
+        "eyes": 2,
+        "brows": 1,
+        "nose": 1,
+        "mouth": 1
+      },
+      "key": "npc-face-2111",
+      "src": "/art/face-studio-20261120/face-2111.gltf"
+    },
+    {
+      "id": "2112",
+      "dna": {
+        "eyes": 2,
+        "brows": 1,
+        "nose": 1,
+        "mouth": 2
+      },
+      "key": "npc-face-2112",
+      "src": "/art/face-studio-20261120/face-2112.gltf"
+    },
+    {
+      "id": "2120",
+      "dna": {
+        "eyes": 2,
+        "brows": 1,
+        "nose": 2,
+        "mouth": 0
+      },
+      "key": "npc-face-2120",
+      "src": "/art/face-studio-20261120/face-2120.gltf"
+    },
+    {
+      "id": "2121",
+      "dna": {
+        "eyes": 2,
+        "brows": 1,
+        "nose": 2,
+        "mouth": 1
+      },
+      "key": "npc-face-2121",
+      "src": "/art/face-studio-20261120/face-2121.gltf"
+    },
+    {
+      "id": "2122",
+      "dna": {
+        "eyes": 2,
+        "brows": 1,
+        "nose": 2,
+        "mouth": 2
+      },
+      "key": "npc-face-2122",
+      "src": "/art/face-studio-20261120/face-2122.gltf"
+    },
+    {
+      "id": "2200",
+      "dna": {
+        "eyes": 2,
+        "brows": 2,
+        "nose": 0,
+        "mouth": 0
+      },
+      "key": "npc-face-2200",
+      "src": "/art/face-studio-20261120/face-2200.gltf"
+    },
+    {
+      "id": "2201",
+      "dna": {
+        "eyes": 2,
+        "brows": 2,
+        "nose": 0,
+        "mouth": 1
+      },
+      "key": "npc-face-2201",
+      "src": "/art/face-studio-20261120/face-2201.gltf"
+    },
+    {
+      "id": "2202",
+      "dna": {
+        "eyes": 2,
+        "brows": 2,
+        "nose": 0,
+        "mouth": 2
+      },
+      "key": "npc-face-2202",
+      "src": "/art/face-studio-20261120/face-2202.gltf"
+    },
+    {
+      "id": "2210",
+      "dna": {
+        "eyes": 2,
+        "brows": 2,
+        "nose": 1,
+        "mouth": 0
+      },
+      "key": "npc-face-2210",
+      "src": "/art/face-studio-20261120/face-2210.gltf"
+    },
+    {
+      "id": "2211",
+      "dna": {
+        "eyes": 2,
+        "brows": 2,
+        "nose": 1,
+        "mouth": 1
+      },
+      "key": "npc-face-2211",
+      "src": "/art/face-studio-20261120/face-2211.gltf"
+    },
+    {
+      "id": "2212",
+      "dna": {
+        "eyes": 2,
+        "brows": 2,
+        "nose": 1,
+        "mouth": 2
+      },
+      "key": "npc-face-2212",
+      "src": "/art/face-studio-20261120/face-2212.gltf"
+    },
+    {
+      "id": "2220",
+      "dna": {
+        "eyes": 2,
+        "brows": 2,
+        "nose": 2,
+        "mouth": 0
+      },
+      "key": "npc-face-2220",
+      "src": "/art/face-studio-20261120/face-2220.gltf"
+    },
+    {
+      "id": "2221",
+      "dna": {
+        "eyes": 2,
+        "brows": 2,
+        "nose": 2,
+        "mouth": 1
+      },
+      "key": "npc-face-2221",
+      "src": "/art/face-studio-20261120/face-2221.gltf"
+    },
+    {
+      "id": "2222",
+      "dna": {
+        "eyes": 2,
+        "brows": 2,
+        "nose": 2,
+        "mouth": 2
+      },
+      "key": "npc-face-2222",
+      "src": "/art/face-studio-20261120/face-2222.gltf"
+    }
+  ],
+  "npcs": [
+    {
+      "shop": "grocery",
+      "faceId": "0010",
+      "faceDNA": {
+        "eyes": 0,
+        "brows": 0,
+        "nose": 1,
+        "mouth": 0
+      },
+      "modelKey": "npc-face-grocery",
+      "src": "/art/face-studio-20261120/npc-grocery.glb",
+      "sha256": "dee1c552ea63fa731e66cce993a7d46e8ce53617bfc23ce0921500195c54ba72",
+      "AnimState3D": {
+        "clip": "wave",
+        "loop": true,
+        "speed": 1
+      },
+      "scale": 1
+    },
+    {
+      "shop": "bakery",
+      "faceId": "1100",
+      "faceDNA": {
+        "eyes": 1,
+        "brows": 1,
+        "nose": 0,
+        "mouth": 0
+      },
+      "modelKey": "npc-face-bakery",
+      "src": "/art/face-studio-20261120/npc-bakery.glb",
+      "sha256": "4ee39298a222d99a637f41d03339bcd79ce5362f39edfc5660b08f867c792d4c",
+      "AnimState3D": {
+        "clip": "idle",
+        "loop": true,
+        "speed": 1
+      },
+      "scale": 1
+    },
+    {
+      "shop": "noodles",
+      "faceId": "2221",
+      "faceDNA": {
+        "eyes": 2,
+        "brows": 2,
+        "nose": 2,
+        "mouth": 1
+      },
+      "modelKey": "npc-face-noodles",
+      "src": "/art/face-studio-20261120/npc-noodles.glb",
+      "sha256": "f5bc04659587e1ae4a136d349d7de0b2a3eb32183394574b1d0df25d58a61820",
+      "AnimState3D": {
+        "clip": "idle",
+        "loop": true,
+        "speed": 1
+      },
+      "scale": 1
+    },
+    {
+      "shop": "catcafe",
+      "faceId": "1012",
+      "faceDNA": {
+        "eyes": 1,
+        "brows": 0,
+        "nose": 1,
+        "mouth": 2
+      },
+      "modelKey": "npc-face-catcafe",
+      "src": "/art/face-studio-20261120/npc-catcafe.glb",
+      "sha256": "0565424808f91764cad422717af13d025b685547589f9541052baee2c6fc897e",
+      "AnimState3D": {
+        "clip": "wave",
+        "loop": true,
+        "speed": 1
+      },
+      "scale": 1
+    },
+    {
+      "shop": "bikeshop",
+      "faceId": "2200",
+      "faceDNA": {
+        "eyes": 2,
+        "brows": 2,
+        "nose": 0,
+        "mouth": 0
+      },
+      "modelKey": "npc-face-bikeshop",
+      "src": "/art/face-studio-20261120/npc-bikeshop.glb",
+      "sha256": "c0af60995f2706c8d37580c261f790df2c9fb5c60612e92fd4335de19a257682",
+      "AnimState3D": {
+        "clip": "idle",
+        "loop": true,
+        "speed": 1
+      },
+      "scale": 1
+    }
+  ],
+  "partBinding": {
+    "parentNode": "Head",
+    "sameBodyMixer": true,
+    "independentSocketUsed": false
+  },
+  "sources": {
+    "shopkeeperV2": "8b576e90b7d617246b1321ed1a513eab857ba2dae79edc62e6bfa12b9c1c4f18",
+    "travelerV4": "89848c4f0fa8eff8783b36af445e29a639fe5656c53ee84dae159e7754d55e8f",
+    "sourceLibraryUnchanged": true
+  },
+  "sharedBinary": {
+    "src": "/art/face-studio-20261120/shared-body.bin",
+    "bytes": 1235752,
+    "sha256": "71985acc71f82dafa0943a7caff55ee225887ec57bb4602136bdbf8479138867"
+  },
+  "seed": 6282026,
+  "notes": [
+    "NPC body and library rotations retained; v4 valid visor and v3 exact sole vertical curves reused",
+    "No Mii meshes, faces, UI or code copied",
+    "Studio uses81 lightweight glTF recipes plus shared1MB bin; main street only five self-contained GLBs",
+    "No runtime helper, engine modification, DOM UI or per-frame random identity changes"
+  ]
+}
