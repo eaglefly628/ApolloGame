@@ -1,0 +1,3006 @@
+{
+  "wet-0": {
+    "Transform3D": {
+      "x": -6.5,
+      "y": 0.012,
+      "z": 2.65
+    },
+    "Decal3D": {
+      "width": 1.9,
+      "height": 2,
+      "color": 5070953,
+      "opacity": 0.38,
+      "y": 0.012
+    }
+  },
+  "wet-1": {
+    "Transform3D": {
+      "x": -5.7,
+      "y": 0.012,
+      "z": 2.65
+    },
+    "Decal3D": {
+      "width": 1.9,
+      "height": 2,
+      "color": 5070953,
+      "opacity": 0.38,
+      "y": 0.012
+    }
+  },
+  "wet-2": {
+    "Transform3D": {
+      "x": -4.9,
+      "y": 0.012,
+      "z": 2.65
+    },
+    "Decal3D": {
+      "width": 1.9,
+      "height": 2,
+      "color": 5070953,
+      "opacity": 0.38,
+      "y": 0.012
+    }
+  },
+  "wet-3": {
+    "Transform3D": {
+      "x": -4.1,
+      "y": 0.012,
+      "z": 2.65
+    },
+    "Decal3D": {
+      "width": 1.9,
+      "height": 2,
+      "color": 5070953,
+      "opacity": 0.38,
+      "y": 0.012
+    }
+  },
+  "wet-4": {
+    "Transform3D": {
+      "x": -3.3,
+      "y": 0.012,
+      "z": 2.65
+    },
+    "Decal3D": {
+      "width": 1.9,
+      "height": 2,
+      "color": 5070953,
+      "opacity": 0.38,
+      "y": 0.012
+    }
+  },
+  "wet-5": {
+    "Transform3D": {
+      "x": -2.5,
+      "y": 0.012,
+      "z": 2.65
+    },
+    "Decal3D": {
+      "width": 1.9,
+      "height": 2,
+      "color": 5070953,
+      "opacity": 0.38,
+      "y": 0.012
+    }
+  },
+  "puddle-0": {
+    "Transform3D": {
+      "x": -5.45,
+      "y": 0.018,
+      "z": 2.64
+    },
+    "Decal3D": {
+      "width": 1.64,
+      "height": 0.87,
+      "tex": "bakery-puddle-west",
+      "y": 0.018
+    }
+  },
+  "puddle-1": {
+    "Transform3D": {
+      "x": -3.42,
+      "y": 0.018,
+      "z": 3.14
+    },
+    "Decal3D": {
+      "width": 1.59,
+      "height": 0.91,
+      "tex": "bakery-puddle-east",
+      "y": 0.018
+    }
+  },
+  "drop-0": {
+    "Transform3D": {
+      "x": -8.25717101595967,
+      "y": 5.088677955107459,
+      "z": 0.18,
+      "scaleX": 0.009,
+      "scaleY": 0.16,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.09,
+          "freq": 16.022122533307943,
+          "phase": 0
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -1,
+          "freq": 16.022122533307943,
+          "phase": 0
+        }
+      ]
+    }
+  },
+  "drop-2": {
+    "Transform3D": {
+      "x": -1.080912604346833,
+      "y": 3.4115451115892843,
+      "z": 3.240759493670886,
+      "scaleX": 0.015,
+      "scaleY": 0.226,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.29610000000000003,
+          "freq": 5.691152649056281,
+          "phase": 4.79992
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.2900000000000005,
+          "freq": 5.691152649056281,
+          "phase": 4.79992
+        }
+      ]
+    }
+  },
+  "drop-4": {
+    "Transform3D": {
+      "x": -1.5846541927339945,
+      "y": 3.734412268071111,
+      "z": 2.4015189873417726,
+      "scaleX": 0.012,
+      "scaleY": 0.29200000000000004,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.32220000000000004,
+          "freq": 5.984821759073292,
+          "phase": 9.59984
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.5800000000000005,
+          "freq": 5.984821759073292,
+          "phase": 9.59984
+        }
+      ]
+    }
+  },
+  "drop-6": {
+    "Transform3D": {
+      "x": -2.014271648871064,
+      "y": 3.233677955107458,
+      "z": 1.5622784810126582,
+      "scaleX": 0.009,
+      "scaleY": 0.16,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.28304999999999997,
+          "freq": 7.671679357573803,
+          "phase": 14.39976
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.145,
+          "freq": 7.671679357573803,
+          "phase": 14.39976
+        }
+      ]
+    }
+  },
+  "drop-8": {
+    "Transform3D": {
+      "x": -2.5180132372582253,
+      "y": 3.5565451115892848,
+      "z": 0.7230379746835442,
+      "scaleX": 0.015,
+      "scaleY": 0.226,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.30915,
+          "freq": 5.057644068224616,
+          "phase": 19.19968
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.435,
+          "freq": 5.057644068224616,
+          "phase": 19.19968
+        }
+      ]
+    }
+  },
+  "drop-10": {
+    "Transform3D": {
+      "x": -2.957157325626612,
+      "y": 3.161662267862495,
+      "z": 3.7837974683544306,
+      "scaleX": 0.012,
+      "scaleY": 0.29200000000000004,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.26934750001877544,
+          "freq": 6.707802875295103,
+          "phase": 23.9996
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -2.9927500002086163,
+          "freq": 6.707802875295103,
+          "phase": 23.9996
+        }
+      ]
+    }
+  },
+  "drop-12": {
+    "Transform3D": {
+      "x": -3.451372281782456,
+      "y": 3.3786779551074577,
+      "z": 2.9445569620253167,
+      "scaleX": 0.009,
+      "scaleY": 0.16,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.29610000000000003,
+          "freq": 6.922962534506382,
+          "phase": 28.79952
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.2900000000000005,
+          "freq": 6.922962534506382,
+          "phase": 28.79952
+        }
+      ]
+    }
+  },
+  "drop-14": {
+    "Transform3D": {
+      "x": -3.9551138701696176,
+      "y": 3.7015451115892843,
+      "z": 2.1053164556962027,
+      "scaleX": 0.015,
+      "scaleY": 0.226,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.32220000000000004,
+          "freq": 4.475453221594397,
+          "phase": 33.59944
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.5800000000000005,
+          "freq": 4.475453221594397,
+          "phase": 33.59944
+        }
+      ]
+    }
+  },
+  "drop-16": {
+    "Transform3D": {
+      "x": -4.39360545855678,
+      "y": 3.299412268071111,
+      "z": 1.2660759493670886,
+      "scaleX": 0.012,
+      "scaleY": 0.29200000000000004,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.28305,
+          "freq": 5.953542834783836,
+          "phase": 38.39936
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.1450000000000005,
+          "freq": 5.953542834783836,
+          "phase": 38.39936
+        }
+      ]
+    }
+  },
+  "drop-18": {
+    "Transform3D": {
+      "x": -5.068472914693848,
+      "y": 5.523677955107459,
+      "z": 0.4268354430379747,
+      "scaleX": 0.009,
+      "scaleY": 0.16,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.12915,
+          "freq": 14.930774841451141,
+          "phase": 43.19928
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -1.435,
+          "freq": 14.930774841451141,
+          "phase": 43.19928
+        }
+      ]
+    }
+  },
+  "drop-20": {
+    "Transform3D": {
+      "x": -5.327617003062234,
+      "y": 3.1287951113806685,
+      "z": 3.487594936708861,
+      "scaleX": 0.015,
+      "scaleY": 0.226,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.26934750001877544,
+          "freq": 8.061960263265476,
+          "phase": 47.9992
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -2.9927500002086163,
+          "freq": 8.061960263265476,
+          "phase": 47.9992
+        }
+      ]
+    }
+  },
+  "drop-22": {
+    "Transform3D": {
+      "x": -5.830706091468172,
+      "y": 3.4444122680711113,
+      "z": 2.6483544303797473,
+      "scaleX": 0.012,
+      "scaleY": 0.29200000000000004,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.2961,
+          "freq": 5.280549353906248,
+          "phase": 52.79912
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.29,
+          "freq": 5.280549353906248,
+          "phase": 52.79912
+        }
+      ]
+    }
+  },
+  "drop-24": {
+    "Transform3D": {
+      "x": -6.624338742797524,
+      "y": 6.988291235021709,
+      "z": 1.8091139240506329,
+      "scaleX": 0.009,
+      "scaleY": 0.16,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.023434804807717473,
+          "freq": 77.09600954237534,
+          "phase": 57.59904
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -0.2603867200857497,
+          "freq": 77.09600954237534,
+          "phase": 57.59904
+        }
+      ]
+    }
+  },
+  "drop-26": {
+    "Transform3D": {
+      "x": -6.875787825510286,
+      "y": 4.507908328454662,
+      "z": 0.9698734177215189,
+      "scaleX": 0.015,
+      "scaleY": 0.226,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.17132731048211614,
+          "freq": 11.964754484845052,
+          "phase": 62.39896
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -1.903636783134624,
+          "freq": 11.964754484845052,
+          "phase": 62.39896
+        }
+      ]
+    }
+  },
+  "drop-28": {
+    "Transform3D": {
+      "x": -7.521282106155363,
+      "y": 6.405805398913318,
+      "z": 4.030632911392405,
+      "scaleX": 0.012,
+      "scaleY": 0.29200000000000004,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.055674618224201375,
+          "freq": 25.900330778934578,
+          "phase": 67.19888
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -0.6186068691577931,
+          "freq": 25.900330778934578,
+          "phase": 67.19888
+        }
+      ]
+    }
+  },
+  "drop-30": {
+    "Transform3D": {
+      "x": -7.6974241805166335,
+      "y": 3.0886779551074577,
+      "z": 3.1913924050632914,
+      "scaleX": 0.009,
+      "scaleY": 0.16,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.27,
+          "freq": 6.241297405131721,
+          "phase": 71.9988
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.0000000000000004,
+          "freq": 6.241297405131721,
+          "phase": 71.9988
+        }
+      ]
+    }
+  },
+  "drop-32": {
+    "Transform3D": {
+      "x": -0.7011657689037945,
+      "y": 3.4115451115892843,
+      "z": 2.3521518987341774,
+      "scaleX": 0.015,
+      "scaleY": 0.226,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.29610000000000003,
+          "freq": 6.512359239356348,
+          "phase": 76.79872
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.2900000000000005,
+          "freq": 6.512359239356348,
+          "phase": 76.79872
+        }
+      ]
+    }
+  },
+  "drop-34": {
+    "Transform3D": {
+      "x": -1.2049073572909563,
+      "y": 3.7344122680711114,
+      "z": 1.5129113924050632,
+      "scaleX": 0.012,
+      "scaleY": 0.29200000000000004,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.3222,
+          "freq": 6.73950602781274,
+          "phase": 81.59864
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.58,
+          "freq": 6.73950602781274,
+          "phase": 81.59864
+        }
+      ]
+    }
+  },
+  "drop-36": {
+    "Transform3D": {
+      "x": -1.6345248134280248,
+      "y": 3.233677955107458,
+      "z": 0.6736708860759494,
+      "scaleX": 0.009,
+      "scaleY": 0.16,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.28304999999999997,
+          "freq": 5.524008704086345,
+          "phase": 86.39856
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.145,
+          "freq": 5.524008704086345,
+          "phase": 86.39856
+        }
+      ]
+    }
+  },
+  "drop-38": {
+    "Transform3D": {
+      "x": -2.1389189017964116,
+      "y": 3.5637951113806685,
+      "z": 3.7344303797468354,
+      "scaleX": 0.015,
+      "scaleY": 0.226,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.30849750001877546,
+          "freq": 5.856546438689229,
+          "phase": 91.19848
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.4277500002086163,
+          "freq": 5.856546438689229,
+          "phase": 91.19848
+        }
+      ]
+    }
+  },
+  "drop-40": {
+    "Transform3D": {
+      "x": -2.576757990202349,
+      "y": 3.1544122680711113,
+      "z": 2.895189873417722,
+      "scaleX": 0.012,
+      "scaleY": 0.29200000000000004,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.27,
+          "freq": 7.592182246175334,
+          "phase": 95.9984
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3,
+          "freq": 7.592182246175334,
+          "phase": 95.9984
+        }
+      ]
+    }
+  },
+  "drop-42": {
+    "Transform3D": {
+      "x": -3.071625446339418,
+      "y": 3.3786779551074577,
+      "z": 2.0559493670886075,
+      "scaleX": 0.009,
+      "scaleY": 0.16,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.29610000000000003,
+          "freq": 4.869946058756213,
+          "phase": 100.79832
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.2900000000000005,
+          "freq": 4.869946058756213,
+          "phase": 100.79832
+        }
+      ]
+    }
+  },
+  "drop-44": {
+    "Transform3D": {
+      "x": -3.5753670347265794,
+      "y": 3.701545111589285,
+      "z": 1.2167088607594936,
+      "scaleX": 0.015,
+      "scaleY": 0.226,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.3222,
+          "freq": 5.230137490333846,
+          "phase": 105.59824
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.58,
+          "freq": 5.230137490333846,
+          "phase": 105.59824
+        }
+      ]
+    }
+  },
+  "drop-46": {
+    "Transform3D": {
+      "x": -4.193858623113741,
+      "y": 5.299412268071111,
+      "z": 0.37746835443037974,
+      "scaleX": 0.012,
+      "scaleY": 0.29200000000000004,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.10305,
+          "freq": 18.712368469416933,
+          "phase": 110.39816
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -1.145,
+          "freq": 18.712368469416933,
+          "phase": 110.39816
+        }
+      ]
+    }
+  },
+  "drop-48": {
+    "Transform3D": {
+      "x": -4.50872607925081,
+      "y": 3.5236779551074577,
+      "z": 3.438227848101266,
+      "scaleX": 0.009,
+      "scaleY": 0.16,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.30915000000000004,
+          "freq": 7.02399754863744,
+          "phase": 115.19808
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.4350000000000005,
+          "freq": 7.02399754863744,
+          "phase": 115.19808
+        }
+      ]
+    }
+  },
+  "drop-50": {
+    "Transform3D": {
+      "x": -4.947217667637973,
+      "y": 3.1215451115892843,
+      "z": 2.598987341772152,
+      "scaleX": 0.015,
+      "scaleY": 0.226,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.27,
+          "freq": 5.791002458117184,
+          "phase": 119.998
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.0000000000000004,
+          "freq": 5.791002458117184,
+          "phase": 119.998
+        }
+      ]
+    }
+  },
+  "drop-52": {
+    "Transform3D": {
+      "x": -5.4509592560251345,
+      "y": 3.4444122680711113,
+      "z": 1.759746835443038,
+      "scaleX": 0.012,
+      "scaleY": 0.29200000000000004,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.2961,
+          "freq": 6.101755944206315,
+          "phase": 124.79792
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.29,
+          "freq": 6.101755944206315,
+          "phase": 124.79792
+        }
+      ]
+    }
+  },
+  "drop-54": {
+    "Transform3D": {
+      "x": -6.058102305025128,
+      "y": 4.916184542473285,
+      "z": 0.9205063291139242,
+      "scaleX": 0.009,
+      "scaleY": 0.16,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.2099244071370756,
+          "freq": 9.76489220297672,
+          "phase": 129.59784000000002
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -2.3324934126341734,
+          "freq": 9.76489220297672,
+          "phase": 129.59784000000002
+        }
+      ]
+    }
+  },
+  "drop-56": {
+    "Transform3D": {
+      "x": -6.384318300549364,
+      "y": 3.2665451115892843,
+      "z": 3.98126582278481,
+      "scaleX": 0.015,
+      "scaleY": 0.226,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.28305,
+          "freq": 5.094474573388853,
+          "phase": 134.39776
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.1450000000000005,
+          "freq": 5.094474573388853,
+          "phase": 134.39776
+        }
+      ]
+    }
+  },
+  "drop-58": {
+    "Transform3D": {
+      "x": -6.888059888936527,
+      "y": 3.589412268071111,
+      "z": 3.1420253164556966,
+      "scaleX": 0.012,
+      "scaleY": 0.29200000000000004,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.30915000000000004,
+          "freq": 5.45091476430718,
+          "phase": 139.19768
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.4350000000000005,
+          "freq": 5.45091476430718,
+          "phase": 139.19768
+        }
+      ]
+    }
+  },
+  "drop-60": {
+    "Transform3D": {
+      "x": -7.317677345073595,
+      "y": 3.0886779551074577,
+      "z": 2.3027848101265826,
+      "scaleX": 0.009,
+      "scaleY": 0.16,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.27,
+          "freq": 7.141887299160795,
+          "phase": 143.9976
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.0000000000000004,
+          "freq": 7.141887299160795,
+          "phase": 143.9976
+        }
+      ]
+    }
+  },
+  "drop-62": {
+    "Transform3D": {
+      "x": -7.821418933460757,
+      "y": 3.4115451115892848,
+      "z": 1.4635443037974682,
+      "scaleX": 0.015,
+      "scaleY": 0.226,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.2961,
+          "freq": 7.333565829656417,
+          "phase": 148.79752000000002
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.29,
+          "freq": 7.333565829656417,
+          "phase": 148.79752000000002
+        }
+      ]
+    }
+  },
+  "drop-64": {
+    "Transform3D": {
+      "x": -0.9469040688321765,
+      "y": 5.087118345673972,
+      "z": 0.6243037974683544,
+      "scaleX": 0.012,
+      "scaleY": 0.29200000000000004,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.20045645301574258,
+          "freq": 7.800051533231743,
+          "phase": 153.59744
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -2.22729392239714,
+          "freq": 7.800051533231743,
+          "phase": 153.59744
+        }
+      ]
+    }
+  },
+  "drop-66": {
+    "Transform3D": {
+      "x": -1.2547779779849875,
+      "y": 3.233677955107458,
+      "z": 3.6850632911392407,
+      "scaleX": 0.009,
+      "scaleY": 0.16,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.28304999999999997,
+          "freq": 6.383076965481328,
+          "phase": 158.39736
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.145,
+          "freq": 6.383076965481328,
+          "phase": 158.39736
+        }
+      ]
+    }
+  },
+  "drop-68": {
+    "Transform3D": {
+      "x": -1.7585195663721493,
+      "y": 3.5565451115892848,
+      "z": 2.8458227848101267,
+      "scaleX": 0.015,
+      "scaleY": 0.226,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.30915,
+          "freq": 6.630726852554877,
+          "phase": 163.19728
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.435,
+          "freq": 6.630726852554877,
+          "phase": 163.19728
+        }
+      ]
+    }
+  },
+  "drop-70": {
+    "Transform3D": {
+      "x": -2.197011154759312,
+      "y": 3.1544122680711113,
+      "z": 2.006582278481013,
+      "scaleX": 0.012,
+      "scaleY": 0.29200000000000004,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.27,
+          "freq": 5.340707511102647,
+          "phase": 167.99720000000002
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3,
+          "freq": 5.340707511102647,
+          "phase": 167.99720000000002
+        }
+      ]
+    }
+  },
+  "drop-72": {
+    "Transform3D": {
+      "x": -2.6918786108963806,
+      "y": 3.378677955107458,
+      "z": 1.1673417721518988,
+      "scaleX": 0.009,
+      "scaleY": 0.16,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.2961,
+          "freq": 5.691152649056282,
+          "phase": 172.79712
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -3.29,
+          "freq": 5.691152649056282,
+          "phase": 172.79712
+        }
+      ]
+    }
+  },
+  "drop-74": {
+    "Transform3D": {
+      "x": -3.4138196095348405,
+      "y": 6.125983003270384,
+      "z": 0.3281012658227848,
+      "scaleX": 0.015,
+      "scaleY": 0.226,
+      "scaleZ": 0.008,
+      "rotZ": 0.08975817418995052
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.10400058974870122,
+          "freq": 18.54133303890708,
+          "phase": 177.59704
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -1.1555621083189025,
+          "freq": 18.54133303890708,
+          "phase": 177.59704
+        }
+      ]
+    }
+  },
+  "drop-100": {
+    "Transform3D": {
+      "x": -5.71,
+      "y": 1.279000002453134,
+      "z": 2.63,
+      "scaleX": 0.012,
+      "scaleY": 0.29200000000000004,
+      "scaleZ": 0.008,
+      "rotZ": 0
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0,
+          "freq": 11.160187070814038,
+          "phase": 0
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -1.125999997546866,
+          "freq": 11.160187070814038,
+          "phase": 0
+        }
+      ]
+    }
+  },
+  "ripple-0": {
+    "Transform3D": {
+      "x": -5.71,
+      "y": 0.024000004906268056,
+      "z": 2.63,
+      "rotX": 1.5707963267948966,
+      "scale": 0.105
+    },
+    "Mesh3D": {
+      "shape": "torus",
+      "width": 2,
+      "height": 2,
+      "tube": 0.05,
+      "frontTint": 11719131
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11719131
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "saw",
+          "amp": 0.103,
+          "freq": 11.160187070814038,
+          "phase": 0
+        }
+      ]
+    }
+  },
+  "splash-0--1": {
+    "Transform3D": {
+      "x": -5.765,
+      "y": 0.10900000490626806,
+      "z": 2.63,
+      "rotZ": 0.5,
+      "scale": 0.5
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 0.013,
+      "height": 0.072,
+      "depth": 0.013,
+      "frontTint": 13492454
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 13492454
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": -0.055,
+          "freq": 11.160187070814038,
+          "phase": 0
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": 0.087,
+          "freq": 11.160187070814038,
+          "phase": 0
+        },
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "square",
+          "amp": 0.499,
+          "freq": 11.160187070814038,
+          "phase": 3.141592653589793
+        }
+      ]
+    }
+  },
+  "splash-0-1": {
+    "Transform3D": {
+      "x": -5.655,
+      "y": 0.10900000490626806,
+      "z": 2.63,
+      "rotZ": -0.5,
+      "scale": 0.5
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 0.013,
+      "height": 0.072,
+      "depth": 0.013,
+      "frontTint": 13492454
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 13492454
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.055,
+          "freq": 11.160187070814038,
+          "phase": 0
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": 0.087,
+          "freq": 11.160187070814038,
+          "phase": 0
+        },
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "square",
+          "amp": 0.499,
+          "freq": 11.160187070814038,
+          "phase": 3.141592653589793
+        }
+      ]
+    }
+  },
+  "drop-101": {
+    "Transform3D": {
+      "x": -5.23,
+      "y": 1.2965,
+      "z": 2.68,
+      "scaleX": 0.015,
+      "scaleY": 0.325,
+      "scaleZ": 0.008,
+      "rotZ": 0
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0,
+          "freq": 11.170107212763709,
+          "phase": 1.713
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -1.125,
+          "freq": 11.170107212763709,
+          "phase": 1.713
+        }
+      ]
+    }
+  },
+  "ripple-1": {
+    "Transform3D": {
+      "x": -5.23,
+      "y": 0.026,
+      "z": 2.68,
+      "rotX": 1.5707963267948966,
+      "scale": 0.105
+    },
+    "Mesh3D": {
+      "shape": "torus",
+      "width": 2,
+      "height": 2,
+      "tube": 0.05,
+      "frontTint": 11719131
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11719131
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "saw",
+          "amp": 0.103,
+          "freq": 11.170107212763709,
+          "phase": 1.713
+        }
+      ]
+    }
+  },
+  "splash-1--1": {
+    "Transform3D": {
+      "x": -5.285,
+      "y": 0.111,
+      "z": 2.68,
+      "rotZ": 0.5,
+      "scale": 0.5
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 0.013,
+      "height": 0.072,
+      "depth": 0.013,
+      "frontTint": 13492454
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 13492454
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": -0.055,
+          "freq": 11.170107212763709,
+          "phase": 1.713
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": 0.087,
+          "freq": 11.170107212763709,
+          "phase": 1.713
+        },
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "square",
+          "amp": 0.499,
+          "freq": 11.170107212763709,
+          "phase": 4.854592653589793
+        }
+      ]
+    }
+  },
+  "splash-1-1": {
+    "Transform3D": {
+      "x": -5.175000000000001,
+      "y": 0.111,
+      "z": 2.68,
+      "rotZ": -0.5,
+      "scale": 0.5
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 0.013,
+      "height": 0.072,
+      "depth": 0.013,
+      "frontTint": 13492454
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 13492454
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.055,
+          "freq": 11.170107212763709,
+          "phase": 1.713
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": 0.087,
+          "freq": 11.170107212763709,
+          "phase": 1.713
+        },
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "square",
+          "amp": 0.499,
+          "freq": 11.170107212763709,
+          "phase": 4.854592653589793
+        }
+      ]
+    }
+  },
+  "drop-102": {
+    "Transform3D": {
+      "x": -3.7,
+      "y": 1.214,
+      "z": 3.1,
+      "scaleX": 0.009,
+      "scaleY": 0.16,
+      "scaleZ": 0.008,
+      "rotZ": 0
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0,
+          "freq": 11.170107212763709,
+          "phase": 3.426
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -1.125,
+          "freq": 11.170107212763709,
+          "phase": 3.426
+        }
+      ]
+    }
+  },
+  "ripple-2": {
+    "Transform3D": {
+      "x": -3.7,
+      "y": 0.026,
+      "z": 3.1,
+      "rotX": 1.5707963267948966,
+      "scale": 0.105
+    },
+    "Mesh3D": {
+      "shape": "torus",
+      "width": 2,
+      "height": 2,
+      "tube": 0.05,
+      "frontTint": 11719131
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11719131
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "saw",
+          "amp": 0.103,
+          "freq": 11.170107212763709,
+          "phase": 3.426
+        }
+      ]
+    }
+  },
+  "splash-2--1": {
+    "Transform3D": {
+      "x": -3.7550000000000003,
+      "y": 0.111,
+      "z": 3.1,
+      "rotZ": 0.5,
+      "scale": 0.5
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 0.013,
+      "height": 0.072,
+      "depth": 0.013,
+      "frontTint": 13492454
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 13492454
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": -0.055,
+          "freq": 11.170107212763709,
+          "phase": 3.426
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": 0.087,
+          "freq": 11.170107212763709,
+          "phase": 3.426
+        },
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "square",
+          "amp": 0.499,
+          "freq": 11.170107212763709,
+          "phase": 6.567592653589793
+        }
+      ]
+    }
+  },
+  "splash-2-1": {
+    "Transform3D": {
+      "x": -3.645,
+      "y": 0.111,
+      "z": 3.1,
+      "rotZ": -0.5,
+      "scale": 0.5
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 0.013,
+      "height": 0.072,
+      "depth": 0.013,
+      "frontTint": 13492454
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 13492454
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.055,
+          "freq": 11.170107212763709,
+          "phase": 3.426
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": 0.087,
+          "freq": 11.170107212763709,
+          "phase": 3.426
+        },
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "square",
+          "amp": 0.499,
+          "freq": 11.170107212763709,
+          "phase": 6.567592653589793
+        }
+      ]
+    }
+  },
+  "drop-103": {
+    "Transform3D": {
+      "x": -3.17,
+      "y": 1.2305,
+      "z": 3.11,
+      "scaleX": 0.012,
+      "scaleY": 0.193,
+      "scaleZ": 0.008,
+      "rotZ": 0
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0,
+          "freq": 11.170107212763709,
+          "phase": 5.139
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -1.125,
+          "freq": 11.170107212763709,
+          "phase": 5.139
+        }
+      ]
+    }
+  },
+  "ripple-3": {
+    "Transform3D": {
+      "x": -3.17,
+      "y": 0.026,
+      "z": 3.11,
+      "rotX": 1.5707963267948966,
+      "scale": 0.105
+    },
+    "Mesh3D": {
+      "shape": "torus",
+      "width": 2,
+      "height": 2,
+      "tube": 0.05,
+      "frontTint": 11719131
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11719131
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "saw",
+          "amp": 0.103,
+          "freq": 11.170107212763709,
+          "phase": 5.139
+        }
+      ]
+    }
+  },
+  "splash-3--1": {
+    "Transform3D": {
+      "x": -3.225,
+      "y": 0.111,
+      "z": 3.11,
+      "rotZ": 0.5,
+      "scale": 0.5
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 0.013,
+      "height": 0.072,
+      "depth": 0.013,
+      "frontTint": 13492454
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 13492454
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": -0.055,
+          "freq": 11.170107212763709,
+          "phase": 5.139
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": 0.087,
+          "freq": 11.170107212763709,
+          "phase": 5.139
+        },
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "square",
+          "amp": 0.499,
+          "freq": 11.170107212763709,
+          "phase": 8.280592653589792
+        }
+      ]
+    }
+  },
+  "splash-3-1": {
+    "Transform3D": {
+      "x": -3.1149999999999998,
+      "y": 0.111,
+      "z": 3.11,
+      "rotZ": -0.5,
+      "scale": 0.5
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 0.013,
+      "height": 0.072,
+      "depth": 0.013,
+      "frontTint": 13492454
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 13492454
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.055,
+          "freq": 11.170107212763709,
+          "phase": 5.139
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": 0.087,
+          "freq": 11.170107212763709,
+          "phase": 5.139
+        },
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "square",
+          "amp": 0.499,
+          "freq": 11.170107212763709,
+          "phase": 8.280592653589792
+        }
+      ]
+    }
+  },
+  "drop-104": {
+    "Transform3D": {
+      "x": -6.15,
+      "y": 1.2469999999999999,
+      "z": 3.1,
+      "scaleX": 0.015,
+      "scaleY": 0.226,
+      "scaleZ": 0.008,
+      "rotZ": 0
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0,
+          "freq": 11.170107212763709,
+          "phase": 6.852
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -1.125,
+          "freq": 11.170107212763709,
+          "phase": 6.852
+        }
+      ]
+    }
+  },
+  "splash-4--1": {
+    "Transform3D": {
+      "x": -6.205,
+      "y": 0.111,
+      "z": 3.1,
+      "rotZ": 0.5,
+      "scale": 0.5
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 0.013,
+      "height": 0.072,
+      "depth": 0.013,
+      "frontTint": 13492454
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 13492454
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": -0.055,
+          "freq": 11.170107212763709,
+          "phase": 6.852
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": 0.087,
+          "freq": 11.170107212763709,
+          "phase": 6.852
+        },
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "square",
+          "amp": 0.499,
+          "freq": 11.170107212763709,
+          "phase": 9.993592653589793
+        }
+      ]
+    }
+  },
+  "splash-4-1": {
+    "Transform3D": {
+      "x": -6.095000000000001,
+      "y": 0.111,
+      "z": 3.1,
+      "rotZ": -0.5,
+      "scale": 0.5
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 0.013,
+      "height": 0.072,
+      "depth": 0.013,
+      "frontTint": 13492454
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 13492454
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.055,
+          "freq": 11.170107212763709,
+          "phase": 6.852
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": 0.087,
+          "freq": 11.170107212763709,
+          "phase": 6.852
+        },
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "square",
+          "amp": 0.499,
+          "freq": 11.170107212763709,
+          "phase": 9.993592653589793
+        }
+      ]
+    }
+  },
+  "drop-105": {
+    "Transform3D": {
+      "x": -4.6,
+      "y": 1.2634999999999998,
+      "z": 3.28,
+      "scaleX": 0.009,
+      "scaleY": 0.259,
+      "scaleZ": 0.008,
+      "rotZ": 0
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0,
+          "freq": 11.170107212763709,
+          "phase": 8.565000000000001
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -1.125,
+          "freq": 11.170107212763709,
+          "phase": 8.565000000000001
+        }
+      ]
+    }
+  },
+  "splash-5--1": {
+    "Transform3D": {
+      "x": -4.654999999999999,
+      "y": 0.111,
+      "z": 3.28,
+      "rotZ": 0.5,
+      "scale": 0.5
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 0.013,
+      "height": 0.072,
+      "depth": 0.013,
+      "frontTint": 13492454
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 13492454
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": -0.055,
+          "freq": 11.170107212763709,
+          "phase": 8.565000000000001
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": 0.087,
+          "freq": 11.170107212763709,
+          "phase": 8.565000000000001
+        },
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "square",
+          "amp": 0.499,
+          "freq": 11.170107212763709,
+          "phase": 11.706592653589794
+        }
+      ]
+    }
+  },
+  "splash-5-1": {
+    "Transform3D": {
+      "x": -4.545,
+      "y": 0.111,
+      "z": 3.28,
+      "rotZ": -0.5,
+      "scale": 0.5
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 0.013,
+      "height": 0.072,
+      "depth": 0.013,
+      "frontTint": 13492454
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 13492454
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.055,
+          "freq": 11.170107212763709,
+          "phase": 8.565000000000001
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": 0.087,
+          "freq": 11.170107212763709,
+          "phase": 8.565000000000001
+        },
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "square",
+          "amp": 0.499,
+          "freq": 11.170107212763709,
+          "phase": 11.706592653589794
+        }
+      ]
+    }
+  },
+  "drop-106": {
+    "Transform3D": {
+      "x": -2.65,
+      "y": 1.2799999999999998,
+      "z": 2.37,
+      "scaleX": 0.012,
+      "scaleY": 0.29200000000000004,
+      "scaleZ": 0.008,
+      "rotZ": 0
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0,
+          "freq": 11.170107212763709,
+          "phase": 10.278
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -1.125,
+          "freq": 11.170107212763709,
+          "phase": 10.278
+        }
+      ]
+    }
+  },
+  "splash-6--1": {
+    "Transform3D": {
+      "x": -2.705,
+      "y": 0.111,
+      "z": 2.37,
+      "rotZ": 0.5,
+      "scale": 0.5
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 0.013,
+      "height": 0.072,
+      "depth": 0.013,
+      "frontTint": 13492454
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 13492454
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": -0.055,
+          "freq": 11.170107212763709,
+          "phase": 10.278
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": 0.087,
+          "freq": 11.170107212763709,
+          "phase": 10.278
+        },
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "square",
+          "amp": 0.499,
+          "freq": 11.170107212763709,
+          "phase": 13.419592653589794
+        }
+      ]
+    }
+  },
+  "splash-6-1": {
+    "Transform3D": {
+      "x": -2.5949999999999998,
+      "y": 0.111,
+      "z": 2.37,
+      "rotZ": -0.5,
+      "scale": 0.5
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 0.013,
+      "height": 0.072,
+      "depth": 0.013,
+      "frontTint": 13492454
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 13492454
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.055,
+          "freq": 11.170107212763709,
+          "phase": 10.278
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": 0.087,
+          "freq": 11.170107212763709,
+          "phase": 10.278
+        },
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "square",
+          "amp": 0.499,
+          "freq": 11.170107212763709,
+          "phase": 13.419592653589794
+        }
+      ]
+    }
+  },
+  "drop-107": {
+    "Transform3D": {
+      "x": -5.04,
+      "y": 1.2965,
+      "z": 3.24,
+      "scaleX": 0.015,
+      "scaleY": 0.325,
+      "scaleZ": 0.008,
+      "rotZ": 0
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "frontTint": 11848921
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 11848921
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0,
+          "freq": 11.170107212763709,
+          "phase": 11.991
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": -1.125,
+          "freq": 11.170107212763709,
+          "phase": 11.991
+        }
+      ]
+    }
+  },
+  "splash-7--1": {
+    "Transform3D": {
+      "x": -5.095,
+      "y": 0.111,
+      "z": 3.24,
+      "rotZ": 0.5,
+      "scale": 0.5
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 0.013,
+      "height": 0.072,
+      "depth": 0.013,
+      "frontTint": 13492454
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 13492454
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": -0.055,
+          "freq": 11.170107212763709,
+          "phase": 11.991
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": 0.087,
+          "freq": 11.170107212763709,
+          "phase": 11.991
+        },
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "square",
+          "amp": 0.499,
+          "freq": 11.170107212763709,
+          "phase": 15.132592653589793
+        }
+      ]
+    }
+  },
+  "splash-7-1": {
+    "Transform3D": {
+      "x": -4.985,
+      "y": 0.111,
+      "z": 3.24,
+      "rotZ": -0.5,
+      "scale": 0.5
+    },
+    "Mesh3D": {
+      "shape": "box",
+      "width": 0.013,
+      "height": 0.072,
+      "depth": 0.013,
+      "frontTint": 13492454
+    },
+    "Material3D": {
+      "preset": "matte",
+      "shading": "flat",
+      "color": 13492454
+    },
+    "Anim3D": {
+      "channels": [
+        {
+          "kind": "osc",
+          "field": "x",
+          "wave": "saw",
+          "amp": 0.055,
+          "freq": 11.170107212763709,
+          "phase": 11.991
+        },
+        {
+          "kind": "osc",
+          "field": "y",
+          "wave": "saw",
+          "amp": 0.087,
+          "freq": 11.170107212763709,
+          "phase": 11.991
+        },
+        {
+          "kind": "osc",
+          "field": "scale",
+          "wave": "square",
+          "amp": 0.499,
+          "freq": 11.170107212763709,
+          "phase": 15.132592653589793
+        }
+      ]
+    }
+  }
+}
