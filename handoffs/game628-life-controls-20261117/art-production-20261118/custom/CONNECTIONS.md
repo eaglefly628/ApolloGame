@@ -1,0 +1,13 @@
+# Modern neighborhood modules · connection declarations before modeling
+
+Scope: original supplementary modules for the local Game 628 art study. K source directories and ledger are read-only. Meter units, glTF +Y up, +Z toward the street. All outputs remain technical/art drafts pending user review.
+
+- **balcony:** deck rear edge Z=0 and bottom Y=0. Railing posts seat on the deck top and insert 5mm; rails overlap their post tops by 8mm. Back plates are wall-mounted, bracket ends intentionally enter the deck and wall plate. Space between bars is an intentional opening. Brackets extend below the origin.
+- **aircon:** rear casing Z=0, facade mounting pads at rear. Closed body, front fan ring connects through a dark fixed inset disc; fan grille openings are decorative, not missing shell faces. No operating animation or maintenance opening promised.
+- **awning:** continuous closed fabric shell with colored strips sharing vertices. Rear bar attaches to wall at Z=0. Front valance overlaps the canopy front seam by 10mm. Supporting arms are under the fabric and seated in rear mounts; scalloped bottom is intentional.
+- **shop-sign:** a closed timber backboard, green recessed face and four perimeter trim rails. Trim overlaps the backboard, face is offset above its front surface to prevent Z-fighting. Blank lettering area intentionally remains available for per-shop text.
+- **bicycle:** tubular frame segments meet at rounded brazed lugs; wheel spokes enter the rim and hub; rims overlap tires within the tire volume. Saddle and stem seat on frame. Wheels intentionally have open spaces. Static prop only, no riding mechanics or wheel animation.
+- **street-planter:** closed base and four thick walls join with controlled hidden corner overlaps. Open top is intentional, soil is seated below rim, with intentional 2.5mm edge fitting clearance above the closed base. No underside holes; feet are not implied.
+- **broadleaf-tree:** closed low-poly trunk and branch segments meet in hidden overlaps; branch tips terminate inside overlapping closed foliage clusters. Crown gaps between clusters are allowed only where no branch is exposed through a missing crown. Root nominal bottom Y=0; final faceted root reaches Y=-0.005m; place origin +5mm above ground.
+
+Final GLBs are reimported, counted and checked for degenerate faces, duplicate triangles, closed-object boundary edges, bounds and material metadata. A grouped overview plus oblique/back views are rendered from reimported outputs; contact details are rendered separately when needed. Assembly-to-existing-building attachment is reviewed by the parent in the final scene and is not certified by local module checks alone.

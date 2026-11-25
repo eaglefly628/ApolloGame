@@ -1,0 +1,1 @@
+G628-CAPE-A-ENGINE。owner 已判 A 并允许隔离候选，当前 engine dev 负责本目录。P3D 拥有 three 渲染面，共享 render.ts 为 P3D/LEAD 交叉边界。正式共享施工依 CLAUDE.md 先推远程施工锁，本单明确禁止 push，因此只修改冻结 runtime 副本并交付基于 SHA 的补丁，不占共享锁、不改原三份契约、现有预览、RC 或其他施工。独立复查在本目录及独立副本进行。

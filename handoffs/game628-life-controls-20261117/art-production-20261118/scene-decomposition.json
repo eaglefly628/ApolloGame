@@ -1,0 +1,1795 @@
+{
+  "reference": "generated_images/exec-e200c4ec-58a4-40bd-a8e6-2c5cfc5b3c19.png",
+  "status": "local-scene-draft-not-final-art",
+  "kPolicy": "Read-only source copies; original K files, review state and ledgers unchanged.",
+  "buildings": [
+    {
+      "name": "grocery",
+      "label": "果蔬铺",
+      "key": "k-housing-e",
+      "x": -9.6,
+      "width": 4.25,
+      "height": 6.8,
+      "wallZ": -1.35,
+      "scale": [
+        2.117863207204193,
+        3.0221288533270307,
+        2.6206895689901955
+      ],
+      "position": [
+        -9.6,
+        -0.3020025171058556,
+        -2.9224137413941174
+      ]
+    },
+    {
+      "name": "bakery",
+      "label": "面包房",
+      "key": "k-housing-a",
+      "x": -5.15,
+      "width": 4.15,
+      "height": 5.9,
+      "wallZ": -1.35,
+      "scale": [
+        3.439018475597721,
+        3.8062810270931253,
+        2.6206895689901955
+      ],
+      "position": [
+        -5.15,
+        -0.3803631502107877,
+        -2.9224137413941174
+      ]
+    },
+    {
+      "name": "noodles",
+      "label": "面馆",
+      "key": "k-housing-d",
+      "x": 1.25,
+      "width": 4.15,
+      "height": 6.8,
+      "wallZ": -1.35,
+      "scale": [
+        2.5828702398794983,
+        3.0221288533270307,
+        2.9230770302947495
+      ],
+      "position": [
+        1.25,
+        -0.3020025171058556,
+        -3.10384621817685
+      ]
+    },
+    {
+      "name": "catcafe",
+      "label": "猫咖",
+      "key": "k-housing-h",
+      "x": 5.65,
+      "width": 4.25,
+      "height": 7.7,
+      "wallZ": -1.35,
+      "scale": [
+        2.117863207204193,
+        2.6101079446486133,
+        2.9230770302947495
+      ],
+      "position": [
+        5.65,
+        -0.26082910671862514,
+        -3.10384621817685
+      ]
+    },
+    {
+      "name": "bikeshop",
+      "label": "修车铺",
+      "key": "k-housing-a",
+      "x": 10.05,
+      "width": 4.15,
+      "height": 5.9,
+      "wallZ": -1.35,
+      "scale": [
+        3.439018475597721,
+        3.8062810270931253,
+        2.6206895689901955
+      ],
+      "position": [
+        10.05,
+        -0.3803631502107877,
+        -2.9224137413941174
+      ]
+    }
+  ],
+  "assembly": [
+    {
+      "id": "grocery-residence",
+      "asset": "k-housing-e",
+      "role": "residential-building",
+      "transform": {
+        "x": -9.6,
+        "y": -0.3020025171058556,
+        "z": -2.9224137413941174,
+        "scaleX": 2.117863207204193,
+        "scaleY": 3.0221288533270307,
+        "scaleZ": 2.6206895689901955,
+        "rotY": 0
+      },
+      "sourceId": "legacy:ad9f858bcad4bc4c"
+    },
+    {
+      "id": "window-glow-grocery-0",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        0.33698762610973476,
+        0.6742230247761768,
+        0.008
+      ]
+    },
+    {
+      "id": "grocery-sign",
+      "asset": "custom-shop-sign",
+      "role": "shop-sign",
+      "transform": {
+        "x": -9.6,
+        "y": 2.42,
+        "z": -0.92,
+        "scaleX": 0.94,
+        "scaleY": 0.94,
+        "scaleZ": 0.94,
+        "rotY": 0
+      },
+      "sourceId": "new-local-module"
+    },
+    {
+      "id": "grocery-balcony",
+      "asset": "custom-balcony",
+      "role": "balcony",
+      "transform": {
+        "x": -9.6,
+        "y": 3.58,
+        "z": -1.35,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "new-local-module"
+    },
+    {
+      "id": "grocery-aircon",
+      "asset": "custom-aircon",
+      "role": "air-conditioning",
+      "transform": {
+        "x": -8.12,
+        "y": 4.88,
+        "z": -1.35,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "new-local-module"
+    },
+    {
+      "id": "grocery-plant--1",
+      "asset": "k-potted-bush",
+      "role": "prop",
+      "transform": {
+        "x": -11.32,
+        "y": 0,
+        "z": -0.35,
+        "scaleX": 2.1,
+        "scaleY": 2.1,
+        "scaleZ": 2.1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:24f9a8cba4372277"
+    },
+    {
+      "id": "grocery-plant-1",
+      "asset": "k-potted-bush",
+      "role": "prop",
+      "transform": {
+        "x": -7.88,
+        "y": 0,
+        "z": -0.35,
+        "scaleX": 2.1,
+        "scaleY": 2.1,
+        "scaleZ": 2.1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:24f9a8cba4372277"
+    },
+    {
+      "id": "bakery-residence",
+      "asset": "k-housing-a",
+      "role": "residential-building",
+      "transform": {
+        "x": -5.15,
+        "y": -0.3803631502107877,
+        "z": -2.9224137413941174,
+        "scaleX": 3.439018475597721,
+        "scaleY": 3.8062810270931253,
+        "scaleZ": 2.6206895689901955,
+        "rotY": 0
+      },
+      "sourceId": "legacy:c6cf6fe342e042a3"
+    },
+    {
+      "id": "window-glow-bakery-0",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        0.5472056307966539,
+        0.4181828058476958,
+        0.008
+      ]
+    },
+    {
+      "id": "bakery-sign",
+      "asset": "custom-shop-sign",
+      "role": "shop-sign",
+      "transform": {
+        "x": -5.15,
+        "y": 2.42,
+        "z": -0.92,
+        "scaleX": 0.94,
+        "scaleY": 0.94,
+        "scaleZ": 0.94,
+        "rotY": 0
+      },
+      "sourceId": "new-local-module"
+    },
+    {
+      "id": "bakery-aircon",
+      "asset": "custom-aircon",
+      "role": "air-conditioning",
+      "transform": {
+        "x": -3.6700000000000004,
+        "y": 4.88,
+        "z": -1.35,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "new-local-module"
+    },
+    {
+      "id": "bakery-plant--1",
+      "asset": "k-potted-bush",
+      "role": "prop",
+      "transform": {
+        "x": -6.87,
+        "y": 0,
+        "z": -0.35,
+        "scaleX": 2.1,
+        "scaleY": 2.1,
+        "scaleZ": 2.1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:24f9a8cba4372277"
+    },
+    {
+      "id": "bakery-plant-1",
+      "asset": "k-potted-bush",
+      "role": "prop",
+      "transform": {
+        "x": -3.4300000000000006,
+        "y": 0,
+        "z": -0.35,
+        "scaleX": 2.1,
+        "scaleY": 2.1,
+        "scaleZ": 2.1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:24f9a8cba4372277"
+    },
+    {
+      "id": "noodles-residence",
+      "asset": "k-housing-d",
+      "role": "residential-building",
+      "transform": {
+        "x": 1.25,
+        "y": -0.3020025171058556,
+        "z": -3.10384621817685,
+        "scaleX": 2.5828702398794983,
+        "scaleY": 3.0221288533270307,
+        "scaleZ": 2.9230770302947495,
+        "rotY": 0
+      },
+      "sourceId": "legacy:69f6d78532163925"
+    },
+    {
+      "id": "window-glow-noodles-0",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        0.41097805926544645,
+        0.6608569606031232,
+        0.008
+      ]
+    },
+    {
+      "id": "noodles-sign",
+      "asset": "custom-shop-sign",
+      "role": "shop-sign",
+      "transform": {
+        "x": 1.25,
+        "y": 2.42,
+        "z": -0.92,
+        "scaleX": 0.94,
+        "scaleY": 0.94,
+        "scaleZ": 0.94,
+        "rotY": 0
+      },
+      "sourceId": "new-local-module"
+    },
+    {
+      "id": "noodles-balcony",
+      "asset": "custom-balcony",
+      "role": "balcony",
+      "transform": {
+        "x": 1.25,
+        "y": 3.58,
+        "z": -1.35,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "new-local-module"
+    },
+    {
+      "id": "noodles-aircon",
+      "asset": "custom-aircon",
+      "role": "air-conditioning",
+      "transform": {
+        "x": 2.73,
+        "y": 4.88,
+        "z": -1.35,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "new-local-module"
+    },
+    {
+      "id": "noodles-plant--1",
+      "asset": "k-potted-bush",
+      "role": "prop",
+      "transform": {
+        "x": -0.47,
+        "y": 0,
+        "z": -0.35,
+        "scaleX": 2.1,
+        "scaleY": 2.1,
+        "scaleZ": 2.1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:24f9a8cba4372277"
+    },
+    {
+      "id": "noodles-plant-1",
+      "asset": "k-potted-bush",
+      "role": "prop",
+      "transform": {
+        "x": 2.9699999999999998,
+        "y": 0,
+        "z": -0.35,
+        "scaleX": 2.1,
+        "scaleY": 2.1,
+        "scaleZ": 2.1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:24f9a8cba4372277"
+    },
+    {
+      "id": "catcafe-residence",
+      "asset": "k-housing-h",
+      "role": "residential-building",
+      "transform": {
+        "x": 5.65,
+        "y": -0.26082910671862514,
+        "z": -3.10384621817685,
+        "scaleX": 2.117863207204193,
+        "scaleY": 2.6101079446486133,
+        "scaleZ": 2.9230770302947495,
+        "rotY": 0
+      },
+      "sourceId": "legacy:fe46f9de6818f80e"
+    },
+    {
+      "id": "window-glow-catcafe-0",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        0.33698762610973476,
+        0.21385951602361614,
+        0.008
+      ]
+    },
+    {
+      "id": "window-glow-catcafe-1",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        0.33698762610973476,
+        0.15022280455597262,
+        0.008
+      ]
+    },
+    {
+      "id": "catcafe-sign",
+      "asset": "custom-shop-sign",
+      "role": "shop-sign",
+      "transform": {
+        "x": 5.65,
+        "y": 2.42,
+        "z": -0.92,
+        "scaleX": 0.94,
+        "scaleY": 0.94,
+        "scaleZ": 0.94,
+        "rotY": 0
+      },
+      "sourceId": "new-local-module"
+    },
+    {
+      "id": "catcafe-balcony",
+      "asset": "custom-balcony",
+      "role": "balcony",
+      "transform": {
+        "x": 5.65,
+        "y": 3.58,
+        "z": -1.35,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "new-local-module"
+    },
+    {
+      "id": "catcafe-aircon",
+      "asset": "custom-aircon",
+      "role": "air-conditioning",
+      "transform": {
+        "x": 7.130000000000001,
+        "y": 4.88,
+        "z": -1.35,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "new-local-module"
+    },
+    {
+      "id": "catcafe-plant--1",
+      "asset": "k-potted-bush",
+      "role": "prop",
+      "transform": {
+        "x": 3.9300000000000006,
+        "y": 0,
+        "z": -0.35,
+        "scaleX": 2.1,
+        "scaleY": 2.1,
+        "scaleZ": 2.1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:24f9a8cba4372277"
+    },
+    {
+      "id": "catcafe-plant-1",
+      "asset": "k-potted-bush",
+      "role": "prop",
+      "transform": {
+        "x": 7.37,
+        "y": 0,
+        "z": -0.35,
+        "scaleX": 2.1,
+        "scaleY": 2.1,
+        "scaleZ": 2.1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:24f9a8cba4372277"
+    },
+    {
+      "id": "bikeshop-residence",
+      "asset": "k-housing-a",
+      "role": "residential-building",
+      "transform": {
+        "x": 10.05,
+        "y": -0.3803631502107877,
+        "z": -2.9224137413941174,
+        "scaleX": 3.439018475597721,
+        "scaleY": 3.8062810270931253,
+        "scaleZ": 2.6206895689901955,
+        "rotY": 0
+      },
+      "sourceId": "legacy:c6cf6fe342e042a3"
+    },
+    {
+      "id": "window-glow-bikeshop-0",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        0.5472056307966539,
+        0.4181828058476958,
+        0.008
+      ]
+    },
+    {
+      "id": "bikeshop-sign",
+      "asset": "custom-shop-sign",
+      "role": "shop-sign",
+      "transform": {
+        "x": 10.05,
+        "y": 2.42,
+        "z": -0.92,
+        "scaleX": 0.94,
+        "scaleY": 0.94,
+        "scaleZ": 0.94,
+        "rotY": 0
+      },
+      "sourceId": "new-local-module"
+    },
+    {
+      "id": "bikeshop-aircon",
+      "asset": "custom-aircon",
+      "role": "air-conditioning",
+      "transform": {
+        "x": 11.530000000000001,
+        "y": 4.88,
+        "z": -1.35,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "new-local-module"
+    },
+    {
+      "id": "bikeshop-plant--1",
+      "asset": "k-potted-bush",
+      "role": "prop",
+      "transform": {
+        "x": 8.33,
+        "y": 0,
+        "z": -0.35,
+        "scaleX": 2.1,
+        "scaleY": 2.1,
+        "scaleZ": 2.1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:24f9a8cba4372277"
+    },
+    {
+      "id": "bikeshop-plant-1",
+      "asset": "k-potted-bush",
+      "role": "prop",
+      "transform": {
+        "x": 11.770000000000001,
+        "y": 0,
+        "z": -0.35,
+        "scaleX": 2.1,
+        "scaleY": 2.1,
+        "scaleZ": 2.1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:24f9a8cba4372277"
+    },
+    {
+      "id": "paving-0-0",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": -14,
+        "y": -0.1,
+        "z": 0.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-0-1",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": -14,
+        "y": -0.1,
+        "z": 2.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-1-0",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": -12,
+        "y": -0.1,
+        "z": 0.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-1-1",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": -12,
+        "y": -0.1,
+        "z": 2.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-2-0",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": -10,
+        "y": -0.1,
+        "z": 0.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-2-1",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": -10,
+        "y": -0.1,
+        "z": 2.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-3-0",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": -8,
+        "y": -0.1,
+        "z": 0.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-3-1",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": -8,
+        "y": -0.1,
+        "z": 2.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-4-0",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": -6,
+        "y": -0.1,
+        "z": 0.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-4-1",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": -6,
+        "y": -0.1,
+        "z": 2.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-5-0",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": -4,
+        "y": -0.1,
+        "z": 0.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-5-1",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": -4,
+        "y": -0.1,
+        "z": 2.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-6-0",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": -2,
+        "y": -0.1,
+        "z": 0.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-6-1",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": -2,
+        "y": -0.1,
+        "z": 2.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-7-0",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": 0,
+        "y": -0.1,
+        "z": 0.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-7-1",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": 0,
+        "y": -0.1,
+        "z": 2.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-8-0",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": 2,
+        "y": -0.1,
+        "z": 0.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-8-1",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": 2,
+        "y": -0.1,
+        "z": 2.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-9-0",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": 4,
+        "y": -0.1,
+        "z": 0.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-9-1",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": 4,
+        "y": -0.1,
+        "z": 2.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-10-0",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": 6,
+        "y": -0.1,
+        "z": 0.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-10-1",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": 6,
+        "y": -0.1,
+        "z": 2.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-11-0",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": 8,
+        "y": -0.1,
+        "z": 0.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-11-1",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": 8,
+        "y": -0.1,
+        "z": 2.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-12-0",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": 10,
+        "y": -0.1,
+        "z": 0.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-12-1",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": 10,
+        "y": -0.1,
+        "z": 2.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-13-0",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": 12,
+        "y": -0.1,
+        "z": 0.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-13-1",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": 12,
+        "y": -0.1,
+        "z": 2.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-14-0",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": 14,
+        "y": -0.1,
+        "z": 0.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "paving-14-1",
+      "asset": "k-pavement-base",
+      "role": "paving",
+      "transform": {
+        "x": 14,
+        "y": -0.1,
+        "z": 2.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4a520be7e0237888"
+    },
+    {
+      "id": "street-underlay",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        32,
+        0.25,
+        10
+      ]
+    },
+    {
+      "id": "walkway-support",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        30,
+        0.2,
+        4
+      ]
+    },
+    {
+      "id": "curb",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        30,
+        0.16,
+        0.16
+      ]
+    },
+    {
+      "id": "road",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        32,
+        0.12,
+        2.9
+      ]
+    },
+    {
+      "id": "grocery-counter",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        3.05,
+        0.86,
+        0.85
+      ]
+    },
+    {
+      "id": "grocery-fruit-0",
+      "asset": "k-fruit-crate",
+      "role": "prop",
+      "transform": {
+        "x": -10.7,
+        "y": 0.863999998579995,
+        "z": 0.06,
+        "scaleX": 2,
+        "scaleY": 2,
+        "scaleZ": 2,
+        "rotY": 0
+      },
+      "sourceId": "legacy:3393d96209840eef"
+    },
+    {
+      "id": "grocery-fruit-1",
+      "asset": "k-fruit-crate",
+      "role": "prop",
+      "transform": {
+        "x": -9.979999999999999,
+        "y": 0.863999998579995,
+        "z": 0.06,
+        "scaleX": 2,
+        "scaleY": 2,
+        "scaleZ": 2,
+        "rotY": 0
+      },
+      "sourceId": "legacy:3393d96209840eef"
+    },
+    {
+      "id": "grocery-fruit-2",
+      "asset": "k-fruit-crate",
+      "role": "prop",
+      "transform": {
+        "x": -9.26,
+        "y": 0.863999998579995,
+        "z": 0.06,
+        "scaleX": 2,
+        "scaleY": 2,
+        "scaleZ": 2,
+        "rotY": 0
+      },
+      "sourceId": "legacy:3393d96209840eef"
+    },
+    {
+      "id": "grocery-fruit-3",
+      "asset": "k-fruit-crate",
+      "role": "prop",
+      "transform": {
+        "x": -8.54,
+        "y": 0.863999998579995,
+        "z": 0.06,
+        "scaleX": 2,
+        "scaleY": 2,
+        "scaleZ": 2,
+        "rotY": 0
+      },
+      "sourceId": "legacy:3393d96209840eef"
+    },
+    {
+      "id": "grocery-box-0",
+      "asset": "k-market-crate",
+      "role": "prop",
+      "transform": {
+        "x": -11.65,
+        "y": 0,
+        "z": 0.38,
+        "scaleX": 1.6,
+        "scaleY": 1.6,
+        "scaleZ": 1.6,
+        "rotY": 0
+      },
+      "sourceId": "legacy:ace8156a8a4d7248"
+    },
+    {
+      "id": "grocery-box-1",
+      "asset": "k-market-crate",
+      "role": "prop",
+      "transform": {
+        "x": -11.65,
+        "y": 0,
+        "z": 0.91,
+        "scaleX": 1.6,
+        "scaleY": 1.6,
+        "scaleZ": 1.6,
+        "rotY": 0
+      },
+      "sourceId": "legacy:ace8156a8a4d7248"
+    },
+    {
+      "id": "bakery-table",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        2.9,
+        0.16,
+        0.8
+      ]
+    },
+    {
+      "id": "bakery-leg--6.25--0.27",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        0.1,
+        0.46,
+        0.1
+      ]
+    },
+    {
+      "id": "bakery-leg--6.25-0.22",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        0.1,
+        0.46,
+        0.1
+      ]
+    },
+    {
+      "id": "bakery-leg--4.05--0.27",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        0.1,
+        0.46,
+        0.1
+      ]
+    },
+    {
+      "id": "bakery-leg--4.05-0.22",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        0.1,
+        0.46,
+        0.1
+      ]
+    },
+    {
+      "id": "bakery-bread-0",
+      "asset": "k-bread-tray",
+      "role": "prop",
+      "transform": {
+        "x": -6.05,
+        "y": 0.5574999998137354,
+        "z": 0.02,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "common:common-bread_display"
+    },
+    {
+      "id": "bakery-bread-1",
+      "asset": "k-bread-tray",
+      "role": "prop",
+      "transform": {
+        "x": -5.1899999999999995,
+        "y": 0.5574999998137354,
+        "z": 0.02,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "common:common-bread_display"
+    },
+    {
+      "id": "bakery-bread-2",
+      "asset": "k-bread-tray",
+      "role": "prop",
+      "transform": {
+        "x": -4.33,
+        "y": 0.5574999998137354,
+        "z": 0.02,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "common:common-bread_display"
+    },
+    {
+      "id": "noodle-bar",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        3.05,
+        0.96,
+        0.78
+      ]
+    },
+    {
+      "id": "noodle-stool-0",
+      "asset": "k-stool",
+      "role": "prop",
+      "transform": {
+        "x": 0.3,
+        "y": -0.012000000569969416,
+        "z": 1.02,
+        "scaleX": 1.5,
+        "scaleY": 1.5,
+        "scaleZ": 1.5,
+        "rotY": 0
+      },
+      "sourceId": "legacy:c355781a52906950"
+    },
+    {
+      "id": "noodle-stool-1",
+      "asset": "k-stool",
+      "role": "prop",
+      "transform": {
+        "x": 1.2,
+        "y": -0.012000000569969416,
+        "z": 1.02,
+        "scaleX": 1.5,
+        "scaleY": 1.5,
+        "scaleZ": 1.5,
+        "rotY": 0
+      },
+      "sourceId": "legacy:c355781a52906950"
+    },
+    {
+      "id": "noodle-stool-2",
+      "asset": "k-stool",
+      "role": "prop",
+      "transform": {
+        "x": 2.1,
+        "y": -0.012000000569969416,
+        "z": 1.02,
+        "scaleX": 1.5,
+        "scaleY": 1.5,
+        "scaleZ": 1.5,
+        "rotY": 0
+      },
+      "sourceId": "legacy:c355781a52906950"
+    },
+    {
+      "id": "noodle-pot",
+      "asset": "k-cooking-pot",
+      "role": "prop",
+      "transform": {
+        "x": 1.45,
+        "y": 0.97,
+        "z": -0.1,
+        "scaleX": 0.53,
+        "scaleY": 0.53,
+        "scaleZ": 0.53,
+        "rotY": 0
+      },
+      "sourceId": "common:common-cooking_pot"
+    },
+    {
+      "id": "noodle-awning",
+      "asset": "custom-awning",
+      "role": "awning",
+      "transform": {
+        "x": 1.25,
+        "y": 2.65,
+        "z": -1.35,
+        "scaleX": 0.95,
+        "scaleY": 0.95,
+        "scaleZ": 0.95,
+        "rotY": 0
+      },
+      "sourceId": "new-local-module"
+    },
+    {
+      "id": "noodle-curtain-rod",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        3.1,
+        0.055,
+        0.055
+      ]
+    },
+    {
+      "id": "curtain-bracket--1",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        0.055,
+        0.055,
+        0.64
+      ]
+    },
+    {
+      "id": "curtain-bracket-1",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        0.055,
+        0.055,
+        0.64
+      ]
+    },
+    {
+      "id": "noodle-curtain-0",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        0.93,
+        0.53,
+        0.035
+      ]
+    },
+    {
+      "id": "noodle-curtain-1",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        0.93,
+        0.53,
+        0.035
+      ]
+    },
+    {
+      "id": "noodle-curtain-2",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        0.93,
+        0.53,
+        0.035
+      ]
+    },
+    {
+      "id": "cat-shelf",
+      "asset": "k-shelf",
+      "role": "prop",
+      "transform": {
+        "x": 5.65,
+        "y": 0,
+        "z": -0.06,
+        "scaleX": 2.2,
+        "scaleY": 2.2,
+        "scaleZ": 2.2,
+        "rotY": 0
+      },
+      "sourceId": "legacy:9aceb3170fbc111d"
+    },
+    {
+      "id": "cat-bench",
+      "asset": "k-bench",
+      "role": "prop",
+      "transform": {
+        "x": 5,
+        "y": -0.009999999776482582,
+        "z": 1.05,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:4015667075d2acc3"
+    },
+    {
+      "id": "cafe-planter",
+      "asset": "k-potted-bush",
+      "role": "prop",
+      "transform": {
+        "x": 7.1,
+        "y": 0,
+        "z": 0.55,
+        "scaleX": 2.1,
+        "scaleY": 2.1,
+        "scaleZ": 2.1,
+        "rotY": 0
+      },
+      "sourceId": "legacy:24f9a8cba4372277"
+    },
+    {
+      "id": "repair-bike",
+      "asset": "custom-bicycle",
+      "role": "bicycle",
+      "transform": {
+        "x": 10.05,
+        "y": 0,
+        "z": 0.45,
+        "scaleX": 1.1,
+        "scaleY": 1.1,
+        "scaleZ": 1.1,
+        "rotY": 0
+      },
+      "sourceId": "new-local-module"
+    },
+    {
+      "id": "repair-shelf",
+      "asset": "k-shelf",
+      "role": "prop",
+      "transform": {
+        "x": 11.3,
+        "y": 0,
+        "z": -0.22,
+        "scaleX": 1.65,
+        "scaleY": 1.65,
+        "scaleZ": 1.65,
+        "rotY": 0
+      },
+      "sourceId": "legacy:9aceb3170fbc111d"
+    },
+    {
+      "id": "repair-stool",
+      "asset": "k-stool",
+      "role": "prop",
+      "transform": {
+        "x": 8.75,
+        "y": -0.011200000531971455,
+        "z": 0.76,
+        "scaleX": 1.4,
+        "scaleY": 1.4,
+        "scaleZ": 1.4,
+        "rotY": 0
+      },
+      "sourceId": "legacy:c355781a52906950"
+    },
+    {
+      "id": "tree--13.3",
+      "asset": "custom-broadleaf-tree",
+      "role": "tree",
+      "transform": {
+        "x": -13.3,
+        "y": 0.00525,
+        "z": 0.7,
+        "scaleX": 1.05,
+        "scaleY": 1.05,
+        "scaleZ": 1.05,
+        "rotY": 0
+      },
+      "sourceId": "new-local-module"
+    },
+    {
+      "id": "tree-13",
+      "asset": "custom-broadleaf-tree",
+      "role": "tree",
+      "transform": {
+        "x": 13,
+        "y": 0.00475,
+        "z": -0.1,
+        "scaleX": 0.95,
+        "scaleY": 0.95,
+        "scaleZ": 0.95,
+        "rotY": 0
+      },
+      "sourceId": "new-local-module"
+    },
+    {
+      "id": "tree--1.8",
+      "asset": "custom-broadleaf-tree",
+      "role": "tree",
+      "transform": {
+        "x": -1.8,
+        "y": 0.004,
+        "z": -5.8,
+        "scaleX": 0.8,
+        "scaleY": 0.8,
+        "scaleZ": 0.8,
+        "rotY": 0
+      },
+      "sourceId": "new-local-module"
+    },
+    {
+      "id": "balcony-green-0",
+      "asset": "k-potted-bush",
+      "role": "prop",
+      "transform": {
+        "x": -10.8,
+        "y": 3.68,
+        "z": -0.78,
+        "scaleX": 1.25,
+        "scaleY": 1.25,
+        "scaleZ": 1.25,
+        "rotY": 0
+      },
+      "sourceId": "legacy:24f9a8cba4372277"
+    },
+    {
+      "id": "balcony-green-1",
+      "asset": "k-potted-bush",
+      "role": "prop",
+      "transform": {
+        "x": -9.4,
+        "y": 3.68,
+        "z": -0.78,
+        "scaleX": 1.25,
+        "scaleY": 1.25,
+        "scaleZ": 1.25,
+        "rotY": 0
+      },
+      "sourceId": "legacy:24f9a8cba4372277"
+    },
+    {
+      "id": "balcony-green-2",
+      "asset": "k-potted-bush",
+      "role": "prop",
+      "transform": {
+        "x": 0.3,
+        "y": 3.68,
+        "z": -0.78,
+        "scaleX": 1.25,
+        "scaleY": 1.25,
+        "scaleZ": 1.25,
+        "rotY": 0
+      },
+      "sourceId": "legacy:24f9a8cba4372277"
+    },
+    {
+      "id": "balcony-green-3",
+      "asset": "k-potted-bush",
+      "role": "prop",
+      "transform": {
+        "x": 1.8,
+        "y": 3.68,
+        "z": -0.78,
+        "scaleX": 1.25,
+        "scaleY": 1.25,
+        "scaleZ": 1.25,
+        "rotY": 0
+      },
+      "sourceId": "legacy:24f9a8cba4372277"
+    },
+    {
+      "id": "balcony-green-4",
+      "asset": "k-potted-bush",
+      "role": "prop",
+      "transform": {
+        "x": 4.8,
+        "y": 3.68,
+        "z": -0.78,
+        "scaleX": 1.25,
+        "scaleY": 1.25,
+        "scaleZ": 1.25,
+        "rotY": 0
+      },
+      "sourceId": "legacy:24f9a8cba4372277"
+    },
+    {
+      "id": "balcony-green-5",
+      "asset": "k-potted-bush",
+      "role": "prop",
+      "transform": {
+        "x": 6.2,
+        "y": 3.68,
+        "z": -0.78,
+        "scaleX": 1.25,
+        "scaleY": 1.25,
+        "scaleZ": 1.25,
+        "rotY": 0
+      },
+      "sourceId": "legacy:24f9a8cba4372277"
+    },
+    {
+      "id": "skyline-0",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        3.8,
+        5.6,
+        4
+      ]
+    },
+    {
+      "id": "skyline-1",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        3.8,
+        6.8,
+        4
+      ]
+    },
+    {
+      "id": "skyline-2",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        3.8,
+        8,
+        4
+      ]
+    },
+    {
+      "id": "skyline-3",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        3.8,
+        5.6,
+        4
+      ]
+    },
+    {
+      "id": "skyline-4",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        3.8,
+        6.8,
+        4
+      ]
+    },
+    {
+      "id": "skyline-5",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        3.8,
+        8,
+        4
+      ]
+    },
+    {
+      "id": "skyline-6",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        3.8,
+        5.6,
+        4
+      ]
+    },
+    {
+      "id": "skyline-7",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        3.8,
+        6.8,
+        4
+      ]
+    },
+    {
+      "id": "skyline-8",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        3.8,
+        8,
+        4
+      ]
+    },
+    {
+      "id": "skyline-9",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        3.8,
+        5.6,
+        4
+      ]
+    },
+    {
+      "id": "parts-stage",
+      "role": "architectural-assembly",
+      "geometry": "Mesh3D.box",
+      "dimensions": [
+        36,
+        0.1,
+        18
+      ]
+    }
+  ],
+  "lighting": {
+    "method": "One dynamic directional key + ambient; three local point fills at night; sparse emissive windows; four numeric presets, 1.8s smooth transition",
+    "presets": [
+      "env.morning",
+      "env.afternoon",
+      "env.evening",
+      "env.night"
+    ]
+  },
+  "intentionalOpenings": [
+    {
+      "id": "lane-entry",
+      "xRange": [
+        -3.07,
+        -0.825
+      ],
+      "width": 2.245,
+      "purpose": "visual street-switch entrance, not blocked by props"
+    },
+    {
+      "id": "shop-openings",
+      "purpose": "K geometry apertures retained, counters placed in front deliberately"
+    }
+  ],
+  "contactRules": [
+    {
+      "id": "paving",
+      "relation": "2m K bases laid edge-to-edge; topY=0; no coplanar duplicate top floor"
+    },
+    {
+      "id": "building-foot",
+      "relation": "Actual source minY transformed onto topY0"
+    },
+    {
+      "id": "balcony-root",
+      "relation": "Rear edge at building wall Z=-1.35; deliberate hidden root overlap; front edge clear of walk path"
+    },
+    {
+      "id": "aircon-mount",
+      "relation": "Back wall contact at Z=-1.35, no floating mount"
+    },
+    {
+      "id": "bread-counter",
+      "relation": "Four legs contact floor; trays contact topY.57"
+    }
+  ]
+}

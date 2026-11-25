@@ -1,0 +1,1 @@
+{"extends":"../../tsconfig.json","include":["preflight.test.ts"],"compilerOptions":{"types":["node","vite/client"]}}

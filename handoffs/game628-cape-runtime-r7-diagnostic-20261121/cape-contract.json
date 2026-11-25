@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "avatar": {
+    "motionRoot": "cape-preview-root",
+    "bodyByIndex": [
+      "slim",
+      "regular",
+      "full"
+    ],
+    "draftBodyStateId": "avatar.build",
+    "appliedLookStateId": "avatar.applied.look",
+    "appliedLookBodyIndex": 1,
+    "showAppliedFlagId": "avatar.view.applied"
+  },
+  "request": {
+    "enabledFlagId": "avatar.cape.request",
+    "tierStateId": "cape.tier",
+    "tiers": [
+      "normal",
+      "low",
+      "off"
+    ],
+    "defaultTier": "normal"
+  },
+  "runtimeContract": "inputs/engine-contract.json"
+}

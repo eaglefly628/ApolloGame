@@ -1,0 +1,466 @@
+{
+  "schema": "game628.movement-obstacles.v1",
+  "status": "finite_final_prototype_proxy_set",
+  "sourceStaticAsset": "street-reference-v4.glb",
+  "sourceStaticSha256": "9830230781952c079e73431b693855d51e6f742a8774ddcd7259890e959d7381",
+  "sourceEditableBlend": "/Users/junbaili/Documents/GitHub/ApolloGame/handoffs/game628-life-controls-20261117/reference-rebuild-20261120/model/cat-animation-fix/reference-street-source-v4.blend",
+  "sourceEditableBlendSha256": "a1881b2787defb064001e4bb256a5a745adf8625dabf33af33c85aa39f7ec1a0",
+  "sourceVerticalSlab": [
+    -0.02,
+    1.85
+  ],
+  "playerRadius": 0.25,
+  "inflation": "All shape radii/width/depth are uninflated physical compound bounds. Engine adds player radius once. shape.height is Z depth, not world Y.",
+  "playerCenterBounds": {
+    "minX": -8.95,
+    "maxX": 8.95,
+    "minZ": 0.8,
+    "maxZ": 3.8
+  },
+  "boundsRecommendation": "Center Z.8..3.8 is feasible with these entrance/pole proxies; do not subtract player radius from this already-effective center Bounds again.",
+  "preferredContinuousThroughLane": {
+    "minZ": 1.5,
+    "maxZ": 3.6,
+    "minX": -8.95,
+    "maxX": 8.95,
+    "gridSamplesVerifiedFree": 7783,
+    "note": "Wide uninterrupted route. Smaller Z used for approaching a shop in open pockets; larger Z detours around bollards."
+  },
+  "safeApproachCenters": [
+    {
+      "shop": "grocery",
+      "centerXZ": [
+        -8.25,
+        0.9
+      ]
+    },
+    {
+      "shop": "bakery",
+      "centerXZ": [
+        -4.15,
+        0.9
+      ]
+    },
+    {
+      "shop": "noodles",
+      "centerXZ": [
+        0.9,
+        1.42
+      ]
+    },
+    {
+      "shop": "catcafe",
+      "centerXZ": [
+        4.1,
+        0.9
+      ]
+    },
+    {
+      "shop": "repair",
+      "centerXZ": [
+        8.35,
+        0.85
+      ]
+    }
+  ],
+  "obstacles": [
+    {
+      "id": "bollard_left",
+      "center": [
+        -8.9,
+        4.04
+      ],
+      "shape": {
+        "kind": "circle",
+        "radius": 0.1150001782122407
+      },
+      "sourceObjects": [
+        "street.bollard.post",
+        "street.bollard.foot",
+        "street.bollard.reflector",
+        "street.bollard.cap"
+      ],
+      "reason": "Foot ring is widest part; actual pole Z4.04, not nominal street limit.",
+      "playerRadiusAlreadyAdded": false
+    },
+    {
+      "id": "bollard_middle",
+      "center": [
+        -0.1,
+        4.04
+      ],
+      "shape": {
+        "kind": "circle",
+        "radius": 0.11500012295560708
+      },
+      "sourceObjects": [
+        "street.bollard.post.001",
+        "street.bollard.foot.001",
+        "street.bollard.reflector.001",
+        "street.bollard.cap.001"
+      ],
+      "reason": "Foot ring is widest part; actual pole Z4.04, not nominal street limit.",
+      "playerRadiusAlreadyAdded": false
+    },
+    {
+      "id": "bollard_right",
+      "center": [
+        7.5,
+        4.04
+      ],
+      "shape": {
+        "kind": "circle",
+        "radius": 0.115000222966736
+      },
+      "sourceObjects": [
+        "street.bollard.post.002",
+        "street.bollard.foot.002",
+        "street.bollard.reflector.002",
+        "street.bollard.cap.002"
+      ],
+      "reason": "Foot ring is widest part; actual pole Z4.04, not nominal street limit.",
+      "playerRadiusAlreadyAdded": false
+    },
+    {
+      "id": "grocery_left_crate_and_planter",
+      "center": [
+        -9.56513500213623,
+        0.740933820605278
+      ],
+      "shape": {
+        "kind": "box",
+        "width": 1.0402698516845703,
+        "height": 0.8181323111057281
+      },
+      "rawBounds": {
+        "min": [
+          -10.085269927978516,
+          0.0,
+          0.33186766505241394
+        ],
+        "max": [
+          -9.045000076293945,
+          0.8585000038146973,
+          1.149999976158142
+        ]
+      },
+      "sourceObjects": [
+        "grocery.empty.crate.floor",
+        "grocery.empty.crate.longwall",
+        "grocery.empty.crate.longwall.001",
+        "grocery.empty.crate.end",
+        "grocery.empty.crate.longwall.002",
+        "grocery.empty.crate.longwall.003",
+        "grocery.empty.crate.end.001",
+        "grocery.blue.producebox",
+        "grocery.street.planter.pot",
+        "grocery.street.planter.soil",
+        "grocery.street.planter.stem",
+        "grocery.street.planter.leaves",
+        "grocery.street.planter.stem.001",
+        "grocery.street.planter.leaves.001",
+        "grocery.street.planter.stem.002",
+        "grocery.street.planter.leaves.002",
+        "grocery.street.planter.stem.003",
+        "grocery.street.planter.leaves.003",
+        "grocery.street.planter.stem.004",
+        "grocery.street.planter.leaves.004"
+      ],
+      "reason": "Overlapping loose crate/blue box/plant at street edge; one compound avoids invisible narrow collision pockets.",
+      "playerRadiusAlreadyAdded": false
+    },
+    {
+      "id": "grocery_right_bakery_left_entrance_cluster",
+      "center": [
+        -6.025000095367432,
+        0.5302360653877258
+      ],
+      "shape": {
+        "kind": "box",
+        "width": 2.489999771118164,
+        "height": 1.0204721689224243
+      },
+      "rawBounds": {
+        "min": [
+          -7.269999980926514,
+          -0.0034947518724948168,
+          0.019999980926513672
+        ],
+        "max": [
+          -4.78000020980835,
+          1.125,
+          1.040472149848938
+        ]
+      },
+      "sourceObjects": [
+        "grocery.side.crate.floor",
+        "grocery.side.crate.longwall",
+        "grocery.side.crate.longwall.001",
+        "grocery.side.crate.end",
+        "grocery.side.crate.longwall.002",
+        "grocery.side.crate.longwall.003",
+        "grocery.side.crate.end.001",
+        "grocery.cabbage",
+        "grocery.cabbage.001",
+        "grocery.cabbage.002",
+        "grocery.cabbage.003",
+        "grocery.cabbage.004",
+        "grocery.street.planter2.pot",
+        "grocery.street.planter2.soil",
+        "grocery.street.planter2.stem",
+        "grocery.street.planter2.leaves",
+        "grocery.street.planter2.stem.001",
+        "grocery.street.planter2.leaves.001",
+        "grocery.street.planter2.stem.002",
+        "grocery.street.planter2.leaves.002",
+        "grocery.street.planter2.stem.003",
+        "grocery.street.planter2.leaves.003",
+        "grocery.street.planter2.stem.004",
+        "grocery.street.planter2.leaves.004",
+        "bakery.baguette.basket",
+        "bakery.board.wood",
+        "bakery.board.slate",
+        "bakery.board.leg",
+        "bakery.board.leg.001",
+        "bakery.board.bread",
+        "bakery.board.score",
+        "bakery.board.score.001",
+        "bakery.board.score.002",
+        "bakery.board.chalkline",
+        "bakery.board.chalkline.001",
+        "bakery.street.planter.pot",
+        "bakery.street.planter.soil",
+        "bakery.street.planter.stem",
+        "bakery.street.planter.leaves",
+        "bakery.street.planter.stem.001",
+        "bakery.street.planter.leaves.001",
+        "bakery.street.planter.stem.002",
+        "bakery.street.planter.leaves.002",
+        "bakery.street.planter.stem.003",
+        "bakery.street.planter.leaves.003",
+        "bakery.street.planter.stem.004",
+        "bakery.street.planter.leaves.004"
+      ],
+      "reason": "Cabbage crate, shared-edge pots, baguette basket and bakery chalkboard. Their remaining gaps are below .5m avatar diameter, so conservatively closed as one compound.",
+      "playerRadiusAlreadyAdded": false
+    },
+    {
+      "id": "bakery_right_planter",
+      "center": [
+        -2.9217946529388428,
+        0.6310948133468628
+      ],
+      "shape": {
+        "kind": "box",
+        "width": 0.5117645263671875,
+        "height": 0.42756855487823486
+      },
+      "rawBounds": {
+        "min": [
+          -3.1776769161224365,
+          0.0,
+          0.41731053590774536
+        ],
+        "max": [
+          -2.665912389755249,
+          0.656499981880188,
+          0.8448790907859802
+        ]
+      },
+      "sourceObjects": [
+        "bakery.street.planter2.pot",
+        "bakery.street.planter2.soil",
+        "bakery.street.planter2.stem",
+        "bakery.street.planter2.leaves",
+        "bakery.street.planter2.stem.001",
+        "bakery.street.planter2.leaves.001",
+        "bakery.street.planter2.stem.002",
+        "bakery.street.planter2.leaves.002",
+        "bakery.street.planter2.stem.003",
+        "bakery.street.planter2.leaves.003",
+        "bakery.street.planter2.stem.004",
+        "bakery.street.planter2.leaves.004"
+      ],
+      "reason": "One entrance planter; does not close alley center.",
+      "playerRadiusAlreadyAdded": false
+    },
+    {
+      "id": "noodles_stools_sign_and_neighbor_pots",
+      "center": [
+        1.353845238685608,
+        0.7104338854551315
+      ],
+      "shape": {
+        "kind": "box",
+        "width": 4.208230257034302,
+        "height": 0.7571324408054352
+      },
+      "rawBounds": {
+        "min": [
+          -0.750269889831543,
+          -0.0034947518724948168,
+          0.33186766505241394
+        ],
+        "max": [
+          3.457960367202759,
+          1.125,
+          1.0890001058578491
+        ]
+      },
+      "sourceObjects": [
+        "noodles.stool.leg",
+        "noodles.stool.seat",
+        "noodles.stool.leg.001",
+        "noodles.stool.seat.001",
+        "noodles.stool.leg.002",
+        "noodles.stool.seat.002",
+        "noodles.board.wood",
+        "noodles.board.slate",
+        "noodles.board.leg",
+        "noodles.board.leg.001",
+        "noodles.board.bowl",
+        "noodles.board.bowlleg",
+        "noodles.board.bowlleg.001",
+        "noodles.board.chalkline",
+        "noodles.board.chalkline.001",
+        "noodles.street.planter.pot",
+        "noodles.street.planter.soil",
+        "noodles.street.planter.stem",
+        "noodles.street.planter.leaves",
+        "noodles.street.planter.stem.001",
+        "noodles.street.planter.leaves.001",
+        "noodles.street.planter.stem.002",
+        "noodles.street.planter.leaves.002",
+        "noodles.street.planter.stem.003",
+        "noodles.street.planter.leaves.003",
+        "noodles.street.planter.stem.004",
+        "noodles.street.planter.leaves.004",
+        "noodles.street.planter2.pot",
+        "noodles.street.planter2.soil",
+        "noodles.street.planter2.stem",
+        "noodles.street.planter2.leaves",
+        "noodles.street.planter2.stem.001",
+        "noodles.street.planter2.leaves.001",
+        "noodles.street.planter2.stem.002",
+        "noodles.street.planter2.leaves.002",
+        "noodles.street.planter2.stem.003",
+        "noodles.street.planter2.leaves.003",
+        "noodles.street.planter2.stem.004",
+        "noodles.street.planter2.leaves.004",
+        "catcafe.street.planter.pot",
+        "catcafe.street.planter.soil",
+        "catcafe.street.planter.stem",
+        "catcafe.street.planter.leaves",
+        "catcafe.street.planter.stem.001",
+        "catcafe.street.planter.leaves.001",
+        "catcafe.street.planter.stem.002",
+        "catcafe.street.planter.leaves.002",
+        "catcafe.street.planter.stem.003",
+        "catcafe.street.planter.leaves.003",
+        "catcafe.street.planter.stem.004",
+        "catcafe.street.planter.leaves.004"
+      ],
+      "reason": "Three stools leave only about .2m between seats, below .5m avatar diameter. Combined with sign and adjacent pots; approach noodles from Z>=1.40.",
+      "playerRadiusAlreadyAdded": false
+    },
+    {
+      "id": "cat_sign_animated_cat_and_repair_edge_plant",
+      "center": [
+        6.035383392582644,
+        0.6509338468313217
+      ],
+      "shape": {
+        "kind": "box",
+        "width": 2.445154807547114,
+        "height": 0.6381323635578156
+      },
+      "rawBounds": {
+        "min": [
+          4.812805988809087,
+          -0.012999992489814758,
+          0.33186766505241394
+        ],
+        "max": [
+          7.257960796356201,
+          1.125,
+          0.9700000286102295
+        ]
+      },
+      "sourceObjects": [
+        "catcafe.board.wood",
+        "catcafe.board.slate",
+        "catcafe.board.leg",
+        "catcafe.board.leg.001",
+        "catcafe.board.catface",
+        "catcafe.board.ear",
+        "catcafe.board.ear.001",
+        "catcafe.board.chalkline",
+        "catcafe.board.chalkline.001",
+        "catcafe.street.planter2.pot",
+        "catcafe.street.planter2.soil",
+        "catcafe.street.planter2.stem",
+        "catcafe.street.planter2.leaves",
+        "catcafe.street.planter2.stem.001",
+        "catcafe.street.planter2.leaves.001",
+        "catcafe.street.planter2.stem.002",
+        "catcafe.street.planter2.leaves.002",
+        "catcafe.street.planter2.stem.003",
+        "catcafe.street.planter2.leaves.003",
+        "catcafe.street.planter2.stem.004",
+        "catcafe.street.planter2.leaves.004",
+        "repair.street.planter.pot",
+        "repair.street.planter.soil",
+        "repair.street.planter.stem",
+        "repair.street.planter.leaves",
+        "repair.street.planter.stem.001",
+        "repair.street.planter.leaves.001",
+        "repair.street.planter.stem.002",
+        "repair.street.planter.leaves.002",
+        "repair.street.planter.stem.003",
+        "repair.street.planter.leaves.003",
+        "repair.street.planter.stem.004",
+        "repair.street.planter.leaves.004"
+      ],
+      "reason": "Includes full measured idle envelope of pavement cat, chalkboard and adjoining pots. Narrow gaps are closed; cat-cafe approach remains clear left of cat.",
+      "playerRadiusAlreadyAdded": false,
+      "animationEnvelope": {
+        "asset": "cat-floor-idle.glb",
+        "clip": "cat_idle",
+        "sampleHz": 120,
+        "samples": 1081,
+        "bounds": {
+          "min": [
+            4.812805988809087,
+            -0.012999992489814758,
+            0.5023749975562097
+          ],
+          "max": [
+            5.613432189394365,
+            0.4770436838547017,
+            0.890407576236662
+          ]
+        }
+      }
+    }
+  ],
+  "omittedDeliberately": [
+    {
+      "object": "repair front bicycle",
+      "reason": "Largest Z about.473; with playerR.25 this ends atcenterZ.723, below effective minZ.8. Do not add another wide bike collider that blocks safe approach."
+    },
+    {
+      "object": "store counters / elevated cats / balcony / awning",
+      "reason": "Counters and elevated cats lie behind center-band clearance; awning valances start above avatar height1.79. Street-only movement, no indoor traversal."
+    },
+    {
+      "object": "far-end plants and tree trunk",
+      "reason": "Beyond X center Bounds\u00b18.95 plus .25m avatar clearance; not part of this finite prototype set."
+    }
+  ],
+  "limits": [
+    "XZ proxies are intentionally conservative and finite, not a navigation mesh or exact concave collision mesh.",
+    "Compound boxes close physical gaps too small for a .5m diameter avatar; do not also add each source component separately.",
+    "Do not spawn inside a proxy; preserve axis-separated sliding/rejection behavior of existing movement capabilities.",
+    "NPC interaction range may need to account for noodle counter/stool separation; closest free approach is roughly Z1.4, not storefront Z0."
+  ]
+}

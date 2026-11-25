@@ -1,0 +1,145 @@
+{
+  "canonicalContract": {
+    "path": "/Users/junbaili/Documents/GitHub/ApolloGame/handoffs/game628-cape-runtime-engine-20261120/CONTRACT.json",
+    "sha256": "d4fb612b2dc0bb91e7b96496ab426004690a5851272b8617a782371501fecaf6"
+  },
+  "status": "fitting-candidates-pending-dynamic-contact-test",
+  "material": {
+    "fabric": "velvet",
+    "color": 6169657
+  },
+  "body": {
+    "slim": {
+      "shoulderGapM": 0.3501938964432847,
+      "widthM": 0.5953296239535839,
+      "heightM": 0.75,
+      "pins": [
+        "left",
+        "right"
+      ],
+      "qualityByTier": {
+        "normal": {
+          "quality": "medium",
+          "iterations": 4
+        },
+        "low": {
+          "quality": "low",
+          "iterations": 2
+        },
+        "off": null
+      },
+      "proxyBindings": [
+        {
+          "id": "torso",
+          "shape": "capsule",
+          "radius": 0.180235,
+          "halfHeight": 0.1388689,
+          "attachment": {
+            "node": "Spine1",
+            "offsetM": [
+              0.0007493,
+              0.0119638,
+              0.0178088
+            ]
+          }
+        },
+        {
+          "id": "left-upper-arm",
+          "shape": "capsule",
+          "radius": 0.077,
+          "halfHeight": 0.0677902,
+          "attachment": {
+            "node": "LeftUpperArm",
+            "offsetM": [
+              0,
+              0.1178402,
+              0
+            ]
+          }
+        },
+        {
+          "id": "right-upper-arm",
+          "shape": "capsule",
+          "radius": 0.077,
+          "halfHeight": 0.0677902,
+          "attachment": {
+            "node": "RightUpperArm",
+            "offsetM": [
+              0,
+              0.1178402,
+              0
+            ]
+          }
+        }
+      ],
+      "sourceInput": "fixtures/slim.json",
+      "fitStatus": "unverified-native-dynamic-runtime"
+    },
+    "full": {
+      "shoulderGapM": 0.4696954243188132,
+      "widthM": 0.7984822213419824,
+      "heightM": 0.75,
+      "pins": [
+        "left",
+        "right"
+      ],
+      "qualityByTier": {
+        "normal": {
+          "quality": "medium",
+          "iterations": 4
+        },
+        "low": {
+          "quality": "low",
+          "iterations": 2
+        },
+        "off": null
+      },
+      "proxyBindings": [
+        {
+          "id": "torso",
+          "shape": "capsule",
+          "radius": 0.2881282,
+          "halfHeight": 0.0877909,
+          "attachment": {
+            "node": "Spine1",
+            "offsetM": [
+              0.0014755,
+              0.0122701,
+              0.034611
+            ]
+          }
+        },
+        {
+          "id": "left-upper-arm",
+          "shape": "capsule",
+          "radius": 0.077,
+          "halfHeight": 0.0677902,
+          "attachment": {
+            "node": "LeftUpperArm",
+            "offsetM": [
+              0,
+              0.1178402,
+              0
+            ]
+          }
+        },
+        {
+          "id": "right-upper-arm",
+          "shape": "capsule",
+          "radius": 0.077,
+          "halfHeight": 0.0677902,
+          "attachment": {
+            "node": "RightUpperArm",
+            "offsetM": [
+              0,
+              0.1178402,
+              0
+            ]
+          }
+        }
+      ],
+      "sourceInput": "fixtures/full.json",
+      "fitStatus": "unverified-native-dynamic-runtime"
+    }
+  }
+}

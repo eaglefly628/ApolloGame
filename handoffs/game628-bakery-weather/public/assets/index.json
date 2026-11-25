@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "bakery-puddle-west",
+      "type": "texture",
+      "description": "面包房西侧石板水渍，透明浅水边缘和烘焙的天空、店面倒影",
+      "status": "filled",
+      "path": "puddle-west.png",
+      "spec": { "usage": "albedo", "colorSpace": "srgb", "wrap": "clamp" }
+    },
+    {
+      "id": "bakery-puddle-east",
+      "type": "texture",
+      "description": "面包房东侧石板水渍，侧向薄水膜和烘焙的天空、店面倒影",
+      "status": "filled",
+      "path": "puddle-east.png",
+      "spec": { "usage": "albedo", "colorSpace": "srgb", "wrap": "clamp" }
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "status": "inputs-aligned-with-isolated-engine-candidate",
+  "units": "meters",
+  "axes": "Y-up,+Z-forward",
+  "sampleHz": 60,
+  "canonicalContract": {
+    "path": "/Users/junbaili/Documents/GitHub/ApolloGame/handoffs/game628-cape-runtime-engine-20261120/CONTRACT.json",
+    "sha256": "d4fb612b2dc0bb91e7b96496ab426004690a5851272b8617a782371501fecaf6"
+  },
+  "bodies": [
+    {
+      "bodyId": "slim",
+      "source": {
+        "path": "/art/face-studio-20261120/body-slim.gltf",
+        "modelSha256": "c93fb6c9d65aba2e9d344041aeef5214d93664d9b5a02f20e3d4bb928b60b55c",
+        "binPath": "/art/face-studio-20261120/shared-body.bin",
+        "binSha256": "71985acc71f82dafa0943a7caff55ee225887ec57bb4602136bdbf8479138867"
+      },
+      "shoulderOffsetsM": {
+        "Left": [
+          3.0755996704101563e-9,
+          0.11113179111480713,
+          3.482452411844861e-8
+        ],
+        "Right": [
+          5.125999450683593e-9,
+          0.11113179111480713,
+          8.1568334462645e-8
+        ]
+      },
+      "maximumOffsetConversionErrorM": 1.5282241497453343e-8,
+      "frames": [
+        {
+          "clip": "idle",
+          "count": 598,
+          "duration": 9.933333396911621
+        },
+        {
+          "clip": "walk",
+          "count": 85,
+          "duration": 1.399999976158142
+        },
+        {
+          "clip": "wave",
+          "count": 285,
+          "duration": 4.733333110809326
+        }
+      ],
+      "torsoRadius": 0.180235,
+      "armRadius": {
+        "Left": 0.07699999364669204,
+        "Right": 0.07699999707449685
+      }
+    },
+    {
+      "bodyId": "full",
+      "source": {
+        "path": "/art/face-studio-20261120/body-full.gltf",
+        "modelSha256": "f1ecf3f43602ee89dc68bf272d35fa401118f8297ba468bb8eed3094d5ff61ce",
+        "binPath": "/art/face-studio-20261120/shared-body.bin",
+        "binSha256": "71985acc71f82dafa0943a7caff55ee225887ec57bb4602136bdbf8479138867"
+      },
+      "shoulderOffsetsM": {
+        "Left": [
+          3.0755996704101563e-9,
+          0.11113179111480713,
+          3.482452411844861e-8
+        ],
+        "Right": [
+          5.125999450683593e-9,
+          0.11113179111480713,
+          8.1568334462645e-8
+        ]
+      },
+      "maximumOffsetConversionErrorM": 1.5282241497453343e-8,
+      "frames": [
+        {
+          "clip": "idle",
+          "count": 598,
+          "duration": 9.933333396911621
+        },
+        {
+          "clip": "walk",
+          "count": 85,
+          "duration": 1.399999976158142
+        },
+        {
+          "clip": "wave",
+          "count": 285,
+          "duration": 4.733333110809326
+        }
+      ],
+      "torsoRadius": 0.2881282,
+      "armRadius": {
+        "Left": 0.07699999364669204,
+        "Right": 0.07699999707449685
+      }
+    }
+  ]
+}

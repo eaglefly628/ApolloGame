@@ -1,0 +1,18 @@
+import { readFileSync, writeFileSync, renameSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { bakeNavigationProfile } from '../../../../../src/skills/tier2/navigation-grid';
+const file=fileURLToPath(new URL('./network-plan.json',import.meta.url));
+const plan=JSON.parse(readFileSync(file,'utf8'));
+const actual=bakeNavigationProfile({type:'NavigationGrid',...plan.grid},.25)!;
+if(!actual?.grid)throw Error('Real bake missing metadata');
+const maskMatch=JSON.stringify(actual.grid.blocked)===JSON.stringify(plan.bakedGrid.blocked);
+const edgeMatch=JSON.stringify(actual.edges)===JSON.stringify(plan.bakedGraph.edges);
+const nodes=actual.nodes;let maxDelta=0;
+if(nodes.length!==plan.bakedGraph.nodes.length)throw Error('Node count mismatch');
+for(let i=0;i<nodes.length;i++)maxDelta=Math.max(maxDelta,Math.abs(nodes[i].x-plan.bakedGraph.nodes[i].x),Math.abs(nodes[i].y-plan.bakedGraph.nodes[i].y));
+if(!maskMatch||!edgeMatch||maxDelta>1e-10)throw Error(JSON.stringify({maskMatch,edgeMatch,maxDelta}));
+plan.bakedGrid=actual.grid;plan.bakedGraph={nodes:actual.nodes,edges:actual.edges};
+plan.validation.method='Actual repository bakeNavigationProfile(.25) executed; blocked mask/edges exactly match source-algorithm mirror; coordinates differ at most floating-roundoff.';
+plan.validation.actualEngineBake={maskMatch,edgeMatch,maxCoordinateDelta:maxDelta,nodes:nodes.length,edges:actual.edges.length};
+const temp=file+'.tmp';writeFileSync(temp,JSON.stringify(plan,null,2));renameSync(temp,file);
+console.log('ACTUAL_ENGINE_BAKE_VERIFIED',JSON.stringify(plan.validation.actualEngineBake));

@@ -1,0 +1,158 @@
+{
+  "status": "local-only-original-geometry-library-derived-motion-not-publish-approved",
+  "sources": {
+    "idle": {
+      "id": "idle-breathing",
+      "sha256": "73d6c558aa783a494f34125dfb6c8c3dd69643c636fe0c453d50c9587d090d66",
+      "source": {
+        "kind": "mixamo",
+        "mixamoName": "Breathing Idle",
+        "searchTerm": "Breathing Idle",
+        "fbxSha256": "0ece42b3a33f218c22b0e8af0618b47dbb5ee6933fd4e298358c48aa119dd876",
+        "manifestSha256": "26a44cab1177701b69e8a3fb6df71274066e9815d4c7cb90b7577a673d5e3a7d",
+        "sourceFile": "idle-breathing.fbx"
+      },
+      "license": "Local user Mixamo library; original FBX and source Skin not copied; no source library edits",
+      "frames": 299,
+      "durationS": 9.933333333333334
+    },
+    "walk": {
+      "id": "walking-100460901",
+      "sha256": "9c37f4f9918f55b13c17dcd4fd22b03443befa57f5eaaa8921190197f6d896e3",
+      "source": {
+        "kind": "mixamo",
+        "mixamoName": "Walking",
+        "searchTerm": "Walking",
+        "fbxSha256": "a20781d391545c5481670be4aa88dd838833fa39398f539404904b63ce525f2c",
+        "manifestSha256": "9d87d2ec83ddfc7ca1ea3c2263d09f9a7ee1299b5ccfa593a93c648146bb7d6c",
+        "sourceFile": "walking-100460901.fbx"
+      },
+      "license": "Local user Mixamo library; original FBX and source Skin not copied; no source library edits",
+      "frames": 43,
+      "durationS": 1.4
+    },
+    "wave": {
+      "id": "waving-106100901",
+      "sha256": "f431aeb937a2db2c0b4e68ccffe6c887aef1b70102961230b880927fc56ba9dd",
+      "source": {
+        "kind": "mixamo",
+        "mixamoName": "Waving",
+        "searchTerm": "Waving",
+        "fbxSha256": "f5f45f0b2f9eae0a8bfdebb576d8b2dc4d528a2341f2e02866a1bdca85d4940b",
+        "manifestSha256": "92db0f0df0a390ff7f0a7250c3569ad045e148c668ecd72d0cfdf0e32b525fd9",
+        "sourceFile": "waving-106100901.fbx"
+      },
+      "license": "Local user Mixamo library; original FBX and source Skin not copied; no source library edits",
+      "frames": 143,
+      "durationS": 4.733333333333333
+    }
+  },
+  "method": "Original rigid-segment cartoon character; source rig rest axes retained; source local quaternion tracks reused, Hips planar translations removed; per-frame vertical sole correction, no new rootXZ motion",
+  "variants": [
+    {
+      "role": "traveler",
+      "file": "traveler-v2.glb",
+      "sha256": "c371801cd8e9ab0d0872bbda091063756f555de1130e5e681d1ebe71d3ece0ff",
+      "bounds": {
+        "min": [
+          -0.7005332640951347,
+          0.0024999916399393134,
+          -0.39177441617942277
+        ],
+        "max": [
+          0.7004828581648357,
+          1.736648034606921,
+          0.3320692464010532
+        ]
+      },
+      "clips": [
+        {
+          "name": "idle",
+          "duration": 9.933333333333334,
+          "tracks": 66
+        },
+        {
+          "name": "walk",
+          "duration": 1.4,
+          "tracks": 66
+        },
+        {
+          "name": "wave",
+          "duration": 4.733333333333333,
+          "tracks": 66
+        }
+      ],
+      "nominalWalkSpeed": 0.9221460884538626,
+      "soleMinY": {
+        "idle": -3.29366504243922e-08,
+        "walk": -4.081021431900922e-08,
+        "wave": -3.2614684154774753e-08
+      }
+    },
+    {
+      "role": "shopkeeper",
+      "file": "shopkeeper-v2.glb",
+      "sha256": "8b576e90b7d617246b1321ed1a513eab857ba2dae79edc62e6bfa12b9c1c4f18",
+      "bounds": {
+        "min": [
+          -0.7005332640951347,
+          0.0024999916399393134,
+          -0.24522571650658861
+        ],
+        "max": [
+          0.7004828581648357,
+          1.736648034606921,
+          0.3320692464010532
+        ]
+      },
+      "clips": [
+        {
+          "name": "idle",
+          "duration": 9.933333333333334,
+          "tracks": 66
+        },
+        {
+          "name": "walk",
+          "duration": 1.4,
+          "tracks": 66
+        },
+        {
+          "name": "wave",
+          "duration": 4.733333333333333,
+          "tracks": 66
+        }
+      ],
+      "nominalWalkSpeed": 0.9221460884538626,
+      "soleMinY": {
+        "idle": -3.29366504243922e-08,
+        "walk": -4.081021431900922e-08,
+        "wave": -3.2614684154774753e-08
+      }
+    }
+  ],
+  "runtimeWiring": {
+    "Model3D": {
+      "scale": 1
+    },
+    "AnimState3D": {
+      "walk": {
+        "clip": "walk",
+        "loop": true,
+        "speed": 1,
+        "speedAtVelocity": 0.015369101474231043
+      },
+      "idle": {
+        "clip": "idle",
+        "loop": true,
+        "speed": 1
+      },
+      "wave": {
+        "clip": "wave",
+        "loop": false,
+        "speed": 1
+      }
+    },
+    "units": "nominalVelocity m/tick at 60Hz; world traveler height about1.737m; +Z front"
+  },
+  "visualReview": "main_engine_review_pending; no producer v2 art-pass claim"
+}

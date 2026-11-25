@@ -1,0 +1,28 @@
+{
+  "source": "traveler-v3.glb",
+  "sourceSha256": "366ae491bd1340a2a59109adbb0650742e12cff2f67d28731ab83a6dc3a7a59b",
+  "candidate": "traveler-v4.glb",
+  "candidateSha256": "89848c4f0fa8eff8783b36af445e29a639fe5656c53ee84dae159e7754d55e8f",
+  "changedMeshOnly": "cap-visor",
+  "sourceVisorProfileSelfCrossings": 2,
+  "repairedVisorR": 0.012,
+  "retainedOuterSize": [
+    0.49,
+    0.035,
+    0.24
+  ],
+  "nodeTransformsMaterialsAllAnimationsIdentical": true,
+  "allOtherMeshesAndOriginalBinaryPrefixIdentical": true,
+  "trianglesOld": 88,
+  "trianglesNew": 92,
+  "whiteMaterialIntroduced": false,
+  "status": "topology_repair_pending_visual_AB; not_proven_white_line_root_cause",
+  "actualExportedTopologyChecks": {
+    "v3BoundaryEdges": 8,
+    "v4BoundaryEdges": 0,
+    "v4NonmanifoldEdges": 0,
+    "v4DuplicateTriangles": 0,
+    "analysisWeldToleranceM": 1e-06,
+    "sectionCrossings": "v3 present near caps, v4 none at same8 sample sections"
+  }
+}

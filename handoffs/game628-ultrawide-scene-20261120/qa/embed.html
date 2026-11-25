@@ -1,0 +1,62 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>Game 628 embedded viewport QA</title>
+<style>body{margin:0;background:#e6dcc8;color:#30291f;font:14px system-ui}iframe{display:block;border:0;width:100%;height:calc(100dvh - 32px)}output{display:none}iframe:fullscreen{width:100%;height:100%}</style></head>
+<body><button type="button" onclick="document.querySelector('iframe').requestFullscreen()">嵌入画布全屏</button>
+<button type="button" id="walk">验证行走与边界</button>
+<output id="metrics" aria-label="QA metrics"></output>
+<iframe title="梧桐街嵌入验证" src="/prototype?scene=reference-walk" allowfullscreen></iframe><script>
+const query = new URLSearchParams(location.search);
+const frame = document.querySelector('iframe');
+if (query.has('scene')) frame.src = '/prototype?scene=' + encodeURIComponent(query.get('scene'));
+const width = Number(query.get('width'));
+if (width) {
+    const fit = () => {
+        frame.style.width = width + 'px';
+        frame.style.height = (Number(query.get('height')) || 1440) + 'px';
+        frame.style.transformOrigin = 'top left';
+        frame.style.transform = 'scale(' + Math.min(Math.min(2200, innerWidth) / width, (innerHeight - 32) / 1440) + ')';
+    };
+    addEventListener('resize', fit);
+    fit();
+}
+function report() {
+    const child = frame.contentDocument;
+    const probe = frame.contentWindow?.apolloPrototype;
+    const player = probe?.snapshot?.().player?.Transform;
+    const result = {
+        ready: Boolean(probe),
+        viewport: [child.documentElement.clientWidth, child.documentElement.clientHeight],
+        canvas: [...child.querySelectorAll('canvas')].map(c => [c.clientWidth, c.clientHeight, c.width, c.height]),
+        camera: probe?.camera(),
+        player,
+        fullscreen: document.fullscreenElement === frame,
+        screen: [screen.width, screen.height],
+        browser: navigator.userAgent,
+    };
+    const output = document.querySelector('#metrics');
+    output.value = JSON.stringify(result);
+    output.dataset.ready = String(result.ready);
+}
+setInterval(report, 250);
+document.querySelector('#walk').addEventListener('click', async event => {
+    const button = event.currentTarget;
+    const view = frame.contentWindow;
+    const position = () => {
+        const {x, y} = view.apolloPrototype.snapshot().player.Transform;
+        return [x, y];
+    };
+    const move = async code => {
+        view.dispatchEvent(new KeyboardEvent('keydown', {code}));
+        await new Promise(resolve => setTimeout(resolve, 850));
+        view.dispatchEvent(new KeyboardEvent('keyup', {code}));
+        return position();
+    };
+    button.disabled = true;
+    try {
+        const positions = [position(), await move('KeyD'), await move('KeyW')];
+        button.dataset.positions = JSON.stringify(positions);
+    } finally {
+        button.disabled = false;
+    }
+});
+</script>
+</body></html>

@@ -1,0 +1,1 @@
+{"extends":"./runtime/tsconfig.json","include":["host.ts","interaction.ts","interaction.test.ts","character-presentation.ts"],"compilerOptions":{"types":["vite/client"]}}

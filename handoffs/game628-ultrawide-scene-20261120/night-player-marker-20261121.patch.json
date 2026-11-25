@@ -1,0 +1,47 @@
+[
+  {
+    "op": "test",
+    "path": "/wideStreetFrame/pitch",
+    "value": 0.135
+  },
+  {
+    "op": "replace",
+    "path": "/wideStreetFrame/pitch",
+    "value": 0.31
+  },
+  {
+    "op": "add",
+    "path": "/manifest/entities/player/WorldUI3D",
+    "value": {
+      "offsetY": 1.93,
+      "node": {
+        "type": "Panel",
+        "id": "player-marker",
+        "props": {
+          "bg": "raised",
+          "edge": "gold"
+        },
+        "layout": {
+          "width": 28,
+          "height": 25,
+          "padding": 0,
+          "radius": 8,
+          "align": "center",
+          "justify": "center"
+        },
+        "children": [
+          {
+            "type": "Label",
+            "id": "player-marker-label",
+            "props": {
+              "text": "你",
+              "size": 15,
+              "color": "text",
+              "bold": true
+            }
+          }
+        ]
+      }
+    }
+  }
+]

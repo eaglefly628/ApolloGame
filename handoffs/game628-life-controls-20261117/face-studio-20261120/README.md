@@ -1,0 +1,54 @@
+# Game 628 · original NPC face composition prototype · 2026-11-20
+
+## Playable entries
+
+- <http://127.0.0.1:18829/?scene=face-studio>
+- <http://127.0.0.1:18829/?scene=face-gallery>
+
+Four facial families each have three clearly different authored shapes: oval / smiling-arc / horizontal eyes; straight / arched / angled-thick brows; round / long / wedge nose; smile / flat / open-round mouth. Buttons change each family independently. R or “随机一张” samples a whole face. “重置种子” recreates the same studio world with initial seed **6282026** and face0000, so the subsequent random sequence replays. Space or “打个招呼” plays the actual local wave clip. Its main hand-lift window is about .75–2.5s; still screenshots at .5s or after3.25s can miss it.
+
+This is a **finite81-combination prototype**, not an infinite avatar generator. The faces are original components using the current game's eye/brow/nose/mouth language. No Wii Mii characters, meshes, face parts, UI or code are copied.
+
+## Existing-capability route
+
+Current checkout search found no Socket3D component or renderer and no Effect that sets Model3D. No shared capability was fabricated. Existing `j1-state`, `w1-random`, `t2-keybind`, `t2-event-when` and `t2-effect-apply` express the prototype completely:
+
+1. Four independent State IDs hold faceDNA: `face.eyes/brows/nose/mouth` values0–2.
+2. Each manual button emits a signal and an Effect sets one State, preserving the other three.
+3. One of81 four-way state conditions emits its `show.<dna>` edge signal. Ordered effects hide all tagged face actors and show exactly the chosen one within the same Commit.
+4. Whole-face random resets each state to0, then a .5 chance sets1, then a1/3 chance overrides2. Each outcome has probability1/3. The fixed engine RandomSeed advances exactly eight draws per click. Identity does not change while idle.
+
+All UI is existing LayoutNode data with house theme and real action signals. No free DOM, game-specific state interpreter, runtime random loop or shared renderer/host modification was added.
+
+The studio swaps the complete coherently animated actor. Its four selected face meshes are direct children of the **same Head node** as the body, sharing that one clip/mixer. This avoids the phase divergence that separately visible face GLBs would have without an actual skeletal socket capability. Original world vertices are transformed into Head-local coordinates offline.
+
+## Assets and main-street integration
+
+`face-contract.json` is the complete family/variant/faceDNA/source/hash contract. Standard .gltf recipes share `/art/face-studio-20261120/shared-body.bin` (1,235,752bytes). Existing ModelAssetLoader accepts JSON model bytes and existing GLTFLoader fetches this local external buffer; both offline and actual browser loading were tested. This avoids81 repeated1MB body binaries. Still,81 JSON recipes are a local prototype tradeoff; full recipe/asset footprint is about23MB.
+
+The **main street only needs these five self-contained GLBs**; do not link studio/gallery from its navigation prefetch chain solely for convenience:
+
+|Shop|Model key|File|faceDNA E/B/N/M|
+|---|---|---|---|
+|grocery|npc-face-grocery|npc-grocery.glb|0/0/1/0|
+|bakery|npc-face-bakery|npc-bakery.glb|1/1/0/0|
+|noodles|npc-face-noodles|npc-noodles.glb|2/2/2/1|
+|catcafe|npc-face-catcafe|npc-catcafe.glb|1/0/1/2|
+|bikeshop|npc-face-bikeshop|npc-bikeshop.glb|2/2/0/0|
+
+All live at `public/art/face-studio-20261120/`. Every file has idle/walk/wave; same +Z facing, Y-up and scale1 as current original shopkeeper. Current prototype uses authored stable NPC identities; future generated residents can consume the same faceDNA schema. Local motion provenance remains from the existing user's library as recorded in original character contracts; no source Skin/FBX or global catalog is copied/changed. The valid v4 visor and exact-sole Hip curves are reused in the new NPC data.
+
+## Checks and evidence
+
+- `face.test.ts`: four tests cover manifest/UI validity, independent part edits, all81 uniquely visible results, static identity stability, 40-click deterministic replay, all family choices reached, eight PRNG draws/click, and reset/new-world initialization. Latest local run4/4 passed.
+- `check-assets.mjs` / `asset-check.json`: eight representative .gltf combinations (covering every component shape and five NPC faces) load through existing GLTFLoader. All four active face components have parentHead. Across600 wave samples, Head-relative matrix error stays below1.14e-13.
+- `check-wave.mjs` / `wave-motion-probe.json`: actual generated GLTF wave track raises the hand fromY≈.76m to≈1.39m; it is not a dummy gesture button.
+- `evidence/face-default.jpg`, `face-composed-1122.jpg`: actual browser component editing.
+- `evidence/random-first.jpg` / `random-first-replayed.jpg`: actual reset + first random face replay, confirmed visually (eyes0/brows1/nose0/mouth2).
+- `evidence/five-npc-gallery.jpg`: five actual different faces generated by this system. Screenshot predates display-only removal of technical Head/DNA copy; current data retains only user-facing descriptions.
+- `evidence/wave-probe-8.jpg`: continuous browser capture at about1358ms confirms raised hand and coherent face/head motion. Earlier isolated screenshots missed the active hand-lift window; those are not treated as gesture failures or as mid-action proof.
+- `evidence/browser-console.json`: actual studio/gallery run without warn/error.
+
+Main session also performed IAB validation and owns final unified build/regression and main-street integration. The child browser had no IAB capability, so producer used a separate Chrome tab and left the user's Steam tab and main preview untouched. No CUA app state was read through hidden globals.
+
+No main scene generator, protagonistv4, original source library, K line, shared engine, runtime host or other session work was edited; no commit or push. Asset generation and tests passed; final user art acceptance remains separate.
