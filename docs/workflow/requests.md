@@ -8,17 +8,11 @@
 
 ## 待处理 / 进行中
 
-### REQ-PUI-ANIM-CONTINUITY · 布局更新不得反复重启无关子树动画 · [2026-10-26] · owner iOS试玩反馈 · 指派：PUI · 施工主体：待抢锁 · status: open · P1 · 类型: 既有UI更新行为修复
-> 实证：game108掉血震屏改变duel-screen根layout，server.ts更新用outerHTML替换整树；真实Chrome约100ms内根替换7次、每次160后代，内部260ms apollo-pop对应重启7次。两游戏rAF中位/p95仍约16.7ms，不可把此问题归给模拟器。完整步骤/原始探针：docs/design/ios-animation-diagnosis-2026-10-26.md。
-> 验收：同类型/同id的可变布局/props更新应保留不受影响子树与动画连续性，输入handler不重复；父锚点、结构性替换、卸载与旧控件行为不回退；真实浏览器+至少两处锚点验红+相关/全量门禁+check-ui。边界src/ui/**及本域测试/手册，游戏量化问题另交game108维护方；不在本单重造UI框架。
+当前为空。2026-11-28 应 owner 要求撤下 10 条引擎需求，原文保留在 Git 历史中。
+
+Game628 工单继续在 [Game628 需求单](../design/game628/requests.md) 管理。
 
 <!-- REQ-3D-RENDER-BIND：owner 2026-10-26 判A，P3D/本聊天抢锁；共享3D协议、component-map/registry与NON_DETERMINISTIC登记在本单授权面，主程已知会；正文见requests-3d.md。不新增sim能力或改hash算法。 -->
-
-### REQ-112-UI-12 · 通用原生分层角色 LayoutNode 控件 · [2026-10-21] · owner 判 A · **施工主体 = PUI（game112 聊天委派 `pui_native_ui` · 本行即锁）** · status: in-progress（0700fd787已锁，实现完成，独立复查与目标GPU验收中） · P1
-- **真人判词**：「A：补通用控件，由 PUI 施工（推荐）」。复用已有 `mountNativeCharacter`，不实施 Game112 专用 iframe 例外；不扩 sim/确定性能力。
-- **实查 / A/B / 验收**：`docs/design/game112/requests.md` 同号单。现有 `ComponentType`/`ImageProps`/catalog 无原生模型消费者，Image 的 sprite/meshMotion 不能解 `.stretch`。
-- **写死边界**：PUI 只改 `src/ui/**`、`games/game-i/**`、UI 手册及本域测试；提供闭集数据控件、catalog/validate、同源播放器装载、静态 poster 回退、重载/卸载及命中透传。不得改引擎端口、sim、工作台 vendor 或其它游戏；Game112 消费/发行运行时由本聊天分别负责。
-- **交付**：手册+活范例+正反测试（含超时/坏资源/过期异步/更新不重建/销毁）、独立复跑/锚点验红及真实游戏验收。只提交代码和小数据，候选美术不进 Git；复查人≠施工人。共享 `server/types/catalog` 合并必须保留同期 parent-anchor 工作，不擅修或撤掉它。
 
 <!-- REQ-MOBILE-SHELL 已按 owner 2026-10-26 授权完成通用 iOS 发布能力，独立复查与边界见 docs/design/ios-publish-review-2026-10-26.md；真实设备/签名/Apple 后台条件缺席时发行门仍 blocked。旧暂停记录查 git 历史。 -->
 
@@ -96,29 +90,6 @@
 <!-- REQ-AIFLOW-SCENELOAD：独立复查通过，判词08ba7e0ac；施工955826af4。按完工清池规则移出，全文查git历史。 -->
 
 <!-- GAP-AIFLOW-REFS：owner 2026-10-27 撤回（“先别A了，这块我们再看看，移除需求”），已从当前可执行池移除；不再等待本次A/B，不代表已实现。原始A/B讨论保留于 docs/design/ai-pipeline/gap-review-2026-10-24.md §二，完整条目查Git历史；准备记录保留。重启须新指令。 -->
-
-### REQ-MOTION-M2 · 动画库入库与目录（FBX → 标准骨架 GLB · 自动测量 · 闭集标签） · [2026-10-27] · owner 判 A · 🟢 工具链 · **施工主体 = Codex（2026-10-27·本行即锁）** · status: in-progress（None母版2445/2445、动作GLB2445/2445、108角色全库验证通过；当前升级Description主导标签分类并同步M3目录/预览优化） · P1
-> spec：`docs/workflow/handoff-codex-motion-line.md` ■ M2；本轮范围与复查入口：`docs/design/ai-pipeline/motion-line-scope-2026-10-29.md`。字段与词表：流程图 §2；首批来源草稿契约及只读预览见 `docs/design/ai-pipeline/motion-source-semantics-review-2026-10-29.md`，待独立复查，不宣称整库分类已准确。
-
-### REQ-MOTION-M5 · 动画库扩展（Mixamo 滑杆变体 · 带皮角色下载 · 裁剪/镜像/补循环 · 其它来源） · [2026-10-27] · owner 判 A · 🟢 工具扩写 · **施工主体 = Codex（2026-10-27·本行即锁）** · status: in-progress（依赖 M2） · P2
-> spec：派工单 ■ M5。
-
-### REQ-MOTION-M7 · 基于世界位移、转角与速度误差的自适应关键帧压缩 · [2026-10-28] · owner 明确授权 · 🔴 通用资源/渲染工具 · **施工主体 = Codex（2026-10-28·本行即锁）** · status: queued（owner要求先完成None母版，再做内部智能减帧；完整母版不可覆盖） · P1
-> spec：`docs/design/ai-pipeline/motion-adaptive-reduction.md`。opt-in 稀疏 LINEAR GLB → 加载时还原均匀采样；保留旧默认/预算；世界末端位置、转角、速度与接触窗验证，不做源站黑盒减帧或游戏自由代码。
-
-### REQ-WORLDKIT-K1 · KayKit 入库与目录（含 K5 风格规范实测 · KayKit 骨骼改名表） · [2026-10-28] · owner 判 A · 🟢 工具链 · **施工主体：待抢锁（指派 Codex）** · status: open · P1
-> spec：`docs/workflow/handoff-codex-worldkit.md` ■ K1；评估：`docs/design/ai-pipeline/kaykit-expansion.md`。
-
-### REQ-WORLDKIT-K3 · 色图换色与风格校正（Blender 作业 atlas-conform） · [2026-10-28] · owner 判 A · 🟢 工具链 · **施工主体：待抢锁（指派 Codex）** · status: open（依赖 K1） · P1
-> spec：派工单 ■ K3。
-
-### REQ-WORLDKIT-K2 · 拼装烘焙（Blender 作业 kitbash） · [2026-10-28] · owner 判 A · 🟢 工具链 · **施工主体：待抢锁（指派 Codex）** · status: open（依赖 K1、K3） · P1
-> spec：派工单 ■ K2。
-
-### REQ-WORLDKIT-K4 · 参数化生成（Blender 作业 generate · 登记制生成器） · [2026-10-28] · owner 判 A · 🟢 工具链 · **施工主体：待抢锁（指派 Codex）** · status: open（依赖 K3） · P2
-> spec：派工单 ■ K4。
-### GAP-FX-RENDER · 渲染线 R1 导入模型实例化绘制 · R2 导入模型卡通着色 · 特效线 V1–V5（爆发 / 贴图序列帧 / 网格粒子 / 盒面发射 / 噪声风）+ 特效库 · [2026-10-28] · owner 要求复盘 · **⚖ 待 owner 判 A/B** · 施工主体：待裁 · status: open · P1 · 类型: 渲染器（🔴 P3D 域·render-only）
-> 实查：实例化只覆盖 `Mesh3D`（`batches.ts`），`ModelPool` 逐实体克隆；`Vfx3D` 为圆点 `THREE.Points`，只有持续发射与点 / 锥 / 球形状，无贴图、无爆发、无噪声。**Lead 推荐 R1=A、R2=B、V=A**。全文：`docs/design/ai-pipeline/fx-render-line-review-2026-10-28.md`。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
