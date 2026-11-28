@@ -10,7 +10,7 @@
 
 当前为空。2026-11-28 应 owner 要求撤下 10 条引擎需求，原文保留在 Git 历史中。
 
-Game628 工单继续在 [Game628 需求单](../design/game628/requests.md) 管理。
+Game628《小生活》（梧桐街）由游戏线独立追踪。各席工作记录从[梧桐街评审交接](../../handoffs/game628-review-20261122.md)查找。《最后的火柴》同编号的[旧需求单](../design/game628/requests.md)保留为历史记录。
 
 <!-- REQ-3D-RENDER-BIND：owner 2026-10-26 判A，P3D/本聊天抢锁；共享3D协议、component-map/registry与NON_DETERMINISTIC登记在本单授权面，主程已知会；正文见requests-3d.md。不新增sim能力或改hash算法。 -->
 

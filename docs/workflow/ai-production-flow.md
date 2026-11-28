@@ -119,7 +119,7 @@ flowchart TD
 
 ## 5. 缺口清单（owner 已判补·拆解见路线图）
 
-> 引擎池 `requests.md` 现 10/10 满槽；以下按缺口裁决协议先摆路，owner 判后再入对应池。
+> 引擎池当前占用以 `node scripts/context-budget-guard.mjs` 的读数为准。以下缺口按裁决协议列出，owner 判后再入对应池。
 
 | # | 缺口 | 实查 | A 补能力 | B 不补 | 影响 |
 |---|---|---|---|---|---|
